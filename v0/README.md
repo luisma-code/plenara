@@ -56,8 +56,11 @@ The three demo turns exercise a simple write, a multi-write resolve-or-create wi
 5. ✅ **Authoring / emergent types** (`define_*`) — Claude authors a type+skill, validators gate it, it registers and runs (done).
 6. **Correction path** — `recordCorrection` (§5.2): "no, I meant X" zeroes the wrong entry and learns the right one; the strong learning signal.
 7. **Structured-output hardening for authoring** — pin the step schema + validate→retry (`G-29`) so complex authored skills don't drift; a `G-30` safety pass before activation.
-8. **Flutter UI** — wrap the console spine; then voice.
-9. **First iOS build** — closes the one deferred storage question (dataless-file cold-start).
+8. **Flutter UI** — wrap the console spine; then voice. **⚠ Setup-gated:** Flutter's Windows-desktop target needs **Visual Studio 2022 + the "Desktop development with C++" workload**; this box has only *Build Tools 2019*, so `flutter build windows` won't run until VS 2022 is installed. (Flutter *web* avoids VS but doesn't fit the file-based native storage — wrong direction.)
+9. **Voice (STT/TTS)** — the P2.1 uncompromising-voice layer; needs on-device speech libs.
+10. **First iOS build** — closes the one deferred storage question (dataless-file cold-start); needs Apple hardware.
+
+**State:** the v0 *logic spine* is complete and tested on this Windows box — everything above the UI/voice/device layers. The three remaining big leaps (UI, voice, iOS) are each gated on a toolchain or hardware not present here (VS 2022, speech libs, an iPhone), not on unresolved design. To run the current console app, start the bge-small embed server (for retrieval; optional) and `dart run bin/plenara.dart`.
 
 ## The thesis, demonstrated
 
