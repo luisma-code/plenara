@@ -1,0 +1,420 @@
+{
+ "acc": 0.9411764705882353,
+ "ood_acc": 1.0,
+ "cost": 0.0261,
+ "rows": [
+  {
+   "id": "H-create-task-1",
+   "exp": "create-task",
+   "pick": "create-reminder",
+   "correct": false,
+   "is_none": false
+  },
+  {
+   "id": "H-create-task-2",
+   "exp": "create-task",
+   "pick": "create-task",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-create-task-3",
+   "exp": "create-task",
+   "pick": "create-task",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-create-recurring-reminder-1",
+   "exp": "create-recurring-reminder",
+   "pick": "create-recurring-reminder",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-create-recurring-reminder-2",
+   "exp": "create-recurring-reminder",
+   "pick": "create-recurring-reminder",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-create-recurring-reminder-3",
+   "exp": "create-recurring-reminder",
+   "pick": "create-recurring-reminder",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-interaction-1",
+   "exp": "log-interaction",
+   "pick": "log-interaction",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-interaction-2",
+   "exp": "log-interaction",
+   "pick": "log-interaction",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-interaction-3",
+   "exp": "log-interaction",
+   "pick": "log-interaction",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-search-records-1",
+   "exp": "search-records",
+   "pick": "search-records",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-search-records-2",
+   "exp": "search-records",
+   "pick": "search-records",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-search-records-3",
+   "exp": "search-records",
+   "pick": "search-records",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-create-reminder-1",
+   "exp": "create-reminder",
+   "pick": "create-reminder",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-create-reminder-2",
+   "exp": "create-reminder",
+   "pick": "create-reminder",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-create-reminder-3",
+   "exp": "create-reminder",
+   "pick": "create-recurring-reminder",
+   "correct": false,
+   "is_none": false
+  },
+  {
+   "id": "H-instantiate-template-1",
+   "exp": "instantiate-template",
+   "pick": "instantiate-template",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-instantiate-template-2",
+   "exp": "instantiate-template",
+   "pick": "instantiate-template",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-instantiate-template-3",
+   "exp": "instantiate-template",
+   "pick": "instantiate-template",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-run-1",
+   "exp": "log-run",
+   "pick": "log-run",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-run-2",
+   "exp": "log-run",
+   "pick": "log-run",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-run-3",
+   "exp": "log-run",
+   "pick": "log-run",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-mood-1",
+   "exp": "log-mood",
+   "pick": "log-mood",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-mood-2",
+   "exp": "log-mood",
+   "pick": "log-mood",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-mood-3",
+   "exp": "log-mood",
+   "pick": "log-mood",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-medication-1",
+   "exp": "log-medication",
+   "pick": "log-medication",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-medication-2",
+   "exp": "log-medication",
+   "pick": "log-medication",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-medication-3",
+   "exp": "log-medication",
+   "pick": "log-medication",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-walk-1",
+   "exp": "log-walk",
+   "pick": "log-walk",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-walk-2",
+   "exp": "log-walk",
+   "pick": "log-walk",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-walk-3",
+   "exp": "log-walk",
+   "pick": "log-walk",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-meal-1",
+   "exp": "log-meal",
+   "pick": "log-meal",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-meal-2",
+   "exp": "log-meal",
+   "pick": "log-meal",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-log-meal-3",
+   "exp": "log-meal",
+   "pick": "log-meal",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-query-last-interaction-1",
+   "exp": "query-last-interaction",
+   "pick": "query-last-interaction",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-query-last-interaction-2",
+   "exp": "query-last-interaction",
+   "pick": "query-last-interaction",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-query-last-interaction-3",
+   "exp": "query-last-interaction",
+   "pick": "query-last-interaction",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-recall-contact-fact-1",
+   "exp": "recall-contact-fact",
+   "pick": "recall-contact-fact",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-recall-contact-fact-2",
+   "exp": "recall-contact-fact",
+   "pick": "recall-contact-fact",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-recall-contact-fact-3",
+   "exp": "recall-contact-fact",
+   "pick": "search-records",
+   "correct": false,
+   "is_none": false
+  },
+  {
+   "id": "H-add-contact-fact-1",
+   "exp": "add-contact-fact",
+   "pick": "add-contact-fact",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-add-contact-fact-2",
+   "exp": "add-contact-fact",
+   "pick": "add-contact-fact",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-add-contact-fact-3",
+   "exp": "add-contact-fact",
+   "pick": "add-contact-fact",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-query-aggregate-1",
+   "exp": "query-aggregate",
+   "pick": "query-aggregate",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-query-aggregate-2",
+   "exp": "query-aggregate",
+   "pick": "query-aggregate",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-query-aggregate-3",
+   "exp": "query-aggregate",
+   "pick": "query-aggregate",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-show-streak-1",
+   "exp": "show-streak",
+   "pick": "show-streak",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-show-streak-2",
+   "exp": "show-streak",
+   "pick": "show-streak",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-show-streak-3",
+   "exp": "show-streak",
+   "pick": "show-streak",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-undo-1",
+   "exp": "undo",
+   "pick": "undo",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-undo-2",
+   "exp": "undo",
+   "pick": "undo",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-undo-3",
+   "exp": "undo",
+   "pick": "undo",
+   "correct": true,
+   "is_none": false
+  },
+  {
+   "id": "H-ood-1",
+   "exp": "none",
+   "pick": "none",
+   "correct": true,
+   "is_none": true
+  },
+  {
+   "id": "H-ood-2",
+   "exp": "none",
+   "pick": "none",
+   "correct": true,
+   "is_none": true
+  },
+  {
+   "id": "H-ood-3",
+   "exp": "none",
+   "pick": "none",
+   "correct": true,
+   "is_none": true
+  },
+  {
+   "id": "H-ood-4",
+   "exp": "none",
+   "pick": "none",
+   "correct": true,
+   "is_none": true
+  },
+  {
+   "id": "H-ood-5",
+   "exp": "none",
+   "pick": "none",
+   "correct": true,
+   "is_none": true
+  },
+  {
+   "id": "H-ood-6",
+   "exp": "none",
+   "pick": "none",
+   "correct": true,
+   "is_none": true
+  },
+  {
+   "id": "H-ood-7",
+   "exp": "none",
+   "pick": "none",
+   "correct": true,
+   "is_none": true
+  },
+  {
+   "id": "H-ood-8",
+   "exp": "none",
+   "pick": "none",
+   "correct": true,
+   "is_none": true
+  }
+ ]
+}

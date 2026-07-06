@@ -1,0 +1,30 @@
+{
+ "no corpus (retrieval only)": {
+  "corrections": 82,
+  "early_rate": 0.32,
+  "late_rate": 0.25,
+  "corpus_share": 0.0,
+  "corpus_errors": 0
+ },
+ "EXACT corpus (\u03b8=0.995)": {
+  "corrections": 27,
+  "early_rate": 0.17,
+  "late_rate": 0.03,
+  "corpus_share": 0.71,
+  "corpus_errors": 0
+ },
+ "SOFT corpus (\u03b8=0.86, R9b)": {
+  "corrections": 27,
+  "early_rate": 0.17,
+  "late_rate": 0.03,
+  "corpus_share": 0.7133333333333334,
+  "corpus_errors": 0
+ },
+ "SOFT corpus (\u03b8=0.82, R9b)": {
+  "corrections": 28,
+  "early_rate": 0.16,
+  "late_rate": 0.03,
+  "corpus_share": 0.7533333333333333,
+  "corpus_errors": 3
+ }
+}

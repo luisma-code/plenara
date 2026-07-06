@@ -1,0 +1,478 @@
+{
+ "cases": [
+  {
+   "id": "H-create-task-1",
+   "utterance": "I need to remember to pick up my prescription from CVS before Friday",
+   "expected": {
+    "skillId": "create-task"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-create-task-2",
+   "utterance": "um can you add buy groceries for the dinner party to my list",
+   "expected": {
+    "skillId": "create-task"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-create-task-3",
+   "utterance": "Add task call mom this weekend",
+   "expected": {
+    "skillId": "create-task"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-create-recurring-reminder-1",
+   "utterance": "remind me every week to take out the trash",
+   "expected": {
+    "skillId": "create-recurring-reminder"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-create-recurring-reminder-2",
+   "utterance": "um i need like a daily reminder to drink water i guess",
+   "expected": {
+    "skillId": "create-recurring-reminder"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-create-recurring-reminder-3",
+   "utterance": "set up a recurring thing for team meetings every monday at 9",
+   "expected": {
+    "skillId": "create-recurring-reminder"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-interaction-1",
+   "utterance": "Log that I ran into Marcus at the coffee shop yesterday and he mentioned his new startup idea",
+   "expected": {
+    "skillId": "log-interaction"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-interaction-2",
+   "utterance": "um I need to remember that Sarah called on the 15th about rescheduling our meeting",
+   "expected": {
+    "skillId": "log-interaction"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-interaction-3",
+   "utterance": "note down that Jennifer seemed really stressed when we talked this morning like maybe something's going on",
+   "expected": {
+    "skillId": "log-interaction"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-search-records-1",
+   "utterance": "find that thing I wrote about the meeting with Sarah last month",
+   "expected": {
+    "skillId": "search-records"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-search-records-2",
+   "utterance": "um what did I say about changing my workout routine",
+   "expected": {
+    "skillId": "search-records"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-search-records-3",
+   "utterance": "search my notes for like recipes or meal prep stuff I guess",
+   "expected": {
+    "skillId": "search-records"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-create-reminder-1",
+   "utterance": "remind me to buy flowers the day before mom's birthday",
+   "expected": {
+    "skillId": "create-reminder"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-create-reminder-2",
+   "utterance": "um i need to remember to call the dentist tomorrow at 2pm",
+   "expected": {
+    "skillId": "create-reminder"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-create-reminder-3",
+   "utterance": "set reminder for taking out the trash like every thursday morning i guess",
+   "expected": {
+    "skillId": "create-reminder"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-instantiate-template-1",
+   "utterance": "I need to start using the workout log template",
+   "expected": {
+    "skillId": "instantiate-template"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-instantiate-template-2",
+   "utterance": "um I want to track my meals with that nutrition thing",
+   "expected": {
+    "skillId": "instantiate-template"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-instantiate-template-3",
+   "utterance": "can you set up a new tracker for my reading list with the book template and maybe add author names too",
+   "expected": {
+    "skillId": "instantiate-template"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-run-1",
+   "utterance": "I just finished my 5K run around the park in like thirty two minutes I think",
+   "expected": {
+    "skillId": "log-run"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-run-2",
+   "utterance": "Logged a 3.2 mile workout um took me about 40 minutes on the riverside trail",
+   "expected": {
+    "skillId": "log-run"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-run-3",
+   "utterance": "Did 7 miles this morning",
+   "expected": {
+    "skillId": "log-run"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-mood-1",
+   "utterance": "I'm feeling pretty anxious today and I think it's because of the presentation tomorrow",
+   "expected": {
+    "skillId": "log-mood"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-mood-2",
+   "utterance": "um I guess I'd say I'm happy right now",
+   "expected": {
+    "skillId": "log-mood"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-mood-3",
+   "utterance": "exhausted",
+   "expected": {
+    "skillId": "log-mood"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-medication-1",
+   "utterance": "I just took my Lipitor",
+   "expected": {
+    "skillId": "log-medication"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-medication-2",
+   "utterance": "um I had the ibuprofen like fifteen minutes ago I think",
+   "expected": {
+    "skillId": "log-medication"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-medication-3",
+   "utterance": "logged the metformin at 8:30 this morning",
+   "expected": {
+    "skillId": "log-medication"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-walk-1",
+   "utterance": "I just finished my walk it was about two point five miles I think",
+   "expected": {
+    "skillId": "log-walk"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-walk-2",
+   "utterance": "um I walked for like thirty minutes maybe a bit more",
+   "expected": {
+    "skillId": "log-walk"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-walk-3",
+   "utterance": "logged seven thousand steps on that one",
+   "expected": {
+    "skillId": "log-walk"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-meal-1",
+   "utterance": "I just had a chicken caesar salad for lunch",
+   "expected": {
+    "skillId": "log-meal"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-meal-2",
+   "utterance": "um I ate like maybe 450 calories of pizza I guess",
+   "expected": {
+    "skillId": "log-meal"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-log-meal-3",
+   "utterance": "log pasta carbonara",
+   "expected": {
+    "skillId": "log-meal"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-query-last-interaction-1",
+   "utterance": "when's the last time I talked to Sarah",
+   "expected": {
+    "skillId": "query-last-interaction"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-query-last-interaction-2",
+   "utterance": "um I think I need to check when did I last like message Marcus or something",
+   "expected": {
+    "skillId": "query-last-interaction"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-query-last-interaction-3",
+   "utterance": "show me my last interaction with Dr. Chen",
+   "expected": {
+    "skillId": "query-last-interaction"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-recall-contact-fact-1",
+   "utterance": "what did i save about Marcus's birthday",
+   "expected": {
+    "skillId": "recall-contact-fact"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-recall-contact-fact-2",
+   "utterance": "um i think i stored something about Sarah's favorite restaurant can you check",
+   "expected": {
+    "skillId": "recall-contact-fact"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-recall-contact-fact-3",
+   "utterance": "tell me the thing i remembered earlier about my dentist appointment",
+   "expected": {
+    "skillId": "recall-contact-fact"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-add-contact-fact-1",
+   "utterance": "Remember that Sarah loves hiking and rock climbing",
+   "expected": {
+    "skillId": "add-contact-fact"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-add-contact-fact-2",
+   "utterance": "My cousin Jake just got promoted to senior engineer at Google",
+   "expected": {
+    "skillId": "add-contact-fact"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-add-contact-fact-3",
+   "utterance": "Um, I should mention that David is actually Maria's brother, not her cousin like I said before",
+   "expected": {
+    "skillId": "add-contact-fact"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-query-aggregate-1",
+   "utterance": "how many steps did i log last week",
+   "expected": {
+    "skillId": "query-aggregate"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-query-aggregate-2",
+   "utterance": "um what's the total calories i burned in march i guess",
+   "expected": {
+    "skillId": "query-aggregate"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-query-aggregate-3",
+   "utterance": "give me my sleep hours for this month",
+   "expected": {
+    "skillId": "query-aggregate"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-show-streak-1",
+   "utterance": "show me my running streak",
+   "expected": {
+    "skillId": "show-streak"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-show-streak-2",
+   "utterance": "um what's like my longest streak for drinking water been",
+   "expected": {
+    "skillId": "show-streak"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-show-streak-3",
+   "utterance": "how many days in a row have I meditated",
+   "expected": {
+    "skillId": "show-streak"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-undo-1",
+   "utterance": "undo that",
+   "expected": {
+    "skillId": "undo"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-undo-2",
+   "utterance": "wait no go back um can you undo what i just did",
+   "expected": {
+    "skillId": "undo"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-undo-3",
+   "utterance": "take back the last thing",
+   "expected": {
+    "skillId": "undo"
+   },
+   "class": "A"
+  },
+  {
+   "id": "H-ood-1",
+   "utterance": "What's the weather going to be like tomorrow?",
+   "expected": {
+    "skillId": "none"
+   },
+   "class": "D"
+  },
+  {
+   "id": "H-ood-2",
+   "utterance": "Who won the basketball game last night?",
+   "expected": {
+    "skillId": "none"
+   },
+   "class": "D"
+  },
+  {
+   "id": "H-ood-3",
+   "utterance": "How do you spell accommodate?",
+   "expected": {
+    "skillId": "none"
+   },
+   "class": "D"
+  },
+  {
+   "id": "H-ood-4",
+   "utterance": "What's 17 times 23?",
+   "expected": {
+    "skillId": "none"
+   },
+   "class": "D"
+  },
+  {
+   "id": "H-ood-5",
+   "utterance": "How far is it from Boston to Portland Maine?",
+   "expected": {
+    "skillId": "none"
+   },
+   "class": "D"
+  },
+  {
+   "id": "H-ood-6",
+   "utterance": "What year did World War II end?",
+   "expected": {
+    "skillId": "none"
+   },
+   "class": "D"
+  },
+  {
+   "id": "H-ood-7",
+   "utterance": "What's the capital of Azerbaijan?",
+   "expected": {
+    "skillId": "none"
+   },
+   "class": "D"
+  },
+  {
+   "id": "H-ood-8",
+   "utterance": "Is it going to rain this weekend?",
+   "expected": {
+    "skillId": "none"
+   },
+   "class": "D"
+  }
+ ],
+ "gen_model": "claude-sonnet-4-5",
+ "gen_cost": 0.0198
+}
