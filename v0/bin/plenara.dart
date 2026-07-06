@@ -8,6 +8,7 @@
 library;
 
 import 'dart:io';
+import 'package:plenara/claude.dart';
 import 'package:plenara/interpreter.dart';
 import 'package:plenara/router.dart';
 import 'package:plenara/store.dart';
@@ -49,6 +50,7 @@ Future<void> main(List<String> args) async {
   final now = DateTime.parse('2026-07-06T09:00:00'); // frozen clock for a reproducible demo
   final interp = Interpreter(types, now);
   final router = Router.load('$dataDir/corpus.json', now);
+  final claude = ClaudeClient();
   final dev = HlcDevice('this-device');
 
   for (final s in skills.values) {
@@ -77,7 +79,9 @@ Future<void> main(List<String> args) async {
       return;
     }
 
-    final routed = router.route(u);
+    // Spec 03 §7.3 cascade: corpus fast-path -> Haiku residual (online, BYOK) -> clarify
+    var routed = router.route(u);
+    routed ??= await claude.routeResidual(u, skills);
     if (routed == null) {
       final sg = await router.retrievalSuggest(u);
       if (sg == null) {
@@ -102,7 +106,8 @@ Future<void> main(List<String> args) async {
         persist(w, '$dataDir/records', dev);
       }
       if (plan.writes.isNotEmpty) lastBefore = before;
-      stdout.writeln('A: ${plan.confirmation}');
+      final via = routed['source'] == 'cloud' ? '  [routed via Haiku — residual, §13]' : '';
+      stdout.writeln('A: ${plan.confirmation}$via');
       if (plan.writes.isNotEmpty) {
         stdout.writeln('   [wrote ${plan.writes.map((w) => w['typeId']).join(', ')} — persisted with _meta CRDT block]');
       }
