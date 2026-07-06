@@ -301,7 +301,7 @@ Evaluate a **safe arithmetic or string expression** over context variables and b
 | `into` | string | yes | Variable the result is bound to. |
 
 #### `format`
-Produce a string value from a template, used for confirmation messages, summaries, and notification bodies. Uses the same `{variableName}` interpolation as the confirmation template in Spec 01 §10.
+Produce a string value from a template, used for confirmation messages, summaries, and notification bodies. A `format` step is the **sole** home of the spoken confirmation (`G-03`; the type-level `nluHints.confirmationTemplate` is retired, Spec 01 §12.1).
 
 ```json
 {
@@ -423,6 +423,8 @@ A step list may not reference itself (recursion is a validation error). The tota
 Multiple keys at the same level are combined with AND. OR is expressed as `"_or": [filterA, filterB]`. Nesting `_or` inside another `_or` is not permitted — if the filter logic requires that, model it as two separate `read_many` steps and merge in a `compute`.
 
 All values in a filter may be `{variableName}` references, resolved at runtime from the execution context.
+
+**Null-valued filter entries are dropped.** A filter entry whose resolved `{variableName}` value is null is **omitted from the filter** — it matches all records, not records where the field is null. This is what lets one skill serve both the filtered and unfiltered case (`query-last-interaction` with no `medium` slot means "any contact method", Spec 05 §10 E4). To match records where a field *is* null, use the explicit `null` operator (`{"medium": {"null": true}}`) — that intent must be written literally, never expressed through an unbound variable.
 
 ### 3.7 Compute Expression Grammar
 
@@ -677,10 +679,12 @@ Skills are **data, not code**: the closed vocabulary (§3) is interpreted, never
 | `recall-contact-fact` | `contact`,`contact_fact` | — | read a stored fact (below). |
 | `log-interaction` | `contact` | `contact`,`contact_interaction` | dated note on a person (F-02; resolve-or-create person). |
 | `query-last-interaction` | `contact`,`contact_interaction` | — | "when did I last…" (below). |
-| `instantiate-template` | — | *(the template's type)* | register a built-in tracker type locally (Spec 05 §6). |
+| `instantiate-template` | — | *(system meta-op)* | register a built-in tracker type + bind its bundled skills locally (Spec 05 §6). **Not interpreter-expressible** — see note below. |
 | `log-<tracker>` | — | *(tracker type)* | template-bundled log skill (e.g. `log-run`, `log-meal`). |
 | `show-streak` | *(tracker type)* | — | compute current/longest streak (read + `compute`). |
 | `search-records` | *(all)* | — | system embedding search path, not a per-type skill (Spec 05 §12). |
+
+**`instantiate-template` and `search-records` are system meta-operations, not DSL skills.** The closed vocabulary (§3) writes *records of registered types*; it cannot register a type, bind skills, or run an embedding scan — those are `SchemaRegistry` / retrieval operations. Both entries appear in the seed table because they are **routing targets** (indexed in the `CapabilityIndex` and invoked by voice exactly like a skill), but the orchestrator dispatches them to the registry/search subsystem, not to the interpreter. The same holds for automation-config edits ("move my briefing to 6:30", P-19): editing an `automations/` file is a registry meta-operation the orchestrator performs directly (Spec 04 §3.9), never a `write_record`. Keeping this boundary explicit protects the P2.7 story: the interpreter's capability ceiling stays exactly the ten primitives, and everything that mutates the *capability system itself* goes through the reviewed registry code paths with their own confirmation rules.
 
 Two read/query skills in full (they exercise `read_related` + the resolve-or-create person idiom for the query side):
 
@@ -694,7 +698,8 @@ Two read/query skills in full (they exercise `read_related` + the resolve-or-cre
   "steps":{"main":[
     {"op":"read_one","typeId":"contact","match":{"id":"{subjectId}"},"into":"subject"},
     {"op":"read_related","typeId":"contact_fact","parentId":"{subject.id}","filter":{"fact":{"contains":"{query}"}},"orderBy":"createdAt","orderDir":"desc","into":"facts"},
-    {"op":"format","template":"{facts.0.fact, default: 'I don''t have anything on that for {subject.displayName}.'}","into":"confirmationText"} ]},
+    {"op":"compute","expr":"concat('I don''t have anything on that for ', {subjectName}, '.')","into":"absentLine"},
+    {"op":"format","template":"{facts.0.fact, default: '{absentLine}'}","into":"confirmationText"} ]},
   "dangerLevel":"safe" }
 
 // query-last-interaction — "When did I last see Marco?"
@@ -707,7 +712,8 @@ Two read/query skills in full (they exercise `read_related` + the resolve-or-cre
     {"op":"read_one","typeId":"contact","match":{"id":"{contactId}"},"into":"c"},
     {"op":"read_related","typeId":"contact_interaction","parentId":"{c.id}","filter":{"medium":"{medium}"},"orderBy":"occurredAt","orderDir":"desc","limit":1,"into":"last"},
     {"op":"compute","expr":"days_between({last.0.occurredAt}, today())","into":"daysAgo"},
+    {"op":"compute","expr":"format_date({last.0.occurredAt}, 'MMMM d')","into":"lastLabel"},
     {"op":"format","template":"You last saw {c.displayName} on {lastLabel} — {daysAgo} days ago.","into":"confirmationText"} ]},
   "dangerLevel":"safe" }
 ```
-*(`recall`/`query` skills take the same `…Id`+`…Name` pair as write skills, `G-12`; a query for an unknown person hits the same disambiguation/absent path. `read_one` on a null `medium` filter matches all — the "any contact method" case, Spec 05 §10 E4. The full log/streak/template skills are canonicalized as the corpus is traced.)*
+*(`recall`/`query` skills take the same `…Id`+`…Name` pair as write skills, `G-12`; a query for an unknown person hits the same disambiguation/absent path. A null `medium` filter entry is dropped and matches all — the "any contact method" case, Spec 05 §10 E4; normative rule in §3.6. The full log/streak/template skills are canonicalized as the corpus is traced.)*

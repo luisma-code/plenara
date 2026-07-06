@@ -199,8 +199,10 @@ from the first commit:
     > a cloud API. The rest of the app is insulated from this choice.
 
 -   **Intelligence layer:** handles NLU, intent classification, and
-    > Claude API calls. By design the local model handles \~95% of
-    > calls; the split can shift without touching other layers.
+    > Claude API calls. By design \~95% of calls complete on-device (in
+    > *steady state* — corpus fast-path + retrieval + deterministic
+    > resolvers; the "1–3B generative model" mechanism is superseded, see
+    > §7.1); the split can shift without touching other layers.
 
 If we decide folder-based JSON sync is not working, we replace the
 storage layer. If a better local model emerges, we swap it in the
@@ -946,6 +948,8 @@ reasoning-heavy, and therefore a Claude task.
 
 ### 7.1 The Local Model (95% of AI calls)
 
+> **⚠ AMENDED July 2026 (measured — Phase-3 findings §§11–12, gap register 05b).** The premise below — a 1–3B *generative* model as the NLU workhorse — is **measured-dead**: every candidate 1–3B checkpoint scored ≤49% routing against a 95% bar, 0% novel-need detection, dead confidence calibration (findings §11). The **spirit survives** (≈95%+ of turns still complete with *zero* cloud calls), but the **mechanism changed**: it is now **(1)** a **corpus fast-path** — deterministic hash/template match on *learned* phrasings, the primary router in steady state; **(2)** a dedicated **retrieval-embedding model** (~80 MB, e.g. bge-small-en-v1.5) that *generates candidates* — it is a weak router alone (40–47% top-1, findings §12); and **(3)** deterministic resolvers (dates, entities, recurrence), with **Haiku on the genuine residual**. A 1–3B generative model is retained only as an optional future *tie-breaker over retrieved candidates*, gated on a new eval. **Crucial caveat:** the ≈95%-local figure holds in *steady state* (after the corpus learns a user's phrasings). **Cold-start** — new user, novel phrasing, or offline — is *clarify-heavy* and is the design's central UX risk; the corpus-learning **rate** is the make-or-break metric (findings §12). The original vision is kept below as record.
+
 A small on-device model handles intent classification, entity
 extraction, and adaptive NLU. This is the workhorse of the Intelligence
 layer.
@@ -1002,9 +1006,14 @@ Concrete cases where Claude is justified:
     > birthday?" --- requires reasoning over her likes, dislikes, recent
     > activities, and budget. No deterministic code can do this well.
 
--   **Daily digest (Batch API).** Once per day: Claude synthesizes
-    > tasks, deadlines, and relationship notes into a spoken morning
-    > briefing. \~2,000 tokens at Haiku 4.5 batch pricing ≈ \$0.003.
+-   **Daily digest.** Once per day: Claude synthesizes tasks, deadlines,
+    > and relationship notes into a spoken morning briefing. \~2,000
+    > tokens at Haiku 4.5 ≈ \$0.0007 (measured, findings §10.1).
+    > *Amended: generate at **fire-time**, not the Batch API — batch only
+    > guarantees completion within 24 h (not by 7 AM) and would assemble
+    > from yesterday's data; the batch discount defends a rounding error
+    > against a sub-cent cost (Fable review F-11). Batch stays right for
+    > the non-deadline weekly consolidation pass.*
 
 -   **Ambiguous intent fallback.** When the local model's confidence is
     > below threshold AND the clarifying question doesn't resolve it,
@@ -1093,11 +1102,16 @@ recipes)
 
 **contacts/** ← one file per person
 
-**journal/** ← one file per day (YYYY-MM-DD.json)
+**journal/** ← *(moved device-local — `G-37`)* journal entries live
+encrypted at `[app-support]/plenara/journal/`, **not** in this synced
+folder; no provider offers a reliable per-subfolder sync exclusion (§10.3)
 
 **meals/** ← records of a user-defined type live in their own folder
 
 **nlu/** ← corrections.json: the user's learned intent mappings
+*(caution — `G-36`: a single monolithic file under whole-file LWW is a
+multi-device self-conflict; must become per-entry files or per-device
+journals merged at load before P2 makes two live devices normal)*
 
 **settings.json**
 
@@ -1310,7 +1324,13 @@ expressive enough to carry the product vision.
 ### 10.3 Life Journaling
 
 -   **Daily voice memo:** 60 seconds auto-transcribed on-device. Stored
-    > as journal/YYYY-MM-DD.json.
+    > **device-local and encrypted** at `[app-support]/plenara/journal/YYYY-MM-DD.json`
+    > — *not* in the cloud-synced folder. *(Amended, `G-37`: no major
+    > provider offers a reliable per-subfolder sync exclusion, so the
+    > originally-planned `journal/` under the synced root would have
+    > silently synced the most sensitive data while the spec asserted it
+    > never leaves the device. Journal entries are never synced by design,
+    > so the synced-root location bought nothing.)*
 
 -   **Local semantic search:** using on-device embeddings.
 
@@ -1784,4 +1804,11 @@ it, followed by what remains genuinely open.
 
 -   **App Store compliance:** confirm the declarative-interpreter
     > approach with a pre-submission review before building it out
-    > (13.6). Assigned to Claud
+    > (13.6). **Do this before v2 builds the authoring UI, not at
+    > store-submission time** — 2026 enforcement (Anything, Replit,
+    > Vibecode) judges product *framing* as much as mechanism, and
+    > "describe a capability and the app builds it" pattern-matches to
+    > exactly what Apple has been pulling (Fable review D-3). The
+    > mechanism defense (interpreter in binary, human-readable JSON, no
+    > remote code fetch) is sound; the *marketing framing* is the
+    > residual risk. Assigned to Claude.

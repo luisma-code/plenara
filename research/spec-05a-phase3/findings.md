@@ -186,4 +186,29 @@ Full report: [`local-model-eval.md`](local-model-eval.md). A 57-case labeled dat
 
 **No small model meets any bar.** Best small-model core-routing (class A) is Llama at 81% (bar 95%); **meta-intent (class C) = 0% for every small model**; OOD (D) 0–38%. Ensemble oracle over all 4 ≈ **70%** (17/57 cases no model ever gets, dominated by the abstention classes). Load-bearing findings: (1) **constrained decoding changed routing by 0 points** — format was never the failure (already 100% valid; the `skillId`-as-number wart vanishes when candidates are keyed by id) → **re-scope `G-07`: constrained decoding is format insurance, not an accuracy lever**; (2) **small models never abstain** → meta-intent + OOD *must* be retrieval-owned; (3) **calibration is dead for every model, Haiku included** (sep ≤0.045) → escalation gates on retrieval, never confidence; (4) `G-19` privacy held (0/4 leaks) but as a *side effect* of non-abstention, so don't hand the model an explicit OOD label to over-trigger.
 
+**⚠ See §12 — the *replacement* router (retrieval) was subsequently measured and is itself weak; the routing story is more fragile than this section alone implies.**
+
 **Decision (per Luis's rule "if bad, cut losses → code + Haiku fallback"): take the `G-20` fail branch — the on-device generative model is NOT in the trusted routing path.** Route known capabilities via **corpus fast-path + retrieval top-1-with-margin + the deterministic date/entity resolvers**; escalate the genuine residual (≥2 close candidates AND novel phrasing) to **Haiku** (96/100/100% on A/B/D, ~$0.0006/call, ~0.8 s p50); own meta-intent + OOD in **retrieval + rules**. Offline/free residual with no cloud → **clarify** (deterministic). The architecture's local-first hedge survives by design: the generative model was only the discriminator-of-last-resort, and corpus + retrieval-margin cover the common case without it. *(A 7–8B "ceiling" run was descoped — a 3B→7B jump is very unlikely to clear 95% AND a 1.5 s phone p95; the NO-GO holds regardless.)*
+
+---
+
+## 12. The retrieval router, measured (`G-38`) — the biggest correction
+
+Fable's independent review (05c F-1) flagged that the *replacement* router — retrieval top-1-with-margin, which the `G-20` cut promoted to the primary router — had never been measured as a stack: the `G-20` eval pre-supplied every case a candidate set that already contained the right answer. Measured now (`harness/eval_retrieval.py`): two embedders serving via llama.cpp, ranking each of the 45 real-skill labeled utterances against the **full 17-skill set**, surface = name + desc + hand-written canonical `examplePhrases` (generic, no leakage from the test utterances).
+
+| metric | MiniLM-L6-v2 (22 MB) | bge-small-en-v1.5 (36 MB) |
+|---|---|---|
+| **top-1 (as router)** | **40%** | **47%** |
+| recall@3 | 62% | 69% |
+| recall@5 | 76% | 80% |
+| recall@8 | 91% | 93% |
+
+**Two hard findings:**
+1. **Retrieval is not a viable standalone router.** 40–47% top-1 (class A known-capability only 54–58%), on par with the *cut* local model (49%). Near-neighbors dominate the errors — `instantiate-template`→`log-*`, `add-contact-fact`→`log-medication`, the task/reminder twins, `search-records`→`log-interaction`. **No margin threshold rescues it:** the best operating point is ~60% accuracy-on-dispatched at ~50% clarify-rate. A stronger embedder buys ~7 points, not a verdict change.
+2. **The `G-20` eval's perfect candidate sets overstated the achievable stack.** Real retrieval puts the correct skill in the top-5 only **76–80%** of the time. So the online "Haiku picks from top-K" path is capped at ~recall@5 × Haiku-pick ≈ 0.80 × 0.86 ≈ **~69% end-to-end** — not the 86% the isolated eval implied — and the offline/free tier has no Haiku at all.
+
+**What this means (folded into Spec 03 §7.3):**
+- **Retrieval is a candidate GENERATOR (top-K), not the router.** The decider is corpus fast-path (learned phrasings, ~deterministic) → Haiku (online, picks from top-K) → clarify (offline/cold). Cold-retrieval top-1-with-margin dispatch is off by default — high-margin-*and*-correct is rare.
+- **Cold-start routing is the make-or-break, and it is clarify-heavy.** Before the corpus learns a user's phrasings, *nothing* reaches the "rarely asks" bar — retrieval 47%, cut local model 49%, retrieval+Haiku ~69%. The research §2.1 vision ("within weeks it rarely asks") is delivered **only** by the corpus-learning ratchet (act → uncorrected → boost → fast-path), not by retrieval. **The corpus-learning rate is now the single most important UX metric** and must be the Phase-0 spike's headline measurement.
+- **Recommendations:** ship **bge-small-en-v1.5** (or test gte-/e5-small) over MiniLM-L6 (~+7 pts, still within the ~80 MB budget); widen the Haiku candidate set to **top-8** (recall 93%); treat retrieval margin as a confidence *signal* into escalate/clarify, never a standalone dispatch gate.
+- **Caveats:** 17-skill set (real deployment has more skills → more near-neighbors → harder); hand-written anchors (authored/user-authored `examplePhrases` quality is uncontrolled — Fable D-2); the free-form `text`-slot extractor floor was not separately measured.

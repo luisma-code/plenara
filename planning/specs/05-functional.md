@@ -84,7 +84,7 @@ The `[PAID]` gate (§3.6) is not a confirmation; it is an inability to proceed. 
 
 ### 3.2 When to Ask Before Acting
 
-The app breaks the fourth wall only when it genuinely cannot determine what was requested. It never pre-confirms a routing it can act on — a moderate-confidence best guess is acted on and made transparent, not surfaced as "did you mean X? — proceed?" (this collapses the routing pre-confirmation band that Spec 03 v0.3 defined; see D2 and the reconciliation in Spec 03 §2.7/§4). The thresholds below are Spec 03's (§4.3), used here by their real names.
+The app breaks the fourth wall only when it genuinely cannot determine what was requested. It never pre-confirms a routing it can act on — a moderate-confidence best guess is acted on and made transparent, not surfaced as "did you mean X? — proceed?" (this collapses the routing pre-confirmation band that Spec 03 v0.3 defined; see D2 and the reconciliation in Spec 03 §2.7/§4). The thresholds below are Spec 03's (§4.3), used here by their real names. *(Post-`G-20`, the quantities behind these names are **retrieval-similarity and margin** signals, not classifier confidence — Spec 03 §7.3.1; the interaction behavior in this section is unchanged, only what the numbers measure.)*
 
 **Transcription below the ASR floor.** The speech engine could not produce a confident transcript at all (Spec 03 §3.5).
 > A: "I didn't quite catch that. Could you say that again?"
@@ -162,7 +162,7 @@ The free tier must work end to end with **no Claude call and no authoring**, bec
 
 **The free-tier capability surface = seed types + built-in templates + the skills bound to them, all shipped in the binary.** Concretely:
 
-- **Seed types** (Spec 01 §12, always present): `task`, `contact`, `contact_interaction`, `journal_entry`.
+- **Seed types** (Spec 01 §12, always present): `task`, `contact`, `contact_fact`, `contact_relationship`, `contact_interaction`, `journal_entry`, plus the `goal` seed (Spec 01 §12.4, `G-32`). The people-knowledge flows (§9) depend on `contact_fact`/`contact_relationship` specifically — a facts capture that only had `contact` would have nowhere to put "Mia is Sarah's daughter."
 - **Built-in tracker templates** (§6): Run, Walk, Water, Reading, Mood, Sleep, Weight, Meals, Habit, Medication. Instantiating one registers its type locally with no cloud call.
 - **Seed skills** (Spec 02 §9): the capture, log, query, streak, and recall skills that operate over the above. A template is not shipped as a bare type — it ships **bundled with its skills** (a log skill and, where relevant, a streak/summary skill), so that the moment a tracker exists the user can log against it and query it by voice. A type with no skill is inert; the free tier ships neither.
 
@@ -184,7 +184,7 @@ Spec 02 §9's seed table is expanded to cover this union. Anything a free-tier f
 
 ### 3.8 Generative Requests (Paid, Voice-Invocable)
 
-Seven of the ten paid marquee tasks — the briefing (§15), gift ideas (§16), event prep (§17), reconnect coaching (§18), weekly review (§19), pattern insight (§20), meal suggestion (§21), and monthly reflection (§22) — are not writes at all. They ask Plenara to *synthesize* something over the user's records. These are **generative requests**, a first-class intent category (`generative_request`, Spec 03 §2.2a), **not** skills — a skill may not call a model at runtime (Spec 02 §8.4). This subsection states how a generative request behaves so the flows below need not each repeat it:
+Eight of the ten paid marquee tasks — the briefing (§15), gift ideas (§16), event prep (§17), reconnect coaching (§18), weekly review (§19), pattern insight (§20), meal suggestion (§21), and monthly reflection (§22) — are not writes at all. (A ninth kind, `foresight`, extends pattern insight forward in time — `G-27`, Spec 04 §3.10.) They ask Plenara to *synthesize* something over the user's records. These are **generative requests**, a first-class intent category (`generative_request`, Spec 03 §2.2a), **not** skills — a skill may not call a model at runtime (Spec 02 §8.4). This subsection states how a generative request behaves so the flows below need not each repeat it:
 
 - **Voice-invocable (P2.1).** A generative request is reached by speaking, exactly like a capture — "give me a briefing," "what should I get Sarah?" The router recognizes it because the fixed built-in generative capabilities are ranked in the `CapabilityIndex` as their own `kind` (Spec 03 §2.2a, Spec 04 §3.4), and a top hit of that kind above the act band yields a `generative_request` carrying a `generativeKind` + resolved `params` (the target contact, a time window, a budget — extracted by the same slot machinery as any skill). Two non-voice entry points also exist for delivery that shouldn't wait on the user to ask: a **scheduled automation** (briefing §15, weekly review §19, nudges §23) and an explicit **UI affordance**. *(This closes what Spec 04 v0.2 had deferred as Q6 — generative features reachable only by automation/UI, which contradicted voice-first; see D9.)*
 - **Read-only — no act-then-describe write, and nothing to undo.** A generative request writes no records, so it has no `confirmationText` and no undo entry. The app presents the synthesized result (a spoken opener + an on-screen card). If the user then acts on it — "save the second one," "remind me to text Marco Friday" — that is a *separate, following* turn, an ordinary act-then-describe skill invocation (§3.1).
@@ -389,7 +389,7 @@ When the `AutomationRunner` detects that a tracker has not had a new entry withi
 ```
 U: "Sarah's daughter Mia is allergic to peanuts."
 [System: NLU routes to `add-contact-fact`; resolves Contact for Sarah (or creates if absent); resolves or creates child relation for Mia]
-[System: execute — (1) Contact record for Mia if not exists, (2) Relation Mia is-child-of Sarah, (3) Attribute allergy="peanuts" on Mia's record]
+[System: execute — (1) Contact record for Mia if not exists, (2) contact_relationship record {Mia →daughter→ Sarah} (Spec 01 §12.2), (3) contact_fact record {attribute: allergy, value: peanuts} owned by Mia]
 A: "Got it — added Mia as Sarah's daughter, noted peanut allergy."
 ```
 
@@ -397,7 +397,7 @@ A: "Got it — added Mia as Sarah's daughter, noted peanut allergy."
 
 ```
 U: "What's Mia allergic to?"
-[System: NLU routes to `recall-contact-fact`; resolves Mia (possibly via Sarah's relation graph); reads allergy attribute]
+[System: NLU routes to `recall-contact-fact`; resolves Mia (possibly via Sarah's relationship records); reads Mia's contact_fact records filtered on the query]
 A: "Mia is allergic to peanuts."
 UI: Contact card for Mia with allergy field highlighted
 ```
@@ -465,7 +465,7 @@ U: "Start journal entry." (or "Today's journal.")
 [System: recording in progress — no cloud STT; on-device transcription only]
 U: (speaks freely for up to 60 seconds)
 U: "Done." (or the 60s window closes)
-[System: transcription finalized on-device; written to journal/YYYY-MM-DD.json (Spec 01 §8)]
+[System: transcription finalized on-device; written to the device-local journal store, [app-support]/plenara/journal/YYYY-MM-DD.json (Spec 01 §8, §12.3)]
 A: "Entry saved — 47 seconds."
 UI: Journal entry card with transcribed text
 ```
@@ -473,8 +473,8 @@ UI: Journal entry card with transcribed text
 **Privacy invariants (stated explicitly, testable):**
 
 - The audio recording is discarded immediately after transcription. It is never written to disk.
-- The transcribed text is stored only in the local Plenara folder, never in the cloud-synced portion (the journal/ subfolder is excluded from sync, §6 — Data & Sync spec).
-- The transcribed text is never sent to the Claude API, not even for paid features, without explicit user opt-in per-entry.
+- The transcribed text is stored in **device-local app storage** (`[app-support]/plenara/journal/`), encrypted at rest — **not** as a subfolder of the synced Plenara root. This is a deliberate correction (Spec 01 §12.3): no major provider (iCloud Drive, OneDrive, Google Drive) gives an app a reliable, settable way to exclude one subfolder of a synced tree from sync, so "excluded from sync" inside the synced folder was an invariant the platform could not actually keep. Device-local storage keeps it by construction.
+- The transcribed text is never sent to the Claude API, not even for paid features, without explicit **per-session** opt-in — the assembly-time consent of `G-26` (Spec 04 §3.10): pattern insight asks per session; monthly reflection shows the mandatory consent card. The consent is not user-disablable (DP-07).
 
 **Edge cases:**
 
@@ -618,13 +618,15 @@ Each refinement is a follow-up authoring call. The type is not registered until 
 ```
 [System: AutomationRunner fires the briefing automation at the user's configured time (default: 7:00 AM)]
 [System: GenerativeService produces generativeKind=`briefing` (§3.8) — assembles the prompt: today's tasks due, upcoming reminders in the next 48 hours, people with upcoming events or overdue contact, recent tracker summary]
-[System: ClaudeClient.generate called (Haiku; batched overnight if configured)]
+[System: ClaudeClient.generate called (Haiku, generated at fire time — see freshness note below)]
 [System: response validated: text only, no write ops; delivered as notification + spoken output on next app open or immediately if app is active]
 UI: Briefing card with the full text
 A: (TTS reads the briefing aloud)
 ```
 
 **The briefing is read-only.** It never writes records. The `AutomationRunner` applies Spec 02 §7.5: a read-only result is delivered without approval gating.
+
+**Freshness over batch pricing.** The research doc's Batch-API costing (research §7.2) predates the measured numbers: an immediate Haiku briefing costs ~$0.0007 and takes ~2 s (findings §10.1), so the 50% batch discount saves a third of a tenth of a cent while introducing a real staleness problem — a batch submitted overnight completes "within 24 hours," is not guaranteed done by 7:00 AM, and is assembled from *yesterday's* data (a task added at 11 PM would be missing). The briefing therefore generates **at fire time** with an immediate call; the Batch API remains appropriate only for genuinely asynchronous, non-deadline work (e.g. the weekly consolidation pass).
 
 **Canonical response example (not verbatim — Claude generates this fresh each day):**
 

@@ -348,7 +348,7 @@ sealed class TurnResponse {}
 class Approve         extends TurnResponse {}                          // accept a non-undoable deletion confirmation (Spec 05 §24) — the one surviving pre-action gate
 class Decline         extends TurnResponse {}                          // reject with no replacement → turn ends, NO write-back (Spec 03 §2.7)
 class Correct         extends TurnResponse { Transcript restatement; } // "no, I meant …" → recordCorrection + re-route the restatement (Spec 03 §2.7)
-class SelectCandidate extends TurnResponse { String skillId; }         // choose one of a clarification candidate set (Spec 03 §2.4)
+class SelectCandidate extends TurnResponse { String candidateId; }     // choose one of a clarification candidate set — a skillId for routing clarifications (Spec 03 §2.4), an entity id for pre-dispatch entity disambiguation ("Which Sarah?", Spec 03 §6.1); the promptId's ClarificationRequested defines what the id names
 class ProvideSlot     extends TurnResponse { String answer; }         // answer a missing-slot follow-up → NluRouter.resolveFollowUp (Spec 03 §6.3)
 class AcceptResidual  extends TurnResponse {}                          // run the queued residual of a compound utterance (Spec 03 MD8); Decline drops it
 ```
@@ -361,7 +361,7 @@ sealed class TurnEvent { String get turnId; }
 
 class TurnStarted            extends TurnEvent {}                                  // turn accepted; UI may show a listening→thinking state
 class Routing                extends TurnEvent { String skillId; RoutingSource source; } // advisory hint ("logging a meal…"); never itself an approval gate
-class ConfirmationRequested  extends TurnEvent { String promptId; ConfirmationKind kind;  // nonUndoableDeletion — the only pre-action gate left (Spec 05 §24)
+class ConfirmationRequested  extends TurnEvent { String promptId; PreActionConfirmKind kind;  // nonUndoableDeletion — the only pre-action gate left (Spec 05 §24)
                                                  ConfirmationView view; }          // the UI-renderable payload (§3.6a) — Approve/Decline via respond()
 class ClarificationRequested extends TurnEvent { String promptId; ClarificationNeeded clarification; } // ambiguous → SelectCandidate; missingSlots → ProvideSlot (Spec 03 §2.4, §6.3)
 class Executing              extends TurnEvent {}                                  // write barrier crossed (§4.3); cancel is now a no-op
@@ -371,8 +371,10 @@ class Detached               extends TurnEvent { String operationId; DetachedKin
 class TurnError              extends TurnEvent { PlenaraError error; }             // terminal-fault; the mapped actionable surface (§5.2)
 class TurnCancelled          extends TurnEvent { CancelReason reason; }            // terminal; bargeIn | userCancel | superseded
 
-enum ConfirmationKind { nonUndoableDeletion }
+enum PreActionConfirmKind { nonUndoableDeletion }
 ```
+
+*(Named `PreActionConfirmKind`, not `ConfirmationKind` — Spec 03 §2.6 already owns the identifier `ConfirmationKind` for the corpus write-back signal (`implicit` | `clarificationSelected`), and the two are unrelated concepts; a shared name would collide in code and, worse, in readers' heads.)*
 
 `ConfirmationRequested` is now a **single-purpose** event: the one pre-action approval the system retains, a non-undoable type/skill deletion (Spec 05 §24). v0.1–v0.2 defined two kinds — a routing pre-confirmation and an action-plan approval — but act-then-describe (Spec 05 §3.1) removed both: an uncertain routing is now surfaced as a `ClarificationRequested` (a genuine `SelectCandidate` choice, not an approve/decline of one guess), and the per-skill action-plan approval is gone with Spec 02's `confirmationPolicy`. The enum is kept (rather than folded into a bare event) so a future non-undoable operation can be added as a named kind and the UI's exhaustive `switch` forced to handle it. Everything else that used to be a "confirmation surface" is either a normal act-then-describe `Done` (no surface) or a `ClarificationRequested`. The orchestrator's obligations to NLU (exactly one of `recordConfirmation`/`recordCorrection`, or neither on a plain cancel/decline) and the compound-utterance residual offer are as specified in Spec 03 §2.7; §4.2 gives the async sequencing. Non-`skill_invocation` intents resolve at the seam exactly as Spec 03 §2.7 lists: `system_command` → the app shell (`undo` via §3.11, `show_pending` → the review feed of §3.9), `clarification_needed` → a `ClarificationRequested` event, `define_*` → `AuthoringService` (§3.7) as a **detached** operation (§4.7) so a 10–30 s Sonnet authoring call never holds the turn lock, tier-gated; `generative_request` → `GenerativeService.produce` (§3.10) as a **detached**, read-only operation (§4.7), tier-gated, delivered through the operation center as a `Detached` event — it writes no records, so it has no confirmation surface and no corpus write-back (Spec 03 §2.2a/§2.7). A `delete_type`/`delete_skill` system command is what raises the `nonUndoableDeletion` `ConfirmationRequested`.
 
@@ -454,6 +456,8 @@ abstract class AutomationRunner {
 }
 ```
 
+**Automation-config edits are a registry meta-operation, not skill writes.** "Move my briefing to 6:30" (Spec 05 §15 E4, P-19) edits an `automations/` file — automations are not instances of a registered type, so no `write_record` can touch them (Spec 02 §9.2). The orchestrator routes a recognized schedule-edit intent here: the runner rewrites the automation record, re-arms the schedule, and the turn is described act-then-describe like any capability-system change that *is* reversible (re-editing the schedule back is the undo; nothing is destroyed). This is the same boundary `instantiate-template` sits on — voice-invocable, registry-executed, outside the interpreter's ten primitives.
+
 An automation-fired execution reuses the **same interpreter and the same serial-execute queue** (§4.4) as an interactive turn — the only differences are that no `NluRouter` runs (there is no utterance; the skill and its inputs come from the automation binding) and the confirmation boundary is the review feed rather than an in-the-moment modal. Approval of a review item flows through `resolveReviewItem`, which reuses the orchestrator's execute path so the write barrier, re-verify, and journaling are identical. This keeps "no write without approval" true on the unattended path (Spec 02 §7.5) without duplicating the execution machinery. Scheduling reliability under OS background limits is §4.8 and Q1.
 
 ### 3.10 Business Logic — `GenerativeService` (new)
@@ -488,7 +492,7 @@ abstract class GenerativeService {
 
 `undo` is a first-class system command (Spec 03 §2.3) — "reverse the most recent executed skill … within the undo window" — but v0.1 gave it no owner or mechanism, and it silently contradicted Spec 02 §5.4, which **reaps a journal entry the instant it reaches `done`**: if the record is gone, there is nothing to reverse. And even a retained entry only records what was *written*, not the prior state an update overwrote, so reversing an update is impossible without more. Both are fixed here; the pieces are already in §3.3.
 
-- **Retention.** A completed execution is retained in the journal's bounded most-recent-completed ring for the **undo window** (default 5 minutes or until the next completed write, whichever the UI prefers; a v1 default of "the last completed execution, for 5 minutes" is simplest), then reaped (`reapExpired`, §3.3). This narrows Spec 02 §5.4's "reap at done" to "reap at end-of-undo-window," aligned in Spec 02 §5.4.
+- **Retention.** A completed execution is retained in the journal's bounded most-recent-completed ring for the **undo window** (default 5 minutes), then reaped (`reapExpired`, §3.3). This narrows Spec 02 §5.4's "reap at done" to "reap at end-of-undo-window," aligned in Spec 02 §5.4. **The ring must hold more than one entry** (v1 default: the last 5 completed executions, each within its window) — *not* "the last execution only" — because the **correction flow depends on it**: "Log 5k" → "logged water" → *"no, that run was a walk"* must still be able to reverse the run's write (Spec 05 §3.3 reverse-then-redispatch), and a ring of one would have evicted it the moment the water log completed. `undo` (the bare system command) still targets only the most recent entry (Spec 05 §3.5); the deeper entries exist for the orchestrator's correction reversal, which identifies its target by the corrected intent's record, not by recency. A correction arriving after the window has closed gets the honest surface — "that was a while ago; want me to just fix the record?" — an ordinary update, never a stale reversal (P2.8).
 - **Before-images.** `execute` captures each written record's prior state (§3.3) — for a delete, that prior state is the **full record**. Undo builds the **inverse plan** from them: a create → `delete_record` of the minted id; an update → `write_record` restoring the captured fields (a field-merge back to the before-image, Spec 02 §3.2); a delete → `write_record` re-creating the record from its captured before-image, stamped with a fresh `lastModified` so the revival wins over its own tombstone on the acting device. Making delete undoable is what lets a record deletion follow act-then-describe (Spec 05 §3.1, D8) rather than needing the pre-action confirmation v0.1 gave it — the before-image was already being captured, so the revival is nearly free. **Carried-forward edge:** the cross-device race — the delete's tombstone syncs to another device before the undo re-creates the record — is a conflict the Data & Sync spec (Spec 06) must resolve under its last-writer-wins-by-`lastModified` model; the fresh `lastModified` on the revival is the intended tiebreaker, but confirming it across the real provider sync is a Spec 06 task. This does not block v1 (same-device undo within minutes is the common case). (*Type/skill* deletion remains genuinely non-undoable — it is a reverse migration, not a record restore — and keeps its pre-action confirmation, §3.6 / Spec 05 §24.)
 - **Undo is an ordinary execution.** The inverse plan runs through the same serial-execute queue and is itself journaled (idempotent, resumable). It is **single-level**: an undo is not itself undoable, so there is no undo/redo stack to keep consistent under crash or sync in v1 (deferred, §11 Q5). 
 - **Undo vs. routing correction are different signals** (Spec 03 §2.7): `undo` reverses the *action* but does not by itself zero the routing corpus entry; an `undo` followed by a `"correct"` is the negative-routing signal and flows through `recordCorrection`. The orchestrator owns that distinction; the interpreter owns only the reversal.
@@ -517,6 +521,39 @@ abstract class AttentionSurface {
 
 `AttentionSurface` is a *projection*, not a store: it derives from the `HydrationReport`, the registry's degraded set, the `MigrationRunner` results, `CryptoBox.keyAvailable`, the sync-conflict set, the authoring draft queue, and the `AutomationRunner`'s review feed. It owns nothing; it makes the union queryable so the repair-view pattern of §5.4 is one testable, bindable contract (a Spec 09 property: every `PlenaraError` whose surface is a repair view appears here).
 
+### 3.13 Business Logic — `NotificationScheduler` (new: reminder & scheduled-generation delivery, `G-34`/`G-35`)
+
+Fable F-3 surfaced a marquee gap: a `task` with `dueAt` (or an RRULE) must make the phone alert at that time, and no component armed OS notifications — `AutomationRunner` (§3.9) owns only the `automations/` registry, and a task record is not an automation. Worse, **iOS gives no reliable background execution** (BGTaskScheduler is opportunistic), so the app cannot assume it is running at fire time; delivery must be handed to the OS.
+
+```dart
+abstract class NotificationScheduler {
+  Future<void> sync(RecordRef ref, DueSpec spec);        // arm/refresh; idempotent
+  Future<void> cancel(RecordRef ref);
+  Future<void> scheduleGenerative(String automationId, Schedule when);
+}
+// DueSpec = { dueAt: DateTime } | { rrule: String, from: DateTime }
+```
+
+- **At write time** a task/reminder write arms an OS-local notification (`UNUserNotificationCenter`) for its `dueAt`. An RRULE **materializes the next N occurrences** (default N = 16; iOS caps pending notifications at 64) as concrete local notifications.
+- **On every app open** the scheduler re-derives and refreshes the next N occurrences of every active RRULE — since it cannot roll them forward in the background, drift is bounded to "one app-open behind."
+- **Scheduled generation is NOT a background Claude call.** The 7 AM briefing (Spec 05 §15) is an OS-fired local notification whose **tap** triggers generation (detached, §4.7); if untapped, generation runs on next app-open. This is why Spec 05 §15's promise reads "waiting for you at 7 AM," not "spoken at 7 AM." Arming is fully offline; only tap-time *content* needs connectivity (degrades per §6.2). Layer: BL component; the OS calls cross to the platform channel. This is pre-v0 (even the walking skeleton's "local reminder" hits it).
+
+### 3.14 Business Logic — `ContentSearchIndex` (new: record/journal content search, `G-34`)
+
+`search-records` (Spec 05 §12) needs a semantic index over record and journal **content** — a different artifact from the `CapabilityIndex` (§3.4), which embeds type/skill/generative *metadata* only (Fable F-8).
+
+```dart
+abstract class ContentSearchIndex {
+  Future<List<RecordRef>> search(String query, {int k = 10, Set<String>? typeScope});
+  Future<void> upsert(RecordRef ref, String content);   // on record write, off-UI-isolate
+  Future<void> remove(RecordRef ref);
+}
+```
+
+- **Device-local and encrypted at rest** (`[app-support]/plenara/search-index/`, never synced): content embeddings are **invertible enough to leak meaning** — a journal embedding reconstructs approximate topics — so this is the mechanism behind Spec 05 §12 E4's "the embedding is not stored in the cloud." **Journal** content is embedded under the same never-synced rule as the journal itself (§3.10, `G-26`/`G-37`).
+- **Incremental, not rebuilt:** `upsert` on each record write; embedding every record ever written at startup is far heavier than the ~hundred capability descriptions in the `CapabilityIndex`. A cold index builds lazily in the background; search degrades to substring match until warm (a *named* temporary degrade, P2.8 — not silence).
+- **Reuses the retrieval embedder** (bge-small, §7.3.4/`G-38`) — no second model ships. Owner: a Storage-adjacent BL component; referenced by Spec 05 §12, Spec 01 §5.4.
+
 ---
 
 ## 4. The Async / Threading Model
@@ -530,7 +567,7 @@ The topology is a small fixed set of isolates, created at the composition root (
 | Isolate | Runs | Why separate |
 |---|---|---|
 | **UI isolate** (root) | Flutter rendering, widget tree, view models, the `DispatchOrchestrator`, the `SkillInterpreter`, the `SchemaRegistry`, the in-memory object store | Must stay responsive at 60–120 fps; holds the authoritative in-memory state |
-| **Inference isolate** | The local llama.cpp model (via platform channel / FFI) and the retrieval-embedding model — classification, extraction, `similarTo` query-embedding — **plus the `CapabilityIndex` vector table and its cosine scan** (§3.4) | A single inference can take tens to hundreds of ms, and a cosine scan is a CPU-bound loop; both would drop frames on the UI isolate |
+| **Inference isolate** | The retrieval-embedding model (~80 MB, Spec 01 §5.1) — query embedding for `similarTo` and record-content search — **plus the `CapabilityIndex` vector table and its cosine scan** (§3.4). *(After the `G-20` NO-GO, Spec 03 §7.3, there is no per-turn local generative model; if a local LLM is ever reinstated as the retrieval-bounded tie-breaker, it lives here.)* | An embedding pass and a cosine scan are CPU-bound loops that would drop frames on the UI isolate |
 | **IO/crypto worker(s)** | File reads/writes, encryption/decryption of large payloads, the startup folder scan, JSON (de)serialization of big batches | Bulk disk + crypto is CPU- and syscall-heavy; short one-off writes may stay inline (§4.5) |
 
 The Business Logic spine — orchestrator and interpreter — deliberately lives **on the UI isolate**. It is not CPU-bound (it awaits IO and inference, it does not compute for long stretches), and keeping it co-resident with the in-memory object store means reads are synchronous in-memory lookups (`StorageRepository.read`/`readMany` return values, not futures — §3.1) with no cross-isolate serialization on the hot path. The expensive, parallelizable work is exactly the model and bulk-IO work, and that is what moves off-isolate. The `SchemaRegistry` also lives on the UI isolate for synchronous `lookup`, but its `similarTo` alone delegates to the inference isolate (where the vectors are, §3.4) — which is why that one registry method is `Future`-returning while `lookup`/`all`/`contains` are synchronous.
@@ -545,8 +582,9 @@ One user turn is a sequence of awaited stages, sequenced by `DispatchOrchestrato
 [BL/UI] assemble NluContext (frozen clock, entityNames, recentIntents, tier)   (UI isolate)
    │
 [Intel] NluRouter.route(transcript, ctx) ──► Intent                  (corpus lookup: UI isolate;
-   │        corpus miss → local classify + similarTo                  model work: INFERENCE isolate;
-   │        local low-conf → ClaudeClient.classify                    cloud: network, off-isolate await)
+   │        corpus miss → embed + similarTo → retrieval-margin        embed/scan: INFERENCE isolate;
+   │        decision (Spec 03 §7.3.1); genuine tie → ClaudeClient      cloud: network, off-isolate await)
+   │        .classify (Haiku residual, Spec 03 §7.3.2)
    │
    ├─ Routing (advisory hint; transparent-routing caveat if moderate confidence)   (→ UI)
    │  or ClarificationRequested if no reliable best guess → respond(SelectCandidate) (Spec 03 §4)
@@ -638,7 +676,7 @@ This section satisfies **P2.8 — no silent failure** end to end (§0 item 3): a
 
 ### 5.1 The sealed error model
 
-Every fallible interface either returns a **value-typed result** for an *expected* outcome or throws a **sealed error** for an exceptional fault — never a raw exception across a boundary. Value results put the failure case in the type so a caller cannot forget it: `CloudResult<T> = Ok(T) | CloudError(kind, message)` (§3.10), and likewise `StorageResult`, `AuthoringOutcome` (§3.7), `GenerativeOutcome` (§3.10). Exceptional faults are a sealed `PlenaraError` hierarchy (Dart `sealed class` → exhaustive `switch`, so a new variant is a compile error until every surface handles it):
+Every fallible interface either returns a **value-typed result** for an *expected* outcome or throws a **sealed error** for an exceptional fault — never a raw exception across a boundary. Value results put the failure case in the type so a caller cannot forget it: `CloudResult<T> = Ok(T) | CloudError(kind, message)` (§3.5), and likewise `StorageResult`, `AuthoringOutcome` (§3.7), `GenerativeOutcome` (§3.10). Exceptional faults are a sealed `PlenaraError` hierarchy (Dart `sealed class` → exhaustive `switch`, so a new variant is a compile error until every surface handles it):
 
 | layer | sealed set |
 |---|---|
@@ -675,7 +713,7 @@ The execution journal (Spec 02 §5) makes a partial write recoverable. If the ap
 
 ### 5.5 The repair surface — consolidating non-fatal inconsistency
 
-Inconsistencies that are not a single turn's failure — a dangling `entityRef` after a tolerate-dangling delete (Spec 02 §7.x), a corrupt record file, a skill referencing a removed type, a suppressed cascade (§4.8) — are **consolidated into the queryable repair surface** (`AttentionSurface`, §3.12), each with a suggested fix, rather than fired as interrupts. This is where §0's promise to "consolidate the partial-failure handling scattered across Specs 01–03" is kept: one review place, act-then-describe repairs, never a modal mid-capture.
+Inconsistencies that are not a single turn's failure — a dangling `entityRef` after a tolerate-dangling delete (Spec 02 §3.2), a corrupt record file, a skill referencing a removed type, a suppressed cascade (§4.8) — are **consolidated into the queryable repair surface** (`AttentionSurface`, §3.12), each with a suggested fix, rather than fired as interrupts. This is where §0's promise to "consolidate the partial-failure handling scattered across Specs 01–03" is kept: one review place, act-then-describe repairs, never a modal mid-capture.
 
 ---
 

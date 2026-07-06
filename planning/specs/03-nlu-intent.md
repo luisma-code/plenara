@@ -60,7 +60,7 @@ The normal case. The user's utterance maps to an existing skill in the skill lib
 }
 ```
 
-`routingSource` records how the intent was derived — one of the values enumerated in §2.5. For a skill invocation it is typically `corpus_hit` (flow-table fast path), `local_model` (local inference), `cloud_model` (Haiku escalation), or `anaphora` (resolved from `recentIntents`, §5.4a). This field is never shown to the user; it feeds the test-pair recorder (§7), the confidence-decay model (§4.2), and the boost-vs-create choice in the write paths (§2.6).
+`routingSource` records how the intent was derived — one of the values enumerated in §2.5. For a skill invocation it is typically `corpus_hit` (flow-table fast path), `retrieval` (the retrieval top-1-with-margin dispatch, §7.3 — the common non-corpus source after the `G-20` NO-GO), `cloud_model` (Haiku residual disambiguation, §7.3.2), or `anaphora` (resolved from `recentIntents`, §5.4a). `local_model` is retained in the enum for the optional tie-breaker role a local model may someday hold (§7.3), but no v1 path emits it. This field is never shown to the user; it feeds the test-pair recorder (§7), the confidence-decay model (§4.2), and the boost-vs-create choice in the write paths (§2.6).
 
 ### 2.2 Capability-Definition Meta-Intents
 
@@ -114,7 +114,7 @@ Intents that ask Plenara to *synthesize* something over the user's records rathe
 }
 ```
 
-`generativeKind` is one of a **fixed, binary-shipped set** — `briefing`, `gift_ideas`, `event_prep`, `reconnect_coaching`, `weekly_review`, `pattern_insight`, `meal_suggestion`, `monthly_reflection` — closed like the primitive-op vocabulary, because each maps to a reviewed `GenerativeService` prompt assembler (Spec 04 §3.10), never to authored or fetched code. `params` carries whatever that kind needs, resolved by the **same slot machinery as a skill invocation** (§6): an `entityRef` for the target contact ("what should I get **Sarah**"), a temporal window ("the last two weeks"), a budget. A required param that is absent takes the normal missing-slot follow-up (§6.3) — "prep for dinner with whom?" — and is never silently guessed (P2.8).
+`generativeKind` is one of a **fixed, binary-shipped set** — `briefing`, `gift_ideas`, `event_prep`, `reconnect_coaching`, `weekly_review`, `pattern_insight`, `meal_suggestion`, `monthly_reflection`, `foresight` (grounded forward-looking synthesis, `G-27`, Spec 04 §3.10) — closed like the primitive-op vocabulary, because each maps to a reviewed `GenerativeService` prompt assembler (Spec 04 §3.10), never to authored or fetched code. `params` carries whatever that kind needs, resolved by the **same slot machinery as a skill invocation** (§6): an `entityRef` for the target contact ("what should I get **Sarah**"), a temporal window ("the last two weeks"), a budget. A required param that is absent takes the normal missing-slot follow-up (§6.3) — "prep for dinner with whom?" — and is never silently guessed (P2.8).
 
 **Recognition.** Generative capabilities are indexed in the `CapabilityIndex` as a third candidate kind (`kind: generative`, Spec 04 §3.4), embedded over the same human-readable surface a skill uses (name, description, example phrases). Routing ranks them alongside skills and types (§3.3–§3.4); when the top candidate is `kind: generative` and clears `θ_act` (or the moderate band, acted on with transparent routing like any other), the router emits a `generative_request`. The built-in set is small and fixed, so its example phrases ship in the binary and are strong retrieval anchors.
 
@@ -167,7 +167,7 @@ Every NLU output is a single intent object. It is never a list. The category det
 |---|---|---|---|
 | `category` | enum | yes | One of: `skill_invocation`, `define_type`, `define_skill`, `system_command`, `clarification_needed`, `generative_request`. |
 | `confidence` | float [0, 1] | yes | The NLU layer's confidence in this intent. See §4. |
-| `routingSource` | enum | yes | The `RoutingSource` enum, closed: `corpus_hit`, `local_model`, `cloud_model`, `rule_match` (system commands, §2.3), `anaphora` (resolved from `recentIntents`, §5.4a). Feeds the test-pair recorder, the decay model, and the write-path boost-vs-create choice (§2.6). |
+| `routingSource` | enum | yes | The `RoutingSource` enum, closed: `corpus_hit`, `retrieval` (top-1-with-margin dispatch, §7.3.1), `local_model` (reserved — no v1 path emits it, §7.3), `cloud_model` (Haiku residual, §7.3.2), `rule_match` (system commands, §2.3), `anaphora` (resolved from `recentIntents`, §5.4a). Feeds the test-pair recorder, the decay model, and the write-path boost-vs-create choice (§2.6). |
 | `skillId` | string | if `skill_invocation` | The `skillId` of the skill to invoke. |
 | `slots` | object | if `skill_invocation` | Key-value map of slot names (matching `source: "slot"` input names in the skill's `inputs` contract, Spec 02 §2.3) to extracted values. Partial fills are permitted for optional slots. |
 | `systemCommand` | enum | if `system_command` | |
@@ -226,7 +226,7 @@ abstract class NluRouter {
 enum ConfirmationKind { implicit, clarificationSelected }
 ```
 
-**Why the write paths take a transcript, not just an `Intent`.** The v0.1/v0.2 signature `recordConfirmation(Intent, {viaPreConfirm})` could not do its job: building or finding the corpus entry requires the *normalized template* of what the user actually said (§5.4), and an `Intent` carries only the resolved `skillId` + slot **values**, not the surface phrasing or the spans templating needs. Passing the transcript (and `NluContext`, for the entity/temporal placeholders) makes both write paths self-contained. Whether a call **boosts** an existing entry or **creates** a new one is decided from `accepted.routingSource`: a `corpus_hit` re-normalizes, re-matches (§5.4), and boosts the matched entry; a `local_model`/`cloud_model` routing templatizes the transcript against `accepted.slots` and inserts a new entry. `recordCorrection` always zeroes any entry currently matching the transcript's template and inserts a fresh `explicit_correction` entry (§4.2).
+**Why the write paths take a transcript, not just an `Intent`.** The v0.1/v0.2 signature `recordConfirmation(Intent, {viaPreConfirm})` could not do its job: building or finding the corpus entry requires the *normalized template* of what the user actually said (§5.4), and an `Intent` carries only the resolved `skillId` + slot **values**, not the surface phrasing or the spans templating needs. Passing the transcript (and `NluContext`, for the entity/temporal placeholders) makes both write paths self-contained. Whether a call **boosts** an existing entry or **creates** a new one is decided from `accepted.routingSource`: a `corpus_hit` re-normalizes, re-matches (§5.4), and boosts the matched entry; a `retrieval`/`local_model`/`cloud_model` routing templatizes the transcript against `accepted.slots` and inserts a new entry — this is how a retrieval-margin or Haiku-routed phrasing graduates into the fast path. `recordCorrection` always zeroes any entry currently matching the transcript's template and inserts a fresh `explicit_correction` entry (§4.2).
 
 **`Intent` is a sealed hierarchy**, not a bag of nullable fields. The flat table in §2.5 documents the wire/JSON form (what is persisted and logged); in code it is a sum type so the dispatcher's `switch` is exhaustive and the illegal states of §2.5 (a `skill_invocation` with no `skillId`, a `clarification_needed` with no `candidates`) are unrepresentable:
 
@@ -344,7 +344,9 @@ Cosine similarity is computed in pure Dart over the in-memory vector table. With
 
 **Generative candidates.** Because the index is kind-tagged (§3.2), the top candidate may be a built-in generative capability. When it is, and it clears the act band (§4), the router emits a `generative_request` (§2.2a) rather than running skill classification — the local model's job on that turn is param slot-extraction (§6), not `skillId` selection. The skill-vs-`define_*` meta boundary (§4.1, `θ_meta`) is unchanged; `generative` simply adds one more kind the top candidate can be, and a generative capability is only offered on the paid tier (§2.2a).
 
-### 3.4 Classification Step (Local Model)
+### 3.4 Classification Step (Local Model) — **SUPERSEDED by §7.3 (`G-20` NO-GO)**
+
+> **⚠ This step is no longer in the v1 routing path.** The dedicated local-model eval (findings §11, `research/spec-05a-phase3/local-model-eval.md`) measured every candidate 1–3B checkpoint at ≤49% routing accuracy against a 95% bar, with 0% meta-intent detection and dead confidence calibration. The classification step described below is **replaced by the deterministic retrieval-margin decision of §7.3.1**, with Haiku as the residual disambiguator (§7.3.2) and deterministic slot extractors (§7.3.3). This section is retained as the design record for the optional, retrieval-bounded tie-breaker role a future local model would occupy if a checkpoint ever clears the §7.3 bar — do not implement it as written.
 
 The local model (llama.cpp 1B–3B, called via Flutter platform channel) receives a structured classification prompt containing:
 
@@ -360,12 +362,14 @@ The model is asked to choose among the candidates, not to classify against the w
 
 **Slot extraction.** The model fills the slot map in the same pass as classification. Slots are declared in the skill's `inputs` contract (Spec 02 §2.3); the classification prompt lists the required and optional slot names, their `valueType`s, and their `label`s. The model is asked to extract each slot value from the utterance or leave it as `null` if not present. Type coercion (string-to-datetime, string-to-enum normalization) is performed by the NLU layer's post-processor, not by the model.
 
-### 3.5 Cloud Escalation Path
+### 3.5 Cloud Escalation Path — **amended by §7.3.2**
+
+> **⚠ Escalation trigger updated (`G-20` NO-GO):** the trigger is no longer "local-model confidence below `θ_cloud_escalate`" — there is no trusted local classification step. Escalation fires only on the **genuine retrieval tie** (`margin < τ_clarify`, §7.3.1), and Haiku's job is narrowed to residual disambiguation among the tied candidates (§7.3.2), not full classification. The cost guard and template-only-context rules below stand unchanged.
 
 If the local model returns a confidence below `θ_cloud_escalate` (§4.1), the NLU layer escalates to Claude Haiku 4.5. The cloud call receives the same classification prompt as the local model, plus the user's correction history for the utterance pattern (from the flow table, §5 — a few recent corrections, not the full corpus). That history is **templates only** — literal patterns with typed placeholders, never `fixed` values and never entries routed to a `sensitive` skill (§5.6) — so escalation leaks no stored user content beyond the live utterance itself. Haiku returns the same structured intent JSON.
 
 **Cost guard.** A cloud call costs real money. The escalation path is guarded by:
-- A per-session rate limit (default: max 20 cloud NLU calls per hour). Above the limit, the NLU layer surfaces a clarification request rather than escalating.
+- A per-session rate limit (default: max 20 cloud NLU calls per hour). Above the limit, the NLU layer falls back to a clarification request — and the surface **says why** ("I've hit today's limit on Claude, so I'll ask instead: did you mean X or Y?"), per the `CloudError.rateLimited` mapping in Spec 04 §5.2. Degrading to a clarify without naming the rate limit would be a quiet failure (P2.8): the user needs to know the app is limited, not confused.
 - BYOK: the cloud path requires a valid API key. Free-tier users without a key fall back to the clarification-request path rather than calling a shared key at Luis's cost.
 
 **Cloud-escalated capability-definition.** If even Haiku returns a confidence below `θ_minimum` after escalation, and the utterance passes the capability-definition meta-intent check (§2.2), the result is a `define_type` or `define_skill` intent — which itself triggers another cloud call, this time to Sonnet for authoring (Spec 01 §6, Spec 02 §6). The NLU layer produces the meta-intent; control passes to the authoring flow, which is a separate subsystem.
@@ -392,7 +396,7 @@ All values are floats in [0, 1] and are configurable (stored in `[app-support]/p
 | `θ_meta` | 0.50 | The skill-vs-meta boundary. If the top-1 skill candidate is below `θ_meta`, the utterance is treated as potentially novel → meta-intent check. |
 | `θ_type` | 0.45 | Within the meta-intent check: minimum type-entry similarity to resolve the domain as a known type. Top type ≥ `θ_type` → `define_skill`; nothing above → `define_type`. |
 
-**Axis 2 — Classifier confidence** (produced by §3.4/§3.5; the local or cloud model's self-reported confidence in the intent it chose). Governs *act / escalate / give up* once a candidate has been chosen.
+**Axis 2 — Classifier confidence** (produced by §3.4/§3.5; the local or cloud model's self-reported confidence in the intent it chose). Governs *act / escalate / give up* once a candidate has been chosen. **⚠ SUPERSEDED (`G-20` NO-GO, §7.3.1):** the eval showed self-reported confidence is uncalibrated for *every* model, Haiku included (separation ≤ 0.045), so this axis is **removed from the decision path** — the act/clarify/escalate decision now runs on Axis-1 retrieval similarity plus the top-1↔top-2 margin (`τ_act`/`τ_clarify`, §7.3.1). The table below is retained because its `θ` names are reused with retrieval semantics; treat model-reported confidence as advisory logging only.
 
 | Threshold | Default | Meaning |
 |---|---|---|
@@ -441,7 +445,9 @@ The tag clears after `preConfirmClearUses` (default 5) **consecutive uncorrected
 
 **Implicit confirmation boost.** A corpus entry that is used and the user does not correct the result after act-then-describe has its confidence boosted by `confirmationBoost` (default: 0.02, capped at 0.98). This is a slow ratchet — from `initConfImplicit` it takes five clean uses to reach `θ_act` — and an explicit correction immediately zeroes it out. A single correction thus outweighs many uncorrected uses, which is the intended asymmetry: acting wrongly is worse than carrying the transparent-routing caveat one more time. (Under act-then-describe this ratchet is *more* effective than under a pre-confirm model — every uncorrected best guess is evidence, not just the ones a user bothered to approve at a modal.)
 
-### 4.3 Escalation Flow
+### 4.3 Escalation Flow — **steps 3–4 replaced by §7.3.1**
+
+> **⚠ Read with §7.3:** the "Local model classification" and "Cloud model classification" steps below are the pre-NO-GO design. In the v1 flow, step 3 is the **retrieval-margin decision** (§7.3.1) and step 4 is the **Haiku residual disambiguation** (§7.3.2), both gated on retrieval signals, never model confidence. The pre-filter, corpus, and meta-intent steps are unchanged.
 
 The complete utterance → dispatch flow, including all decision points:
 
@@ -507,6 +513,8 @@ The resulting layout (detailed in §5.2–§5.3):
 
 Lane 1 carries *earned phrasing* (slot-abstracted templates → intents) that should survive a device swap, so its non-sensitive part syncs. Lane 2 would carry fully-resolved plans with `sensitive` values, so it is device-local + encrypted (Spec 02 §5.2) and is **not built in v1**.
 
+**⚠ Lane 1 is a single synced file under whole-file last-writer-wins — a multi-device conflict hazard (G-36).** The storage model's per-record granularity principle (research §8.2) exists precisely because whole-file LWW sync silently discards one side of a concurrent edit — and `nlu/flow-table.json` is a *monolithic, frequently-written* file (a write-back per dispatched turn). Two devices used in the same sync window will each learn entries the other's overwrite then destroys, or the cloud client will spawn conflict copies nobody resolves. Before multi-device is real (v1 is effectively single-device), this must be redesigned: the corpus is **append-mostly and mergeable by construction** (entries keyed by template signature; boosts commutative), so the right shape is either per-entry files under `nlu/corpus/`, or a per-device journal (`nlu/corpus-{deviceId}.json`) merged at load. Logged as `G-36` in the gap register; a single-device v1 may ship the single file, but the format must not be one a merge cannot be retrofitted onto.
+
 ---
 
 ## 6. Slot Extraction & Resolution *(resolve-stage addition)*
@@ -563,6 +571,8 @@ The eval (findings §11) cut the generative model from the trusted path. Known-c
 Cutting the generative model removes **Axis 2** entirely (the "local classification" step of the §4.3 escalation flow, and its `confidence` field — dead anyway, findings §11). The retrieval score that §3.3 already computes *becomes* the routing decision. Define, over the ranked candidate set:
 - `s₁` = top-1 similarity, `s₂` = top-2 similarity, **`margin = s₁ − s₂`**.
 
+> **⚠ Superseded in part by §7.3.4 (measured, `G-38`).** The "accept top-1 iff margin ≥ `τ_act`" rule below reads as if retrieval can dispatch on its own. Measurement showed retrieval top-1 is only 40–47%, so cold-retrieval dispatch is **off by default** — retrieval feeds a top-8 candidate set to the corpus/Haiku decider, and margin is a confidence signal, not an act gate. Read this section with §7.3.4.
+
 The §4.3 flow's step 3 ("Local classification") is **replaced** by a pure retrieval-margin decision (Axis 3 corpus and the §2.2 meta/OOD checks are unchanged):
 
 | condition | action |
@@ -584,9 +594,9 @@ Slots are filled by **typed deterministic extractors**, not a model (which even 
 
 | valueType | extractor |
 |---|---|
-| `date` / `datetime` / `recurrence` | the §6.2 deterministic date/recurrence resolver (`G-14/15/16`) |
-| `entity` / contact ref | §6.1 `entityNames.resolve` — aliases (`G-24`), resolve-or-create (`G-12`) |
-| `decimal` / `integer` / quantity | numeric + unit pattern (regex + unit table) |
+| `date` / `datetime` / recurrence (RRULE `text`) | the §6.2 deterministic date/recurrence resolver (`G-14/15/16`) |
+| `entityRef` (contact and other entity refs) | §6.1 `entityNames.resolve` — aliases (`G-24`), resolve-or-create (`G-12`) |
+| `number` / `decimal` / quantity | numeric + unit pattern (regex + unit table) |
 | `duration` | duration pattern ("for 30 min", "a couple hours") |
 | `enum` | keyword/synonym match against the type's `enumValues` |
 | `tag` | token match against the known tag vocabulary |
@@ -598,3 +608,10 @@ Corpus `span`/`fixed` recipes (§6.4) handle known templates with zero inference
 #### 7.3.4 What this removes, and what it preserves
 
 **Removed:** the on-device generative model, Axis 2 (classifier confidence), the local-classify escalation step, and the 2–8 s CPU inference cost per turn (findings §11). **Preserved:** the corpus fast-path (Axis 3, untouched — the primary offline/high-frequency path), retrieval (Axis 1, now load-bearing for the decision rather than only candidate-set membership), the `θ_*` thresholds (reused with retrieval-similarity semantics), meta-intent + OOD (rule+retrieval, §7.2), act-then-describe, the single clarify surface, and full offline/free operation (steps 1–3 + clarify need no cloud). **Net:** fewer moving parts, nothing unreliable in the hot path, and lower latency — the NO-GO made routing *simpler*, not weaker. *(Follow-on for a tuning pass: fit `τ_act`/`τ_clarify` on the eval dataset and add a `margin`-sweep report to `eval_routing.py`.)*
+
+**⚠ MEASURED (`G-38`, findings §12) — retrieval is a candidate *generator*, not the router; cold-start routing is the make-or-break.** The gate above was resolved by measurement (`harness/eval_retrieval.py`: each labeled utterance ranked against the full skill set, surface = name + desc + `examplePhrases`). The "retrieval top-1-with-margin carries routing" claim **does not hold**: top-1 is **40%** (MiniLM-L6-v2) / **47%** (bge-small-en-v1.5) — on par with the *cut* local model (49%) — and no margin threshold gives an acceptable trade (best ≈ 60% accuracy-on-dispatched at ≈ 50% clarify). Worse, the correct skill is in the **top-5 only ~80%** of the time, so the `G-20` eval's pre-supplied perfect candidate sets overstated the stack: the online Haiku ceiling is ~recall@5 × 86% ≈ **~69%**, not 86%, and offline has no Haiku. **Corrected design (supersedes the "accept top-1 iff margin ≥ `τ_act`" framing of §7.3.1):**
+
+- **Retrieval is a top-K candidate generator, not a dispatch gate.** Cold-retrieval top-1 dispatch is **off by default** — high-margin-*and*-correct is rare. Retrieval feeds the **top-8** (recall@8 ≈ 93%) to the decider; retrieval margin is a confidence *signal* into escalate/clarify, never a standalone act gate.
+- **The decider is corpus → Haiku → clarify.** A *learned* phrasing is dispatched by the corpus fast-path (§5, deterministic). A *novel* phrasing, online, is disambiguated by Haiku over the top-8 (§7.3.2). A novel phrasing, offline/free, **clarifies** — there is no reliable offline cold-start router, and the spec must not pretend otherwise.
+- **Cold-start is clarify-heavy — the central UX risk.** Nothing routes novel phrasings to the "rarely asks" bar until the corpus learns them (retrieval 47%, cut model 49%, retrieval+Haiku ~69%). The research §2.1 promise ("within weeks it rarely asks") is delivered **only** by the corpus-learning ratchet (§4.2 — act → uncorrected → boost → fast-path); its **rate**, not point accuracy, is the make-or-break metric. Phase 0's spike (research §11.1) must measure the learning *curve*.
+- **Embedder + budget:** ship **bge-small-en-v1.5** (~36 MB, +7 pts over MiniLM) or a better small model within the ~80 MB budget; MiniLM-L6 is the weakest choice. Caveats: 17-skill floor (more skills → more near-neighbors → harder); authored/user `examplePhrases` quality is uncontrolled (a badly-phrased authored type loses the retrieval race forever — a real "my custom tracker never works by voice" risk); the free-form `text`-slot extractor (§7.3.3) floor is still unmeasured.

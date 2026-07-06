@@ -25,7 +25,8 @@ All design specs live in [`planning/`](planning/). Read them before touching arc
 - **Framework:** Flutter / Dart
 - **Storage:** per-record JSON files in user-chosen folder (iCloud / OneDrive / Google Drive); no SQL on disk
 - **In-memory cache:** Dart object store, hydrated from JSON at startup
-- **Local NLU:** llama.cpp 1B–3B model via Flutter platform channel
+- **Local NLU:** corpus fast-path + retrieval-embedding model (~80MB, e.g. bge-small-en-v1.5) + deterministic date/entity resolvers; Haiku for the genuine residual. *(The originally-planned llama.cpp 1B–3B generative router was measured-dead and cut — Phase-3 findings §11–12, Spec 03 §7.3. A small generative model survives only as an optional future tie-breaker.)*
+- **Storage caveat:** the journal is device-local + encrypted (never synced) — no provider offers a reliable per-subfolder sync exclusion.
 - **Cloud AI:** Claude Haiku 4.5 (most calls) + Sonnet for reasoning; BYOK model
 - **Platform targets:** P1 iPhone, P2 Windows desktop, P3 Android, P4 macOS
 

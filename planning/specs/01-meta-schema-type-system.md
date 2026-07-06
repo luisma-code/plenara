@@ -1,7 +1,7 @@
 # Spec 01 — Meta-Schema & Type System
 
 **Status:** Draft v0.3 — July 2026 (reviewed & revised by Claude — see Appendix A)  
-**Depends on:** Research doc v0.8 (§4, §8, §9)  
+**Depends on:** Research doc v0.10 (§4, §8, §9)  
 **Blocks:** Skill DSL spec, NLU spec, Architecture spec, Data & Sync spec, UI spec
 
 ---
@@ -167,8 +167,7 @@ Each type is stored as a single JSON file in `[plenara-root]/types/`. The filena
   },
   "nluHints": {
     "captureIntent": "log_meal",
-    "queryIntent": "query_meal",
-    "confirmationTemplate": "Logged {mealType, default: 'a meal'}: {description}."
+    "queryIntent": "query_meal"
   }
 }
 ```
@@ -191,7 +190,7 @@ Each type is stored as a single JSON file in `[plenara-root]/types/`. The filena
 | `attributes` | Attribute[] | yes | The type's fields. See §4.3. May be empty only for a type whose data is entirely relations. |
 | `relations` | Relation[] | no | Typed edges to other entities; same object schema as attributes (§4.3) with `valueType: entityRef`. Omit or use `[]` if none. |
 | `presentation` | object | yes | View-archetype hints. See §9. |
-| `nluHints` | object | yes | Intent labels and confirmation template. See §10. |
+| `nluHints` | object | yes | Intent labels only (`captureIntent`, `queryIntent`). See §10 (planned). The former `confirmationTemplate` field is **retired** (§12.1, `G-03`) — the spoken confirmation is produced by a skill's `format` step (Spec 02 §7.1), never by the type. |
 | `migrations` | Migration[] | no | Declarative migration descriptors; user-defined types only. See §7.2. |
 | `parentType` | string | optional | If present, this type is *owned* by the named entity type; its instances carry a `parentId`. See §4.5. |
 | `append` | boolean | no | If true, instances are append-only (an event log): written once, never edited inline, indexed by parent/time. Default false. See §4.5. |
@@ -313,6 +312,7 @@ Most are enforced on every `register()` call; the cross-reference invariants (ma
 - `typeId` matches the filename (`{typeId}.json`).
 - ⁑ All `refType` values (in relations) and every `parentType` reference a `typeId` that exists in the registry. Because types load in arbitrary order, this check runs **after** full hydration — a forward reference (A → B where B loads later) is valid once both are present. A reference still unresolved after hydration marks the *referencing* type as degraded (it loads, but the offending relation is inert) rather than failing startup.
 - Every automation's `targetType` resolves to a registered type (⁑), and its `skillId` exists in `skills/` **or** is marked `pendingSkill: true` (inert until authored).
+- An automation's referenced skill must not be `dangerLevel: "destructive"` (Spec 02 §7 forbids destructive skills on the unattended path; Spec 04 §3.9 rejects them at registration — this invariant is where that rejection is enforced).
 - `schemaVersion` is a positive integer.
 - `examplePhrases` has at least three entries.
 - `safetyAssessmentId` is present and non-null for any type where `authoredBy == "claude"`.
@@ -349,7 +349,7 @@ This is a Claude reasoning task; the threshold and the reuse/extend/create decis
 
 ### 6.2 Periodic Consolidation Pass (Clean Up)
 
-The app runs a weekly background consolidation pass (on-device, local model, when the device is idle and charging). The pass:
+The app runs a weekly background consolidation pass (on-device, driven by the registry's embedding similarity — no generative model is involved until a merge is proposed; after the `G-20` NO-GO there is no on-device generative model to lean on), when the device is idle and charging. The pass:
 
 1. Queries the registry for pairs of types with similarity score > 0.80.
 2. For each high-similarity pair, checks whether both have instance records (data). Types with zero instances are flagged for deletion; types with instances are flagged for potential merge.
@@ -604,7 +604,7 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
   "presentation":{"archetype":"journal","primaryField":"body","timestampField":"entryDate"} }
 ```
 
-**Notes.** `contact_fact` and `contact_interaction` are **owned** (`parentType:"contact"`) so they index under their person without decryption (§4.5/§8.2). `journal_entry` is fully sensitive and lives in the sync-excluded `journal/` subfolder (Spec 05 §11, §8.2). These six + the built-in tracker templates (Spec 05 §6) are the free-tier type surface; the seed **skills** over them are canonicalized in Spec 02 §9.
+**Notes.** `contact_fact` and `contact_interaction` are **owned** (`parentType:"contact"`) so they index under their person without decryption (§4.5/§8.2). `journal_entry` is fully sensitive and stored in **device-local app storage** (`[app-support]/plenara/journal/`), *not* in the synced Plenara root — a "sync-excluded subfolder inside the cloud-synced folder" is not reliably implementable (iCloud Drive, OneDrive, and Google Drive offer no app-settable per-subfolder client exclusion), so the never-leaves-the-device invariant (Spec 05 §11) must not depend on one. Journal entries are by design never synced, so device-local storage loses nothing; the StorageRepository treats the journal directory as a second, non-watched root. These six + the built-in tracker templates (Spec 05 §6) are the free-tier type surface; the seed **skills** over them are canonicalized in Spec 02 §9.
 
 ### 12.4 Corpus resolve additions (`G-22`, `G-24`, `G-32`)
 - **Contact aliases (`G-24`).** `contact` gains `{"name":"aliases","label":"Also known as","valueType":"tag","required":false}` (nicknames/roles: "Mum", "the boss"). `entityNames.resolve` (Spec 03 §6.1) matches `displayName` **or** any alias; common role words map via aliases or a small role table. A **group** name ("the Garcias") resolves to a *set* of contacts (for `event_prep`, P-08).
