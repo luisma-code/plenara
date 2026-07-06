@@ -89,6 +89,20 @@ Future<void> main(List<String> args) async {
       return;
     }
 
+    // correction with a restatement (§5.2, the strong learning signal): "no, I meant to X"
+    final corrM = RegExp(r'^(?:no,?|actually,?|nope,?)\s+i meant (?:to |it was )?(.+?)\.?$',
+            caseSensitive: false)
+        .firstMatch(u.trim());
+    if (corrM != null) {
+      if (lastBefore != null) {
+        undoTurn(lastBefore!, '$dataDir/records', dev, store);
+        lastBefore = null;
+        stdout.writeln('A: Got it — undoing that. Let me redo:');
+      }
+      await handle(corrM.group(1)!.trim()); // re-route the corrected request
+      return;
+    }
+
     // meta-intent: a "track my X" the app doesn't have -> AUTHOR it (Spec 02 §6, emergent types)
     final defM = RegExp(r'^(?:start tracking|track|i want to track|i want to start tracking|make me a|create a) '
             r'(?:my |a |an )?(.+?)(?: tracker)?\.?$',
