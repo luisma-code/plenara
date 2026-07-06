@@ -1,0 +1,11 @@
+[
+  { "skillId": "create-task", "template": "add {description:text} to my {_:text} due {dueDate:date}" },
+  { "skillId": "create-task", "template": "add {description:text} to my {_:text}" },
+  { "skillId": "create-task", "template": "remind me to {description:text} on {dueDate:date}" },
+  { "skillId": "create-task", "template": "remind me to {description:text}" },
+  { "skillId": "remember-person-fact", "template": "remember that {personName:entity} {fact:text} and she is {relationTo:entity}'s {relationType:text}" },
+  { "skillId": "remember-person-fact", "template": "remember that {personName:entity} {fact:text} and he is {relationTo:entity}'s {relationType:text}" },
+  { "skillId": "remember-person-fact", "template": "note that {personName:entity} {fact:text}" },
+  { "skillId": "count-runs-this-week", "template": "how {_:text} have i run this week" },
+  { "skillId": "count-runs-this-week", "template": "how many runs this week" }
+]

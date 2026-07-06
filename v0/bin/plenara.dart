@@ -7,36 +7,10 @@ library;
 
 import 'dart:io';
 import 'package:plenara/interpreter.dart';
+import 'package:plenara/router.dart';
 import 'package:plenara/store.dart';
 
 const dataDir = 'data';
-
-/// Placeholder router: maps the demo utterances to (skillId, slots). Stands in
-/// for corpus fast-path + retrieval-margin + deterministic slot extractors.
-Map<String, dynamic>? route(String u) {
-  final s = u.toLowerCase();
-  var m = RegExp(r'add (.+?) to my (?:to-?do|list|tasks)').firstMatch(s);
-  if (m != null) {
-    return {'skillId': 'create-task', 'slots': {'description': m.group(1)}};
-  }
-  m = RegExp(r"remember that (\w+) (.+?) and (?:she|he|they) (?:is|are) (.+?)'?s (\w+)")
-      .firstMatch(u); // keep original case for names
-  if (m != null) {
-    return {
-      'skillId': 'remember-person-fact',
-      'slots': {
-        'personName': m.group(1),
-        'fact': m.group(2),
-        'relationTo': m.group(3),
-        'relationType': m.group(4),
-      }
-    };
-  }
-  if (s.contains('run') && s.contains('week')) {
-    return {'skillId': 'count-runs-this-week', 'slots': <String, dynamic>{}};
-  }
-  return null;
-}
 
 void seedForDemo(Map<String, Map<String, dynamic>> store, DateTime now) {
   String d(int days) {
@@ -62,6 +36,7 @@ void main(List<String> args) {
 
   final now = DateTime.parse('2026-07-06T09:00:00'); // frozen clock for a reproducible demo
   final interp = Interpreter(types, now);
+  final router = Router.load('$dataDir/corpus.json', now);
   final dev = HlcDevice('this-device');
 
   // authoring-time static gate — every skill must pass before it can run (Spec 02 §6.4)
@@ -83,9 +58,9 @@ void main(List<String> args) {
 
   for (final u in utterances) {
     stdout.writeln('U: $u');
-    final routed = route(u);
+    final routed = router.route(u);
     if (routed == null) {
-      stdout.writeln("A: I didn't understand that yet (v0 placeholder router).\n");
+      stdout.writeln("A: I didn't catch a known request there (no corpus hit; retrieval fallback is next).\n");
       continue;
     }
     try {

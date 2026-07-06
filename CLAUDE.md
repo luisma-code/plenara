@@ -6,6 +6,15 @@ Plenara is a voice-driven, AI-augmented personal assistant app. Solo project by 
 
 **Not a commercial venture.** No investors, no deadlines. The goal is an app Luis genuinely loves and relies on.
 
+## Working mode (IMPORTANT — read first)
+
+**Work autonomously and keep going. Never ask permission to proceed.** This is the top collaboration rule and the most-repeated correction — honor it above default caution.
+
+- **The answer to "should I do the next step?" is ALWAYS yes** — so never ask it. Finish an increment → commit → immediately start the next → repeat, indefinitely. **Never** end a turn with "recommended next step, whenever you want," a menu of options, "should I…", or any permission-seeking offer. Report progress as completed facts.
+- **Make the calls yourself.** Design, tooling, and sequencing decisions are yours: decide with clear rationale, record it (specs / `05b` gap register / findings / commit messages), and move on. Review happens when the work is *done*, not mid-stream — "when Luis returns, the task is finished, not waiting for input."
+- **Only stop for a genuine hard blocker** — something needing hardware only Luis has (e.g. an iPhone for the iOS spike), a real user/beta, or a truly irreversible high-stakes action — or when there is honestly nothing left to do.
+- Standing setup: the broad allowlist + bypass mode remove per-action approvals; at the start of a substantive session launch `scripts/keep-alive.ps1` in the background and kill it only when all work is complete.
+
 ## Planning documents
 
 All design specs live in [`planning/`](planning/). Read them before touching architecture or interfaces.
