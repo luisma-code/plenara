@@ -165,7 +165,7 @@ abstract class CryptoBox {
 }
 ```
 
-The same `CryptoBox` seals the device-local encrypted stores of the other layers — the execution journal (Spec 02 §5.2) and the sensitive corpus / plan cache (Spec 03 §5) — so there is exactly one crypto surface and one key-availability check in the whole app.
+The same `CryptoBox` seals the device-local encrypted stores of the other layers — the execution journal (Spec 02 §5.2) and the plan cache (Spec 03 §5.1 Lane 2) — so there is exactly one crypto surface and one key-availability check in the whole app. *(The corrections **corpus**, Lane 1, is a different case: it holds slot-*shapes* not values, so it **syncs** as plaintext per-device files, §5.1 / `G-36` — it is not one of the device-local encrypted stores.)*
 
 ### 3.2 Business Logic — `SchemaRegistry`, `MigrationRunner` (restated)
 
@@ -744,8 +744,8 @@ Offline/free-tier authoring accumulates **`pendingDrafts`** (§3.7) — inert, n
 On launch, before the turn pipeline (§4.2) accepts any utterance, the app runs a fixed, **fully offline** sequence:
 1. Open the storage folder; **hydrate the in-memory object store** (§3.1) from the per-record JSON files.
 2. Build the `CapabilityIndex` (§3.4) from the registered type/skill definitions.
-3. Load the corpus (Spec 03 §5) from device-local encrypted storage.
+3. Load the corrections corpus (Spec 03 §5.1 Lane 1) from the **synced** folder (per-device files, `G-36`); the plan cache (Lane 2, deferred) and the execution journal are the device-local stores.
 4. **Journal recovery** (§5.4): roll back or complete any `executing` `ExecutionRecord`; reap `done` entries past their window.
 5. Start the file watcher (§4.5) so external/synced edits keep the cache coherent thereafter.
 
-The journal and corpus are device-local/encrypted (never synced), so they load from app-support; records load from the possibly-syncing storage folder. A file that fails to parse during hydration is routed to the repair surface (§5.5) and **does not block startup** — the rest of the store loads, so one corrupt record never bricks the app. No startup step touches the network.
+The **execution** journal and plan cache are device-local/encrypted (never synced — volatile execution state), so they load from app-support; the corrections corpus (Lane 1), the user's **journal entries**, and all records load from the possibly-syncing storage folder (journal entries sync too, `G-37`). A file that fails to parse during hydration is routed to the repair surface (§5.5) and **does not block startup** — the rest of the store loads, so one corrupt record never bricks the app. No startup step touches the network.

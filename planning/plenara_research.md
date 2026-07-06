@@ -1102,10 +1102,11 @@ recipes)
 
 **contacts/** ← one file per person
 
-**journal/** ← one file per day (YYYY-MM-DD.json); **syncs** like other
-records so a journal survives device loss. The earlier "excluded from
-sync" idea is dropped (unimplementable + device-loss risk, `G-37`);
-provider-privacy is a **deferred** later-version hardening (encryption, §8.7)
+**journal/** ← one file per entry (`YYYY-MM-DD-<id>.json` — date-prefixed
+for navigability, unique-id suffix so same-day entries on two devices don't
+collide); **syncs** like other records so a journal survives device loss.
+Earlier "excluded from sync" idea dropped (unimplementable + device-loss
+risk, `G-37`); provider-privacy is a **deferred** hardening (encryption, §8.7)
 
 **meals/** ← records of a user-defined type live in their own folder
 
@@ -1325,8 +1326,9 @@ expressive enough to carry the product vision.
 ### 10.3 Life Journaling
 
 -   **Daily voice memo:** 60 seconds auto-transcribed on-device. Stored
-    > as `journal/YYYY-MM-DD.json` in the user's synced folder, and it
-    > **syncs** like any other record so a journal survives device loss.
+    > as `journal/YYYY-MM-DD-<id>.json` (date-prefixed but unique-suffixed,
+    > so same-day entries on two devices don't collide) in the user's synced
+    > folder, and it **syncs** like any record so a journal survives device loss.
     > *(Amended: the original "excluded from sync inside the synced folder"
     > invariant is dropped — no provider offers a reliable per-subfolder
     > exclusion (`G-37`), and making it device-local would lose the journal
