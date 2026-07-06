@@ -25,10 +25,46 @@ class Router {
   final DateTime now;
   Router(this.corpus, this.now);
 
-  static Router load(String path, DateTime now) {
-    final raw = jsonDecode(File(path).readAsStringSync()) as List;
-    final entries = raw.map((e) => _compile(e as Map<String, dynamic>)).toList();
+  static Router load(String path, DateTime now, {String? learnedPath}) {
+    final entries = <CorpusEntry>[];
+    for (final e in jsonDecode(File(path).readAsStringSync()) as List) {
+      entries.add(_compile(e as Map<String, dynamic>));
+    }
+    if (learnedPath != null && File(learnedPath).existsSync()) {
+      for (final e in jsonDecode(File(learnedPath).readAsStringSync()) as List) {
+        entries.insert(0, _compile(e as Map<String, dynamic>)); // learned tried first
+      }
+    }
     return Router(entries, now);
+  }
+
+  /// Learn a phrasing (§5.2 write path): abstract the extracted slot values back
+  /// into typed placeholders and add a corpus template, so the next similar
+  /// phrasing hits the fast path with no cloud call. Returns the template (for
+  /// persistence) or null if nothing could be abstracted. Exact/near-exact
+  /// learning; soft generalization (R9b) is deferred (findings §13).
+  String? learn(String utterance, String skillId, Map<String, dynamic> slots) {
+    var t = utterance.trim();
+    var abstracted = false;
+    slots.forEach((name, value) {
+      if (value == null) return;
+      final vs = value.toString();
+      final idx = t.toLowerCase().indexOf(vs.toLowerCase());
+      if (idx >= 0) {
+        t = '${t.substring(0, idx)}{$name:${_inferType(vs)}}${t.substring(idx + vs.length)}';
+        abstracted = true;
+      }
+    });
+    final hasSlots = slots.values.any((v) => v != null);
+    if (hasSlots && !abstracted) return null; // couldn't abstract (e.g. a resolved date) -> skip
+    corpus.insert(0, _compile({'skillId': skillId, 'template': t}));
+    return t;
+  }
+
+  static String _inferType(String v) {
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(v)) return 'date';
+    if (RegExp(r'^\d+(\.\d+)?$').hasMatch(v)) return 'quantity';
+    return 'text';
   }
 
   /// Compile a template like "add {description:text} to my {_:text}" into a

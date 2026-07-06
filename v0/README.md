@@ -39,6 +39,7 @@ The three demo turns exercise a simple write, a multi-write resolve-or-create wi
 | Voice (STT/TTS) | Not yet — text-first |
 | CRDT **merge** engine | P2 (single-device now) |
 | Retrieval embedder | Real via local llama-server (bge-small on :8091); in-process model on device later |
+| **Cloud residual + learning** (Spec 04 §3.5 / §5.2) | **Real** — `ClaudeClient` Haiku full-inventory residual routing (§13 E4); a cloud-routed turn **learns** its template so the next similar phrasing fast-paths with no cloud call (the §13 "gets better" ratchet). BYOK; offline/keyless → clarify. |
 | Flutter UI | Console for now |
 | Claude authoring (define_*) | v2 |
 
@@ -50,7 +51,9 @@ The three demo turns exercise a simple write, a multi-write resolve-or-create wi
 
 1. ✅ **Real router** — corpus fast-path + bge-small retrieval + date resolver (done).
 2. ✅ **Undo** — before-images + reversal (done).
-3. **Corpus learning loop** — an uncorrected turn / a correction appends a corpus entry (§5.2), so a rephrasing that once clarified now fast-paths. This is the §13 make-or-break mechanism, in code.
-4. **More seed skills/types** — grow the free-tier surface (e.g. `log-run` to fix the query-vs-log act-type confusion retrieval showed).
-5. **Flutter UI** — wrap the console spine; then voice.
-6. **First iOS build** — closes the one deferred storage question (dataless-file cold-start).
+3. ✅ **Haiku residual router + corpus learning loop** — the full §13 cascade + the "gets better" ratchet, in code (done).
+4. ✅ **More seed skills/types** — `log-run`, `log-mood` (done).
+5. **Correction path** — `recordCorrection` (§5.2): "no, I meant X" zeroes the wrong entry and learns the right one; the strong learning signal.
+6. **Structured-output authoring** (`define_*`) — Claude authors a new type/skill from a described need, gated by the static validators (Spec 02 §6, the emergent-types bet).
+7. **Flutter UI** — wrap the console spine; then voice.
+8. **First iOS build** — closes the one deferred storage question (dataless-file cold-start).

@@ -7,6 +7,7 @@
 ///   dart run bin/plenara.dart "log a 3k run"   # one-shot
 library;
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:plenara/claude.dart';
 import 'package:plenara/interpreter.dart';
@@ -24,6 +25,14 @@ const demoUtterances = [
   "i'm feeling good",
   'jot down that I need to buy milk', // novel phrasing -> retrieval clarify (§13)
 ];
+
+/// Persist a learned corpus template (§5.2). Per-user data -> data/corpus-learned.json.
+void persistLearned(String skillId, String template) {
+  final f = File('$dataDir/corpus-learned.json');
+  final list = f.existsSync() ? (jsonDecode(f.readAsStringSync()) as List) : <dynamic>[];
+  list.add({'skillId': skillId, 'template': template});
+  f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(list));
+}
 
 void seedForDemo(Map<String, Map<String, dynamic>> store, DateTime now) {
   String d(int days) {
@@ -49,7 +58,8 @@ Future<void> main(List<String> args) async {
 
   final now = DateTime.parse('2026-07-06T09:00:00'); // frozen clock for a reproducible demo
   final interp = Interpreter(types, now);
-  final router = Router.load('$dataDir/corpus.json', now);
+  final router = Router.load('$dataDir/corpus.json', now,
+      learnedPath: '$dataDir/corpus-learned.json');
   final claude = ClaudeClient();
   final dev = HlcDevice('this-device');
 
@@ -110,6 +120,15 @@ Future<void> main(List<String> args) async {
       stdout.writeln('A: ${plan.confirmation}$via');
       if (plan.writes.isNotEmpty) {
         stdout.writeln('   [wrote ${plan.writes.map((w) => w['typeId']).join(', ')} — persisted with _meta CRDT block]');
+      }
+      // the "gets better" ratchet (§5.2): a cloud-routed turn learns its phrasing
+      if (routed['source'] == 'cloud') {
+        final tmpl = router.learn(u, routed['skillId'] as String,
+            (routed['slots'] as Map).cast<String, dynamic>());
+        if (tmpl != null) {
+          persistLearned(routed['skillId'] as String, tmpl);
+          stdout.writeln('   [learned: "$tmpl" -> ${routed['skillId']} — next time no cloud call]');
+        }
       }
       stdout.writeln('');
     } on ResolveError catch (e) {
