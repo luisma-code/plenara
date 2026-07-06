@@ -1,0 +1,96 @@
+{
+  "example": "F-19",
+  "steps": [
+    {
+      "id": "classify-derived-date",
+      "surface": "both",
+      "local": [
+        {
+          "text": "```json\n{\n  \"skillId\": null,\n  \"slots\": {\n    \"description\": \"buy flowers\",\n    \"dueDate\": \"2026-07-06\",\n    \"dateAnchor\": \"Sarah's birthday\",\n    \"dateOffset\": \"-1 day\"\n  },\n  \"confidence\": 1.0\n}\n```",
+          "latency_ms": 3260.1,
+          "prompt_tok": 268,
+          "completion_tok": 74,
+          "server_prompt_ms": 786.5,
+          "server_predicted_ms": 2436.4,
+          "predicted_per_second": 30.4,
+          "model": "qwen2.5-1.5b"
+        },
+        {
+          "text": "{\"skillId\": \"1\", \"slots\": {\"description\": \"buy flowers\", \"dueDate\": \"2026-07-04\", \"dateAnchor\": \"Sarah\", \"dateOffset\": \"-1 day\"}, \"confidence\": 0.9}",
+          "latency_ms": 5230.6,
+          "prompt_tok": 286,
+          "completion_tok": 53,
+          "server_prompt_ms": 1785.7,
+          "server_predicted_ms": 3430.0,
+          "predicted_per_second": 15.5,
+          "model": "llama-3.2-3b"
+        }
+      ],
+      "claude": [
+        {
+          "text": "```json\n{\n  \"skillId\": \"create-reminder\",\n  \"slots\": {\n    \"description\": \"buy flowers\",\n    \"dueDate\": null,\n    \"dateAnchor\": \"Sarah's birthday\",\n    \"dateOffset\": \"-1 day\"\n  },\n  \"confidence\": 0.95\n}\n```",
+          "latency_ms": 1215.3,
+          "in_tok": 294,
+          "out_tok": 82,
+          "cost_usd": 0.000704,
+          "stop_reason": "end_turn",
+          "model": "haiku-4.5"
+        },
+        {
+          "text": "```json\n{\n  \"skillId\": 1,\n  \"slots\": {\n    \"description\": \"buy flowers\",\n    \"dueDate\": null,\n    \"dateAnchor\": \"Sarah's birthday\",\n    \"dateOffset\": \"-1 day\"\n  },\n  \"confidence\": 0.95\n}\n```",
+          "latency_ms": 1516.9,
+          "in_tok": 294,
+          "out_tok": 80,
+          "cost_usd": 0.002082,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.5"
+        },
+        {
+          "text": "{\"skillId\": 1, \"slots\": {\"description\": \"Buy flowers\", \"dueDate\": null, \"dateAnchor\": \"Sarah's birthday\", \"dateOffset\": \"-1 day\"}, \"confidence\": 0.97}",
+          "latency_ms": 1430.8,
+          "in_tok": 295,
+          "out_tok": 56,
+          "cost_usd": 0.001725,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.6"
+        },
+        {
+          "text": "{\"skillId\": \"create-reminder\", \"slots\": {\"description\": \"buy flowers\", \"dueDate\": null, \"dateAnchor\": \"Sarah's birthday\", \"dateOffset\": \"-1 day\"}, \"confidence\": 0.95}",
+          "latency_ms": 1153.4,
+          "in_tok": 294,
+          "out_tok": 58,
+          "cost_usd": 0.00292,
+          "stop_reason": "end_turn",
+          "model": "opus-4.5"
+        },
+        {
+          "text": "```json\n{\"skillId\": \"create-reminder\", \"slots\": {\"description\": \"Buy flowers\", \"dueDate\": null, \"dateAnchor\": \"Sarah's birthday\", \"dateOffset\": \"-1 day\"}, \"confidence\": 0.97}\n```",
+          "latency_ms": 2560.4,
+          "in_tok": 295,
+          "out_tok": 63,
+          "cost_usd": 0.00305,
+          "stop_reason": "end_turn",
+          "model": "opus-4.6"
+        },
+        {
+          "text": "{\"skillId\":1,\"slots\":{\"description\":\"buy flowers\",\"dueDate\":null,\"dateAnchor\":\"Sarah.birthday\",\"dateOffset\":\"-1 day\"},\"confidence\":0.95}",
+          "latency_ms": 1772.5,
+          "in_tok": 404,
+          "out_tok": 74,
+          "cost_usd": 0.00387,
+          "stop_reason": "end_turn",
+          "model": "opus-4.7"
+        },
+        {
+          "text": "{\"skillId\": 1, \"slots\": {\"description\": \"buy flowers\", \"dueDate\": null, \"dateAnchor\": \"Sarah's birthday\", \"dateOffset\": \"-1 day\"}, \"confidence\": 0.95}",
+          "latency_ms": 2431.0,
+          "in_tok": 399,
+          "out_tok": 77,
+          "cost_usd": 0.00392,
+          "stop_reason": "end_turn",
+          "model": "opus-4.8"
+        }
+      ]
+    }
+  ]
+}

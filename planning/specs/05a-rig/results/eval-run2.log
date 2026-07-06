@@ -1,0 +1,473 @@
+  [qwen2.5-1.5b/free] 1/57 A-task-1     exp=create-task            got=create-task            OK
+  [qwen2.5-1.5b/free] 2/57 A-task-2     exp=create-task            got=create-task            OK
+  [qwen2.5-1.5b/free] 3/57 A-task-3     exp=create-task            got=create-task            OK
+  [qwen2.5-1.5b/free] 4/57 A-task-4     exp=create-task            got=create-task            OK
+  [qwen2.5-1.5b/free] 5/57 A-recur-1    exp=create-recurring-reminder got=create-reminder        x 
+  [qwen2.5-1.5b/free] 6/57 A-recur-2    exp=create-recurring-reminder got=create-reminder        x 
+  [qwen2.5-1.5b/free] 7/57 A-recur-3    exp=create-recurring-reminder got=create-reminder        x 
+  [qwen2.5-1.5b/free] 8/57 A-tmpl-1     exp=instantiate-template   got=log-run                x 
+  [qwen2.5-1.5b/free] 9/57 A-tmpl-2     exp=instantiate-template   got=log-mood               x 
+  [qwen2.5-1.5b/free] 10/57 A-tmpl-3     exp=instantiate-template   got=log-medication         x 
+  [qwen2.5-1.5b/free] 11/57 A-run-1      exp=log-run                got=log-run                OK
+  [qwen2.5-1.5b/free] 12/57 A-run-2      exp=log-run                got=log-run                OK
+  [qwen2.5-1.5b/free] 13/57 A-run-3      exp=log-run                got=log-run                OK
+  [qwen2.5-1.5b/free] 14/57 A-last-1     exp=query-last-interaction got=log-interaction        x 
+  [qwen2.5-1.5b/free] 15/57 A-last-2     exp=query-last-interaction got=log-interaction        x 
+  [qwen2.5-1.5b/free] 16/57 A-last-3     exp=query-last-interaction got=log-interaction        x 
+  [qwen2.5-1.5b/free] 17/57 A-note-1     exp=log-interaction        got=log-interaction        OK
+  [qwen2.5-1.5b/free] 18/57 A-note-2     exp=log-interaction        got=log-interaction        OK
+  [qwen2.5-1.5b/free] 19/57 A-agg-1      exp=query-aggregate        got=query-aggregate        OK
+  [qwen2.5-1.5b/free] 20/57 A-agg-2      exp=query-aggregate        got=query-aggregate        OK
+  [qwen2.5-1.5b/free] 21/57 A-streak-1   exp=show-streak            got=show-streak            OK
+  [qwen2.5-1.5b/free] 22/57 A-streak-2   exp=show-streak            got=show-streak            OK
+  [qwen2.5-1.5b/free] 23/57 A-rem-1      exp=create-reminder        got=create-reminder        OK
+  [qwen2.5-1.5b/free] 24/57 A-rem-2      exp=create-reminder        got=create-reminder        OK
+  [qwen2.5-1.5b/free] 25/57 A-search-1   exp=search-records         got=search-records         OK
+  [qwen2.5-1.5b/free] 26/57 A-search-2   exp=search-records         got=search-records         OK
+  [qwen2.5-1.5b/free] 27/57 B-fact-1     exp=add-contact-fact       got=recall-contact-fact    x 
+  [qwen2.5-1.5b/free] 28/57 B-fact-2     exp=add-contact-fact       got=add-contact-fact       OK
+  [qwen2.5-1.5b/free] 29/57 B-fact-3     exp=add-contact-fact       got=recall-contact-fact    x 
+  [qwen2.5-1.5b/free] 30/57 B-fact-4     exp=add-contact-fact       got=log-interaction        x 
+  [qwen2.5-1.5b/free] 31/57 B-recall-1   exp=recall-contact-fact    got=recall-contact-fact    OK
+  [qwen2.5-1.5b/free] 32/57 B-recall-2   exp=recall-contact-fact    got=search-records         x 
+  [qwen2.5-1.5b/free] 33/57 B-medium-1   exp=query-last-interaction got=log-interaction        x 
+  [qwen2.5-1.5b/free] 34/57 C-meta-1     exp=none                   got=log-mood               x 
+  [qwen2.5-1.5b/free] 35/57 C-meta-2     exp=none                   got=log-interaction        x 
+  [qwen2.5-1.5b/free] 36/57 C-meta-3     exp=none                   got=log-run                x 
+  [qwen2.5-1.5b/free] 37/57 C-meta-4     exp=none                   got=query-aggregate        x 
+  [qwen2.5-1.5b/free] 38/57 C-meta-5     exp=none                   got=instantiate-template   x 
+  [qwen2.5-1.5b/free] 39/57 C-meta-6     exp=none                   got=log-walk               x 
+  [qwen2.5-1.5b/free] 40/57 D-ood-1      exp=none                   got=search-records         x 
+  [qwen2.5-1.5b/free] 41/57 D-ood-2      exp=none                   got=search-records         x 
+  [qwen2.5-1.5b/free] 42/57 D-ood-3      exp=none                   got=search-records         x 
+  [qwen2.5-1.5b/free] 43/57 D-ood-4      exp=none                   got=search-records         x 
+  [qwen2.5-1.5b/free] 44/57 D-adv-1      exp=search-records         got=recall-contact-fact    x 
+  [qwen2.5-1.5b/free] 45/57 D-adv-2      exp=search-records         got=search-records         OK
+  [qwen2.5-1.5b/free] 46/57 D-adv-3      exp=search-records         got=search-records         OK
+  [qwen2.5-1.5b/free] 47/57 D-adv-4      exp=search-records         got=create-reminder        x 
+  [qwen2.5-1.5b/free] 48/57 E-nearmiss-1 exp=log-run                got=log-run                OK
+  [qwen2.5-1.5b/free] 49/57 E-nearmiss-2 exp=log-walk               got=log-walk               OK
+  [qwen2.5-1.5b/free] 50/57 E-twin-1     exp=create-task            got=create-reminder        x 
+  [qwen2.5-1.5b/free] 51/57 E-twin-2     exp=log-interaction        got=log-interaction        OK
+  [qwen2.5-1.5b/free] 52/57 E-twin-3     exp=recall-contact-fact    got=recall-contact-fact    OK
+  [qwen2.5-1.5b/free] 53/57 E-coord-1    exp=create-task            got=create-task            OK
+  [qwen2.5-1.5b/free] 54/57 E-coord-2    exp=instantiate-template   got=log-mood               x 
+  [qwen2.5-1.5b/free] 55/57 E-ana-1      exp=none                   got=create-task            x 
+  [qwen2.5-1.5b/free] 56/57 E-ana-2      exp=none                   got=none                   OK
+  [qwen2.5-1.5b/free] 57/57 E-ana-3      exp=undo                   got=undo                   OK
+== qwen2.5-1.5b/free: routing_acc=0.491 fmt=1.0 p95=4254.8ms ==
+
+  [qwen2.5-1.5b/constrained] 1/57 A-task-1     exp=create-task            got=create-task            OK
+  [qwen2.5-1.5b/constrained] 2/57 A-task-2     exp=create-task            got=create-task            OK
+  [qwen2.5-1.5b/constrained] 3/57 A-task-3     exp=create-task            got=create-task            OK
+  [qwen2.5-1.5b/constrained] 4/57 A-task-4     exp=create-task            got=create-task            OK
+  [qwen2.5-1.5b/constrained] 5/57 A-recur-1    exp=create-recurring-reminder got=create-reminder        x 
+  [qwen2.5-1.5b/constrained] 6/57 A-recur-2    exp=create-recurring-reminder got=create-reminder        x 
+  [qwen2.5-1.5b/constrained] 7/57 A-recur-3    exp=create-recurring-reminder got=create-reminder        x 
+  [qwen2.5-1.5b/constrained] 8/57 A-tmpl-1     exp=instantiate-template   got=log-run                x 
+  [qwen2.5-1.5b/constrained] 9/57 A-tmpl-2     exp=instantiate-template   got=log-mood               x 
+  [qwen2.5-1.5b/constrained] 10/57 A-tmpl-3     exp=instantiate-template   got=log-medication         x 
+  [qwen2.5-1.5b/constrained] 11/57 A-run-1      exp=log-run                got=log-run                OK
+  [qwen2.5-1.5b/constrained] 12/57 A-run-2      exp=log-run                got=log-run                OK
+  [qwen2.5-1.5b/constrained] 13/57 A-run-3      exp=log-run                got=log-run                OK
+  [qwen2.5-1.5b/constrained] 14/57 A-last-1     exp=query-last-interaction got=log-interaction        x 
+  [qwen2.5-1.5b/constrained] 15/57 A-last-2     exp=query-last-interaction got=log-interaction        x 
+  [qwen2.5-1.5b/constrained] 16/57 A-last-3     exp=query-last-interaction got=log-interaction        x 
+  [qwen2.5-1.5b/constrained] 17/57 A-note-1     exp=log-interaction        got=log-interaction        OK
+  [qwen2.5-1.5b/constrained] 18/57 A-note-2     exp=log-interaction        got=log-interaction        OK
+  [qwen2.5-1.5b/constrained] 19/57 A-agg-1      exp=query-aggregate        got=query-aggregate        OK
+  [qwen2.5-1.5b/constrained] 20/57 A-agg-2      exp=query-aggregate        got=query-aggregate        OK
+  [qwen2.5-1.5b/constrained] 21/57 A-streak-1   exp=show-streak            got=show-streak            OK
+  [qwen2.5-1.5b/constrained] 22/57 A-streak-2   exp=show-streak            got=show-streak            OK
+  [qwen2.5-1.5b/constrained] 23/57 A-rem-1      exp=create-reminder        got=create-reminder        OK
+  [qwen2.5-1.5b/constrained] 24/57 A-rem-2      exp=create-reminder        got=create-reminder        OK
+  [qwen2.5-1.5b/constrained] 25/57 A-search-1   exp=search-records         got=search-records         OK
+  [qwen2.5-1.5b/constrained] 26/57 A-search-2   exp=search-records         got=search-records         OK
+  [qwen2.5-1.5b/constrained] 27/57 B-fact-1     exp=add-contact-fact       got=recall-contact-fact    x 
+  [qwen2.5-1.5b/constrained] 28/57 B-fact-2     exp=add-contact-fact       got=add-contact-fact       OK
+  [qwen2.5-1.5b/constrained] 29/57 B-fact-3     exp=add-contact-fact       got=recall-contact-fact    x 
+  [qwen2.5-1.5b/constrained] 30/57 B-fact-4     exp=add-contact-fact       got=log-interaction        x 
+  [qwen2.5-1.5b/constrained] 31/57 B-recall-1   exp=recall-contact-fact    got=recall-contact-fact    OK
+  [qwen2.5-1.5b/constrained] 32/57 B-recall-2   exp=recall-contact-fact    got=search-records         x 
+  [qwen2.5-1.5b/constrained] 33/57 B-medium-1   exp=query-last-interaction got=log-interaction        x 
+  [qwen2.5-1.5b/constrained] 34/57 C-meta-1     exp=none                   got=log-mood               x 
+  [qwen2.5-1.5b/constrained] 35/57 C-meta-2     exp=none                   got=log-interaction        x 
+  [qwen2.5-1.5b/constrained] 36/57 C-meta-3     exp=none                   got=log-run                x 
+  [qwen2.5-1.5b/constrained] 37/57 C-meta-4     exp=none                   got=query-aggregate        x 
+  [qwen2.5-1.5b/constrained] 38/57 C-meta-5     exp=none                   got=instantiate-template   x 
+  [qwen2.5-1.5b/constrained] 39/57 C-meta-6     exp=none                   got=log-walk               x 
+  [qwen2.5-1.5b/constrained] 40/57 D-ood-1      exp=none                   got=search-records         x 
+  [qwen2.5-1.5b/constrained] 41/57 D-ood-2      exp=none                   got=search-records         x 
+  [qwen2.5-1.5b/constrained] 42/57 D-ood-3      exp=none                   got=search-records         x 
+  [qwen2.5-1.5b/constrained] 43/57 D-ood-4      exp=none                   got=search-records         x 
+  [qwen2.5-1.5b/constrained] 44/57 D-adv-1      exp=search-records         got=recall-contact-fact    x 
+  [qwen2.5-1.5b/constrained] 45/57 D-adv-2      exp=search-records         got=search-records         OK
+  [qwen2.5-1.5b/constrained] 46/57 D-adv-3      exp=search-records         got=search-records         OK
+  [qwen2.5-1.5b/constrained] 47/57 D-adv-4      exp=search-records         got=create-reminder        x 
+  [qwen2.5-1.5b/constrained] 48/57 E-nearmiss-1 exp=log-run                got=log-run                OK
+  [qwen2.5-1.5b/constrained] 49/57 E-nearmiss-2 exp=log-walk               got=log-walk               OK
+  [qwen2.5-1.5b/constrained] 50/57 E-twin-1     exp=create-task            got=create-reminder        x 
+  [qwen2.5-1.5b/constrained] 51/57 E-twin-2     exp=log-interaction        got=log-interaction        OK
+  [qwen2.5-1.5b/constrained] 52/57 E-twin-3     exp=recall-contact-fact    got=recall-contact-fact    OK
+  [qwen2.5-1.5b/constrained] 53/57 E-coord-1    exp=create-task            got=create-task            OK
+  [qwen2.5-1.5b/constrained] 54/57 E-coord-2    exp=instantiate-template   got=log-mood               x 
+  [qwen2.5-1.5b/constrained] 55/57 E-ana-1      exp=none                   got=create-task            x 
+  [qwen2.5-1.5b/constrained] 56/57 E-ana-2      exp=none                   got=none                   OK
+  [qwen2.5-1.5b/constrained] 57/57 E-ana-3      exp=undo                   got=undo                   OK
+== qwen2.5-1.5b/constrained: routing_acc=0.491 fmt=1.0 p95=4130.4ms ==
+
+  [llama-3.2-3b/free] 1/57 A-task-1     exp=create-task            got=create-task            OK
+  [llama-3.2-3b/free] 2/57 A-task-2     exp=create-task            got=log-interaction        x 
+  [llama-3.2-3b/free] 3/57 A-task-3     exp=create-task            got=create-task            OK
+  [llama-3.2-3b/free] 4/57 A-task-4     exp=create-task            got=create-task            OK
+  [llama-3.2-3b/free] 5/57 A-recur-1    exp=create-recurring-reminder got=create-reminder        x 
+  [llama-3.2-3b/free] 6/57 A-recur-2    exp=create-recurring-reminder got=create-reminder        x 
+  [llama-3.2-3b/free] 7/57 A-recur-3    exp=create-recurring-reminder got=create-recurring-reminder OK
+  [llama-3.2-3b/free] 8/57 A-tmpl-1     exp=instantiate-template   got=instantiate-template   OK
+  [llama-3.2-3b/free] 9/57 A-tmpl-2     exp=instantiate-template   got=instantiate-template   OK
+  [llama-3.2-3b/free] 10/57 A-tmpl-3     exp=instantiate-template   got=instantiate-template   OK
+  [llama-3.2-3b/free] 11/57 A-run-1      exp=log-run                got=log-run                OK
+  [llama-3.2-3b/free] 12/57 A-run-2      exp=log-run                got=log-run                OK
+  [llama-3.2-3b/free] 13/57 A-run-3      exp=log-run                got=log-run                OK
+  [llama-3.2-3b/free] 14/57 A-last-1     exp=query-last-interaction got=log-interaction        x 
+  [llama-3.2-3b/free] 15/57 A-last-2     exp=query-last-interaction got=log-interaction        x 
+  [llama-3.2-3b/free] 16/57 A-last-3     exp=query-last-interaction got=query-last-interaction OK
+  [llama-3.2-3b/free] 17/57 A-note-1     exp=log-interaction        got=log-interaction        OK
+  [llama-3.2-3b/free] 18/57 A-note-2     exp=log-interaction        got=log-interaction        OK
+  [llama-3.2-3b/free] 19/57 A-agg-1      exp=query-aggregate        got=query-aggregate        OK
+  [llama-3.2-3b/free] 20/57 A-agg-2      exp=query-aggregate        got=query-aggregate        OK
+  [llama-3.2-3b/free] 21/57 A-streak-1   exp=show-streak            got=show-streak            OK
+  [llama-3.2-3b/free] 22/57 A-streak-2   exp=show-streak            got=show-streak            OK
+  [llama-3.2-3b/free] 23/57 A-rem-1      exp=create-reminder        got=create-reminder        OK
+  [llama-3.2-3b/free] 24/57 A-rem-2      exp=create-reminder        got=create-reminder        OK
+  [llama-3.2-3b/free] 25/57 A-search-1   exp=search-records         got=search-records         OK
+  [llama-3.2-3b/free] 26/57 A-search-2   exp=search-records         got=search-records         OK
+  [llama-3.2-3b/free] 27/57 B-fact-1     exp=add-contact-fact       got=recall-contact-fact    x 
+  [llama-3.2-3b/free] 28/57 B-fact-2     exp=add-contact-fact       got=add-contact-fact       OK
+  [llama-3.2-3b/free] 29/57 B-fact-3     exp=add-contact-fact       got=recall-contact-fact    x 
+  [llama-3.2-3b/free] 30/57 B-fact-4     exp=add-contact-fact       got=log-interaction        x 
+  [llama-3.2-3b/free] 31/57 B-recall-1   exp=recall-contact-fact    got=add-contact-fact       x 
+  [llama-3.2-3b/free] 32/57 B-recall-2   exp=recall-contact-fact    got=search-records         x 
+  [llama-3.2-3b/free] 33/57 B-medium-1   exp=query-last-interaction got=query-last-interaction OK
+  [llama-3.2-3b/free] 34/57 C-meta-1     exp=none                   got=log-mood               x 
+  [llama-3.2-3b/free] 35/57 C-meta-2     exp=none                   got=log-interaction        x 
+  [llama-3.2-3b/free] 36/57 C-meta-3     exp=none                   got=log-run                x 
+  [llama-3.2-3b/free] 37/57 C-meta-4     exp=none                   got=query-aggregate        x 
+  [llama-3.2-3b/free] 38/57 C-meta-5     exp=none                   got=instantiate-template   x 
+  [llama-3.2-3b/free] 39/57 C-meta-6     exp=none                   got=instantiate-template   x 
+  [llama-3.2-3b/free] 40/57 D-ood-1      exp=none                   got=query-last-interaction x 
+  [llama-3.2-3b/free] 41/57 D-ood-2      exp=none                   got=recall-contact-fact    x 
+  [llama-3.2-3b/free] 42/57 D-ood-3      exp=none                   got=recall-contact-fact    x 
+  [llama-3.2-3b/free] 43/57 D-ood-4      exp=none                   got=recall-contact-fact    x 
+  [llama-3.2-3b/free] 44/57 D-adv-1      exp=search-records         got=recall-contact-fact    x 
+  [llama-3.2-3b/free] 45/57 D-adv-2      exp=search-records         got=recall-contact-fact    x 
+  [llama-3.2-3b/free] 46/57 D-adv-3      exp=search-records         got=recall-contact-fact    x 
+  [llama-3.2-3b/free] 47/57 D-adv-4      exp=search-records         got=recall-contact-fact    x 
+  [llama-3.2-3b/free] 48/57 E-nearmiss-1 exp=log-run                got=log-run                OK
+  [llama-3.2-3b/free] 49/57 E-nearmiss-2 exp=log-walk               got=log-walk               OK
+  [llama-3.2-3b/free] 50/57 E-twin-1     exp=create-task            got=create-reminder        x 
+  [llama-3.2-3b/free] 51/57 E-twin-2     exp=log-interaction        got=log-interaction        OK
+  [llama-3.2-3b/free] 52/57 E-twin-3     exp=recall-contact-fact    got=recall-contact-fact    OK
+  [llama-3.2-3b/free] 53/57 E-coord-1    exp=create-task            got=create-reminder        x 
+  [llama-3.2-3b/free] 54/57 E-coord-2    exp=instantiate-template   got=log-mood               x 
+  [llama-3.2-3b/free] 55/57 E-ana-1      exp=none                   got=log-run                x 
+  [llama-3.2-3b/free] 56/57 E-ana-2      exp=none                   got=log-run                x 
+  [llama-3.2-3b/free] 57/57 E-ana-3      exp=undo                   got=undo                   OK
+== llama-3.2-3b/free: routing_acc=0.491 fmt=1.0 p95=8370.8ms ==
+
+  [llama-3.2-3b/constrained] 1/57 A-task-1     exp=create-task            got=create-task            OK
+  [llama-3.2-3b/constrained] 2/57 A-task-2     exp=create-task            got=log-interaction        x 
+  [llama-3.2-3b/constrained] 3/57 A-task-3     exp=create-task            got=create-task            OK
+  [llama-3.2-3b/constrained] 4/57 A-task-4     exp=create-task            got=create-task            OK
+  [llama-3.2-3b/constrained] 5/57 A-recur-1    exp=create-recurring-reminder got=create-reminder        x 
+  [llama-3.2-3b/constrained] 6/57 A-recur-2    exp=create-recurring-reminder got=create-reminder        x 
+  [llama-3.2-3b/constrained] 7/57 A-recur-3    exp=create-recurring-reminder got=create-recurring-reminder OK
+  [llama-3.2-3b/constrained] 8/57 A-tmpl-1     exp=instantiate-template   got=instantiate-template   OK
+  [llama-3.2-3b/constrained] 9/57 A-tmpl-2     exp=instantiate-template   got=instantiate-template   OK
+  [llama-3.2-3b/constrained] 10/57 A-tmpl-3     exp=instantiate-template   got=instantiate-template   OK
+  [llama-3.2-3b/constrained] 11/57 A-run-1      exp=log-run                got=log-run                OK
+  [llama-3.2-3b/constrained] 12/57 A-run-2      exp=log-run                got=log-run                OK
+  [llama-3.2-3b/constrained] 13/57 A-run-3      exp=log-run                got=log-run                OK
+  [llama-3.2-3b/constrained] 14/57 A-last-1     exp=query-last-interaction got=log-interaction        x 
+  [llama-3.2-3b/constrained] 15/57 A-last-2     exp=query-last-interaction got=log-interaction        x 
+  [llama-3.2-3b/constrained] 16/57 A-last-3     exp=query-last-interaction got=query-last-interaction OK
+  [llama-3.2-3b/constrained] 17/57 A-note-1     exp=log-interaction        got=log-interaction        OK
+  [llama-3.2-3b/constrained] 18/57 A-note-2     exp=log-interaction        got=log-interaction        OK
+  [llama-3.2-3b/constrained] 19/57 A-agg-1      exp=query-aggregate        got=query-aggregate        OK
+  [llama-3.2-3b/constrained] 20/57 A-agg-2      exp=query-aggregate        got=query-aggregate        OK
+  [llama-3.2-3b/constrained] 21/57 A-streak-1   exp=show-streak            got=show-streak            OK
+  [llama-3.2-3b/constrained] 22/57 A-streak-2   exp=show-streak            got=show-streak            OK
+  [llama-3.2-3b/constrained] 23/57 A-rem-1      exp=create-reminder        got=create-reminder        OK
+  [llama-3.2-3b/constrained] 24/57 A-rem-2      exp=create-reminder        got=create-reminder        OK
+  [llama-3.2-3b/constrained] 25/57 A-search-1   exp=search-records         got=search-records         OK
+  [llama-3.2-3b/constrained] 26/57 A-search-2   exp=search-records         got=search-records         OK
+  [llama-3.2-3b/constrained] 27/57 B-fact-1     exp=add-contact-fact       got=recall-contact-fact    x 
+  [llama-3.2-3b/constrained] 28/57 B-fact-2     exp=add-contact-fact       got=add-contact-fact       OK
+  [llama-3.2-3b/constrained] 29/57 B-fact-3     exp=add-contact-fact       got=recall-contact-fact    x 
+  [llama-3.2-3b/constrained] 30/57 B-fact-4     exp=add-contact-fact       got=log-interaction        x 
+  [llama-3.2-3b/constrained] 31/57 B-recall-1   exp=recall-contact-fact    got=add-contact-fact       x 
+  [llama-3.2-3b/constrained] 32/57 B-recall-2   exp=recall-contact-fact    got=search-records         x 
+  [llama-3.2-3b/constrained] 33/57 B-medium-1   exp=query-last-interaction got=query-last-interaction OK
+  [llama-3.2-3b/constrained] 34/57 C-meta-1     exp=none                   got=log-mood               x 
+  [llama-3.2-3b/constrained] 35/57 C-meta-2     exp=none                   got=log-interaction        x 
+  [llama-3.2-3b/constrained] 36/57 C-meta-3     exp=none                   got=log-run                x 
+  [llama-3.2-3b/constrained] 37/57 C-meta-4     exp=none                   got=query-aggregate        x 
+  [llama-3.2-3b/constrained] 38/57 C-meta-5     exp=none                   got=instantiate-template   x 
+  [llama-3.2-3b/constrained] 39/57 C-meta-6     exp=none                   got=instantiate-template   x 
+  [llama-3.2-3b/constrained] 40/57 D-ood-1      exp=none                   got=query-last-interaction x 
+  [llama-3.2-3b/constrained] 41/57 D-ood-2      exp=none                   got=recall-contact-fact    x 
+  [llama-3.2-3b/constrained] 42/57 D-ood-3      exp=none                   got=recall-contact-fact    x 
+  [llama-3.2-3b/constrained] 43/57 D-ood-4      exp=none                   got=recall-contact-fact    x 
+  [llama-3.2-3b/constrained] 44/57 D-adv-1      exp=search-records         got=recall-contact-fact    x 
+  [llama-3.2-3b/constrained] 45/57 D-adv-2      exp=search-records         got=recall-contact-fact    x 
+  [llama-3.2-3b/constrained] 46/57 D-adv-3      exp=search-records         got=recall-contact-fact    x 
+  [llama-3.2-3b/constrained] 47/57 D-adv-4      exp=search-records         got=recall-contact-fact    x 
+  [llama-3.2-3b/constrained] 48/57 E-nearmiss-1 exp=log-run                got=log-run                OK
+  [llama-3.2-3b/constrained] 49/57 E-nearmiss-2 exp=log-walk               got=log-walk               OK
+  [llama-3.2-3b/constrained] 50/57 E-twin-1     exp=create-task            got=create-reminder        x 
+  [llama-3.2-3b/constrained] 51/57 E-twin-2     exp=log-interaction        got=log-interaction        OK
+  [llama-3.2-3b/constrained] 52/57 E-twin-3     exp=recall-contact-fact    got=recall-contact-fact    OK
+  [llama-3.2-3b/constrained] 53/57 E-coord-1    exp=create-task            got=create-reminder        x 
+  [llama-3.2-3b/constrained] 54/57 E-coord-2    exp=instantiate-template   got=log-mood               x 
+  [llama-3.2-3b/constrained] 55/57 E-ana-1      exp=none                   got=log-run                x 
+  [llama-3.2-3b/constrained] 56/57 E-ana-2      exp=none                   got=log-run                x 
+  [llama-3.2-3b/constrained] 57/57 E-ana-3      exp=undo                   got=undo                   OK
+== llama-3.2-3b/constrained: routing_acc=0.491 fmt=1.0 p95=8808.6ms ==
+
+  [gemma-2-2b/free] 1/57 A-task-1     exp=create-task            got=create-task            OK
+  [gemma-2-2b/free] 2/57 A-task-2     exp=create-task            got=log-interaction        x 
+  [gemma-2-2b/free] 3/57 A-task-3     exp=create-task            got=create-task            OK
+  [gemma-2-2b/free] 4/57 A-task-4     exp=create-task            got=create-task            OK
+  [gemma-2-2b/free] 5/57 A-recur-1    exp=create-recurring-reminder got=create-task            x 
+  [gemma-2-2b/free] 6/57 A-recur-2    exp=create-recurring-reminder got=create-recurring-reminder OK
+  [gemma-2-2b/free] 7/57 A-recur-3    exp=create-recurring-reminder got=create-recurring-reminder OK
+  [gemma-2-2b/free] 8/57 A-tmpl-1     exp=instantiate-template   got=log-run                x 
+  [gemma-2-2b/free] 9/57 A-tmpl-2     exp=instantiate-template   got=log-mood               x 
+  [gemma-2-2b/free] 10/57 A-tmpl-3     exp=instantiate-template   got=log-medication         x 
+  [gemma-2-2b/free] 11/57 A-run-1      exp=log-run                got=log-run                OK
+  [gemma-2-2b/free] 12/57 A-run-2      exp=log-run                got=log-run                OK
+  [gemma-2-2b/free] 13/57 A-run-3      exp=log-run                got=log-run                OK
+  [gemma-2-2b/free] 14/57 A-last-1     exp=query-last-interaction got=log-interaction        x 
+  [gemma-2-2b/free] 15/57 A-last-2     exp=query-last-interaction got=log-interaction        x 
+  [gemma-2-2b/free] 16/57 A-last-3     exp=query-last-interaction got=log-interaction        x 
+  [gemma-2-2b/free] 17/57 A-note-1     exp=log-interaction        got=log-interaction        OK
+  [gemma-2-2b/free] 18/57 A-note-2     exp=log-interaction        got=log-interaction        OK
+  [gemma-2-2b/free] 19/57 A-agg-1      exp=query-aggregate        got=query-aggregate        OK
+  [gemma-2-2b/free] 20/57 A-agg-2      exp=query-aggregate        got=query-aggregate        OK
+  [gemma-2-2b/free] 21/57 A-streak-1   exp=show-streak            got=show-streak            OK
+  [gemma-2-2b/free] 22/57 A-streak-2   exp=show-streak            got=query-aggregate        x 
+  [gemma-2-2b/free] 23/57 A-rem-1      exp=create-reminder        got=create-reminder        OK
+  [gemma-2-2b/free] 24/57 A-rem-2      exp=create-reminder        got=create-reminder        OK
+  [gemma-2-2b/free] 25/57 A-search-1   exp=search-records         got=search-records         OK
+  [gemma-2-2b/free] 26/57 A-search-2   exp=search-records         got=search-records         OK
+  [gemma-2-2b/free] 27/57 B-fact-1     exp=add-contact-fact       got=add-contact-fact       OK
+  [gemma-2-2b/free] 28/57 B-fact-2     exp=add-contact-fact       got=add-contact-fact       OK
+  [gemma-2-2b/free] 29/57 B-fact-3     exp=add-contact-fact       got=none                   x 
+  [gemma-2-2b/free] 30/57 B-fact-4     exp=add-contact-fact       got=log-interaction        x 
+  [gemma-2-2b/free] 31/57 B-recall-1   exp=recall-contact-fact    got=recall-contact-fact    OK
+  [gemma-2-2b/free] 32/57 B-recall-2   exp=recall-contact-fact    got=recall-contact-fact    OK
+  [gemma-2-2b/free] 33/57 B-medium-1   exp=query-last-interaction got=log-interaction        x 
+  [gemma-2-2b/free] 34/57 C-meta-1     exp=none                   got=log-mood               x 
+  [gemma-2-2b/free] 35/57 C-meta-2     exp=none                   got=log-interaction        x 
+  [gemma-2-2b/free] 36/57 C-meta-3     exp=none                   got=log-run                x 
+  [gemma-2-2b/free] 37/57 C-meta-4     exp=none                   got=query-aggregate        x 
+  [gemma-2-2b/free] 38/57 C-meta-5     exp=none                   got=log-interaction        x 
+  [gemma-2-2b/free] 39/57 C-meta-6     exp=none                   got=log-walk               x 
+  [gemma-2-2b/free] 40/57 D-ood-1      exp=none                   got=search-records         x 
+  [gemma-2-2b/free] 41/57 D-ood-2      exp=none                   got=search-records         x 
+  [gemma-2-2b/free] 42/57 D-ood-3      exp=none                   got=search-records         x 
+  [gemma-2-2b/free] 43/57 D-ood-4      exp=none                   got=search-records         x 
+  [gemma-2-2b/free] 44/57 D-adv-1      exp=search-records         got=search-records         OK
+  [gemma-2-2b/free] 45/57 D-adv-2      exp=search-records         got=search-records         OK
+  [gemma-2-2b/free] 46/57 D-adv-3      exp=search-records         got=search-records         OK
+  [gemma-2-2b/free] 47/57 D-adv-4      exp=search-records         got=recall-contact-fact    x 
+  [gemma-2-2b/free] 48/57 E-nearmiss-1 exp=log-run                got=log-run                OK
+  [gemma-2-2b/free] 49/57 E-nearmiss-2 exp=log-walk               got=log-walk               OK
+  [gemma-2-2b/free] 50/57 E-twin-1     exp=create-task            got=create-reminder        x 
+  [gemma-2-2b/free] 51/57 E-twin-2     exp=log-interaction        got=log-interaction        OK
+  [gemma-2-2b/free] 52/57 E-twin-3     exp=recall-contact-fact    got=add-contact-fact       x 
+  [gemma-2-2b/free] 53/57 E-coord-1    exp=create-task            got=create-reminder        x 
+  [gemma-2-2b/free] 54/57 E-coord-2    exp=instantiate-template   got=log-mood               x 
+  [gemma-2-2b/free] 55/57 E-ana-1      exp=none                   got=log-run                x 
+  [gemma-2-2b/free] 56/57 E-ana-2      exp=none                   got=log-run                x 
+  [gemma-2-2b/free] 57/57 E-ana-3      exp=undo                   got=undo                   OK
+== gemma-2-2b/free: routing_acc=0.491 fmt=1.0 p95=7689.1ms ==
+
+  [gemma-2-2b/constrained] 1/57 A-task-1     exp=create-task            got=create-task            OK
+  [gemma-2-2b/constrained] 2/57 A-task-2     exp=create-task            got=log-interaction        x 
+  [gemma-2-2b/constrained] 3/57 A-task-3     exp=create-task            got=create-task            OK
+  [gemma-2-2b/constrained] 4/57 A-task-4     exp=create-task            got=create-task            OK
+  [gemma-2-2b/constrained] 5/57 A-recur-1    exp=create-recurring-reminder got=create-task            x 
+  [gemma-2-2b/constrained] 6/57 A-recur-2    exp=create-recurring-reminder got=create-recurring-reminder OK
+  [gemma-2-2b/constrained] 7/57 A-recur-3    exp=create-recurring-reminder got=create-recurring-reminder OK
+  [gemma-2-2b/constrained] 8/57 A-tmpl-1     exp=instantiate-template   got=log-run                x 
+  [gemma-2-2b/constrained] 9/57 A-tmpl-2     exp=instantiate-template   got=log-mood               x 
+  [gemma-2-2b/constrained] 10/57 A-tmpl-3     exp=instantiate-template   got=log-medication         x 
+  [gemma-2-2b/constrained] 11/57 A-run-1      exp=log-run                got=log-run                OK
+  [gemma-2-2b/constrained] 12/57 A-run-2      exp=log-run                got=log-run                OK
+  [gemma-2-2b/constrained] 13/57 A-run-3      exp=log-run                got=log-run                OK
+  [gemma-2-2b/constrained] 14/57 A-last-1     exp=query-last-interaction got=log-interaction        x 
+  [gemma-2-2b/constrained] 15/57 A-last-2     exp=query-last-interaction got=log-interaction        x 
+  [gemma-2-2b/constrained] 16/57 A-last-3     exp=query-last-interaction got=log-interaction        x 
+  [gemma-2-2b/constrained] 17/57 A-note-1     exp=log-interaction        got=log-interaction        OK
+  [gemma-2-2b/constrained] 18/57 A-note-2     exp=log-interaction        got=log-interaction        OK
+  [gemma-2-2b/constrained] 19/57 A-agg-1      exp=query-aggregate        got=query-aggregate        OK
+  [gemma-2-2b/constrained] 20/57 A-agg-2      exp=query-aggregate        got=query-aggregate        OK
+  [gemma-2-2b/constrained] 21/57 A-streak-1   exp=show-streak            got=show-streak            OK
+  [gemma-2-2b/constrained] 22/57 A-streak-2   exp=show-streak            got=query-aggregate        x 
+  [gemma-2-2b/constrained] 23/57 A-rem-1      exp=create-reminder        got=create-reminder        OK
+  [gemma-2-2b/constrained] 24/57 A-rem-2      exp=create-reminder        got=create-reminder        OK
+  [gemma-2-2b/constrained] 25/57 A-search-1   exp=search-records         got=search-records         OK
+  [gemma-2-2b/constrained] 26/57 A-search-2   exp=search-records         got=search-records         OK
+  [gemma-2-2b/constrained] 27/57 B-fact-1     exp=add-contact-fact       got=add-contact-fact       OK
+  [gemma-2-2b/constrained] 28/57 B-fact-2     exp=add-contact-fact       got=add-contact-fact       OK
+  [gemma-2-2b/constrained] 29/57 B-fact-3     exp=add-contact-fact       got=none                   x 
+  [gemma-2-2b/constrained] 30/57 B-fact-4     exp=add-contact-fact       got=log-interaction        x 
+  [gemma-2-2b/constrained] 31/57 B-recall-1   exp=recall-contact-fact    got=recall-contact-fact    OK
+  [gemma-2-2b/constrained] 32/57 B-recall-2   exp=recall-contact-fact    got=recall-contact-fact    OK
+  [gemma-2-2b/constrained] 33/57 B-medium-1   exp=query-last-interaction got=log-interaction        x 
+  [gemma-2-2b/constrained] 34/57 C-meta-1     exp=none                   got=log-mood               x 
+  [gemma-2-2b/constrained] 35/57 C-meta-2     exp=none                   got=log-interaction        x 
+  [gemma-2-2b/constrained] 36/57 C-meta-3     exp=none                   got=log-run                x 
+  [gemma-2-2b/constrained] 37/57 C-meta-4     exp=none                   got=query-aggregate        x 
+  [gemma-2-2b/constrained] 38/57 C-meta-5     exp=none                   got=log-interaction        x 
+  [gemma-2-2b/constrained] 39/57 C-meta-6     exp=none                   got=log-walk               x 
+  [gemma-2-2b/constrained] 40/57 D-ood-1      exp=none                   got=search-records         x 
+  [gemma-2-2b/constrained] 41/57 D-ood-2      exp=none                   got=search-records         x 
+  [gemma-2-2b/constrained] 42/57 D-ood-3      exp=none                   got=search-records         x 
+  [gemma-2-2b/constrained] 43/57 D-ood-4      exp=none                   got=search-records         x 
+  [gemma-2-2b/constrained] 44/57 D-adv-1      exp=search-records         got=search-records         OK
+  [gemma-2-2b/constrained] 45/57 D-adv-2      exp=search-records         got=search-records         OK
+  [gemma-2-2b/constrained] 46/57 D-adv-3      exp=search-records         got=search-records         OK
+  [gemma-2-2b/constrained] 47/57 D-adv-4      exp=search-records         got=recall-contact-fact    x 
+  [gemma-2-2b/constrained] 48/57 E-nearmiss-1 exp=log-run                got=log-run                OK
+  [gemma-2-2b/constrained] 49/57 E-nearmiss-2 exp=log-walk               got=log-walk               OK
+  [gemma-2-2b/constrained] 50/57 E-twin-1     exp=create-task            got=create-reminder        x 
+  [gemma-2-2b/constrained] 51/57 E-twin-2     exp=log-interaction        got=log-interaction        OK
+  [gemma-2-2b/constrained] 52/57 E-twin-3     exp=recall-contact-fact    got=add-contact-fact       x 
+  [gemma-2-2b/constrained] 53/57 E-coord-1    exp=create-task            got=create-reminder        x 
+  [gemma-2-2b/constrained] 54/57 E-coord-2    exp=instantiate-template   got=log-mood               x 
+  [gemma-2-2b/constrained] 55/57 E-ana-1      exp=none                   got=log-run                x 
+  [gemma-2-2b/constrained] 56/57 E-ana-2      exp=none                   got=log-run                x 
+  [gemma-2-2b/constrained] 57/57 E-ana-3      exp=undo                   got=undo                   OK
+== gemma-2-2b/constrained: routing_acc=0.491 fmt=1.0 p95=7726.1ms ==
+
+  [phi-3.5-mini/free] 1/57 A-task-1     exp=create-task            got=create-task            OK
+  [phi-3.5-mini/free] 2/57 A-task-2     exp=create-task            got=log-interaction        x 
+  [phi-3.5-mini/free] 3/57 A-task-3     exp=create-task            got=create-task            OK
+  [phi-3.5-mini/free] 4/57 A-task-4     exp=create-task            got=create-task            OK
+  [phi-3.5-mini/free] 5/57 A-recur-1    exp=create-recurring-reminder got=create-reminder        x 
+  [phi-3.5-mini/free] 6/57 A-recur-2    exp=create-recurring-reminder got=create-reminder        x 
+  [phi-3.5-mini/free] 7/57 A-recur-3    exp=create-recurring-reminder got=create-reminder        x 
+  [phi-3.5-mini/free] 8/57 A-tmpl-1     exp=instantiate-template   got=log-run                x 
+  [phi-3.5-mini/free] 9/57 A-tmpl-2     exp=instantiate-template   got=log-mood               x 
+  [phi-3.5-mini/free] 10/57 A-tmpl-3     exp=instantiate-template   got=log-medication         x 
+  [phi-3.5-mini/free] 11/57 A-run-1      exp=log-run                got=log-run                OK
+  [phi-3.5-mini/free] 12/57 A-run-2      exp=log-run                got=log-run                OK
+  [phi-3.5-mini/free] 13/57 A-run-3      exp=log-run                got=log-run                OK
+  [phi-3.5-mini/free] 14/57 A-last-1     exp=query-last-interaction got=query-last-interaction OK
+  [phi-3.5-mini/free] 15/57 A-last-2     exp=query-last-interaction got=query-last-interaction OK
+  [phi-3.5-mini/free] 16/57 A-last-3     exp=query-last-interaction got=query-last-interaction OK
+  [phi-3.5-mini/free] 17/57 A-note-1     exp=log-interaction        got=log-interaction        OK
+  [phi-3.5-mini/free] 18/57 A-note-2     exp=log-interaction        got=log-interaction        OK
+  [phi-3.5-mini/free] 19/57 A-agg-1      exp=query-aggregate        got=query-aggregate        OK
+  [phi-3.5-mini/free] 20/57 A-agg-2      exp=query-aggregate        got=query-aggregate        OK
+  [phi-3.5-mini/free] 21/57 A-streak-1   exp=show-streak            got=query-aggregate        x 
+  [phi-3.5-mini/free] 22/57 A-streak-2   exp=show-streak            got=query-aggregate        x 
+  [phi-3.5-mini/free] 23/57 A-rem-1      exp=create-reminder        got=create-reminder        OK
+  [phi-3.5-mini/free] 24/57 A-rem-2      exp=create-reminder        got=create-reminder        OK
+  [phi-3.5-mini/free] 25/57 A-search-1   exp=search-records         got=search-records         OK
+  [phi-3.5-mini/free] 26/57 A-search-2   exp=search-records         got=search-records         OK
+  [phi-3.5-mini/free] 27/57 B-fact-1     exp=add-contact-fact       got=recall-contact-fact    x 
+  [phi-3.5-mini/free] 28/57 B-fact-2     exp=add-contact-fact       got=recall-contact-fact    x 
+  [phi-3.5-mini/free] 29/57 B-fact-3     exp=add-contact-fact       got=recall-contact-fact    x 
+  [phi-3.5-mini/free] 30/57 B-fact-4     exp=add-contact-fact       got=log-interaction        x 
+  [phi-3.5-mini/free] 31/57 B-recall-1   exp=recall-contact-fact    got=recall-contact-fact    OK
+  [phi-3.5-mini/free] 32/57 B-recall-2   exp=recall-contact-fact    got=recall-contact-fact    OK
+  [phi-3.5-mini/free] 33/57 B-medium-1   exp=query-last-interaction got=query-last-interaction OK
+  [phi-3.5-mini/free] 34/57 C-meta-1     exp=none                   got=log-interaction        x 
+  [phi-3.5-mini/free] 35/57 C-meta-2     exp=none                   got=add-contact-fact       x 
+  [phi-3.5-mini/free] 36/57 C-meta-3     exp=none                   got=log-run                x 
+  [phi-3.5-mini/free] 37/57 C-meta-4     exp=none                   got=query-aggregate        x 
+  [phi-3.5-mini/free] 38/57 C-meta-5     exp=none                   got=instantiate-template   x 
+  [phi-3.5-mini/free] 39/57 C-meta-6     exp=none                   got=instantiate-template   x 
+  [phi-3.5-mini/free] 40/57 D-ood-1      exp=none                   got=search-records         x 
+  [phi-3.5-mini/free] 41/57 D-ood-2      exp=none                   got=search-records         x 
+  [phi-3.5-mini/free] 42/57 D-ood-3      exp=none                   got=search-records         x 
+  [phi-3.5-mini/free] 43/57 D-ood-4      exp=none                   got=search-records         x 
+  [phi-3.5-mini/free] 44/57 D-adv-1      exp=search-records         got=recall-contact-fact    x 
+  [phi-3.5-mini/free] 45/57 D-adv-2      exp=search-records         got=recall-contact-fact    x 
+  [phi-3.5-mini/free] 46/57 D-adv-3      exp=search-records         got=search-records         OK
+  [phi-3.5-mini/free] 47/57 D-adv-4      exp=search-records         got=recall-contact-fact    x 
+  [phi-3.5-mini/free] 48/57 E-nearmiss-1 exp=log-run                got=log-run                OK
+  [phi-3.5-mini/free] 49/57 E-nearmiss-2 exp=log-walk               got=log-walk               OK
+  [phi-3.5-mini/free] 50/57 E-twin-1     exp=create-task            got=create-reminder        x 
+  [phi-3.5-mini/free] 51/57 E-twin-2     exp=log-interaction        got=add-contact-fact       x 
+  [phi-3.5-mini/free] 52/57 E-twin-3     exp=recall-contact-fact    got=recall-contact-fact    OK
+  [phi-3.5-mini/free] 53/57 E-coord-1    exp=create-task            got=create-reminder        x 
+  [phi-3.5-mini/free] 54/57 E-coord-2    exp=instantiate-template   got=log-mood               x 
+  [phi-3.5-mini/free] 55/57 E-ana-1      exp=none                   got=log-walk               x 
+  [phi-3.5-mini/free] 56/57 E-ana-2      exp=none                   got=ERR                    x 
+  [phi-3.5-mini/free] 57/57 E-ana-3      exp=undo                   got=ERR                    x 
+== phi-3.5-mini/free: routing_acc=0.436 fmt=1.0 p95=27646.3ms ==
+
+  [haiku-4.5/free] 1/57 A-task-1     got=create-task            OK
+  [haiku-4.5/free] 2/57 A-task-2     got=create-task            OK
+  [haiku-4.5/free] 3/57 A-task-3     got=create-task            OK
+  [haiku-4.5/free] 4/57 A-task-4     got=create-task            OK
+  [haiku-4.5/free] 5/57 A-recur-1    got=create-recurring-reminder OK
+  [haiku-4.5/free] 6/57 A-recur-2    got=create-recurring-reminder OK
+  [haiku-4.5/free] 7/57 A-recur-3    got=create-recurring-reminder OK
+  [haiku-4.5/free] 8/57 A-tmpl-1     got=instantiate-template   OK
+  [haiku-4.5/free] 9/57 A-tmpl-2     got=instantiate-template   OK
+  [haiku-4.5/free] 10/57 A-tmpl-3     got=instantiate-template   OK
+  [haiku-4.5/free] 11/57 A-run-1      got=log-run                OK
+  [haiku-4.5/free] 12/57 A-run-2      got=log-run                OK
+  [haiku-4.5/free] 13/57 A-run-3      got=log-run                OK
+  [haiku-4.5/free] 14/57 A-last-1     got=query-last-interaction OK
+  [haiku-4.5/free] 15/57 A-last-2     got=query-last-interaction OK
+  [haiku-4.5/free] 16/57 A-last-3     got=query-last-interaction OK
+  [haiku-4.5/free] 17/57 A-note-1     got=add-contact-fact       x 
+  [haiku-4.5/free] 18/57 A-note-2     got=log-interaction        OK
+  [haiku-4.5/free] 19/57 A-agg-1      got=query-aggregate        OK
+  [haiku-4.5/free] 20/57 A-agg-2      got=query-aggregate        OK
+  [haiku-4.5/free] 21/57 A-streak-1   got=show-streak            OK
+  [haiku-4.5/free] 22/57 A-streak-2   got=show-streak            OK
+  [haiku-4.5/free] 23/57 A-rem-1      got=create-reminder        OK
+  [haiku-4.5/free] 24/57 A-rem-2      got=create-reminder        OK
+  [haiku-4.5/free] 25/57 A-search-1   got=search-records         OK
+  [haiku-4.5/free] 26/57 A-search-2   got=search-records         OK
+  [haiku-4.5/free] 27/57 B-fact-1     got=add-contact-fact       OK
+  [haiku-4.5/free] 28/57 B-fact-2     got=add-contact-fact       OK
+  [haiku-4.5/free] 29/57 B-fact-3     got=add-contact-fact       OK
+  [haiku-4.5/free] 30/57 B-fact-4     got=add-contact-fact       OK
+  [haiku-4.5/free] 31/57 B-recall-1   got=recall-contact-fact    OK
+  [haiku-4.5/free] 32/57 B-recall-2   got=recall-contact-fact    OK
+  [haiku-4.5/free] 33/57 B-medium-1   got=query-last-interaction OK
+  [haiku-4.5/free] 34/57 C-meta-1     got=none                   OK
+  [haiku-4.5/free] 35/57 C-meta-2     got=instantiate-template   x 
+  [haiku-4.5/free] 36/57 C-meta-3     got=none                   OK
+  [haiku-4.5/free] 37/57 C-meta-4     got=query-aggregate        x 
+  [haiku-4.5/free] 38/57 C-meta-5     got=instantiate-template   x 
+  [haiku-4.5/free] 39/57 C-meta-6     got=instantiate-template   x 
+  [haiku-4.5/free] 40/57 D-ood-1      got=none                   OK
+  [haiku-4.5/free] 41/57 D-ood-2      got=none                   OK
+  [haiku-4.5/free] 42/57 D-ood-3      got=none                   OK
+  [haiku-4.5/free] 43/57 D-ood-4      got=none                   OK
+  [haiku-4.5/free] 44/57 D-adv-1      got=search-records         OK
+  [haiku-4.5/free] 45/57 D-adv-2      got=search-records         OK
+  [haiku-4.5/free] 46/57 D-adv-3      got=search-records         OK
+  [haiku-4.5/free] 47/57 D-adv-4      got=search-records         OK
+  [haiku-4.5/free] 48/57 E-nearmiss-1 got=log-run                OK
+  [haiku-4.5/free] 49/57 E-nearmiss-2 got=log-walk               OK
+  [haiku-4.5/free] 50/57 E-twin-1     got=create-reminder        x 
+  [haiku-4.5/free] 51/57 E-twin-2     got=add-contact-fact       x 
+  [haiku-4.5/free] 52/57 E-twin-3     got=recall-contact-fact    OK
+  [haiku-4.5/free] 53/57 E-coord-1    got=create-reminder        x 
+  [haiku-4.5/free] 54/57 E-coord-2    got=instantiate-template   OK
+  [haiku-4.5/free] 55/57 E-ana-1      got=none                   OK
+  [haiku-4.5/free] 56/57 E-ana-2      got=none                   OK
+  [haiku-4.5/free] 57/57 E-ana-3      got=undo                   OK
+== haiku-4.5/free: routing_acc=0.86 ==
+
+done -> results/eval-routing-raw.json + results/eval-routing-summary.json

@@ -1,6 +1,7 @@
 # Spec 05a — Functional Examples (Validation Corpus)
 
-**Status:** v0.2 — July 2026 — **PHASE 1: CATALOG ONLY.** This pass defines *what* the sixty examples are and confirms their variety and usefulness. The full end-to-end handling traces (NLU → DSL → execution → response), the undefined-vs-predefined dual analysis, and the real-model measurements are **Phase 3** and are deliberately not in this draft yet (see §0.2).
+**Status:** v0.3 — July 2026 — **PHASE 2 DONE · PHASE 3 IN PROGRESS (vertical slice).** The catalog (§§2–5) is stable. Phase 2 (the test rig) is stood up on Luis's machine; Phase 3 (full end-to-end traces + real-model measurements) has begun with a **5-example vertical slice** (F-01, F-07, F-19, P-01, DP-02) measured across the on-device NLU candidates and the full Claude matrix. Interim findings — including confirmation of the "AI authors, code executes" bet and resolution of the F-19 gap probe — are archived in [`research/spec-05a-phase3/findings.md`](../../research/spec-05a-phase3/); the remaining 55 examples proceed once the trace-doc format is signed off. The full per-example traces are not yet folded into this spec.
+**v0.2 (retained):** PHASE 1 CATALOG — defined *what* the sixty examples are and confirmed variety/usefulness. The traces, undefined-vs-predefined dual analysis, and measurements are Phase 3 (see §0.2).
 **v0.2 changes (Luis review):** local checkpoint comparison confirmed (Qwen2.5-1.5B vs. Llama-3.2-3B, D-B). DP-05 reframed — "predictive fabrication" was wrongly a denial; grounded, hedged foresight is a legitimate capability, so it becomes paid-hero **P-17** and the denial slot is refilled with a genuine record-integrity refusal. DP-02 reframed from flat denial to **graceful delegation** (out-of-domain → hand off / augment, never fabricate), with a design exploration in Appendix A on adding web augmentation without scope/cost blowup.
 **Depends on:** Spec 01 — Meta-Schema & Type System; Spec 02 — Skill DSL; Spec 03 — NLU / Intent; Spec 04 — Architecture; Spec 05 — Functional.
 **Relationship to Spec 05:** Spec 05 is the *authority* — it defines the ten free + ten paid marquee tasks and the interaction contract. This spec is the *validation corpus*: sixty concrete, worked utterances that stretch those contracts to their edges and are traced end-to-end to prove the specification is buildable before any code is written. Spec 05 owns the rules; 05a proves they hold.
@@ -22,7 +23,9 @@ Spec 05 already runs to ~1,060 lines defining the marquee tasks and the interact
    - **(b) Predefined:** the capability already ships / has been authored, and the request executes on the fast path.
    Each interactive step shows its speech pattern. Each step that invokes the **local model** is run against the real model, capturing latency + token usage. Each step that calls **Claude** is run against Haiku / Sonnet / Opus at versions 4.5 / 4.6 / 4.8 (**excluding Sonnet 5, Fable, Mythos** per Luis — not cost-effective), capturing latency + token usage.
 
-### 0.3 ⚠ Phase-2 environment blocker (needs Luis)
+### 0.3 ✅ Phase-2 environment blocker — RESOLVED
+
+**Resolved (July 2026):** Phase 3 is running in **Claude Code on Luis's machine** (option D-C "preferred"). The rig — llama.cpp + Qwen2.5-1.5B + Llama-3.2-3B, a Python/Anthropic-SDK harness, and BYOK auth against all 7 non-excluded Claude models — is stood up and verified. See [`planning/specs/05a-rig/`](05a-rig/) (tooling) and [`research/spec-05a-phase3/`](../../research/spec-05a-phase3/) (results). The original blocker, retained for the record:
 
 The Cowork sandbox cannot run Phase 2 as-is:
 
@@ -39,7 +42,7 @@ Either way, **Phase 1 does not need models** and proceeds now.
 ### 0.4 Open decisions for Luis
 
 - **D-A:** Keep examples in this separate spec (recommended) vs. fold into Spec 05. — *Recommend separate.*
-- **D-B:** ✅ **Confirmed (Luis).** Phase 2 measures **Qwen2.5-1.5B-Instruct** and **Llama-3.2-3B-Instruct** and reports both before pinning. (Spec 03 §3.4 leaves the checkpoint swappable; other candidates — Gemma-2-2B, Phi-3.5-mini — are held as fallbacks if neither meets the latency/accuracy bar.)
+- **D-B:** ✅ **Confirmed (Luis).** Phase 2 measures **Qwen2.5-1.5B-Instruct** and **Llama-3.2-3B-Instruct** and reports both before pinning. (Spec 03 §3.4 leaves the checkpoint swappable; other candidates — Gemma-2-2B, Phi-3.5-mini — are held as fallbacks if neither meets the latency/accuracy bar.) **Vertical-slice data (see findings.md §2):** the two models fail in *opposite* ways — Llama-3.2-3B is stronger on classification/meta-intent, Qwen-1.5B on the out-of-domain boundary; **neither covers both**, and both emit uncalibrated confidence. Pinning is deferred; the fallback candidates and/or a rule-based OOD pre-filter (Appendix A §A.2) should be evaluated in the full pass.
 - **D-C:** Phase-3 environment (Claude Code vs. unblocked Cowork). — §0.3.
 
 ---

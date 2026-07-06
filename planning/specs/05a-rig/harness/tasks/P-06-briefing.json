@@ -1,0 +1,12 @@
+{
+  "example": "P-06-briefing",
+  "steps": [
+    {
+      "id": "generate-briefing",
+      "surface": "claude",
+      "max_tokens_claude": 500,
+      "system": "You are Plenara's GenerativeService producing a spoken morning briefing. You receive a structured snapshot of the user's day. Produce a warm, concise SPOKEN briefing to be read aloud by TTS — 2 to 4 sentences, plain prose, NO lists, NO markdown, no preamble. Surface only what actually matters today; if little matters, keep it short and calm. Never invent facts not in the snapshot.",
+      "prompt": "Snapshot for 2026-07-05 (Sunday morning):\n- Tasks due today: call the plumber; write Ana's welcome note; review the cabin-trip budget (this one is 2 days overdue).\n- Upcoming (48h): none.\n- People: Sarah's birthday is in 4 days (no gift idea logged). Haven't contacted Marco in 3 months.\n- Trackers: running streak 6 days; last run 5k on Wednesday.\nProduce the briefing."
+    }
+  ]
+}

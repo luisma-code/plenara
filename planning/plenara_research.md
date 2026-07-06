@@ -1716,9 +1716,16 @@ it, followed by what remains genuinely open.
     > architecture, and functional specs. Reverses the earlier "confirm
     > before any non-trivial action" note in §4.8.
 
--   **API keys:** BYOK to start --- no billing backend, consistent with
-    > the privacy and no-profit posture; revisit managed keys only if
-    > user friction proves high.
+-   **API keys / cloud-access model:** BYOK --- the user supplies their
+    > own Anthropic API key; no billing backend, consistent with the
+    > local-first, privacy, and no-profit posture. The free tier runs
+    > fully on-device and needs no key (the wall-free on-ramp); the paid
+    > tier is BYOK and positioned for advanced users. This is a deliberate
+    > consequence of having no backend, not an oversight --- see the
+    > adoption-wall risk in §15.2. An app-funded/managed-key tier is
+    > deferrable without rework (the ClaudeClient seam is
+    > key-source-agnostic) but requires a backend and a changed
+    > privacy/commercial posture, so it is out of scope for v1.
 
 -   **Migration:** a versioned migration runner for built-in and
     > user-defined types, defined before production data exists.
@@ -1728,6 +1735,28 @@ it, followed by what remains genuinely open.
     > assessment (13.2).
 
 ### 15.2 Still Open
+
+-   **Cloud-access adoption wall (store distribution):** BYOK forces every
+    > paid-tier user to create an Anthropic API account and pre-purchase
+    > credits before any Claude feature works, and they will intuitively
+    > (wrongly) expect a Claude Max/Pro subscription to cover it --- a real
+    > friction wall for wide adoption once the app ships in stores. This is
+    > **not** Anthropic-specific: no LLM provider lets a third-party app
+    > bill inference against an end user's consumer subscription; the only
+    > zero-friction alternative for any AI app is an app-funded key behind a
+    > backend, monetized via in-app purchase, which contradicts Plenara's
+    > no-backend / local-first / journal-never-leaves-device foundations.
+    > **v1 stance:** accept the wall, keep the free tier fully on-device as
+    > the wall-free on-ramp, position paid as advanced-user BYOK.
+    > **Mitigations that lower the wall without a backend:** (a) push more
+    > capability onto on-device models (llama.cpp now; platform-native Apple
+    > Foundation Models / Gemini Nano next) so the paywall is hit rarely,
+    > not on every cloud-ish feature; (b) keep minimizing cloud dependence
+    > per "code over AI." **Onboarding requirement:** the paid-upgrade flow
+    > must state plainly that a Claude subscription will not work and an API
+    > key is required, *before* sending the user to the console. Surfaced
+    > July 2026 when Luis's own testing hit the subscription-vs-API
+    > confusion firsthand.
 
 -   **Flow definition & key:** validate the (intent, type, slot-shape)
     > signature as the right equivalence class before building any cache

@@ -1,0 +1,12 @@
+{
+  "example": "F-07",
+  "steps": [
+    {
+      "id": "classify-extract",
+      "surface": "both",
+      "max_tokens": 200,
+      "system": "You are Plenara's on-device intent classifier. Given a user utterance and candidate skills (with description, examples, and input slots), choose exactly one skillId (or null) and extract the declared slots. A single sentence may imply MULTIPLE writes; capture every entity/relation/fact you can into the slots. Reply with ONLY JSON: {\"skillId\": <id or null>, \"slots\": {...}, \"confidence\": 0.0-1.0}. Never invent a skillId. No commentary.",
+      "prompt": "Utterance: \"Sarah's daughter Mia is allergic to peanuts.\"\n\nCandidates:\n1. add-contact-fact — Store a fact/attribute about a person, optionally introducing a related person. Examples: \"Marco likes hiking\", \"Sarah's daughter Mia is allergic to peanuts\", \"my boss's wife is called Jo\". Slots: subjectName (the person the fact is about), fact (the attribute/value), relatedToName (optional, another person referenced), relationType (optional, e.g. daughter/son/wife/boss).\n2. log-interaction — Record a dated note about a person. Slots: contactName, note, date (optional).\n3. recall-contact-fact — Retrieve a stored fact about a person. Slots: subjectName, query.\n4. create-task — Create a to-do. Slots: description, dueDate (optional)."
+    }
+  ]
+}

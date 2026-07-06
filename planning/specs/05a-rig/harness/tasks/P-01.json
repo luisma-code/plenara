@@ -1,0 +1,19 @@
+{
+  "example": "P-01",
+  "steps": [
+    {
+      "id": "raise-meta-intent",
+      "surface": "local",
+      "max_tokens": 100,
+      "system": "You are Plenara's on-device intent classifier. Decide whether an utterance can be served by an existing capability or needs a NEW capability authored. Reply with ONLY JSON: {\"category\": \"skill_invocation\"|\"define_type\"|\"define_skill\", \"inferredDomain\": <short label>, \"confidence\": 0.0-1.0}. Existing capabilities: create-task, log-interaction, add-contact-fact, recall-contact-fact, query-last-interaction, instantiate-template(run,walk,water,reading,mood,sleep,weight,meals,habit,medication), search-records.",
+      "prompt": "Utterance: \"I want to track my daughter's mood and what preceded her good and bad days.\""
+    },
+    {
+      "id": "author",
+      "surface": "claude",
+      "max_tokens_claude": 2000,
+      "system": "You are Plenara's capability-authoring service. Plenara is a local-first personal-memory app whose capabilities are DATA, not code: you emit declarative JSON that a deterministic interpreter executes. You NEVER emit executable code.\n\nGiven the user's described need, output a SINGLE JSON object with keys \"type\", \"skill\", \"safetyAssessment\".\n\n\"type\" (TypeDefinition): typeId (snake_case), displayName, displayNamePlural, description, examplePhrases (>=3), attributes[] each {name (camelCase), label, valueType in [text,number,decimal,boolean,datetime,date,duration,enum,entityRef,tag,attachment,json], required (bool), and for enum: enumValues[], for entityRef: refType, optional defaultToNow for date/datetime}, relations[] (entityRef attributes with refType + cardinality in [one,many]), presentation {archetype, primaryField, timestampField}.\n\n\"skill\" (Skill): skillId (kebab-case), displayName, description, inputs[] each {name, valueType, source in [slot,system], required}, reads[] (typeIds), writes[] (typeIds), steps {\"main\": [ ... ]}, dangerLevel in [safe,caution,destructive].\n\nSteps may use ONLY this CLOSED primitive vocabulary, no others: read_one, read_many, read_related, write_record, delete_record, compute, format, set, branch, foreach. Shapes: write_record {op,typeId,fields{},into?}; format {op,template,into}; set {op,var,value}; branch {op,condition,ifTrue,ifFalse}; foreach {op,over,as,do}. Reference inputs/vars as {name}. Ambient system values {now},{today},{userId} need no inputs entry. A skill MUST NOT call a model, network, or timer; aggregation uses compute() functions (sum/avg/count), never loops. If the need cannot be expressed in this vocabulary, note it in safetyAssessment.concerns rather than inventing an op.\n\nThe seed types task, contact, contact_interaction, journal_entry already exist; reference contact via entityRef refType \"contact\" if a person is involved. No existing type scored above the 0.85 reconciliation threshold, so author a new type.\n\nOutput ONLY the JSON object — no prose, no markdown fences.",
+      "prompt": "I want to track my daughter's mood and what preceded her good and bad days."
+    }
+  ]
+}

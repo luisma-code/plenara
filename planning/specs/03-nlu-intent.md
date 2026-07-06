@@ -502,4 +502,99 @@ The resulting layout (detailed in §5.2–§5.3):
 
 | Store | Home | Encryption | Lane | Status |
 |---|---|---|---|---|
-| `nlu/flow-ta
+| `nlu/flow-table.json` | synced Plenara root (non-sensitive templates only) | plaintext | 1 — corrections corpus | **built in v1** |
+| `[app-support]/plenara/nlu/plan-cache` | device-local | encrypted at rest | 2 — plan cache | deferred (§5.1) |
+
+Lane 1 carries *earned phrasing* (slot-abstracted templates → intents) that should survive a device swap, so its non-sensitive part syncs. Lane 2 would carry fully-resolved plans with `sensitive` values, so it is device-local + encrypted (Spec 02 §5.2) and is **not built in v1**.
+
+---
+
+## 6. Slot Extraction & Resolution *(resolve-stage addition)*
+
+*Added by the Phase-3 resolve stage ([`../05b-gap-register.md`](../05b-gap-register.md)), resolving **G-12, G-14, G-15, G-16**. How the NLU layer fills the `source:"slot"` inputs a skill declares, and — the parts the traces proved were unspecified — how it resolves people and dates.*
+
+### 6.1 Entity resolution & the resolve-or-create contract (`G-12`)
+`NluContext.entityNames.resolve(refType, token) → List<(id, displayName)>` (read-only, §2.6). For every person a skill references, the NLU layer:
+- **0 matches** → pass the **name** (text slot); the skill creates the contact (a write, so it must be in execute — Spec 02 §9.1 resolve-or-create idiom).
+- **exactly 1** → pass **both** the `…Id` (entityRef) *and* the `…Name` (text).
+- **> 1** → emit a `ClarificationRequested` **before dispatch** ("Which Sarah — Mitchell or Chen?", `SelectCandidate`); the chosen id is then passed.
+
+Person-referencing skills therefore declare **both** a `…Id?` and a `…Name` slot (Spec 02 §9.1). Consequences: (a) creation never happens in the read-only NLU layer; (b) confirmations always have the display name (fixes the F-07 `G-12` defect); (c) **invariant:** after disambiguation, a skill's `read_one contact{displayName}` sees only 0-or-1, so `read_one` on a non-unique field is never exercised with an ambiguous result (if it somehow is — stale sync — it returns the most-recent and flags a repair item).
+
+### 6.2 The deterministic date / recurrence resolver (`G-14`, `G-15`, `G-16`)
+A **pure-code** component in the NLU post-processor — **never the model** (models hallucinate the actual date; findings §3). It takes the temporal *expression* the model extracted plus the frozen `now`/`today`, and returns a resolved `datetime`/`date`/RRULE (+ `allDay`). It owns **all** date math so skills receive a literal `dueAt`:
+- **Relative** ("Thursday", "in three weeks") → concrete date; `date→datetime` coercion + `allDay` (Spec 01 §7.3).
+- **Recurring** ("every second Tuesday") → RRULE (`FREQ=WEEKLY;INTERVAL=2;BYDAY=TU`).
+- **Anniversary / next-occurrence** (`G-15`) → `next_anniversary(date)` / `next_occurrence` — the MM-DD logic the compute grammar lacks; it lives **here**, not in the DSL.
+- **Record-anchored** (`G-14`) → given a *structured* anchor `(contactRef, field, offsetDays)` — NLU resolves the contact via §6.1 and maps the field word ("birthday" → the `birthday` attribute) — the resolver does a **scoped graph-read** of that field, applies `next_anniversary` + offset, and returns the literal `dueAt`. **This supersedes the skill-side anchor branch sketched in 05a-traces §3A:** `create-reminder` receives a resolved `dueAt` and needs no `read_one`/`compute` anchor logic in the common case.
+- **Missing anchor data** (`G-16`) → if the anchor field is null (Sarah's birthday unknown), the resolver cannot produce a date → it raises a **missing-slot follow-up** (§6.3): *"When's Sarah's birthday?"* The answer resolves this reminder (and the app may offer to save it to the contact — a separate act).
+
+### 6.3 Missing-slot follow-up (the `ProvideSlot` loop)
+When a required slot (or a date the resolver needs) cannot be filled, resolve halts *before any write* (Spec 02 §4.1) and the orchestrator emits `ClarificationRequested(kind: missingSlots)`. The app asks **one** targeted question (P2.1); the answer returns via `ProvideSlot` → `NluRouter.resolveFollowUp(pending, slotName, answer, ctx)` runs a **scoped second-pass extraction** (no re-classification, §2.6) → resolve resumes. At most two rounds per turn (Spec 05 §3.2), then the app offers to start over.
+
+---
+
+## 7. Routing-Reliability Amendments *(resolve-stage addition)*
+
+*Resolving **G-07, G-19, G-20** (the last via the completed eval, findings §11 → NO-GO). These amend the confidence policy (§4), the out-of-domain path, and the routing cascade in light of the Phase-3 measurements ([findings §2](../../research/spec-05a-phase3/findings.md), [§11](../../research/spec-05a-phase3/findings.md)).*
+
+### 7.1 Constrained decoding + escalation gated on retrieval, not model confidence (`G-07`)
+- The local classification step (§3.4) uses **grammar / JSON-schema constrained decoding**: `skillId` is constrained to the enum of *retrieved candidate ids* (it cannot emit a list index like `1`, a hallucinated id, or a non-committal `null`), and slots to their declared shapes. This is a **format guarantee, not a correctness one** — it does not fix a wrong choice (findings §5).
+- **The local model's self-reported `confidence` is not trusted** (measured uncalibrated — correct labels at 0.0, wrong ones at 0.9; findings §2). The **escalate/clarify/act decision gates on *retrieval* signals** — the top-1 similarity, the top-1↔top-2 margin, and the `θ` thresholds (§4.1) — plus the repeated-correction/`requiresPreConfirm` rules, **never** on the generative model's confidence field. This amends Axis-2 (§4.1): "classifier confidence" from a 1–3B local model is treated as advisory-only for logging, not as the escalation gate.
+- **`G-20` — RESOLVED: the eval failed the bar → the local generative model is cut from the trusted routing path** (findings §11; ≤49% routing across four small models, meta-intent 0%, uncalibrated). The classify step is *not* a trusted router. Constrained decoding is retained only as **optional format insurance** where a local model is used at all (it changed routing accuracy by 0 points — the `skillId`-as-number wart was an artifact of *numbering* candidates; keying them by id removes it without a grammar). See **§7.3** for the deterministic replacement.
+
+### 7.2 Out-of-domain detection: conservative and records-biased (`G-19`)
+Out-of-domain is decided **locally, by rule + retrieval — not the generative model's guess** (Llama-3.2-3B misroutes the hard case; findings §2). A turn is tagged `out_of_domain` only when **all** hold: (a) the best `CapabilityIndex` hit across every kind is below `θ_retrieval`; (b) the utterance matches a small built-in **world-knowledge shape** (weather, sports, news, definitions, "what is / who is / when did ‹public entity›"); and (c) it carries **no personal cue**. **Personal cues force `records_query`** even when a world-noun appears: first-person/possessive references to the user's own data — "what did **I** say…", "on **our** trip", "**my** …", "last time **I** …". This is a **privacy boundary**, not just UX: a records-cued query is **never** delegated to an external OS/web assistant (the leak `G-19` names). Only (a)+(b)+(c) → the tiered delegation policy (Appendix A §A.3); anything with a personal cue stays in-app. *(The eval showed small models never leak here — 0/4 — but only as a side effect of never abstaining, `G-20`; so OOD stays rule+retrieval-owned and the model is never handed an explicit `out_of_domain` label it could over-trigger.)*
+
+### 7.3 Routing without the on-device generative model (`G-20` NO-GO → `G-33`)
+
+The eval (findings §11) cut the generative model from the trusted path. Known-capability routing is now a **deterministic cascade**, no per-turn local LLM:
+
+1. **Corpus fast-path (§5)** — hash/slot-template hit → route directly, no inference. Owns high-frequency capture; offline; free.
+2. **Retrieval top-1-with-margin** — `CapabilityIndex` (the dedicated embedding model, not the generative one) ranks candidates; **accept top-1 iff it clears `θ_retrieval` AND beats top-2 by margin `τ`.** This is the escalation gate (§4.1), on *retrieval* signals only — never model confidence (dead for every model, findings §11).
+3. **Deterministic slot extraction** — dates/recurrence via the §6.2 resolver, entities via §6.1 `entityNames.resolve` (`G-24` aliases), quantities/durations by pattern, corpus recipes for known templates. Replaces the cut model's slot job (which even Haiku did at only 78% exact). A missing required slot → the §6.3 one-question follow-up.
+4. **Residual** — only when ≥2 candidates are close **and** phrasing is novel (steps 1–2 can't decide): **online + keyed → Haiku** (measured 86% routing / 96% on known-capability class A, ~$0.0006, ~0.8 s p50 — the reliable escalation, findings §11); **offline or free → clarify** (deterministic "did you mean X or Y?", the honest floor, P7).
+5. **Meta-intent (novel need → author) and OOD** stay **retrieval + rule owned** (§7.2) — small models scored 0% on meta-intent, so this was never theirs to do.
+
+**Offline/free is preserved:** steps 1–3 need no cloud; only the genuine residual wants Haiku, and its absence degrades to a clarify, not a failure. The local-first hedge holds because the generative model was only ever the last-resort discriminator.
+
+#### 7.3.1 The routing signal is retrieval margin, not classifier confidence (amends §4.3)
+
+Cutting the generative model removes **Axis 2** entirely (the "local classification" step of the §4.3 escalation flow, and its `confidence` field — dead anyway, findings §11). The retrieval score that §3.3 already computes *becomes* the routing decision. Define, over the ranked candidate set:
+- `s₁` = top-1 similarity, `s₂` = top-2 similarity, **`margin = s₁ − s₂`**.
+
+The §4.3 flow's step 3 ("Local classification") is **replaced** by a pure retrieval-margin decision (Axis 3 corpus and the §2.2 meta/OOD checks are unchanged):
+
+| condition | action |
+|---|---|
+| `s₁ ≥ θ_act` **and** `margin ≥ τ_act` | **dispatch + describe** — a clear, dominant winner |
+| `s₁ ≥ θ_meta` **and** `margin ≥ τ_clarify` (but not the row above) | **dispatch on best guess + transparent routing** (act-then-describe moderate band, §4.1) |
+| `s₁ ≥ θ_meta` **and** `margin < τ_clarify` | **genuine tie** → residual: online+keyed → Haiku disambiguation (§7.3.2); else **clarify** (`SelectCandidate` between the tied candidates) |
+| `s₁ < θ_meta` | **meta-intent check** (§2.2) — novel need → `define_*`; unchanged |
+
+Two new margin thresholds join the §4.1 table — **`τ_act` (default 0.08)** and **`τ_clarify` (default 0.03)** — on the *retrieval* axis. They are **calibration targets, not guesses:** the eval harness (`eval_routing.py`) re-scores the labeled dataset to pick the `τ` that maximizes correct-dispatch while holding the clarify-rate acceptable; ship the defaults, tune on data. This is strictly simpler than the old two-axis model (retrieval similarity *and* a separate classifier confidence): one axis, one dominant-winner test.
+
+#### 7.3.2 Haiku as the residual disambiguator (not a router)
+
+Haiku is invoked **only** on the genuine-tie residual (`margin < τ_clarify`) when online and BYOK-keyed. Its job is deliberately narrow — the exact task it measured **96%** on (findings §11, class A): *given the utterance + the ≤5 tied candidates keyed by id, return one id or `none`.* Output is enum-constrained to `{candidate ids} ∪ {none}` (~$0.0006, ~0.8 s p50). `none`, or a pick below `θ_meta`, falls to the meta-intent check or a clarify. This is the same escalation slot the old §4.3 "cloud classification" step held — Haiku now owns the disambiguation the local model did badly, and only for the residual, so the per-turn cloud rate stays low.
+
+#### 7.3.3 Deterministic slot extraction (the extractor inventory)
+
+Slots are filled by **typed deterministic extractors**, not a model (which even Haiku did at only 78% exact — so this is *more* reliable, not a downgrade):
+
+| valueType | extractor |
+|---|---|
+| `date` / `datetime` / `recurrence` | the §6.2 deterministic date/recurrence resolver (`G-14/15/16`) |
+| `entity` / contact ref | §6.1 `entityNames.resolve` — aliases (`G-24`), resolve-or-create (`G-12`) |
+| `decimal` / `integer` / quantity | numeric + unit pattern (regex + unit table) |
+| `duration` | duration pattern ("for 30 min", "a couple hours") |
+| `enum` | keyword/synonym match against the type's `enumValues` |
+| `tag` | token match against the known tag vocabulary |
+| `boolean` | polarity keywords |
+| `text` (free-form) | span heuristic — the residual after removing the matched trigger + other slots; or the whole utterance for a capture skill |
+
+Corpus `span`/`fixed` recipes (§6.4) handle known templates with zero inference. A required slot the extractors cannot fill → the §6.3 one-question follow-up (unchanged). Only a free-form slot on a *novel* phrasing that the span heuristic can't isolate **and** is online+paid piggybacks on the §7.3.2 Haiku residual call for extraction; offline/free → the follow-up question. So slot quality no longer rides on a 48%-exact local model.
+
+#### 7.3.4 What this removes, and what it preserves
+
+**Removed:** the on-device generative model, Axis 2 (classifier confidence), the local-classify escalation step, and the 2–8 s CPU inference cost per turn (findings §11). **Preserved:** the corpus fast-path (Axis 3, untouched — the primary offline/high-frequency path), retrieval (Axis 1, now load-bearing for the decision rather than only candidate-set membership), the `θ_*` thresholds (reused with retrieval-similarity semantics), meta-intent + OOD (rule+retrieval, §7.2), act-then-describe, the single clarify surface, and full offline/free operation (steps 1–3 + clarify need no cloud). **Net:** fewer moving parts, nothing unreliable in the hot path, and lower latency — the NO-GO made routing *simpler*, not weaker. *(Follow-on for a tuning pass: fit `τ_act`/`τ_clarify` on the eval dataset and add a `margin`-sweep report to `eval_routing.py`.)*

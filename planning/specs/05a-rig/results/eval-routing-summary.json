@@ -1,0 +1,399 @@
+{
+  "qwen2.5-1.5b": {
+    "free": {
+      "n": 57,
+      "n_ok": 57,
+      "routing_acc": 0.491,
+      "format_valid_rate": 1.0,
+      "numeric_index_rate": 0.0,
+      "slot_exact_P": 0.5,
+      "slot_exact_R": 0.481,
+      "slot_norm_P": 0.821,
+      "slot_norm_R": 0.79,
+      "slot_pairs": {
+        "n_pred": 78,
+        "n_exp": 81
+      },
+      "lat_p50": 3378.5,
+      "lat_p95": 4254.8,
+      "lat_mean": 3322.7,
+      "calib": {
+        "n_conf": 57,
+        "mean_conf_correct": 0.929,
+        "mean_conf_wrong": 0.914,
+        "separation": 0.015,
+        "correct_at_conf_0": 1,
+        "sd_correct": 0.185
+      },
+      "by_class": {
+        "A": {
+          "n": 26,
+          "acc": 0.654
+        },
+        "B": {
+          "n": 7,
+          "acc": 0.286
+        },
+        "C": {
+          "n": 6,
+          "acc": 0.0
+        },
+        "D": {
+          "n": 8,
+          "acc": 0.25
+        },
+        "E": {
+          "n": 10,
+          "acc": 0.7
+        }
+      }
+    },
+    "constrained": {
+      "n": 57,
+      "n_ok": 57,
+      "routing_acc": 0.491,
+      "format_valid_rate": 1.0,
+      "numeric_index_rate": 0.0,
+      "slot_exact_P": 0.5,
+      "slot_exact_R": 0.481,
+      "slot_norm_P": 0.821,
+      "slot_norm_R": 0.79,
+      "slot_pairs": {
+        "n_pred": 78,
+        "n_exp": 81
+      },
+      "lat_p50": 3214.9,
+      "lat_p95": 4130.4,
+      "lat_mean": 3248.2,
+      "calib": {
+        "n_conf": 57,
+        "mean_conf_correct": 0.929,
+        "mean_conf_wrong": 0.914,
+        "separation": 0.015,
+        "correct_at_conf_0": 1,
+        "sd_correct": 0.185
+      },
+      "by_class": {
+        "A": {
+          "n": 26,
+          "acc": 0.654
+        },
+        "B": {
+          "n": 7,
+          "acc": 0.286
+        },
+        "C": {
+          "n": 6,
+          "acc": 0.0
+        },
+        "D": {
+          "n": 8,
+          "acc": 0.25
+        },
+        "E": {
+          "n": 10,
+          "acc": 0.7
+        }
+      }
+    }
+  },
+  "llama-3.2-3b": {
+    "free": {
+      "n": 57,
+      "n_ok": 57,
+      "routing_acc": 0.491,
+      "format_valid_rate": 1.0,
+      "numeric_index_rate": 0.0,
+      "slot_exact_P": 0.385,
+      "slot_exact_R": 0.494,
+      "slot_norm_P": 0.721,
+      "slot_norm_R": 0.852,
+      "slot_pairs": {
+        "n_pred": 104,
+        "n_exp": 81
+      },
+      "lat_p50": 7119.1,
+      "lat_p95": 8370.8,
+      "lat_mean": 7017.4,
+      "calib": {
+        "n_conf": 54,
+        "mean_conf_correct": 0.836,
+        "mean_conf_wrong": 0.792,
+        "separation": 0.043,
+        "correct_at_conf_0": 0,
+        "sd_correct": 0.048
+      },
+      "by_class": {
+        "A": {
+          "n": 26,
+          "acc": 0.808
+        },
+        "B": {
+          "n": 7,
+          "acc": 0.286
+        },
+        "C": {
+          "n": 6,
+          "acc": 0.0
+        },
+        "D": {
+          "n": 8,
+          "acc": 0.0
+        },
+        "E": {
+          "n": 10,
+          "acc": 0.5
+        }
+      }
+    },
+    "constrained": {
+      "n": 57,
+      "n_ok": 57,
+      "routing_acc": 0.491,
+      "format_valid_rate": 1.0,
+      "numeric_index_rate": 0.0,
+      "slot_exact_P": 0.385,
+      "slot_exact_R": 0.494,
+      "slot_norm_P": 0.731,
+      "slot_norm_R": 0.864,
+      "slot_pairs": {
+        "n_pred": 104,
+        "n_exp": 81
+      },
+      "lat_p50": 7105.6,
+      "lat_p95": 8808.6,
+      "lat_mean": 7176.4,
+      "calib": {
+        "n_conf": 57,
+        "mean_conf_correct": 0.836,
+        "mean_conf_wrong": 0.793,
+        "separation": 0.043,
+        "correct_at_conf_0": 0,
+        "sd_correct": 0.048
+      },
+      "by_class": {
+        "A": {
+          "n": 26,
+          "acc": 0.808
+        },
+        "B": {
+          "n": 7,
+          "acc": 0.286
+        },
+        "C": {
+          "n": 6,
+          "acc": 0.0
+        },
+        "D": {
+          "n": 8,
+          "acc": 0.0
+        },
+        "E": {
+          "n": 10,
+          "acc": 0.5
+        }
+      }
+    }
+  },
+  "gemma-2-2b": {
+    "free": {
+      "n": 57,
+      "n_ok": 57,
+      "routing_acc": 0.491,
+      "format_valid_rate": 1.0,
+      "numeric_index_rate": 0.0,
+      "slot_exact_P": 0.444,
+      "slot_exact_R": 0.395,
+      "slot_norm_P": 0.722,
+      "slot_norm_R": 0.654,
+      "slot_pairs": {
+        "n_pred": 72,
+        "n_exp": 81
+      },
+      "lat_p50": 6115.1,
+      "lat_p95": 7689.1,
+      "lat_mean": 6179.7,
+      "calib": {
+        "n_conf": 57,
+        "mean_conf_correct": 0.945,
+        "mean_conf_wrong": 0.9,
+        "separation": 0.045,
+        "correct_at_conf_0": 0,
+        "sd_correct": 0.02
+      },
+      "by_class": {
+        "A": {
+          "n": 26,
+          "acc": 0.654
+        },
+        "B": {
+          "n": 7,
+          "acc": 0.571
+        },
+        "C": {
+          "n": 6,
+          "acc": 0.0
+        },
+        "D": {
+          "n": 8,
+          "acc": 0.375
+        },
+        "E": {
+          "n": 10,
+          "acc": 0.4
+        }
+      }
+    },
+    "constrained": {
+      "n": 57,
+      "n_ok": 57,
+      "routing_acc": 0.491,
+      "format_valid_rate": 1.0,
+      "numeric_index_rate": 0.0,
+      "slot_exact_P": 0.444,
+      "slot_exact_R": 0.395,
+      "slot_norm_P": 0.722,
+      "slot_norm_R": 0.654,
+      "slot_pairs": {
+        "n_pred": 72,
+        "n_exp": 81
+      },
+      "lat_p50": 6163.7,
+      "lat_p95": 7726.1,
+      "lat_mean": 6191.4,
+      "calib": {
+        "n_conf": 57,
+        "mean_conf_correct": 0.945,
+        "mean_conf_wrong": 0.9,
+        "separation": 0.045,
+        "correct_at_conf_0": 0,
+        "sd_correct": 0.02
+      },
+      "by_class": {
+        "A": {
+          "n": 26,
+          "acc": 0.654
+        },
+        "B": {
+          "n": 7,
+          "acc": 0.571
+        },
+        "C": {
+          "n": 6,
+          "acc": 0.0
+        },
+        "D": {
+          "n": 8,
+          "acc": 0.375
+        },
+        "E": {
+          "n": 10,
+          "acc": 0.4
+        }
+      }
+    }
+  },
+  "phi-3.5-mini": {
+    "constrained": {
+      "unavailable": "llama.cpp json_schema grammar rejected by this model's tokenizer (400: 'Unexpected empty grammar stack')"
+    },
+    "free": {
+      "n": 57,
+      "n_ok": 55,
+      "routing_acc": 0.436,
+      "format_valid_rate": 1.0,
+      "numeric_index_rate": 0.0,
+      "slot_exact_P": 0.475,
+      "slot_exact_R": 0.469,
+      "slot_norm_P": 0.775,
+      "slot_norm_R": 0.815,
+      "slot_pairs": {
+        "n_pred": 80,
+        "n_exp": 81
+      },
+      "lat_p50": 20638.1,
+      "lat_p95": 27646.3,
+      "lat_mean": 22846.7,
+      "calib": {
+        "n_conf": 55,
+        "mean_conf_correct": 0.981,
+        "mean_conf_wrong": 0.958,
+        "separation": 0.023,
+        "correct_at_conf_0": 0,
+        "sd_correct": 0.035
+      },
+      "by_class": {
+        "A": {
+          "n": 26,
+          "acc": 0.654
+        },
+        "B": {
+          "n": 7,
+          "acc": 0.429
+        },
+        "C": {
+          "n": 6,
+          "acc": 0.0
+        },
+        "D": {
+          "n": 8,
+          "acc": 0.125
+        },
+        "E": {
+          "n": 8,
+          "acc": 0.375
+        }
+      }
+    }
+  },
+  "haiku-4.5": {
+    "free": {
+      "n": 57,
+      "n_ok": 57,
+      "routing_acc": 0.86,
+      "format_valid_rate": 1.0,
+      "numeric_index_rate": 0.0,
+      "slot_exact_P": 0.747,
+      "slot_exact_R": 0.728,
+      "slot_norm_P": 0.937,
+      "slot_norm_R": 0.926,
+      "slot_pairs": {
+        "n_pred": 79,
+        "n_exp": 81
+      },
+      "lat_p50": 778.2,
+      "lat_p95": 1641.8,
+      "lat_mean": 983.0,
+      "calib": {
+        "n_conf": 57,
+        "mean_conf_correct": 0.912,
+        "mean_conf_wrong": 0.885,
+        "separation": 0.027,
+        "correct_at_conf_0": 2,
+        "sd_correct": 0.189
+      },
+      "by_class": {
+        "A": {
+          "n": 26,
+          "acc": 0.962
+        },
+        "B": {
+          "n": 7,
+          "acc": 1.0
+        },
+        "C": {
+          "n": 6,
+          "acc": 0.333
+        },
+        "D": {
+          "n": 8,
+          "acc": 1.0
+        },
+        "E": {
+          "n": 10,
+          "acc": 0.7
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,80 @@
+
+### P-01 — step `raise-meta-intent`  (local)
+
+**Local:**
+
+| model | latency ms | prompt→gen ms (server) | tok in/out | gen tok/s |
+|---|---|---|---|---|
+| qwen2.5-1.5b | 1470.1 | 505.9→925.8 | 160/29 | 31.3 |
+| llama-3.2-3b | 2916.0 | 1195.7→1687.9 | 182/26 | 15.4 |
+
+_outputs:_
+- `qwen2.5-1.5b`: ```json
+{"category": "skill_invocation", "inferredDomain": "health", "confidence": 0.9}
+```
+- `llama-3.2-3b`: {"category": "define_skill", "inferredDomain": "mood-tracking", "confidence": 0.8}
+
+### P-01 — step `author`  (claude)
+
+
+**Claude:**
+
+| model | latency ms | tok in/out | cost $ | stop |
+|---|---|---|---|---|
+| haiku-4.5 | 4742.3 | 577/817 | 0.004662 | end_turn |
+| sonnet-4.5 | 21177.9 | 577/1582 | 0.025461 | end_turn |
+| sonnet-4.6 | 23441.3 | 578/1839 | 0.029319 | end_turn |
+| opus-4.5 | 14518.0 | 577/973 | 0.027210 | end_turn |
+| opus-4.6 | 23521.7 | 578/1900 | 0.050390 | end_turn |
+| opus-4.7 | 16742.2 | 806/1580 | 0.043530 | end_turn |
+| opus-4.8 | 16640.4 | 801/1631 | 0.044780 | end_turn |
+
+_outputs:_
+- `haiku-4.5`: ```json
+{
+  "type": {
+    "typeId": "mood_day",
+    "displayName": "Mood Day",
+    "displayNamePlural": "Mood Days",
+    "description": "Record of a day's overall mood state and the events or factors that preceded or influenced it",
+    "examplePhrases": [
+      "Today was great after sleeping well",
+      "Bad mood because she didn't nap",
+      "Good day following the park visit"
+    ],
+    "att
+- `sonnet-4.5`: ```json
+{
+  "type": {
+    "typeId": "child_mood_log",
+    "displayName": "Child Mood Log",
+    "displayNamePlural": "Child Mood Logs",
+    "description": "Track a child's mood and the events, circumstances, or triggers that preceded it",
+    "examplePhrases": [
+      "Emma had a great day after her playdate",
+      "Sophia was cranky following a short nap",
+      "Mia felt happy after dance class"
+- `sonnet-4.6`: {
+  "type": {
+    "typeId": "child_mood_entry",
+    "displayName": "Child Mood Entry",
+    "displayNamePlural": "Child Mood Entries",
+    "description": "Records a child's mood at a point in time along with contextual factors that preceded or accompanied the mood, enabling pattern discovery across good and bad days.",
+    "examplePhrases": [
+      "Log that my daughter was really happy today after
+- `opus-4.5`: {"type":{"typeId":"child_mood_log","displayName":"Child Mood Log","displayNamePlural":"Child Mood Logs","description":"Tracks a child's daily mood along with preceding events, sleep quality, and contextual factors to help identify patterns in good and bad days.","examplePhrases":["Log Emma's mood today","Record that Lily had a great day","Track what happened before Max's meltdown","Add a mood entr
+- `opus-4.6`: ```json
+{
+  "type": {
+    "typeId": "child_mood_log",
+    "displayName": "Child Mood Log",
+    "displayNamePlural": "Child Mood Logs",
+    "description": "Track your daughter's daily mood along with context about what preceded good and bad days, including activities, sleep, meals, social interactions, and other factors that may influence her emotional state.",
+    "examplePhrases": [
+      "Log my
+- `opus-4.7`: {
+  "type": {
+    "typeId": "mood_log",
+    "displayName": "Mood Log",
+    "displayNamePlural": "Mood Logs",
+    "description": "A daily record of a person's mood along with contextual factors (sleep, activities, events) that may have influenced it.",

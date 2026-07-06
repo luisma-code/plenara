@@ -1,0 +1,2578 @@
+{
+  "meta": {
+    "spec": "05b \u00a73 (G-20) local-model trust eval",
+    "task_shape": "candidate-discrimination: utterance + <=5 retrieved candidates -> one skillId (or 'none') + slots + confidence",
+    "classes": {
+      "A": "known-capability routing (core)",
+      "B": "slot extraction incl. multi-entity",
+      "C": "meta-intent (novel need -> expect 'none', retrieval-owned)",
+      "D": "out-of-domain boundary (true OOD -> 'none'; adversarial personal -> search-records)",
+      "E": "ambiguous / adversarial (near-miss, coordination, anaphora)"
+    },
+    "n_cases": 57
+  },
+  "cases": [
+    {
+      "id": "A-task-1",
+      "class": "A",
+      "utterance": "Add call the plumber to my to-do list.",
+      "candidates": [
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-recurring-reminder",
+          "desc": "Set a repeating reminder.",
+          "slots": [
+            "description",
+            "recurrence"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-task",
+        "slots": {
+          "description": "call the plumber"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-task-2",
+      "class": "A",
+      "utterance": "I need to call the plumber on Thursday.",
+      "candidates": [
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-recurring-reminder",
+          "desc": "Set a repeating reminder.",
+          "slots": [
+            "description",
+            "recurrence"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-task",
+        "slots": {
+          "description": "call the plumber",
+          "dueDate": "Thursday"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-task-3",
+      "class": "A",
+      "utterance": "Put pick up the dry cleaning on my tasks.",
+      "candidates": [
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-recurring-reminder",
+          "desc": "Set a repeating reminder.",
+          "slots": [
+            "description",
+            "recurrence"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-task",
+        "slots": {
+          "description": "pick up the dry cleaning"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-task-4",
+      "class": "A",
+      "utterance": "Remind me to email the accountant tomorrow.",
+      "candidates": [
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-recurring-reminder",
+          "desc": "Set a repeating reminder.",
+          "slots": [
+            "description",
+            "recurrence"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-task",
+        "slots": {
+          "description": "email the accountant",
+          "dueDate": "tomorrow"
+        }
+      },
+      "note": "reminder/task twin absent here"
+    },
+    {
+      "id": "A-recur-1",
+      "class": "A",
+      "utterance": "Every second Tuesday, take the bins out.",
+      "candidates": [
+        {
+          "skillId": "create-recurring-reminder",
+          "desc": "Set a repeating reminder.",
+          "slots": [
+            "description",
+            "recurrence"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-recurring-reminder",
+        "slots": {
+          "description": "take the bins out",
+          "recurrence": "every second Tuesday"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-recur-2",
+      "class": "A",
+      "utterance": "Remind me to water the plants every Monday morning.",
+      "candidates": [
+        {
+          "skillId": "create-recurring-reminder",
+          "desc": "Set a repeating reminder.",
+          "slots": [
+            "description",
+            "recurrence"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-recurring-reminder",
+        "slots": {
+          "description": "water the plants",
+          "recurrence": "every Monday"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-recur-3",
+      "class": "A",
+      "utterance": "Set up a weekly reminder to back up my laptop.",
+      "candidates": [
+        {
+          "skillId": "create-recurring-reminder",
+          "desc": "Set a repeating reminder.",
+          "slots": [
+            "description",
+            "recurrence"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-recurring-reminder",
+        "slots": {
+          "description": "back up my laptop",
+          "recurrence": "weekly"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-tmpl-1",
+      "class": "A",
+      "utterance": "Start tracking my runs.",
+      "candidates": [
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        },
+        {
+          "skillId": "log-run",
+          "desc": "Log a completed run/workout.",
+          "slots": [
+            "distance",
+            "duration?",
+            "route?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "instantiate-template",
+        "slots": {
+          "templateName": "runs"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-tmpl-2",
+      "class": "A",
+      "utterance": "I want to start a mood tracker.",
+      "candidates": [
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        },
+        {
+          "skillId": "log-mood",
+          "desc": "Log a mood entry.",
+          "slots": [
+            "mood",
+            "note?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "instantiate-template",
+        "slots": {
+          "templateName": "mood"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-tmpl-3",
+      "class": "A",
+      "utterance": "Begin tracking my medications.",
+      "candidates": [
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        },
+        {
+          "skillId": "log-medication",
+          "desc": "Log that medication was taken.",
+          "slots": [
+            "medName?",
+            "time?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "instantiate-template",
+        "slots": {
+          "templateName": "medications"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-run-1",
+      "class": "A",
+      "utterance": "Ran 5k in 27 minutes on the river trail.",
+      "candidates": [
+        {
+          "skillId": "log-run",
+          "desc": "Log a completed run/workout.",
+          "slots": [
+            "distance",
+            "duration?",
+            "route?"
+          ]
+        },
+        {
+          "skillId": "log-walk",
+          "desc": "Log a walk.",
+          "slots": [
+            "distance?",
+            "steps?",
+            "duration?"
+          ]
+        },
+        {
+          "skillId": "log-meal",
+          "desc": "Log a meal / food eaten.",
+          "slots": [
+            "food",
+            "calories?"
+          ]
+        },
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "log-run",
+        "slots": {
+          "distance": "5k",
+          "duration": "27 minutes",
+          "route": "river trail"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-run-2",
+      "class": "A",
+      "utterance": "Just finished a 10 kilometre run, took me 52 minutes.",
+      "candidates": [
+        {
+          "skillId": "log-run",
+          "desc": "Log a completed run/workout.",
+          "slots": [
+            "distance",
+            "duration?",
+            "route?"
+          ]
+        },
+        {
+          "skillId": "log-walk",
+          "desc": "Log a walk.",
+          "slots": [
+            "distance?",
+            "steps?",
+            "duration?"
+          ]
+        },
+        {
+          "skillId": "log-meal",
+          "desc": "Log a meal / food eaten.",
+          "slots": [
+            "food",
+            "calories?"
+          ]
+        },
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "log-run",
+        "slots": {
+          "distance": "10 kilometre",
+          "duration": "52 minutes"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-run-3",
+      "class": "A",
+      "utterance": "Logged an 8k run this morning.",
+      "candidates": [
+        {
+          "skillId": "log-run",
+          "desc": "Log a completed run/workout.",
+          "slots": [
+            "distance",
+            "duration?",
+            "route?"
+          ]
+        },
+        {
+          "skillId": "log-walk",
+          "desc": "Log a walk.",
+          "slots": [
+            "distance?",
+            "steps?",
+            "duration?"
+          ]
+        },
+        {
+          "skillId": "log-meal",
+          "desc": "Log a meal / food eaten.",
+          "slots": [
+            "food",
+            "calories?"
+          ]
+        },
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "log-run",
+        "slots": {
+          "distance": "8k"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-last-1",
+      "class": "A",
+      "utterance": "When did I last see Marco?",
+      "candidates": [
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "query-last-interaction",
+        "slots": {
+          "contactName": "Marco"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-last-2",
+      "class": "A",
+      "utterance": "How long has it been since I caught up with Priya?",
+      "candidates": [
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "query-last-interaction",
+        "slots": {
+          "contactName": "Priya"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-last-3",
+      "class": "A",
+      "utterance": "When did I last talk to my sister?",
+      "candidates": [
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "query-last-interaction",
+        "slots": {
+          "contactName": "my sister"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-note-1",
+      "class": "A",
+      "utterance": "Note that Ana starts her new job Monday.",
+      "candidates": [
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "log-interaction",
+        "slots": {
+          "contactName": "Ana",
+          "note": "starts her new job Monday",
+          "date": "Monday"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-note-2",
+      "class": "A",
+      "utterance": "Write down that I had coffee with Tom yesterday.",
+      "candidates": [
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "log-interaction",
+        "slots": {
+          "contactName": "Tom",
+          "note": "had coffee",
+          "date": "yesterday"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-agg-1",
+      "class": "A",
+      "utterance": "How many steps did I do this week?",
+      "candidates": [
+        {
+          "skillId": "query-aggregate",
+          "desc": "Compute an aggregate (sum/count) over the user's tracker records for a period.",
+          "slots": [
+            "tracker",
+            "metric",
+            "period"
+          ]
+        },
+        {
+          "skillId": "show-streak",
+          "desc": "Show a streak (current or longest) for a habit tracker.",
+          "slots": [
+            "tracker",
+            "kind?"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "query-aggregate",
+        "slots": {
+          "tracker": "steps",
+          "metric": "sum",
+          "period": "this week"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-agg-2",
+      "class": "A",
+      "utterance": "What's my total running distance this month?",
+      "candidates": [
+        {
+          "skillId": "query-aggregate",
+          "desc": "Compute an aggregate (sum/count) over the user's tracker records for a period.",
+          "slots": [
+            "tracker",
+            "metric",
+            "period"
+          ]
+        },
+        {
+          "skillId": "show-streak",
+          "desc": "Show a streak (current or longest) for a habit tracker.",
+          "slots": [
+            "tracker",
+            "kind?"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "query-aggregate",
+        "slots": {
+          "tracker": "running",
+          "metric": "sum",
+          "period": "this month"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-streak-1",
+      "class": "A",
+      "utterance": "What's my longest reading streak?",
+      "candidates": [
+        {
+          "skillId": "show-streak",
+          "desc": "Show a streak (current or longest) for a habit tracker.",
+          "slots": [
+            "tracker",
+            "kind?"
+          ]
+        },
+        {
+          "skillId": "query-aggregate",
+          "desc": "Compute an aggregate (sum/count) over the user's tracker records for a period.",
+          "slots": [
+            "tracker",
+            "metric",
+            "period"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "show-streak",
+        "slots": {
+          "tracker": "reading",
+          "kind": "longest"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-streak-2",
+      "class": "A",
+      "utterance": "How many days in a row have I meditated?",
+      "candidates": [
+        {
+          "skillId": "show-streak",
+          "desc": "Show a streak (current or longest) for a habit tracker.",
+          "slots": [
+            "tracker",
+            "kind?"
+          ]
+        },
+        {
+          "skillId": "query-aggregate",
+          "desc": "Compute an aggregate (sum/count) over the user's tracker records for a period.",
+          "slots": [
+            "tracker",
+            "metric",
+            "period"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "show-streak",
+        "slots": {
+          "tracker": "meditated",
+          "kind": "current"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-rem-1",
+      "class": "A",
+      "utterance": "Remind me to buy flowers the day before Sarah's birthday.",
+      "candidates": [
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-recurring-reminder",
+          "desc": "Set a repeating reminder.",
+          "slots": [
+            "description",
+            "recurrence"
+          ]
+        },
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-reminder",
+        "slots": {
+          "description": "buy flowers",
+          "dateAnchor": "Sarah's birthday",
+          "dateOffset": "-1 day"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-rem-2",
+      "class": "A",
+      "utterance": "Remind me to call Dad on his anniversary.",
+      "candidates": [
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-recurring-reminder",
+          "desc": "Set a repeating reminder.",
+          "slots": [
+            "description",
+            "recurrence"
+          ]
+        },
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-reminder",
+        "slots": {
+          "description": "call Dad",
+          "dateAnchor": "Dad's anniversary"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-search-1",
+      "class": "A",
+      "utterance": "Find that note about the cabin trip.",
+      "candidates": [
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "search-records",
+        "slots": {
+          "query": "cabin trip"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "A-search-2",
+      "class": "A",
+      "utterance": "Pull up what I wrote about the Lisbon conference.",
+      "candidates": [
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "search-records",
+        "slots": {
+          "query": "Lisbon conference"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "B-fact-1",
+      "class": "B",
+      "utterance": "Sarah's daughter Mia is allergic to peanuts.",
+      "candidates": [
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "add-contact-fact",
+        "slots": {
+          "subjectName": "Mia",
+          "fact": "allergic to peanuts",
+          "relatedToName": "Sarah",
+          "relationType": "daughter"
+        }
+      },
+      "note": "3 writes from one sentence"
+    },
+    {
+      "id": "B-fact-2",
+      "class": "B",
+      "utterance": "My boss Karen's husband is called Jo.",
+      "candidates": [
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "add-contact-fact",
+        "slots": {
+          "subjectName": "Jo",
+          "fact": "husband of Karen",
+          "relatedToName": "Karen",
+          "relationType": "husband"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "B-fact-3",
+      "class": "B",
+      "utterance": "Marco loves hiking and hates crowds.",
+      "candidates": [
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "add-contact-fact",
+        "slots": {
+          "subjectName": "Marco",
+          "fact": "loves hiking and hates crowds"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "B-fact-4",
+      "class": "B",
+      "utterance": "Note that Ana's son Leo just started school.",
+      "candidates": [
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "add-contact-fact",
+        "slots": {
+          "subjectName": "Leo",
+          "fact": "just started school",
+          "relatedToName": "Ana",
+          "relationType": "son"
+        }
+      },
+      "note": "fact-vs-interaction near miss"
+    },
+    {
+      "id": "B-recall-1",
+      "class": "B",
+      "utterance": "What's Mia allergic to?",
+      "candidates": [
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "recall-contact-fact",
+        "slots": {
+          "subjectName": "Mia",
+          "query": "allergic to"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "B-recall-2",
+      "class": "B",
+      "utterance": "What does Marco like to do?",
+      "candidates": [
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "recall-contact-fact",
+        "slots": {
+          "subjectName": "Marco",
+          "query": "like to do"
+        }
+      },
+      "note": ""
+    },
+    {
+      "id": "B-medium-1",
+      "class": "B",
+      "utterance": "How long since I called Mum?",
+      "candidates": [
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "query-last-interaction",
+        "slots": {
+          "contactName": "Mum",
+          "medium": "phone"
+        }
+      },
+      "note": "role alias + medium filter slot"
+    },
+    {
+      "id": "C-meta-1",
+      "class": "C",
+      "utterance": "I want to track my daughter's mood and what preceded her good and bad days.",
+      "candidates": [
+        {
+          "skillId": "log-mood",
+          "desc": "Log a mood entry.",
+          "slots": [
+            "mood",
+            "note?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "P-01 novel authoring need"
+    },
+    {
+      "id": "C-meta-2",
+      "class": "C",
+      "utterance": "Track the gifts I give each person.",
+      "candidates": [
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "P-03 authored type w/ relation"
+    },
+    {
+      "id": "C-meta-3",
+      "class": "C",
+      "utterance": "When I log a workout, also add the distance to my weekly mileage total.",
+      "candidates": [
+        {
+          "skillId": "log-run",
+          "desc": "Log a completed run/workout.",
+          "slots": [
+            "distance",
+            "duration?",
+            "route?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        },
+        {
+          "skillId": "query-aggregate",
+          "desc": "Compute an aggregate (sum/count) over the user's tracker records for a period.",
+          "slots": [
+            "tracker",
+            "metric",
+            "period"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "P-05 define_skill"
+    },
+    {
+      "id": "C-meta-4",
+      "class": "C",
+      "utterance": "Track my expenses by category and show me a monthly breakdown.",
+      "candidates": [
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        },
+        {
+          "skillId": "query-aggregate",
+          "desc": "Compute an aggregate (sum/count) over the user's tracker records for a period.",
+          "slots": [
+            "tracker",
+            "metric",
+            "period"
+          ]
+        },
+        {
+          "skillId": "log-meal",
+          "desc": "Log a meal / food eaten.",
+          "slots": [
+            "food",
+            "calories?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "P-16 authoring aggregation view"
+    },
+    {
+      "id": "C-meta-5",
+      "class": "C",
+      "utterance": "Start tracking which restaurants I visit.",
+      "candidates": [
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        },
+        {
+          "skillId": "log-meal",
+          "desc": "Log a meal / food eaten.",
+          "slots": [
+            "food",
+            "calories?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "DF-01 no built-in template"
+    },
+    {
+      "id": "C-meta-6",
+      "class": "C",
+      "utterance": "Log my car's mileage.",
+      "candidates": [
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        },
+        {
+          "skillId": "log-walk",
+          "desc": "Log a walk.",
+          "slots": [
+            "distance?",
+            "steps?",
+            "duration?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "DF-09 no type"
+    },
+    {
+      "id": "D-ood-1",
+      "class": "D",
+      "utterance": "What's the weather tomorrow?",
+      "candidates": [
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "DP-02 world knowledge"
+    },
+    {
+      "id": "D-ood-2",
+      "class": "D",
+      "utterance": "Who won the match last night?",
+      "candidates": [
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "DP-02 sports"
+    },
+    {
+      "id": "D-ood-3",
+      "class": "D",
+      "utterance": "What's the capital of Australia?",
+      "candidates": [
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "public fact"
+    },
+    {
+      "id": "D-ood-4",
+      "class": "D",
+      "utterance": "How tall is the Eiffel Tower?",
+      "candidates": [
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "public fact"
+    },
+    {
+      "id": "D-adv-1",
+      "class": "D",
+      "utterance": "What did I say about the weather on our cabin trip?",
+      "candidates": [
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "search-records",
+        "slots": {
+          "query": "weather cabin trip"
+        }
+      },
+      "note": "G-19 adversarial: world-noun in a records query"
+    },
+    {
+      "id": "D-adv-2",
+      "class": "D",
+      "utterance": "What did I note about the Barcelona match we watched together?",
+      "candidates": [
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "search-records",
+        "slots": {
+          "query": "Barcelona match"
+        }
+      },
+      "note": "G-19 adversarial: sports noun in records query"
+    },
+    {
+      "id": "D-adv-3",
+      "class": "D",
+      "utterance": "What did I write about our trip to Australia?",
+      "candidates": [
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "search-records",
+        "slots": {
+          "query": "trip to Australia"
+        }
+      },
+      "note": "G-19 adversarial: place noun in records query"
+    },
+    {
+      "id": "D-adv-4",
+      "class": "D",
+      "utterance": "Remind me what I said the restaurant near the Eiffel Tower was called.",
+      "candidates": [
+        {
+          "skillId": "search-records",
+          "desc": "Semantic search across the user's OWN notes, journal and records.",
+          "slots": [
+            "query"
+          ]
+        },
+        {
+          "skillId": "query-last-interaction",
+          "desc": "Look up when the user last interacted with a person.",
+          "slots": [
+            "contactName",
+            "medium?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "search-records",
+        "slots": {
+          "query": "restaurant near the Eiffel Tower"
+        }
+      },
+      "note": "G-19 adversarial: landmark in records query"
+    },
+    {
+      "id": "E-nearmiss-1",
+      "class": "E",
+      "utterance": "Log 5k.",
+      "candidates": [
+        {
+          "skillId": "log-run",
+          "desc": "Log a completed run/workout.",
+          "slots": [
+            "distance",
+            "duration?",
+            "route?"
+          ]
+        },
+        {
+          "skillId": "log-walk",
+          "desc": "Log a walk.",
+          "slots": [
+            "distance?",
+            "steps?",
+            "duration?"
+          ]
+        },
+        {
+          "skillId": "log-meal",
+          "desc": "Log a meal / food eaten.",
+          "slots": [
+            "food",
+            "calories?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "log-run",
+        "slots": {
+          "distance": "5k"
+        }
+      },
+      "note": "F-14 default-to-run near miss"
+    },
+    {
+      "id": "E-nearmiss-2",
+      "class": "E",
+      "utterance": "Log 10,000 steps.",
+      "candidates": [
+        {
+          "skillId": "log-walk",
+          "desc": "Log a walk.",
+          "slots": [
+            "distance?",
+            "steps?",
+            "duration?"
+          ]
+        },
+        {
+          "skillId": "log-run",
+          "desc": "Log a completed run/workout.",
+          "slots": [
+            "distance",
+            "duration?",
+            "route?"
+          ]
+        },
+        {
+          "skillId": "show-streak",
+          "desc": "Show a streak (current or longest) for a habit tracker.",
+          "slots": [
+            "tracker",
+            "kind?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "log-walk",
+        "slots": {
+          "steps": "10,000"
+        }
+      },
+      "note": "steps -> walk not run"
+    },
+    {
+      "id": "E-twin-1",
+      "class": "E",
+      "utterance": "Remind me to call the plumber Thursday.",
+      "candidates": [
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        },
+        {
+          "skillId": "create-recurring-reminder",
+          "desc": "Set a repeating reminder.",
+          "slots": [
+            "description",
+            "recurrence"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-task",
+        "slots": {
+          "description": "call the plumber",
+          "dueDate": "Thursday"
+        }
+      },
+      "note": "F-01: task/reminder twin both retrieved"
+    },
+    {
+      "id": "E-twin-2",
+      "class": "E",
+      "utterance": "Note that Ana starts her new job Monday.",
+      "candidates": [
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        },
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "log-interaction",
+        "slots": {
+          "contactName": "Ana",
+          "note": "starts her new job Monday"
+        }
+      },
+      "note": "F-02: dated event -> interaction not standing fact"
+    },
+    {
+      "id": "E-twin-3",
+      "class": "E",
+      "utterance": "What's Mia allergic to?",
+      "candidates": [
+        {
+          "skillId": "add-contact-fact",
+          "desc": "Store a fact/attribute about a person, optionally introducing a related person.",
+          "slots": [
+            "subjectName",
+            "fact",
+            "relatedToName?",
+            "relationType?"
+          ]
+        },
+        {
+          "skillId": "recall-contact-fact",
+          "desc": "Retrieve a stored fact about a person.",
+          "slots": [
+            "subjectName",
+            "query"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "recall-contact-fact",
+        "slots": {
+          "subjectName": "Mia",
+          "query": "allergic to"
+        }
+      },
+      "note": "read vs write twin"
+    },
+    {
+      "id": "E-coord-1",
+      "class": "E",
+      "utterance": "Remind me to buy milk and call the dentist.",
+      "candidates": [
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "create-reminder",
+          "desc": "Set a time-anchored reminder to do something (may be anchored to another record's date).",
+          "slots": [
+            "description",
+            "dueAt?",
+            "dateAnchor?",
+            "dateOffset?"
+          ]
+        },
+        {
+          "skillId": "log-interaction",
+          "desc": "Record a dated note / interaction about a person.",
+          "slots": [
+            "contactName",
+            "note",
+            "date?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "create-task",
+        "slots": {
+          "description": "buy milk and call the dentist"
+        }
+      },
+      "note": "coordination: two actions one skill"
+    },
+    {
+      "id": "E-coord-2",
+      "class": "E",
+      "utterance": "Track my mood and my energy.",
+      "candidates": [
+        {
+          "skillId": "instantiate-template",
+          "desc": "Start tracking something using a built-in tracker template.",
+          "slots": [
+            "templateName",
+            "extraField?"
+          ]
+        },
+        {
+          "skillId": "log-mood",
+          "desc": "Log a mood entry.",
+          "slots": [
+            "mood",
+            "note?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "instantiate-template",
+        "slots": {
+          "templateName": "mood"
+        }
+      },
+      "note": "F-13: mood instantiates, energy has no template (partial)"
+    },
+    {
+      "id": "E-ana-1",
+      "class": "E",
+      "utterance": "Actually, make it 28 minutes.",
+      "candidates": [
+        {
+          "skillId": "log-run",
+          "desc": "Log a completed run/workout.",
+          "slots": [
+            "distance",
+            "duration?",
+            "route?"
+          ]
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "log-walk",
+          "desc": "Log a walk.",
+          "slots": [
+            "distance?",
+            "steps?",
+            "duration?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "F-15: slot correction needs prior-turn context"
+    },
+    {
+      "id": "E-ana-2",
+      "class": "E",
+      "utterance": "Same as yesterday.",
+      "candidates": [
+        {
+          "skillId": "log-run",
+          "desc": "Log a completed run/workout.",
+          "slots": [
+            "distance",
+            "duration?",
+            "route?"
+          ]
+        },
+        {
+          "skillId": "log-meal",
+          "desc": "Log a meal / food eaten.",
+          "slots": [
+            "food",
+            "calories?"
+          ]
+        },
+        {
+          "skillId": "log-medication",
+          "desc": "Log that medication was taken.",
+          "slots": [
+            "medName?",
+            "time?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "none",
+        "slots": {}
+      },
+      "note": "anaphora: no referent in candidates"
+    },
+    {
+      "id": "E-ana-3",
+      "class": "E",
+      "utterance": "Undo that.",
+      "candidates": [
+        {
+          "skillId": "undo",
+          "desc": "Undo the last action.",
+          "slots": []
+        },
+        {
+          "skillId": "create-task",
+          "desc": "Create a to-do item.",
+          "slots": [
+            "description",
+            "dueDate?"
+          ]
+        },
+        {
+          "skillId": "log-run",
+          "desc": "Log a completed run/workout.",
+          "slots": [
+            "distance",
+            "duration?",
+            "route?"
+          ]
+        }
+      ],
+      "expected": {
+        "skillId": "undo",
+        "slots": {}
+      },
+      "note": "system command"
+    }
+  ]
+}

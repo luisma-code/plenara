@@ -376,6 +376,8 @@ enum ConfirmationKind { nonUndoableDeletion }
 
 `ConfirmationRequested` is now a **single-purpose** event: the one pre-action approval the system retains, a non-undoable type/skill deletion (Spec 05 §24). v0.1–v0.2 defined two kinds — a routing pre-confirmation and an action-plan approval — but act-then-describe (Spec 05 §3.1) removed both: an uncertain routing is now surfaced as a `ClarificationRequested` (a genuine `SelectCandidate` choice, not an approve/decline of one guess), and the per-skill action-plan approval is gone with Spec 02's `confirmationPolicy`. The enum is kept (rather than folded into a bare event) so a future non-undoable operation can be added as a named kind and the UI's exhaustive `switch` forced to handle it. Everything else that used to be a "confirmation surface" is either a normal act-then-describe `Done` (no surface) or a `ClarificationRequested`. The orchestrator's obligations to NLU (exactly one of `recordConfirmation`/`recordCorrection`, or neither on a plain cancel/decline) and the compound-utterance residual offer are as specified in Spec 03 §2.7; §4.2 gives the async sequencing. Non-`skill_invocation` intents resolve at the seam exactly as Spec 03 §2.7 lists: `system_command` → the app shell (`undo` via §3.11, `show_pending` → the review feed of §3.9), `clarification_needed` → a `ClarificationRequested` event, `define_*` → `AuthoringService` (§3.7) as a **detached** operation (§4.7) so a 10–30 s Sonnet authoring call never holds the turn lock, tier-gated; `generative_request` → `GenerativeService.produce` (§3.10) as a **detached**, read-only operation (§4.7), tier-gated, delivered through the operation center as a `Detached` event — it writes no records, so it has no confirmation surface and no corpus write-back (Spec 03 §2.2a/§2.7). A `delete_type`/`delete_skill` system command is what raises the `nonUndoableDeletion` `ConfirmationRequested`.
 
+**Mixed free/paid multi-target turn (resolve-stage, `G-23`).** A compound utterance whose fragments resolve to a *mix* of free and paid capabilities — F-13, *"track my mood **and** my energy"*: mood instantiates a built-in template (free), energy has no template (→ paid authoring) — does **not** fail the whole turn. The orchestrator applies the free fragment(s) act-then-describe, then surfaces the paid remainder as a single follow-up offer: *"Your mood tracker's ready — I don't have a template for energy; want me to create a custom one? [PAID]"*. This reuses the compound-utterance residual-offer machinery (Spec 03 §2.7 / MD8) with a per-fragment tier decision, so a partial-free/partial-paid turn degrades gracefully instead of all-or-nothing.
+
 #### 3.6a `ConfirmationView` — the render payload for a confirmation
 
 `ConfirmationView` is the data the `nonUndoableDeletion` `ConfirmationRequested` event carries so the UI can render the deletion confirmation without reaching into a subsystem:
@@ -474,6 +476,13 @@ abstract class GenerativeService {
 `GenerativeOutcome` is `Produced(artifact)` or a `CloudError` surface (§5.2) — offline/no-key degrades to "needs internet and a key," and never to a fabricated local imitation (§6.2). Because generation is read-only and can take seconds, it always runs as a **detached operation** (§4.7): a user-initiated request (or a scheduled generative automation) returns immediately with a `Detached` handle and delivers through the operation center, so it never holds the turn lock. Results are never cached as procedural plans (the project's "never cache generative effects" rule; Spec 02 §5.5, Spec 03 §5.3).
 
 **Voice routing (resolved — Spec 03 §2.2a, closes Q6).** A user *saying* "give me a briefing" or "what should I get Sarah?" is now routed by the `generative_request` intent category (Spec 03 §2.2a): the built-in generative capabilities are indexed in the `CapabilityIndex` as a third `kind` (§3.4), the router ranks them like any candidate, and a `generative` top-hit above the act band yields a `generative_request` carrying a `generativeKind` + resolved `params`. The orchestrator (§3.6) dispatches it here, detached and read-only; `produce` assembles the cloud `GenerationRequest` DTO from records + those `params` (the DTO is deliberately distinct from Spec 03's `GenerativeRequest` *intent* — the intent is the spoken ask, the DTO is the assembled prompt job). All three entry paths now exist: **voice** (this), a **scheduled generative automation** (§3.9), and an explicit **UI affordance** ("✨ Briefing"). The earlier v0.2 deferral (reachable only by automation/UI) contradicted P2.1 — voice is uncompromising — for seven of the ten paid marquee tasks (Spec 05 §§15–22); reversing it is the flagship of this Spec 05-driven pass (Appendix C, MD-A10).
+
+**Resolve-stage additions (`G-25`, `G-26`, `G-27`).**
+- **Addressable results for the generative→act chain (`G-25`).** A `GenerativeOutcome.artifact` carries, alongside its prose + card, a list of **structured, stably-handled items** (e.g. the five gift ideas each with an id). The orchestrator retains the last generative result's items in `recentIntents` (Spec 03 §2.6), so a *following* act-then-describe turn can reference "**the second one**" (P-14: → `write GiftIdea` → `create-reminder`). The generative call itself stays read-only; only the following act reads the structure.
+- **Assembly-time journal consent (`G-26`).** Journal text enters a generative prompt only by **re-assembling the prompt** with the journal included under a per-session consent — never by instructing the model to "use the journal." `pattern_insight` (P-11) rebuilds *with* journal on an opt-in; `monthly_reflection` (P-13) requires a mandatory consent card. Consent is per-session state on the assembler (Spec 08), not a model instruction — the privacy bound is at *assembly*, so a declined turn's prompt never contains journal text.
+- **`foresight` generativeKind (`G-27`).** Added to the fixed set (Spec 03 §2.2a). Grounded, forward-looking synthesis (P-17): it (1) gathers what's actually upcoming — optionally via an interactive "what's on next week?" step — then (2) looks back at how *similar past situations* moved the log, and (3) returns **evidence-linked, hedged** foresight. Contract: **never a confident fabrication** with no evidence (the honest line vs DP-05's refusal to fabricate the *past* — foresight reasons about the future, it does not invent history).
+
+**Cost note (`findings §10.1`):** the generative kinds default to **Haiku** (usable synthesis at ~$0.0007/briefing, 5–15× cheaper than Opus); Sonnet/Opus are reserved for the heaviest reasoning (`pattern_insight`, `monthly_reflection`).
 
 ### 3.11 Undo & Reversal
 
@@ -608,4 +617,97 @@ This preserves both invariants at once: the turn queue stays responsive (a new u
 
 ### 4.8 The `onWrite` Automation Hook and Cascade Bound
 
-An `onWrite` automation (Spec 01 §4.4) fires after a specified field is written to a target type. The hook lives at exactly one place — **the completion of `StorageRepository.write` on the UI isolate** (§4.5) — where the `AutomationRunner` (§3.9) is notified of the `(typeId
+An `onWrite` automation (Spec 01 §4.4) fires after a specified field is written to a target type. The hook lives at exactly one place — **the completion of `StorageRepository.write` on the UI isolate** (§4.5) — where the `AutomationRunner` (§3.9) is notified of the `(typeId, recordId, changedField)` tuple. The runner matches it against registered `onWrite` automations whose `condition.targetType == typeId` and `condition.afterField == changedField` (Spec 01 §4.4) and enqueues each matched automation's skill on the serial-execute queue (§4.4). Automation-origin writes carry `origin: automation`, so their effects land in the **Review Feed** (unattended → never act-then-describe) and can never lower a skill's undoability (CLAUDE.md; Spec 02 §7.5).
+
+**The cascade bound.** An automation's skill may itself write, which could trigger another `onWrite` — an unbounded cascade. Every write therefore carries a **cascade depth**: a user-origin write starts at `0`; a write performed by an automation is `triggering-write-depth + 1`. `onWrite` hooks fire only for writes **below the bound** (`maxCascadeDepth`, default 3); a write already at the bound still completes, but its `onWrite` hooks are **suppressed and logged** to the repair surface (§5.5). Because automations run on the serial-execute queue, a cascade is serialized, never concurrent (§4.4), so it is finite and analyzable — the bound Spec 02 §7.5 requires.
+
+### 4.9 Freshness: no stale caches in the async model
+
+The async model caches exactly one user-facing thing: the corpus **routing** decision (Spec 03 §5) — slot *shapes* and the route, never slot *values*, never a resolved plan, never a generative effect. Everything else is recomputed:
+- **Generative outputs are never cached** — regenerated every turn; their whole value is being current (Spec 05 §3.8).
+- **The plan cache is deferred** (Spec 02 §5.5) — resolution is re-run each turn (deterministic, cheap).
+- **The in-memory object store** (§3.1) is hydrated at startup (§7) and kept coherent by the file watcher (§4.5): a synced-in edit invalidates the cached object, so a read never serves a stale record.
+
+Net: nothing user-facing is served stale. The one cache (routing shape) is correctness-neutral — a wrong shape merely re-routes, it never returns wrong data.
+
+---
+
+## 5. Error Handling — the Sealed Taxonomy and the Surfacing Contract
+
+This section satisfies **P2.8 — no silent failure** end to end (§0 item 3): a sealed error set, a total mapping from every terminal error to an actionable surface, translation across seams, and the crash/repair consolidation.
+
+### 5.1 The sealed error model
+
+Every fallible interface either returns a **value-typed result** for an *expected* outcome or throws a **sealed error** for an exceptional fault — never a raw exception across a boundary. Value results put the failure case in the type so a caller cannot forget it: `CloudResult<T> = Ok(T) | CloudError(kind, message)` (§3.10), and likewise `StorageResult`, `AuthoringOutcome` (§3.7), `GenerativeOutcome` (§3.10). Exceptional faults are a sealed `PlenaraError` hierarchy (Dart `sealed class` → exhaustive `switch`, so a new variant is a compile error until every surface handles it):
+
+| layer | sealed set |
+|---|---|
+| Intelligence | `CloudError{offline, rateLimited, authFailed, policyBlocked, serverError}` |
+| Storage | `StorageError{notFound, conflict, ioFailed, corrupt}` |
+| Schema/Interpreter | `SchemaError{typeNotFound, versionTooNew, validationFailed}` · `SkillError{unresolvedRef, opFailed(index)}` |
+| NLU | `NluError{ambiguous, noCandidate}` |
+| Authoring | `AuthoringError{validationFailed, declined, draftOnly}` |
+
+### 5.2 The surface map — every terminal error is actionable
+
+No error is a swallowed null; each maps to a spoken/text surface plus an offered action:
+
+| error | surface + action |
+|---|---|
+| `CloudError.offline` | "That needs an internet connection — remind you when you're back?" → reminder (Spec 05 §13) |
+| `CloudError.rateLimited` | "I've hit today's limit on Claude." → retry-later |
+| `CloudError.authFailed` | "Your API key was rejected." → open settings |
+| `CloudError.policyBlocked` | the caring decline (Spec 02 §7.6) — names what and why |
+| `StorageError.conflict` | "This changed since I read it — redo with the new version, or keep yours?" (§4.5) |
+| `StorageError.corrupt` | routed to the repair surface (§5.5), not an interrupt |
+| `SchemaError.typeNotFound` | clarify, or offer to author (Spec 03 meta-intent) |
+| `SchemaError.versionTooNew` | "This skill needs a newer Plenara." → update |
+| `AuthoringError.validationFailed` | "I couldn't build that cleanly — saved a draft." (Spec 02 §6.4) |
+| `NluError.ambiguous` | the clarify surface (`SelectCandidate`, Spec 03 §7.3) |
+
+### 5.3 Translation across boundaries
+
+An error is translated into the *caller's* vocabulary at each seam, never leaked raw. Storage's `ioFailed` becomes a BL `SkillError.opFailed(index)` carrying the failed op index (so undo/repair know where the plan stopped); the UI only ever reasons about the Business-Logic error vocabulary, never a file-system exception. Translation is where the §5.1 sealed sets connect — each layer maps the layer-below's set into its own — and it is what keeps the dependency rule (§2.2) intact under failure.
+
+### 5.4 Crash and mid-execution recovery
+
+The execution journal (Spec 02 §5) makes a partial write recoverable. If the app dies mid-execute, startup (§7) finds the one `ExecutionRecord` in state `executing` (the serial-execute invariant, §4.4, guarantees at most one in flight, so recovery is unambiguous) and uses its before-images (Spec 02 §5.4) to deterministically **roll the partial plan back** to the pre-turn state — or complete it, if every op's before-image is present and the after-images still match. A `done` entry past its undo window is reaped. No partial turn is ever left half-applied and invisible.
+
+### 5.5 The repair surface — consolidating non-fatal inconsistency
+
+Inconsistencies that are not a single turn's failure — a dangling `entityRef` after a tolerate-dangling delete (Spec 02 §7.x), a corrupt record file, a skill referencing a removed type, a suppressed cascade (§4.8) — are **consolidated into the queryable repair surface** (`AttentionSurface`, §3.12), each with a suggested fix, rather than fired as interrupts. This is where §0's promise to "consolidate the partial-failure handling scattered across Specs 01–03" is kept: one review place, act-then-describe repairs, never a modal mid-capture.
+
+---
+
+## 6. Offline Behavior
+
+### 6.1 The offline contract — what runs with the radio off
+
+The entire **free tier** runs offline to completion (§1): capture, recall, every deterministic skill, undo, migration, storage, and **all of NLU routing** — which after the `G-20` NO-GO is fully local in the common path (corpus fast-path + retrieval-margin + deterministic slot extractors, Spec 03 §7.3; no cloud classify step to lose). No base-tier interface makes a network round-trip mandatory. Connectivity is a value the `ClaudeClient` exposes (`available`), not a thing callers poll — offline is a *typed case*, not an exception (§3.10).
+
+### 6.2 Cloud-dependent operations degrade to a surface, never a dead end
+
+There are exactly three cloud touchpoints, each with a defined offline degrade:
+- **NLU residual escalation** (Haiku, only the genuine tie, Spec 03 §7.3) → offline: **clarify** (the deterministic floor), so routing still completes — the model was never on the common path.
+- **Authoring** (`define_*`) → offline *or* free/keyless: produces a **`Drafted`** outcome (§3.7), not an activation (Spec 01 decision: offline may draft; activation requires Claude).
+- **Generation** → offline: the three-surface degrade (Spec 05 §13), never a fabricated local imitation.
+Each returns a typed `CloudError` the caller turns into a §5.2 surface.
+
+### 6.3 Drafts and activation on reconnect (the connectivity/queue model)
+
+Offline/free-tier authoring accumulates **`pendingDrafts`** (§3.7) — inert, not registered capabilities. On reconnect with a key, the app does **not** auto-activate: it surfaces the drafts in the Review Feed for the user to activate, and each activation runs the deferred authoring call (validate → safety review §7.6 → register). Connectivity returning never silently changes the capability set — the user stays in control, and "AI authors, code executes" is preserved. There is deliberately **no automatic action-queue** for paid flows (a user may not want to wait, Spec 05 §13); the only "queue" is the explicit draft list plus any reminders the user opts into.
+
+---
+
+## 7. Startup and Resume
+
+### 7.1 Cold start
+
+On launch, before the turn pipeline (§4.2) accepts any utterance, the app runs a fixed, **fully offline** sequence:
+1. Open the storage folder; **hydrate the in-memory object store** (§3.1) from the per-record JSON files.
+2. Build the `CapabilityIndex` (§3.4) from the registered type/skill definitions.
+3. Load the corpus (Spec 03 §5) from device-local encrypted storage.
+4. **Journal recovery** (§5.4): roll back or complete any `executing` `ExecutionRecord`; reap `done` entries past their window.
+5. Start the file watcher (§4.5) so external/synced edits keep the cache coherent thereafter.
+
+The journal and corpus are device-local/encrypted (never synced), so they load from app-support; records load from the possibly-syncing storage folder. A file that fails to parse during hydration is routed to the repair surface (§5.5) and **does not block startup** — the rest of the store loads, so one corrupt record never bricks the app. No startup step touches the network.

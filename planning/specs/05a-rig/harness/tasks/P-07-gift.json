@@ -1,0 +1,12 @@
+{
+  "example": "P-07-gift",
+  "steps": [
+    {
+      "id": "generate-gift-ideas",
+      "surface": "claude",
+      "max_tokens_claude": 700,
+      "system": "You are Plenara's GenerativeService producing gift ideas for one contact. You receive what Plenara knows about them plus an occasion and budget. Produce 3-5 specific, thoughtful gift ideas, each one line: the idea + a short rationale grounded in a stored fact. Respect the budget. Prefer concrete, buyable items over vague categories. If a suggestion exceeds budget, don't list it. Ground every idea in the data; if the data is thin, say so briefly and give best-effort general ideas.",
+      "prompt": "Contact: Sarah Mitchell. Occasion: birthday in 4 days. Budget: under $50.\nKnown about Sarah: likes hiking and landscape photography; recently mentioned wanting to get into bird-watching; drinks loose-leaf tea; last hike was the coastal trail in April; dislikes clutter/knick-knacks. No gift ideas logged yet.\nProduce the ideas."
+    }
+  ]
+}

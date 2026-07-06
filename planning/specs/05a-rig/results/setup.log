@@ -1,0 +1,19 @@
+=== rig setup started Sun Jul  5 20:07:53 UTC 2026 ===
+[1/4] resolving latest llama.cpp release asset...
+  asset: https://github.com/ggml-org/llama.cpp/releases/download/b9878/llama-b9878-bin-win-cpu-x64.zip
+  llama.cpp extracted
+[2/4] downloading Qwen2.5-1.5B-Instruct Q4_K_M...
+  qwen size: 1.1G
+[3/4] downloading Llama-3.2-3B-Instruct Q4_K_M...
+  llama size: 1.9G
+[4/4] creating venv + installing anthropic...
+  anthropic: Version: 0.116.0
+=== rig setup finished Sun Jul  5 20:08:50 UTC 2026 ===
+--- inventory ---
+Z:/code/plenara/planning/specs/05a-rig/bin/llama-cli-impl.dll
+Z:/code/plenara/planning/specs/05a-rig/bin/llama-cli.exe
+Z:/code/plenara/planning/specs/05a-rig/bin/llama-server-impl.dll
+Z:/code/plenara/planning/specs/05a-rig/bin/llama-server.exe
+total 3.0G
+-rw-r--r-- 1 lmh10 197609 1.9G Jul  5 13:08 llama-3.2-3b-instruct-q4_k_m.gguf
+-rw-r--r-- 1 lmh10 197609 1.1G Jul  5 13:08 qwen2.5-1.5b-instruct-q4_k_m.gguf

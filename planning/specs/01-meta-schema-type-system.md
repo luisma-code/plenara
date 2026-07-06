@@ -516,3 +516,111 @@ A **partially-sensitive** record (e.g. `contact`) — name and relationship type
   "typeId": "contact",
   "schemaVersion": 1,
   "createdAt": "2026-07-03T08:00:00Z",
+  "lastModified": "2026-07-03T08:00:00Z",
+  "fields": { "displayName": "Sarah Mitchell", "birthday": "1990-11-14" },
+  "encryptedPayload": "BASE64_ENCRYPTED_JSON(notes)..."
+}
+```
+
+---
+
+## 12. Seed Types & the People-Knowledge Model *(resolve-stage addition)*
+
+*Added by the Phase-3 resolve stage (see [`05a-traces.md`](05a-traces.md), [`05b-gap-register.md`](05b-gap-register.md)). Fills the seed-type definitions the suite references, and folds in resolutions **G-01, G-02, G-03, G-10, G-11**. The earlier-planned §§9–11 (presentation archetypes, nluHints, migration edge-cases) remain to be written; this section is numbered §12 per the cross-references to "seed types (§12)".*
+
+### 12.1 Two small kernel-schema amendments
+- **`default` on attributes (G-02).** The Attribute object (§4.3) gains an optional `default` — a literal value bound at **create** when the attribute is absent and not `required`. Complements `defaultToNow`. Lets a type declare e.g. `{"name":"completed","valueType":"boolean","default":false}` instead of every skill hand-writing the default. (Not a kernel-*primitive* change; a schema field addition.)
+- **Confirmation lives on the skill, not the type (G-03).** `nluHints.confirmationTemplate` (§10, planned) is **retired**. The spoken confirmation is produced by a skill's `format` step (Spec 02 §7.1); a type carries no confirmation template. Removes the two-homes ambiguity.
+
+### 12.2 The people-knowledge model — kernel unchanged (G-10, G-11)
+Open-ended knowledge about people (arbitrary facts; qualified social relationships) is **modeled as seed record types, not new kernel primitives** — the direct expression of P2.6 "capabilities are data." The kernel (§2) is not touched.
+- **Arbitrary facts → `contact_fact`** (owned by `contact`): a fact is a record `{attribute?, value?, fact}`, structured when NLU can (`attribute:"allergy", value:"peanuts"`) and free-text otherwise (`fact:"allergic to peanuts"`). Queryable for recall (F-08) via `read_related`; the free-text `fact` is `sensitive`, while `attribute`/`value` stay plaintext so recall filters on disk without decryption. Chosen over a `json` bag on `contact` (which §3 discourages and which blocks querying).
+- **Qualified relationships → `contact_relationship`**: a record `{fromContact→contact, toContact→contact, relationType}` where `relationType` is the **role of `from` relative to `to`** ("Mia [daughter] of Sarah"). This matches how NLU actually extracts the role as free text, avoids a kernel version-bump, and stays graph-queryable through its two `entityRef`s. The kernel `Relation` (§2.1) remains for structural/ownership edges; open-ended *social* roles are records. *(Follow-up, off the vertical hot path: inverse-role queries — "Sarah's children" — resolve via a small `role → inverse-role` table, e.g. `daughter⇒parent`.)*
+
+### 12.3 The canonical seed types
+Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safetyAssessmentId:null`, `schemaVersion:1`). Presentation/nluHints trimmed here for brevity; full envelopes are in the traces.
+
+```json
+// task — a to-do / reminder
+{ "typeId":"task","displayName":"Task","displayNamePlural":"Tasks",
+  "description":"A to-do item, optionally with a due date/time and recurrence.",
+  "examplePhrases":["remind me to call the plumber","add a task to buy milk","I need to email Sam tomorrow"],
+  "attributes":[
+    {"name":"description","valueType":"text","required":true},
+    {"name":"dueAt","valueType":"datetime","required":false},
+    {"name":"allDay","valueType":"boolean","required":false,"default":false},
+    {"name":"completed","valueType":"boolean","required":false,"default":false},
+    {"name":"recurrence","valueType":"text","required":false}],
+  "presentation":{"archetype":"checklist","primaryField":"description","timestampField":"dueAt"} }
+
+// contact — a person the user knows
+{ "typeId":"contact","displayName":"Contact","displayNamePlural":"Contacts",
+  "description":"A person the user knows.",
+  "examplePhrases":["add a contact","who is Marco","note about Sarah"],
+  "attributes":[
+    {"name":"displayName","valueType":"text","required":true},
+    {"name":"birthday","valueType":"date","required":false},
+    {"name":"notes","valueType":"text","required":false,"sensitive":true}],
+  "presentation":{"archetype":"person_card","primaryField":"displayName"} }
+
+// contact_fact — an arbitrary fact about a contact (G-10)
+{ "typeId":"contact_fact","displayName":"Contact Fact","displayNamePlural":"Contact Facts",
+  "description":"An arbitrary fact/attribute about a contact.","parentType":"contact","append":false,
+  "examplePhrases":["allergic to peanuts","likes hiking","middle name is Rose"],
+  "attributes":[
+    {"name":"attribute","valueType":"text","required":false},
+    {"name":"value","valueType":"text","required":false},
+    {"name":"fact","valueType":"text","required":true,"sensitive":true}],
+  "presentation":{"archetype":"key_value","primaryField":"fact"} }
+
+// contact_relationship — a qualified edge between two contacts (G-11)
+{ "typeId":"contact_relationship","displayName":"Relationship","displayNamePlural":"Relationships",
+  "description":"A qualified relationship between two contacts (role of `from` relative to `to`).",
+  "examplePhrases":["Mia is Sarah's daughter","Carlos is my brother"],
+  "attributes":[{"name":"relationType","valueType":"text","required":true}],
+  "relations":[
+    {"name":"fromContact","valueType":"entityRef","refType":"contact","required":true,"cardinality":"one"},
+    {"name":"toContact","valueType":"entityRef","refType":"contact","required":true,"cardinality":"one"}],
+  "presentation":{"archetype":"edge","primaryField":"relationType"} }
+
+// contact_interaction — a dated note/log of contact with a person (owned, append-only)
+{ "typeId":"contact_interaction","displayName":"Interaction","displayNamePlural":"Interactions",
+  "description":"A dated interaction with a contact (call, text, in-person, note).",
+  "parentType":"contact","append":true,
+  "examplePhrases":["called Mum","had lunch with Marco","note that Ana starts her job Monday"],
+  "attributes":[
+    {"name":"medium","valueType":"enum","enumValues":["phone","text","in_person","email","note"],"required":false},
+    {"name":"note","valueType":"text","required":false,"sensitive":true},
+    {"name":"occurredAt","valueType":"datetime","required":true,"defaultToNow":true}],
+  "presentation":{"archetype":"timeline","primaryField":"note","timestampField":"occurredAt"} }
+
+// journal_entry — private on-device daily journal (fully sensitive; excluded from sync)
+{ "typeId":"journal_entry","displayName":"Journal Entry","displayNamePlural":"Journal Entries",
+  "description":"A private, on-device daily journal entry.",
+  "examplePhrases":["start today's journal","journal entry"],
+  "attributes":[
+    {"name":"entryDate","valueType":"date","required":true,"defaultToNow":true},
+    {"name":"body","valueType":"text","required":true,"sensitive":true}],
+  "presentation":{"archetype":"journal","primaryField":"body","timestampField":"entryDate"} }
+```
+
+**Notes.** `contact_fact` and `contact_interaction` are **owned** (`parentType:"contact"`) so they index under their person without decryption (§4.5/§8.2). `journal_entry` is fully sensitive and lives in the sync-excluded `journal/` subfolder (Spec 05 §11, §8.2). These six + the built-in tracker templates (Spec 05 §6) are the free-tier type surface; the seed **skills** over them are canonicalized in Spec 02 §9.
+
+### 12.4 Corpus resolve additions (`G-22`, `G-24`, `G-32`)
+- **Contact aliases (`G-24`).** `contact` gains `{"name":"aliases","label":"Also known as","valueType":"tag","required":false}` (nicknames/roles: "Mum", "the boss"). `entityNames.resolve` (Spec 03 §6.1) matches `displayName` **or** any alias; common role words map via aliases or a small role table. A **group** name ("the Garcias") resolves to a *set* of contacts (for `event_prep`, P-08).
+- **Tracker-template model (`G-22`).** A built-in template is a binary-shipped **`(type + bundled skills)`** pair — a seed type definition (as in §12.3) plus its `log-<tracker>` and (where relevant) `show-streak`/summary skills. `instantiate-template` (Spec 02 §9) registers the type + binds its skills locally with **no cloud call** (Spec 05 §6 E4). Adding an optional field *at instantiation* is free template configuration; adding one to a *registered* type later is authoring (paid, DF-03). Shipped templates: Run, Walk, Water, Reading, Mood, Sleep, Weight, Meals, Habit, Medication.
+- **Goals as a seed type (`G-32`).** Ship a seed `goal` type so "how am I doing on my January goals?" needs no authoring:
+```json
+{ "typeId":"goal","displayName":"Goal","displayNamePlural":"Goals",
+  "description":"A personal goal with an optional target and horizon.",
+  "examplePhrases":["set a goal to read 20 books this year","my goal is to run 3x a week","track my savings goal"],
+  "attributes":[
+    {"name":"title","valueType":"text","required":true},
+    {"name":"metric","valueType":"text","required":false},
+    {"name":"target","valueType":"decimal","required":false},
+    {"name":"horizon","valueType":"date","required":false},
+    {"name":"startedAt","valueType":"date","required":true,"defaultToNow":true},
+    {"name":"status","valueType":"enum","enumValues":["active","met","dropped"],"required":false,"default":"active"}],
+  "presentation":{"archetype":"progress","primaryField":"title","timestampField":"horizon"} }
+```
+A **progress narrative** (P-18) is then a `generativeKind` (Spec 04 §3.10) reading `goal` + tasks + trackers over a window — not a write.

@@ -438,6 +438,8 @@ All values in a filter may be `{variableName}` references, resolved at runtime f
 
 **Date/time operations:** `now()`, `today()`, `days_between(a, b)`, `add_days(date, n)`, `format_date(date, "YYYY-MM-DD")`. `now()` and `today()` return the **frozen** resolve-start values — the same `{now}` (UTC datetime) and `{today}` (local date, device timezone; Spec 01 §12 Q8) system inputs bound at the top of the resolve phase (§4.1) — **not** wall-clock at call time. Freezing them makes an action plan reproducible: a re-verify (§4.2) that re-resolves the same inputs yields the same plan, and a plan built across many steps cannot straddle a midnight or minute boundary.
 
+**Sequence operations (resolve-stage addition, `G-21`).** `streak(list, dateField) → { current, longest }` computes the current and longest runs of **consecutive calendar days** present in a list of dated records — the basis of `show-streak` (F-18). Consecutive-run logic cannot be expressed as `sum`/`count`, so it is a first-class function, not a composition. *(Anniversary / next-occurrence date math — `next_anniversary`, F-19 — lives in the deterministic date resolver (Spec 03 §6.2), not here, because record-anchored dates are resolved to a literal before a skill runs.)*
+
 **Conditional:** `if(condition, thenValue, elseValue)`. Condition is a boolean sub-expression.
 
 **Null propagation.** A `{variableName}` that is null, or a field access on a null value (e.g. `{contact}.name` when `read_one` bound `{contact}` to null), evaluates to null rather than raising — dereferencing is null-safe throughout. Null operands propagate: arithmetic with a null operand yields null; `concat` skips null operands; a `format` token over a null value uses its `default`/`omitIfNull` behavior (§3.3). This matters because voice capture routinely omits optional fields, and a skill must degrade to a partial result, not an error.
@@ -536,4 +538,176 @@ An execution-journal entry records one in-flight execution:
 
 ```json
 {
-  "executionId": "exec_7
+  "executionId": "exec_7f3a…",
+  "skillId": "add-contact-fact",
+  "skillSchemaVersion": 1,
+  "compiledFormVersion": 1,
+  "origin": "interactive",
+  "phase": "awaiting_confirmation",
+  "frozenInputs": { "now": "2026-07-05T20:15:00Z", "today": "2026-07-05", "userId": "u_1" },
+  "slots": { "subjectName": "Mia", "fact": "allergic to peanuts", "relatedToId": "cnt_sarah", "relationType": "daughter" },
+  "readSnapshot": [ { "id": "cnt_sarah", "lastModified": "2026-07-01T09:00:00Z" } ],
+  "branches": { "main": "create_subject" },
+  "foreachProgress": {},
+  "actionPlan": [ "‹compiled numeric writes: create cnt_mia, rel_x, fct_y›" ],
+  "beforeImages": [],
+  "createdAt": "2026-07-05T20:15:00Z",
+  "expiresAt": "2026-07-05T20:20:00Z"
+}
+```
+
+| Field | Purpose |
+|---|---|
+| `phase` | `awaiting_confirmation` \| `executing` \| `done` — drives resume (§4.2, Spec 04 §7). |
+| `frozenInputs` | `now`/`today`/`userId` captured at first resolve (§4.4); reused on every re-resolve/resume. |
+| `slots` | The NLU slot fills that hydrated the context. |
+| `readSnapshot` | `(id, lastModified)` of every record read during resolve — the re-verify basis (§4.2). |
+| `branches` / `foreachProgress` | Which label each `branch` took; how far each `foreach` got — so resume doesn't re-decide/re-iterate. |
+| `actionPlan` | The compiled numeric write chain (§3.0) — the source of the description and the writes. |
+| `beforeImages` | Captured at execute (Spec 04 §3.3); the basis for `undo`. Empty until `executing`→`done`. |
+| `origin` | `interactive` \| `automation` — the orchestrator uses this to decide whether an approval gate applies (§4.2, §7.5). |
+
+One entry per in-flight execution at `[app-support]/plenara/executions/{executionId}.json` (encrypted); a `done` entry lingers only until its undo window closes (Spec 04 §3.11).
+
+### 5.4 Before-images and reap-at-done — the undo backbone
+
+Act-then-describe (Spec 05 §3.1) is only safe because undo is reliable, and undo is reliable because every write captures a **before-image** at execute. This is the mechanism `beforeImages` (§5.3) holds.
+
+- **Capture (at `executing`, Spec 04 §3.3).** Each write op records what it will overwrite, keyed by op index + recordId: `write_record` create → a `{absent}` marker (undo = delete the minted id); `write_record`/`set` on an existing record → the prior field value(s); `delete_record` → the **full** prior record. Reads/computes/formats capture nothing (they don't write). Capture happens inside the serial-execute step, so a plan's before-image set is a consistent snapshot.
+- **Undo = reverse replay, deterministic, no model.** `undo` (Spec 03 system command) replays the set in reverse op order: a create is deleted, an update is restored to its prior value, a delete is re-written from the captured record. A whole turn's multi-write plan reverses **atomically** — all before-images or none — so a compound turn ("log the run and bump my streak") never half-undoes.
+- **Optimistic-concurrency guard.** Before restoring, undo checks the live record still matches the after-image (Spec 04 §4.5 "record changed under you"). If it diverged (a later turn or a synced edit touched it), undo does not clobber — it surfaces "this changed since; undo anyway / keep" (P7, no silent failure).
+- **Reap-at-done.** Before-images can hold sensitive prior values, and the journal is device-local/encrypted (§5.2) but still finite. A `done` entry and its before-images are **reaped when the undo window closes** (Spec 04 §3.11) or a newer turn supersedes it — the images exist exactly as long as undo can reach them, no longer. Automation-origin entries (`origin: automation`) follow the Review-Feed retention rule instead (§7.5).
+
+### 5.5 The deferred plan cache (recorded, not built in v1)
+
+A resolved `actionPlan` (the numeric write chain, §3.0) could in principle be cached per `(skillId, slot-shape)` so a repeat invocation skips re-resolution. **This is deliberately deferred — not a v1 mechanism** (the `deferredPlanCache` references elsewhere resolve here):
+- Resolution is already deterministic and cheap (no model call), so the cache saves little.
+- A cached plan risks **staleness** — a type/skill edit or a changed record can invalidate it; the project's "never cache generative effects" discipline (§5.5-adjacent; Spec 03 §5.3) extends to "never cache a plan whose inputs may have shifted."
+- The expensive part — the *routing/inference* decision — is already cached by the corpus fast-path (Spec 03 §5), which stores slot *shapes* and the route, never the resolved plan or slot *values*.
+
+So plan-caching is logged as a future option gated on evidence that resolution latency actually matters, not a launch feature.
+
+---
+
+## 6. The Authoring Flow *(resolve-stage addition)*
+
+*Added by the Phase-3 resolve stage ([`05b-gap-register.md`](../05b-gap-register.md)), resolving **G-06, G-17, G-18**. How Claude produces a type/skill once, and how the deterministic validators gate it before it becomes data. Owned by `AuthoringService` (Spec 04 §3.7); reached from a `define_type`/`define_skill` meta-intent (Spec 03 §2.2).*
+
+### 6.1 Trigger & tier gate
+A `define_type` (novel domain) or `define_skill` (existing type, missing operation) meta-intent reaches the orchestrator. Authoring is **BYOK-gated and detached** (Spec 04 §3.7): free tier → the §3.6 upgrade prompt, no call; offline → a **draft** (§6.5). Otherwise the orchestrator calls `AuthoringService.authorType`/`authorSkill`, which returns immediately with a `Detached` handle while the multi-second Claude call runs.
+
+### 6.2 Pre-authoring reconciliation (`define_type` only)
+Before authoring a *type*, run the similarity search (Spec 01 §6.1): `similarTo(candidateDescription)` → any hit > 0.85 is surfaced to Claude, which reuses/extends rather than creating a near-duplicate; a strong hit triggers the one allowed clarify ("add to your existing X, or keep separate?"). `define_skill` against an existing type skips this (there is nothing to reconcile — the type is fixed).
+
+### 6.3 The author call and its constraints
+`ClaudeClient.author` receives the request + reconciliation candidates + the closed-vocabulary contract, and must return **declarative JSON only** — a `type` and/or `skill` definition + a `safetyAssessment`. The prompt is built from schema/metadata, never from user record content (the §7.3 prompt-injection defense).
+
+**Reliability scales inversely with skill complexity — and the fix is structured output (`G-29`, findings §10.2).** All seven measured models authored a *simple* single-write skill as valid closed-vocabulary DSL (the core P2.7 feasibility result). But on *complex* multi-step skills (a computed-write, a grouped aggregation) all but Opus 4.7/4.8 **drifted the step schema** — right logic, wrong serialization (`{"step":…,"expression":…}` instead of the DSL's `{"op":…,"expr":…,"into":…}`). The vocabulary is not the limit (grouped aggregation *is* expressible); serialization discipline is. So the author call **(a)** uses **structured / JSON-schema-constrained output** pinning the exact step schema, **(b)** **pins a capable authoring model** (Opus 4.7/4.8), and **(c)** leans on the §6.4 validate→retry loop to catch any residual drift.
+
+### 6.4 Validation — the gate (`G-17`)
+The returned artifact is **never registered until it passes deterministic validation** (this is the `validate_authoring.py` gate proven in Phase 3):
+
+1. **Structural** — parses; required fields present; `typeId`/`skillId` well-formed.
+2. **Closed-vocabulary** — every step `op` ∈ the fixed set (§3); no invented ops.
+3. **Capability closure** — every `write_record`/`delete_record` `typeId` ∈ the skill's declared `writes`; every read type ∈ `reads` (§2.2, §6.3-legacy).
+4. **Variable closure** — every `{var}` reference is bound (an input, an ambient system value, or a prior `into`).
+5. **Semantic `entityRef` closure (NEW, `G-17`)** — every field written to an `entityRef` attribute must be fed by a **resolved id**: a variable bound by a `read_one`/`read_related`, or a slot the NLU layer resolves to an id (Spec 03 §6, `G-12`). A skill that writes an `entityRef` from a **raw name** slot is **rejected** — it would parse and pass structural validation yet fail at first use (the P-01 finding). *This is the check the vertical slice proved the old validator lacked.*
+6. **Safety** — the `safetyAssessment` is split into validator-verified facts vs Claude prose (§7.4); stored to `audit/` on activation.
+
+On failure → **one automatic re-author** with the structured error; a second failure → "I saved a draft — try again or refine" (draft stored inert; Spec 05 §14 E3). An invalid artifact is never half-registered.
+
+### 6.5 Preview → refine → activate (`G-18`)
+A passing artifact is **previewed, not committed**: the app describes it and waits. The user **refines** across turns ("add a sleep field"); each refinement is a follow-up author call, and the **draft accumulates in memory (not on disk), up to five turns** (Spec 05 §14 E6). **Nothing is registered until the user says "activate."** On activate: the type/skill files are written, the safety assessment stored, and the capability is live — indexed in the `CapabilityIndex` (Spec 01 §5.4) so routing finds it exactly like a seed. This preview/commit boundary is *not* a fourth-wall break (Spec 05 §3.1) — it is a user-driven commit of a collaborative design. Offline or free-tier authoring produces a `Drafted` outcome queued for activation when a key/network is present (Spec 04 §6.3).
+
+---
+
+## 7. Confirmation & Safety
+
+- **Confirmation is act-then-describe** (Spec 05 §3.1): interactive skills do not pause for approval; they execute and describe. The spoken line is the skill's resolved `confirmationText` — produced by a `format` step (§3.3), the **sole** home for it (`G-03`; the type-level `nluHints.confirmationTemplate` is retired, Spec 01 §12.1). The standard construction idiom is `compute` (build any date/number labels via `format_date`, since `format` cannot, `G-05`) → `write_record` → `format`.
+- **The two surviving gates** are unattended-automation writes (held for Review-Feed approval, §7.5) and non-undoable type/skill **deletion** (pre-action confirm, Spec 05 §24). Everything else is act-then-describe with `undo` as the net.
+- **`dangerLevel`** (`safe`/`caution`/`destructive`) classifies what a skill can change; `destructive` is required for `delete_record` and forbidden for automations.
+- **Prompt-injection defense (§7.3):** authoring and classification prompts are assembled from **type/skill metadata**, never from the content of user records, so a malicious value in a note cannot rewrite a capability.
+- **The safety gate is the model — but not a *single* model (`G-30`, findings §10.3).** Claude is the authoring safety gate (Spec 05 §14 E2), reliable on egregious requests (covert-surveillance authoring was declined by all seven measured models). But it is **model/version-dependent on borderline cases** — a disordered-eating tracker was declined by five models and *authored* by two. So authoring does not trust one model: it adds **(a)** a **dedicated safety-classification pass** on the request, independent of the authoring model, and **(b)** an **app-side policy layer** that hard-blocks known-sensitive domains — self-harm / disordered eating, covert surveillance of another person, medical diagnosis, financial transactions, impersonation of a third party — regardless of what the authoring model returns. **Record-integrity** (never fabricate the past to inflate a streak, DP-05 — distinct from a legitimate backdated log of a *real* event) and the **non-disablable privacy invariants** (per-session journal consent is not user-disablable, DP-07) live in this layer too.
+
+### 7.6 The safety architecture — defense-in-depth (`G-30`)
+
+The measurement that forces this (findings §10.3): the authoring model is a *good* safety gate on egregious requests (covert surveillance declined by all 7 models) but **model/version-dependent on borderline ones** (a disordered-eating tracker was declined by 5 and *authored* by 2 — and it was **not monotonic in version**). A single-model gate is therefore not enough. Plenara uses **three layers plus deterministic invariants**, so no single model's blind spot can pass a harmful capability:
+
+**Layer 1 — App-side policy pre-filter (deterministic, before any Claude call).** A fixed, binary-shipped ruleset (recognized by the same local/rule machinery as OOD detection, `G-19`) that hard-blocks a small set of **known-harmful request *shapes*** *before* an authoring call is even spent:
+- covert monitoring of another person ("track my partner's location… without them knowing"),
+- self-harm / disordered-eating tooling (**punitive** calorie/weight framing — "warn me… so I can cut down harder"),
+- medical diagnosis ("what's wrong with me"),
+- executing financial transactions (purchases, payments),
+- impersonation of a named third party.
+On a match → the app declines with a caring surface (Spec 05 §14 E2 shape), no cloud call. This is the **version-independent floor** — the two most dangerous domains (covert surveillance, self-harm) never depend on a model's judgment. **Precision matters:** the rule keys on the harmful *framing*, not the domain — a non-punitive calorie tracker for a stated weight goal is *not* blocked (the DP-08 data shows "cut down harder" + punitive alerts is the signal, not "calorie").
+
+**Layer 2 — The authoring model's `safetyAssessment` (the model gate).** Claude's author call returns `level: safe|caution|decline` (§6.3); a `decline` stops authoring and relays the model's caring message. Catches nuance the ruleset misses — but is **not trusted alone**.
+
+**Layer 3 — An independent safety review (second opinion, before activation).** After validation (§6.4) and before activation (§6.5), a **separate** cheap call (Haiku, or a pinned reliably-refusing model) reviews the *original request + the authored artifact* **independently of the authoring model**. This is exactly the DP-08 failure's antidote: when the authoring model both builds *and* self-clears a borderline capability (opus-4.6 did), a different reviewer that reliably declines provides the veto. **Disagreement → decline.** Cost is negligible (~$0.0003, only on authoring turns).
+
+**Composition with §6:** `Layer 1 (pre-filter)` → author (§6.3) → validate (§6.4) → `Layer 3 (independent review)` → preview → activate (§6.5).
+
+**Deterministic invariants (not model decisions, always enforced):** **record integrity** — the interpreter refuses a write for an event that did not happen to falsify history (DP-05), while a real backdated event (F-17) is fine; **non-disablable privacy** — the per-session journal-to-cloud consent cannot be turned off (DP-07); the app declines requests to weaken it.
+
+**Why layered, not "just a better model":** the finding shows model choice alone is fragile (non-monotonic in version). A deterministic floor (Layer 1) + an independent second opinion (Layer 3) makes the guardrail robust to any single model's blind spot, keeps the worst domains blocked for free, and costs a few hundredths of a cent on the rare authoring turn. The open tuning risk is **false positives** — Layers 1 and 3 must target harmful *intent/framing*, not merely sensitive *topics*, so legitimate health/finance/relationship capabilities still build.
+
+## 8. The No-Executable-Code Constraint
+
+Skills are **data, not code**: the closed vocabulary (§3) is interpreted, never `eval`'d, `dart:mirrors`'d, or dynamically dispatched. This is a correctness *and* platform-compliance requirement (Apple 2.5.2 / Microsoft 10.2.6): the interpreter ships in the binary; capabilities are recombined declarative JSON the reviewer can read (§3.0). Richness comes from **composition** of the primitives, not from primitive complexity — anything the vocabulary cannot express is surfaced as an honest "that would require [network/timer/model]; here's what I can do instead" (§0, P2.8), never smuggled in as code.
+
+---
+
+## 9. Seed Skills *(canonical — resolve-stage addition)*
+
+*Resolves **G-04, G-05, G-13**. The seed set is **defined as the union of the skills the free-tier flows require** (Spec 05 §3.7). Seed skills are `authoredBy:"system"`, `safetyAssessmentId:null`, `schemaVersion:1`. Full JSON for the vertical-set skills is in [`05a-traces.md`](../05a-traces.md); this section is the canonical index + the two shared idioms + the read/query skills.*
+
+### 9.1 Idioms (every seed skill follows these)
+- **Confirmation idiom (`G-05`):** `compute` (build labels — `format_date`, `if`/`concat` for optional phrases) → `write_record`(s) → `format` (compose `confirmationText`). `format` never formats a date/number itself.
+- **Resolve-or-create-person idiom (`G-12`):** a person-referencing skill takes **both** an optional `…Id` (`entityRef`, NLU-resolved) *and* a `…Name` (`text`). NLU resolves *existing* people (disambiguates >1 before dispatch; passes the id when unique, the name when new). The skill uses the id if present, else `read_one contact{displayName:{…Name}}` → `branch null` → `write_record contact`. After NLU disambiguation a name-`read_one` sees only 0-or-1. Because both id and name are carried, confirmations always have the display name.
+- **Multi-write idiom (`G-13`):** one utterance → N records is sequential `branch`/`write_record` steps in one plan; ids minted at resolve thread across writes (§4.4); the `format` composes one line over the created records; `undo` reverses all N atomically (Spec 05 §3.5).
+
+### 9.2 Canonical seed skills
+
+| skillId | reads | writes | shape |
+|---|---|---|---|
+| `create-task` | — | `task` | capture a to-do (F-01; full JSON in 05a-traces §1A). |
+| `create-reminder` | `contact` | `task` | dated/record-anchored reminder; date resolved by the resolver (Spec 03 §6, `G-14`), skill receives literal `dueAt` (F-19 §3A). |
+| `create-recurring-reminder` | — | `task` | writes a `recurrence` RRULE (recurrence parsed by the resolver). |
+| `add-contact-fact` | `contact` | `contact`,`contact_fact`,`contact_relationship` | multi-write people fact (F-07; full JSON in 05a-traces §2A). |
+| `recall-contact-fact` | `contact`,`contact_fact` | — | read a stored fact (below). |
+| `log-interaction` | `contact` | `contact`,`contact_interaction` | dated note on a person (F-02; resolve-or-create person). |
+| `query-last-interaction` | `contact`,`contact_interaction` | — | "when did I last…" (below). |
+| `instantiate-template` | — | *(the template's type)* | register a built-in tracker type locally (Spec 05 §6). |
+| `log-<tracker>` | — | *(tracker type)* | template-bundled log skill (e.g. `log-run`, `log-meal`). |
+| `show-streak` | *(tracker type)* | — | compute current/longest streak (read + `compute`). |
+| `search-records` | *(all)* | — | system embedding search path, not a per-type skill (Spec 05 §12). |
+
+Two read/query skills in full (they exercise `read_related` + the resolve-or-create person idiom for the query side):
+
+```json
+// recall-contact-fact — "What's Mia allergic to?"
+{ "skillId":"recall-contact-fact","displayName":"Recall a Fact About Someone",
+  "inputs":[{"name":"subjectId","valueType":"entityRef","source":"slot","required":false},
+            {"name":"subjectName","valueType":"text","source":"slot","required":true},
+            {"name":"query","valueType":"text","source":"slot","required":false}],
+  "reads":["contact","contact_fact"],"writes":[],
+  "steps":{"main":[
+    {"op":"read_one","typeId":"contact","match":{"id":"{subjectId}"},"into":"subject"},
+    {"op":"read_related","typeId":"contact_fact","parentId":"{subject.id}","filter":{"fact":{"contains":"{query}"}},"orderBy":"createdAt","orderDir":"desc","into":"facts"},
+    {"op":"format","template":"{facts.0.fact, default: 'I don''t have anything on that for {subject.displayName}.'}","into":"confirmationText"} ]},
+  "dangerLevel":"safe" }
+
+// query-last-interaction — "When did I last see Marco?"
+{ "skillId":"query-last-interaction","displayName":"When Did I Last…",
+  "inputs":[{"name":"contactId","valueType":"entityRef","source":"slot","required":false},
+            {"name":"contactName","valueType":"text","source":"slot","required":true},
+            {"name":"medium","valueType":"enum","enumValues":["phone","text","in_person","email","note"],"source":"slot","required":false}],
+  "reads":["contact","contact_interaction"],"writes":[],
+  "steps":{"main":[
+    {"op":"read_one","typeId":"contact","match":{"id":"{contactId}"},"into":"c"},
+    {"op":"read_related","typeId":"contact_interaction","parentId":"{c.id}","filter":{"medium":"{medium}"},"orderBy":"occurredAt","orderDir":"desc","limit":1,"into":"last"},
+    {"op":"compute","expr":"days_between({last.0.occurredAt}, today())","into":"daysAgo"},
+    {"op":"format","template":"You last saw {c.displayName} on {lastLabel} — {daysAgo} days ago.","into":"confirmationText"} ]},
+  "dangerLevel":"safe" }
+```
+*(`recall`/`query` skills take the same `…Id`+`…Name` pair as write skills, `G-12`; a query for an unknown person hits the same disambiguation/absent path. `read_one` on a null `medium` filter matches all — the "any contact method" case, Spec 05 §10 E4. The full log/streak/template skills are canonicalized as the corpus is traced.)*

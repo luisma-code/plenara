@@ -1,0 +1,75 @@
+{
+  "example": "P-06-briefing",
+  "steps": [
+    {
+      "id": "generate-briefing",
+      "surface": "claude",
+      "local": [],
+      "claude": [
+        {
+          "text": "Good morning. You've got three things to tackle today: call the plumber, write Ana's welcome note, and finally review that cabin-trip budget\u2014it's a couple days overdue. On the brighter side, your running streak is alive at six days, so you're in a good rhythm there. One thing to keep in the back of your mind: Sarah's birthday is coming up in four days and you haven't landed on a gift yet, so maybe start thinking about that today.",
+          "latency_ms": 1919.7,
+          "in_tok": 220,
+          "out_tok": 105,
+          "cost_usd": 0.000745,
+          "stop_reason": "end_turn",
+          "model": "haiku-4.5"
+        },
+        {
+          "text": "Good morning! It's Sunday, July fifth. You have three tasks on your plate today: calling the plumber, writing Ana's welcome note, and reviewing that cabin-trip budget, which is already two days overdue. On a brighter note, you're on a six-day running streak, and Sarah's birthday is coming up on Wednesday\u2014might be a good moment today to think about a gift for her.",
+          "latency_ms": 3277.8,
+          "in_tok": 220,
+          "out_tok": 89,
+          "cost_usd": 0.001995,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.5"
+        },
+        {
+          "text": "Good morning! You've got three things asking for attention today: calling the plumber, writing Ana's welcome note, and reviewing the cabin-trip budget, which has already slipped two days so that one's worth tackling first. Sarah's birthday is coming up in four days and you don't have a gift lined up yet, so it might be worth giving that a quick thought today. And just a gentle nudge \u2014 it's been three months since you've been in touch with Marco.",
+          "latency_ms": 3465.9,
+          "in_tok": 221,
+          "out_tok": 104,
+          "cost_usd": 0.002223,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.6"
+        },
+        {
+          "text": "Good morning! Today you've got three things on your plate: calling the plumber, writing Ana's welcome note, and that cabin-trip budget review which is a couple days overdue now, so worth knocking out. Just a heads up that Sarah's birthday is coming up Thursday and you haven't noted a gift idea yet, so you might want to start thinking on that. Your running streak is at six days strong \u2014 nice work keeping that going.",
+          "latency_ms": 2991.4,
+          "in_tok": 220,
+          "out_tok": 96,
+          "cost_usd": 0.0035,
+          "stop_reason": "end_turn",
+          "model": "opus-4.5"
+        },
+        {
+          "text": "Good morning! You've got three tasks on your plate today \u2014 calling the plumber, writing Ana's welcome note, and reviewing the cabin-trip budget, which is already two days overdue so worth tackling first. Sarah's birthday is coming up Thursday and you don't have a gift idea yet, so today might be a good time to think on that, and it's also been three months since you've reached out to Marco if you want to send a quick message. Your running streak is at six days strong, so keep that momentum going!",
+          "latency_ms": 4934.6,
+          "in_tok": 221,
+          "out_tok": 115,
+          "cost_usd": 0.00398,
+          "stop_reason": "end_turn",
+          "model": "opus-4.6"
+        },
+        {
+          "text": "Good morning \u2014 three things on your plate today: calling the plumber, writing Ana's welcome note, and the cabin-trip budget, which is now two days overdue. Sarah's birthday is in four days and you still don't have a gift idea, so worth a thought while you've got a quiet Sunday. Your running streak is at six days, and it's been about three months since you last reached out to Marco.",
+          "latency_ms": 3154.9,
+          "in_tok": 313,
+          "out_tok": 126,
+          "cost_usd": 0.004715,
+          "stop_reason": "end_turn",
+          "model": "opus-4.7"
+        },
+        {
+          "text": "Good morning. Today's a light one: you've got a couple of quick things to knock out \u2014 calling the plumber and writing Ana's welcome note \u2014 plus that cabin-trip budget review that's slipped a couple days behind, so it might be worth clearing first. Sarah's birthday is in four days and there's no gift idea logged yet, so you may want to give that a little thought. And nice work on that six-day running streak \u2014 Sunday could be a good day to keep it going.",
+          "latency_ms": 8275.8,
+          "in_tok": 308,
+          "out_tok": 147,
+          "cost_usd": 0.005215,
+          "stop_reason": "end_turn",
+          "model": "opus-4.8"
+        }
+      ]
+    }
+  ]
+}

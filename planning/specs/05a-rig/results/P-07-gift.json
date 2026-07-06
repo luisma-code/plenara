@@ -1,0 +1,75 @@
+{
+  "example": "P-07-gift",
+  "steps": [
+    {
+      "id": "generate-gift-ideas",
+      "surface": "claude",
+      "local": [],
+      "claude": [
+        {
+          "text": "# Gift Ideas for Sarah Mitchell (Birthday, <$50)\n\n1. **Field guide to local birds** (e.g., Audubon or regional Peterson guide, ~$20\u201330) \u2013 Bridges her new bird-watching interest with her hiking habit; practical reference for trail walks without adding d\u00e9cor clutter.\n\n2. **Lightweight camera bean bag or peak design capture clip (~$25\u201335)** \u2013 Supports her landscape photography on hikes by stabilizing gear; functional tool rather than decorative item.\n\n3. **Premium loose-leaf tea sampler set** (e.g., specialty blends from Harney & Sons or similar, ~$25\u201340) \u2013 Aligns with her tea preference; consumable, so no clutter concern.\n\n4. **Waterproof field notebook + weatherproof pencil** (~$15\u201325) \u2013 Useful for bird-watching notes or photography location scouting during hikes; practical, minimal footprint.\n\n**Note:** Sarah's data is well-aligned to her interests (hiking, photography, tea, bird-watching) and clear dislikes, so these all ground in stored facts and respect her minimalist preference.",
+          "latency_ms": 3724.9,
+          "in_tok": 207,
+          "out_tok": 261,
+          "cost_usd": 0.001512,
+          "stop_reason": "end_turn",
+          "model": "haiku-4.5"
+        },
+        {
+          "text": "# Gift Ideas for Sarah Mitchell's Birthday\n\n1. **Compact bird identification field guide for local species** \u2014 She mentioned wanting to get into bird-watching, and a pocket-sized guide would be practical for her hikes without adding clutter.\n\n2. **Lightweight binoculars (8x25 or similar, ~$30-45)** \u2014 Perfect bridge between her hiking hobby and new bird-watching interest; compact models won't weigh down her pack on trails like the coastal one.\n\n3. **Premium loose-leaf tea sampler set** \u2014 She drinks loose-leaf tea, and a curated variety pack gives her new flavors to try without taking up much space (respects her dislike of clutter).\n\n4. **Microfiber lens cleaning kit for camera lenses** \u2014 As a landscape photographer, she needs to maintain her equipment, especially after dusty/coastal hikes; small, functional, anti-clutter.\n\n5. **\"Birds of [Your Region]\" photography print or art card set** \u2014 Connects her landscape photography appreciation with her emerging bird-watching interest; cards are usable (can be framed selectively or sent) rather than pure clutter.",
+          "latency_ms": 8237.1,
+          "in_tok": 207,
+          "out_tok": 259,
+          "cost_usd": 0.004506,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.5"
+        },
+        {
+          "text": "**Gift Ideas for Sarah Mitchell \u2014 Birthday (4 days) | Under $50**\n\n1. **Sibley's \"Birds of North America\" field guide (~$25)** \u2014 Directly supports her stated interest in getting into bird-watching; a reference book is practical and won't feel like clutter.\n\n2. **Lightweight binoculars for birding, e.g. Celestron Nature DX 8\u00d742 (~$45)** \u2014 A concrete first tool for bird-watching that also doubles for scenic landscape scouting on hikes like her coastal trail routes.\n\n3. **Loose-leaf tea sampler from a quality brand like Palais des Th\u00e9s or Adagio (~$25\u2013$35)** \u2014 Grounded directly in her loose-leaf tea habit; consumable, so it aligns with her dislike of clutter.\n\n4. **Waterproof trail map or National Geographic Trails Illustrated map for her coastal trail region (~$15)** \u2014 Ties to her April coastal hike; practical, flat, and uncluttered \u2014 exactly her style.\n\n5. **Consider combining #1 + #4 (~$40 total)** \u2014 A birding guide paired with a local trail map creates a coherent \"next adventure\" gift set that connects her photography, hiking, and new bird-watching interest in one tidy package.\n\n---\n*Note: Data on Sarah is reasonably rich for targeted ideas. Skipped decorative/knick-knack options entirely per her preference.*",
+          "latency_ms": 9282.4,
+          "in_tok": 208,
+          "out_tok": 340,
+          "cost_usd": 0.005724,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.6"
+        },
+        {
+          "text": "## Gift Ideas for Sarah Mitchell's Birthday\n\n1. **Compact field guide to local birds** (~$15-20) \u2014 Directly supports her new bird-watching interest and pairs naturally with her existing hiking habit.\n\n2. **Quality loose-leaf tea sampler from a specialty brand like Harney & Sons or David's Tea** (~$25-35) \u2014 Matches her known tea preference while offering variety without adding clutter.\n\n3. **Lightweight, packable birding binoculars** (~$30-45) \u2014 Bridges her hiking and emerging bird-watching interests; practical gear she'd actually use on trails like the coastal one she enjoyed.\n\n4. **Gift card to a local camera shop or B&H Photo** (~$25-50) \u2014 Lets her choose accessories for her landscape photography without risking an unwanted item, respecting her anti-clutter preference.\n\n5. **Merino wool hiking socks (2-pack from Darn Tough or Smartwool)** (~$30-40) \u2014 Functional upgrade for her regular hikes; consumable/usable so it won't become clutter.\n\n---\n*Note: All suggestions are grounded in stored facts. Avoided decorative or display items given her stated dislike of clutter.*",
+          "latency_ms": 7406.6,
+          "in_tok": 207,
+          "out_tok": 282,
+          "cost_usd": 0.008085,
+          "stop_reason": "end_turn",
+          "model": "opus-4.5"
+        },
+        {
+          "text": "Here are 5 gift ideas for Sarah's birthday:\n\n1. **A quality beginner's birding field guide (e.g., *The Sibley Guide to Birds*, ~$25)** \u2014 Directly supports her newly mentioned interest in bird-watching, and a well-made field guide is a practical tool, not clutter.\n\n2. **A compact monocular or pocket binoculars for birding & hiking (~$30\u201345)** \u2014 Bridges her love of hiking with her budding bird-watching interest; a small, functional piece of gear she'd actually carry on the trail.\n\n3. **A curated loose-leaf tea sampler set (~$20\u201335)** \u2014 She drinks loose-leaf tea, so a high-quality sampler (e.g., from Harney & Sons or Adagio) lets her explore new varieties without adding clutter \u2014 it's consumable.\n\n4. **A waterproof trail notebook/journal for field sketches & bird sightings (e.g., Rite in the Rain, ~$12\u201315)** \u2014 Pairs perfectly with both hiking and bird-watching; it's functional and compact, respecting her dislike of clutter, and great for logging sightings on trails like the coastal one she enjoyed.\n\n5. **A lens-cleaning kit + a UV/polarizing filter for landscape photography (~$20\u201340, depending on her lens size)** \u2014 Grounded in her landscape photography hobby; practical gear she'd use on every hike rather than something that sits on a shelf.\n\n**Suggested combo if budget allows:** Pairing the field guide (#1) with the tea sampler (#3) comes in around $45\u201350 and covers two distinct interests for a nicely rounded gift.",
+          "latency_ms": 13952.2,
+          "in_tok": 208,
+          "out_tok": 391,
+          "cost_usd": 0.010815,
+          "stop_reason": "end_turn",
+          "model": "opus-4.6"
+        },
+        {
+          "text": "- Sibley Birds East (or West) field guide, ~$20 \u2014 she recently mentioned wanting to get into bird-watching, and a solid field guide is the standard entry point without adding shelf clutter.\n- Merlin Bird ID companion: a National Audubon Society pocket birding notebook, ~$15 \u2014 pairs with her new bird-watching interest and is functional rather than decorative, aligning with her aversion to knick-knacks.\n- A tin of high-quality loose-leaf tea from Bellocq, Harney & Sons, or a local specialty shop (2\u20133 oz sampler), ~$25\u201340 \u2014 she drinks loose-leaf tea, so a better-grade tea is consumable and clutter-free.\n- Kikkerland or Finum stainless-steel loose-leaf tea infuser + a small hand-thrown ceramic mug, ~$30 total \u2014 upgrades her existing tea ritual with items she'll actually use daily.\n- Peak Design Cuff or Leash camera wrist/neck strap, ~$30\u201340 \u2014 practical for her landscape photography on hikes like the coastal trail, replacing rather than adding gear.",
+          "latency_ms": 9251.4,
+          "in_tok": 315,
+          "out_tok": 380,
+          "cost_usd": 0.011075,
+          "stop_reason": "end_turn",
+          "model": "opus-4.7"
+        },
+        {
+          "text": "Gift ideas for Sarah (birthday, under $50):\n\n1. **Compact 8x21 pocket binoculars** (~$35) \u2014 She recently mentioned wanting to get into bird-watching, and a lightweight pair suits her hiking habit without adding bulk.\n\n2. **A regional birding field guide or a Merlin Bird ID-friendly waterproof quick guide** (~$15) \u2014 Pairs with the bird-watching interest and is practical, not clutter, since she can carry it on hikes.\n\n3. **Sampler set of loose-leaf teas from a quality tea vendor** (~$25\u201340) \u2014 She drinks loose-leaf tea; a consumable gift respects her dislike of knick-knacks since nothing lingers on a shelf.\n\n4. **A coastal/landscape photography print magazine subscription or a single-issue premium photo book** (~$20\u201345) \u2014 Ties to her landscape photography interest; a subscription is experiential rather than physical clutter.\n\n5. **Microfiber lens cleaning kit for her camera** (~$15) \u2014 Useful for her landscape photography, compact, and consumable/functional rather than decorative.\n\nNote: The data is fairly rich here. If you want to lean into her April coastal-trail hike specifically, a framed-free option like a digital gift card to a print service (so she chooses her own shot) also fits her anti-clutter preference.",
+          "latency_ms": 13418.7,
+          "in_tok": 310,
+          "out_tok": 450,
+          "cost_usd": 0.0128,
+          "stop_reason": "end_turn",
+          "model": "opus-4.8"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "example": "F-01",
+  "steps": [
+    {
+      "id": "classify",
+      "surface": "both",
+      "local": [
+        {
+          "text": "{\"skillId\": null, \"slots\": {\"description\": \"call the plumber\", \"dueDate\": \"2026-07-04\"}, \"confidence\": 0.95}",
+          "latency_ms": 2629.3,
+          "prompt_tok": 363,
+          "completion_tok": 43,
+          "server_prompt_ms": 1105.7,
+          "server_predicted_ms": 1466.2,
+          "predicted_per_second": 29.3,
+          "model": "qwen2.5-1.5b"
+        },
+        {
+          "text": "{\"skillId\": \"1\", \"slots\": {\"description\": \"call the plumber\", \"dueDate\": \"2026-07-08\"}, \"confidence\": 0.9}",
+          "latency_ms": 5171.1,
+          "prompt_tok": 381,
+          "completion_tok": 39,
+          "server_prompt_ms": 2456.3,
+          "server_predicted_ms": 2708.6,
+          "predicted_per_second": 14.4,
+          "model": "llama-3.2-3b"
+        }
+      ],
+      "claude": [],
+      "claude_note": "SKIPPED \u2014 no ANTHROPIC_API_KEY set"
+    }
+  ]
+}

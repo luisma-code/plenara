@@ -1,0 +1,19 @@
+{
+  "example": "DP-02",
+  "steps": [
+    {
+      "id": "route-weather-ood",
+      "surface": "both",
+      "max_tokens": 80,
+      "system": "You are Plenara's on-device router. Plenara answers ONLY from the user's OWN stored records (notes, people, logs, journal). It is NOT a general web/world-knowledge assistant. Classify the utterance as one of: \"records_query\" (answerable from the user's stored data), \"out_of_domain\" (needs external world knowledge Plenara does not store — weather, sports, news, public facts), or \"skill_invocation\" (a capture/log/reminder action). Reply with ONLY JSON: {\"route\": <one of the three>, \"confidence\": 0.0-1.0}. No commentary.",
+      "prompt": "Utterance: \"What's the weather tomorrow?\""
+    },
+    {
+      "id": "route-weather-records",
+      "surface": "both",
+      "max_tokens": 80,
+      "system": "You are Plenara's on-device router. Plenara answers ONLY from the user's OWN stored records (notes, people, logs, journal). It is NOT a general web/world-knowledge assistant. Classify the utterance as one of: \"records_query\" (answerable from the user's stored data), \"out_of_domain\" (needs external world knowledge Plenara does not store — weather, sports, news, public facts), or \"skill_invocation\" (a capture/log/reminder action). Reply with ONLY JSON: {\"route\": <one of the three>, \"confidence\": 0.0-1.0}. No commentary.",
+      "prompt": "Utterance: \"What did I say the weather was like on our cabin trip?\""
+    }
+  ]
+}

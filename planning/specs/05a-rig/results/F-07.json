@@ -1,0 +1,96 @@
+{
+  "example": "F-07",
+  "steps": [
+    {
+      "id": "classify-extract",
+      "surface": "both",
+      "local": [
+        {
+          "text": "{\"skillId\": null, \"slots\": {\"subjectName\": \"Sarah\", \"fact\": \"Mia is allergic to peanuts\"}, \"confidence\": 1.0}",
+          "latency_ms": 2096.7,
+          "prompt_tok": 293,
+          "completion_tok": 36,
+          "server_prompt_ms": 886.9,
+          "server_predicted_ms": 1174.6,
+          "predicted_per_second": 30.6,
+          "model": "qwen2.5-1.5b"
+        },
+        {
+          "text": "{\"skillId\": \"add-contact-fact\", \"slots\": {\"subjectName\": \"Mia\", \"fact\": \"is allergic to peanuts\", \"relationType\": \"daughter\", \"relatedToName\": \"Sarah\"}}",
+          "latency_ms": 5074.6,
+          "prompt_tok": 315,
+          "completion_tok": 46,
+          "server_prompt_ms": 2028.5,
+          "server_predicted_ms": 3025.3,
+          "predicted_per_second": 15.2,
+          "model": "llama-3.2-3b"
+        }
+      ],
+      "claude": [
+        {
+          "text": "```json\n{\n  \"skillId\": \"add-contact-fact\",\n  \"slots\": {\n    \"subjectName\": \"Mia\",\n    \"fact\": \"allergic to peanuts\",\n    \"relatedToName\": \"Sarah\",\n    \"relationType\": \"daughter\"\n  },\n  \"confidence\": 0.98\n}\n```",
+          "latency_ms": 1051.1,
+          "in_tok": 325,
+          "out_tok": 87,
+          "cost_usd": 0.00076,
+          "stop_reason": "end_turn",
+          "model": "haiku-4.5"
+        },
+        {
+          "text": "```json\n{\n  \"skillId\": \"add-contact-fact\",\n  \"slots\": {\n    \"subjectName\": \"Mia\",\n    \"fact\": \"allergic to peanuts\",\n    \"relatedToName\": \"Sarah\",\n    \"relationType\": \"daughter\"\n  },\n  \"confidence\": 0.95\n}\n```",
+          "latency_ms": 1421.2,
+          "in_tok": 325,
+          "out_tok": 87,
+          "cost_usd": 0.00228,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.5"
+        },
+        {
+          "text": "{\"skillId\": \"add-contact-fact\", \"slots\": {\"subjectName\": \"Mia\", \"fact\": \"allergic to peanuts\", \"relatedToName\": \"Sarah\", \"relationType\": \"daughter\"}, \"confidence\": 0.99}",
+          "latency_ms": 1381.9,
+          "in_tok": 326,
+          "out_tok": 63,
+          "cost_usd": 0.001923,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.6"
+        },
+        {
+          "text": "```json\n{\"skillId\": \"add-contact-fact\", \"slots\": {\"subjectName\": \"Mia\", \"fact\": \"allergic to peanuts\", \"relatedToName\": \"Sarah\", \"relationType\": \"daughter\"}, \"confidence\": 0.95}\n```",
+          "latency_ms": 2217.7,
+          "in_tok": 325,
+          "out_tok": 68,
+          "cost_usd": 0.003325,
+          "stop_reason": "end_turn",
+          "model": "opus-4.5"
+        },
+        {
+          "text": "```json\n{\"skillId\": \"add-contact-fact\", \"slots\": {\"subjectName\": \"Mia\", \"fact\": \"allergic to peanuts\", \"relatedToName\": \"Sarah\", \"relationType\": \"daughter\"}, \"confidence\": 0.98}\n```",
+          "latency_ms": 2311.0,
+          "in_tok": 326,
+          "out_tok": 68,
+          "cost_usd": 0.00333,
+          "stop_reason": "end_turn",
+          "model": "opus-4.6"
+        },
+        {
+          "text": "{\"skillId\":1,\"slots\":{\"subjectName\":\"Mia\",\"fact\":\"allergic to peanuts\",\"relatedToName\":\"Sarah\",\"relationType\":\"daughter\"},\"confidence\":0.95}",
+          "latency_ms": 1479.0,
+          "in_tok": 452,
+          "out_tok": 72,
+          "cost_usd": 0.00406,
+          "stop_reason": "end_turn",
+          "model": "opus-4.7"
+        },
+        {
+          "text": "{\"skillId\": 1, \"slots\": {\"subjectName\": \"Mia\", \"fact\": \"allergic to peanuts\", \"relatedToName\": \"Sarah\", \"relationType\": \"daughter\"}, \"confidence\": 0.97}",
+          "latency_ms": 1839.0,
+          "in_tok": 447,
+          "out_tok": 76,
+          "cost_usd": 0.004135,
+          "stop_reason": "end_turn",
+          "model": "opus-4.8"
+        }
+      ]
+    }
+  ]
+}

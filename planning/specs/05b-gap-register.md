@@ -1,0 +1,167 @@
+# Spec 05b — Gap Register (evolving)
+
+**Status:** v0.1 — July 2026 — live worklist. Itemizes every gap/seam the end-to-end traces ([`05a-traces.md`](05a-traces.md)) surface where the upstream specs are silent, contradictory, or under-powered. This is the input to the **resolve stage**: each gap gets a designed solution that is then written back into specs 01–05, after which the vertical examples are re-confirmed end-to-end.
+
+**Why separate from 05a-traces:** the traces are a *narrative* (what happens, step by step); this is a *ledger* (discrete items with IDs, severity, and status that evolve independently as we design fixes). Kept apart so the trace prose stays readable and each gap is trackable through resolution.
+
+**Lifecycle of a gap:** `open` (surfaced) → `designing` (resolve stage, solution being specced here) → `resolved` (written into the target spec; cite section). Severity: **blocker** (a vertical example cannot function without it) · **major** (works but a real design decision / possible re-architecture) · **minor** (local convention or wording).
+
+> ⚠ Nothing here is folded into the upstream specs yet (Luis's call — gaps may still evolve as more examples are traced). Fold-back happens in the resolve stage.
+
+---
+
+## 1. Register
+
+| ID | Gap | Source | Spec target | Severity | Status |
+|---|---|---|---|---|---|
+| **G-01** | **Seed types undefined.** No seed type (`task`, `contact`, `contact_interaction`, `journal_entry`, …) is defined anywhere; each trace must author them. | F-01, F-07 | 01 §12 | blocker | open |
+| **G-02** | **No generic attribute default.** Attributes support only `defaultToNow` (dates); a boolean like `completed` can't default to `false` in schema. Decide: add a `default` field, or make "skills write literal defaults" a rule. | F-01 | 01 §4.3 | minor | open |
+| **G-03** | **Confirmation-template home ambiguous.** Two candidate homes: `type.nluHints.confirmationTemplate` (Spec 01 §10) vs a skill `format` step (Spec 02 §7.1). Traces use the skill `format` step; the other should be reconciled/retired. | F-01 | 01 §10 / 02 §7 | minor | open |
+| **G-04** | **Seed skills undefined.** No seed skill (`create-task`, `add-contact-fact`, `log-interaction`, `instantiate-template`, query/streak/recall skills) is defined. §9 must be authored as "the union of the skills the free-tier flows require" (Spec 05 §3.7). | F-01, F-07 | 02 §9 | blocker | open |
+| **G-05** | **`format` op can't format dates/numbers to labels.** Saying "Thursday" needs `compute format_date(...)` first. The seed-skill confirmation idiom is `compute → write_record → format`, not a bare `format`. Document, or extend `format` with date/enum modifiers. | F-01 | 02 §3.3 | minor | open |
+| **G-06** | **Authoring flow unwritten.** The `define_type` / `define_skill` → prompt → validate → retry → register sequence (`AuthoringService`) doesn't exist. Both undefined variants and all paid authoring depend on it. | F-01, P-01 | 02 §6 / 04 §3.7 | blocker | open |
+| **G-07** | **Local classify needs constrained decoding + confidence rule.** Models return `skillId` as the candidate *number* (incl. Opus 4.7/4.8) and emit uncalibrated confidence (correct label at 0.0). Shipped default: grammar/enum-constrained `skillId`; router ignores the model's self-reported confidence. **→ RE-SCOPED (findings §11): constrained decoding changed routing by 0 points — format was never the failure (free-form was already 100% valid, and the `skillId`-as-number wart vanishes when candidates are keyed by id, not numbered). Constrained decoding = optional format insurance, not an accuracy lever. Confidence-ignoring stands (calibration dead for all models). Folded into `G-20`'s cut.** | F-01, F-07, F-19 | 03 §3.4 / §7.3 | major | resolved (via G-20) |
+| **G-08** | **Date/recurrence resolver unwritten.** The deterministic resolver (relative dates, recurrence RRULE, `date→datetime` + `allDay`, record-anchored dates) is referenced but not specified. Measurements prove it must be code (models hallucinate dates). | F-01, F-03, F-19 | 03 §6 | major | open |
+| **G-09** | **Type/skill deletion flow unwritten.** The one surviving pre-action confirmation (non-undoable deletion) is referenced by act-then-describe but never specified. | (system) | 05 §24 | minor | open |
+| **G-10** | **Arbitrary personal facts have no home.** "Mia is allergic to peanuts" is not a predefined `contact` attribute, and types have *fixed* schemas — so the meta-schema has **no mechanism for arbitrary per-entity facts**. Needs a generic fact record type (proposed `contact_fact`, owned by `contact`). Meta-schema finding. | F-07 | 01 §2 / §12 | **major** | open |
+| **G-11** | **Relations can't be qualified with a role.** The kernel `Relation` is `name + refType + cardinality` — it cannot express "Mia is Sarah's *daughter*" (vs son/cousin) except by minting a distinct relation name per role. Needs a role qualifier on Relation, or a `contact_relationship` record type `{from, to, relationType}`. Meta-schema finding. | F-07 | 01 §2.1 / §4.3 | **major** | open |
+| **G-12** | **Resolve-or-create-entity: division of labor + non-unique `read_one`.** Who turns a name into a contact id — NLU (`entityNames`, read-only, disambiguates) or the skill (`read_one` match + branch + create-if-absent, which writes)? And `read_one` on a non-unique field (`displayName`) is unspecified when >1 match. Needs a stated contract. | F-07, F-02 | 02 §3.1 / 03 §6 | **major** | open |
+| **G-13** | **Multi-write skill idiom.** "One sentence → three records" (create Contact + relationship + fact) needs the seed-skill pattern for sequential resolve-or-create + a confirmation composed over N *created* records ("added Mia as Sarah's daughter, noted peanut allergy"). Not yet an established shape. | F-07 | 02 §9 | major | open |
+| **G-14** | **Record-anchored date resolution has no home.** NLU extracts a *derived* date as free text ("Sarah's birthday", offset "-1 day"); turning it into a structured anchor `(contactId, field, offset)` + reaching the value is unassigned — NLU vs the deterministic date resolver. Recommendation: put it in the date resolver (`G-08`) with scoped graph-read, so skills receive a resolved `dueAt`. | F-19 | 03 §6 / 02 §3.1 | major | open |
+| **G-15** | **Anniversary / next-occurrence date math missing.** "The day before her *next* birthday" needs `next_anniversary(date)` (next MM-DD occurrence); the compute grammar (Spec 02 §3.7) has only `add_days`/`days_between`/`format_date`/`today`. Missing function **also blocks the authoring path** — you can't author what the vocabulary can't express. Add the function (or fold anchor math into the date resolver). | F-19 | 02 §3.7 | major | open |
+| **G-16** | **Empty anchor field → resolve-time clarify.** If the anchor record exists but its field is null (Sarah's birthday unknown), resolve can't compute the date; it should halt with a missing-slot follow-up ("When's Sarah's birthday?", `ProvideSlot`) rather than error. Exercises the unwritten follow-up seam. | F-19 | 03 §6.3 / 02 §4.1 | minor | open |
+| **G-17** | **Structural validation ≠ semantic validation.** An authored skill can pass the closed-vocab/closure validator yet write an `entityRef` from an *unresolved name slot* (no `read_one`/resolved id) — structurally valid, **fails at first use** (P-01: `subject:"{daughter}"`). The validator must check "every `entityRef` write is fed by a resolved id." Ties to `G-12`. | P-01 | 02 §6.3 | major | open |
+| **G-18** | **Multi-turn authoring draft accumulation.** The refine→activate loop (draft held in memory across ≤5 turns, nothing registered until "activate", the design/commit boundary that is *not* a fourth-wall break) has no defined mechanism/state model. Part of the `AuthoringService` (`G-06`) but called out separately as the interactive-commit seam. | P-01, P-02 | 02 §6 / 04 §3.7 | major | open |
+| **G-19** | **OOD misclassification is a privacy boundary, not just UX.** A local model that misroutes "what did I say about X" as `out_of_domain` would hand a **private-records query to an external OS/web assistant** (leak). OOD detection must be conservative and **bias toward `records_query` on ambiguity** ("what did I/my/our …" → records). Llama-3.2-3B fails this exact case (findings §2). | DP-02 | 03 §2 / Appendix A | major | open |
+| **G-20** | **Local-model trust is unproven — gate it on a dedicated eval (decision rule, Luis).** The small model's *narrowed* job (discriminate among retrieved candidates + extract slots for known capabilities) is plausible but unverified; its judgment on novel/meta/OOD is unreliable and its confidence is uncalibrated (findings §2). Build a rich local-model eval suite (post-5a) with an **acceptance bar set in advance**; **pass** → the small model routes *known* capabilities only (novel/OOD owned by retrieval + rules + Haiku escalation); **fail** → cut the on-device generative model from the routing path → deterministic/rule approaches where possible, Haiku fallback where not. Supersedes/absorbs D-B. See §3 detail. **→ RESOLVED (findings §11): NO-GO.** No small model exceeds 49% routing (bar 95%), meta-intent 0%, uncalibrated, ensemble ceiling 70%. **The on-device generative model is cut from the trusted routing path**: known-capability routing = corpus fast-path + retrieval top-1-with-margin + deterministic date/entity resolvers; genuine residual → Haiku (paid) or **clarify** (offline/free); meta-intent + OOD owned by retrieval + rules. | F-01, F-07, P-01, DP-02 | 03 §3.4 / §4 / §7.3 | **major** | **resolved → NO-GO** |
+| **G-21** | **Streak / consecutive-run computation not in the compute grammar.** "Longest reading streak" = longest run of consecutive days with an entry — not `sum`/`count`; needs sequence logic §3.7 lacks (cf. `next_anniversary`, `G-15`). Add a `streak(list, dateField) → {current, longest}` function, or let a small service own it. `show-streak` depends on it. | F-18 | 02 §3.7 | major | open |
+| **G-22** | **Tracker-template format + `instantiate-template` mechanism unspecified.** A built-in template = a binary-shipped `(type + bundled skills)` pair; instantiating registers it locally, free (Spec 05 §6 E4). The template file format and the instantiate flow aren't defined. | F-04, F-06 | 01 §12 / 02 §9 | major | open |
+| **G-23** | **Mixed free/paid multi-target turn.** One utterance targeting several capabilities where some are free (instantiate a template) and some need paid authoring (no template) must apply the free part and surface the paid remainder — not fail the whole turn. | F-13 | 04 §3.6 / 05 | minor | open |
+| **G-24** | **Alias / role / nickname contact resolution.** "Mum", "my boss", "the wife" must resolve to a contact — `entityNames.resolve` can't rely on exact `displayName`. Needs an alias field on `contact` (or a role→contact mapping) and alias-aware resolution. Also covers **group** resolution ("the Garcias" → a set of contacts, P-08). | F-10, P-08 | 01 §12 / 03 §6.1 | minor | open |
+| **G-25** | **Generative results must be addressable for the →act chain.** "Save the second one" / "remind me to buy it Friday" (P-14) requires the generative card's items to carry stable handles, and `recentIntents` to retain the last generative result's items (not just skill intents), so a following act can reference "the second one". | P-14 | 03 §2.6 / 04 §3.10 | major | open |
+| **G-26** | **Assembly-time journal-consent switch.** Journal text enters a generative prompt only under a per-session consent that **rebuilds the prompt** with the journal included (not "instruct the model to use it") — pattern_insight (opt-in) and monthly_reflection (mandatory card). The re-assembly mechanism + consent state is unwritten. | P-11, P-13 | 04 §3.10 / 08 | major | open |
+| **G-27** | **`foresight` generativeKind + grounded-not-fabricated contract.** Forward-looking synthesis that gathers what's upcoming (optional interactive pre-step), looks back at similar past situations, and returns evidence-linked, hedged foresight — never a confident fabrication (contrast DP-05). Add the kind + its contract + the optional "what's coming up?" step. | P-17 | 03 §2.2a / 04 §3.10 | major | open |
+| **G-28** | **Offline-paid degrade path.** A paid flow attempted while **offline** (even with a key) is blocked on *connectivity*, not tier — a distinct surface ("needs an internet connection; I'll remind you when back online") + an optional retry-reminder. Not tier, not scope. **→ resolved: Spec 05 §13 now spells out the three distinct paid-unavailable surfaces (tier / connectivity / key-quota), each named honestly.** | DF-05 | 04 §6 / 05 §13 | minor | **resolved (05 §13)** |
+| **G-29** | **Authoring schema-drift on complex skills.** Models produce the *right logic* for multi-step skills but serialize steps in a self-invented schema (`{"step":…,"expression":…}` vs the DSL's `{"op":…,"expr":…}`); simple authoring is 7/7, complex only opus-4.7/4.8 (findings §10.2). Fix: **structured/JSON-schema-constrained authoring output + the validate→retry loop + a pinned capable authoring model** (opus-4.7/4.8). Vocabulary is *not* the gap (aggregation expressible → P-16 probe is a non-gap). | P-05, P-16 | 02 §6 | **major** | open |
+| **G-30** | **Safety guardrail is model/version-dependent on borderline cases.** Egregious requests (covert surveillance, DP-01) are refused by all 7 models; a borderline wellbeing request (disordered-eating tracker, DP-08) leaked past sonnet-4.6 + opus-4.6, which authored it (findings §10.3). The app must **not rely on a single model** for the wellbeing gate → add a dedicated safety-classification pass and/or an app-side policy layer for sensitive domains (self-harm, surveillance, medical). | DP-01, DP-08 | 02 §7 / 04 | **major** | open |
+| **G-31** | **View archetypes for grouped/periodic aggregation.** A "monthly breakdown by category" needs a presentation archetype for grouped/time-bucketed aggregation. Skill side is expressible (`G-29`/non-gap). **Contract spec'd for Spec 07 (deferred, no UI spec yet): a `grouped-aggregation` archetype** must render the aggregation skill's output (§7.3) as (a) rows grouped by a category field, each showing an aggregate (sum/count/avg) + a total row; (b) optional **time-bucketing** (week/month) → a period × group view (grouped bars or small-multiples); (c) sorted by aggregate, read-only. The authored type's `presentation.archetype` names it; the view layer must provide it. Placeholder in the archetype vocabulary (Spec 01 §12 presentation block) until Spec 07 implements it. | P-16 | 07 (UI) | minor | **spec'd, deferred to Spec 07** |
+| **G-32** | **Goals as a first-class type.** "How am I doing on my January goals?" needs a `goal` type (goals + targets + horizon) — not a seed today. Seed-coverage decision: ship a seed `goal` type or make it authored. A progress narrative then reads goals + tasks + trackers over a window (generative). | P-18 | 01 §12 / 04 §3.10 | minor | open |
+| **G-33** | **Routing without the on-device generative model** (the `G-20` NO-GO follow-on). Specify the deterministic replacement for the cut model: (a) retrieval **top-1-with-margin** thresholds (accept if top candidate beats #2 by margin τ; else clarify/escalate), (b) **deterministic slot extractors** — dates via the `G-14/15/16` resolver, entities via `entityNames.resolve` (`G-24`), quantities/durations via patterns, corpus recipes for known templates — replacing the model's slot job (Haiku slot-exact was only 78%; local far worse), (c) **Haiku residual** call shape for the genuine ≥2-close-candidates-AND-novel case, (d) **offline/free fallback = clarify**. Owns meta-intent + OOD in retrieval + rules (`G-19`). | (from G-20) | 03 §7.3 / §4 | **major** | **resolved (03 §7.3.1–7.3.4)** |
+
+**Methodology note (not a spec gap):** denial/delegation examples (DF-*, DP-*, ~20 of the 60) have **no undefined/predefined dual** — nothing to author. Their two axes are *recognition* (does the router detect the boundary?) and *response* (the correct refusal/delegation surface). The trace template needs a **second shape** for these, established when the full corpus is traced. (Surfaced by DP-02.)
+
+---
+
+## 2. Detail — the meta-schema gaps (need design in the resolve stage)
+
+These three (G-10, G-11, G-12) are the ones that may require *changing the meta-schema*, not just writing a missing section — so they carry the most implementation risk and get first attention in the resolve stage.
+
+### G-10 · Arbitrary personal facts
+Types have fixed attribute schemas (Spec 01 §4). Real people-knowledge is open-ended ("allergic to peanuts", "hates cilantro", "middle name is Rose"). Options to design:
+- **(a) Generic `contact_fact` child type** — `parentType: contact`, attributes `{attribute?, value?, fact}` (structured when extractable, free-text otherwise). Queryable via `read_related`; `recall-contact-fact` reads it. *(Traces adopt this provisionally.)*
+- **(b) A `json` fact-bag attribute on `contact`** — simplest, but blocks structured querying (Spec 01 §3 warns against `json`).
+- **(c) Per-fact attributes authored on demand** — turns every new fact into a (paid) schema edit; wrong for a free-tier capture.
+- **Decision driver:** F-08 recall ("What's Mia allergic to?") wants queryability → leans (a). Confirm the type and whether it's `append`-only.
+
+### G-11 · Qualified relationships
+The kernel Relation can't say *how* two contacts relate. Options:
+- **(a) `contact_relationship` record type** `{fromContact→contact, toContact→contact, relationType: text}` — matches how NLU actually extracts (`relationType:"daughter"`), symmetric/queryable, free-text roles. *(Traces adopt this provisionally.)*
+- **(b) Add a `role`/qualifier field to the kernel Relation** — keeps it in the graph's `relations` array (Spec 01's "independently queryable graph"), but is a **kernel change** (version bump) and still needs a controlled vocabulary or free-text role.
+- **(c) A fixed set of named relations on `contact`** (`children`, `parents`, `partners`, …) — coarse, and "cousin/colleague/mentor" don't fit.
+- **Decision driver:** keeping the relationship graph first-class (b) vs. modeling it as records (a). (a) is less invasive; (b) is more faithful to the graph vision. Resolve-stage call.
+
+### G-12 · Resolve-or-create + name uniqueness
+Proposed contract to design and state:
+- **NLU owns disambiguation of *existing* entities.** `entityNames.resolve('contact', "Sarah")` → if exactly 1, pass `sarahId`; if >1, **clarify before dispatch** ("Which Sarah — Mitchell or Chen?", Spec 05 §9 E2); if 0, pass the *name* for the skill to create.
+- **The skill owns create-if-absent** (a write, so it must be in execute): `read_one contact {displayName}` → `branch null` → `write_record contact`. This means a seed skill takes **both** an optional resolved `…Id` *and* a `…Name` per person, or a single name slot with the skill always doing resolve-or-create. Pick one and make it the idiom.
+- **`read_one` on a non-unique field** must be defined: error, or "first by recency," or forbidden (require id). Given NLU pre-disambiguates, the skill's `read_one {displayName}` should only ever see 0-or-1 — but that invariant must be stated and enforced.
+
+## 3. Planned — Local-model trust evaluation (G-20)
+
+To be built **after 5a is complete** (Luis's direction). Extends the existing rig ([`05a-rig/harness`](05a-rig/harness)). Determines, against a bar set *in advance*, whether the on-device generative model earns a place in the routing path — or is cut for deterministic/rule routing + Haiku fallback. This is the rigorous form of D-B and the go/no-go for any on-device generative routing.
+
+**What it tests** (labeled dataset, many paraphrases per case):
+- **A. Known-capability routing** *(the real job)* — utterance + a realistic *retrieved* candidate set (≤5) → expected `skillId` + slots. The core metric.
+- **B. Slot extraction** — exact + normalized precision/recall, including multi-entity (F-07-style).
+- **C. Meta-intent detection** — novel-need recognition; measured to *confirm it should be retrieval-owned, not model-owned*.
+- **D. Out-of-domain boundary** — records-vs-OOD, including the adversarial "what did I say about ‹world-noun›" cases (`G-19`).
+- **E. Ambiguous / adversarial** — near-miss candidates, coordinations ("salt and pepper"), anaphora ("again", "the usual").
+
+**Models:** Qwen2.5-1.5B, Llama-3.2-3B, Gemma-2-2B, Phi-3.5-mini, + one 7–8B (ceiling) · **Haiku 4.5 as the cloud reference.** **Conditions:** free-form vs grammar/JSON-schema constrained decoding.
+
+**Metrics:** routing accuracy (A) · slot P/R (B) · format-valid rate · latency p50/p95 on target hardware · **calibration** (does confidence separate right from wrong? — so far *0.0 on correct*, so probably not; if confirmed, escalation must gate on **retrieval** signals, never model confidence).
+
+**Acceptance bar (illustrative — pin before running):** routing accuracy ≥ ~95% among ≤5 candidates · slot-exact ≥ ~90% · p95 < ~1.5 s. **Decision:** meet the bar → the small model routes *known* capabilities only; miss it → **cut it** from routing (deterministic/rule where a code path exists, Haiku fallback where none does).
+
+*(Register grows as the full corpus is traced.)*
+
+---
+
+## 4. Resolutions (design decisions — resolve stage)
+
+Calls made 2026-07-05 (Luis delegated). Listed gaps move to **designing**; each is then written into its target spec, after which the vertical set is re-confirmed. **Guiding decision: the kernel does not change — open-ended people-knowledge is modeled as seed *record types*, not new primitives (capabilities are data).**
+
+**Meta-schema (Spec 01):**
+- **G-10 → `contact_fact` record type.** Arbitrary facts live in an owned child type `{attribute?, value?, fact}` — queryable (F-08), structured-when-possible with a free-text fallback. *Not* a `json` bag (Spec 01 §3 discourages `json`; it blocks querying). **Kernel unchanged.**
+- **G-11 → `contact_relationship` record type**, *not* a kernel change: `{fromContact→contact, toContact→contact, relationType:text}`, where `relationType` is the role of `from` relative to `to`. Matches how NLU actually extracts ("daughter"), avoids a kernel/version bump, stays graph-queryable via the two `entityRef`s. The kernel `Relation` stays for structural/ownership edges; open-ended *social* roles are records. *(Follow-up, off the hot path: inverse-role queries — "Sarah's children" — via a small role→inverse table.)*
+- **G-02 → add optional `default` to the attribute schema** (literal create-time default), complementing `defaultToNow`; skills stop hand-writing `completed:false`.
+- **G-03 → the skill `format` step is the sole confirmation home;** retire `type.nluHints.confirmationTemplate`.
+- **G-01 → canonicalize the seed types** into Spec 01 from the trace drafts (`task`, `contact`, `contact_fact`, `contact_relationship`, `contact_interaction`, `journal_entry`).
+
+**DSL & interpreter (Spec 02):**
+- **G-04 → canonicalize the seed skills** into Spec 02 §9 ("the union the free-tier flows require", Spec 05 §3.7).
+- **G-05 → keep `format` minimal;** the confirmation idiom is `compute (format_date/labels) → write_record → format`, documented in §9 (not a `format` extension — richness from composition).
+- **G-06 / G-18 → author the `AuthoringService` flow** (Spec 02 §6 / Spec 04 §3.7): `define_type`/`define_skill` → reconcile → author → validate → (≤5-turn in-memory refine) → activate; nothing registered until activate.
+- **G-13 → document the multi-write seed-skill idiom** in §9 (sequential resolve-or-create branches; confirmation composed over created records; atomic undo).
+- **G-17 → semantic validator check** (Spec 02 §6.3): every `entityRef` write field must be fed by a *resolved id* (a bound `read_*` variable or an NLU-resolved slot) — reject an authored skill that writes an `entityRef` from a raw name slot.
+
+**NLU & routing (Spec 03):**
+- **G-12 → resolve-or-create contract.** NLU owns disambiguation of *existing* entities (`entityNames`: >1 → clarify pre-dispatch; 1 → pass id; 0 → pass name). Person-referencing skills take **both** an optional `…Id` and a `…Name`; use the id if present, else create from the name — so confirmations always have the name (fixes the F-07 defect). Post-disambiguation, a `read_one` on a name only ever sees 0-or-1 (stated invariant).
+- **G-14 / G-15 / G-16 → the deterministic date/recurrence resolver owns all date math** (Spec 03 §6), including **record-anchored** dates (scoped graph-read) and `next_anniversary` / `next_occurrence`; on a null anchor field it raises a `ProvideSlot` follow-up ("When's Sarah's birthday?"). Skills receive a literal resolved `dueAt`.
+- **G-07 → constrained decoding (a *format* guarantee) + escalation gated on retrieval signals, never model confidence.**
+- **G-19 → OOD detection conservative + records-biased:** personal cues ("what did **I / my / our / we** …") force `records_query`; a world-knowledge shape + no personal cue + below-retrieval-threshold → OOD/delegate. A records-cued query is never routed out.
+- **G-20 → RESOLVED: NO-GO (findings §11).** The eval killed the "small model discriminates among retrieved candidates" bet (≤49% routing, meta-intent 0%, uncalibrated). **Routing without the generative model:** corpus fast-path → retrieval top-1-with-margin → deterministic date/entity resolvers; residual (≥2 close candidates AND novel phrasing) → Haiku (paid) or clarify (offline/free); meta-intent + OOD owned by retrieval + rules. The architecture's local-first hedge holds — the generative model was only the last-resort discriminator, and corpus + retrieval-margin cover the common case. **`G-07` folds in** (constrained decoding = format insurance, not accuracy). *Follow-on design (own gap `G-33`): the retrieval-margin thresholds + deterministic slot extractors that replace the model's slot job (Haiku slot-exact was only 78%, so slots lean on the date/entity resolvers + corpus recipes + clarify, Haiku for residual).*
+
+**Functional (Spec 05):**
+- **G-09 → write §24 (type/skill deletion:** pre-action confirm, non-undoable, `MigrationRunner`). Off the vertical hot path — lower priority.
+
+**Apply order:** Spec 01 (seed types + fact/relationship model + `default` + confirmation home) → Spec 02 (seed skills §9 + authoring §6 + validator §6.3) → Spec 03 (resolve-or-create + date resolver §6 + routing) → Spec 05 (§24). Then re-confirm F-01/F-07/F-19/P-01/DP-02 against the completed specs.
+
+### Applied to specs (live status)
+- ✅ **Spec 01 §12** (done) — `G-01` (seed types), `G-02` (`default` attr), `G-03` (confirmation on skill), `G-10` (`contact_fact`), `G-11` (`contact_relationship`). Kernel unchanged.
+- ✅ **Spec 02 §§5.3–9** (done) — `G-04` seed skills §9, `G-05` confirmation idiom, `G-06`/`G-18` authoring flow §6, `G-13` multi-write idiom, `G-17` semantic validator §6.4.
+- ✅ **Spec 03 §§6–7** (done) — `G-12` resolve-or-create §6.1, `G-14`/`G-15`/`G-16` date resolver §6.2–6.3, `G-07` constrained decoding + retrieval-gated escalation §7.1, `G-19` records-biased OOD §7.2.
+- ✅ **Spec 05** — `G-09` deletion flow §24, `G-28` three-surface degrade §13; also finished the §20/P7 truncation and added §21–23 stubs (P8/P9/nudges).
+- ✅ **Eval** — `G-20` **RESOLVED: NO-GO** (findings §11 + `research/spec-05a-phase3/local-model-eval.md`); `G-07` folded in. New follow-on `G-33` (retrieval-margin + deterministic slot extractors that replace the cut model's job).
+- ✅ **Corpus resolve** — `G-21` streak fn (02 §3.7), `G-22`/`G-24`/`G-32` (01 §12.4), `G-23` mixed free/paid turn (04 §3.6), `G-25`/`G-26`/`G-27` generative (04 §3.10), `G-29` structured authoring (02 §6.3), `G-30` safety layer (02 §7). Every corpus **hot-path** gap is resolved.
+- ✅ **All 33 gaps dispositioned** — `G-09`/`G-28` resolved (above); `G-31` spec'd → deferred to Spec 07 (UI). No open corpus-driven gap remains.
+
+**Every gap the corpus exercises (`G-01`–`G-33`) is resolved or explicitly deferred with rationale.** The remaining work is not gaps but *spec completeness* — the drafts were only ~65% written (§5 below).
+
+---
+
+## 5. Spec completeness backlog (from the 05a full-suite survey)
+
+The define-as-we-trace pass completed every section the corpus **hot paths** touch. A full-suite survey (`research/spec-05a-phase3`, 2026-07-05) then found the specs were drafted to only ~65%: five files, ~20 missing sections, 40+ dangling cross-references into them. This is the tracked remainder, by dependency load. **P1** = hard-truncation or heavily referenced (blocks coherence); **P2** = referenced, self-contained; **P3** = archival/meta (Decision Records, open-questions, appendices — safe to defer indefinitely).
+
+**Spec 01** (ends clean §12.4; holes §9–11, §13):
+- **§8.7** key store / secure enclave — **P1** (ref'd 04×3, 03×1 — the journal-encryption + key-source seam)
+- **§9** presentation archetypes — **P2** (`G-31` grouped-aggregation archetype lands here)
+- **§10** nluHints / confirmationTemplate — **P2** · **§13** mixin — P3 (deferred by design) · §12 Q-refs, Appendix A — P3
+
+**Spec 02** (ends clean §9.2; holes §5.4/5.5, §10):
+- **§5.4** before-images / reap-at-done — **P1** (ref'd 04×5+ — the undo contract's backbone)
+- **§5.5** deferred plan cache — **P2** (mostly a "deferred post-v1" note) · **§7.1–7.5 / §8.2–8.4** numbered anchors — **P2** (content exists, needs headers) · §10 open-Qs, Appendix A — P3
+
+**Spec 03** (ends clean §7.3.4; §5 body + §8–11 missing):
+- **§5.2** correction flow — **P1** (ref'd ×6 — the "gets better" ratchet) · **§5.4** normalize, **§5.4a** anaphora, **§5.5** active:false, **§5.6** sensitive-exclusion — **P1** (all load-bearing)
+- **§8.1** captureIntent label — P2 · **Appendix A §A.3** tiered delegation — **P2** (ref'd 03:547) · §10 MD-series, §11, App B–E — P3
+
+**Spec 04** (was HARD-TRUNCATED mid-§4.8 — **now written through §7**):
+- ✅ **§4.8** onWrite hook + cascade bound (finished), **§4.9** freshness/no-stale-cache, **§5** error taxonomy (sealed sets §5.1, surface map §5.2, translation §5.3, crash recovery §5.4, repair surface §5.5), **§6** offline (contract §6.1, degrade §6.2, drafts/reconnect §6.3), **§7/§7.1** startup & resume — all written this pass (~18 dangling refs closed).
+- ⏳ §9 Decision Record, §11 open-Qs, MD-A5/6/10, App B–D — P3 (archival)
+
+**Spec 05** (was truncated mid-§20; **§20 finished, §24 deletion + §21–23 stubs added this pass**):
+- **§21/§22 full flows** (P8 meal_suggestion, P9 monthly_reflection) + **§23** nudges — **P2** (stubs in place) · §26 Decision Record (D1–D9, ref'd ×6) + Appendix B — P3
+
+**Progress this pass:** ✅ Spec 04 §4.8–§7 (done), ✅ Spec 02 §5.4–§5.5 (done), ✅ Spec 05 §20 finished + §21–24 added. **Recommended next block:** **Spec 03 §5.2–5.6** (the correction/anaphora/invalidation loop — ~15 dangling refs, the "gets better" spine), then **Spec 01 §8.7 + §9** (key store + presentation archetypes). The **P3** tier (Decision Records, open-Qs, appendices) is archival and can wait indefinitely.

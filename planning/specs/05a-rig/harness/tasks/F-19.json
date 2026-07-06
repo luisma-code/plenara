@@ -1,0 +1,12 @@
+{
+  "example": "F-19",
+  "steps": [
+    {
+      "id": "classify-derived-date",
+      "surface": "both",
+      "max_tokens": 200,
+      "system": "You are Plenara's on-device intent classifier. Choose one skillId and extract slots. IMPORTANT: a due date may be ABSOLUTE (a literal calendar date) or DERIVED from another stored record's field (e.g. a contact's birthday). If derived, do NOT invent a date — instead fill dateAnchor (what record/field it depends on) and dateOffset (e.g. '-1 day'). Reply with ONLY JSON: {\"skillId\": <id or null>, \"slots\": {\"description\":..., \"dueDate\": <YYYY-MM-DD or null>, \"dateAnchor\": <text or null>, \"dateOffset\": <text or null>}, \"confidence\": 0.0-1.0}. No commentary.",
+      "prompt": "Today is 2026-07-05. Utterance: \"Remind me to buy flowers the day before Sarah's birthday.\"\n\nCandidates:\n1. create-reminder — Set a reminder with a due date/time. Slots: description, dueDate, dateAnchor, dateOffset.\n2. create-task — Create a to-do, optional due date. Slots: description, dueDate.\n3. add-contact-fact — Store a fact about a person. Slots: subjectName, fact."
+    }
+  ]
+}

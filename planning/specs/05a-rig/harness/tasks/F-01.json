@@ -1,0 +1,12 @@
+{
+  "example": "F-01",
+  "steps": [
+    {
+      "id": "classify",
+      "surface": "both",
+      "max_tokens": 120,
+      "system": "You are Plenara's on-device intent classifier. You receive a user utterance and a set of candidate skills, each with a description, example phrases, and input slots. Choose exactly one skillId from the candidates (or null if none fit), and extract the declared slot values from the utterance. Reply with ONLY a JSON object: {\"skillId\": <candidate id or null>, \"slots\": {<slotName>: <value or null>}, \"confidence\": <0.0-1.0>}. Never invent a skillId. No commentary.",
+      "prompt": "Today is Sunday 2026-07-05 (local). Resolve relative dates to YYYY-MM-DD.\n\nUtterance: \"Remind me to call the plumber Thursday.\"\n\nCandidates:\n1. create-task — Create a to-do task, optionally with a due date. Examples: \"remind me to call the plumber\", \"add a task to buy milk\", \"I need to email Sam tomorrow\". Slots: description (text), dueDate (date, optional).\n2. create-reminder — Set a time/point reminder. Examples: \"in three weeks nudge me about the tickets\", \"remind me at 8am to stretch\". Slots: description (text), dueAt (datetime).\n3. log-interaction — Record a dated note about a person. Examples: \"note that Ana starts her job Monday\", \"had lunch with Marco\". Slots: contactName (text), note (text), date (date, optional).\n4. add-contact-fact — Store a fact about a person. Examples: \"Sarah's daughter is allergic to peanuts\", \"Marco likes hiking\". Slots: contactName (text), fact (text)."
+    }
+  ]
+}

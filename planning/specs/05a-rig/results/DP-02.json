@@ -1,0 +1,187 @@
+{
+  "example": "DP-02",
+  "steps": [
+    {
+      "id": "route-weather-ood",
+      "surface": "both",
+      "local": [
+        {
+          "text": "{\"route\": \"out_of_domain\", \"confidence\": 0.0}",
+          "latency_ms": 1045.3,
+          "prompt_tok": 158,
+          "completion_tok": 17,
+          "server_prompt_ms": 472.1,
+          "server_predicted_ms": 533.9,
+          "predicted_per_second": 31.8,
+          "model": "qwen2.5-1.5b"
+        },
+        {
+          "text": "{\"route\": \"out_of_domain\", \"confidence\": 0.0}",
+          "latency_ms": 2224.8,
+          "prompt_tok": 180,
+          "completion_tok": 17,
+          "server_prompt_ms": 1136.5,
+          "server_predicted_ms": 1073.6,
+          "predicted_per_second": 15.8,
+          "model": "llama-3.2-3b"
+        }
+      ],
+      "claude": [
+        {
+          "text": "```json\n{\"route\": \"out_of_domain\", \"confidence\": 0.99}\n```",
+          "latency_ms": 1220.7,
+          "in_tok": 167,
+          "out_tok": 26,
+          "cost_usd": 0.000297,
+          "stop_reason": "end_turn",
+          "model": "haiku-4.5"
+        },
+        {
+          "text": "```json\n{\n  \"route\": \"out_of_domain\",\n  \"confidence\": 1.0\n}\n```",
+          "latency_ms": 1650.6,
+          "in_tok": 167,
+          "out_tok": 32,
+          "cost_usd": 0.000981,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.5"
+        },
+        {
+          "text": "{\"route\": \"out_of_domain\", \"confidence\": 1.0}",
+          "latency_ms": 1098.0,
+          "in_tok": 168,
+          "out_tok": 21,
+          "cost_usd": 0.000819,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.6"
+        },
+        {
+          "text": "{\"route\": \"out_of_domain\", \"confidence\": 0.95}",
+          "latency_ms": 1862.8,
+          "in_tok": 167,
+          "out_tok": 21,
+          "cost_usd": 0.00136,
+          "stop_reason": "end_turn",
+          "model": "opus-4.5"
+        },
+        {
+          "text": "{\"route\": \"out_of_domain\", \"confidence\": 0.99}",
+          "latency_ms": 1730.0,
+          "in_tok": 168,
+          "out_tok": 21,
+          "cost_usd": 0.001365,
+          "stop_reason": "end_turn",
+          "model": "opus-4.6"
+        },
+        {
+          "text": "{\"route\":\"out_of_domain\",\"confidence\":0.98}",
+          "latency_ms": 1070.2,
+          "in_tok": 222,
+          "out_tok": 24,
+          "cost_usd": 0.00171,
+          "stop_reason": "end_turn",
+          "model": "opus-4.7"
+        },
+        {
+          "text": "{\"route\": \"out_of_domain\", \"confidence\": 0.97}",
+          "latency_ms": 1228.6,
+          "in_tok": 217,
+          "out_tok": 24,
+          "cost_usd": 0.001685,
+          "stop_reason": "end_turn",
+          "model": "opus-4.8"
+        }
+      ]
+    },
+    {
+      "id": "route-weather-records",
+      "surface": "both",
+      "local": [
+        {
+          "text": "{\"route\": \"records_query\", \"confidence\": 0.9}",
+          "latency_ms": 1052.5,
+          "prompt_tok": 165,
+          "completion_tok": 16,
+          "server_prompt_ms": 520.1,
+          "server_predicted_ms": 505.2,
+          "predicted_per_second": 31.7,
+          "model": "qwen2.5-1.5b"
+        },
+        {
+          "text": "{\"route\": \"out_of_domain\", \"confidence\": 0.0}",
+          "latency_ms": 2274.0,
+          "prompt_tok": 187,
+          "completion_tok": 17,
+          "server_prompt_ms": 1191.4,
+          "server_predicted_ms": 1077.0,
+          "predicted_per_second": 15.8,
+          "model": "llama-3.2-3b"
+        }
+      ],
+      "claude": [
+        {
+          "text": "```json\n{\"route\": \"records_query\", \"confidence\": 0.95}\n```",
+          "latency_ms": 950.5,
+          "in_tok": 174,
+          "out_tok": 24,
+          "cost_usd": 0.000294,
+          "stop_reason": "end_turn",
+          "model": "haiku-4.5"
+        },
+        {
+          "text": "```json\n{\n  \"route\": \"records_query\",\n  \"confidence\": 0.95\n}\n```",
+          "latency_ms": 1012.7,
+          "in_tok": 174,
+          "out_tok": 30,
+          "cost_usd": 0.000972,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.5"
+        },
+        {
+          "text": "{\"route\": \"records_query\", \"confidence\": 0.95}",
+          "latency_ms": 988.7,
+          "in_tok": 175,
+          "out_tok": 19,
+          "cost_usd": 0.00081,
+          "stop_reason": "end_turn",
+          "model": "sonnet-4.6"
+        },
+        {
+          "text": "{\"route\": \"records_query\", \"confidence\": 0.95}",
+          "latency_ms": 851.2,
+          "in_tok": 174,
+          "out_tok": 19,
+          "cost_usd": 0.001345,
+          "stop_reason": "end_turn",
+          "model": "opus-4.5"
+        },
+        {
+          "text": "{\"route\": \"records_query\", \"confidence\": 0.95}",
+          "latency_ms": 1871.9,
+          "in_tok": 175,
+          "out_tok": 19,
+          "cost_usd": 0.00135,
+          "stop_reason": "end_turn",
+          "model": "opus-4.6"
+        },
+        {
+          "text": "{\"route\":\"records_query\",\"confidence\":0.95}",
+          "latency_ms": 1198.7,
+          "in_tok": 228,
+          "out_tok": 21,
+          "cost_usd": 0.001665,
+          "stop_reason": "end_turn",
+          "model": "opus-4.7"
+        },
+        {
+          "text": "{\"route\": \"records_query\", \"confidence\": 0.9}",
+          "latency_ms": 1200.3,
+          "in_tok": 223,
+          "out_tok": 21,
+          "cost_usd": 0.00164,
+          "stop_reason": "end_turn",
+          "model": "opus-4.8"
+        }
+      ]
+    }
+  ]
+}

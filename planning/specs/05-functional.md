@@ -539,6 +539,11 @@ When the user initiates a paid-tier flow while offline, the response is:
 > A: "That feature needs an internet connection. I'll remind you to try again when you're back online."
 The app offers to set a reminder (§5 flow). The request is not queued automatically because the user may not want to wait.
 
+**Three distinct "paid unavailable" surfaces, never conflated (`G-28`).** A paid flow can be blocked for three different reasons, each with its own honest surface (P7 — no silent failure) — the app names the *actual* reason so the user knows what would fix it:
+- **Tier** (free user, no key): "That's a paid feature — it uses Claude. Add your API key in settings and it's yours." → offers the upgrade path (Spec 03 §2.2a).
+- **Connectivity** (keyed user, offline): the message above — a *reminder* offer, not an upgrade prompt; the capability exists, only the network is missing. On reconnect the app silently re-enables cloud features (E1) but does **not** auto-run the earlier request.
+- **Key/quota** (keyed but the call returns `CloudError(rateLimited)` or an auth failure): "I've hit today's limit on Claude" / "your key was rejected" — a distinct, actionable surface (Spec 04 §6, §5.2), never mislabeled as "offline."
+
 **Subtitle overlay:**
 
 At any point, the user can toggle the quiet overlay (a system command: "text mode" / "quiet mode"). In this mode:
@@ -778,4 +783,68 @@ The user can set the weekly review to run automatically (e.g. every Sunday morni
 
 ```
 U: "What tends to precede my bad-sleep nights?"
-[System: NLU routes to `generative_request`, generati
+[System: NLU routes to `generative_request`, generativeKind = `pattern_insight` (Spec 03 §2.2a).
+ Tier/key gate passes (paid). GenerativeService.produce runs DETACHED and READ-ONLY (Spec 04 §3.10):
+ it reads the sleep tracker plus the candidate correlate trackers/logs over a window
+ (caffeine, exercise, screen-time, mood/stress), assembles a metadata-framed prompt, and calls Claude.]
+A: "Over the last two months, your worse-sleep nights most often followed days with
+    late caffeine (after ~3pm) and little movement — and a couple clustered around
+    high-stress journal days. It's a pattern, not a certainty, but caffeine timing is
+    the one you have the most direct handle on."
+```
+
+**What makes this safe and honest:**
+- **Read-only, no writes, no undo** — a `pattern_insight` produces a narrative artifact, never a record; it is not act-then-describe (Spec 04 §3.10).
+- **Evidence-linked and hedged** — the narration cites the actual logged signals and explicitly frames correlation, not causation (the same discipline as `foresight`, `G-27`); it never manufactures a pattern the data doesn't show.
+- **Journal enters only under consent** — if stress/journal signals are used, they are included at prompt *assembly* under the per-session consent (`G-26`, Spec 04 §3.10), never by instructing the model to "read the journal."
+- **Delivered off the turn lock** — detached; returns immediately with a handle and narrates through the operation center (Spec 04 §4.7), so a multi-second synthesis never blocks capture.
+
+**Edge cases:**
+
+*E1 — Not enough data.* Fewer than a usable window of entries across the relevant trackers → the app says so plainly rather than inventing a pattern: "I don't have enough logged yet to see a reliable pattern — a few more weeks of sleep and caffeine entries and I can look again."
+
+*E2 — Offline or no key.* `generative_request` is recognized but tier/connectivity-gated (§13) → the three-surface degrade, not a fabricated local imitation (Spec 04 §3.10).
+
+---
+
+## 21. Paid-Tier Task P8: Meal Suggestion
+
+**Summary:** The user asks what to cook or eat; Claude suggests options grounded in logged preferences, dietary restrictions, and recent meals. `generativeKind = meal_suggestion` (Spec 03 §2.2a); read-only, detached (Spec 04 §3.10). *Full canonical flow: pending — see the completeness backlog (05b §5).*
+
+## 22. Paid-Tier Task P9: Monthly Reflection
+
+**Summary:** A monthly narrative over journal + trackers + interactions; `generativeKind = monthly_reflection` (Spec 03 §2.2a). Requires the **mandatory journal-consent card** (`G-26`, Spec 04 §3.10) before any journal text enters the prompt. Read-only, detached. *Full canonical flow: pending — see the completeness backlog (05b §5).*
+
+## 23. Gentle Nudges
+
+**Summary:** Proactive, low-frequency surfacing (streak encouragement, reconnect prompts, upcoming anniversaries) delivered via the **Review Feed / AttentionSurface** (Spec 04 §3.12), never interrupting a live turn. Mechanism: automations (Spec 01 automations registry) writing to the attention surface, subject to act-then-describe's automation rule (automation writes never lower undoability). *Full canonical flow: pending — see the completeness backlog (05b §5).*
+
+---
+
+## 24. Capability Deletion — the one pre-action confirmation (`G-09`)
+
+**Summary:** Deleting a user-authored type or skill is the **single exception** to act-then-describe (P2; CLAUDE.md). Everything else executes then describes, because reliable undo is the safety net — but a capability deletion is **not** recoverable by the record-undo mechanism, so the app confirms *before* doing it. This app-initiated confirm is what lets everything else be fearless.
+
+**Why it's the exception.** Record writes reverse via before-images (Spec 02 §4). A *definition* is different: removing a type can orphan many records and drop a capability the corpus and automations depend on; there is no before-image that "un-deletes a type and re-links 200 records." So deletion gets a genuine "this can't be undone" gate — not the retired routing pre-confirm (D2), but a real destructive-action confirmation.
+
+**Trigger & flow — type with records:**
+```
+U: "Delete the mood tracker."
+[System: NLU → system_command(delete_type, target=mood). The orchestrator does NOT execute;
+ it raises ConfirmationRequested(nonUndoableDeletion) with an impact summary.]
+A: "Deleting the Mood type also affects 87 mood entries — this can't be undone.
+    Delete the type and its entries, keep the entries as read-only history, or cancel?"
+U: "Keep the entries."
+[System: type marked deleted; its records retained as read-only orphans (archived typeRef);
+ the log-mood skill + its corpus entries are deactivated (§5.5).]
+A: "Done — removed the Mood tracker. Your 87 entries are kept as read-only history."
+```
+
+**The three choices on a type with records:** (a) **delete type + records**; (b) **keep records as read-only orphans** — the capability goes, the history stays viewable but not writable; (c) **cancel**. A type with *no* records skips the choice → a single "Delete the X type? This can't be undone." confirm.
+
+**Skill deletion** is lighter — a skill is behavior, not data: deleting it removes the capability and its corpus entries but touches no records, and it is re-authorable (paid). Still confirmed ("Delete the X skill? This removes the capability; your records stay."), because it isn't record-undoable and may break an automation.
+
+**Guards:**
+- **Seeds cannot be deleted** — the six seed types, built-in tracker templates, and seed skills (Spec 01 §12, Spec 02 §9) are binary, not user data. A delete against a seed → "That's built-in — I can't remove it, but I can stop suggesting it."
+- **Dependency check** — if an automation or another skill references the target, the impact summary names it ("the 'weekly mood review' automation uses this") so nothing breaks silently (P7).
+- **Never automation-initiated** — deletion is a `system_command` only; an unattended automation has no path to this confirm and can never delete a capability (Review Feed writes can't lower undoability, CLAUDE.md).
