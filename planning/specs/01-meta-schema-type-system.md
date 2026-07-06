@@ -522,9 +522,11 @@ A **partially-sensitive** record (e.g. `contact`) — name and relationship type
 }
 ```
 
-### 8.7 Key Store & the CryptoBox *(resolve-stage addition)*
+### 8.7 Key Store & the CryptoBox *(resolve-stage addition — DEFERRED feature)*
 
-§8.1–8.2 define *what* is encrypted (sensitive attribute values, bundled into `encryptedPayload`). This section defines *the key* — where it lives, how it reaches every device, and the interface the layers use. It is the seam Specs 03/04 reference (`CryptoBox.keyAvailable`).
+> **⚠ DEFERRED to a later version (Luis's call).** At-rest encryption — and therefore *json-privacy from the cloud provider* — is **not in early versions**. Early versions store all content, including the journal and `sensitive` attributes, as **plaintext JSON that syncs** in the user's own cloud folder: durable across device loss, protected by the user's *provider-account* security (their iCloud/OneDrive/Drive), not by Plenara. Nothing about the app's function depends on encryption — it is privacy *hardening*, layered on later. The design below is what ships when encryption is scheduled; the `sensitive` flag (§8.1) is honored *then*, and the onboarding surface states the current posture honestly until it is.
+
+§8.1–8.2 define *what* will be encrypted (sensitive attribute values, bundled into `encryptedPayload`). This section defines *the key* — where it lives, how it reaches every device, and the interface the layers use. It is the seam Specs 03/04 reference (`CryptoBox.keyAvailable`).
 
 **The `CryptoBox`.** All at-rest encryption goes through one interface:
 ```dart
@@ -534,7 +536,7 @@ abstract class CryptoBox {
   String decrypt(String encryptedPayload);  // typed failure if no key (Spec 04 §5.1)
 }
 ```
-It is the single reader/writer of **every** encrypted store: the per-record `encryptedPayload` (§8.2), the device-local journal (`G-37`), the execution journal (Spec 02 §5.2), the deferred plan cache (Lane 2, Spec 03 §5.1), and the content-search index (Spec 04 §3.14). One key, one algorithm, one place to audit.
+When shipped, it is the single reader/writer of **every** encrypted store: the per-record `encryptedPayload` of `sensitive` attributes and the journal (§8.2 — both synced records), plus the device-local stores kept local for *volatility/conflict* reasons rather than privacy (the execution journal, Spec 02 §5.2; the deferred plan cache, Spec 03 §5.1; the rebuildable content-search index, Spec 04 §3.14). One key, one algorithm, one place to audit.
 
 **Where the key lives.** In the **platform secure store**, never in the storage folder and never in a synced file: Keychain / Secure Enclave (Apple), DPAPI / TPM (Windows), Keystore (Android). Generated on first run; never leaves the secure store in plaintext (research §8.7).
 
@@ -616,7 +618,7 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
     {"name":"occurredAt","valueType":"datetime","required":true,"defaultToNow":true}],
   "presentation":{"archetype":"timeline","primaryField":"note","timestampField":"occurredAt"} }
 
-// journal_entry — private on-device daily journal (fully sensitive; excluded from sync)
+// journal_entry — private daily journal (fully sensitive; SYNCS for durability; provider-privacy deferred to a later encryption-based version, §8.7)
 { "typeId":"journal_entry","displayName":"Journal Entry","displayNamePlural":"Journal Entries",
   "description":"A private, on-device daily journal entry.",
   "examplePhrases":["start today's journal","journal entry"],
@@ -626,7 +628,7 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
   "presentation":{"archetype":"journal","primaryField":"body","timestampField":"entryDate"} }
 ```
 
-**Notes.** `contact_fact` and `contact_interaction` are **owned** (`parentType:"contact"`) so they index under their person without decryption (§4.5/§8.2). `journal_entry` is fully sensitive and stored in **device-local app storage** (`[app-support]/plenara/journal/`), *not* in the synced Plenara root — a "sync-excluded subfolder inside the cloud-synced folder" is not reliably implementable (iCloud Drive, OneDrive, and Google Drive offer no app-settable per-subfolder client exclusion), so the never-leaves-the-device invariant (Spec 05 §11) must not depend on one. Journal entries are by design never synced, so device-local storage loses nothing; the StorageRepository treats the journal directory as a second, non-watched root. These six + the built-in tracker templates (Spec 05 §6) are the free-tier type surface; the seed **skills** over them are canonicalized in Spec 02 §9.
+**Notes.** `contact_fact` and `contact_interaction` are **owned** (`parentType:"contact"`) so they index under their person without decryption (§4.5/§8.2). `journal_entry` **syncs like any other record** (in the user's cloud folder) so a journal survives device loss. Two earlier positions are both **dropped**: a "sync-excluded subfolder inside the synced folder" is not implementable (no provider offers app-settable per-subfolder exclusion — `G-37`), and making the journal **device-local** would trade a privacy leak for **data loss if the device is lost** (Luis's call — the worse failure of the two). The remaining question — keeping journal content unreadable by the cloud *provider* — is a **json-privacy problem deferred to a later version** (via the at-rest encryption of §8.7, itself deferred); until then journal content is plaintext JSON in the user's own synced folder, protected by their provider-account security, and the onboarding/consent surface states this plainly. These six + the built-in tracker templates (Spec 05 §6) are the free-tier type surface; the seed **skills** over them are canonicalized in Spec 02 §9.
 
 ### 12.4 Corpus resolve additions (`G-22`, `G-24`, `G-32`)
 - **Contact aliases (`G-24`).** `contact` gains `{"name":"aliases","label":"Also known as","valueType":"tag","required":false}` (nicknames/roles: "Mum", "the boss"). `entityNames.resolve` (Spec 03 §6.1) matches `displayName` **or** any alias; common role words map via aliases or a small role table. A **group** name ("the Garcias") resolves to a *set* of contacts (for `event_prep`, P-08).

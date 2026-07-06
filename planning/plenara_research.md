@@ -1102,9 +1102,10 @@ recipes)
 
 **contacts/** ← one file per person
 
-**journal/** ← *(moved device-local — `G-37`)* journal entries live
-encrypted at `[app-support]/plenara/journal/`, **not** in this synced
-folder; no provider offers a reliable per-subfolder sync exclusion (§10.3)
+**journal/** ← one file per day (YYYY-MM-DD.json); **syncs** like other
+records so a journal survives device loss. The earlier "excluded from
+sync" idea is dropped (unimplementable + device-loss risk, `G-37`);
+provider-privacy is a **deferred** later-version hardening (encryption, §8.7)
 
 **meals/** ← records of a user-defined type live in their own folder
 
@@ -1324,13 +1325,15 @@ expressive enough to carry the product vision.
 ### 10.3 Life Journaling
 
 -   **Daily voice memo:** 60 seconds auto-transcribed on-device. Stored
-    > **device-local and encrypted** at `[app-support]/plenara/journal/YYYY-MM-DD.json`
-    > — *not* in the cloud-synced folder. *(Amended, `G-37`: no major
-    > provider offers a reliable per-subfolder sync exclusion, so the
-    > originally-planned `journal/` under the synced root would have
-    > silently synced the most sensitive data while the spec asserted it
-    > never leaves the device. Journal entries are never synced by design,
-    > so the synced-root location bought nothing.)*
+    > as `journal/YYYY-MM-DD.json` in the user's synced folder, and it
+    > **syncs** like any other record so a journal survives device loss.
+    > *(Amended: the original "excluded from sync inside the synced folder"
+    > invariant is dropped — no provider offers a reliable per-subfolder
+    > exclusion (`G-37`), and making it device-local would lose the journal
+    > on device loss. Keeping journal content unreadable by the cloud
+    > **provider** is a json-privacy hardening **deferred to a later
+    > version** — at-rest encryption, §8.7, itself deferred; until then it
+    > is plaintext in the user's own synced folder, and onboarding says so.)*
 
 -   **Local semantic search:** using on-device embeddings.
 
