@@ -51,6 +51,23 @@ Map<String, Map<String, dynamic>> loadRecords(String dir) {
   return store;
 }
 
+/// Reverse a turn from its before-images (Spec 02 §5.4 / Spec 04 §3.11): a
+/// created record (prior == null) is deleted; an updated one is restored. Applies
+/// to both the in-memory store and the persisted files.
+void undoTurn(Map<String, Map<String, dynamic>?> before, String dir, HlcDevice dev,
+    Map<String, Map<String, dynamic>> store) {
+  before.forEach((id, prior) {
+    if (prior == null) {
+      store.remove(id);
+      final f = File('$dir/$id.json');
+      if (f.existsSync()) f.deleteSync();
+    } else {
+      store[id] = Map<String, dynamic>.from(prior);
+      persist(prior, dir, dev);
+    }
+  });
+}
+
 /// Flat record -> per-record file, stamping each field (the CRDT `_meta` block).
 void persist(Map<String, dynamic> flat, String dir, HlcDevice dev) {
   Directory(dir).createSync(recursive: true);

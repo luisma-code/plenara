@@ -52,12 +52,30 @@ void main(List<String> args) {
       ? [args.join(' ')]
       : [
           'add call the plumber to my to-do list',
+          'undo that',
           "remember that Mia is allergic to peanuts and she is Sarah Mitchell's daughter",
           'how many km have I run this week',
         ];
 
+  final undoRe = RegExp(r'^(undo|undo that|no,? take that back|scratch that)\.?$',
+      caseSensitive: false);
+  Map<String, Map<String, dynamic>?>? lastBefore; // most recent write turn's before-images
+
   for (final u in utterances) {
     stdout.writeln('U: $u');
+
+    // pre-filter: `undo` is a system command (Spec 03 §2.3), not a skill
+    if (undoRe.hasMatch(u.trim())) {
+      if (lastBefore == null) {
+        stdout.writeln('A: Nothing to undo.\n');
+      } else {
+        undoTurn(lastBefore, '$dataDir/records', dev, store);
+        stdout.writeln('A: Undone.\n');
+        lastBefore = null;
+      }
+      continue;
+    }
+
     final routed = router.route(u);
     if (routed == null) {
       stdout.writeln("A: I didn't catch a known request there (no corpus hit; retrieval fallback is next).\n");
@@ -65,10 +83,11 @@ void main(List<String> args) {
     }
     try {
       final plan = interp.resolve(skills[routed['skillId']]!, routed['slots'], store);
-      interp.execute(plan, store);
+      final before = interp.execute(plan, store);
       for (final w in plan.writes) {
         persist(w, '$dataDir/records', dev);
       }
+      if (plan.writes.isNotEmpty) lastBefore = before; // enable undo of this turn
       stdout.writeln('A: ${plan.confirmation}');
       if (plan.writes.isNotEmpty) {
         stdout.writeln('   [wrote ${plan.writes.map((w) => w['typeId']).join(', ')} — persisted with _meta CRDT block]');

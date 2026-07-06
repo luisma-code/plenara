@@ -220,9 +220,16 @@ class Interpreter {
     return rec;
   }
 
-  void execute(Plan plan, Map<String, Record> store) {
+  /// Applies the plan and returns the before-images (Spec 02 §5.4): recordId ->
+  /// prior state, or null when the write created the record. This is what makes
+  /// `undo` deterministic and reliable — the safety net act-then-describe rests on.
+  Map<String, Map<String, dynamic>?> execute(Plan plan, Map<String, Record> store) {
+    final before = <String, Map<String, dynamic>?>{};
     for (final rec in plan.writes) {
-      store[rec['id']] = Map<String, dynamic>.from(rec);
+      final id = rec['id'] as String;
+      before[id] = store.containsKey(id) ? Map<String, dynamic>.from(store[id]!) : null;
+      store[id] = Map<String, dynamic>.from(rec);
     }
+    return before;
   }
 }
