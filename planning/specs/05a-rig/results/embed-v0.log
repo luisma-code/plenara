@@ -1323,3 +1323,225 @@
 18.30.947.660 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.062
 18.30.947.669 I slot launch_slot_: id  2 | task 874 | processing task, is_child = 0
 18.30.949.245 I slot      release: id  2 | task 874 | stop processing: n_tokens = 7, truncated = 0
+19.27.412.018 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.167 (> 0.100 thold), f_keep = 0.143
+19.27.412.025 I slot launch_slot_: id  2 | task 876 | processing task, is_child = 0
+19.27.414.269 I slot      release: id  2 | task 876 | stop processing: n_tokens = 6, truncated = 0
+19.27.435.509 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.167
+19.27.435.518 I slot launch_slot_: id  2 | task 878 | processing task, is_child = 0
+19.27.437.758 I slot      release: id  2 | task 878 | stop processing: n_tokens = 7, truncated = 0
+19.27.441.067 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.125 (> 0.100 thold), f_keep = 0.143
+19.27.441.077 I slot launch_slot_: id  2 | task 880 | processing task, is_child = 0
+19.27.443.236 I slot      release: id  2 | task 880 | stop processing: n_tokens = 8, truncated = 0
+19.27.445.820 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.286 (> 0.100 thold), f_keep = 0.250
+19.27.445.828 I slot launch_slot_: id  2 | task 882 | processing task, is_child = 0
+19.27.447.872 I slot      release: id  2 | task 882 | stop processing: n_tokens = 7, truncated = 0
+19.27.449.960 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.250 (> 0.100 thold), f_keep = 0.143
+19.27.449.970 I slot launch_slot_: id  2 | task 884 | processing task, is_child = 0
+19.27.451.617 I slot      release: id  2 | task 884 | stop processing: n_tokens = 4, truncated = 0
+19.27.453.363 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.400 (> 0.100 thold), f_keep = 0.500
+19.27.453.370 I slot launch_slot_: id  2 | task 886 | processing task, is_child = 0
+19.27.454.938 I slot      release: id  2 | task 886 | stop processing: n_tokens = 5, truncated = 0
+19.27.457.384 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.111 (> 0.100 thold), f_keep = 0.200
+19.27.457.390 I slot launch_slot_: id  2 | task 888 | processing task, is_child = 0
+19.27.459.207 I slot      release: id  2 | task 888 | stop processing: n_tokens = 9, truncated = 0
+19.27.461.295 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.833 (> 0.100 thold), f_keep = 0.556
+19.27.461.305 I slot launch_slot_: id  2 | task 890 | processing task, is_child = 0
+19.27.462.933 I slot      release: id  2 | task 890 | stop processing: n_tokens = 6, truncated = 0
+19.27.464.833 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.111 (> 0.100 thold), f_keep = 0.167
+19.27.464.844 I slot launch_slot_: id  2 | task 892 | processing task, is_child = 0
+19.27.466.896 I slot      release: id  2 | task 892 | stop processing: n_tokens = 9, truncated = 0
+19.27.468.778 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.833 (> 0.100 thold), f_keep = 0.556
+19.27.468.786 I slot launch_slot_: id  2 | task 894 | processing task, is_child = 0
+19.27.470.772 I slot      release: id  2 | task 894 | stop processing: n_tokens = 6, truncated = 0
+19.27.473.115 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.250 (> 0.100 thold), f_keep = 0.167
+19.27.473.122 I slot launch_slot_: id  2 | task 896 | processing task, is_child = 0
+19.27.474.752 I slot      release: id  2 | task 896 | stop processing: n_tokens = 4, truncated = 0
+19.27.477.128 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.400 (> 0.100 thold), f_keep = 0.500
+19.27.477.134 I slot launch_slot_: id  2 | task 898 | processing task, is_child = 0
+19.27.478.601 I slot      release: id  2 | task 898 | stop processing: n_tokens = 5, truncated = 0
+19.27.480.438 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.286 (> 0.100 thold), f_keep = 0.400
+19.27.480.445 I slot launch_slot_: id  2 | task 900 | processing task, is_child = 0
+19.27.482.277 I slot      release: id  2 | task 900 | stop processing: n_tokens = 7, truncated = 0
+19.27.485.546 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.143
+19.27.485.555 I slot launch_slot_: id  2 | task 902 | processing task, is_child = 0
+19.27.487.588 I slot      release: id  2 | task 902 | stop processing: n_tokens = 7, truncated = 0
+19.27.489.913 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.250 (> 0.100 thold), f_keep = 0.143
+19.27.489.920 I slot launch_slot_: id  2 | task 904 | processing task, is_child = 0
+19.27.491.638 I slot      release: id  2 | task 904 | stop processing: n_tokens = 4, truncated = 0
+19.27.493.194 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.400 (> 0.100 thold), f_keep = 0.500
+19.27.493.202 I slot launch_slot_: id  2 | task 906 | processing task, is_child = 0
+19.27.494.689 I slot      release: id  2 | task 906 | stop processing: n_tokens = 5, truncated = 0
+19.27.496.898 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.429 (> 0.100 thold), f_keep = 0.600
+19.27.496.905 I slot launch_slot_: id  2 | task 908 | processing task, is_child = 0
+19.27.498.485 I slot      release: id  2 | task 908 | stop processing: n_tokens = 7, truncated = 0
+19.27.500.226 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.167 (> 0.100 thold), f_keep = 0.143
+19.27.500.232 I slot launch_slot_: id  2 | task 910 | processing task, is_child = 0
+19.27.501.713 I slot      release: id  2 | task 910 | stop processing: n_tokens = 6, truncated = 0
+19.27.503.776 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.200 (> 0.100 thold), f_keep = 0.167
+19.27.503.781 I slot launch_slot_: id  2 | task 912 | processing task, is_child = 0
+19.27.505.115 I slot      release: id  2 | task 912 | stop processing: n_tokens = 5, truncated = 0
+19.27.506.746 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.200 (> 0.100 thold), f_keep = 0.200
+19.27.506.754 I slot launch_slot_: id  2 | task 914 | processing task, is_child = 0
+19.27.508.312 I slot      release: id  2 | task 914 | stop processing: n_tokens = 5, truncated = 0
+19.27.509.688 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.154 (> 0.100 thold), f_keep = 0.400
+19.27.509.694 I slot launch_slot_: id  2 | task 916 | processing task, is_child = 0
+19.27.511.869 I slot      release: id  2 | task 916 | stop processing: n_tokens = 13, truncated = 0
+19.27.513.304 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.125 (> 0.100 thold), f_keep = 0.154
+19.27.513.313 I slot launch_slot_: id  2 | task 918 | processing task, is_child = 0
+19.27.516.233 I slot      release: id  2 | task 918 | stop processing: n_tokens = 16, truncated = 0
+19.27.518.409 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.438 (> 0.100 thold), f_keep = 0.438
+19.27.518.417 I slot launch_slot_: id  2 | task 920 | processing task, is_child = 0
+19.27.521.083 I slot      release: id  2 | task 920 | stop processing: n_tokens = 16, truncated = 0
+19.27.523.253 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.062
+19.27.523.260 I slot launch_slot_: id  2 | task 922 | processing task, is_child = 0
+19.27.525.146 I slot      release: id  2 | task 922 | stop processing: n_tokens = 7, truncated = 0
+19.27.962.924 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.167 (> 0.100 thold), f_keep = 0.143
+19.27.962.931 I slot launch_slot_: id  2 | task 924 | processing task, is_child = 0
+19.27.964.989 I slot      release: id  2 | task 924 | stop processing: n_tokens = 6, truncated = 0
+19.27.986.615 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.167
+19.27.986.623 I slot launch_slot_: id  2 | task 926 | processing task, is_child = 0
+19.27.988.850 I slot      release: id  2 | task 926 | stop processing: n_tokens = 7, truncated = 0
+19.27.991.408 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.125 (> 0.100 thold), f_keep = 0.143
+19.27.991.415 I slot launch_slot_: id  2 | task 928 | processing task, is_child = 0
+19.27.993.343 I slot      release: id  2 | task 928 | stop processing: n_tokens = 8, truncated = 0
+19.27.994.898 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.286 (> 0.100 thold), f_keep = 0.250
+19.27.994.906 I slot launch_slot_: id  2 | task 930 | processing task, is_child = 0
+19.27.996.584 I slot      release: id  2 | task 930 | stop processing: n_tokens = 7, truncated = 0
+19.27.999.115 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.250 (> 0.100 thold), f_keep = 0.143
+19.27.999.121 I slot launch_slot_: id  2 | task 932 | processing task, is_child = 0
+19.28.000.418 I slot      release: id  2 | task 932 | stop processing: n_tokens = 4, truncated = 0
+19.28.002.321 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.400 (> 0.100 thold), f_keep = 0.500
+19.28.002.329 I slot launch_slot_: id  2 | task 934 | processing task, is_child = 0
+19.28.003.868 I slot      release: id  2 | task 934 | stop processing: n_tokens = 5, truncated = 0
+19.28.006.173 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.111 (> 0.100 thold), f_keep = 0.200
+19.28.006.180 I slot launch_slot_: id  2 | task 936 | processing task, is_child = 0
+19.28.007.980 I slot      release: id  2 | task 936 | stop processing: n_tokens = 9, truncated = 0
+19.28.010.140 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.833 (> 0.100 thold), f_keep = 0.556
+19.28.010.147 I slot launch_slot_: id  2 | task 938 | processing task, is_child = 0
+19.28.011.682 I slot      release: id  2 | task 938 | stop processing: n_tokens = 6, truncated = 0
+19.28.013.664 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.111 (> 0.100 thold), f_keep = 0.167
+19.28.013.671 I slot launch_slot_: id  2 | task 940 | processing task, is_child = 0
+19.28.015.459 I slot      release: id  2 | task 940 | stop processing: n_tokens = 9, truncated = 0
+19.28.017.108 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.833 (> 0.100 thold), f_keep = 0.556
+19.28.017.114 I slot launch_slot_: id  2 | task 942 | processing task, is_child = 0
+19.28.019.149 I slot      release: id  2 | task 942 | stop processing: n_tokens = 6, truncated = 0
+19.28.021.614 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.250 (> 0.100 thold), f_keep = 0.167
+19.28.021.624 I slot launch_slot_: id  2 | task 944 | processing task, is_child = 0
+19.28.023.258 I slot      release: id  2 | task 944 | stop processing: n_tokens = 4, truncated = 0
+19.28.024.848 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.400 (> 0.100 thold), f_keep = 0.500
+19.28.024.856 I slot launch_slot_: id  2 | task 946 | processing task, is_child = 0
+19.28.026.338 I slot      release: id  2 | task 946 | stop processing: n_tokens = 5, truncated = 0
+19.28.027.873 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.286 (> 0.100 thold), f_keep = 0.400
+19.28.027.884 I slot launch_slot_: id  2 | task 948 | processing task, is_child = 0
+19.28.029.491 I slot      release: id  2 | task 948 | stop processing: n_tokens = 7, truncated = 0
+19.28.031.518 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.143
+19.28.031.528 I slot launch_slot_: id  2 | task 950 | processing task, is_child = 0
+19.28.033.369 I slot      release: id  2 | task 950 | stop processing: n_tokens = 7, truncated = 0
+19.28.035.284 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.250 (> 0.100 thold), f_keep = 0.143
+19.28.035.290 I slot launch_slot_: id  2 | task 952 | processing task, is_child = 0
+19.28.036.841 I slot      release: id  2 | task 952 | stop processing: n_tokens = 4, truncated = 0
+19.28.038.320 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.400 (> 0.100 thold), f_keep = 0.500
+19.28.038.328 I slot launch_slot_: id  2 | task 954 | processing task, is_child = 0
+19.28.039.905 I slot      release: id  2 | task 954 | stop processing: n_tokens = 5, truncated = 0
+19.28.042.270 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.429 (> 0.100 thold), f_keep = 0.600
+19.28.042.276 I slot launch_slot_: id  2 | task 956 | processing task, is_child = 0
+19.28.043.902 I slot      release: id  2 | task 956 | stop processing: n_tokens = 7, truncated = 0
+19.28.045.673 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.167 (> 0.100 thold), f_keep = 0.143
+19.28.045.680 I slot launch_slot_: id  2 | task 958 | processing task, is_child = 0
+19.28.047.190 I slot      release: id  2 | task 958 | stop processing: n_tokens = 6, truncated = 0
+19.28.048.848 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.200 (> 0.100 thold), f_keep = 0.167
+19.28.048.857 I slot launch_slot_: id  2 | task 960 | processing task, is_child = 0
+19.28.050.647 I slot      release: id  2 | task 960 | stop processing: n_tokens = 5, truncated = 0
+19.28.053.085 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.200 (> 0.100 thold), f_keep = 0.200
+19.28.053.093 I slot launch_slot_: id  2 | task 962 | processing task, is_child = 0
+19.28.054.807 I slot      release: id  2 | task 962 | stop processing: n_tokens = 5, truncated = 0
+19.28.057.096 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.154 (> 0.100 thold), f_keep = 0.400
+19.28.057.104 I slot launch_slot_: id  2 | task 964 | processing task, is_child = 0
+19.28.059.622 I slot      release: id  2 | task 964 | stop processing: n_tokens = 13, truncated = 0
+19.28.061.822 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.125 (> 0.100 thold), f_keep = 0.154
+19.28.061.831 I slot launch_slot_: id  2 | task 966 | processing task, is_child = 0
+19.28.064.390 I slot      release: id  2 | task 966 | stop processing: n_tokens = 16, truncated = 0
+19.28.066.472 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.438 (> 0.100 thold), f_keep = 0.438
+19.28.066.479 I slot launch_slot_: id  2 | task 968 | processing task, is_child = 0
+19.28.069.088 I slot      release: id  2 | task 968 | stop processing: n_tokens = 16, truncated = 0
+19.28.071.390 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.062
+19.28.071.398 I slot launch_slot_: id  2 | task 970 | processing task, is_child = 0
+19.28.073.204 I slot      release: id  2 | task 970 | stop processing: n_tokens = 7, truncated = 0
+19.30.442.899 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.167 (> 0.100 thold), f_keep = 0.143
+19.30.442.907 I slot launch_slot_: id  2 | task 972 | processing task, is_child = 0
+19.30.445.330 I slot      release: id  2 | task 972 | stop processing: n_tokens = 6, truncated = 0
+19.30.448.020 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.167
+19.30.448.029 I slot launch_slot_: id  2 | task 974 | processing task, is_child = 0
+19.30.450.164 I slot      release: id  2 | task 974 | stop processing: n_tokens = 7, truncated = 0
+19.30.452.304 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.125 (> 0.100 thold), f_keep = 0.143
+19.30.452.313 I slot launch_slot_: id  2 | task 976 | processing task, is_child = 0
+19.30.454.327 I slot      release: id  2 | task 976 | stop processing: n_tokens = 8, truncated = 0
+19.30.456.500 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.286 (> 0.100 thold), f_keep = 0.250
+19.30.456.508 I slot launch_slot_: id  2 | task 978 | processing task, is_child = 0
+19.30.458.197 I slot      release: id  2 | task 978 | stop processing: n_tokens = 7, truncated = 0
+19.30.460.057 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.250 (> 0.100 thold), f_keep = 0.143
+19.30.460.064 I slot launch_slot_: id  2 | task 980 | processing task, is_child = 0
+19.30.461.426 I slot      release: id  2 | task 980 | stop processing: n_tokens = 4, truncated = 0
+19.30.463.559 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.400 (> 0.100 thold), f_keep = 0.500
+19.30.463.569 I slot launch_slot_: id  2 | task 982 | processing task, is_child = 0
+19.30.465.234 I slot      release: id  2 | task 982 | stop processing: n_tokens = 5, truncated = 0
+19.30.467.164 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.111 (> 0.100 thold), f_keep = 0.200
+19.30.467.172 I slot launch_slot_: id  2 | task 984 | processing task, is_child = 0
+19.30.469.186 I slot      release: id  2 | task 984 | stop processing: n_tokens = 9, truncated = 0
+19.30.471.336 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.833 (> 0.100 thold), f_keep = 0.556
+19.30.471.343 I slot launch_slot_: id  2 | task 986 | processing task, is_child = 0
+19.30.472.905 I slot      release: id  2 | task 986 | stop processing: n_tokens = 6, truncated = 0
+19.30.474.688 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.111 (> 0.100 thold), f_keep = 0.167
+19.30.474.694 I slot launch_slot_: id  2 | task 988 | processing task, is_child = 0
+19.30.476.798 I slot      release: id  2 | task 988 | stop processing: n_tokens = 9, truncated = 0
+19.30.479.164 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.833 (> 0.100 thold), f_keep = 0.556
+19.30.479.171 I slot launch_slot_: id  2 | task 990 | processing task, is_child = 0
+19.30.480.796 I slot      release: id  2 | task 990 | stop processing: n_tokens = 6, truncated = 0
+19.30.482.513 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.250 (> 0.100 thold), f_keep = 0.167
+19.30.482.519 I slot launch_slot_: id  2 | task 992 | processing task, is_child = 0
+19.30.484.174 I slot      release: id  2 | task 992 | stop processing: n_tokens = 4, truncated = 0
+19.30.486.402 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.400 (> 0.100 thold), f_keep = 0.500
+19.30.486.412 I slot launch_slot_: id  2 | task 994 | processing task, is_child = 0
+19.30.487.994 I slot      release: id  2 | task 994 | stop processing: n_tokens = 5, truncated = 0
+19.30.490.356 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.286 (> 0.100 thold), f_keep = 0.400
+19.30.490.366 I slot launch_slot_: id  2 | task 996 | processing task, is_child = 0
+19.30.492.115 I slot      release: id  2 | task 996 | stop processing: n_tokens = 7, truncated = 0
+19.30.493.790 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.143
+19.30.493.797 I slot launch_slot_: id  2 | task 998 | processing task, is_child = 0
+19.30.495.429 I slot      release: id  2 | task 998 | stop processing: n_tokens = 7, truncated = 0
+19.30.496.828 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.250 (> 0.100 thold), f_keep = 0.143
+19.30.496.835 I slot launch_slot_: id  2 | task 1000 | processing task, is_child = 0
+19.30.498.070 I slot      release: id  2 | task 1000 | stop processing: n_tokens = 4, truncated = 0
+19.30.499.518 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.400 (> 0.100 thold), f_keep = 0.500
+19.30.499.525 I slot launch_slot_: id  2 | task 1002 | processing task, is_child = 0
+19.30.500.959 I slot      release: id  2 | task 1002 | stop processing: n_tokens = 5, truncated = 0
+19.30.503.061 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.429 (> 0.100 thold), f_keep = 0.600
+19.30.503.067 I slot launch_slot_: id  2 | task 1004 | processing task, is_child = 0
+19.30.504.712 I slot      release: id  2 | task 1004 | stop processing: n_tokens = 7, truncated = 0
+19.30.506.339 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.167 (> 0.100 thold), f_keep = 0.143
+19.30.506.345 I slot launch_slot_: id  2 | task 1006 | processing task, is_child = 0
+19.30.507.857 I slot      release: id  2 | task 1006 | stop processing: n_tokens = 6, truncated = 0
+19.30.509.600 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.200 (> 0.100 thold), f_keep = 0.167
+19.30.509.605 I slot launch_slot_: id  2 | task 1008 | processing task, is_child = 0
+19.30.511.035 I slot      release: id  2 | task 1008 | stop processing: n_tokens = 5, truncated = 0
+19.30.512.669 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.200 (> 0.100 thold), f_keep = 0.200
+19.30.512.676 I slot launch_slot_: id  2 | task 1010 | processing task, is_child = 0
+19.30.514.062 I slot      release: id  2 | task 1010 | stop processing: n_tokens = 5, truncated = 0
+19.30.515.751 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.154 (> 0.100 thold), f_keep = 0.400
+19.30.515.761 I slot launch_slot_: id  2 | task 1012 | processing task, is_child = 0
+19.30.517.979 I slot      release: id  2 | task 1012 | stop processing: n_tokens = 13, truncated = 0
+19.30.519.914 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.125 (> 0.100 thold), f_keep = 0.154
+19.30.519.921 I slot launch_slot_: id  2 | task 1014 | processing task, is_child = 0
+19.30.522.535 I slot      release: id  2 | task 1014 | stop processing: n_tokens = 16, truncated = 0
+19.30.524.346 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.438 (> 0.100 thold), f_keep = 0.438
+19.30.524.353 I slot launch_slot_: id  2 | task 1016 | processing task, is_child = 0
+19.30.526.970 I slot      release: id  2 | task 1016 | stop processing: n_tokens = 16, truncated = 0
+19.30.528.423 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.062
+19.30.528.428 I slot launch_slot_: id  2 | task 1018 | processing task, is_child = 0
+19.30.530.060 I slot      release: id  2 | task 1018 | stop processing: n_tokens = 7, truncated = 0
+19.30.531.448 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.143 (> 0.100 thold), f_keep = 0.143
+19.30.531.454 I slot launch_slot_: id  2 | task 1020 | processing task, is_child = 0
+19.30.533.036 I slot      release: id  2 | task 1020 | stop processing: n_tokens = 7, truncated = 0
+19.30.534.466 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, sim_best = 0.400 (> 0.100 thold), f_keep = 0.286
+19.30.534.474 I slot launch_slot_: id  2 | task 1022 | processing task, is_child = 0
+19.30.535.966 I slot      release: id  2 | task 1022 | stop processing: n_tokens = 5, truncated = 0

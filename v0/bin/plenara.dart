@@ -123,28 +123,38 @@ Future<void> main(List<String> args) async {
         return;
       }
       stdout.writeln('A: I don\'t have that yet — authoring a capability for "$desc"…');
-      final authored = await claude.authorCapability(desc);
-      if (authored == null) {
-        stdout.writeln('A: I couldn\'t build that right now.\n');
-        return;
-      }
-      try {
+      String? priorError; // validate -> retry (G-29): feed the validation error back on failure
+      for (var attempt = 1; attempt <= 2; attempt++) {
+        final authored = await claude.authorCapability(desc, priorError: priorError);
+        if (authored == null) {
+          stdout.writeln('A: I couldn\'t build that right now.\n');
+          return;
+        }
         final type = (authored['type'] as Map).cast<String, dynamic>();
         final skill = (authored['skill'] as Map).cast<String, dynamic>();
-        types[type['typeId'] as String] = type;      // register type (shared map -> interp sees it)
-        interp.validateSkill(skill);                 // deterministic static gate (throws if invalid)
-        skills[skill['skillId'] as String] = skill;
-        File('$dataDir/types/${type['typeId']}.json')
-            .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(type));
-        File('$dataDir/skills/${skill['skillId']}.json')
-            .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(skill));
-        await router.buildRetrievalIndex(skills);    // the new skill joins routing
-        final eg = (skill['examplePhrases'] as List?)?.cast<String>();
-        stdout.writeln('A: Built "${skill['displayName']}" — a new capability, authored and validated. '
-            '${eg != null && eg.isNotEmpty ? 'Try: "${eg.first}".' : ''}\n'
-            '   [AI authored -> deterministic validators passed -> registered as data]\n');
-      } on ResolveError catch (e) {
-        stdout.writeln('A: I drafted that but it failed validation ($e) — not registered.\n');
+        try {
+          types[type['typeId'] as String] = type; // tentative (shared map -> interp sees it)
+          interp.validateSkill(skill); // deterministic static gate (G-17 etc.); throws if invalid
+          skills[skill['skillId'] as String] = skill;
+          File('$dataDir/types/${type['typeId']}.json')
+              .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(type));
+          File('$dataDir/skills/${skill['skillId']}.json')
+              .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(skill));
+          await router.buildRetrievalIndex(skills);
+          final eg = (skill['examplePhrases'] as List?)?.cast<String>();
+          stdout.writeln('A: Built "${skill['displayName']}" — a new capability, authored and validated. '
+              '${eg != null && eg.isNotEmpty ? 'Try: "${eg.first}".' : ''}\n'
+              '   [AI authored -> deterministic validators passed -> registered as data]\n');
+          return;
+        } on ResolveError catch (e) {
+          types.remove(type['typeId']); // roll back the tentative type
+          priorError = e.message;
+          if (attempt == 2) {
+            stdout.writeln('A: I drafted that but it failed validation twice — not registered. ($e)\n');
+            return;
+          }
+          stdout.writeln('   [validation failed: ${e.message} — re-authoring with the error (G-29)]');
+        }
       }
       return;
     }

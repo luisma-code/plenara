@@ -55,8 +55,12 @@ Output only JSON, no prose.''';
 
   /// Author a new type + skill from a described need (Spec 02 §6). Returns
   /// {type, skill} maps, or null. Deterministic validation happens in the caller.
-  Future<Map<String, dynamic>?> authorCapability(String description) async {
-    final out = await _message(_authorSys, 'Capability to build: "$description"', maxTokens: 900);
+  Future<Map<String, dynamic>?> authorCapability(String description, {String? priorError}) async {
+    final fix = priorError == null
+        ? ''
+        : '\nYour previous attempt FAILED deterministic validation with: "$priorError". '
+            'Return corrected JSON that fixes exactly that.';
+    final out = await _message(_authorSys, 'Capability to build: "$description"$fix', maxTokens: 900);
     if (out == null) return null;
     final type = out['type'], skill = out['skill'];
     if (type is! Map || skill is! Map) return null;
