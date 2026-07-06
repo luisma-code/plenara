@@ -55,8 +55,10 @@ Future<void> main(List<String> args) async {
           'add call the plumber to my to-do list',
           'undo that',
           "remember that Mia is allergic to peanuts and she is Sarah Mitchell's daughter",
-          'how many km have I run this week',
-          'jot down that I need to buy milk', // novel phrasing -> no corpus hit -> retrieval
+          'log a 3k run',
+          'how many km have I run this week', // reflects the run just logged (write -> read)
+          "i'm feeling good",
+          'jot down that I need to buy milk', // novel phrasing -> retrieval clarify (§13)
         ];
 
   final undoRe = RegExp(r'^(undo|undo that|no,? take that back|scratch that)\.?$',

@@ -1,0 +1,20 @@
+{
+  "skillId": "log-run",
+  "displayName": "Log a run",
+  "inputs": [
+    { "name": "distance", "required": false }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      { "op": "write_record", "typeId": "workout",
+        "fields": { "activity": "run", "distance": {"var": "distance"}, "date": {"var": "today"} },
+        "into": "w" },
+      { "op": "branch", "cond": { "notNull": "distance" }, "then": [
+        { "op": "format", "template": "Logged a {distance} km run today.", "into": "confirmation" }
+      ], "else": [
+        { "op": "format", "template": "Logged a run today.", "into": "confirmation" }
+      ] }
+    ]
+  }
+}
