@@ -37,6 +37,61 @@ class ClaudeClient {
       'distance as a plain number with no unit, e.g. 6 not "6k"). Use "none" if it '
       'is not one of these capabilities or is a general/world question. Output only JSON.';
 
+  static const _authorSys = '''
+You author capabilities for a personal-assistant app as DATA (never code). Given a
+described need, output ONLY a JSON object: {"type": <typeDef>, "skill": <skillDef>}.
+
+typeDef: {"typeId","displayName","attributes":[{"name","valueType","required",("default"?)}]}
+  valueType in: text|date|decimal|integer|boolean. Always include a "loggedAt" date attribute (required:true).
+
+skillDef uses ONLY this closed op vocabulary:
+  {"op":"compute","fn":<now|today|format_date|add|count>,"args":[...],"into":"var"}
+  {"op":"write_record","typeId":"...","fields":{"<attr>":{"var":"<slot>"}|<literal>},"into":"var"}
+  {"op":"format","template":"... {slotOrVar} ...","into":"confirmation"}
+Shape: {"skillId","displayName","inputs":[{"name","required"}],"examplePhrases":[3 strings],"steps":{"main":[<ops>]}}
+Author a LOGGING skill: compute today into a var, write_record capturing the input value(s) + that date
+into the type, then a format op that sets "confirmation". Reference inputs as {"var":"<slotName>"}.
+Output only JSON, no prose.''';
+
+  /// Author a new type + skill from a described need (Spec 02 §6). Returns
+  /// {type, skill} maps, or null. Deterministic validation happens in the caller.
+  Future<Map<String, dynamic>?> authorCapability(String description) async {
+    final out = await _message(_authorSys, 'Capability to build: "$description"', maxTokens: 900);
+    if (out == null) return null;
+    final type = out['type'], skill = out['skill'];
+    if (type is! Map || skill is! Map) return null;
+    return {'type': type.cast<String, dynamic>(), 'skill': skill.cast<String, dynamic>()};
+  }
+
+  Future<Map<String, dynamic>?> _message(String sys, String user, {int maxTokens = 200}) async {
+    if (key == null) return null;
+    final body = jsonEncode({
+      'model': 'claude-haiku-4-5',
+      'max_tokens': maxTokens,
+      'system': sys,
+      'messages': [{'role': 'user', 'content': user}],
+    });
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 20);
+    try {
+      final req = await client.postUrl(Uri.parse('https://api.anthropic.com/v1/messages'));
+      req.headers
+        ..set('x-api-key', key!)
+        ..set('anthropic-version', '2023-06-01')
+        ..contentType = ContentType.json;
+      req.add(utf8.encode(body));
+      final resp = await req.close();
+      final raw = await resp.transform(utf8.decoder).join();
+      if (resp.statusCode != 200) return null;
+      final text = ((jsonDecode(raw)['content'] as List)[0]['text'] as String).trim();
+      final jsonStr = RegExp(r'\{.*\}', dotAll: true).firstMatch(text)?.group(0);
+      return jsonStr == null ? null : jsonDecode(jsonStr) as Map<String, dynamic>;
+    } on Exception {
+      return null;
+    } finally {
+      client.close();
+    }
+  }
+
   /// Full-inventory residual routing. Returns {skillId, slots} or null.
   Future<Map<String, dynamic>?> routeResidual(
       String utterance, Map<String, Map<String, dynamic>> skills) async {

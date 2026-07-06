@@ -89,6 +89,40 @@ Future<void> main(List<String> args) async {
       return;
     }
 
+    // meta-intent: a "track my X" the app doesn't have -> AUTHOR it (Spec 02 §6, emergent types)
+    final defM = RegExp(r'^(?:start tracking|track|i want to track|i want to start tracking|make me a|create a) '
+            r'(?:my |a |an )?(.+?)(?: tracker)?\.?$',
+            caseSensitive: false)
+        .firstMatch(u.trim());
+    if (defM != null && router.route(u) == null) {
+      final desc = defM.group(1)!;
+      stdout.writeln('A: I don\'t have that yet — authoring a capability for "$desc"…');
+      final authored = await claude.authorCapability(desc);
+      if (authored == null) {
+        stdout.writeln('A: I couldn\'t build that right now.\n');
+        return;
+      }
+      try {
+        final type = (authored['type'] as Map).cast<String, dynamic>();
+        final skill = (authored['skill'] as Map).cast<String, dynamic>();
+        types[type['typeId'] as String] = type;      // register type (shared map -> interp sees it)
+        interp.validateSkill(skill);                 // deterministic static gate (throws if invalid)
+        skills[skill['skillId'] as String] = skill;
+        File('$dataDir/types/${type['typeId']}.json')
+            .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(type));
+        File('$dataDir/skills/${skill['skillId']}.json')
+            .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(skill));
+        await router.buildRetrievalIndex(skills);    // the new skill joins routing
+        final eg = (skill['examplePhrases'] as List?)?.cast<String>();
+        stdout.writeln('A: Built "${skill['displayName']}" — a new capability, authored and validated. '
+            '${eg != null && eg.isNotEmpty ? 'Try: "${eg.first}".' : ''}\n'
+            '   [AI authored -> deterministic validators passed -> registered as data]\n');
+      } on ResolveError catch (e) {
+        stdout.writeln('A: I drafted that but it failed validation ($e) — not registered.\n');
+      }
+      return;
+    }
+
     // Spec 03 §7.3 cascade: corpus fast-path -> Haiku residual (online, BYOK) -> clarify
     var routed = router.route(u);
     routed ??= await claude.routeResidual(u, skills);

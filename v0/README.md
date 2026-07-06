@@ -41,7 +41,7 @@ The three demo turns exercise a simple write, a multi-write resolve-or-create wi
 | Retrieval embedder | Real via local llama-server (bge-small on :8091); in-process model on device later |
 | **Cloud residual + learning** (Spec 04 §3.5 / §5.2) | **Real** — `ClaudeClient` Haiku full-inventory residual routing (§13 E4); a cloud-routed turn **learns** its template so the next similar phrasing fast-paths with no cloud call (the §13 "gets better" ratchet). BYOK; offline/keyless → clarify. |
 | Flutter UI | Console for now |
-| Claude authoring (define_*) | v2 |
+| **Authoring / emergent types** (Spec 02 §6) | **Real** — "track my X" → Claude authors a type + skill *as data* → the static validators gate it → it registers → it works. The whole "AI authors, code executes, capabilities are data" thesis, live. (Independent safety review `G-30`: v2.) |
 
 ## Findings so far
 
@@ -53,7 +53,12 @@ The three demo turns exercise a simple write, a multi-write resolve-or-create wi
 2. ✅ **Undo** — before-images + reversal (done).
 3. ✅ **Haiku residual router + corpus learning loop** — the full §13 cascade + the "gets better" ratchet, in code (done).
 4. ✅ **More seed skills/types** — `log-run`, `log-mood` (done).
-5. **Correction path** — `recordCorrection` (§5.2): "no, I meant X" zeroes the wrong entry and learns the right one; the strong learning signal.
-6. **Structured-output authoring** (`define_*`) — Claude authors a new type/skill from a described need, gated by the static validators (Spec 02 §6, the emergent-types bet).
-7. **Flutter UI** — wrap the console spine; then voice.
-8. **First iOS build** — closes the one deferred storage question (dataless-file cold-start).
+5. ✅ **Authoring / emergent types** (`define_*`) — Claude authors a type+skill, validators gate it, it registers and runs (done).
+6. **Correction path** — `recordCorrection` (§5.2): "no, I meant X" zeroes the wrong entry and learns the right one; the strong learning signal.
+7. **Structured-output hardening for authoring** — pin the step schema + validate→retry (`G-29`) so complex authored skills don't drift; a `G-30` safety pass before activation.
+8. **Flutter UI** — wrap the console spine; then voice.
+9. **First iOS build** — closes the one deferred storage question (dataless-file cold-start).
+
+## The thesis, demonstrated
+
+This v0 already exercises essentially the whole Plenara design end-to-end, in real Dart: capabilities as data, a two-phase static-validated interpreter, the full §13 routing cascade (corpus fast-path → Haiku residual → clarify), the corpus-learning ratchet (the §13 make-or-break), act-then-describe + undo, per-record CRDT-format storage, and **AI authoring of new capabilities that validate, register, and run.** What remains is hardening, voice, the UI, and the iOS build — not unproven bets.
