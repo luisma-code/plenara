@@ -1,0 +1,29 @@
+{
+  "skillId": "remember-person-fact",
+  "displayName": "Remember a fact about a person (with optional relationship)",
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "fact", "required": true },
+    { "name": "relationTo", "required": false },
+    { "name": "relationType", "required": false }
+  ],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": {"var": "personName"} }, "into": "person" },
+      { "op": "branch", "cond": { "isNull": "person" }, "then": [
+        { "op": "write_record", "typeId": "contact", "fields": { "displayName": {"var": "personName"} }, "into": "person" }
+      ] },
+      { "op": "write_record", "typeId": "contact_fact",
+        "fields": { "subject": {"ref": "person"}, "fact": {"var": "fact"} }, "into": "newFact" },
+      { "op": "branch", "cond": { "notNull": "relationTo" }, "then": [
+        { "op": "read_one", "typeId": "contact", "match": { "displayName": {"var": "relationTo"} }, "into": "relative" },
+        { "op": "branch", "cond": { "isNull": "relative" }, "then": [
+          { "op": "write_record", "typeId": "contact", "fields": { "displayName": {"var": "relationTo"} }, "into": "relative" }
+        ] },
+        { "op": "write_record", "typeId": "contact_relationship",
+          "fields": { "from": {"ref": "relative"}, "to": {"ref": "person"}, "relationType": {"var": "relationType"} }, "into": "newRel" }
+      ] },
+      { "op": "format", "template": "Noted that {personName} {fact}.", "into": "confirmation" }
+    ]
+  }
+}

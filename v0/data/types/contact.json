@@ -1,0 +1,8 @@
+{
+  "typeId": "contact",
+  "displayName": "Contact",
+  "attributes": [
+    { "name": "displayName", "valueType": "text", "required": true },
+    { "name": "birthday", "valueType": "date", "required": false }
+  ]
+}

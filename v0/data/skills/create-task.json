@@ -1,0 +1,22 @@
+{
+  "skillId": "create-task",
+  "displayName": "Create a task",
+  "inputs": [
+    { "name": "description", "required": true },
+    { "name": "dueDate", "required": false }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "now", "into": "createdAt" },
+      { "op": "write_record", "typeId": "task",
+        "fields": { "description": {"var": "description"}, "dueAt": {"var": "dueDate"}, "createdAt": {"var": "createdAt"} },
+        "into": "newTask" },
+      { "op": "branch", "cond": { "notNull": "dueDate" }, "then": [
+        { "op": "compute", "fn": "format_date", "args": [{"var": "dueDate"}, "EEEE"], "into": "dueLabel" },
+        { "op": "format", "template": "Added \"{description}\" to your tasks, due {dueLabel}.", "into": "confirmation" }
+      ], "else": [
+        { "op": "format", "template": "Added \"{description}\" to your tasks.", "into": "confirmation" }
+      ] }
+    ]
+  }
+}

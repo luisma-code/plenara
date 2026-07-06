@@ -1,0 +1,7 @@
+name: plenara
+description: Plenara v0 walking skeleton — text-first console, real Dart codebase.
+publish_to: none
+environment:
+  sdk: ^3.0.0
+# No external deps yet — pure Dart (dart:io, dart:convert). The retrieval
+# embedder + Flutter UI arrive as later layers.
