@@ -1134,9 +1134,16 @@ on startup), but it is never the source of truth on disk.
 
 ### 8.4 In-Memory Cache
 
--   **On startup:** scan the Plenara folder, parse JSON files modified
-    > since last scan, hydrate an in-memory object store. 10,000 small
-    > JSON files parse in well under a second on modern hardware.
+-   **On startup:** load a **local materialized snapshot** (the *bootstrap
+    > cache*), then read only the files **changed since it was written** —
+    > NOT a full folder re-scan. *(Amended by measurement — the storage-crdt
+    > spike (`spikes/storage-crdt/`) clocked a full scan+parse at ~230
+    > files/s in Python on Windows, ~22 s for 5,000 files, so the earlier
+    > "10,000 files parse in well under a second" was optimistic by orders
+    > of magnitude even on a local desktop SSD, before iOS dataless files.
+    > Full-scan-every-launch does not scale; the bootstrap cache +
+    > incremental read is required, and it also mitigates the iOS
+    > cold-start cost the deferred iOS spike would measure.)*
 
 -   **On write:** write the JSON file first (source of truth), then
     > update the in-memory cache.
