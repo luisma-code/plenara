@@ -34,10 +34,11 @@ The three demo turns exercise a simple write, a multi-write resolve-or-create wi
 | Storage + CRDT format (Spec 04 / assessment) | **Real** — per-record files, `_meta` HLC stamps |
 | Turn pipeline / act-then-describe (Spec 04/05) | **Real** (thinned) |
 | Types + skills as data (Spec 01/02) | **Real** — JSON in `data/` |
-| **Router** (Spec 03) | **Stub** — a pattern-matcher placeholder; the real corpus fast-path + retrieval-margin + deterministic extractors (findings §12–13) need the bge-small embedder wired in |
+| **Router** (Spec 03) | **Real** — corpus fast-path (templates as data, `data/corpus.json`) + deterministic slot extraction + date resolver (§6.2); **retrieval fallback** via bge-small (multi-vector max-sim, top-1-with-margin). Faithful to §13: retrieval is weak, so a low-confidence result **clarifies** rather than mis-acting. |
+| **Undo** (Spec 02 §5.4 / 04 §3.11) | **Real** — before-images captured at execute; `undo` reverses the last turn in memory + on disk. Full execution journal + multi-turn ring: later. |
 | Voice (STT/TTS) | Not yet — text-first |
 | CRDT **merge** engine | P2 (single-device now) |
-| Undo / execution journal | Not yet |
+| Retrieval embedder | Real via local llama-server (bge-small on :8091); in-process model on device later |
 | Flutter UI | Console for now |
 | Claude authoring (define_*) | v2 |
 
@@ -47,8 +48,9 @@ The three demo turns exercise a simple write, a multi-write resolve-or-create wi
 
 ## Next increments (in order)
 
-1. **Wire the real router** — corpus fast-path + bge-small retrieval + deterministic slot extractors, replacing the stub (this is where the §13 routing design becomes code).
-2. **Undo** — before-images + the execution journal.
-3. **More seed skills/types** — grow the free-tier surface.
-4. **Flutter UI** — wrap the console spine; then voice.
-5. **First iOS build** — closes the one deferred storage question (dataless-file cold-start).
+1. ✅ **Real router** — corpus fast-path + bge-small retrieval + date resolver (done).
+2. ✅ **Undo** — before-images + reversal (done).
+3. **Corpus learning loop** — an uncorrected turn / a correction appends a corpus entry (§5.2), so a rephrasing that once clarified now fast-paths. This is the §13 make-or-break mechanism, in code.
+4. **More seed skills/types** — grow the free-tier surface (e.g. `log-run` to fix the query-vs-log act-type confusion retrieval showed).
+5. **Flutter UI** — wrap the console spine; then voice.
+6. **First iOS build** — closes the one deferred storage question (dataless-file cold-start).

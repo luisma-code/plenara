@@ -8,12 +8,16 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+
+import 'embed.dart';
 
 class CorpusEntry {
   final String skillId;
+  final String template;
   final RegExp regex; // named groups per slot
   final Map<String, String> slotTypes; // slotName -> text|date|entity|quantity
-  CorpusEntry(this.skillId, this.regex, this.slotTypes);
+  CorpusEntry(this.skillId, this.template, this.regex, this.slotTypes);
 }
 
 class Router {
@@ -45,7 +49,7 @@ class Router {
     }
     sb.write(_lit(tmpl.substring(i)));
     sb.write(r'\.?$');
-    return CorpusEntry(e['skillId'] as String,
+    return CorpusEntry(e['skillId'] as String, tmpl,
         RegExp(sb.toString(), caseSensitive: false), slotTypes);
   }
 
@@ -77,6 +81,59 @@ class Router {
       if (ok) return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus'};
     }
     return null;
+  }
+
+  // ---- retrieval fallback (findings §13): a candidate generator, not a router ----
+  final Map<String, List<List<double>>> _skillVecs = {};
+
+  /// Embed each skill's anchors (humanized id + displayName + its corpus
+  /// templates cleaned to phrases). Multi-vector: one vector per anchor (§13).
+  Future<void> buildRetrievalIndex(Map<String, Map<String, dynamic>> skills) async {
+    final anchors = <String, Set<String>>{};
+    for (final s in skills.values) {
+      final sid = s['skillId'] as String;
+      final set = anchors.putIfAbsent(sid, () => {});
+      set.add(sid.replaceAll('-', ' '));
+      if (s['displayName'] != null) set.add(s['displayName'] as String);
+    }
+    for (final e in corpus) {
+      final phrase = e.template
+          .replaceAllMapped(RegExp(r'\{(\w+):\w+\}'), (m) => m.group(1) == '_' ? '' : m.group(1)!)
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+      anchors.putIfAbsent(e.skillId, () => {}).add(phrase);
+    }
+    for (final entry in anchors.entries) {
+      final vecs = <List<double>>[];
+      for (final a in entry.value) {
+        final v = await embed(a);
+        if (v != null) vecs.add(v);
+      }
+      _skillVecs[entry.key] = vecs;
+    }
+  }
+
+  /// On a corpus miss: rank skills by multi-vector max-sim; return the top skill
+  /// iff it clears `theta` AND beats #2 by `tau` — a *suggestion*, not a dispatch
+  /// (retrieval is a weak router; §13). null => clarify.
+  Future<Map<String, dynamic>?> retrievalSuggest(String utterance,
+      {double theta = 0.55, double tau = 0.03}) async {
+    if (_skillVecs.isEmpty) return null;
+    final uv = await embed(utterance);
+    if (uv == null) return null;
+    final scored = _skillVecs.entries
+        .map((e) => MapEntry(e.key,
+            e.value.isEmpty ? 0.0 : e.value.map((v) => cosine(uv, v)).reduce(max)))
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final s1 = scored[0].value;
+    final s2 = scored.length > 1 ? scored[1].value : 0.0;
+    return {
+      'skillId': scored[0].key,
+      's1': s1,
+      'margin': s1 - s2,
+      'confident': s1 >= theta && (s1 - s2) >= tau,
+    };
   }
 
   dynamic _resolveSlot(String? raw, String type) {

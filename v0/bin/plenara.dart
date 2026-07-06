@@ -29,7 +29,7 @@ void seedForDemo(Map<String, Map<String, dynamic>> store, DateTime now) {
   }
 }
 
-void main(List<String> args) {
+Future<void> main(List<String> args) async {
   final types = loadDefs('$dataDir/types', 'typeId');
   final skills = loadDefs('$dataDir/skills', 'skillId');
   final store = loadRecords('$dataDir/records');
@@ -43,8 +43,9 @@ void main(List<String> args) {
   for (final s in skills.values) {
     interp.validateSkill(s);
   }
+  await router.buildRetrievalIndex(skills); // cold-start candidate index (no-op if embed server down)
   stdout.writeln('loaded ${types.length} types + ${skills.length} skills '
-      '(${store.length} persisted records); all skills pass static validation\n');
+      '(${store.length} persisted records); all skills pass static validation; retrieval index ready\n');
 
   seedForDemo(store, now); // in-memory seed so the read-side skill has data
 
@@ -55,6 +56,7 @@ void main(List<String> args) {
           'undo that',
           "remember that Mia is allergic to peanuts and she is Sarah Mitchell's daughter",
           'how many km have I run this week',
+          'jot down that I need to buy milk', // novel phrasing -> no corpus hit -> retrieval
         ];
 
   final undoRe = RegExp(r'^(undo|undo that|no,? take that back|scratch that)\.?$',
@@ -78,7 +80,21 @@ void main(List<String> args) {
 
     final routed = router.route(u);
     if (routed == null) {
-      stdout.writeln("A: I didn't catch a known request there (no corpus hit; retrieval fallback is next).\n");
+      final sg = await router.retrievalSuggest(u);
+      if (sg == null) {
+        stdout.writeln("A: I didn't catch that (retrieval unavailable).\n");
+      } else {
+        final name = skills[sg['skillId']]!['displayName'];
+        final s1 = (sg['s1'] as double).toStringAsFixed(2);
+        if (sg['confident'] == true) {
+          stdout.writeln('A: I don\'t have that phrasing learned — did you mean to "$name"? '
+              'Say it a known way and I\'ll learn it. [retrieval $s1]\n');
+        } else {
+          // §13: retrieval alone is a weak router -> clarify rather than act on a low-confidence guess
+          stdout.writeln('A: I\'m not sure what you meant — closest is "$name" ($s1), below my '
+              'confidence bar, so I won\'t guess. Could you rephrase? [§13: retrieval is a weak cold-start router]\n');
+        }
+      }
       continue;
     }
     try {
