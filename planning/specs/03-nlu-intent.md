@@ -515,6 +515,40 @@ Lane 1 carries *earned phrasing* (slot-abstracted templates → intents) that sh
 
 **⚠ Lane 1 is a single synced file under whole-file last-writer-wins — a multi-device conflict hazard (G-36).** The storage model's per-record granularity principle (research §8.2) exists precisely because whole-file LWW sync silently discards one side of a concurrent edit — and `nlu/flow-table.json` is a *monolithic, frequently-written* file (a write-back per dispatched turn). Two devices used in the same sync window will each learn entries the other's overwrite then destroys, or the cloud client will spawn conflict copies nobody resolves. Before multi-device is real (v1 is effectively single-device), this must be redesigned: the corpus is **append-mostly and mergeable by construction** (entries keyed by template signature; boosts commutative), so the right shape is either per-entry files under `nlu/corpus/`, or a per-device journal (`nlu/corpus-{deviceId}.json`) merged at load. Logged as `G-36` in the gap register; a single-device v1 may ship the single file, but the format must not be one a merge cannot be retrofitted onto.
 
+### 5.2 The write paths — how the corpus learns (the "gets better" ratchet)
+
+Lane 1 is written by exactly the two paths §2.6 names, and this is the mechanism the §13 learning-curve result rests on:
+
+- **`recordConfirmation(transcript, accepted, ctx)`** — a routing the user did **not** correct after act-then-describe. If `accepted.routingSource == corpus_hit`, the matched entry is **boosted** (`confirmationBoost`, §4.2). If it is `retrieval`/`cloud_model`, the transcript is **templatized** (§5.4) against `accepted.slots` and **inserted** as a new Lane-1 entry at `initConfImplicit` (0.70) — this is precisely how a retrieval- or Haiku-routed phrasing **graduates into the fast path**, and why offline/free friction falls toward the corpus floor over use (§13: ~20% → ~3% as habitual phrasings accrue entries).
+- **`recordCorrection(transcript, corrected, ctx)`** — the user said "no, I meant X." It **zeroes** any entry whose template currently matches the transcript (killing the wrong learned mapping) **and inserts** a fresh entry at `initConfExplicitCorrection` (0.90 — just below `θ_act`), so the corrected routing acts on the very next identical utterance.
+
+The asymmetry is deliberate (§4.2): a single correction outweighs many uncorrected uses (correction zeroes; the boost is a slow ratchet). Acting wrongly is worse than carrying the transparent-routing caveat one turn longer. **Measured caveat (§13):** the ratchet only reaches ~3% friction if a user *reuses* habitual phrasings; under maximum phrasing variety it barely fires — the real reuse distribution is the offline/free make-or-break and needs a beta.
+
+### 5.3 Entry lifecycle & the shared signature
+
+A Lane-1 entry is `{ templateSig, skillId, slotRecipes, confidence, originSource, lastUsedAt, useCount }`. Its `templateSig` — `(normalized-intent, typeIds, slot-shape)` — is the **signature shared with Lane 2** (§5.1): one key schema across the two homes, not one byte stream. Lifecycle: **created** (at `initConf*`, §4.2) → **boosted** on uncorrected reuse → **decayed** on disuse (§4.2) → **invalidated** (§5.5). Routing consults Lane 1 first (the §4.3 cascade, `Axis 3` corpus trust): a template match at trust ≥ `θ_corpus_act` dispatches and describes with no model call; in the moderate band it dispatches with the transparent-routing caveat; below `θ_corpus_drop` it is not a hit and falls through to retrieval (§7.3).
+
+### 5.4 Normalization & templating (utterance → template)
+
+The template is what makes the corpus store **slot *shapes*, never slot *values*** (the project privacy rule; CLAUDE.md). The algorithm:
+1. **Normalize** the transcript — lowercase, strip punctuation and disfluencies (um/uh/like), collapse whitespace, canonicalize numbers/units.
+2. **Abstract the extracted slot spans** into **typed placeholders** — `‹date›`, `‹contact›`, `‹quantity›`, `‹text›`, `‹enum:…›` — keeping the carrier phrasing intact. E.g. *"log a 5k run this morning"* → **`log a ‹quantity› run ‹date›`**.
+3. **Record `slotRecipes`** — *how* to re-extract each placeholder (`span` offsets, `fixed`, or a scoped re-extraction, §6.4) — **never the extracted value**.
+
+Two utterances with the same normalized template are the same learned phrasing (a Lane-1 hash hit) — which is why habitual phrasings collapse onto one entry and the ratchet (§5.2) works. **Matching is exact/near-exact template hash in v1** (§13 showed this suffices); an embedding-based *soft* generalization (one correction teaching a neighborhood) is `R9b` in `05d-routing-design.md`, deferred as marginal-and-false-positive-prone (§13).
+
+### 5.4a Anaphora resolution
+
+`recentIntents` (the `NluContext` field, §2.6) holds the last few turns' resolved intents and any **addressable generative results** (`G-25`, Spec 04 §3.10). The pre-filter (§2.3) resolves referring expressions before routing: an **ordinal** ("the second one") → the Nth item of the most recent generative result; a **pronoun / bare reference** ("that", "remind me about him") → the last salient entity or record. A resolved anaphor rewrites the referent to a concrete id and normal routing proceeds with `routingSource = anaphora`; **no salient referent → clarify** ("which one?"), never a guess. This is why the write paths and the pre-filter both take `NluContext`, not a bare `Intent` (§2.6).
+
+### 5.5 Entry invalidation (`active: false`)
+
+A stale or wrong entry is marked **`active: false`** (dropped from the fast path, retained for audit/revival) rather than deleted. Triggers: (a) decay below `θ_corpus_drop` (§4.2); (b) the target skill/type was **edited or deleted** (a template pointing at a removed or reshaped capability — Spec 05 §24, Spec 02 §6); (c) a `recordCorrection` zeroed it (§5.2); (d) a schema **migration** changed the slot shape so `slotRecipes` no longer apply. Invalidation is the **shared discipline with Lane 2** (§5.1): the registry emits an invalidation keyed on the `templateSig`, and it drops both the corpus entry and any cached plan carrying that signature — so a capability edit can never leave a fast-path entry routing to a definition that no longer matches.
+
+### 5.6 Sensitive-skill exclusion
+
+An entry whose skill is `sensitive` (or writes a `sensitive` type — e.g. the journal) is **excluded from cloud-escalation context**: the correction-history handed to Haiku on escalation (§3.5) is templates-only **and** omits every sensitive-skill entry, so a cloud call leaks no hint that a private capability exists or was used. The template itself is a slot-*shape* (no content), so it may sync in Lane 1 like any other; but sensitive-skill entries are additionally **excluded from any diagnostic/feedback export** (research §14 / the Feedback spec), on the same no-leak principle. This closes the last path by which routing metadata could betray sensitive activity.
+
 ---
 
 ## 6. Slot Extraction & Resolution *(resolve-stage addition)*

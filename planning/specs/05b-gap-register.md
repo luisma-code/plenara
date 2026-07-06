@@ -153,7 +153,7 @@ Calls made 2026-07-05 (Luis delegated). Listed gaps move to **designing**; each 
 The define-as-we-trace pass completed every section the corpus **hot paths** touch. A full-suite survey (`research/spec-05a-phase3`, 2026-07-05) then found the specs were drafted to only ~65%: five files, ~20 missing sections, 40+ dangling cross-references into them. This is the tracked remainder, by dependency load. **P1** = hard-truncation or heavily referenced (blocks coherence); **P2** = referenced, self-contained; **P3** = archival/meta (Decision Records, open-questions, appendices — safe to defer indefinitely).
 
 **Spec 01** (ends clean §12.4; holes §9–11, §13):
-- **§8.7** key store / secure enclave — **P1** (ref'd 04×3, 03×1 — the journal-encryption + key-source seam)
+- ✅ **§8.7** key store / CryptoBox — **DONE** (01 §8.7: the `CryptoBox` seam; key in the platform secure store; records-sync-via-folder + key-sync-via-OS-keychain resolution; key-absent = locked repair state, not a crash)
 - **§9** presentation archetypes — **P2** (`G-31` grouped-aggregation archetype lands here)
 - **§10** nluHints / confirmationTemplate — **P2** · **§13** mixin — P3 (deferred by design) · §12 Q-refs, Appendix A — P3
 
@@ -162,7 +162,7 @@ The define-as-we-trace pass completed every section the corpus **hot paths** tou
 - **§5.5** deferred plan cache — **P2** (mostly a "deferred post-v1" note) · **§7.1–7.5 / §8.2–8.4** numbered anchors — **P2** (content exists, needs headers) · §10 open-Qs, Appendix A — P3
 
 **Spec 03** (ends clean §7.3.4; §5 body + §8–11 missing):
-- **§5.2** correction flow — **P1** (ref'd ×6 — the "gets better" ratchet) · **§5.4** normalize, **§5.4a** anaphora, **§5.5** active:false, **§5.6** sensitive-exclusion — **P1** (all load-bearing)
+- ✅ **§5.2–5.6** — **DONE** (03 §5.2 write paths/ratchet, §5.3 entry lifecycle, §5.4 normalization+templating, §5.4a anaphora, §5.5 invalidation, §5.6 sensitive-exclusion; the corpus/correction spine — the §13-proven make-or-break)
 - **§8.1** captureIntent label — P2 · **Appendix A §A.3** tiered delegation — **P2** (ref'd 03:547) · §10 MD-series, §11, App B–E — P3
 
 **Spec 04** (was HARD-TRUNCATED mid-§4.8 — **now written through §7**):
@@ -172,4 +172,4 @@ The define-as-we-trace pass completed every section the corpus **hot paths** tou
 **Spec 05** (was truncated mid-§20; **§20 finished, §24 deletion + §21–23 stubs added this pass**):
 - **§21/§22 full flows** (P8 meal_suggestion, P9 monthly_reflection) + **§23** nudges — **P2** (stubs in place) · §26 Decision Record (D1–D9, ref'd ×6) + Appendix B — P3
 
-**Progress this pass:** ✅ Spec 04 §4.8–§7 (done), ✅ Spec 02 §5.4–§5.5 (done), ✅ Spec 05 §20 finished + §21–24 added. **Recommended next block:** **Spec 03 §5.2–5.6** (the correction/anaphora/invalidation loop — ~15 dangling refs, the "gets better" spine), then **Spec 01 §8.7 + §9** (key store + presentation archetypes). The **P3** tier (Decision Records, open-Qs, appendices) is archival and can wait indefinitely.
+**Progress:** ✅ Spec 04 §4.8–§7, ✅ Spec 02 §5.4–§5.5, ✅ Spec 05 §20 + §21–24, ✅ **Spec 03 §5.2–5.6** (corpus/correction spine), ✅ **Spec 01 §8.7** (CryptoBox/key store). **Every P1 completeness gap is now closed.** Remaining: **P2** — Spec 01 §9 (presentation archetypes, incl. `G-31`), §10 (nluHints); Spec 02 §7.x/§8.x numbered anchors; Spec 05 §21–23 full flows. **Deferred (churny, low-risk):** the Spec 03 body **consolidation** (fold §7.3 into §3/§4, demote the NO-GO'd design to an appendix — the supersession banners already prevent misbuilding). **P3** (Decision Records, open-Qs, appendices) is archival. **Strategic note:** with the P1 core-spec gaps closed, the highest-value next work is **Phase-0 spikes** (research §11.1) — meta-schema/DSL hand-encode, the iOS-file-sync spike (Fable D-1), and a local-routing spike to start measuring real phrasing-reuse (§13) — writing specs 6–11 just-in-time as the spikes need them.

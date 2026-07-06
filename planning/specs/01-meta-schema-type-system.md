@@ -522,6 +522,28 @@ A **partially-sensitive** record (e.g. `contact`) — name and relationship type
 }
 ```
 
+### 8.7 Key Store & the CryptoBox *(resolve-stage addition)*
+
+§8.1–8.2 define *what* is encrypted (sensitive attribute values, bundled into `encryptedPayload`). This section defines *the key* — where it lives, how it reaches every device, and the interface the layers use. It is the seam Specs 03/04 reference (`CryptoBox.keyAvailable`).
+
+**The `CryptoBox`.** All at-rest encryption goes through one interface:
+```dart
+abstract class CryptoBox {
+  bool get keyAvailable;                    // device key present and unlocked?
+  String encrypt(String plaintext);         // -> encryptedPayload (AES-256-GCM)
+  String decrypt(String encryptedPayload);  // typed failure if no key (Spec 04 §5.1)
+}
+```
+It is the single reader/writer of **every** encrypted store: the per-record `encryptedPayload` (§8.2), the device-local journal (`G-37`), the execution journal (Spec 02 §5.2), the deferred plan cache (Lane 2, Spec 03 §5.1), and the content-search index (Spec 04 §3.14). One key, one algorithm, one place to audit.
+
+**Where the key lives.** In the **platform secure store**, never in the storage folder and never in a synced file: Keychain / Secure Enclave (Apple), DPAPI / TPM (Windows), Keystore (Android). Generated on first run; never leaves the secure store in plaintext (research §8.7).
+
+**How sensitive data syncs while staying encrypted — the resolution.** This is the tension §8 raises: sensitive records live in the *plaintext-to-the-provider* synced folder as `encryptedPayload` blobs, so a second device receives the blob but needs the key to read it. The key does **not** travel in the Plenara folder — it reaches other devices via the **OS keychain's own end-to-end-encrypted sync** (iCloud Keychain on Apple; platform equivalents elsewhere). So **records sync through the user's cloud folder; the key syncs through the OS keychain** — two independent channels, and the provider never sees both. That is what lets a sensitive type be both synced *and* private.
+
+**When the key is absent (`keyAvailable == false`).** A fresh device before keychain sync completes — or a user who keeps keychain sync off — receives sensitive records it cannot yet decrypt. This is a **named, recoverable state, not a crash** (P2.8): those records surface as **locked** in the `AttentionSurface` repair view (Spec 04 §5.5), their plaintext `fields` still readable, and decryption resumes automatically once the key arrives. The **portability trade-off** (research §8.7) — declining keychain sync trades cross-device access to sensitive content for maximal locality — is stated at the encryption opt-in, never silently.
+
+**What needs no key at all** (§8.2, restated as a key-availability contract): type/skill definitions, `settings.json`, and the Lane-1 corpus templates (slot-*shapes*, no values). So **capability hydration, routing, and the entire non-sensitive free tier run with no key present** (offline-first, Spec 04 §6.1) — key availability gates only sensitive-content *decryption*, never the app's ability to start or route.
+
 ---
 
 ## 12. Seed Types & the People-Knowledge Model *(resolve-stage addition)*
