@@ -67,6 +67,8 @@ class Interpreter {
         return (a[0] ?? 0) + (a[1] ?? 0);
       case 'count':
         return (a[0] as List?)?.length ?? 0;
+      case 'concat':
+        return a.map((x) => x?.toString() ?? '').join();
       default:
         throw ResolveError("unknown compute fn '$fn'");
     }
@@ -181,7 +183,8 @@ class Interpreter {
         var recs = store.values.where((r) => r['typeId'] == step['typeId']).toList();
         final f = step['filter'];
         if (f != null) {
-          recs = recs.where((r) => f['op'] == 'eq' ? r[f['field']] == f['value'] : true).toList();
+          final fv = val(f['value'], env); // resolve {var}/{ref}/literal -> dynamic filters
+          recs = recs.where((r) => f['op'] == 'eq' ? r[f['field']] == fv : true).toList();
         }
         env[step['into']] = recs;
       case 'write_record':

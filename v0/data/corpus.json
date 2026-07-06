@@ -11,6 +11,12 @@
   { "skillId": "log-run", "template": "log a run" },
   { "skillId": "log-mood", "template": "log my mood as {rating:text}" },
   { "skillId": "log-mood", "template": "i'm feeling {rating:text}" },
+  { "skillId": "recall-facts", "template": "what do i know about {personName:entity}" },
+  { "skillId": "recall-facts", "template": "tell me about {personName:entity}" },
+  { "skillId": "list-tasks", "template": "list my tasks" },
+  { "skillId": "list-tasks", "template": "show my tasks" },
+  { "skillId": "list-tasks", "template": "what are my tasks" },
+  { "skillId": "list-tasks", "template": "what's on my to-do list" },
   { "skillId": "count-runs-this-week", "template": "how {_:text} have i run this week" },
   { "skillId": "count-runs-this-week", "template": "how many runs this week" }
 ]
