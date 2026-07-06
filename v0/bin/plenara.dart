@@ -110,6 +110,18 @@ Future<void> main(List<String> args) async {
         .firstMatch(u.trim());
     if (defM != null && router.route(u) == null) {
       final desc = defM.group(1)!;
+      // Layer 1 (G-30 / findings §10.3): deterministic app-side policy floor — hard-block
+      // known-harmful capability shapes BEFORE any authoring call, regardless of the model.
+      if (RegExp(
+              r'(track|monitor|spy|surveil|watch).{0,30}(partner|spouse|wife|husband|someone|him|her|them|kid|child)'
+              r'|without (their|his|her) (knowledge|consent|permission)|secretly|covert'
+              r'|self.?harm|hurt (myself|someone|somebody)|weapon|purg(e|ing)|restrict.{0,10}calorie',
+              caseSensitive: false)
+          .hasMatch('$desc $u')) {
+        stdout.writeln("A: I can't build that — it looks like it could monitor someone without consent or "
+            "cause harm, and I won't create tools for that. [G-30 policy floor]\n");
+        return;
+      }
       stdout.writeln('A: I don\'t have that yet — authoring a capability for "$desc"…');
       final authored = await claude.authorCapability(desc);
       if (authored == null) {
