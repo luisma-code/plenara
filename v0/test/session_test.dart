@@ -154,6 +154,24 @@ void main() {
     });
   });
 
+  group('run-streak', () {
+    test('counts consecutive days of runs', () async {
+      final dir = makeTempDataDir();
+      for (final d in const ['2026-07-04', '2026-07-05', '2026-07-06']) {
+        final s = Session(dir, clock: DateTime.parse('${d}T09:00:00'), cloud: _NoCloud());
+        await s.init(retrieval: false);
+        await s.handle('log a 3k run');
+      }
+      final s = await _session(dir); // queries at Monday 2026-07-06
+      final r = await s.handle("what's my running streak");
+      expect(r, contains('3 day(s) current'));
+      expect(r, contains('3 day(s) longest'));
+    });
+    test('no runs -> friendly empty', () async {
+      expect(await (await _session()).handle('running streak'), contains('No runs logged'));
+    });
+  });
+
   group('journaling', () {
     test('log a journal entry then read it back', () async {
       final s = await _session();

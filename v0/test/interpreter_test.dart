@@ -51,6 +51,18 @@ void main() {
     test('days_until_annual today -> 0', () => expect(_i().compute('days_until_annual', ['2000-07-06'], {}), 0));
     test('days_until_annual passed -> rolls to next year', () => expect(_i().compute('days_until_annual', ['2000-07-05'], {}), 364));
     test('next_annual null -> null', () => expect(_i().compute('next_annual', [null], {}), isNull));
+    // streaks over a record list's date field (clock is Monday 2026-07-06)
+    test('current_streak today + back', () => expect(_i().compute('current_streak',
+        [[{'date': '2026-07-06'}, {'date': '2026-07-05'}, {'date': '2026-07-04'}], 'date'], {}), 3));
+    test('current_streak alive via yesterday', () => expect(_i().compute('current_streak',
+        [[{'date': '2026-07-05'}, {'date': '2026-07-04'}], 'date'], {}), 2));
+    test('current_streak broken (only older days)', () => expect(_i().compute('current_streak',
+        [[{'date': '2026-07-04'}], 'date'], {}), 0));
+    test('current_streak dedupes same-day', () => expect(_i().compute('current_streak',
+        [[{'date': '2026-07-06'}, {'date': '2026-07-06'}], 'date'], {}), 1));
+    test('longest_streak finds the max run', () => expect(_i().compute('longest_streak',
+        [[{'date': '2026-07-01'}, {'date': '2026-07-02'}, {'date': '2026-07-03'}, {'date': '2026-07-06'}], 'date'], {}), 3));
+    test('streak over empty list -> 0', () => expect(_i().compute('current_streak', [[], 'date'], {}), 0));
     test('start_of_week(Wed) -> Monday', () => expect(_i().compute('start_of_week', ['2026-07-08'], {}), '2026-07-06'));
     test('start_of_week(Sun) -> Monday', () => expect(_i().compute('start_of_week', ['2026-07-12'], {}), '2026-07-06'));
     test('start_of_week(Mon) -> same', () => expect(_i().compute('start_of_week', ['2026-07-06'], {}), '2026-07-06'));

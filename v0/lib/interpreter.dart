@@ -99,6 +99,26 @@ class Interpreter {
       case 'days_until_annual':
         final d = _asDate(a[0]);
         return d == null ? null : daysUntilAnnual(d, now);
+      case 'current_streak':
+        // consecutive days (ending today, or yesterday if today is blank) that the
+        // list has a record for — the motivating "you're on an N-day streak".
+        final days = _daysSet(a[0], a[1]);
+        var t = _epochDay(now);
+        if (!days.contains(t)) {
+          if (days.contains(t - 1)) t -= 1; else return 0;
+        }
+        var n = 0;
+        while (days.contains(t)) { n++; t -= 1; }
+        return n;
+      case 'longest_streak':
+        final days = (_daysSet(a[0], a[1]).toList())..sort();
+        if (days.isEmpty) return 0;
+        var best = 1, cur = 1;
+        for (var i = 1; i < days.length; i++) {
+          cur = days[i] == days[i - 1] + 1 ? cur + 1 : 1;
+          if (cur > best) best = cur;
+        }
+        return best;
       case 'start_of_week':
         final d = _asDate(a[0])!;
         return _dateOnly(d.subtract(Duration(days: d.weekday - 1)));
@@ -130,6 +150,22 @@ class Interpreter {
   // full datetime (keeps the time-of-day; used by format_time). Never throws.
   static DateTime? _asDateTime(dynamic s) => s == null ? null : DateTime.tryParse(s.toString());
 
+  // day number in UTC (no DST) so consecutive calendar days differ by exactly 1.
+  static int _epochDay(DateTime d) => DateTime.utc(d.year, d.month, d.day).millisecondsSinceEpoch ~/ 86400000;
+  // the set of distinct day-numbers a record list occupies on [field].
+  static Set<int> _daysSet(dynamic list, dynamic field) {
+    final out = <int>{};
+    if (list is List) {
+      for (final r in list) {
+        if (r is Map) {
+          final dt = _asDate(r[field]);
+          if (dt != null) out.add(_epochDay(dt));
+        }
+      }
+    }
+    return out;
+  }
+
   bool cond(Map c, Map<String, dynamic> env) {
     if (c.containsKey('isNull')) return env[c['isNull']] == null;
     if (c.containsKey('notNull')) return env[c['notNull']] != null;
@@ -159,7 +195,7 @@ class Interpreter {
 
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
   static const _ops = {'read_one', 'read_many', 'read_related', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
-  static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'add', 'count', 'concat', 'next_annual', 'days_until_annual'};
+  static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'add', 'count', 'concat', 'next_annual', 'days_until_annual', 'current_streak', 'longest_streak'};
   static const _valueTypes = {'text', 'date', 'datetime', 'decimal', 'integer', 'boolean', 'entityRef', 'enum'};
 
   /// Validate an authored TYPE def (Spec 01 §3). Throws ResolveError (never a

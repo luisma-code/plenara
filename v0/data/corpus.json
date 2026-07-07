@@ -108,5 +108,9 @@
   { "skillId": "reschedule-task", "template": "reschedule {description:text} to {dueDate:date}" },
   { "skillId": "reschedule-task", "template": "change {description:text} due date to {dueDate:date}" },
   { "skillId": "count-runs-this-week", "template": "how {_:text} have i run this week" },
-  { "skillId": "count-runs-this-week", "template": "how many runs this week" }
+  { "skillId": "count-runs-this-week", "template": "how many runs this week" },
+  { "skillId": "run-streak", "template": "what's my running streak" },
+  { "skillId": "run-streak", "template": "what's my run streak" },
+  { "skillId": "run-streak", "template": "running streak" },
+  { "skillId": "run-streak", "template": "am i on a running streak" }
 ]
