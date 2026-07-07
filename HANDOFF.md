@@ -80,9 +80,11 @@ Same machine, different user? Simplest is to copy
 `origin/main` == local `main`. Push auth was initially denied (this session
 commits as GitHub user `cognivita-ai`, which lacks write access to
 `luisma-code/plenara`); resolved by storing a **`luisma-code` PAT** in the OS
-credential store (Git Credential Manager). Config set for headless push:
-`credential.interactive=false`, `credential.guiPrompt=false` (so GCM never blocks
-on a GUI). Future `git push origin main` works non-interactively.
+credential store (Git Credential Manager). Config set for headless push (global): `credential.credentialStore=dpapi` (a
+Windows store GCM can persist to + read back without a GUI),
+`credential.interactive=false`, `credential.guiPrompt=false`. Verified: `git
+credential fill` returns the stored token non-interactively, so **plain `git push
+origin main` works headlessly** — no token in any command needed anymore.
 
 > **⚠ ROTATE the PAT.** The token was transmitted in chat → treat it as
 > compromised. Generate a new fine-grained PAT (Contents: Read+Write on plenara)
