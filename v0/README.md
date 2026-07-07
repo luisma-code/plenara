@@ -12,6 +12,25 @@ Z:/code/plenara/.tools/dart-sdk/bin/dart.exe run bin/plenara.dart
 dart run bin/plenara.dart "add water the plants to my list"
 ```
 
+## Tests
+
+**897 tests, hermetic (no network), `dart analyze` clean** — `dart test`.
+
+| Suite | Count | Layer hammered |
+|---|---|---|
+| `router_test.dart` | 453 | NLU/corpus — hero phrasings × 30 descriptions, all 22 date forms, slot extraction, learning, documented fast-path limits |
+| `pipeline_test.dart` | 265 | full route→resolve→execute→persist→reload→undo + 260 **seeded-random fuzz** cases |
+| `interpreter_test.dart` | 111 | primitives, every skill via NLU slots, defaults/required, the static gate (accept + reject), error paths |
+| `cloud_test.dart` | 33 | residual routing + authoring via the **recorded cassette** (no live Haiku) |
+| `session_test.dart` | 25 | end-to-end offline turns, cross-skill write→read, undo/correction, cross-instance persistence |
+| `store_test.dart` | 10 | on-disk CRDT shape, per-field HLC stamps, HLC monotonicity, `undoTurn` |
+
+**Cloud cassette (record/replay).** Tests never call Haiku. Real responses for a fixed input set (`lib/fixture_inputs.dart`) are recorded once into `test/fixtures/cloud.json` and replayed via `ReplayCloud` — deterministic and free, yet still exercising the real routing/authoring *code* against genuine model outputs (so it catches real schema drift; a recorded `null` replays as null, an unrecorded input throws loudly). Refresh after changing the inputs:
+
+```
+dart run bin/record_fixtures.dart   # one BYOK Haiku pass, then commit the fixture
+```
+
 ## What it proves
 
 Every layer boundary connects, in the production language:
