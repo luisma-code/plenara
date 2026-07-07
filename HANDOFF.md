@@ -6,20 +6,22 @@ _Last updated: 2026-07-07. Written to survive a Claude process relaunch._
 
 The **v0 engine is complete and heavily tested**; the **Windows desktop app is
 dogfood-ready** (runs on a user-chosen synced folder + BYOK key). Latest session
-shipped **F2 reminders**, the **people loop** (Fable #3), and **on-open nudges**
-(Fable #4). **Fable's actionable priorities #1–#4 are all DONE**; #5–#8 are
-defer/do-not-build. The people loop is now deep (facts, relationships,
-interactions log/last/**list**, birthdays + nudges). **HEAD = `e0268ca`**, working
-tree clean (ignore the pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log`
-+ untracked `.claude/settings.local.json`), **1165 Dart tests + 8 Flutter widget
-tests green**, `dart analyze` clean, and **`flutter build windows --debug` succeeds**
-(dogfood exe builds with all new features; no ATL needed since the toast plugin is
-deferred).
+shipped **F2 reminders**, the **people loop** (Fable #3), **on-open nudges** (Fable
+#4), and a **Fable strategic review → Phase 1 typed `CloudResult` refactor**. The
+cloud seam now returns typed results (Ok/abstain vs named CloudError kinds); Session
+surfaces honest failure reasons + logs cloud health per turn; cloud date/datetime
+slots are normalized (no midnight/dropped reminders); the machine-specific `.env`
+fallback is gone from the app path. **HEAD = `072586e`**, working tree clean (ignore
+the pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
+`.claude/settings.local.json`), **1174 Dart tests + 8 Flutter widget tests green**,
+`dart analyze` clean, **`flutter build windows --debug` succeeds**.
 
-**The immediate next task:** pick from the remaining options (all re-record-free
-except where noted) — see "Next task". The Fable roadmap's build items are done;
-what's left is depth (more people/tracker skills), a couple of deferred engine
-items (persisted undo journal, typed `CloudResult`), or polish. None need Luis.
+**The immediate next task:** Fable's **Phase 2** — daily-driver conversation polish
+(pure Dart, only the one new skill needs a re-record): (1) `read_one` ambiguity ("two
+Sams") → a one-turn clarify DIALOGUE instead of a raw `ResolveError` string; (2)
+humanize remaining `ResolveError` surfaces; (3) a "what can you do" discoverability
+skill (renders each skill's displayName + examplePhrases); (4) a `bin/turnlog_report.dart`
+so skill choices become measurement-driven. See "Next task".
 
 **One blocker for Luis (needs admin):** the native Windows toast for reminders
 needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
@@ -167,6 +169,17 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **Phase 1: typed CloudResult (done, `072586e`):** `CloudResult` sealed type
+  (`CloudOk`/`CloudError` + `CloudErrorKind`) replaces `Map?`/null at the cloud seam;
+  `_message` maps every HTTP/parse outcome to a kind (never throws); Session names the
+  cause on a cloud-caused miss + logs a `cloud` turnlog field; skill inputs can declare
+  `"type": date|datetime` and Session normalizes cloud slots via resolveDate/DateTime;
+  dropped the absolute `.env` fallback. Cassette UNCHANGED (recorded values wrap as Ok).
+  `claude_test` now asserts a kind per failure; new `cloud_result_test` covers R1+R2.
+- **Fable strategic review:** ranked next phases toward v1 — Phase 1 (cloud truth) now
+  done; Phase 2 (conversation polish) next; persisted journal explicitly WAIT (Spec 04
+  §3.11's undo window is 5 min, so post-restart undo is mostly moot until execution is
+  async). Full review reasoning is in the session log.
 - **list-interactions + app build verify (done, `e0268ca`, `6cce275`):**
   "what have I logged with X" (dated bullets + notes); grew app widget tests to 8
   (undo, multi-turn, list render, busy state); clarified count-runs-this-week's
