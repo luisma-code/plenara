@@ -6,17 +6,16 @@ _Last updated: 2026-07-07. Written to survive a Claude process relaunch._
 
 The **v0 engine is complete and heavily tested**; the **Windows desktop app is
 dogfood-ready** (runs on a user-chosen synced folder + BYOK key). Latest session
-shipped **F2: reminders + notifications** end-to-end and **completed the people loop**
-(Fable #3): log-interaction, "when did I last talk to X", and birthdays
-(set / when / upcoming). **HEAD = `a31eefa`**, working tree clean (ignore the
+shipped **F2 reminders**, the **people loop** (Fable #3), and **on-open nudges**
+(Fable #4). **Fable's actionable priorities #1–#4 are all DONE**; #5–#8 are
+defer/do-not-build. **HEAD = `74ee048`**, working tree clean (ignore the
 pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
-`.claude/settings.local.json`), **1161 Dart tests + 3 Flutter widget tests green**,
+`.claude/settings.local.json`), **1163 Dart tests + 4 Flutter widget tests green**,
 `dart analyze` clean.
 
-**The immediate next task:** birthday **on-open nudges** (Fable #4) — surface
-"🎂 X's birthday is in N days" on launch, DERIVED from contacts like reminder
-nudges (no new skill → NO cassette re-record). Then presentation archetypes stay
-deferred; grow the thin app widget tests (directive #1). See "Next task".
+**The immediate next task:** grow the **app widget tests** — directive #1 flags the
+Flutter app as the thinnest-covered surface. Cover undo-in-UI, the busy/disabled
+state, multi-turn, list rendering, error surfacing. Re-record-free. See "Next task".
 
 **One blocker for Luis (needs admin):** the native Windows toast for reminders
 needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
@@ -162,6 +161,10 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **On-open birthday nudges (done, `74ee048`):** "🎂 X's birthday is in N days" on
+  launch, derived from contacts (no new skill). Factored annual-date math into
+  `lib/dates.dart` (shared by the interpreter + `lib/people.dart`). `pendingNudges()`
+  now merges reminder (⏰) + birthday (🎂) nudges. Completes Fable #4.
 - **Birthdays (done, `a31eefa`):** DSL `next_annual`/`days_until_annual` compute fns,
   month-name dates in the resolver ("March 3", "3rd of december"), + `set-birthday`
   / `when-birthday` / `upcoming-birthdays` (30-day window via reversed-gte). +6 tests.
@@ -200,17 +203,16 @@ config (5), hardening (~20).
 
 ## Next task (build this, test-first)
 
-**People loop (Fable #3) DONE.** Next: **birthday on-open nudges** (Fable #4) —
-NO new skill, so NO cassette re-record.
+**Fable #1–#4 DONE.** Next: **grow the app widget tests** (directive #1 — the
+Flutter app is the thinnest-covered surface). Re-record-free. Candidates:
+- undo from the UI (send a turn, then "undo that", assert the reversal bubble);
+- the busy/disabled state (Send disabled + progress bar while a turn is in flight);
+- a multi-turn sequence keeps state (add task → list tasks shows it);
+- list rendering (list-reminders / recall-facts produce the bulleted block);
+- error surfacing (a throwing Session still shows a message, never a dead input).
 
-- Add a pure `upcomingBirthdayNudges(store, now, {withinDays=7})` (in a small
-  people helper or reuse the reminders.dart style) → "🎂 X's birthday is in N days",
-  derived from `contact` records' `birthday` via the same next-occurrence math the
-  interpreter's `next_annual`/`days_until_annual` use (factor that into a shared
-  helper if handy). Fold it into `Session.pendingNudges()` alongside reminder
-  nudges, and show it in the app on open. Deterministic Session test + a widget test.
-- After that: grow the thin app widget tests (directive #1 — the app is the
-  least-covered surface); presentation archetypes stay DEFERRED (Spec 01 §9).
+Then the roadmap is at deferred items (presentation archetypes — Spec 01 §9;
+persisted journal; typed CloudResult). Presentation archetypes stay DEFERRED.
 
 **When you DO add a skill later:** it grows the capability inventory → the cloud
 cassette's `invSig` keys change → **re-record** `test/fixtures/cloud.json`
