@@ -328,6 +328,43 @@ void main() {
     });
   });
 
+  group('update + delete ops (Fable review)', () {
+    test('write_record with target updates an existing record (merge, same id)', () {
+      final store = <String, Map<String, dynamic>>{
+        'task-x': {'id': 'task-x', 'typeId': 'task', 'description': 'buy milk', 'completed': false, 'createdAt': 'c'}
+      };
+      final (p, before) = _run('complete-task', {'description': 'buy milk'}, store);
+      final t = p.writes.single;
+      expect(t['id'], 'task-x'); // same record, not a fresh mint
+      expect(t['completed'], true);
+      expect(t['description'], 'buy milk'); // untouched fields preserved
+      expect(store['task-x']!['completed'], true);
+      expect(before['task-x'], isNotNull); // update -> before is the prior (undo can restore)
+      expect(p.confirmation, contains('done'));
+    });
+    test('complete-task on a missing task -> friendly message, no write', () {
+      final (p, _) = _run('complete-task', {'description': 'nope'}, _store());
+      expect(p.writes, isEmpty);
+      expect(p.confirmation, contains("couldn't find"));
+    });
+    test('delete_record removes from store and captures the before-image', () {
+      final store = <String, Map<String, dynamic>>{
+        'task-x': {'id': 'task-x', 'typeId': 'task', 'description': 'buy milk'}
+      };
+      final (p, before) = _run('delete-task', {'description': 'buy milk'}, store);
+      expect(p.deletes, ['task-x']);
+      expect(store.containsKey('task-x'), isFalse);
+      expect(before['task-x']!['description'], 'buy milk'); // undo can restore it
+    });
+    test('update to a non-existent target throws (no silent create)', () {
+      final s = {'skillId': 'x', 'steps': {'main': [
+        {'op': 'write_record', 'typeId': 'task', 'target': {'var': 'missing'}, 'fields': {'completed': true}, 'into': 't'},
+        {'op': 'format', 'template': 'ok', 'into': 'confirmation'},
+      ]}};
+      expect(() => _i().resolve(s, {}, _store()), throwsA(isA<ResolveError>()));
+    });
+  });
+
   group('hardened authoring gate (Fable review)', () {
     Map<String, dynamic> skill(List main) => {'skillId': 'x', 'steps': {'main': main}};
     final ok = {'op': 'format', 'template': 'done', 'into': 'confirmation'};
@@ -335,8 +372,9 @@ void main() {
     test('unknown op rejected', () {
       expect(() => _i().validateSkill(skill([{'op': 'delete_everything'}, ok])), throwsA(isA<ResolveError>()));
     });
-    test('spec-legal-but-unimplemented op (delete_record) rejected at the gate', () {
-      expect(() => _i().validateSkill(skill([{'op': 'delete_record', 'id': {'var': 'x'}}, ok])), throwsA(isA<ResolveError>()));
+    test('delete_record without an id is rejected; with an id is accepted', () {
+      expect(() => _i().validateSkill(skill([{'op': 'delete_record'}, ok])), throwsA(isA<ResolveError>()));
+      expect(() => _i().validateSkill(skill([{'op': 'delete_record', 'id': {'var': 'x'}}, ok])), returnsNormally);
     });
     test('unknown compute fn (spec sum, unimplemented) rejected', () {
       expect(() => _i().validateSkill(skill([{'op': 'compute', 'fn': 'sum', 'args': [], 'into': 'x'}, ok])), throwsA(isA<ResolveError>()));

@@ -19,6 +19,7 @@ typedef Skill = Map<String, dynamic>;
 
 class Plan {
   final List<Record> writes = [];
+  final List<String> deletes = []; // record ids to tombstone
   String? confirmation;
 }
 
@@ -127,7 +128,7 @@ class Interpreter {
   }
 
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
-  static const _ops = {'read_one', 'read_many', 'write_record', 'compute', 'set', 'format', 'branch', 'foreach'};
+  static const _ops = {'read_one', 'read_many', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
   static const _fns = {'now', 'today', 'format_date', 'start_of_week', 'add', 'count', 'concat'};
   static const _valueTypes = {'text', 'date', 'datetime', 'decimal', 'integer', 'boolean', 'entity', 'enum'};
 
@@ -217,6 +218,8 @@ class Interpreter {
             }
           });
           if (step['into'] is String) recVars[step['into'] as String] = tid as String;
+        case 'delete_record':
+          if (step['id'] == null) throw ResolveError("${c.sid}: delete_record needs an 'id'");
         case 'format':
           if (step['into'] == 'confirmation') c.setsConfirmation = true;
         case 'branch':
@@ -298,7 +301,10 @@ class Interpreter {
         }
         env[step['into']] = recs;
       case 'write_record':
-        env[step['into']] = _resolveWrite(step, env, plan);
+        env[step['into']] = _resolveWrite(step, env, store, plan);
+      case 'delete_record':
+        final id = val(step['id'], env);
+        if (id is String && store.containsKey(id)) plan.deletes.add(id);
       case 'branch':
         _run((cond(step['cond'] as Map, env) ? step['then'] : step['else']) ?? [], env, store, plan);
       case 'foreach':
@@ -311,24 +317,31 @@ class Interpreter {
     }
   }
 
-  Record _resolveWrite(Map step, Map<String, dynamic> env, Plan plan) {
+  Record _resolveWrite(Map step, Map<String, dynamic> env, Map<String, Record> store, Plan plan) {
     final typeId = step['typeId'] as String;
     final td = types[typeId]!;
     final fields = <String, dynamic>{
       for (final e in (step['fields'] as Map).entries) e.key: val(e.value, env)
     };
-    for (final a in (td['attributes'] as List)) {
-      if (fields[a['name']] == null && a.containsKey('default')) {
-        fields[a['name']] = a['default'];
+    Record rec;
+    final target = step['target']; // {ref: recVar} / an id expr -> UPDATE the existing record
+    if (target != null) {
+      final id = val(target, env);
+      final existing = id == null ? null : store[id];
+      if (existing == null) throw ResolveError("write $typeId: update target '$id' not found");
+      // merge: keep existing fields, overlay the new ones (id-based upsert, Spec 02 §3.2)
+      rec = <String, dynamic>{...existing, ...fields, 'id': existing['id'], 'typeId': typeId};
+    } else {
+      for (final a in (td['attributes'] as List)) {
+        if (fields[a['name']] == null && a.containsKey('default')) fields[a['name']] = a['default'];
       }
-    }
-    for (final a in (td['attributes'] as List)) {
-      final name = a['name'], v = fields[name];
-      if (a['required'] == true && v == null) {
-        throw ResolveError("write $typeId: required '$name' missing (schema validation)");
+      for (final a in (td['attributes'] as List)) {
+        if (a['required'] == true && fields[a['name']] == null) {
+          throw ResolveError("write $typeId: required '${a['name']}' missing (schema validation)");
+        }
       }
+      rec = <String, dynamic>{'id': _mint(typeId), 'typeId': typeId, ...fields};
     }
-    final rec = <String, dynamic>{'id': _mint(typeId), 'typeId': typeId, ...fields};
     plan.writes.add(rec);
     return rec;
   }
@@ -342,6 +355,10 @@ class Interpreter {
       final id = rec['id'] as String;
       before[id] = store.containsKey(id) ? Map<String, dynamic>.from(store[id]!) : null;
       store[id] = Map<String, dynamic>.from(rec);
+    }
+    for (final id in plan.deletes) {
+      before[id] = store.containsKey(id) ? Map<String, dynamic>.from(store[id]!) : null;
+      store.remove(id); // the before-image (the deleted record) lets undo restore it
     }
     return before;
   }

@@ -122,6 +122,22 @@ void main() {
       expect(s.store.values.where((r) => r['typeId'] == 'workout'), isEmpty);
       expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
     });
+    test('mark a task done (update), then undo restores it as not-done', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      expect(await s.handle('mark buy milk as done'), contains('done'));
+      expect(s.store.values.firstWhere((r) => r['typeId'] == 'task')['completed'], true);
+      await s.handle('undo that');
+      expect(s.store.values.firstWhere((r) => r['typeId'] == 'task')['completed'], false);
+    });
+    test('delete a task, then undo restores it', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      expect(await s.handle('delete buy milk from my list'), contains('Deleted'));
+      expect(s.store.values.where((r) => r['typeId'] == 'task'), isEmpty);
+      await s.handle('undo that');
+      expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
+    });
     test('scratch that / take that back also undo', () async {
       final s = await _session();
       await s.handle('add buy milk to my list');

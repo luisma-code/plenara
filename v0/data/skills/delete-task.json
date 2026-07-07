@@ -1,0 +1,18 @@
+{
+  "skillId": "delete-task",
+  "displayName": "Delete a task",
+  "inputs": [
+    { "name": "description", "required": true }
+  ],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "task", "match": { "description": {"var": "description"} }, "into": "t" },
+      { "op": "branch", "cond": { "isNull": "t" }, "then": [
+        { "op": "format", "template": "I couldn't find a task \"{description}\".", "into": "confirmation" }
+      ], "else": [
+        { "op": "delete_record", "id": {"ref": "t"} },
+        { "op": "format", "template": "Deleted \"{description}\".", "into": "confirmation" }
+      ] }
+    ]
+  }
+}

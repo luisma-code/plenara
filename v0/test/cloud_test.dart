@@ -118,6 +118,30 @@ void main() {
     });
   });
 
+  group('replay through Session — EVERY in-domain fixture routes AND acts', () {
+    const expectedWrite = {'create-task': 'task', 'log-run': 'workout', 'log-mood': 'mood'};
+    residualBySkill.forEach((skillId, utterances) {
+      for (final u in utterances) {
+        test('"$u" -> $skillId', () async {
+          final s = Session(makeTempDataDir(), clock: _now, cloud: _cloud());
+          await s.init(retrieval: false);
+          final resp = await s.handle(u);
+          expect(resp, isNotEmpty);
+          if (expectedWrite.containsKey(skillId)) {
+            final w = s.store.values.where((r) => r['typeId'] == expectedWrite[skillId]).toList();
+            expect(w.length, 1, reason: '$u should write one ${expectedWrite[skillId]}');
+            // every written string slot is real text, never a leaked sentinel
+            for (final v in w.single.values) {
+              if (v is String) expect(v.toLowerCase(), isNot('none'));
+            }
+          } else {
+            expect(s.store, isEmpty, reason: '$u is a read-only skill and must not write');
+          }
+        });
+      }
+    });
+  });
+
   group('replay through Session — out-of-domain clarifies (no mis-action)', () {
     for (final u in outOfDomainUtterances) {
       test('"$u" writes nothing and does not confirm an action', () async {

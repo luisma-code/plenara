@@ -48,10 +48,13 @@ class ClaudeClient implements CloudClient {
       'utterance and the app\'s full capability inventory (each with an id, a '
       'description, and its input slot names), respond with ONLY a JSON object: '
       '{"skillId": "<id or none>", "slots": {<slotName>: <literal value>, ...}}. '
-      'Pick the single best capability and extract its input slots as literal '
-      'values from the utterance (dates as YYYY-MM-DD; numeric quantities like a '
-      'distance as a plain number with no unit, e.g. 6 not "6k"). Use "none" if it '
-      'is not one of these capabilities or is a general/world question. Output only JSON.';
+      'Pick the single best capability and extract its input slots from the '
+      'utterance. Rules: dates as YYYY-MM-DD; a numeric quantity like a distance '
+      'as a plain number with no unit (6 not "6k"); a TEXT slot (a mood rating, a '
+      'name, a description) is the user\'s OWN words verbatim — never a number or a '
+      'paraphrase; use JSON null (not the string "none") for a slot with no value. '
+      'Use skillId "none" if it is not one of these capabilities or is a '
+      'general/world question. Output only JSON.';
 
   static const _authorSys = '''
 You author capabilities for a personal-assistant app as DATA (never code). Given a

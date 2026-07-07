@@ -1,5 +1,5 @@
 {
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001jot down that I need to buy milk": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001jot down that I need to buy milk": {
     "skillId": "create-task",
     "slots": {
       "description": "buy milk",
@@ -7,7 +7,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001make a note to email the accountant": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001make a note to email the accountant": {
     "skillId": "create-task",
     "slots": {
       "description": "email the accountant",
@@ -15,7 +15,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001put picking up dry cleaning on my to-do list": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001put picking up dry cleaning on my to-do list": {
     "skillId": "create-task",
     "slots": {
       "description": "picking up dry cleaning",
@@ -23,7 +23,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001I have to renew the car registration, add that": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001I have to renew the car registration, add that": {
     "skillId": "create-task",
     "slots": {
       "description": "renew the car registration",
@@ -31,103 +31,103 @@
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001don't let me forget to call the dentist": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001don't let me forget to call the dentist": {
     "skillId": "create-task",
     "slots": {
       "description": "call the dentist",
-      "dueDate": "none"
-    },
-    "source": "cloud"
-  },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001stick booking flights on my list": {
-    "skillId": "create-task",
-    "slots": {
-      "description": "book flights",
       "dueDate": null
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001I did a 6k jog this morning": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001stick booking flights on my list": {
+    "skillId": "create-task",
+    "slots": {
+      "description": "booking flights",
+      "dueDate": null
+    },
+    "source": "cloud"
+  },
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001I did a 6k jog this morning": {
     "skillId": "log-run",
     "slots": {
       "distance": 6
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001just finished running 8 kilometers": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001just finished running 8 kilometers": {
     "skillId": "log-run",
     "slots": {
       "distance": 8
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001went for a 5k this afternoon": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001went for a 5k this afternoon": {
     "skillId": "log-run",
     "slots": {
       "distance": 5
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001clocked a quick 3k": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001clocked a quick 3k": {
     "skillId": "log-run",
     "slots": {
       "distance": 3
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001feeling pretty anxious today": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001feeling pretty anxious today": {
     "skillId": "log-mood",
     "slots": {
-      "rating": "2"
+      "rating": "feeling pretty anxious today"
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001I am in a great mood": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001I am in a great mood": {
     "skillId": "log-mood",
     "slots": {
       "rating": "great"
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001honestly kind of down right now": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001honestly kind of down right now": {
     "skillId": "log-mood",
     "slots": {
-      "rating": "2"
+      "rating": "honestly kind of down right now"
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001refresh my memory on Sarah Mitchell": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001refresh my memory on Sarah Mitchell": {
     "skillId": "recall-facts",
     "slots": {
       "personName": "Sarah Mitchell"
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001what have I got on Mia": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001what have I got on Mia": {
     "skillId": "recall-facts",
     "slots": {
       "personName": "Mia"
     },
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001run me through my open items": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001run me through my open items": {
     "skillId": "list-tasks",
     "slots": {},
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001what have I got to do": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001what have I got to do": {
     "skillId": "list-tasks",
     "slots": {},
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001how much running have I done since Monday": {
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001how much running have I done since Monday": {
     "skillId": "count-runs-this-week",
     "slots": {},
     "source": "cloud"
   },
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001what's the capital of France": null,
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001tell me a joke": null,
-  "route\u0001count-runs-this-week,create-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001what time is it in Tokyo": null,
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001what's the capital of France": null,
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001tell me a joke": null,
+  "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001what time is it in Tokyo": null,
   "author\u0001\u0001water intake": {
     "type": {
       "typeId": "water_intake",
@@ -165,9 +165,9 @@
         }
       ],
       "examplePhrases": [
-        "I drank 500 ml of water",
+        "I drank 500 milliliters of water",
         "Log 8 ounces of water",
-        "Add 2 cups of water to my intake"
+        "Add 2 cups to my water intake"
       ],
       "steps": {
         "main": [
@@ -195,7 +195,7 @@
           },
           {
             "op": "format",
-            "template": "Logged {amount} {unit} of water intake",
+            "template": "Logged {var:amount} {var:unit} of water intake",
             "into": "confirmation"
           }
         ]
@@ -208,7 +208,7 @@
       "displayName": "Gratitude Journal Entry",
       "attributes": [
         {
-          "name": "gratitudeText",
+          "name": "entry",
           "valueType": "text",
           "required": true
         },
@@ -224,14 +224,14 @@
       "displayName": "Log Daily Gratitude",
       "inputs": [
         {
-          "name": "gratitudeText",
+          "name": "gratitudeEntry",
           "required": true
         }
       ],
       "examplePhrases": [
-        "I'm grateful for my family today",
-        "Log that I'm thankful for good health",
-        "Add to my gratitude journal: my morning coffee"
+        "Log my gratitude for today",
+        "I'm grateful for my family",
+        "Add to my gratitude journal"
       ],
       "steps": {
         "main": [
@@ -245,8 +245,8 @@
             "op": "write_record",
             "typeId": "gratitude_entry",
             "fields": {
-              "gratitudeText": {
-                "var": "gratitudeText"
+              "entry": {
+                "var": "gratitudeEntry"
               },
               "loggedAt": {
                 "var": "entryDate"
@@ -256,7 +256,7 @@
           },
           {
             "op": "format",
-            "template": "Your gratitude has been saved: {gratitudeText}",
+            "template": "✓ Gratitude logged for {entryDate}: {gratitudeEntry}",
             "into": "confirmation"
           }
         ]
@@ -308,9 +308,9 @@
         }
       ],
       "examplePhrases": [
-        "I finished reading the great gatsby",
-        "Log finished book dune by frank herbert completed today",
-        "Add 1984 to my finished books completed on december 15th"
+        "I finished reading The Great Gatsby by F. Scott Fitzgerald",
+        "Log that I completed Dune today",
+        "Add 1984 to my finished books"
       ],
       "steps": {
         "main": [
@@ -319,6 +319,12 @@
             "fn": "today",
             "args": [],
             "into": "logDate"
+          },
+          {
+            "op": "compute",
+            "fn": "today",
+            "args": [],
+            "into": "completedDateVar"
           },
           {
             "op": "write_record",
@@ -341,7 +347,7 @@
           },
           {
             "op": "format",
-            "template": "Logged finished book: {title}",
+            "template": "Logged {title} as finished reading.",
             "into": "confirmation"
           }
         ]
@@ -362,7 +368,7 @@
           "name": "unit",
           "valueType": "text",
           "required": true,
-          "default": "lbs"
+          "default": "lb"
         },
         {
           "name": "loggedAt",
@@ -385,9 +391,9 @@
         }
       ],
       "examplePhrases": [
-        "log my weight as 175 pounds",
-        "i weigh 72 kilograms",
-        "record 165 lbs"
+        "Log my weight as 175 pounds",
+        "I weigh 72 kilograms",
+        "My weight is 165 lb"
       ],
       "steps": {
         "main": [
@@ -395,7 +401,7 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "today_date"
+            "into": "todayVar"
           },
           {
             "op": "write_record",
@@ -408,7 +414,7 @@
                 "var": "unit"
               },
               "loggedAt": {
-                "var": "today_date"
+                "var": "todayVar"
               }
             },
             "into": "record"
@@ -424,12 +430,12 @@
   },
   "author\u0001\u0001coffee cups per day": {
     "type": {
-      "typeId": "coffee_consumption",
-      "displayName": "Coffee Consumption",
+      "typeId": "coffee_cups_logged",
+      "displayName": "Coffee Cups Logged",
       "attributes": [
         {
-          "name": "cupsPerDay",
-          "valueType": "decimal",
+          "name": "cupsCount",
+          "valueType": "integer",
           "required": true
         },
         {
@@ -444,14 +450,14 @@
       "displayName": "Log Coffee Cups",
       "inputs": [
         {
-          "name": "cups",
+          "name": "cupsCount",
           "required": true
         }
       ],
       "examplePhrases": [
         "I had 3 cups of coffee today",
-        "Log 2 coffee cups",
-        "I drank 4 cups of coffee"
+        "Log 2 coffees",
+        "Track 4 cups of coffee"
       ],
       "steps": {
         "main": [
@@ -459,24 +465,24 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "logDate"
+            "into": "todayDate"
           },
           {
             "op": "write_record",
-            "typeId": "coffee_consumption",
+            "typeId": "coffee_cups_logged",
             "fields": {
-              "cupsPerDay": {
-                "var": "cups"
+              "cupsCount": {
+                "var": "cupsCount"
               },
               "loggedAt": {
-                "var": "logDate"
+                "var": "todayDate"
               }
             },
             "into": "record"
           },
           {
             "op": "format",
-            "template": "Logged {cups} cups of coffee for today",
+            "template": "Logged {cupsCount} coffee cups for today",
             "into": "confirmation"
           }
         ]

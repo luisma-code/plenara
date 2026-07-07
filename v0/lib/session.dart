@@ -190,7 +190,10 @@ class Session {
       for (final w in plan.writes) {
         persist(w, '$dataDir/records', dev);
       }
-      if (plan.writes.isNotEmpty) {
+      for (final id in plan.deletes) {
+        tombstone(id, '$dataDir/records', dev);
+      }
+      if (plan.writes.isNotEmpty || plan.deletes.isNotEmpty) {
         _lastBefore = before;
         _lastActionDesc = plan.confirmation;
       }
