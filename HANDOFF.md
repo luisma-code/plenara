@@ -11,19 +11,17 @@ shipped **F2 reminders**, the **people loop** (Fable #3), **on-open nudges** (Fa
 cloud seam now returns typed results (Ok/abstain vs named CloudError kinds); Session
 surfaces honest failure reasons + logs cloud health per turn; cloud date/datetime
 slots are normalized (no midnight/dropped reminders); the machine-specific `.env`
-fallback is gone from the app path. **Phase 2a (discoverability + turnlog report) is
-also DONE.** **HEAD = `949f501`**, working tree clean (ignore the pre-existing dirty
-`planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1178 Dart tests + 8 Flutter widget tests green**, `dart analyze` clean,
-**`flutter build windows --debug` succeeds**.
+fallback is gone from the app path. **Fable Phase 2 is DONE too** — discoverability
+("what can you do"), a turnlog report, and partial-name matching with a disambiguation
+clarify ("Sam" → "Sam Rivera", or a "which one?" question). **HEAD = `ec14145`**, working
+tree clean (ignore the pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log`
++ untracked `.claude/settings.local.json`), **1182 Dart tests + 8 Flutter widget tests
+green**, `dart analyze` clean, **`flutter build windows --debug` succeeds**.
 
-**The immediate next task:** the remaining Phase 2 item — **partial-name matching +
-disambiguation**. Today `read_one` is exact-match + find-or-create deduped, so "what do
-I know about Sam" misses two full-name "Sam …" contacts entirely (and Fable's ambiguity
-dialogue is unreachable without this). Add substring/prefix name matching to `read_one`
-and, when >1 matches, surface a clarify listing the candidates (carry candidate labels
-out of `interpreter.dart` on the ambiguity). Then Phase 3 is TONIGHT (post-reconfig):
-the real notification toast (ATL) + the voice spike. See "Next task".
+**The immediate next task:** Fable Phases 1–2 are complete; NOT blocked on Luis. Pick
+from unblocked, re-record-aware options in "Next task" (people/tracker depth, persisted
+journal if desired, NLU corpus growth, app UI panels). Only Phase 3 needs the reconfig:
+the real notification toast (ATL) + the voice spike — do those TONIGHT.
 
 **One blocker for Luis (needs admin):** the native Windows toast for reminders
 needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
@@ -171,6 +169,10 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **Phase 2 complete: partial name matching + disambiguation (done, `ec14145`):**
+  `read_one` resolves exact-first then substring (opt-in `partial:true` on people READ
+  skills); >1 match throws with candidate labels (`ResolveError.options`) which Session
+  renders as a "which one?" clarify. Write/find-or-create stay exact (dedup preserved).
 - **Phase 2a: discoverability + turnlog report (done, `949f501`):** "what can you do"
   is a Session special-case (no re-record) rendering a capability-grounded, per-skill-
   gated overview; `bin/turnlog_report.dart` + `lib/turnlog.dart` aggregate source
