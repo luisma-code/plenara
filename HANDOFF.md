@@ -13,15 +13,17 @@ surfaces honest failure reasons + logs cloud health per turn; cloud date/datetim
 slots are normalized (no midnight/dropped reminders); the machine-specific `.env`
 fallback is gone from the app path. **Fable Phase 2 is DONE too** — discoverability
 ("what can you do"), a turnlog report, and partial-name matching with a disambiguation
-clarify ("Sam" → "Sam Rivera", or a "which one?" question). **HEAD = `ec14145`**, working
-tree clean (ignore the pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log`
-+ untracked `.claude/settings.local.json`), **1182 Dart tests + 8 Flutter widget tests
-green**, `dart analyze` clean, **`flutter build windows --debug` succeeds**.
+clarify ("Sam" → "Sam Rivera", or a "which one?" question). Then went DEEP on Phase-5
+capability: relationship queries (both directions), forget-fact (+ a `contains` cond),
+and a due-tasks agenda ("what's due"). **HEAD = `b21ff4e`**, working tree clean (ignore
+the pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
+`.claude/settings.local.json`), **1193 Dart tests + 8 Flutter widget tests green**,
+`dart analyze` clean, **`flutter build windows --debug` succeeds**.
 
-**The immediate next task:** Fable Phases 1–2 are complete; NOT blocked on Luis. Pick
-from unblocked, re-record-aware options in "Next task" (people/tracker depth, persisted
-journal if desired, NLU corpus growth, app UI panels). Only Phase 3 needs the reconfig:
-the real notification toast (ATL) + the voice spike — do those TONIGHT.
+**The immediate next task:** NOT blocked on Luis. Keep rolling autonomously (working
+mode: never stop for input, make the sequencing call yourself). Unblocked options:
+more depth on demand, NLU corpus growth, robustness/hardening, app UI panels. Only
+Phase 3 needs tonight's reconfig: the real notification toast (ATL) + the voice spike.
 
 **One blocker for Luis (needs admin):** the native Windows toast for reminders
 needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
@@ -153,13 +155,14 @@ The bundle is intentionally secret-free; keep it that way.
   derive/reconcile (armed set DERIVED from the record store; idempotent). Session
   reconciles on init + every turn and exposes `pendingNudges()`.
 
-**`v0/data/`** — 8 types, **19 skills** (create/list/complete/delete-task, log-run,
-log-mood, count-runs-this-week, remember-person-fact, recall-facts, set/list/
-complete/cancel-reminder, log-interaction, last-interaction, **list-interactions**,
-set/when/upcoming-birthday), corpus.json. DSL compute fns now incl. `format_time`,
-`next_annual`, `days_until_annual`; the date resolver handles month-name dates.
-`lib/dates.dart` (shared annual math), `lib/people.dart` (birthday-nudge projection),
-`lib/reminders.dart` (notification seam + reconcile).
+**`v0/data/`** — 8 types, **22 skills**: tasks (create/list/complete/delete/**due**),
+running (log-run, count-runs-this-week), mood (log-mood), reminders (set/list/complete/
+cancel), people-facts (remember/recall/**forget**), interactions (log/last/list),
+**list-relations**, birthdays (set/when/upcoming). DSL compute fns: `format_time`,
+`next_annual`, `days_until_annual`; conds incl. **`contains`**; the date resolver
+handles month-name dates. Helper libs: `dates.dart` (annual math), `people.dart`
+(birthday-nudge projection), `reminders.dart` (notification seam + reconcile),
+`turnlog.dart` (dogfood metrics).
 **`v0/bin/plenara.dart`** — console (REPL / `--demo` / one-shot) over the same Session.
 **`app/`** — Flutter Windows chat UI; `buildSession()` from config; 2 widget tests.
 
@@ -169,6 +172,11 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **Capability depth (done, `b21ff4e` … `c36d00a`):** `due-tasks` ("what's due" /
+  "anything overdue" — overdue + today, excluding future/done); `forget-fact`
+  ("forget that Mia likes chess") + a new `contains` cond (case-insensitive substring
+  in branches); `list-relations` querying the relationship graph BOTH directions
+  ("Sarah's daughter: Mia" and "Mia: daughter of Sarah"). People loop is now full CRUD.
 - **Phase 2 complete: partial name matching + disambiguation (done, `ec14145`):**
   `read_one` resolves exact-first then substring (opt-in `partial:true` on people READ
   skills); >1 match throws with candidate labels (`ResolveError.options`) which Session
