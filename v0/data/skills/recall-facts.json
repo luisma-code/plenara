@@ -38,14 +38,11 @@
         ],
         "else": [
           {
-            "op": "read_many",
+            "op": "read_related",
             "typeId": "contact_fact",
-            "filter": {
-              "field": "subject",
-              "op": "eq",
-              "value": {
-                "ref": "person"
-              }
+            "via": "subject",
+            "from": {
+              "ref": "person"
             },
             "into": "facts"
           },

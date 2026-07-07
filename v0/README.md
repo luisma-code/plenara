@@ -49,7 +49,7 @@ The three demo turns exercise a simple write, a multi-write resolve-or-create wi
 
 | Layer | State |
 |---|---|
-| Skill interpreter (Spec 02) | **Real** — two-phase, static-validated, 9/10 primitives (create/update/delete; only `read_related` left) |
+| Skill interpreter (Spec 02) | **Real** — two-phase, static-validated, **all 10 primitives** (incl. create/update/delete + read_related), capability-closure enforced |
 | Storage + CRDT format (Spec 04 / assessment) | **Real** — per-record files, `_meta` HLC stamps |
 | Turn pipeline / act-then-describe (Spec 04/05) | **Real** (thinned) |
 | Types + skills as data (Spec 01/02) | **Real** — JSON in `data/` |

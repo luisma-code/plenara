@@ -130,7 +130,7 @@ class Interpreter {
   }
 
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
-  static const _ops = {'read_one', 'read_many', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
+  static const _ops = {'read_one', 'read_many', 'read_related', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
   static const _fns = {'now', 'today', 'format_date', 'start_of_week', 'add', 'count', 'concat'};
   static const _valueTypes = {'text', 'date', 'datetime', 'decimal', 'integer', 'boolean', 'entityRef', 'enum'};
 
@@ -204,6 +204,13 @@ class Interpreter {
           c.readTypes.add(tid as String);
           final f = step['filter'];
           if (f != null && f['op'] != 'eq') throw ResolveError("${c.sid}: read_many unsupported filter op '${f['op']}'");
+          if (step['into'] is String) listVars[step['into'] as String] = tid;
+        case 'read_related':
+          final tid = step['typeId'];
+          if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_related unknown type '$tid'");
+          if (step['via'] is! String) throw ResolveError("${c.sid}: read_related needs a 'via' attribute name");
+          if (step['from'] == null) throw ResolveError("${c.sid}: read_related needs a 'from' record reference");
+          c.readTypes.add(tid as String);
           if (step['into'] is String) listVars[step['into'] as String] = tid;
         case 'write_record':
           final tid = step['typeId'];
@@ -317,6 +324,13 @@ class Interpreter {
           recs = recs.where((r) => r[f['field']] == fv).toList();
         }
         env[step['into']] = recs;
+      case 'read_related':
+        // records of typeId whose `via` entity attr points at the `from` record's id
+        final fromId = val(step['from'], env);
+        final via = step['via'] as String;
+        env[step['into']] = store.values
+            .where((r) => r['typeId'] == step['typeId'] && r[via] == fromId)
+            .toList();
       case 'write_record':
         env[step['into']] = _resolveWrite(step, env, store, plan);
       case 'delete_record':

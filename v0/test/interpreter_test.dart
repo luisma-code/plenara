@@ -356,6 +356,22 @@ void main() {
       expect(store.containsKey('task-x'), isFalse);
       expect(before['task-x']!['description'], 'buy milk'); // undo can restore it
     });
+    test('read_related returns records whose via-attr points at the from record', () {
+      final store = <String, Map<String, dynamic>>{
+        'c1': {'id': 'c1', 'typeId': 'contact', 'displayName': 'Mia'},
+        'f1': {'id': 'f1', 'typeId': 'contact_fact', 'subject': 'c1', 'fact': 'a'},
+        'f2': {'id': 'f2', 'typeId': 'contact_fact', 'subject': 'cX', 'fact': 'b'},
+      };
+      final s = {'skillId': 'x', 'reads': ['contact', 'contact_fact'], 'writes': [], 'steps': {'main': [
+        {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': 'Mia'}, 'into': 'p'},
+        {'op': 'read_related', 'typeId': 'contact_fact', 'via': 'subject', 'from': {'ref': 'p'}, 'into': 'fs'},
+        {'op': 'compute', 'fn': 'count', 'args': [{'var': 'fs'}], 'into': 'n'},
+        {'op': 'format', 'template': '{n}', 'into': 'confirmationText'},
+      ]}};
+      final i = _i();
+      expect(() => i.validateSkill(s), returnsNormally);
+      expect(i.resolve(s, {}, store).confirmation, '1'); // only f1 points at c1
+    });
     test('update to a non-existent target throws (no silent create)', () {
       final s = {'skillId': 'x', 'steps': {'main': [
         {'op': 'write_record', 'typeId': 'task', 'target': {'var': 'missing'}, 'fields': {'completed': true}, 'into': 't'},
