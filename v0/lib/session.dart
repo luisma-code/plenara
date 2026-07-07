@@ -17,10 +17,17 @@ final _defRe = RegExp(
     r'^(?:start tracking|track|i want to track|i want to start tracking|make me a|create a) '
     r'(?:my |a |an )?(.+?)(?: tracker)?\.?$',
     caseSensitive: false);
+// Layer-1 policy floor (Spec 02 §7.6): key on harmful FRAMING, never merely a
+// sensitive topic. "track my kid's mood" (the flagship marquee) is fine; "track
+// my kid secretly / without their knowledge" is not. Layers 2/3 (model + review)
+// are v2.
 final _harmfulRe = RegExp(
-    r'(track|monitor|spy|surveil|watch).{0,30}(partner|spouse|wife|husband|someone|him|her|them|kid|child)'
-    r'|without (their|his|her) (knowledge|consent|permission)|secretly|covert'
-    r'|self.?harm|hurt (myself|someone|somebody)|weapon|purg(e|ing)|restrict.{0,10}calorie',
+    // covert / non-consensual surveillance framing
+    r"secretly|covertly|without (?:their|his|her|your) (?:knowledge|consent|permission)"
+    r"|behind (?:their|his|her) back|\bspy on\b|\bstalk\b|keep tabs on|\bsnoop\b"
+    // self-harm, weapons, disordered-eating framing
+    r"|self.?harm|hurt (?:myself|someone|somebody)|make a weapon|build a weapon"
+    r"|purge (?:after|my|food|meal)|hide (?:my )?(?:eating|calories)|restrict (?:my )?calories",
     caseSensitive: false);
 // authored ids are model output; keep them out of file paths and odd charsets
 final _idRe = RegExp(r'^[a-z0-9_-]{1,64}$');

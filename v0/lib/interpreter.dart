@@ -272,7 +272,12 @@ class Interpreter {
         final hits = store.values
             .where((r) =>
                 r['typeId'] == step['typeId'] &&
-                match.entries.every((e) => r[e.key] == e.value))
+                match.entries.every((e) {
+                  final rv = r[e.key], mv = e.value;
+                  // case-insensitive name resolution: "mia" finds "Mia" (voice
+                  // transcripts vary in case), so we don't create a duplicate contact
+                  return (rv is String && mv is String) ? rv.toLowerCase() == mv.toLowerCase() : rv == mv;
+                }))
             .toList();
         if (hits.length > 1) {
           throw ResolveError(

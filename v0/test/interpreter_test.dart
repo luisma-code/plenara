@@ -197,6 +197,12 @@ void main() {
       expect(rel['to'], person['id']);
       expect(rel['relationType'], 'daughter');
     });
+    test('resolves an existing person case-insensitively (no duplicate contact)', () {
+      final store = <String, Map<String, dynamic>>{'c1': {'id': 'c1', 'typeId': 'contact', 'displayName': 'Mia'}};
+      final (p, _) = _run('remember-person-fact', {'personName': 'mia', 'fact': 'likes tea'}, store);
+      expect(p.writes.map((w) => w['typeId']), ['contact_fact']); // NOT [contact, contact_fact]
+      expect(p.writes[0]['subject'], 'c1');
+    });
     test('with relation, existing relative -> resolved (no 2nd contact write)', () {
       final store = <String, Map<String, dynamic>>{'c1': {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sarah Mitchell'}};
       final (p, _) = _run('remember-person-fact',
