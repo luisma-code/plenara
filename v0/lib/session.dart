@@ -128,7 +128,7 @@ class Session {
     bool has(String id) => skills.containsKey(id);
     final lines = <String>[
       if (has('create-task'))
-        '• Tasks — "add call the plumber to my list", "list my tasks", "mark X done", "delete X"',
+        '• Tasks — "add call the plumber to my list", "list my tasks", "what\'s due", "mark X done", "delete X"',
       if (has('set-reminder'))
         '• Reminders — "remind me to call mom on thursday at 5pm", "what are my reminders", "cancel the reminder to X"',
       if (has('log-run'))

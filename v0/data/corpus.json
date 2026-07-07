@@ -68,6 +68,12 @@
   { "skillId": "list-tasks", "template": "show my tasks" },
   { "skillId": "list-tasks", "template": "what are my tasks" },
   { "skillId": "list-tasks", "template": "what's on my to-do list" },
+  { "skillId": "due-tasks", "template": "what's due today" },
+  { "skillId": "due-tasks", "template": "what's due" },
+  { "skillId": "due-tasks", "template": "what's overdue" },
+  { "skillId": "due-tasks", "template": "anything overdue" },
+  { "skillId": "due-tasks", "template": "what do i need to do today" },
+  { "skillId": "due-tasks", "template": "what needs doing" },
   { "skillId": "count-runs-this-week", "template": "how {_:text} have i run this week" },
   { "skillId": "count-runs-this-week", "template": "how many runs this week" }
 ]

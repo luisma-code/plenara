@@ -32,8 +32,8 @@ const residualBySkill = <String, List<String>>{
     'what have I got on Mia',
   ],
   'list-tasks': [
-    'run me through my open items',
-    'what have I got to do',
+    'show me my whole to-do list',
+    'give me a rundown of all my tasks',
   ],
   'count-runs-this-week': [
     'how much running have I done since Monday',

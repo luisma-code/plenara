@@ -80,6 +80,30 @@ void main() {
     });
   });
 
+  group('due-tasks (agenda view)', () {
+    test('shows overdue + due-today, excludes future / no-date / completed', () async {
+      final s = await _session(); // clock is Monday 2026-07-06
+      await s.handle('add pay rent to my list due yesterday'); // overdue (07-05)
+      await s.handle('add call the bank to my list due today'); // due today
+      await s.handle('add book flights to my list due friday'); // future (07-10)
+      await s.handle('add water the plants to my list'); // no due date
+      final r = await s.handle("what's due");
+      expect(r, contains('pay rent'));
+      expect(r, contains('overdue'));
+      expect(r, contains('call the bank'));
+      expect(r, contains('due today'));
+      expect(r.contains('book flights'), isFalse); // future excluded
+      expect(r.contains('water the plants'), isFalse); // no-date excluded
+    });
+
+    test('completed tasks drop out; nothing due -> clear message', () async {
+      final s = await _session();
+      await s.handle('add call the bank to my list due today');
+      await s.handle('mark call the bank done');
+      expect(await s.handle('anything overdue'), contains("you're clear"));
+    });
+  });
+
   group('cross-skill integration: write -> read', () {
     test('log a run, then the weekly count reflects it', () async {
       final s = await _session();
