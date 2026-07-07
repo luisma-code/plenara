@@ -37,8 +37,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatState extends State<ChatScreen> {
-  late final Session _session =
-      widget.session ?? Session(dataDir, clock: DateTime.parse('2026-07-06T09:00:00'));
+  late final Session _session = widget.session ?? Session(dataDir); // live wall clock
   final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
@@ -51,15 +50,23 @@ class _ChatState extends State<ChatScreen> {
   }
 
   Future<void> _init() async {
-    await _session.init(retrieval: widget.retrieval);
-    setState(() {
-      _ready = true;
-      _msgs.add(Msg(
-          'Hi — I\'m Plenara. Try: "add call the plumber to my list", "log a 3k run", '
-          '"remember that Mia is Sarah Mitchell\'s daughter", "what do I know about Mia", '
-          '"list my tasks", or "start tracking my water intake". "undo that" reverses the last thing.',
-          false));
-    });
+    try {
+      await _session.init(retrieval: widget.retrieval);
+      setState(() {
+        _ready = true;
+        _msgs.add(Msg(
+            'Hi — I\'m Plenara. Try: "add call the plumber to my list", "log a 3k run", '
+            '"remember that Mia is Sarah Mitchell\'s daughter", "what do I know about Mia", '
+            '"list my tasks", or "start tracking my water intake". "undo that" reverses the last thing.',
+            false));
+      });
+    } catch (e) {
+      // no infinite spinner: surface the failure and let the user see it
+      setState(() {
+        _ready = true;
+        _msgs.add(Msg("I couldn't start up — there may be a problem reading your data folder.\n\n$e", false));
+      });
+    }
   }
 
   Future<void> _send() async {
@@ -71,7 +78,13 @@ class _ChatState extends State<ChatScreen> {
       _busy = true;
     });
     _jump();
-    final resp = await _session.handle(t);
+    String resp;
+    try {
+      resp = await _session.handle(t); // already catch-all internally; belt-and-suspenders here
+    } catch (e) {
+      resp = 'Something went wrong: $e';
+    }
+    // _busy is always cleared, so the input can never lock up
     setState(() {
       _msgs.add(Msg(resp, false));
       _busy = false;

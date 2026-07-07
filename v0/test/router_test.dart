@@ -88,6 +88,15 @@ void main() {
     });
   });
 
+  group('per-turn clock (Fable review)', () {
+    test('route resolves dates against the passed clock, not construction time', () {
+      final r = Router.load('data/corpus.json', DateTime.parse('2020-01-01T00:00:00')); // stale construction clock
+      expect(r.route('remind me to call mom on friday', clock: _now)?['slots']['dueDate'], '2026-07-10');
+      final nextWeek = DateTime.parse('2026-07-13T09:00:00'); // a later Monday
+      expect(r.route('remind me to call mom on friday', clock: nextWeek)?['slots']['dueDate'], '2026-07-17');
+    });
+  });
+
   group('log-run — quantity extraction', () {
     for (final n in [1, 2, 3, 5, 8, 10, 12, 15, 21, 26]) {
       test('"log a ${n}k run" -> $n', () {

@@ -110,8 +110,11 @@ class Router {
   }
 
   /// Returns {skillId, slots} for a corpus hit, else null (=> retrieval/clarify).
-  Map<String, dynamic>? route(String utterance) {
+  /// [clock] is the turn's frozen now for date resolution (Spec 03 §4); defaults
+  /// to the router's construction time.
+  Map<String, dynamic>? route(String utterance, {DateTime? clock}) {
     final u = utterance.trim();
+    final asOf = clock ?? now;
     for (final e in corpus) {
       final m = e.regex.firstMatch(u);
       if (m == null) continue;
@@ -119,7 +122,7 @@ class Router {
       var ok = true;
       e.slotTypes.forEach((name, type) {
         final raw = m.namedGroup(name)?.trim();
-        final v = _resolveSlot(raw, type);
+        final v = _resolveSlot(raw, type, asOf);
         if (v == null && type == 'date') ok = false; // unparseable date -> not this template
         slots[name] = v;
       });
@@ -181,11 +184,11 @@ class Router {
     };
   }
 
-  dynamic _resolveSlot(String? raw, String type) {
+  dynamic _resolveSlot(String? raw, String type, DateTime asOf) {
     if (raw == null) return null;
     switch (type) {
       case 'date':
-        return resolveDate(raw, now);
+        return resolveDate(raw, asOf);
       case 'quantity':
         final m = RegExp(r'-?\d+(\.\d+)?').firstMatch(raw);
         return m == null ? null : num.parse(m.group(0)!);

@@ -27,7 +27,11 @@ final _idRe = RegExp(r'^[a-z0-9_-]{1,64}$');
 
 class Session {
   final String dataDir;
-  final DateTime now;
+  final DateTime? _fixedClock;
+  /// The clock, read live per access so a long-open app never freezes at launch
+  /// time (Spec 03 §4 wants a per-turn snapshot). Tests/the demo pin it via the
+  /// [clock] constructor arg for reproducibility.
+  DateTime get now => _fixedClock ?? DateTime.now();
   late Map<String, Map<String, dynamic>> types;
   late Map<String, Map<String, dynamic>> skills;
   late Map<String, Map<String, dynamic>> store;
@@ -42,7 +46,7 @@ class Session {
   /// the residual-routing and authoring paths run offline against recorded
   /// real responses. Production leaves it null -> a live ClaudeClient.
   Session(this.dataDir, {DateTime? clock, CloudClient? cloud})
-      : now = clock ?? DateTime.now(),
+      : _fixedClock = clock,
         _injectedCloud = cloud;
 
   /// [retrieval] builds the embedding index (needs the embed server). Tests pass
@@ -84,6 +88,7 @@ class Session {
   /// Process one utterance; returns the assistant's response text (may be multi-line).
   Future<String> _handle(String u) async {
     u = u.trim();
+    final now = this.now; // one frozen snapshot for the whole turn
     if (_undoRe.hasMatch(u)) {
       if (_lastBefore == null) return 'Nothing to undo.';
       undoTurn(_lastBefore!, '$dataDir/records', dev, store);
@@ -103,7 +108,7 @@ class Session {
     }
 
     final def = _defRe.firstMatch(u);
-    if (def != null && router.route(u) == null) {
+    if (def != null && router.route(u, clock: now) == null) {
       final desc = def.group(1)!;
       if (_harmfulRe.hasMatch('$desc $u')) {
         return "I can't build that — it could monitor someone without consent or cause harm, "
@@ -150,7 +155,7 @@ class Session {
       }
     }
 
-    var routed = router.route(u);
+    var routed = router.route(u, clock: now);
     routed ??= await claude.routeResidual(u, skills);
     if (routed == null) {
       final sg = await router.retrievalSuggest(u);
@@ -167,8 +172,9 @@ class Session {
     (routed['slots'] as Map?)?.updateAll(
         (k, v) => (v is String && const {'none', 'null'}.contains(v.trim().toLowerCase())) ? null : v);
     try {
-      final plan = interp.resolve(skills[routed['skillId']]!, routed['slots'], store);
-      final before = interp.execute(plan, store);
+      final turnInterp = Interpreter(types, now); // per-turn clock (Spec 03 §4)
+      final plan = turnInterp.resolve(skills[routed['skillId']]!, routed['slots'], store);
+      final before = turnInterp.execute(plan, store);
       for (final w in plan.writes) {
         persist(w, '$dataDir/records', dev);
       }

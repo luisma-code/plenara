@@ -42,7 +42,9 @@ void seedForDemo(Map<String, Map<String, dynamic>> store, DateTime now) {
 }
 
 Future<void> main(List<String> args) async {
-  final session = Session(dataDir, clock: DateTime.parse('2026-07-06T09:00:00'));
+  // real wall clock, except the scripted demo which pins it for reproducibility
+  final session = Session(dataDir,
+      clock: args.contains('--demo') ? DateTime.parse('2026-07-06T09:00:00') : null);
   await session.init();
   stdout.writeln('loaded ${session.types.length} types + ${session.skills.length} skills '
       '(${session.store.length} persisted records); all pass static validation\n');
