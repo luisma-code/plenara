@@ -154,6 +154,20 @@ void main() {
     });
   });
 
+  group('journaling', () {
+    test('log a journal entry then read it back', () async {
+      final s = await _session();
+      expect(await s.handle('read my journal'), contains('empty'));
+      await s.handle('journal that today was a good day');
+      await s.handle('note in my journal that i started a new book');
+      final r = await s.handle('read my journal');
+      expect(r, contains('2 entries'));
+      expect(r, contains('today was a good day'));
+      expect(r, contains('started a new book'));
+      expect(r, contains('2026-07-06')); // dated
+    });
+  });
+
   group('recall-mood', () {
     test('lists logged moods, with a clear message when there are none', () async {
       final s = await _session();

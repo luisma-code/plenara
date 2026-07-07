@@ -134,6 +134,7 @@ class Session {
       if (has('log-run'))
         '• Running — "log a 3k run", "how much have I run this week"',
       if (has('log-mood')) '• Mood — "I\'m feeling great", "how have I been feeling"',
+      if (has('log-journal')) '• Journal — "journal that today was a good day", "read my journal"',
       if (has('remember-person-fact'))
         '• People — "remember that Mia is Sarah\'s daughter", "what do I know about Mia", "talked to Sam about the trip", "when did I last talk to Sam"',
       if (has('set-birthday'))
