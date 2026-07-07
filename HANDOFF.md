@@ -6,18 +6,17 @@ _Last updated: 2026-07-07. Written to survive a Claude process relaunch._
 
 The **v0 engine is complete and heavily tested**; the **Windows desktop app is
 dogfood-ready** (runs on a user-chosen synced folder + BYOK key). Latest session
-shipped **F2: reminders + notifications** end-to-end (set / list / complete /
-cancel, on-open nudges, behind a `NotificationScheduler` seam) and started the
-**people loop** (log-interaction + last-interaction, Fable #3).
-**HEAD = `bf6cdc4`**, working tree clean (ignore the
+shipped **F2: reminders + notifications** end-to-end and **completed the people loop**
+(Fable #3): log-interaction, "when did I last talk to X", and birthdays
+(set / when / upcoming). **HEAD = `a31eefa`**, working tree clean (ignore the
 pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
-`.claude/settings.local.json`), **1063 Dart tests + 3 Flutter widget tests green**,
+`.claude/settings.local.json`), **1161 Dart tests + 3 Flutter widget tests green**,
 `dart analyze` clean.
 
-**The immediate next task:** finish the **people loop** — birthdays
-("whose birthday is coming up", set/recall a contact's birthday). `contact.birthday`
-already exists; the gap is date math (days-until in the year), which the DSL lacks —
-see "Next task". log-interaction + "when did I last talk to X" are DONE this session.
+**The immediate next task:** birthday **on-open nudges** (Fable #4) — surface
+"🎂 X's birthday is in N days" on launch, DERIVED from contacts like reminder
+nudges (no new skill → NO cassette re-record). Then presentation archetypes stay
+deferred; grow the thin app widget tests (directive #1). See "Next task".
 
 **One blocker for Luis (needs admin):** the native Windows toast for reminders
 needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
@@ -149,9 +148,11 @@ The bundle is intentionally secret-free; keep it that way.
   derive/reconcile (armed set DERIVED from the record store; idempotent). Session
   reconciles on init + every turn and exposes `pendingNudges()`.
 
-**`v0/data/`** — 8 types, **15 skills** (create/list/complete/delete-task, log-run,
-log-mood, count-runs-this-week, remember-person-fact, recall-facts, **set/list/
-complete/cancel-reminder**, **log-interaction, last-interaction**), corpus.json.
+**`v0/data/`** — 8 types, **18 skills** (create/list/complete/delete-task, log-run,
+log-mood, count-runs-this-week, remember-person-fact, recall-facts, set/list/
+complete/cancel-reminder, log-interaction, last-interaction, **set/when/upcoming-
+birthday**), corpus.json. DSL compute fns now incl. `format_time`, `next_annual`,
+`days_until_annual`; the date resolver handles month-name dates.
 **`v0/bin/plenara.dart`** — console (REPL / `--demo` / one-shot) over the same Session.
 **`app/`** — Flutter Windows chat UI; `buildSession()` from config; 2 widget tests.
 
@@ -161,6 +162,10 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **Birthdays (done, `a31eefa`):** DSL `next_annual`/`days_until_annual` compute fns,
+  month-name dates in the resolver ("March 3", "3rd of december"), + `set-birthday`
+  / `when-birthday` / `upcoming-birthdays` (30-day window via reversed-gte). +6 tests.
+  This completes Fable #3 (people loop).
 - **People loop pt.1 (done, `bf6cdc4`):** `interaction` type (subject→contact,
   note, at) + `log-interaction` ("talked to/called/caught up with X [about Y]",
   finds-or-creates the contact) + `last-interaction` ("when did I last talk to X",
@@ -195,24 +200,24 @@ config (5), hardening (~20).
 
 ## Next task (build this, test-first)
 
-**F2 reminders DONE. People loop STARTED** (log-interaction + last-interaction).
-Next: **birthdays** to round out Fable #3.
+**People loop (Fable #3) DONE.** Next: **birthday on-open nudges** (Fable #4) —
+NO new skill, so NO cassette re-record.
 
-- Skills: set-birthday ("Sarah's birthday is March 3"), upcoming-birthdays
-  ("whose birthday is coming up", "when is Sarah's birthday"). `contact.birthday`
-  (a `date`) already exists — `remember-person-fact` could also set it, but a
-  dedicated skill is cleaner.
-- **DSL gap to close first:** there's no date math for "days until the next
-  occurrence of MM-DD". Add a small compute fn (e.g. `days_until_annual(date)` or
-  `next_birthday(date)`) to `interpreter.dart` — whitelist it in BOTH `_fns` sets
-  (the `compute` switch ~line 76 and the static `_fns` ~line 134) and unit-test it,
-  same as `format_time`. Then upcoming-birthdays = read_many contact → foreach →
-  compute days-until → filter/format. (Sorting/top-N isn't in the DSL; a "within N
-  days" branch filter is the pragmatic shape, like list-reminders' done filter.)
-- **Every new skill grows the inventory** → the cloud cassette's `invSig` keys
-  change → **re-record** `test/fixtures/cloud.json` (`dart run bin/record_fixtures.dart`,
-  needs the BYOK key in the rig `.env`). Routing stayed stable across THREE
-  re-records this session; still eyeball the printed routes for shifts.
+- Add a pure `upcomingBirthdayNudges(store, now, {withinDays=7})` (in a small
+  people helper or reuse the reminders.dart style) → "🎂 X's birthday is in N days",
+  derived from `contact` records' `birthday` via the same next-occurrence math the
+  interpreter's `next_annual`/`days_until_annual` use (factor that into a shared
+  helper if handy). Fold it into `Session.pendingNudges()` alongside reminder
+  nudges, and show it in the app on open. Deterministic Session test + a widget test.
+- After that: grow the thin app widget tests (directive #1 — the app is the
+  least-covered surface); presentation archetypes stay DEFERRED (Spec 01 §9).
+
+**When you DO add a skill later:** it grows the capability inventory → the cloud
+cassette's `invSig` keys change → **re-record** `test/fixtures/cloud.json`
+(`dart run bin/record_fixtures.dart`, needs the BYOK key in the rig `.env`).
+Routing stayed stable across the re-records this session (one count-runs route
+flapped once to abstain, correct on the next roll — Haiku sampling variance);
+eyeball the printed routes each time.
 
 **Reminder architecture already in place (reuse it):** `v0/lib/reminders.dart`
 holds the `NotificationScheduler` seam + `FakeScheduler` + the pure derive/reconcile
