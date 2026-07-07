@@ -25,6 +25,15 @@ final _corrRe = RegExp(
     caseSensitive: false);
 // abandons a pending slot-fill dialogue (Spec 03 §6.3 ProvideSlot)
 final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
+// Record-integrity floor (locked principle #7 / DP-05): refuse to fabricate the past.
+// Narrow, framing-keyed — a genuine backdated log ("I talked to Sam yesterday") is NOT
+// this; only "pretend/fake/fabricate a <record>" framing. The general case is the
+// deferred Layer-2 model gate (G-30); this catches the explicit asks.
+final _fabricationRe = RegExp(
+    r"\b(pretend (that |i )|make it look like|falsify|fabricate|"
+    r"(log|add|create|make|record) (a |an |some )?fake|fake (a |an |some )?"
+    r"(interaction|call|meeting|conversation|entry|record|note|log|visit|chat))\b",
+    caseSensitive: false);
 // Out-of-domain boundary (Spec 03 §7.2, G-19). A clearly-external question with NO
 // personal cue gets a graceful "that's not what I do" instead of "I didn't catch that".
 // The personal-cue guard is a PRIVACY boundary, not just UX: "what did I say about X"
@@ -295,6 +304,12 @@ class Session {
       _outSource = 'provide-slot';
       _outSkill = skillId;
       return _dispatch(skillId, slots, 'corpus', now);
+    }
+
+    // record-integrity floor: never fabricate history (DP-05, locked principle #7)
+    if (_fabricationRe.hasMatch(u)) {
+      _outSource = 'refused';
+      return "I won't record things that didn't happen — I can only log what's real.";
     }
 
     if (_undoRe.hasMatch(u)) {

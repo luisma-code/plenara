@@ -90,6 +90,28 @@ void main() {
     });
   });
 
+  group('record integrity — refuses fabricating the past (DP-05, principle #7)', () {
+    for (final u in const [
+      'pretend that I called mom yesterday',
+      'add a fake interaction with Sam',
+      'make it look like I went to the gym',
+      'fabricate a meeting with my boss',
+      'log a fake call with the dentist',
+    ]) {
+      test('refuses: "$u"', () async {
+        final s = await _session(_ScriptCloud()); // never reaches cloud
+        final r = await s.handle(u);
+        expect(r.toLowerCase(), contains("didn't happen"));
+        expect(s.store.isEmpty, isTrue, reason: 'a refused fabrication must not write');
+      });
+    }
+    test('a genuine (even backdated) log is NOT treated as fabrication', () async {
+      final s = await _session(_ScriptCloud());
+      final r = await s.handle('i talked to Sam about the project');
+      expect(r.toLowerCase(), isNot(contains("didn't happen")));
+    });
+  });
+
   group('safety floor keys on framing, not topic (Fable review)', () {
     // must BLOCK (harmful framing) — the floor fires before any cloud call
     for (final u in const [
