@@ -36,11 +36,11 @@ The three demo turns exercise a simple write, a multi-write resolve-or-create wi
 | Types + skills as data (Spec 01/02) | **Real** — JSON in `data/` |
 | **Router** (Spec 03) | **Real** — corpus fast-path (templates as data, `data/corpus.json`) + deterministic slot extraction + date resolver (§6.2); **retrieval fallback** via bge-small (multi-vector max-sim, top-1-with-margin). Faithful to §13: retrieval is weak, so a low-confidence result **clarifies** rather than mis-acting. |
 | **Undo** (Spec 02 §5.4 / 04 §3.11) | **Real** — before-images captured at execute; `undo` reverses the last turn in memory + on disk. Full execution journal + multi-turn ring: later. |
-| Voice (STT/TTS) | Not yet — text-first |
+| Voice (STT/TTS) | Not yet — **gated on setup**: Flutter speech plugins (`flutter_tts`, `speech_to_text`) are native plugins that need **Windows Developer Mode** enabled (plugin symlinks) + audio hardware to verify. The text path is the same `Session` seam voice will plug into. |
 | CRDT **merge** engine | P2 (single-device now) |
 | Retrieval embedder | Real via local llama-server (bge-small on :8091); in-process model on device later |
 | **Cloud residual + learning** (Spec 04 §3.5 / §5.2) | **Real** — `ClaudeClient` Haiku full-inventory residual routing (§13 E4); a cloud-routed turn **learns** its template so the next similar phrasing fast-paths with no cloud call (the §13 "gets better" ratchet). BYOK; offline/keyless → clarify. |
-| Flutter UI | Console for now |
+| **Flutter UI** (P2) | **Real** — a Flutter **Windows desktop** app (`../app/`) depending on the v0 `plenara` package; a Material chat UI over the shared `Session` engine (`lib/session.dart`). `flutter build windows` → `plenara_app.exe`. Run: `.tools/flutter/bin/flutter run -d windows` in `app/`. |
 | **Authoring / emergent types** (Spec 02 §6) | **Real** — "track my X" → Claude authors a type + skill *as data* → the static validators gate it → it registers → it works. The whole "AI authors, code executes, capabilities are data" thesis, live. (Independent safety review `G-30`: v2.) |
 
 ## Findings so far
@@ -56,11 +56,11 @@ The three demo turns exercise a simple write, a multi-write resolve-or-create wi
 5. ✅ **Authoring / emergent types** (`define_*`) — Claude authors a type+skill, validators gate it, it registers and runs (done).
 6. **Correction path** — `recordCorrection` (§5.2): "no, I meant X" zeroes the wrong entry and learns the right one; the strong learning signal.
 7. **Structured-output hardening for authoring** — pin the step schema + validate→retry (`G-29`) so complex authored skills don't drift; a `G-30` safety pass before activation.
-8. **Flutter UI** — wrap the console spine; then voice. **⚠ Setup-gated:** Flutter's Windows-desktop target needs **Visual Studio 2022 + the "Desktop development with C++" workload**; this box has only *Build Tools 2019*, so `flutter build windows` won't run until VS 2022 is installed. (Flutter *web* avoids VS but doesn't fit the file-based native storage — wrong direction.)
-9. **Voice (STT/TTS)** — the P2.1 uncompromising-voice layer; needs on-device speech libs.
+8. ✅ **Flutter desktop UI** — a real Windows app (`../app/`) over the shared `Session` engine; builds to `plenara_app.exe` (done). *(Flutter accepts the installed VS Build Tools 2019 — the earlier "needs VS 2022" note was wrong.)*
+9. **Voice (STT/TTS)** — the P2.1 uncompromising-voice layer. **Gated:** the Flutter speech plugins need **Windows Developer Mode** on (native-plugin symlinks) + audio hardware to verify. Plugs into the same `Session.handle` seam the UI/console already use.
 10. **First iOS build** — closes the one deferred storage question (dataless-file cold-start); needs Apple hardware.
 
-**State:** the v0 *logic spine* is complete and tested on this Windows box — everything above the UI/voice/device layers. The three remaining big leaps (UI, voice, iOS) are each gated on a toolchain or hardware not present here (VS 2022, speech libs, an iPhone), not on unresolved design. To run the current console app, start the bge-small embed server (for retrieval; optional) and `dart run bin/plenara.dart`.
+**State:** on this Windows box the v0 *logic spine and a desktop GUI* are built and tested — everything except voice and the iOS build. The two remaining leaps are each gated on a real external prerequisite (Windows Developer Mode + audio for voice; an iPhone for iOS), not on unresolved design. Run the console: `dart run bin/plenara.dart`. Run the GUI: `.tools/flutter/bin/flutter run -d windows` from `../app/`.
 
 ## The thesis, demonstrated
 

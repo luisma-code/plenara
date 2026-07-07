@@ -36,7 +36,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   plenara:
     path: ../v0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
