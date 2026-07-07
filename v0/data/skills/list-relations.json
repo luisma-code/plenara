@@ -29,6 +29,7 @@
           }
         ],
         "else": [
+          { "op": "set", "var": "lines", "value": "" },
           {
             "op": "read_related",
             "typeId": "contact_relationship",
@@ -36,7 +37,6 @@
             "from": { "ref": "person" },
             "into": "rels"
           },
-          { "op": "set", "var": "lines", "value": "" },
           {
             "op": "foreach",
             "list": { "var": "rels" },
@@ -68,9 +68,58 @@
             ]
           },
           {
+            "op": "read_related",
+            "typeId": "contact_relationship",
+            "via": "to",
+            "from": { "ref": "person" },
+            "into": "revRels"
+          },
+          {
+            "op": "foreach",
+            "list": { "var": "revRels" },
+            "as": "rel",
+            "body": [
+              {
+                "op": "read_one",
+                "typeId": "contact",
+                "match": { "id": { "field": [ "rel", "from" ] } },
+                "into": "other"
+              },
+              {
+                "op": "set",
+                "var": "otherName",
+                "value": { "field": [ "other", "displayName" ] }
+              },
+              {
+                "op": "compute",
+                "fn": "concat",
+                "args": [
+                  { "var": "lines" },
+                  "\n  • ",
+                  { "field": [ "rel", "relationType" ] },
+                  " of ",
+                  { "var": "otherName" }
+                ],
+                "into": "lines"
+              }
+            ]
+          },
+          {
             "op": "compute",
             "fn": "count",
             "args": [ { "var": "rels" } ],
+            "into": "nFwd"
+          },
+          {
+            "op": "compute",
+            "fn": "count",
+            "args": [ { "var": "revRels" } ],
+            "into": "nRev"
+          },
+          {
+            "op": "compute",
+            "fn": "add",
+            "args": [ { "var": "nFwd" }, { "var": "nRev" } ],
             "into": "n"
           },
           {

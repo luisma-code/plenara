@@ -186,8 +186,14 @@ void main() {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
       await s.handle("remember that Mia loves art and she is Sarah's daughter");
       final r = await s.handle("who are Sarah's relatives");
-      expect(r, contains('daughter'));
-      expect(r, contains('Mia')); // the `to` id resolved back to a name
+      expect(r, contains('daughter: Mia')); // forward: Sarah's daughter is Mia
+    });
+
+    test('resolves the reverse direction too ("who is Mia related to")', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle("remember that Mia loves art and she is Sarah's daughter");
+      final r = await s.handle('who is Mia related to');
+      expect(r, contains('daughter of Sarah')); // reverse: Mia is Sarah's daughter
     });
 
     test('unknown contact / a contact with no relationships', () async {
