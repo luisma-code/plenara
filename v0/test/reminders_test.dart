@@ -206,6 +206,18 @@ void main() {
           contains("couldn't find"));
     });
 
+    test('correcting a reminder reverses the old one and arms the new (toast reconciles)', () async {
+      final fake = FakeScheduler();
+      final s = await _open(makeTempDataDir(), fake);
+      await s.handle('remind me to call mom on thursday at 5pm');
+      await s.handle('no, I meant to remind me to call dad on thursday at 5pm');
+      final rems = s.store.values.where((x) => x['typeId'] == 'reminder' && x['done'] != true).toList();
+      expect(rems.length, 1); // the mom reminder was reversed
+      expect(rems.single['text'], 'call dad');
+      expect(fake.armed().length, 1);
+      expect(fake.scheduled.values.single.body, contains('call dad')); // mom's toast cancelled, dad's armed
+    });
+
     test('undo of a reschedule restores the original time and re-arms there', () async {
       final fake = FakeScheduler();
       final s = await _open(makeTempDataDir(), fake);
