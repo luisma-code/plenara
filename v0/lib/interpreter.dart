@@ -90,7 +90,12 @@ class Interpreter {
     if (c.containsKey('notNull')) return env[c['notNull']] != null;
     if (c.containsKey('gte')) {
       final ab = (c['gte'] as List).map((x) => val(x, env)).toList();
-      return ab[0].toString().compareTo(ab[1].toString()) >= 0;
+      final a = ab[0], b = ab[1];
+      if (a is num && b is num) return a >= b;
+      // numeric when both look numeric; else lexical (correct for fixed-width ISO dates)
+      final an = num.tryParse(a.toString()), bn = num.tryParse(b.toString());
+      if (an != null && bn != null) return an >= bn;
+      return a.toString().compareTo(b.toString()) >= 0;
     }
     if (c.containsKey('eq')) {
       final ab = (c['eq'] as List).map((x) => val(x, env)).toList();

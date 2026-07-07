@@ -1,0 +1,367 @@
+/// Interpreter layer (Spec 02) — driven by simulated NLU output ({skillId, slots}).
+/// Exercises the primitive vocabulary, every seed skill across many inputs,
+/// schema defaults + required-validation, read_one ambiguity, the static
+/// authoring gate (pass + many rejections), and error paths. Offline.
+import 'package:plenara/interpreter.dart';
+import 'package:plenara/store.dart';
+import 'package:test/test.dart';
+
+final _types = loadDefs('data/types', 'typeId');
+final _skills = loadDefs('data/skills', 'skillId');
+final _now = DateTime.parse('2026-07-06T09:00:00'); // Monday
+Interpreter _i() => Interpreter(_types, _now);
+Map<String, Map<String, dynamic>> _store() => <String, Map<String, dynamic>>{};
+
+/// resolve + execute a skill against a store; returns (plan, before-images).
+(Plan, Map<String, Map<String, dynamic>?>) _run(
+    String skillId, Map<String, dynamic> slots, Map<String, Map<String, dynamic>> store) {
+  final i = _i();
+  final p = i.resolve(_skills[skillId]!, slots, store);
+  final b = i.execute(p, store);
+  return (p, b);
+}
+
+Map<String, dynamic> _workout(String id, String activity, dynamic distance, String date) =>
+    {'id': id, 'typeId': 'workout', 'activity': activity, 'distance': distance, 'date': date};
+
+// weekday name for the ISO dates used below
+const _weekday = {
+  '2026-07-06': 'Monday', '2026-07-07': 'Tuesday', '2026-07-08': 'Wednesday',
+  '2026-07-09': 'Thursday', '2026-07-10': 'Friday', '2026-07-11': 'Saturday',
+  '2026-07-12': 'Sunday', '2026-12-25': 'Friday',
+};
+
+void main() {
+  group('compute (closed fn vocabulary)', () {
+    test('now -> ISO datetime', () => expect(_i().compute('now', [], {}), '2026-07-06T09:00:00.000'));
+    test('today -> ISO date', () => expect(_i().compute('today', [], {}), '2026-07-06'));
+    test('format_date EEEE -> weekday', () => expect(_i().compute('format_date', ['2026-07-09', 'EEEE'], {}), 'Thursday'));
+    test('format_date other -> date only', () => expect(_i().compute('format_date', ['2026-07-09', 'y'], {}), '2026-07-09'));
+    test('format_date null -> null', () => expect(_i().compute('format_date', [null, 'EEEE'], {}), isNull));
+    test('start_of_week(Wed) -> Monday', () => expect(_i().compute('start_of_week', ['2026-07-08'], {}), '2026-07-06'));
+    test('start_of_week(Sun) -> Monday', () => expect(_i().compute('start_of_week', ['2026-07-12'], {}), '2026-07-06'));
+    test('start_of_week(Mon) -> same', () => expect(_i().compute('start_of_week', ['2026-07-06'], {}), '2026-07-06'));
+    for (final c in [[3, 4, 7], [0, 5, 5], [10, 0, 10], [2, 2, 4]]) {
+      test('add ${c[0]}+${c[1]}=${c[2]}', () => expect(_i().compute('add', [c[0], c[1]], {}), c[2]));
+    }
+    test('add with null -> treats as 0', () => expect(_i().compute('add', [5, null], {}), 5));
+    test('count list', () => expect(_i().compute('count', [[1, 2, 3]], {}), 3));
+    test('count empty', () => expect(_i().compute('count', [[]], {}), 0));
+    test('count null -> 0', () => expect(_i().compute('count', [null], {}), 0));
+    test('concat', () => expect(_i().compute('concat', ['a', 'b', 'c'], {}), 'abc'));
+    test('concat skips null', () => expect(_i().compute('concat', ['x', null, 'y'], {}), 'xy'));
+    test('unknown fn -> throws', () => expect(() => _i().compute('bogus', [], {}), throwsA(isA<ResolveError>())));
+  });
+
+  group('val (value resolution)', () {
+    test('{var}', () => expect(_i().val({'var': 'x'}, {'x': 5}), 5));
+    test('{ref} -> record id', () => expect(_i().val({'ref': 'p'}, {'p': {'id': 'c1'}}), 'c1'));
+    test('{ref} to null -> null', () => expect(_i().val({'ref': 'p'}, {}), isNull));
+    test('{field}', () => expect(_i().val({'field': ['r', 'date']}, {'r': {'date': '2026-07-06'}}), '2026-07-06'));
+    test('{field} of missing -> null', () => expect(_i().val({'field': ['r', 'x']}, {}), isNull));
+    test('{fn}', () => expect(_i().val({'fn': 'add', 'args': [2, 3]}, {}), 5));
+    test('literal num', () => expect(_i().val(42, {}), 42));
+    test('literal string', () => expect(_i().val('lit', {}), 'lit'));
+  });
+
+  group('cond', () {
+    test('isNull true', () => expect(_i().cond({'isNull': 'x'}, {}), isTrue));
+    test('isNull false', () => expect(_i().cond({'isNull': 'x'}, {'x': 1}), isFalse));
+    test('notNull true', () => expect(_i().cond({'notNull': 'x'}, {'x': 1}), isTrue));
+    test('notNull false', () => expect(_i().cond({'notNull': 'x'}, {}), isFalse));
+    test('gte dates equal (inclusive)', () => expect(_i().cond({'gte': ['2026-07-06', '2026-07-06']}, {}), isTrue));
+    test('gte dates before', () => expect(_i().cond({'gte': ['2026-07-05', '2026-07-06']}, {}), isFalse));
+    test('gte dates after', () => expect(_i().cond({'gte': ['2026-07-20', '2026-07-06']}, {}), isTrue));
+    test('gte numeric single digit', () => expect(_i().cond({'gte': [5, 1]}, {}), isTrue));
+    test('gte numeric multi-digit (fixed: 10>=3)', () => expect(_i().cond({'gte': [10, 3]}, {}), isTrue));
+    test('gte numeric-as-string 10>=3', () => expect(_i().cond({'gte': ['10', '3']}, {}), isTrue));
+    test('gte 0>=1 false', () => expect(_i().cond({'gte': [0, 1]}, {}), isFalse));
+    test('eq true', () => expect(_i().cond({'eq': [1, 1]}, {}), isTrue));
+    test('eq false', () => expect(_i().cond({'eq': [1, 2]}, {}), isFalse));
+    test('unknown cond -> throws', () => expect(() => _i().cond({'bogus': 1}, {}), throwsA(isA<ResolveError>())));
+  });
+
+  group('create-task — NLU slots (no due date, many descriptions)', () {
+    for (final d in ['call the plumber', 'buy milk', 'walk the dog', 'pay the rent',
+      'schedule a dentist appointment', 'book flights to Boston', 'renew the registration']) {
+      test('"$d"', () {
+        final store = _store();
+        final (p, _) = _run('create-task', {'description': d}, store);
+        expect(p.writes.length, 1);
+        final t = p.writes.first;
+        expect(t['typeId'], 'task');
+        expect(t['description'], d);
+        expect(t['completed'], isFalse, reason: 'schema default');
+        expect(t['createdAt'], '2026-07-06T09:00:00.000');
+        expect(t['dueAt'], isNull);
+        expect(p.confirmation, 'Added "$d" to your tasks.');
+        expect(store.length, 1);
+      });
+    }
+  });
+
+  group('create-task — NLU slots (with due date -> weekday label)', () {
+    for (final entry in _weekday.entries) {
+      test('due ${entry.key} -> "${entry.value}"', () {
+        final (p, _) = _run('create-task', {'description': 'X', 'dueDate': entry.key}, _store());
+        expect(p.writes.first['dueAt'], entry.key);
+        expect(p.confirmation, 'Added "X" to your tasks, due ${entry.value}.');
+      });
+    }
+  });
+
+  group('log-run — NLU slots (many distances)', () {
+    for (final n in [1, 2, 3, 5, 8, 10, 12, 15, 21, 26, 0.5, 3.5, 13.1]) {
+      test('distance $n', () {
+        final store = _store();
+        final (p, _) = _run('log-run', {'distance': n}, store);
+        final w = p.writes.first;
+        expect(w['typeId'], 'workout');
+        expect(w['activity'], 'run');
+        expect(w['distance'], n);
+        expect(w['date'], '2026-07-06');
+        expect(p.confirmation, 'Logged a $n km run today.');
+      });
+    }
+    test('no distance -> generic confirmation', () {
+      final (p, _) = _run('log-run', {}, _store());
+      expect(p.writes.first['distance'], isNull);
+      expect(p.confirmation, 'Logged a run today.');
+    });
+  });
+
+  group('log-mood — NLU slots (many ratings)', () {
+    for (final m in ['great', 'good', 'anxious', 'tired', 'excited', 'stressed', 'content']) {
+      test('"$m"', () {
+        final (p, _) = _run('log-mood', {'rating': m}, _store());
+        final r = p.writes.first;
+        expect(r['typeId'], 'mood');
+        expect(r['rating'], m);
+        expect(r['loggedAt'], '2026-07-06');
+        expect(p.confirmation, 'Logged your mood as $m.');
+      });
+    }
+  });
+
+  group('count-runs-this-week — aggregation over many stores (read-only)', () {
+    final scenarios = <String, (List<Map<String, dynamic>>, String)>{
+      'two runs this week': ([_workout('a', 'run', 5, '2026-07-06'), _workout('b', 'run', 3, '2026-07-07')], '8'),
+      'run last week excluded': ([_workout('a', 'run', 5, '2026-07-06'), _workout('b', 'run', 10, '2026-06-28')], '5'),
+      'walk excluded by activity': ([_workout('a', 'run', 5, '2026-07-06'), _workout('b', 'walk', 2, '2026-07-06')], '5'),
+      'empty store': (<Map<String, dynamic>>[], '0'),
+      'boundary: run exactly on weekStart counts': ([_workout('a', 'run', 4, '2026-07-06')], '4'),
+      'day before weekStart excluded': ([_workout('a', 'run', 9, '2026-07-05')], '0'),
+      'decimals sum': ([_workout('a', 'run', 3.5, '2026-07-06'), _workout('b', 'run', 2.5, '2026-07-08')], '6.0'),
+      'null distance adds nothing': ([_workout('a', 'run', null, '2026-07-06'), _workout('b', 'run', 4, '2026-07-07')], '4'),
+      'many runs': ([
+        _workout('a', 'run', 2, '2026-07-06'), _workout('b', 'run', 3, '2026-07-07'),
+        _workout('c', 'run', 4, '2026-07-08'), _workout('d', 'run', 1, '2026-07-09')
+      ], '10'),
+    };
+    scenarios.forEach((name, sc) {
+      test(name, () {
+        final store = {for (final r in sc.$1) r['id'] as String: r};
+        final (p, before) = _run('count-runs-this-week', {}, store);
+        expect(p.writes, isEmpty, reason: 'aggregation must not write');
+        expect(before, isEmpty);
+        expect(p.confirmation, "You've run ${sc.$2} km so far this week.");
+      });
+    });
+  });
+
+  group('remember-person-fact — resolve-or-create + entityRefs', () {
+    test('new person, no relation -> contact + fact; fact.subject = minted id', () {
+      final store = _store();
+      final (p, _) = _run('remember-person-fact', {'personName': 'Mia', 'fact': 'likes tea'}, store);
+      expect(p.writes.map((w) => w['typeId']), ['contact', 'contact_fact']);
+      final contact = p.writes[0], fact = p.writes[1];
+      expect(contact['displayName'], 'Mia');
+      expect(fact['subject'], contact['id']); // entityRef by resolved id, not the name
+      expect(fact['fact'], 'likes tea');
+      expect(p.confirmation, 'Noted that Mia likes tea.');
+    });
+    test('existing person -> resolved, no new contact', () {
+      final store = <String, Map<String, dynamic>>{'c1': {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sarah Mitchell'}};
+      final (p, _) = _run('remember-person-fact', {'personName': 'Sarah Mitchell', 'fact': 'runs marathons'}, store);
+      expect(p.writes.map((w) => w['typeId']), ['contact_fact']); // no new contact
+      expect(p.writes[0]['subject'], 'c1');
+    });
+    test('with relation, new relative -> contact + fact + relative + relationship', () {
+      final store = _store();
+      final (p, _) = _run('remember-person-fact',
+          {'personName': 'Mia', 'fact': 'is allergic to peanuts', 'relationTo': 'Sarah Mitchell', 'relationType': 'daughter'}, store);
+      expect(p.writes.map((w) => w['typeId']),
+          ['contact', 'contact_fact', 'contact', 'contact_relationship']);
+      final person = p.writes[0], rel = p.writes[3], relative = p.writes[2];
+      expect(rel['from'], relative['id']);
+      expect(rel['to'], person['id']);
+      expect(rel['relationType'], 'daughter');
+    });
+    test('with relation, existing relative -> resolved (no 2nd contact write)', () {
+      final store = <String, Map<String, dynamic>>{'c1': {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sarah Mitchell'}};
+      final (p, _) = _run('remember-person-fact',
+          {'personName': 'Mia', 'fact': 'is her daughter', 'relationTo': 'Sarah Mitchell', 'relationType': 'daughter'}, store);
+      expect(p.writes.map((w) => w['typeId']), ['contact', 'contact_fact', 'contact_relationship']);
+      expect(p.writes[2]['from'], 'c1'); // resolved Sarah
+    });
+  });
+
+  group('recall-facts', () {
+    test('unknown person', () {
+      final (p, _) = _run('recall-facts', {'personName': 'Nobody'}, _store());
+      expect(p.writes, isEmpty);
+      expect(p.confirmation, "I don't know anyone named Nobody yet.");
+    });
+    test('known with facts', () {
+      final store = {
+        'c1': {'id': 'c1', 'typeId': 'contact', 'displayName': 'Mia'},
+        'f1': {'id': 'f1', 'typeId': 'contact_fact', 'subject': 'c1', 'fact': 'allergic to peanuts'},
+        'f2': {'id': 'f2', 'typeId': 'contact_fact', 'subject': 'c1', 'fact': 'loves drawing'},
+        'f3': {'id': 'f3', 'typeId': 'contact_fact', 'subject': 'cX', 'fact': 'someone else'},
+      };
+      final (p, _) = _run('recall-facts', {'personName': 'Mia'}, store);
+      expect(p.confirmation, contains("Here's what I know about Mia:"));
+      expect(p.confirmation, contains('allergic to peanuts'));
+      expect(p.confirmation, contains('loves drawing'));
+      expect(p.confirmation, isNot(contains('someone else'))); // filtered by subject
+    });
+    test('known with no facts', () {
+      final store = {'c1': {'id': 'c1', 'typeId': 'contact', 'displayName': 'Tom'}};
+      final (p, _) = _run('recall-facts', {'personName': 'Tom'}, store);
+      expect(p.confirmation, 'I have Tom as a contact but nothing noted yet.');
+    });
+  });
+
+  group('list-tasks', () {
+    test('empty', () {
+      final (p, _) = _run('list-tasks', {}, _store());
+      expect(p.confirmation, 'You have 0 task(s):');
+    });
+    for (final n in [1, 3, 7]) {
+      test('$n tasks', () {
+        final store = {
+          for (var k = 0; k < n; k++)
+            't$k': {'id': 't$k', 'typeId': 'task', 'description': 'task $k'}
+        };
+        final (p, _) = _run('list-tasks', {}, store);
+        expect(p.confirmation, startsWith('You have $n task(s):'));
+        for (var k = 0; k < n; k++) {
+          expect(p.confirmation, contains('task $k'));
+        }
+      });
+    }
+  });
+
+  group('static validation — the authoring gate', () {
+    test('all ${_skills.length} seed skills pass', () {
+      for (final s in _skills.values) {
+        expect(() => _i().validateSkill(s), returnsNormally, reason: s['skillId']);
+      }
+    });
+
+    Map<String, dynamic> skillWriting(dynamic subjectField) => {
+          'skillId': 'x',
+          'steps': {'main': [
+            {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': subjectField, 'fact': 'y'}, 'into': 'f'}
+          ]}
+        };
+
+    test('reject: entity fed by a raw {var}', () {
+      expect(() => _i().validateSkill(skillWriting({'var': 'x'})), throwsA(isA<ResolveError>()));
+    });
+    test('reject: entity fed by a literal', () {
+      expect(() => _i().validateSkill(skillWriting('some-id')), throwsA(isA<ResolveError>()));
+    });
+    test('reject: entity fed by {ref} to a non-record var', () {
+      expect(() => _i().validateSkill(skillWriting({'ref': 'ghost'})), throwsA(isA<ResolveError>()));
+    });
+    test('reject: entity fed by {field:[rec, name]} (not id)', () {
+      final s = {
+        'skillId': 'x',
+        'steps': {'main': [
+          {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'n'}}, 'into': 'p'},
+          {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'field': ['p', 'displayName']}, 'fact': 'y'}, 'into': 'f'}
+        ]}
+      };
+      expect(() => _i().validateSkill(s), throwsA(isA<ResolveError>()));
+    });
+    test('accept: entity fed by {ref} to a read_one record', () {
+      final s = {
+        'skillId': 'x',
+        'steps': {'main': [
+          {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'n'}}, 'into': 'p'},
+          {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'ref': 'p'}, 'fact': 'y'}, 'into': 'f'}
+        ]}
+      };
+      expect(() => _i().validateSkill(s), returnsNormally);
+    });
+    test('accept: entity fed by {field:[rec, id]}', () {
+      final s = {
+        'skillId': 'x',
+        'steps': {'main': [
+          {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'n'}}, 'into': 'p'},
+          {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'field': ['p', 'id']}, 'fact': 'y'}, 'into': 'f'}
+        ]}
+      };
+      expect(() => _i().validateSkill(s), returnsNormally);
+    });
+    test('accept: entity fed by a foreach loop var (scoped record)', () {
+      final s = {
+        'skillId': 'x',
+        'steps': {'main': [
+          {'op': 'read_many', 'typeId': 'contact', 'into': 'ps'},
+          {'op': 'foreach', 'list': {'var': 'ps'}, 'as': 'p', 'body': [
+            {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'ref': 'p'}, 'fact': 'y'}, 'into': 'f'}
+          ]}
+        ]}
+      };
+      expect(() => _i().validateSkill(s), returnsNormally);
+    });
+  });
+
+  group('error paths (resolve/execute throw ResolveError, not crash)', () {
+    test('required field missing', () {
+      final s = {'skillId': 'x', 'steps': {'main': [
+        {'op': 'write_record', 'typeId': 'mood', 'fields': {'loggedAt': '2026-07-06'}, 'into': 'm'} // no rating
+      ]}};
+      expect(() => _i().resolve(s, {}, _store()), throwsA(isA<ResolveError>()));
+    });
+    test('read_one ambiguous (G-12)', () {
+      final store = {
+        'c1': {'id': 'c1', 'typeId': 'contact', 'displayName': 'Mia'},
+        'c2': {'id': 'c2', 'typeId': 'contact', 'displayName': 'Mia'},
+      };
+      expect(() => _run('recall-facts', {'personName': 'Mia'}, store), throwsA(isA<ResolveError>()));
+    });
+    test('unknown op', () {
+      final s = {'skillId': 'x', 'steps': {'main': [{'op': 'teleport'}]}};
+      expect(() => _i().resolve(s, {}, _store()), throwsA(isA<ResolveError>()));
+    });
+    test('format leaves unknown placeholder literal', () {
+      final s = {'skillId': 'x', 'steps': {'main': [
+        {'op': 'format', 'template': 'hi {missing}', 'into': 'confirmation'}
+      ]}};
+      final p = _i().resolve(s, {}, _store());
+      expect(p.confirmation, 'hi {missing}');
+    });
+  });
+
+  group('execute — before-images (undo correctness)', () {
+    test('created record -> before is null', () {
+      final store = _store();
+      final (p, before) = _run('create-task', {'description': 'x'}, store);
+      expect(before[p.writes.first['id']], isNull);
+    });
+    test('overwritten record -> before is the prior state', () {
+      final store = <String, Map<String, dynamic>>{};
+      final i = _i();
+      final p = i.resolve(_skills['create-task']!, {'description': 'new'}, store);
+      final id = p.writes.first['id'] as String;
+      // put a prior record at the minted id so the write overwrites it
+      store[id] = <String, dynamic>{'id': id, 'typeId': 'task', 'description': 'prior'};
+      final before = i.execute(p, store);
+      expect(before[id], isNotNull);
+      expect(before[id]!['description'], 'prior');
+    });
+  });
+}
