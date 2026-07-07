@@ -5,10 +5,28 @@
 ///   dart run bin/record_fixtures.dart
 library;
 
+import 'dart:io';
+
 import 'package:plenara/claude.dart';
 import 'package:plenara/fixture_inputs.dart';
 import 'package:plenara/replay_cloud.dart';
+import 'package:plenara/session.dart';
 import 'package:plenara/store.dart';
+
+/// A throwaway data dir (copy of types + skills + corpus.json) so authoring writes
+/// don't touch the real seed data.
+String _tempData() {
+  final tmp = Directory.systemTemp.createTempSync('plenara_rec_');
+  for (final sub in const ['types', 'skills']) {
+    final dst = Directory('${tmp.path}/$sub')..createSync(recursive: true);
+    for (final f in Directory('data/$sub').listSync().whereType<File>()) {
+      f.copySync('${dst.path}/${f.path.replaceAll('\\', '/').split('/').last}');
+    }
+  }
+  File('data/corpus.json').copySync('${tmp.path}/corpus.json');
+  Directory('${tmp.path}/records').createSync();
+  return tmp.path;
+}
 
 Future<void> main() async {
   final skills = loadDefs('data/skills', 'skillId');
@@ -26,11 +44,17 @@ Future<void> main() async {
     print('  route  "$u" -> ${route?['skillId'] ?? 'none'}');
   }
 
-  print('--- authoring (${authoringDescriptions.length} descriptions) ---');
+  // Authoring: drive the REAL Session authoring path (incl. its validate→retry loop)
+  // so the recorded keys — including any priorError retry — are EXACTLY what replay
+  // requests. A first-attempt out-of-vocab fn (a known Haiku flake) is then recorded
+  // together with its priorError-corrected retry, instead of failing the suite.
+  print('--- authoring via Session (${authoringDescriptions.length} descriptions) ---');
+  final clock = DateTime.parse('2026-07-06T09:00:00');
   for (final d in authoringDescriptions) {
-    final r = await rec.authorCapability(d);
-    final authored = (r as CloudOk<Map<String, dynamic>?>).value;
-    print('  author "$d" -> ${(authored?['skill'] as Map?)?['skillId'] ?? 'FAILED'}');
+    final s = Session(_tempData(), clock: clock, cloud: rec);
+    await s.init(retrieval: false);
+    final resp = await s.handle('start tracking $d'); // def-triggered authoring
+    print('  author "$d" -> $resp');
   }
 
   rec.save('test/fixtures/cloud.json');

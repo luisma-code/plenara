@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:plenara/claude.dart';
 import 'package:plenara/fixture_inputs.dart';
-import 'package:plenara/interpreter.dart';
 import 'package:plenara/replay_cloud.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara/store.dart';
@@ -16,7 +15,6 @@ import 'helpers.dart';
 
 final _now = DateTime.parse('2026-07-06T09:00:00');
 final _skills = loadDefs('data/skills', 'skillId');
-final _types = loadDefs('data/types', 'typeId');
 ReplayCloud _cloud() => ReplayCloud.load('test/fixtures/cloud.json');
 // unwrap a replayed result — the cassette holds only genuine (Ok) answers.
 Map<String, dynamic>? _ok(CloudResult<Map<String, dynamic>?> r) => (r as CloudOk<Map<String, dynamic>?>).value;
@@ -43,21 +41,20 @@ void main() {
     }
   });
 
-  group('replay — authored capabilities pass the static validators (schema-drift guard)', () {
+  // Schema-drift guard: every authoring description must, through the REAL Session
+  // authoring loop (validate → retry-with-priorError → validate), end in a registered
+  // capability. Driving the loop (not just the raw first attempt) matches production:
+  // a first-attempt out-of-vocab fn is corrected on the recorded retry, so this catches
+  // genuine drift without flaking on Haiku's first-shot imperfections.
+  group('replay — authoring registers a valid capability for every description', () {
     for (final desc in authoringDescriptions) {
-      test('author "$desc" -> a valid type + skill that the gate accepts', () async {
-        final a = _ok(await _cloud().authorCapability(desc));
-        expect(a, isNotNull, reason: desc);
-        final type = (a!['type'] as Map).cast<String, dynamic>();
-        final skill = (a['skill'] as Map).cast<String, dynamic>();
-        expect(type['typeId'], isA<String>());
-        expect(skill['skillId'], isA<String>());
-        expect(skill['steps']?['main'], isA<List>());
-        final t = Map<String, Map<String, dynamic>>.from(_types)
-          ..[type['typeId'] as String] = type;
-        final interp = Interpreter(t, _now);
-        expect(() => interp.validateSkill(skill), returnsNormally,
-            reason: '"$desc" authored a skill the validators reject');
+      test('"start tracking $desc" authors, validates, and registers', () async {
+        final s = Session(makeTempDataDir(), clock: _now, cloud: _cloud());
+        await s.init(retrieval: false);
+        final before = s.skills.length;
+        final resp = await s.handle('start tracking $desc');
+        expect(resp.toLowerCase(), contains('built'), reason: '"$desc": $resp');
+        expect(s.skills.length, before + 1);
       });
     }
   });

@@ -42,7 +42,7 @@
   "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001stick booking flights on my list": {
     "skillId": "create-task",
     "slots": {
-      "description": "stick booking flights on my list",
+      "description": "book flights",
       "dueDate": null
     },
     "source": "cloud"
@@ -78,7 +78,7 @@
   "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001feeling pretty anxious today": {
     "skillId": "log-mood",
     "slots": {
-      "rating": "feeling pretty anxious today"
+      "rating": "pretty anxious"
     },
     "source": "cloud"
   },
@@ -142,7 +142,7 @@
           "name": "unit",
           "valueType": "text",
           "required": true,
-          "default": "oz"
+          "default": "ml"
         },
         {
           "name": "loggedAt",
@@ -169,17 +169,17 @@
         }
       ],
       "examplePhrases": [
-        "I drank 16 ounces of water",
-        "Log 8 glasses of water",
-        "I had 500 ml of water"
+        "I drank 500 ml of water",
+        "Log 8 ounces of water",
+        "Record water intake of 2 cups"
       ],
       "steps": {
         "main": [
           {
             "op": "compute",
-            "fn": "now",
+            "fn": "today",
             "args": [],
-            "into": "timestamp"
+            "into": "logDate"
           },
           {
             "op": "write_record",
@@ -192,7 +192,7 @@
                 "var": "unit"
               },
               "loggedAt": {
-                "var": "timestamp"
+                "var": "logDate"
               }
             },
             "into": "record"
@@ -212,7 +212,7 @@
       "displayName": "Gratitude Journal Entry",
       "attributes": [
         {
-          "name": "gratitudeText",
+          "name": "gratitude_text",
           "valueType": "text",
           "required": true
         },
@@ -225,21 +225,21 @@
     },
     "skill": {
       "skillId": "log_gratitude",
-      "displayName": "Log Gratitude Entry",
+      "displayName": "Log Daily Gratitude",
       "reads": [],
       "writes": [
         "gratitude_entry"
       ],
       "inputs": [
         {
-          "name": "gratitudeText",
+          "name": "gratitude_text",
           "required": true
         }
       ],
       "examplePhrases": [
-        "log my gratitude for today",
-        "add to my gratitude journal",
-        "record what I'm grateful for"
+        "Log my gratitude: I'm grateful for my family",
+        "Add to gratitude journal: today's sunshine",
+        "Save gratitude: I appreciate my good health"
       ],
       "steps": {
         "main": [
@@ -247,24 +247,24 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "entryDate"
+            "into": "entry_date"
           },
           {
             "op": "write_record",
             "typeId": "gratitude_entry",
             "fields": {
-              "gratitudeText": {
-                "var": "gratitudeText"
+              "gratitude_text": {
+                "var": "gratitude_text"
               },
               "loggedAt": {
-                "var": "entryDate"
+                "var": "entry_date"
               }
             },
-            "into": "newEntry"
+            "into": "saved_entry"
           },
           {
             "op": "format",
-            "template": "Gratitude logged for {entryDate}: {gratitudeText}",
+            "template": "Gratitude logged: {gratitude_text}",
             "into": "confirmationText"
           }
         ]
@@ -313,16 +313,12 @@
         {
           "name": "author",
           "required": false
-        },
-        {
-          "name": "completedAt",
-          "required": false
         }
       ],
       "examplePhrases": [
         "I finished reading The Great Gatsby",
         "Log that I completed Dune by Frank Herbert",
-        "Add To Kill a Mockingbird to my finished books"
+        "Add 1984 to my finished books"
       ],
       "steps": {
         "main": [
@@ -330,7 +326,7 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "logDate"
+            "into": "today_var"
           },
           {
             "op": "write_record",
@@ -343,37 +339,37 @@
                 "var": "author"
               },
               "completedAt": {
-                "var": "completedAt"
+                "var": "today_var"
               },
               "loggedAt": {
-                "var": "logDate"
+                "var": "today_var"
               }
             },
-            "into": "record"
+            "into": "book_record"
           },
           {
             "op": "format",
-            "template": "Logged finished book: {title} by {author}",
+            "template": "Added {title} to your finished books list.",
             "into": "confirmationText"
           }
         ]
       }
     }
   },
-  "author\u0001\u0001my weight": {
+  "author\u0001\u0001weight": {
     "type": {
-      "typeId": "weight_log",
-      "displayName": "Weight Log",
+      "typeId": "weight_entry",
+      "displayName": "Weight Entry",
       "attributes": [
         {
-          "name": "weight",
+          "name": "value",
           "valueType": "decimal",
           "required": true
         },
         {
           "name": "unit",
           "valueType": "text",
-          "required": false,
+          "required": true,
           "default": "lbs"
         },
         {
@@ -388,7 +384,7 @@
       "displayName": "Log Weight",
       "reads": [],
       "writes": [
-        "weight_log"
+        "weight_entry"
       ],
       "inputs": [
         {
@@ -401,9 +397,9 @@
         }
       ],
       "examplePhrases": [
-        "my weight is 175",
-        "log weight 168.5 pounds",
-        "i weigh 72 kilograms"
+        "I weigh 165 pounds",
+        "Log my weight as 75 kilos",
+        "My weight is 160 lbs"
       ],
       "steps": {
         "main": [
@@ -411,27 +407,27 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "today_date"
+            "into": "logDate"
           },
           {
             "op": "write_record",
-            "typeId": "weight_log",
+            "typeId": "weight_entry",
             "fields": {
-              "weight": {
+              "value": {
                 "var": "weight"
               },
               "unit": {
                 "var": "unit"
               },
               "loggedAt": {
-                "var": "today_date"
+                "var": "logDate"
               }
             },
             "into": "record"
           },
           {
             "op": "format",
-            "template": "Logged weight of {weight} {unit} on {today_date}",
+            "template": "Weight logged: {weight} {unit}",
             "into": "confirmationText"
           }
         ]
@@ -441,11 +437,11 @@
   "author\u0001\u0001coffee cups per day": {
     "type": {
       "typeId": "coffee_consumption",
-      "displayName": "Coffee Consumption Log",
+      "displayName": "Coffee Consumption",
       "attributes": [
         {
           "name": "cupsPerDay",
-          "valueType": "integer",
+          "valueType": "decimal",
           "required": true
         },
         {
@@ -469,9 +465,9 @@
         }
       ],
       "examplePhrases": [
-        "I had 3 cups of coffee today",
+        "I drank 3 cups of coffee today",
         "Log 2 coffee cups",
-        "I drank 4 cups of coffee"
+        "My coffee intake was 4 cups"
       ],
       "steps": {
         "main": [
@@ -479,7 +475,7 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "todayDate"
+            "into": "logDate"
           },
           {
             "op": "write_record",
@@ -489,14 +485,14 @@
                 "var": "cupsPerDay"
               },
               "loggedAt": {
-                "var": "todayDate"
+                "var": "logDate"
               }
             },
-            "into": "logEntry"
+            "into": "record"
           },
           {
             "op": "format",
-            "template": "Logged {cupsPerDay} cups of coffee for today",
+            "template": "Logged {cupsPerDay} cups of coffee for {logDate}",
             "into": "confirmationText"
           }
         ]
