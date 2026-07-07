@@ -20,11 +20,12 @@ remember-relationship (offline "X is Y's Z"). Fixed real bugs found along the wa
 retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder kept
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
-the real Session validate→retry loop). **HEAD = `02f4388`**, working tree clean (ignore
-the pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
-`.claude/settings.local.json`), **1202 Dart tests + 8 Flutter widget tests green**
-(26 skills, incl. a "realistic day" cross-skill integration guard), `dart analyze`
-clean, **`flutter build windows --debug` succeeds**. `DOGFOOD.md` refreshed for tonight.
+the real Session validate→retry loop), then started the spec-conformance program (below).
+**HEAD = `46d15a5`**, working tree clean (ignore the pre-existing dirty
+`planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
+**1238 Dart tests + 8 Flutter widget tests green** (30 skills, 9 types; DSL now has
+ordering/limit/filter-ops + aggregation/date-math), `dart analyze` clean,
+**`flutter build windows --debug` succeeds**. `DOGFOOD.md` refreshed for tonight.
 
 **Working-mode enforcement (new):** a user-level **Stop hook**
 (`~/.claude/hooks/stop-guard.ps1` + `~/.claude/settings.json`) bounces any turn whose
@@ -33,10 +34,24 @@ continues while unblocked items remain. Fails open. If you (a future session) ge
 "STOP BLOCKED (working-mode hook)" message, that's it — pick the next unblocked item and
 do it, don't re-ask. The rule itself is in `CLAUDE.md` "Working mode" (rewritten `627d4cc`).
 
-**The immediate next task:** NOT blocked on Luis. Keep rolling autonomously (working
-mode: never stop for input, make the sequencing call yourself). Unblocked options:
-more depth on demand, NLU corpus growth, robustness/hardening, app UI panels. Only
-Phase 3 needs tonight's reconfig: the real notification toast (ATL) + the voice spike.
+**The immediate next task: the SPEC-CONFORMANCE PROGRAM (the real remaining scope).**
+A full spec-vs-code audit (5 forks, synthesized) found the engine *spine* is done but
+the app satisfies only ~1 of the 60 05a examples cleanly, ~12 partially, ~47 fail —
+four whole architecture components (Automation, Generative, SchemaRegistry/Migration,
+ContentSearch) and the conversational NLU seams (slot-fill, alias, anaphora, OOD) are
+unbuilt, and the DSL was thinner than the spec's own §9.2 seed skills. This is weeks of
+build, NOT "mostly done." **Ranked top-10 (see "Spec-conformance program" section):**
+1 DSL query+compute fidelity ✅ DONE (`8cc36ed`); 2 ProvideSlot slot-filling dialogue
+(§6.3 G-16); 3 tracker templates + free instantiate (§12.4 G-22, also fixes the
+free→paid misroute defect); 4 alias/role/group person resolution (§6.1 G-24); 5
+correction robustness update-vs-reverse (§3.3 F-14/15); 6 GenerativeService + gift_ideas
+/briefing (§3.10); 7 authoring preview→refine→activate + reconcile + pin Opus + structured
+output (§6 G-18/29); 8 recurrence RRULE + record-anchored dates (§6.2 G-14/15); 9 safety
+Layer-2/3 + record-integrity (§7.6 G-30 DP-05); 10 records-vs-OOD boundary (§7.2 G-19).
+Work them in order; each is a committed increment. Also-done this session: 2 correctness
+defects (`c29732c` safety-bypass + format-leak), journaling/F-11, streaks/G-21.
+(Blocked/deferred, do NOT pick: native toast/ATL, voice, CRDT merge engine, persisted
+journal, presentation archetypes, at-rest encryption, per-device corpus.)
 
 **One blocker for Luis (needs admin):** the native Windows toast for reminders
 needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
@@ -185,6 +200,15 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **Spec-conformance program STARTED (`46d15a5` … `e62bedf`):** ran a 5-fork spec-vs-code
+  audit (the ranked top-10 is in the TL;DR + the gap register `05b-gap-register.md`);
+  then shipped: journaling (`journal_entry` + log/recall, F-11/G-01), streaks
+  (`current_streak`/`longest_streak` + run-streak, G-21), **2 real defects** (safety
+  bypass: `_defRe` missed "build me a" so DP-01/DP-08 skipped the §7.6 floor; format
+  leaked `{var}` on null — both fixed `c29732c`), and **DSL query+compute fidelity**
+  (`8cc36ed`: read_many orderBy/limit + full filter ops; compute sum/avg/min/max/
+  count_where/days_between/add_days/if) + total-distance demonstrating it. **Next: item 2
+  (ProvideSlot slot-filling dialogue) — the biggest conversational gap.**
 - **More depth + real bug fixes (done, `02f4388` … `6a17c15`):** reschedule-reminder
   (snooze) — which exposed and FIXED a `reconcileReminders` time-change bug (armed()
   now returns ref→time so a rescheduled reminder re-arms); reschedule-task;
