@@ -1,0 +1,61 @@
+{
+  "skillId": "reschedule-reminder",
+  "displayName": "Reschedule (snooze) a reminder to a new time",
+  "reads": [
+    "reminder"
+  ],
+  "writes": [
+    "reminder"
+  ],
+  "inputs": [
+    { "name": "text", "required": true },
+    { "name": "when", "required": true, "type": "datetime" }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "reminder",
+        "match": { "text": { "var": "text" } },
+        "into": "r"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "r" },
+        "then": [
+          {
+            "op": "format",
+            "template": "I couldn't find a reminder to \"{text}\".",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "write_record",
+            "typeId": "reminder",
+            "target": { "ref": "r" },
+            "fields": { "remindAt": { "var": "when" } },
+            "into": "r2"
+          },
+          {
+            "op": "compute",
+            "fn": "format_date",
+            "args": [ { "var": "when" }, "EEEE" ],
+            "into": "dayLabel"
+          },
+          {
+            "op": "compute",
+            "fn": "format_time",
+            "args": [ { "var": "when" } ],
+            "into": "timeLabel"
+          },
+          {
+            "op": "format",
+            "template": "Okay — moved the reminder to {text} to {dayLabel} at {timeLabel}.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -35,7 +35,9 @@ class Reminder {
 abstract interface class NotificationScheduler {
   Future<void> schedule(String ref, DateTime when, String body);
   Future<void> cancel(String ref);
-  Set<String> armed();
+  /// The currently-armed set as ref -> the time it's armed for. The time lets
+  /// reconcile detect a RESCHEDULE (same reminder, new time) and re-arm it.
+  Map<String, DateTime> armed();
 }
 
 /// In-memory scheduler — the test double AND a safe production default (a no-op
@@ -58,7 +60,7 @@ class FakeScheduler implements NotificationScheduler {
   }
 
   @override
-  Set<String> armed() => scheduled.keys.toSet();
+  Map<String, DateTime> armed() => {for (final e in scheduled.entries) e.key: e.value.at};
 }
 
 typedef _Store = Map<String, Map<String, dynamic>>;
@@ -95,12 +97,14 @@ List<Reminder> dueReminders(_Store store, DateTime now) => [
 Future<void> reconcileReminders(
     NotificationScheduler sched, _Store store, DateTime now) async {
   final desired = desiredArmed(store, now);
-  for (final ref in sched.armed().toList()) {
-    if (!desired.containsKey(ref)) await sched.cancel(ref);
+  final armed = sched.armed(); // ref -> armed time (snapshot)
+  // Cancel anything armed that is no longer desired OR whose time changed (reschedule).
+  for (final e in armed.entries) {
+    final want = desired[e.key];
+    if (want == null || want.at != e.value) await sched.cancel(e.key);
   }
+  // (Re)arm anything desired that isn't already armed at the right time.
   for (final rem in desired.values) {
-    if (!sched.armed().contains(rem.ref)) {
-      await sched.schedule(rem.ref, rem.at, rem.body);
-    }
+    if (armed[rem.ref] != rem.at) await sched.schedule(rem.ref, rem.at, rem.body);
   }
 }

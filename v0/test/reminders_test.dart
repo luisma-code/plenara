@@ -65,7 +65,7 @@ void main() {
       final fake = FakeScheduler();
       await reconcileReminders(fake, s, _now);
       await reconcileReminders(fake, s, _now); // re-open / idle tick
-      expect(fake.armed(), {'reminder-a'});
+      expect(fake.armed().keys.toSet(), {'reminder-a'});
       expect(fake.scheduleCalls, 1); // armed exactly once, never re-armed
     });
 
@@ -98,7 +98,7 @@ void main() {
       final fake = FakeScheduler();
       final s = await _open(makeTempDataDir(), fake);
       await s.handle('remind me to call mom on thursday at 5pm');
-      final ref = fake.armed().single;
+      final ref = fake.armed().keys.single;
       final r = await s.handle('undo');
       expect(r.toLowerCase(), contains('undone'));
       expect(fake.armed(), isEmpty);
@@ -185,6 +185,25 @@ void main() {
       final s = await _open(makeTempDataDir(), FakeScheduler());
       expect(await s.handle('mark the reminder to walk the dog done'), contains("couldn't find"));
       expect(await s.handle('cancel the reminder to walk the dog'), contains("couldn't find"));
+    });
+  });
+
+  group('reschedule (snooze) a reminder', () {
+    test('moves the reminder and RE-ARMS the toast at the new time', () async {
+      final fake = FakeScheduler();
+      final s = await _open(makeTempDataDir(), fake);
+      await s.handle('remind me to call mom on thursday at 5pm');
+      expect(fake.armed().values.single, DateTime.parse('2026-07-09T17:00:00'));
+      final r = await s.handle('snooze the reminder to call mom to friday at 9am');
+      expect(r.toLowerCase(), contains('moved'));
+      expect(fake.armed().length, 1); // still exactly one
+      expect(fake.armed().values.single, DateTime.parse('2026-07-10T09:00:00')); // re-armed at the NEW time
+    });
+
+    test('rescheduling an unknown reminder is a clear no-op', () async {
+      final s = await _open(makeTempDataDir(), FakeScheduler());
+      expect(await s.handle('snooze the reminder to walk the dog to friday at 9am'),
+          contains("couldn't find"));
     });
   });
 
