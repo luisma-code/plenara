@@ -4,11 +4,36 @@
 /// covered separately in cloud_test.dart via the replay cassette.
 import 'package:plenara/claude.dart';
 import 'package:plenara/session.dart';
+import 'package:plenara/storage_repository.dart';
 import 'package:test/test.dart';
 
 import 'helpers.dart';
 
 final _now = DateTime.parse('2026-07-06T09:00:00');
+
+/// An in-memory StorageRepository — proves the seam is real (nothing about
+/// Session depends on the filesystem backend).
+class _MemStorage implements StorageRepository {
+  final Map<String, Map<String, dynamic>> types, skills;
+  final Map<String, Map<String, dynamic>> records = {};
+  final List<dynamic> learned = [];
+  _MemStorage(this.types, this.skills);
+  @override
+  Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) => subdir == 'types' ? types : skills;
+  @override
+  Map<String, Map<String, dynamic>> loadRecords() => {for (final e in records.entries) e.key: Map.of(e.value)};
+  @override
+  void persist(Map<String, dynamic> record) => records[record['id'] as String] = Map.of(record);
+  @override
+  void remove(String id) => records.remove(id);
+  @override
+  List<dynamic> loadCorpusLearned() => learned;
+  @override
+  void appendCorpusLearned(Map<String, dynamic> entry) => learned.add(entry);
+  @override
+  void writeDef(String subdir, String idKey, Map<String, dynamic> def) =>
+      (subdir == 'types' ? types : skills)[def[idKey] as String] = def;
+}
 
 class _NoCloud implements CloudClient {
   @override
@@ -174,6 +199,22 @@ void main() {
       await s1.handle('undo that');
       final s2 = await _session(dir);
       expect(await s2.handle('list my tasks'), contains('0 task(s)'));
+    });
+  });
+
+  group('StorageRepository seam (Fable review)', () {
+    test('Session runs on an injected in-memory repository (no disk touched)', () async {
+      final file = FileStorageRepository('data');
+      final mem = _MemStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
+      await s.init(retrieval: false);
+      await s.handle('add buy milk to my list');
+      final tasks = mem.records.values.where((r) => r['typeId'] == 'task').toList();
+      expect(tasks.length, 1);
+      expect(tasks.single['description'], 'buy milk');
+      // undo goes through the repo too
+      await s.handle('undo that');
+      expect(mem.records.values.where((r) => r['typeId'] == 'task'), isEmpty);
     });
   });
 

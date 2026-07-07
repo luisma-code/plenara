@@ -3,13 +3,10 @@
 /// returns the response text instead of printing, so any front-end can present it.
 library;
 
-import 'dart:convert';
-import 'dart:io';
-
 import 'claude.dart';
 import 'interpreter.dart';
 import 'router.dart';
-import 'store.dart';
+import 'storage_repository.dart';
 
 final _undoRe = RegExp(r'^(undo|undo that|no,? take that back|scratch that)\.?$', caseSensitive: false);
 final _corrRe = RegExp(r'^(?:no,?|actually,?|nope,?)\s+i meant (?:to |it was )?(.+?)\.?$', caseSensitive: false);
@@ -54,40 +51,48 @@ class Session {
   late Interpreter interp;
   late Router router;
   late CloudClient claude;
-  late HlcDevice dev;
+  late StorageRepository repo;
   final CloudClient? _injectedCloud;
+  final StorageRepository? _injectedStorage;
   static const _journalMax = 25; // ring depth
   final List<_JournalEntry> _journal = []; // execution journal (device-local, volatile)
 
-  /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart) so
-  /// the residual-routing and authoring paths run offline against recorded
-  /// real responses. Production leaves it null -> a live ClaudeClient.
-  Session(this.dataDir, {DateTime? clock, CloudClient? cloud})
+  /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart); [storage]
+  /// lets them inject a repository (in-memory / test double). Production leaves both
+  /// null -> a live ClaudeClient over a FileStorageRepository.
+  Session(this.dataDir, {DateTime? clock, CloudClient? cloud, StorageRepository? storage})
       : _fixedClock = clock,
-        _injectedCloud = cloud;
+        _injectedCloud = cloud,
+        _injectedStorage = storage;
 
   /// [retrieval] builds the embedding index (needs the embed server). Tests pass
   /// false to stay hermetic — the corpus fast-path and injected cloud need no
   /// embeddings; only the cold-start suggestion on a full miss does.
   Future<void> init({bool retrieval = true}) async {
-    types = loadDefs('$dataDir/types', 'typeId');
-    skills = loadDefs('$dataDir/skills', 'skillId');
-    store = loadRecords('$dataDir/records');
+    repo = _injectedStorage ?? FileStorageRepository(dataDir);
+    types = repo.loadDefs('types', 'typeId');
+    skills = repo.loadDefs('skills', 'skillId');
+    store = repo.loadRecords();
     interp = Interpreter(types, now);
     router = Router.load('$dataDir/corpus.json', now, learnedPath: '$dataDir/corpus-learned.json');
     claude = _injectedCloud ?? ClaudeClient();
-    dev = HlcDevice('this-device');
     for (final s in skills.values) {
       interp.validateSkill(s);
     }
     if (retrieval) await router.buildRetrievalIndex(skills);
   }
 
-  void _persistLearned(String skillId, String template) {
-    final f = File('$dataDir/corpus-learned.json');
-    final list = f.existsSync() ? (jsonDecode(f.readAsStringSync()) as List) : <dynamic>[];
-    list.add({'skillId': skillId, 'template': template});
-    f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(list));
+  /// Reverse a turn's writes via the repository (undo / correction).
+  void _reverse(Map<String, Map<String, dynamic>?> before) {
+    before.forEach((id, prior) {
+      if (prior == null) {
+        store.remove(id);
+        repo.remove(id); // tombstone
+      } else {
+        store[id] = Map<String, dynamic>.from(prior);
+        repo.persist(prior);
+      }
+    });
   }
 
   /// Public entry: a catch-all boundary so NO exception (ResolveError or a raw
@@ -109,7 +114,7 @@ class Session {
     if (_undoRe.hasMatch(u)) {
       if (_journal.isEmpty) return 'Nothing to undo.';
       final entry = _journal.removeLast(); // walk back the ring, most-recent first
-      undoTurn(entry.before, '$dataDir/records', dev, store);
+      _reverse(entry.before);
       // say WHAT was reversed — a silent "Undone." can't be trusted as the safety net
       return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
     }
@@ -119,7 +124,7 @@ class Session {
       var pre = '';
       if (_journal.isNotEmpty) {
         final entry = _journal.removeLast();
-        undoTurn(entry.before, '$dataDir/records', dev, store);
+        _reverse(entry.before);
         pre = 'Got it — undid that. ';
       }
       return '$pre${await _handle(corr.group(1)!.trim())}';
@@ -157,10 +162,8 @@ class Session {
           addedTypeId = typeId;
           interp.validateSkill(skill);
           skills[skillId] = skill;
-          File('$dataDir/types/$typeId.json')
-              .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(type));
-          File('$dataDir/skills/$skillId.json')
-              .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(skill));
+          repo.writeDef('types', 'typeId', type);
+          repo.writeDef('skills', 'skillId', skill);
           await router.buildRetrievalIndex(skills);
           final eg = (skill['examplePhrases'] as List?)?.cast<String>();
           return 'Built "${skill['displayName'] ?? skillId}" — a new capability, authored and validated.'
@@ -194,10 +197,10 @@ class Session {
       final plan = turnInterp.resolve(skills[routed['skillId']]!, routed['slots'], store);
       final before = turnInterp.execute(plan, store);
       for (final w in plan.writes) {
-        persist(w, '$dataDir/records', dev);
+        repo.persist(w);
       }
       for (final id in plan.deletes) {
-        tombstone(id, '$dataDir/records', dev);
+        repo.remove(id);
       }
       if (plan.writes.isNotEmpty || plan.deletes.isNotEmpty) {
         _journal.add(_JournalEntry(before, plan.confirmation));
@@ -206,7 +209,9 @@ class Session {
       if (routed['source'] == 'cloud') {
         final tmpl = router.learn(u, routed['skillId'] as String,
             (routed['slots'] as Map).cast<String, dynamic>());
-        if (tmpl != null) _persistLearned(routed['skillId'] as String, tmpl);
+        if (tmpl != null) {
+          repo.appendCorpusLearned({'skillId': routed['skillId'], 'template': tmpl});
+        }
       }
       return plan.confirmation ?? 'Done.';
     } on ResolveError catch (e) {
