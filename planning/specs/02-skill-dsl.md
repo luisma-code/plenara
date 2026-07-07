@@ -112,6 +112,14 @@ The input contract is the seam between this spec and the NLU spec (which this sp
 
 ## 3. The Primitive-Operation Vocabulary
 
+> **⚠ v0 DIALECT CONVERGENCE (Luis's call — "converge spec↔code", 2026-07).** The v0 walking skeleton (`v0/lib/interpreter.dart`, the reference implementation) uses a **structured** form of two constructs where the prose below still shows string/label forms. These structured forms are now **canonical**, because they are the ones a JSON schema can fully constrain at authoring time (which is where the measured authoring drift, `G-29`, lives) — a free-form `"expr"` string cannot be. The rest of this section reads as intent; the structured forms are the normative wire format:
+> - **`compute`** is a structured op — `{"op":"compute","fn":<name>,"args":[…],"into":"var"}` — **not** a hand-parsed string expression (§3.3's grammar). The implemented `fn` set is `now, today, format_date, start_of_week, add, count, concat`; aggregation fns (`sum`, `count_where`, …) extend this set as needed.
+> - **`branch`** carries **inline** `then` / `else` step arrays (`else` optional) — **not** label references into a top-level `steps` map (§3.4/§3.5).
+> - **`write_record`** with a `target` (`{"ref":"<recordVar>"}`) is an **update** (merge into the existing record); without a target it creates. **`delete_record`** (`{"op":"delete_record","id":<expr>}`) tombstones.
+> - Canonical names retained from this spec: the entity value type is **`entityRef`**, the confirmation slot is **`confirmationText`**, and every skill declares **`reads`/`writes`** (typeIds it may touch); `validateSkill` enforces the capability closure (§6.4 rule 3). What v0 has NOT yet adopted: `read_related`, `dangerLevel` gating, and the `sum`/`count_where`/`days_between`/`add_days` compute fns.
+>
+> Net: the *structure* comes from the code (reliability), the *names + skill envelope* come from this spec. When Spec 02 is next revised in-session, fold these into §3.3/§3.4/§3.5 proper and retire the string-expression grammar.
+
 Every step in a skill is one of the following primitive operations. This set is **closed and fixed**. Adding a new primitive requires a version bump to the interpreter itself — it is not an authoring decision.
 
 The vocabulary is intentionally small. Each primitive maps directly to a safe, auditable action the interpreter can perform without dynamic evaluation. The richness of a skill comes from composition and sequencing, not from primitive complexity.
