@@ -419,6 +419,28 @@ void main() {
       expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'entityRef'}]}), throwsA(isA<ResolveError>()));
       expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'text'}]}), returnsNormally);
     });
+    test('capability closure: writing an undeclared type is rejected', () {
+      final s = {'skillId': 'x', 'reads': [], 'writes': ['task'], 'steps': {'main': [
+        {'op': 'compute', 'fn': 'today', 'into': 't'},
+        {'op': 'write_record', 'typeId': 'mood', 'fields': {'rating': 'x', 'loggedAt': {'var': 't'}}, 'into': 'm'},
+        {'op': 'format', 'template': 'ok', 'into': 'confirmationText'},
+      ]}};
+      expect(() => _i().validateSkill(s), throwsA(isA<ResolveError>()));
+    });
+    test('capability closure: reading an undeclared type is rejected', () {
+      final s = {'skillId': 'x', 'reads': [], 'writes': [], 'steps': {'main': [
+        {'op': 'read_many', 'typeId': 'task', 'into': 'ts'},
+        {'op': 'format', 'template': 'ok', 'into': 'confirmationText'},
+      ]}};
+      expect(() => _i().validateSkill(s), throwsA(isA<ResolveError>()));
+    });
+    test('all seed skills declare and satisfy their reads/writes', () {
+      for (final sk in _skills.values) {
+        expect(sk['reads'], isA<List>(), reason: '${sk['skillId']} must declare reads');
+        expect(sk['writes'], isA<List>(), reason: '${sk['skillId']} must declare writes');
+        expect(() => _i().validateSkill(sk), returnsNormally, reason: sk['skillId'] as String);
+      }
+    });
     test('mint produces unique ids across 500 fresh interpreters (no cross-session collision)', () {
       final ids = <String>{};
       for (var k = 0; k < 500; k++) {

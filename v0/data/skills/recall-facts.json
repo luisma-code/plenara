@@ -1,29 +1,122 @@
 {
   "skillId": "recall-facts",
   "displayName": "Recall facts about a person",
+  "reads": [
+    "contact",
+    "contact_fact"
+  ],
+  "writes": [],
   "inputs": [
-    { "name": "personName", "required": true }
+    {
+      "name": "personName",
+      "required": true
+    }
   ],
   "steps": {
     "main": [
-      { "op": "read_one", "typeId": "contact", "match": { "displayName": {"var": "personName"} }, "into": "person" },
-      { "op": "branch", "cond": { "isNull": "person" }, "then": [
-        { "op": "format", "template": "I don't know anyone named {personName} yet.", "into": "confirmationText" }
-      ], "else": [
-        { "op": "read_many", "typeId": "contact_fact",
-          "filter": { "field": "subject", "op": "eq", "value": {"ref": "person"} }, "into": "facts" },
-        { "op": "set", "var": "lines", "value": "" },
-        { "op": "foreach", "list": {"var": "facts"}, "as": "f", "body": [
-          { "op": "compute", "fn": "concat",
-            "args": [{"var": "lines"}, "\n  • ", {"field": ["f", "fact"]}], "into": "lines" }
-        ] },
-        { "op": "compute", "fn": "count", "args": [{"var": "facts"}], "into": "n" },
-        { "op": "branch", "cond": { "gte": [{"var": "n"}, 1] }, "then": [
-          { "op": "format", "template": "Here's what I know about {personName}:{lines}", "into": "confirmationText" }
-        ], "else": [
-          { "op": "format", "template": "I have {personName} as a contact but nothing noted yet.", "into": "confirmationText" }
-        ] }
-      ] }
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": {
+          "displayName": {
+            "var": "personName"
+          }
+        },
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": {
+          "isNull": "person"
+        },
+        "then": [
+          {
+            "op": "format",
+            "template": "I don't know anyone named {personName} yet.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "read_many",
+            "typeId": "contact_fact",
+            "filter": {
+              "field": "subject",
+              "op": "eq",
+              "value": {
+                "ref": "person"
+              }
+            },
+            "into": "facts"
+          },
+          {
+            "op": "set",
+            "var": "lines",
+            "value": ""
+          },
+          {
+            "op": "foreach",
+            "list": {
+              "var": "facts"
+            },
+            "as": "f",
+            "body": [
+              {
+                "op": "compute",
+                "fn": "concat",
+                "args": [
+                  {
+                    "var": "lines"
+                  },
+                  "\n  \u2022 ",
+                  {
+                    "field": [
+                      "f",
+                      "fact"
+                    ]
+                  }
+                ],
+                "into": "lines"
+              }
+            ]
+          },
+          {
+            "op": "compute",
+            "fn": "count",
+            "args": [
+              {
+                "var": "facts"
+              }
+            ],
+            "into": "n"
+          },
+          {
+            "op": "branch",
+            "cond": {
+              "gte": [
+                {
+                  "var": "n"
+                },
+                1
+              ]
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "Here's what I know about {personName}:{lines}",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "I have {personName} as a contact but nothing noted yet.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
     ]
   }
 }

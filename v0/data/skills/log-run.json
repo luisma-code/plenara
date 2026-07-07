@@ -1,20 +1,57 @@
 {
   "skillId": "log-run",
   "displayName": "Log a run",
+  "reads": [],
+  "writes": [
+    "workout"
+  ],
   "inputs": [
-    { "name": "distance", "required": false }
+    {
+      "name": "distance",
+      "required": false
+    }
   ],
   "steps": {
     "main": [
-      { "op": "compute", "fn": "today", "into": "today" },
-      { "op": "write_record", "typeId": "workout",
-        "fields": { "activity": "run", "distance": {"var": "distance"}, "date": {"var": "today"} },
-        "into": "w" },
-      { "op": "branch", "cond": { "notNull": "distance" }, "then": [
-        { "op": "format", "template": "Logged a {distance} km run today.", "into": "confirmationText" }
-      ], "else": [
-        { "op": "format", "template": "Logged a run today.", "into": "confirmationText" }
-      ] }
+      {
+        "op": "compute",
+        "fn": "today",
+        "into": "today"
+      },
+      {
+        "op": "write_record",
+        "typeId": "workout",
+        "fields": {
+          "activity": "run",
+          "distance": {
+            "var": "distance"
+          },
+          "date": {
+            "var": "today"
+          }
+        },
+        "into": "w"
+      },
+      {
+        "op": "branch",
+        "cond": {
+          "notNull": "distance"
+        },
+        "then": [
+          {
+            "op": "format",
+            "template": "Logged a {distance} km run today.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "format",
+            "template": "Logged a run today.",
+            "into": "confirmationText"
+          }
+        ]
+      }
     ]
   }
 }

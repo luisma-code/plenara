@@ -27,6 +27,8 @@ class Plan {
 class _VCtx {
   final String sid;
   bool setsConfirmation = false;
+  final Set<String> readTypes = {}; // types actually read (for the capability closure)
+  final Set<String> writeTypes = {}; // types actually written
   _VCtx(this.sid);
 }
 
@@ -163,7 +165,19 @@ class Interpreter {
     final c = _VCtx(sid);
     _validate(steps['main'] as List, <String, String?>{}, <String, String?>{}, c);
     if (!c.setsConfirmation) {
-      throw ResolveError("$sid: no step produces a 'confirmationText' (a format op into confirmation is required)");
+      throw ResolveError("$sid: no step produces a 'confirmationText' (a format op into confirmationText is required)");
+    }
+    // capability closure (Spec 02 §6.4 rule 3): if the skill declares reads/writes,
+    // it may not touch a type it didn't declare. Enforced-if-present.
+    final declaredReads = (skill['reads'] as List?)?.map((e) => e.toString()).toSet();
+    if (declaredReads != null) {
+      final extra = c.readTypes.difference(declaredReads);
+      if (extra.isNotEmpty) throw ResolveError("$sid: reads undeclared type(s) ${extra.join(', ')} — add to 'reads'");
+    }
+    final declaredWrites = (skill['writes'] as List?)?.map((e) => e.toString()).toSet();
+    if (declaredWrites != null) {
+      final extra = c.writeTypes.difference(declaredWrites);
+      if (extra.isNotEmpty) throw ResolveError("$sid: writes undeclared type(s) ${extra.join(', ')} — add to 'writes'");
     }
   }
 
@@ -182,17 +196,20 @@ class Interpreter {
         case 'read_one':
           final tid = step['typeId'];
           if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_one unknown type '$tid'");
-          if (step['into'] is String) recVars[step['into'] as String] = tid as String;
+          c.readTypes.add(tid as String);
+          if (step['into'] is String) recVars[step['into'] as String] = tid;
         case 'read_many':
           final tid = step['typeId'];
           if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_many unknown type '$tid'");
+          c.readTypes.add(tid as String);
           final f = step['filter'];
           if (f != null && f['op'] != 'eq') throw ResolveError("${c.sid}: read_many unsupported filter op '${f['op']}'");
-          if (step['into'] is String) listVars[step['into'] as String] = tid as String;
+          if (step['into'] is String) listVars[step['into'] as String] = tid;
         case 'write_record':
           final tid = step['typeId'];
           final td = types[tid];
           if (td == null) throw ResolveError("${c.sid}: write_record unknown type '$tid'");
+          c.writeTypes.add(tid as String);
           final entity = <String, dynamic>{
             for (final a in ((td['attributes'] as List?) ?? []))
               if (a is Map && a['valueType'] == 'entityRef') a['name'] as String: a['refType']
@@ -217,7 +234,7 @@ class Interpreter {
               throw ResolveError("${c.sid}: entity field '$tid.$name' expects a $refType, but '$srcVar' is a $srcType");
             }
           });
-          if (step['into'] is String) recVars[step['into'] as String] = tid as String;
+          if (step['into'] is String) recVars[step['into'] as String] = tid;
         case 'delete_record':
           if (step['id'] == null) throw ResolveError("${c.sid}: delete_record needs an 'id'");
         case 'format':

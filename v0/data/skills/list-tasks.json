@@ -1,17 +1,64 @@
 {
   "skillId": "list-tasks",
   "displayName": "List your tasks",
+  "reads": [
+    "task"
+  ],
+  "writes": [],
   "inputs": [],
   "steps": {
     "main": [
-      { "op": "read_many", "typeId": "task", "into": "tasks" },
-      { "op": "set", "var": "lines", "value": "" },
-      { "op": "foreach", "list": {"var": "tasks"}, "as": "t", "body": [
-        { "op": "compute", "fn": "concat",
-          "args": [{"var": "lines"}, "\n  • ", {"field": ["t", "description"]}], "into": "lines" }
-      ] },
-      { "op": "compute", "fn": "count", "args": [{"var": "tasks"}], "into": "n" },
-      { "op": "format", "template": "You have {n} task(s):{lines}", "into": "confirmationText" }
+      {
+        "op": "read_many",
+        "typeId": "task",
+        "into": "tasks"
+      },
+      {
+        "op": "set",
+        "var": "lines",
+        "value": ""
+      },
+      {
+        "op": "foreach",
+        "list": {
+          "var": "tasks"
+        },
+        "as": "t",
+        "body": [
+          {
+            "op": "compute",
+            "fn": "concat",
+            "args": [
+              {
+                "var": "lines"
+              },
+              "\n  \u2022 ",
+              {
+                "field": [
+                  "t",
+                  "description"
+                ]
+              }
+            ],
+            "into": "lines"
+          }
+        ]
+      },
+      {
+        "op": "compute",
+        "fn": "count",
+        "args": [
+          {
+            "var": "tasks"
+          }
+        ],
+        "into": "n"
+      },
+      {
+        "op": "format",
+        "template": "You have {n} task(s):{lines}",
+        "into": "confirmationText"
+      }
     ]
   }
 }

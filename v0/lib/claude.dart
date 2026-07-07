@@ -67,10 +67,10 @@ skillDef uses ONLY this closed op vocabulary:
   {"op":"compute","fn":<now|today|format_date|add|count>,"args":[...],"into":"var"}
   {"op":"write_record","typeId":"...","fields":{"<attr>":{"var":"<slot>"}|<literal>},"into":"var"}
   {"op":"format","template":"... {slotOrVar} ...","into":"confirmationText"}
-Shape: {"skillId","displayName","inputs":[{"name","required"}],"examplePhrases":[3 strings],"steps":{"main":[<ops>]}}
+Shape: {"skillId","displayName","reads":[<typeIds read>],"writes":[<typeIds written>],"inputs":[{"name","required"}],"examplePhrases":[3 strings],"steps":{"main":[<ops>]}}
 Author a LOGGING skill: compute today into a var, write_record capturing the input value(s) + that date
 into the type, then a format op that sets "confirmationText". Reference inputs as {"var":"<slotName>"}.
-Output only JSON, no prose.''';
+"reads" is [] and "writes" is [the new typeId] for a logging skill. Output only JSON, no prose.''';
 
   /// Author a new type + skill from a described need (Spec 02 §6). Returns
   /// {type, skill} maps, or null. Deterministic validation happens in the caller.

@@ -1,18 +1,61 @@
 {
   "skillId": "complete-task",
   "displayName": "Mark a task done",
+  "reads": [
+    "task"
+  ],
+  "writes": [
+    "task"
+  ],
   "inputs": [
-    { "name": "description", "required": true }
+    {
+      "name": "description",
+      "required": true
+    }
   ],
   "steps": {
     "main": [
-      { "op": "read_one", "typeId": "task", "match": { "description": {"var": "description"} }, "into": "t" },
-      { "op": "branch", "cond": { "isNull": "t" }, "then": [
-        { "op": "format", "template": "I couldn't find a task \"{description}\".", "into": "confirmationText" }
-      ], "else": [
-        { "op": "write_record", "typeId": "task", "target": {"ref": "t"}, "fields": { "completed": true }, "into": "t2" },
-        { "op": "format", "template": "Marked \"{description}\" done.", "into": "confirmationText" }
-      ] }
+      {
+        "op": "read_one",
+        "typeId": "task",
+        "match": {
+          "description": {
+            "var": "description"
+          }
+        },
+        "into": "t"
+      },
+      {
+        "op": "branch",
+        "cond": {
+          "isNull": "t"
+        },
+        "then": [
+          {
+            "op": "format",
+            "template": "I couldn't find a task \"{description}\".",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "write_record",
+            "typeId": "task",
+            "target": {
+              "ref": "t"
+            },
+            "fields": {
+              "completed": true
+            },
+            "into": "t2"
+          },
+          {
+            "op": "format",
+            "template": "Marked \"{description}\" done.",
+            "into": "confirmationText"
+          }
+        ]
+      }
     ]
   }
 }
