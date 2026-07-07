@@ -45,18 +45,27 @@ class Router {
   /// learning; soft generalization (R9b) is deferred (findings §13).
   String? learn(String utterance, String skillId, Map<String, dynamic> slots) {
     var t = utterance.trim();
-    var abstracted = false;
-    slots.forEach((name, value) {
-      if (value == null) return;
-      final vs = value.toString();
+    final nonNull = slots.entries.where((e) => e.value != null).toList();
+    var abstracted = 0;
+    for (final e in nonNull) {
+      final vs = e.value.toString();
       final idx = t.toLowerCase().indexOf(vs.toLowerCase());
       if (idx >= 0) {
-        t = '${t.substring(0, idx)}{$name:${_inferType(vs)}}${t.substring(idx + vs.length)}';
-        abstracted = true;
+        t = '${t.substring(0, idx)}{${e.key}:${_inferType(vs)}}${t.substring(idx + vs.length)}';
+        abstracted++;
       }
-    });
-    final hasSlots = slots.values.any((v) => v != null);
-    if (hasSlots && !abstracted) return null; // couldn't abstract (e.g. a resolved date) -> skip
+    }
+    // Only learn a SAFE template (Fable review):
+    //  1. EVERY non-null slot must abstract. Otherwise the template is lossy (a
+    //     dropped slot — e.g. a cloud-resolved date not present in the surface)
+    //     AND it persists a private slot *value* verbatim into the synced corpus
+    //     (violates "store slot shapes, not values").
+    //  2. At least one literal word must survive. Otherwise "call mom" ->
+    //     "{description:text}" compiles to `^(.+?)$` which matches EVERY utterance
+    //     and — inserted first + persisted — permanently hijacks all routing.
+    if (abstracted != nonNull.length) return null;
+    if (t.replaceAll(RegExp(r'\{\w+:\w+\}'), ' ').trim().isEmpty) return null;
+    if (corpus.any((c) => c.template == t)) return null; // dedupe: nothing new to persist
     corpus.insert(0, _compile({'skillId': skillId, 'template': t}));
     return t;
   }

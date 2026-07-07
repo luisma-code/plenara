@@ -224,6 +224,24 @@ void main() {
       // slot value is the ISO date, which does not appear in the surface text
       expect(r.learn('remind me next friday', 'create-task', {'dueDate': '2026-07-10'}), isNull);
     });
+    test('match-everything guard: a whole-utterance slot is NOT learned', () {
+      final r = Router.load('data/corpus.json', _now);
+      // "call mom" -> description IS the whole utterance -> a bare {description}
+      // template would match everything and hijack all routing. Must be refused.
+      expect(r.learn('call mom', 'create-task', {'description': 'call mom'}), isNull);
+      expect(r.route('what do i know about Mia')?['skillId'], 'recall-facts'); // routing intact
+      expect(r.route('log a 5k run')?['skillId'], 'log-run');
+    });
+    test('partial abstraction (one slot not in the surface) is NOT learned', () {
+      final r = Router.load('data/corpus.json', _now);
+      expect(r.learn('remind me to call mom next friday', 'create-task',
+          {'description': 'call mom', 'dueDate': '2026-07-10'}), isNull);
+    });
+    test('dedupe: learning the same template shape twice returns null', () {
+      final r = Router.load('data/corpus.json', _now);
+      expect(r.learn('jot down that I need to buy milk', 'create-task', {'description': 'buy milk'}), isNotNull);
+      expect(r.learn('jot down that I need to sweep', 'create-task', {'description': 'sweep'}), isNull);
+    });
   });
 
   group('known corpus fast-path limitations (documented; cloud handles these)', () {

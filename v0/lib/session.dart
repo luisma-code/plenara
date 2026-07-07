@@ -22,6 +22,8 @@ final _harmfulRe = RegExp(
     r'|without (their|his|her) (knowledge|consent|permission)|secretly|covert'
     r'|self.?harm|hurt (myself|someone|somebody)|weapon|purg(e|ing)|restrict.{0,10}calorie',
     caseSensitive: false);
+// authored ids are model output; keep them out of file paths and odd charsets
+final _idRe = RegExp(r'^[a-z0-9_-]{1,64}$');
 
 class Session {
   final String dataDir;
@@ -67,8 +69,20 @@ class Session {
     f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(list));
   }
 
-  /// Process one utterance; returns the assistant's response text (may be multi-line).
+  /// Public entry: a catch-all boundary so NO exception (ResolveError or a raw
+  /// TypeError/RangeError from model-shaped input) ever escapes into the UI or
+  /// console. A crash becomes a visible, non-destructive message (no silent
+  /// failure, P7) rather than a bricked input box.
   Future<String> handle(String u) async {
+    try {
+      return await _handle(u.trim());
+    } catch (e) {
+      return "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
+    }
+  }
+
+  /// Process one utterance; returns the assistant's response text (may be multi-line).
+  Future<String> _handle(String u) async {
     u = u.trim();
     if (_undoRe.hasMatch(u)) {
       if (_lastBefore == null) return 'Nothing to undo.';
@@ -85,7 +99,7 @@ class Session {
         _lastBefore = null;
         pre = 'Got it — undid that. ';
       }
-      return '$pre${await handle(corr.group(1)!.trim())}';
+      return '$pre${await _handle(corr.group(1)!.trim())}';
     }
 
     final def = _defRe.firstMatch(u);
@@ -99,24 +113,39 @@ class Session {
       for (var attempt = 1; attempt <= 2; attempt++) {
         final authored = await claude.authorCapability(desc, priorError: priorError);
         if (authored == null) return "I couldn't build that right now (offline or no key).";
-        final type = (authored['type'] as Map).cast<String, dynamic>();
-        final skill = (authored['skill'] as Map).cast<String, dynamic>();
+        String? addedTypeId; // rollback removes ONLY a type we registered this attempt
         try {
-          types[type['typeId'] as String] = type;
+          final type = (authored['type'] as Map).cast<String, dynamic>();
+          final skill = (authored['skill'] as Map).cast<String, dynamic>();
+          final typeId = type['typeId'], skillId = skill['skillId'];
+          if (typeId is! String || skillId is! String) {
+            throw ResolveError('authored capability is missing a string typeId/skillId');
+          }
+          if (!_idRe.hasMatch(typeId) || !_idRe.hasMatch(skillId)) {
+            // model-controlled ids must never steer a file path or carry odd chars
+            throw ResolveError('authored id must match [a-z0-9_-] (1-64 chars)');
+          }
+          if (types.containsKey(typeId) || skills.containsKey(skillId)) {
+            // never overwrite a built-in / existing capability
+            throw ResolveError('a capability like "$skillId" already exists — nothing built');
+          }
+          interp.validateType(type);
+          types[typeId] = type;
+          addedTypeId = typeId;
           interp.validateSkill(skill);
-          skills[skill['skillId'] as String] = skill;
-          File('$dataDir/types/${type['typeId']}.json')
+          skills[skillId] = skill;
+          File('$dataDir/types/$typeId.json')
               .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(type));
-          File('$dataDir/skills/${skill['skillId']}.json')
+          File('$dataDir/skills/$skillId.json')
               .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(skill));
           await router.buildRetrievalIndex(skills);
           final eg = (skill['examplePhrases'] as List?)?.cast<String>();
-          return 'Built "${skill['displayName']}" — a new capability, authored and validated.'
+          return 'Built "${skill['displayName'] ?? skillId}" — a new capability, authored and validated.'
               '${eg != null && eg.isNotEmpty ? ' Try: "${eg.first}".' : ''}';
-        } on ResolveError catch (e) {
-          types.remove(type['typeId']);
-          priorError = e.message;
-          if (attempt == 2) return 'I drafted that but it failed validation — not registered.';
+        } catch (e) {
+          if (addedTypeId != null) types.remove(addedTypeId); // safe rollback
+          priorError = e is ResolveError ? e.message : e.toString();
+          if (attempt == 2) return 'I drafted that but it could not be validated — nothing was registered.';
         }
       }
     }
@@ -132,6 +161,11 @@ class Session {
           ? 'I don\'t have that phrasing learned — did you mean to "$name"? Say it a known way and I\'ll learn it.'
           : 'I\'m not sure what you meant — closest is "$name" ($s1), below my confidence bar, so I won\'t guess.';
     }
+    // normalize leaked sentinel slot values from any source before they reach a
+    // resolver (a replayed/live "none" for an absent date would otherwise persist
+    // as garbage; the crash it once caused is already handled in _asDate).
+    (routed['slots'] as Map?)?.updateAll(
+        (k, v) => (v is String && const {'none', 'null'}.contains(v.trim().toLowerCase())) ? null : v);
     try {
       final plan = interp.resolve(skills[routed['skillId']]!, routed['slots'], store);
       final before = interp.execute(plan, store);
