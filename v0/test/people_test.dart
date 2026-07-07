@@ -181,6 +181,23 @@ void main() {
     });
   });
 
+  group('list-relations', () {
+    test('shows a person\'s relationships with the linked contact name resolved', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle("remember that Mia loves art and she is Sarah's daughter");
+      final r = await s.handle("who are Sarah's relatives");
+      expect(r, contains('daughter'));
+      expect(r, contains('Mia')); // the `to` id resolved back to a name
+    });
+
+    test('unknown contact / a contact with no relationships', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      expect(await s.handle('who is Nobody related to'), contains("don't have"));
+      await s.handle('talked to Alex'); // a contact, but no relationships noted
+      expect(await s.handle("who are Alex's relatives"), contains('any relationships'));
+    });
+  });
+
   group('partial name matching + disambiguation (people reads)', () {
     test('a first name resolves to the full-name contact', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));

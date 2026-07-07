@@ -10,7 +10,7 @@ library;
 const residualBySkill = <String, List<String>>{
   'create-task': [
     'jot down that I need to buy milk',
-    'make a note to email the accountant',
+    'put emailing the accountant on my to-do list',
     'put picking up dry cleaning on my to-do list',
     'I have to renew the car registration, add that',
     'jot down that I need to water the plants',

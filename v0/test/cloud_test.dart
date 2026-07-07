@@ -82,7 +82,7 @@ void main() {
     test('every in-domain novel phrasing executes the right downstream write', () async {
       // create-task and log-* variants all flow route->execute with no mis-action
       for (final entry in {
-        'create-task': ('make a note to email the accountant', 'task'),
+        'create-task': ('put emailing the accountant on my to-do list', 'task'),
         'log-run': ('went for a 5k this afternoon', 'workout'),
         'log-mood': ('feeling pretty anxious today', 'mood'),
       }.entries) {
