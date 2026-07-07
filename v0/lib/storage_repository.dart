@@ -30,6 +30,11 @@ abstract interface class StorageRepository {
 
   /// Persist an authored type/skill definition file (Spec 02 §6 authoring).
   void writeDef(String subdir, String idKey, Map<String, dynamic> def);
+
+  /// Append one line to the device-local turn log (dogfood telemetry: the
+  /// instrument that measures the make-or-break metrics — clarify rate, cloud
+  /// rate, correction rate — in real use).
+  void logTurn(Map<String, dynamic> entry);
 }
 
 /// The filesystem implementation — the current per-record JSON store.
@@ -76,5 +81,10 @@ class FileStorageRepository implements StorageRepository {
   void writeDef(String subdir, String idKey, Map<String, dynamic> def) {
     File('$dataDir/$subdir/${def[idKey]}.json')
         .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(def));
+  }
+
+  @override
+  void logTurn(Map<String, dynamic> entry) {
+    File('$dataDir/turnlog.jsonl').writeAsStringSync('${jsonEncode(entry)}\n', mode: FileMode.append);
   }
 }

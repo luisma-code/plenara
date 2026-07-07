@@ -60,6 +60,8 @@ class Session {
   // the right thing: forget its template, and reverse it ONLY if it actually wrote.
   String? _lastTurnTemplate;
   bool _lastTurnWrote = false;
+  String _outSource = 'clarify'; // telemetry: how this turn resolved
+  String? _outSkill;
 
   /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart); [storage]
   /// lets them inject a repository (in-memory / test double). Production leaves both
@@ -104,11 +106,24 @@ class Session {
   /// console. A crash becomes a visible, non-destructive message (no silent
   /// failure, P7) rather than a bricked input box.
   Future<String> handle(String u) async {
+    u = u.trim();
+    _outSource = 'clarify';
+    _outSkill = null;
+    String resp;
     try {
-      return await _handle(u.trim());
+      resp = await _handle(u);
     } catch (e) {
-      return "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
+      _outSource = 'error';
+      resp = "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
     }
+    // dogfood telemetry — measures clarify/cloud/correction rates in real use
+    repo.logTurn({
+      'at': DateTime.now().toIso8601String(),
+      'utterance': u,
+      'source': _outSource,
+      if (_outSkill != null) 'skill': _outSkill,
+    });
+    return resp;
   }
 
   /// Process one utterance; returns the assistant's response text (may be multi-line).
@@ -116,6 +131,7 @@ class Session {
     u = u.trim();
     final now = this.now; // one frozen snapshot for the whole turn
     if (_undoRe.hasMatch(u)) {
+      _outSource = 'undo';
       _lastTurnTemplate = null;
       _lastTurnWrote = false; // an undo is not itself a correctable route
       if (_journal.isEmpty) return 'Nothing to undo.';
@@ -140,7 +156,9 @@ class Session {
       }
       _lastTurnTemplate = null;
       _lastTurnWrote = false;
-      return '$pre${await _handle(corr.group(1)!.trim())}';
+      final redo = await _handle(corr.group(1)!.trim());
+      _outSource = 'correction';
+      return '$pre$redo';
     }
 
     final def = _defRe.firstMatch(u);
@@ -178,6 +196,7 @@ class Session {
           repo.writeDef('types', 'typeId', type);
           repo.writeDef('skills', 'skillId', skill);
           await router.buildRetrievalIndex(skills);
+          _outSource = 'authored';
           final eg = (skill['examplePhrases'] as List?)?.cast<String>();
           return 'Built "${skill['displayName'] ?? skillId}" — a new capability, authored and validated.'
               '${eg != null && eg.isNotEmpty ? ' Try: "${eg.first}".' : ''}';
@@ -200,6 +219,8 @@ class Session {
           ? 'I don\'t have that phrasing learned — did you mean to "$name"? Say it a known way and I\'ll learn it.'
           : 'I\'m not sure what you meant — closest is "$name" ($s1), below my confidence bar, so I won\'t guess.';
     }
+    _outSource = routed['source'] as String; // telemetry: corpus | cloud
+    _outSkill = routed['skillId'] as String?;
     // normalize leaked sentinel slot values from any source before they reach a
     // resolver (a replayed/live "none" for an absent date would otherwise persist
     // as garbage; the crash it once caused is already handled in _asDate).
