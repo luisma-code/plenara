@@ -148,6 +148,7 @@ class Session {
         '• People — "remember that Mia is Sarah\'s daughter", "what do I know about Mia", "talked to Sam about the trip", "when did I last talk to Sam"',
       if (has('set-birthday'))
         '• Birthdays — "Sarah\'s birthday is july 16", "whose birthday is coming up"',
+      if (has('set-alias')) '• Nicknames — "Sarah\'s nickname is Mum", then "when did I last talk to Mum"',
       '• New trackers — "start tracking my water intake"',
     ];
     return 'Here\'s what I can do:\n${lines.join('\n')}\nAnd "undo that" reverses the last thing.';

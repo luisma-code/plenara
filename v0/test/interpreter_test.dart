@@ -170,6 +170,30 @@ void main() {
     });
   });
 
+  group('read_one — alias tier (G-24)', () {
+    String? who(String q) {
+      final store = {
+        'c1': {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sarah', 'aliases': 'Mum, the boss'},
+        'c2': {'id': 'c2', 'typeId': 'contact', 'displayName': 'Tom'},
+      };
+      final skill = {'skillId': 'x', 'steps': {'main': [
+        {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'q'}}, 'partial': true, 'into': 'p'},
+        {'op': 'branch', 'cond': {'isNull': 'p'}, 'then': [
+          {'op': 'format', 'template': 'none', 'into': 'confirmationText'}
+        ], 'else': [
+          {'op': 'set', 'var': 'w', 'value': {'field': ['p', 'displayName']}},
+          {'op': 'format', 'template': '{w}', 'into': 'confirmationText'}
+        ]}
+      ]}};
+      return _i().resolve(skill, {'q': q}, store).confirmation;
+    }
+
+    test('resolves a nickname via aliases', () => expect(who('the boss'), 'Sarah'));
+    test('resolves a comma-listed alias', () => expect(who('Mum'), 'Sarah'));
+    test('exact displayName still wins (no alias needed)', () => expect(who('Tom'), 'Tom'));
+    test('an unknown name matches nothing (no false alias hit)', () => expect(who('Nobody'), 'none'));
+  });
+
   group('format', () {
     test('renders a null/absent var as empty — never leaks a literal {var}', () {
       final skill = {

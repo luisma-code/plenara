@@ -183,6 +183,18 @@ void main() {
     });
   });
 
+  group('aliases (G-24) — resolve a person by a nickname/role', () {
+    test('set an alias, then reach the contact through it', () async {
+      final s = await _session();
+      await s.handle('i talked to Sarah about the cabin trip');
+      final ack = await s.handle("Sarah's nickname is Mum");
+      expect(ack, contains('Mum'));
+      final r = await s.handle('when did i last talk to Mum'); // "Mum" only resolves via alias
+      expect(r, isNot(contains("don't have")));
+      expect(r, contains('last talked to Mum'));
+    });
+  });
+
   group('journaling', () {
     test('log a journal entry then read it back', () async {
       final s = await _session();

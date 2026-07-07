@@ -460,6 +460,16 @@ class Interpreter {
         if (hits.isEmpty && step['partial'] == true) {
           hits = store.values.where((r) => matches(r, (rv, mv) => rv.contains(mv))).toList();
         }
+        // alias tier (G-24): a record whose comma-separated `aliases` holds the match
+        // value exactly (case-insensitive) — resolves "Mum", "my boss", "the wife".
+        if (hits.isEmpty && step['partial'] == true && match['displayName'] is String) {
+          final want = (match['displayName'] as String).toLowerCase().trim();
+          hits = store.values.where((r) {
+            if (r['typeId'] != step['typeId']) return false;
+            final a = r['aliases'];
+            return a is String && a.toLowerCase().split(',').map((s) => s.trim()).contains(want);
+          }).toList();
+        }
         if (hits.length > 1) {
           final labelField = (step['match'] as Map).keys.first as String;
           final labels = hits.map((h) => (h['displayName'] ?? h[labelField] ?? h['id']).toString()).toList();
