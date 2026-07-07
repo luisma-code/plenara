@@ -134,6 +134,18 @@ abstract class StorageRepository {
   /// re-issue idempotent (Spec 02 §4.4). If any field is sensitive and
   /// CryptoBox.keyAvailable is false, the write fails with a CryptoError
   /// surface (§5.2) rather than persisting the value in plaintext.
+  ///
+  /// **v1 ENCRYPTION POSTURE — normative until Spec 01 §8.7 ships (the deferred
+  /// feature).** While at-rest encryption is deferred, `CryptoBox` is a
+  /// PASS-THROUGH: `keyAvailable` is always true, `sensitiveFields` is recorded on
+  /// the envelope but NOT enforced, sensitive values (including the journal and
+  /// contact notes/facts, Spec 01 §12.3) persist as PLAINTEXT JSON that syncs, and
+  /// the CryptoError / `lockedRecords` / AttentionSurface-locked surfaces are
+  /// inert. The paragraph above is the contract that ACTIVATES when §8.7 is
+  /// scheduled; onboarding states the current posture honestly (§8.7). This
+  /// resolves the apparent contradiction between this section (and §3.14 /
+  /// Spec 02 §5.2) and the Spec 01 §8.7 deferral: without this note an implementer
+  /// following §3.1 literally would fail every journal/sensitive write in v1.
   Future<void> write(Record record, {Set<String> sensitiveFields = const {}});
 
   /// Delete one record (file + store), writing a tombstone so sync propagates
