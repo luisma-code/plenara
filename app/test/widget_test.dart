@@ -1,6 +1,7 @@
 // Widget smoke tests for the Plenara chat UI. Inject a Session pointed at a temp
 // data dir with an offline (null) cloud so the UI test is hermetic and writes
 // nothing to the real data folder.
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -14,6 +15,24 @@ class _NullCloud implements CloudClient {
   Future<Map<String, dynamic>?> routeResidual(String u, Map<String, Map<String, dynamic>> s) async => null;
   @override
   Future<Map<String, dynamic>?> authorCapability(String d, {String? priorError}) async => null;
+}
+
+/// A cloud whose residual routing blocks until [gate] completes — lets a test hold
+/// a turn in flight to observe the busy/disabled UI state deterministically.
+class _GatedCloud implements CloudClient {
+  final Completer<Map<String, dynamic>?> gate;
+  _GatedCloud(this.gate);
+  @override
+  Future<Map<String, dynamic>?> routeResidual(String u, Map<String, Map<String, dynamic>> s) => gate.future;
+  @override
+  Future<Map<String, dynamic>?> authorCapability(String d, {String? priorError}) async => null;
+}
+
+/// Enter text + tap Send + settle. A small helper for multi-turn tests.
+Future<void> _send(WidgetTester tester, String text) async {
+  await tester.enterText(find.byType(TextField), text);
+  await tester.tap(find.text('Send'));
+  await tester.pumpAndSettle();
 }
 
 String _base(String p) => p.replaceAll('\\', '/').split('/').last;
@@ -89,5 +108,58 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SelectableText), findsOneWidget); // only the greeting bubble
+  });
+
+  testWidgets('undo from the UI reverses the last turn', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
+    await tester.pumpAndSettle();
+
+    await _send(tester, 'add buy milk to my list');
+    expect(find.textContaining('Added'), findsOneWidget);
+
+    await _send(tester, 'undo that');
+    expect(find.textContaining('Undone'), findsOneWidget);
+  });
+
+  testWidgets('multi-turn: a task added is then shown (bulleted) by "list my tasks"', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
+    await tester.pumpAndSettle();
+
+    await _send(tester, 'add buy milk to my list');
+    await _send(tester, 'list my tasks');
+
+    expect(find.textContaining('You have 1 task'), findsOneWidget);
+    expect(find.textContaining('• buy milk'), findsOneWidget); // the rendered list block
+  });
+
+  testWidgets('an unrecognized input gets a graceful reply (no silent failure)', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
+    await tester.pumpAndSettle();
+
+    await _send(tester, 'zxcvbnm qwerty asdf');
+    expect(find.textContaining("didn't catch"), findsOneWidget);
+  });
+
+  testWidgets('the Send button disables and a progress bar shows while a turn is in flight', (tester) async {
+    final gate = Completer<Map<String, dynamic>?>();
+    final session = Session(_tempData(),
+        clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _GatedCloud(gate));
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
+    await tester.pumpAndSettle();
+
+    // an unrecognized phrase misses the corpus and reaches the (gated) cloud
+    await tester.enterText(find.byType(TextField), 'something the corpus cannot match');
+    await tester.tap(find.text('Send'));
+    await tester.pump(); // process setState(busy=true); the turn is now stuck on the gate
+
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Send')).onPressed, isNull);
+
+    gate.complete(null); // release the turn -> clarify
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Send')).onPressed, isNotNull);
+    expect(find.textContaining("didn't catch"), findsOneWidget);
   });
 }
