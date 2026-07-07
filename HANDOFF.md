@@ -21,10 +21,11 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `46d15a5`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `f9e2695`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1238 Dart tests + 8 Flutter widget tests green** (30 skills, 9 types; DSL now has
-ordering/limit/filter-ops + aggregation/date-math), `dart analyze` clean,
+**1248 Dart tests + 8 Flutter widget tests green** (31 skills, 9 types; DSL now has
+ordering/limit/filter-ops + aggregation/date-math; ProvideSlot slot-filling; alias
+resolution), `dart analyze` clean,
 **`flutter build windows --debug` succeeds**. `DOGFOOD.md` refreshed for tonight.
 
 **Working-mode enforcement (new):** a user-level **Stop hook**
@@ -42,14 +43,16 @@ ContentSearch) and the conversational NLU seams (slot-fill, alias, anaphora, OOD
 unbuilt, and the DSL was thinner than the spec's own §9.2 seed skills. This is weeks of
 build, NOT "mostly done." **Ranked top-10 (see "Spec-conformance program" section):**
 1 DSL query+compute fidelity ✅ DONE (`8cc36ed`); 2 ProvideSlot slot-filling dialogue
-(§6.3 G-16); 3 tracker templates + free instantiate (§12.4 G-22, also fixes the
-free→paid misroute defect); 4 alias/role/group person resolution (§6.1 G-24); 5
-correction robustness update-vs-reverse (§3.3 F-14/15); 6 GenerativeService + gift_ideas
-/briefing (§3.10); 7 authoring preview→refine→activate + reconcile + pin Opus + structured
-output (§6 G-18/29); 8 recurrence RRULE + record-anchored dates (§6.2 G-14/15); 9 safety
-Layer-2/3 + record-integrity (§7.6 G-30 DP-05); 10 records-vs-OOD boundary (§7.2 G-19).
-Work them in order; each is a committed increment. Also-done this session: 2 correctness
-defects (`c29732c` safety-bypass + format-leak), journaling/F-11, streaks/G-21.
+✅ DONE (`619f07c`); 3 tracker templates + free instantiate (§12.4 G-22) — free→paid
+misroute slice ✅ DONE (`f9e2695`, built-in recognizer); instantiating NEW built-in
+types from a template library REMAINS; 4 alias/role/group person resolution ✅ DONE
+(`f3a396f`); **5 correction robustness update-vs-reverse (§3.3 F-14/15) ← NEXT**; 6
+GenerativeService + gift_ideas/briefing (§3.10); 7 authoring preview→refine→activate +
+reconcile + pin Opus + structured output (§6 G-18/29); 8 recurrence RRULE + record-anchored
+dates (§6.2 G-14/15); 9 safety Layer-2/3 + record-integrity (§7.6 G-30 DP-05); 10
+records-vs-OOD boundary (§7.2 G-19). Work them in order; each is a committed increment.
+Also-done this session: all 3 correctness defects (`c29732c` safety-bypass + format-leak,
+`f9e2695` free→paid), journaling/F-11, streaks/G-21, total-distance (aggregation demo).
 (Blocked/deferred, do NOT pick: native toast/ATL, voice, CRDT merge engine, persisted
 journal, presentation archetypes, at-rest encryption, per-device corpus.)
 
@@ -207,8 +210,10 @@ config (5), hardening (~20).
   bypass: `_defRe` missed "build me a" so DP-01/DP-08 skipped the §7.6 floor; format
   leaked `{var}` on null — both fixed `c29732c`), and **DSL query+compute fidelity**
   (`8cc36ed`: read_many orderBy/limit + full filter ops; compute sum/avg/min/max/
-  count_where/days_between/add_days/if) + total-distance demonstrating it. **Next: item 2
-  (ProvideSlot slot-filling dialogue) — the biggest conversational gap.**
+  count_where/days_between/add_days/if) + total-distance demonstrating it; then item 2
+  ProvideSlot (`619f07c`, resumable missing-slot dialogue), item 4 aliases (`f3a396f`,
+  "Mum"/"the boss" → contact via a new alias tier in read_one), and the free→paid slice
+  of item 3 (`f9e2695`). **Next: item 5 — correction robustness (F-14/F-15).**
 - **More depth + real bug fixes (done, `02f4388` … `6a17c15`):** reschedule-reminder
   (snooze) — which exposed and FIXED a `reconcileReminders` time-change bug (armed()
   now returns ref→time so a rescheduled reminder re-arms); reschedule-task;
