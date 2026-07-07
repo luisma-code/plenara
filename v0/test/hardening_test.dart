@@ -108,6 +108,18 @@ void main() {
         expect(await s.handle(u), contains("won't create tools"));
       });
     }
+    // a tracker the app ALREADY ships routes to it for free — never to paid authoring
+    test('"start tracking my runs" points to the built-in, no cloud call', () async {
+      final s = await _session(_ScriptCloud());
+      final r = await s.handle('start tracking my runs');
+      expect(r.toLowerCase(), contains('already'));
+      expect(r, contains('log a 3k run'));
+    });
+    test('a third-party tracker ("my daughter\'s mood") still goes to authoring', () async {
+      final s = await _session(_ScriptCloud()); // author returns null -> "couldn't build"
+      final r = await s.handle("start tracking my daughter's mood");
+      expect(r.toLowerCase(), isNot(contains('already'))); // not short-circuited as a built-in
+    });
     // must NOT block (benign, merely-sensitive topic) — the flagship parenting use
     for (final u in const [
       "start tracking my daughter's mood",

@@ -20,6 +20,21 @@ final _helpRe = RegExp(
 final _corrRe = RegExp(r'^(?:no,?|actually,?|nope,?)\s+i meant (?:to |it was )?(.+?)\.?$', caseSensitive: false);
 // abandons a pending slot-fill dialogue (Spec 03 §6.3 ProvideSlot)
 final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
+// A tracker the app ALREADY ships — "start tracking my runs" should use it for FREE,
+// not pay Haiku to author a duplicate type (Spec 05 §3.7; the free→paid misroute). Kept
+// deliberately narrow: only unambiguous SELF trackers, and skipped entirely when a
+// third-party possessive is present ("my daughter's mood" is a genuinely new capability).
+final _thirdPartyRe = RegExp(
+    r"\b(daughter|son|kid|kids|child|children|wife|husband|partner|mom|mum|dad|friend|colleague|coworker|team)('s|s')?\b",
+    caseSensitive: false);
+// Anchored to the WHOLE description so only a BARE built-in matches ("runs", "my
+// journal") — a qualified variant ("daily gratitude journal") is a new structured type
+// and correctly falls through to authoring.
+const _builtinTrackers = <String, String>{
+  r'^(my )?(runs?|running|jogs?|jogging)$': 'log a 3k run',
+  r'^(my )?(journal|diary)$': 'journal that today was a good day',
+  r'^(my )?(moods?|feelings?)$': 'log your mood, e.g. "I\'m feeling great"',
+};
 final _defRe = RegExp(
     r'^(?:start tracking|track|i want to track|i want to start tracking|make me a|create a|'
     r'build me a|build a|set up a|set me up a) '
@@ -306,6 +321,15 @@ class Session {
       if (_harmfulRe.hasMatch('$desc $u')) {
         return "I can't build that — it could monitor someone without consent or cause harm, "
             "and I won't create tools for that.";
+      }
+      // Already ships? Point to it for free instead of authoring a duplicate (no cloud).
+      if (!_thirdPartyRe.hasMatch(desc)) {
+        for (final e in _builtinTrackers.entries) {
+          if (RegExp(e.key, caseSensitive: false).hasMatch(desc)) {
+            _outSource = 'builtin-tracker';
+            return 'You can already track that — try "${e.value}". No need to build a new one.';
+          }
+        }
       }
       String? priorError;
       for (var attempt = 1; attempt <= 2; attempt++) {
