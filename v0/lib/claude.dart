@@ -12,8 +12,12 @@ String? apiKey() {
   final env = Platform.environment['ANTHROPIC_API_KEY'];
   if (env != null && env.isNotEmpty) return env.trim();
   // v0 dev convenience: read the BYOK key from the rig's gitignored .env
-  final f = File('../planning/specs/05a-rig/.env');
-  if (f.existsSync()) {
+  for (final p in const [
+    '../planning/specs/05a-rig/.env',
+    r'Z:\code\plenara\planning\specs\05a-rig\.env', // absolute fallback (UI runs from a build dir)
+  ]) {
+    final f = File(p);
+    if (!f.existsSync()) continue;
     for (final line in f.readAsLinesSync()) {
       if (line.startsWith('ANTHROPIC_API_KEY')) {
         return line.split('=')[1].trim().replaceAll('"', '').replaceAll("'", '');
