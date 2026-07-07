@@ -1,0 +1,10 @@
+{
+  "typeId": "interaction",
+  "displayName": "Interaction",
+  "parentType": "contact",
+  "attributes": [
+    { "name": "subject", "valueType": "entityRef", "refType": "contact", "required": true },
+    { "name": "note", "valueType": "text", "required": false },
+    { "name": "at", "valueType": "date", "required": true }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "skillId": "log-interaction",
+  "displayName": "Log talking to or seeing someone",
+  "reads": [
+    "contact"
+  ],
+  "writes": [
+    "contact",
+    "interaction"
+  ],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "note", "required": false }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          {
+            "op": "write_record",
+            "typeId": "contact",
+            "fields": { "displayName": { "var": "personName" } },
+            "into": "person"
+          }
+        ]
+      },
+      {
+        "op": "compute",
+        "fn": "today",
+        "into": "at"
+      },
+      {
+        "op": "write_record",
+        "typeId": "interaction",
+        "fields": {
+          "subject": { "ref": "person" },
+          "note": { "var": "note" },
+          "at": { "var": "at" }
+        },
+        "into": "newInteraction"
+      },
+      {
+        "op": "format",
+        "template": "Logged that you talked to {personName}.",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

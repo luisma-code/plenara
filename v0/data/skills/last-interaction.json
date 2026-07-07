@@ -1,0 +1,91 @@
+{
+  "skillId": "last-interaction",
+  "displayName": "When you last talked to someone",
+  "reads": [
+    "contact",
+    "interaction"
+  ],
+  "writes": [],
+  "inputs": [
+    { "name": "personName", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          {
+            "op": "format",
+            "template": "I don't have {personName} as a contact yet.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "read_related",
+            "typeId": "interaction",
+            "via": "subject",
+            "from": { "ref": "person" },
+            "into": "ints"
+          },
+          {
+            "op": "set",
+            "var": "latest",
+            "value": ""
+          },
+          {
+            "op": "foreach",
+            "list": { "var": "ints" },
+            "as": "i",
+            "body": [
+              {
+                "op": "branch",
+                "cond": { "gte": [ { "field": [ "i", "at" ] }, { "var": "latest" } ] },
+                "then": [
+                  { "op": "set", "var": "latest", "value": { "field": [ "i", "at" ] } }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "compute",
+            "fn": "count",
+            "args": [ { "var": "ints" } ],
+            "into": "n"
+          },
+          {
+            "op": "branch",
+            "cond": { "gte": [ { "var": "n" }, 1 ] },
+            "then": [
+              {
+                "op": "compute",
+                "fn": "format_date",
+                "args": [ { "var": "latest" }, "EEEE" ],
+                "into": "dayLabel"
+              },
+              {
+                "op": "format",
+                "template": "You last talked to {personName} on {latest} ({dayLabel}).",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "You haven't logged talking to {personName} yet.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
