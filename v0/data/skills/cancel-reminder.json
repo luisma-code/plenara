@@ -1,0 +1,45 @@
+{
+  "skillId": "cancel-reminder",
+  "displayName": "Cancel a reminder",
+  "reads": [
+    "reminder"
+  ],
+  "writes": [
+    "reminder"
+  ],
+  "inputs": [
+    { "name": "text", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "reminder",
+        "match": { "text": { "var": "text" } },
+        "into": "r"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "r" },
+        "then": [
+          {
+            "op": "format",
+            "template": "I couldn't find a reminder to \"{text}\".",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "delete_record",
+            "id": { "ref": "r" }
+          },
+          {
+            "op": "format",
+            "template": "Cancelled the reminder to \"{text}\".",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}

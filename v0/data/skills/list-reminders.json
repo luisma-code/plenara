@@ -1,0 +1,68 @@
+{
+  "skillId": "list-reminders",
+  "displayName": "List your reminders",
+  "reads": [
+    "reminder"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "reminder",
+        "filter": { "field": "done", "op": "eq", "value": false },
+        "into": "rems"
+      },
+      {
+        "op": "set",
+        "var": "lines",
+        "value": ""
+      },
+      {
+        "op": "foreach",
+        "list": { "var": "rems" },
+        "as": "r",
+        "body": [
+          {
+            "op": "compute",
+            "fn": "format_date",
+            "args": [ { "field": [ "r", "remindAt" ] }, "EEEE" ],
+            "into": "d"
+          },
+          {
+            "op": "compute",
+            "fn": "format_time",
+            "args": [ { "field": [ "r", "remindAt" ] } ],
+            "into": "tm"
+          },
+          {
+            "op": "compute",
+            "fn": "concat",
+            "args": [
+              { "var": "lines" },
+              "\n  • ",
+              { "field": [ "r", "text" ] },
+              " — ",
+              { "var": "d" },
+              " at ",
+              { "var": "tm" }
+            ],
+            "into": "lines"
+          }
+        ]
+      },
+      {
+        "op": "compute",
+        "fn": "count",
+        "args": [ { "var": "rems" } ],
+        "into": "n"
+      },
+      {
+        "op": "format",
+        "template": "You have {n} reminder(s):{lines}",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

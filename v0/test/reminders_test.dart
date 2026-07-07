@@ -146,6 +146,46 @@ void main() {
     });
   });
 
+  group('reminder management (list / complete / cancel)', () {
+    test('completing a reminder cancels its armed toast (reconcile derives it away)', () async {
+      final fake = FakeScheduler();
+      final s = await _open(makeTempDataDir(), fake);
+      await s.handle('remind me to call mom on thursday at 5pm');
+      expect(fake.armed().length, 1);
+      final r = await s.handle('mark the reminder to call mom done');
+      expect(r.toLowerCase(), contains('done'));
+      expect(fake.armed(), isEmpty); // done -> no longer desired -> cancelled
+    });
+
+    test('cancelling a reminder deletes it and cancels the toast', () async {
+      final fake = FakeScheduler();
+      final s = await _open(makeTempDataDir(), fake);
+      await s.handle('remind me to call mom on thursday at 5pm');
+      final r = await s.handle('cancel the reminder to call mom');
+      expect(r.toLowerCase(), contains('cancel'));
+      expect(fake.armed(), isEmpty);
+      expect(s.store.values.where((x) => x['typeId'] == 'reminder'), isEmpty);
+    });
+
+    test('list-reminders shows active reminders and excludes completed ones', () async {
+      final s = await _open(makeTempDataDir(), FakeScheduler());
+      await s.handle('remind me to call mom on thursday at 5pm');
+      await s.handle('remind me to book the dentist on friday at 10am');
+      await s.handle('mark the reminder to call mom done');
+      final r = await s.handle('what are my reminders');
+      expect(r, contains('1 reminder'));
+      expect(r, contains('book the dentist'));
+      expect(r, contains('Friday at 10:00 AM'));
+      expect(r.contains('call mom'), isFalse); // completed -> excluded from the list
+    });
+
+    test('completing/cancelling an unknown reminder is a clear no-op', () async {
+      final s = await _open(makeTempDataDir(), FakeScheduler());
+      expect(await s.handle('mark the reminder to walk the dog done'), contains("couldn't find"));
+      expect(await s.handle('cancel the reminder to walk the dog'), contains("couldn't find"));
+    });
+  });
+
   group('graceful missing-time (no silent failure)', () {
     test('a reminder intent without a time asks when, writes nothing, arms nothing', () async {
       final fake = FakeScheduler();

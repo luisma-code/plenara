@@ -322,4 +322,23 @@ void main() {
       expect(r?['slots']['dueDate'], '2026-07-10');
     });
   });
+
+  group('reminder management routing (wins over task ops on overlap)', () {
+    test('"what are my reminders" -> list-reminders (not list-tasks)', () {
+      expect(_r.route('what are my reminders')?['skillId'], 'list-reminders');
+    });
+    test('"mark the reminder to X done" -> complete-reminder (not complete-task)', () {
+      final r = _r.route('mark the reminder to call mom done');
+      expect(r?['skillId'], 'complete-reminder');
+      expect(r?['slots']['text'], 'call mom');
+    });
+    test('"cancel the reminder to X" -> cancel-reminder', () {
+      final r = _r.route('cancel the reminder to call mom');
+      expect(r?['skillId'], 'cancel-reminder');
+      expect(r?['slots']['text'], 'call mom');
+    });
+    test('"forget the reminder to X" -> cancel-reminder', () {
+      expect(_r.route('forget the reminder to water the plants')?['skillId'], 'cancel-reminder');
+    });
+  });
 }
