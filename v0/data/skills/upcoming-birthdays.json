@@ -1,0 +1,95 @@
+{
+  "skillId": "upcoming-birthdays",
+  "displayName": "Upcoming birthdays",
+  "reads": [
+    "contact"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "contact",
+        "into": "contacts"
+      },
+      { "op": "set", "var": "lines", "value": "" },
+      { "op": "set", "var": "count", "value": 0 },
+      {
+        "op": "foreach",
+        "list": { "var": "contacts" },
+        "as": "c",
+        "body": [
+          {
+            "op": "set",
+            "var": "bd",
+            "value": { "field": [ "c", "birthday" ] }
+          },
+          {
+            "op": "branch",
+            "cond": { "notNull": "bd" },
+            "then": [
+              {
+                "op": "compute",
+                "fn": "days_until_annual",
+                "args": [ { "var": "bd" } ],
+                "into": "days"
+              },
+              {
+                "op": "branch",
+                "cond": { "gte": [ 30, { "var": "days" } ] },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "next_annual",
+                    "args": [ { "var": "bd" } ],
+                    "into": "next"
+                  },
+                  {
+                    "op": "compute",
+                    "fn": "concat",
+                    "args": [
+                      { "var": "lines" },
+                      "\n  • ",
+                      { "field": [ "c", "displayName" ] },
+                      " — ",
+                      { "var": "next" },
+                      " (in ",
+                      { "var": "days" },
+                      " days)"
+                    ],
+                    "into": "lines"
+                  },
+                  {
+                    "op": "compute",
+                    "fn": "add",
+                    "args": [ { "var": "count" }, 1 ],
+                    "into": "count"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "count" }, 1 ] },
+        "then": [
+          {
+            "op": "format",
+            "template": "Birthdays in the next 30 days:{lines}",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "format",
+            "template": "No birthdays coming up in the next 30 days.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}

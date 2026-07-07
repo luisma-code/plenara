@@ -31,6 +31,10 @@ const _dateCases = <List<String>>[
   ['sunday', '2026-07-12'],
   ['on thursday', '2026-07-09'], ['next tuesday', '2026-07-07'], ['next monday', '2026-07-13'],
   ['2026-12-25', '2026-12-25'], ['2027-01-01', '2027-01-01'],
+  // month-name dates (current year; birthday skills roll to the next occurrence)
+  ['march 3', '2026-03-03'], ['mar 3rd', '2026-03-03'], ['on july 12', '2026-07-12'],
+  ['december 25', '2026-12-25'], ['3 march', '2026-03-03'], ['the 3rd of december', '2026-12-03'],
+  ['sept 9', '2026-09-09'],
 ];
 
 void main() {

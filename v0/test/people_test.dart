@@ -76,6 +76,58 @@ void main() {
     });
   });
 
+  group('birthdays', () {
+    test('set-birthday creates a contact with the birthday (month-name date)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      final r = await s.handle("Sarah's birthday is july 16");
+      expect(r, contains('Sarah'));
+      final c = s.store.values.where((x) => x['typeId'] == 'contact').toList();
+      expect(c.length, 1);
+      expect(c.single['birthday'], '2026-07-16');
+    });
+
+    test('set-birthday updates an existing contact without duplicating', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Sarah'); // creates the contact
+      await s.handle("set Sarah's birthday to march 3");
+      final c = s.store.values.where((x) => x['typeId'] == 'contact').toList();
+      expect(c.length, 1); // no duplicate
+      expect(c.single['birthday'], '2026-03-03');
+    });
+
+    test('when-birthday reports the next occurrence + days away', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle("Sarah's birthday is july 16");
+      final r = await s.handle("when is Sarah's birthday");
+      expect(r, contains('2026-07-16'));
+      expect(r, contains('Thursday'));
+      expect(r, contains('in 10 days'));
+    });
+
+    test('when-birthday: unknown contact / no birthday set', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      expect(await s.handle("when is Nobody's birthday"), contains("don't have"));
+      await s.handle('talked to Amir');
+      expect(await s.handle("when is Amir's birthday"), contains("don't know"));
+    });
+
+    test('upcoming-birthdays lists within 30 days and excludes far-off ones', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle("Sarah's birthday is july 16"); // in 10 days
+      await s.handle("Mia's birthday is december 25"); // far off
+      final r = await s.handle('whose birthday is coming up');
+      expect(r, contains('Sarah'));
+      expect(r, contains('in 10 days'));
+      expect(r.contains('Mia'), isFalse);
+    });
+
+    test('upcoming-birthdays: none coming up', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle("Mia's birthday is december 25");
+      expect(await s.handle('any birthdays coming up'), contains('No birthdays'));
+    });
+  });
+
   group('people-loop routing', () {
     test('"talked to X about Y" -> log-interaction with a note', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));

@@ -1,0 +1,75 @@
+{
+  "skillId": "when-birthday",
+  "displayName": "When is someone's birthday",
+  "reads": [
+    "contact"
+  ],
+  "writes": [],
+  "inputs": [
+    { "name": "personName", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          {
+            "op": "format",
+            "template": "I don't have {personName} as a contact yet.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "set",
+            "var": "bd",
+            "value": { "field": [ "person", "birthday" ] }
+          },
+          {
+            "op": "branch",
+            "cond": { "isNull": "bd" },
+            "then": [
+              {
+                "op": "format",
+                "template": "I don't know {personName}'s birthday yet.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "compute",
+                "fn": "next_annual",
+                "args": [ { "var": "bd" } ],
+                "into": "next"
+              },
+              {
+                "op": "compute",
+                "fn": "days_until_annual",
+                "args": [ { "var": "bd" } ],
+                "into": "days"
+              },
+              {
+                "op": "compute",
+                "fn": "format_date",
+                "args": [ { "var": "next" }, "EEEE" ],
+                "into": "dayLabel"
+              },
+              {
+                "op": "format",
+                "template": "{personName}'s birthday is {next} ({dayLabel}) — in {days} days.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

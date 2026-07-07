@@ -238,6 +238,27 @@ class Router {
       return iso(now.add(Duration(days: delta)));
     }
     if (RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(p)) return p.substring(0, 10);
+    // month-name dates (for birthdays etc.): "march 3", "mar 3rd", "on july 12",
+    // "3 march", "the 3rd of december". Resolved in the current year — callers that
+    // care about the next annual occurrence (birthdays) roll it forward themselves.
+    int monthOf(String tok) {
+      const abbr = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      return abbr.indexOf(tok.length >= 3 ? tok.substring(0, 3) : tok) + 1; // 0 = not a month
+    }
+    String? fromMonthDay(int mm, int dd) =>
+        (mm > 0 && dd >= 1 && dd <= 31) ? iso(DateTime(now.year, mm, dd)) : null;
+    // "march 3", "mar 3rd", "on july 12"  (month then day)
+    final m1 = RegExp(r'^(?:on\s+)?([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?$').firstMatch(p);
+    if (m1 != null) {
+      final r = fromMonthDay(monthOf(m1.group(1)!), int.parse(m1.group(2)!));
+      if (r != null) return r;
+    }
+    // "3 march", "the 3rd of december"  (day then month)
+    final m2 = RegExp(r'^(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]{3,9})$').firstMatch(p);
+    if (m2 != null) {
+      final r = fromMonthDay(monthOf(m2.group(2)!), int.parse(m2.group(1)!));
+      if (r != null) return r;
+    }
     return null;
   }
 

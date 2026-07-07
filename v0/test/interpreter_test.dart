@@ -43,6 +43,14 @@ void main() {
     test('format_time midnight -> 12 AM', () => expect(_i().compute('format_time', ['2026-07-09T00:00:00'], {}), '12:00 AM'));
     test('format_time morning -> AM', () => expect(_i().compute('format_time', ['2026-07-09T09:30:00'], {}), '9:30 AM'));
     test('format_time null -> null', () => expect(_i().compute('format_time', [null], {}), isNull));
+    // clock is Monday 2026-07-06 (see _i())
+    test('next_annual later this year', () => expect(_i().compute('next_annual', ['2020-12-25'], {}), '2026-12-25'));
+    test('next_annual already passed -> next year', () => expect(_i().compute('next_annual', ['1990-03-03'], {}), '2027-03-03'));
+    test('next_annual today -> today', () => expect(_i().compute('next_annual', ['1990-07-06'], {}), '2026-07-06'));
+    test('days_until_annual future', () => expect(_i().compute('days_until_annual', ['2000-07-16'], {}), 10));
+    test('days_until_annual today -> 0', () => expect(_i().compute('days_until_annual', ['2000-07-06'], {}), 0));
+    test('days_until_annual passed -> rolls to next year', () => expect(_i().compute('days_until_annual', ['2000-07-05'], {}), 364));
+    test('next_annual null -> null', () => expect(_i().compute('next_annual', [null], {}), isNull));
     test('start_of_week(Wed) -> Monday', () => expect(_i().compute('start_of_week', ['2026-07-08'], {}), '2026-07-06'));
     test('start_of_week(Sun) -> Monday', () => expect(_i().compute('start_of_week', ['2026-07-12'], {}), '2026-07-06'));
     test('start_of_week(Mon) -> same', () => expect(_i().compute('start_of_week', ['2026-07-06'], {}), '2026-07-06'));
