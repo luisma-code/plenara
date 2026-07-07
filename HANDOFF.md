@@ -6,16 +6,17 @@ _Last updated: 2026-07-07. Written to survive a Claude process relaunch._
 
 The **v0 engine is complete and heavily tested**; the **Windows desktop app is
 dogfood-ready** (runs on a user-chosen synced folder + BYOK key). Latest session
-shipped **F2: reminders + notifications behind a `NotificationScheduler` seam**
-(the retention hook). **HEAD = `4d30b68`**, working tree clean (ignore the
+shipped **F2: reminders + notifications** end-to-end (set / list / complete /
+cancel, on-open nudges, behind a `NotificationScheduler` seam — the retention hook).
+**HEAD = `0fddb86`**, working tree clean (ignore the
 pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
-`.claude/settings.local.json`), **1049 Dart tests + 3 Flutter widget tests green**,
+`.claude/settings.local.json`), **1057 Dart tests + 3 Flutter widget tests green**,
 `dart analyze` clean.
 
 **The immediate next task:** deepen the **people loop** (Fable priority #3) —
-log-interaction, "when did I last talk to X", birthdays — OR round out reminder
-management (list/complete/cancel-reminder skills). Both reuse the existing seams.
-See "Next task" below.
+log-interaction, "when did I last talk to X", birthdays. Reuses `read_related`
+(contact ← interactions). See "Next task" below. (Reminder management — list /
+complete / cancel — is DONE this session.)
 
 **One blocker for Luis (needs admin):** the native Windows toast for reminders
 needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
@@ -147,9 +148,9 @@ The bundle is intentionally secret-free; keep it that way.
   derive/reconcile (armed set DERIVED from the record store; idempotent). Session
   reconciles on init + every turn and exposes `pendingNudges()`.
 
-**`v0/data/`** — 7 types, **10 skills** (create/list/complete/delete-task, log-run,
-log-mood, count-runs-this-week, remember-person-fact, recall-facts, **set-reminder**),
-corpus.json.
+**`v0/data/`** — 7 types, **13 skills** (create/list/complete/delete-task, log-run,
+log-mood, count-runs-this-week, remember-person-fact, recall-facts, **set/list/
+complete/cancel-reminder**), corpus.json.
 **`v0/bin/plenara.dart`** — console (REPL / `--demo` / one-shot) over the same Session.
 **`app/`** — Flutter Windows chat UI; `buildSession()` from config; 2 widget tests.
 
@@ -187,17 +188,15 @@ config (5), hardening (~20).
 
 ## Next task (build this, test-first)
 
-**F2 reminders is DONE.** Pick the next increment (both reuse existing seams):
+**F2 reminders is DONE** (set / list / complete / cancel / nudges / seam). Next:
 
-**Option A — round out reminder management** (tight completion of F2):
-- `list-reminders` ("what are my reminders"), `complete-reminder` ("I called mom",
-  sets `done:true` → reconcile cancels the toast), `cancel-reminder` ("cancel the
-  reminder to call mom" → delete_record). Corpus templates + product tests. The
-  reconcile + nudge machinery already handles the notification side.
-
-**Option B — deepen the people loop (Fable #3):**
+**Deepen the people loop (Fable #3):**
 - log-interaction ("talked to Sarah today"), "when did I last talk to X", birthdays.
   New `interaction` type + skills; reuses `read_related` (contact ← interactions).
+- Note: adding skills grows the capability inventory → the cloud cassette's `invSig`
+  keys change → **re-record** `test/fixtures/cloud.json` (`dart run bin/record_fixtures.dart`,
+  needs the BYOK key in the rig `.env`). Routing stayed stable across the two
+  re-records this session; check the printed routes for shifts anyway.
 
 **Reminder architecture already in place (reuse it):** `v0/lib/reminders.dart`
 holds the `NotificationScheduler` seam + `FakeScheduler` + the pure derive/reconcile
