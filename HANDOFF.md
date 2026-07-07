@@ -11,17 +11,19 @@ shipped **F2 reminders**, the **people loop** (Fable #3), **on-open nudges** (Fa
 cloud seam now returns typed results (Ok/abstain vs named CloudError kinds); Session
 surfaces honest failure reasons + logs cloud health per turn; cloud date/datetime
 slots are normalized (no midnight/dropped reminders); the machine-specific `.env`
-fallback is gone from the app path. **HEAD = `072586e`**, working tree clean (ignore
-the pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
-`.claude/settings.local.json`), **1174 Dart tests + 8 Flutter widget tests green**,
-`dart analyze` clean, **`flutter build windows --debug` succeeds**.
+fallback is gone from the app path. **Phase 2a (discoverability + turnlog report) is
+also DONE.** **HEAD = `949f501`**, working tree clean (ignore the pre-existing dirty
+`planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
+**1178 Dart tests + 8 Flutter widget tests green**, `dart analyze` clean,
+**`flutter build windows --debug` succeeds**.
 
-**The immediate next task:** Fable's **Phase 2** — daily-driver conversation polish
-(pure Dart, only the one new skill needs a re-record): (1) `read_one` ambiguity ("two
-Sams") → a one-turn clarify DIALOGUE instead of a raw `ResolveError` string; (2)
-humanize remaining `ResolveError` surfaces; (3) a "what can you do" discoverability
-skill (renders each skill's displayName + examplePhrases); (4) a `bin/turnlog_report.dart`
-so skill choices become measurement-driven. See "Next task".
+**The immediate next task:** the remaining Phase 2 item — **partial-name matching +
+disambiguation**. Today `read_one` is exact-match + find-or-create deduped, so "what do
+I know about Sam" misses two full-name "Sam …" contacts entirely (and Fable's ambiguity
+dialogue is unreachable without this). Add substring/prefix name matching to `read_one`
+and, when >1 matches, surface a clarify listing the candidates (carry candidate labels
+out of `interpreter.dart` on the ambiguity). Then Phase 3 is TONIGHT (post-reconfig):
+the real notification toast (ATL) + the voice spike. See "Next task".
 
 **One blocker for Luis (needs admin):** the native Windows toast for reminders
 needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
@@ -169,6 +171,10 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **Phase 2a: discoverability + turnlog report (done, `949f501`):** "what can you do"
+  is a Session special-case (no re-record) rendering a capability-grounded, per-skill-
+  gated overview; `bin/turnlog_report.dart` + `lib/turnlog.dart` aggregate source
+  distribution, cloud health, top skills, and the make-or-break clarify rate.
 - **Phase 1: typed CloudResult (done, `072586e`):** `CloudResult` sealed type
   (`CloudOk`/`CloudError` + `CloudErrorKind`) replaces `Map?`/null at the cloud seam;
   `_message` maps every HTTP/parse outcome to a kind (never throws); Session names the
