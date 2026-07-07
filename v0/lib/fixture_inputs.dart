@@ -13,7 +13,7 @@ const residualBySkill = <String, List<String>>{
     'make a note to email the accountant',
     'put picking up dry cleaning on my to-do list',
     'I have to renew the car registration, add that',
-    "don't let me forget to call the dentist",
+    'jot down that I need to water the plants',
     'stick booking flights on my list',
   ],
   'log-run': [

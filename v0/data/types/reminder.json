@@ -1,0 +1,10 @@
+{
+  "typeId": "reminder",
+  "displayName": "Reminder",
+  "attributes": [
+    { "name": "text", "valueType": "text", "required": true },
+    { "name": "remindAt", "valueType": "datetime", "required": true },
+    { "name": "createdAt", "valueType": "datetime", "required": true },
+    { "name": "done", "valueType": "boolean", "required": false, "default": false }
+  ]
+}

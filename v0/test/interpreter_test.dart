@@ -38,6 +38,11 @@ void main() {
     test('format_date EEEE -> weekday', () => expect(_i().compute('format_date', ['2026-07-09', 'EEEE'], {}), 'Thursday'));
     test('format_date other -> date only', () => expect(_i().compute('format_date', ['2026-07-09', 'y'], {}), '2026-07-09'));
     test('format_date null -> null', () => expect(_i().compute('format_date', [null, 'EEEE'], {}), isNull));
+    test('format_time afternoon -> 12h clock', () => expect(_i().compute('format_time', ['2026-07-09T17:05:00'], {}), '5:05 PM'));
+    test('format_time noon -> 12 PM', () => expect(_i().compute('format_time', ['2026-07-09T12:00:00'], {}), '12:00 PM'));
+    test('format_time midnight -> 12 AM', () => expect(_i().compute('format_time', ['2026-07-09T00:00:00'], {}), '12:00 AM'));
+    test('format_time morning -> AM', () => expect(_i().compute('format_time', ['2026-07-09T09:30:00'], {}), '9:30 AM'));
+    test('format_time null -> null', () => expect(_i().compute('format_time', [null], {}), isNull));
     test('start_of_week(Wed) -> Monday', () => expect(_i().compute('start_of_week', ['2026-07-08'], {}), '2026-07-06'));
     test('start_of_week(Sun) -> Monday', () => expect(_i().compute('start_of_week', ['2026-07-12'], {}), '2026-07-06'));
     test('start_of_week(Mon) -> same', () => expect(_i().compute('start_of_week', ['2026-07-06'], {}), '2026-07-06'));

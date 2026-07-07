@@ -2,7 +2,6 @@
 /// built-ins or traverse the filesystem, malformed/throwing cloud output can't
 /// crash the turn, and a leaked "none" slot no longer RangeErrors.
 import 'package:plenara/claude.dart';
-import 'package:plenara/replay_cloud.dart';
 import 'package:plenara/session.dart';
 import 'package:test/test.dart';
 
@@ -10,13 +9,15 @@ import 'helpers.dart';
 
 final _now = DateTime.parse('2026-07-06T09:00:00');
 
-/// Cloud stub returning a scripted authoring response (or throwing).
+/// Cloud stub returning a scripted authoring response (or throwing), and an
+/// optional scripted residual route (to inject a leaked-"none" slot deterministically).
 class _ScriptCloud implements CloudClient {
   final Map<String, dynamic>? authorResult;
+  final Map<String, dynamic>? routeResult;
   final bool throwOnAuthor;
-  _ScriptCloud({this.authorResult, this.throwOnAuthor = false});
+  _ScriptCloud({this.authorResult, this.routeResult, this.throwOnAuthor = false});
   @override
-  Future<Map<String, dynamic>?> routeResidual(String u, Map<String, Map<String, dynamic>> s) async => null;
+  Future<Map<String, dynamic>?> routeResidual(String u, Map<String, Map<String, dynamic>> s) async => routeResult;
   @override
   Future<Map<String, dynamic>?> authorCapability(String d, {String? priorError}) async {
     if (throwOnAuthor) throw StateError('boom');
@@ -118,9 +119,15 @@ void main() {
 
   group('cloud slot sanitization — the committed "none" crash', () {
     test('a leaked "none" dueDate no longer crashes the turn', () async {
-      final s = Session(makeTempDataDir(), clock: _now, cloud: ReplayCloud.load('test/fixtures/cloud.json'));
-      await s.init(retrieval: false);
-      // this fixture recorded dueDate:"none"; pre-fix it RangeError'd out of handle
+      // A cloud route that leaks the literal "none" for the absent date — the exact
+      // shape Haiku once emitted. Injected deterministically (not via the recorded
+      // cassette, whose model outputs shift on re-record) so this guards the
+      // sanitization in Session, not a lucky fixture.
+      final s = await _session(_ScriptCloud(routeResult: {
+        'skillId': 'create-task',
+        'slots': <String, dynamic>{'description': 'call the dentist', 'dueDate': 'none'},
+        'source': 'cloud',
+      }));
       final r = await s.handle("don't let me forget to call the dentist");
       expect(r, contains('call the dentist'));
       final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();

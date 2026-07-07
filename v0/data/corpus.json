@@ -1,4 +1,9 @@
 [
+  { "skillId": "set-reminder", "template": "remind me to {text:text} on {when:datetime}" },
+  { "skillId": "set-reminder", "template": "remind me to {text:text} at {when:datetime}" },
+  { "skillId": "set-reminder", "template": "remind me at {when:datetime} to {text:text}" },
+  { "skillId": "set-reminder", "template": "set a reminder to {text:text} at {when:datetime}" },
+  { "skillId": "set-reminder", "template": "set a reminder to {text:text} on {when:datetime}" },
   { "skillId": "create-task", "template": "add {description:text} to my {_:text} due {dueDate:date}" },
   { "skillId": "create-task", "template": "add {description:text} to my {_:text}" },
   { "skillId": "create-task", "template": "remind me to {description:text} on {dueDate:date}" },

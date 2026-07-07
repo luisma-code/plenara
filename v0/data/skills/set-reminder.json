@@ -1,0 +1,61 @@
+{
+  "skillId": "set-reminder",
+  "displayName": "Set a reminder for a specific clock time (needs a time of day)",
+  "reads": [],
+  "writes": [
+    "reminder"
+  ],
+  "inputs": [
+    { "name": "text", "required": true },
+    { "name": "when", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "branch",
+        "cond": { "isNull": "when" },
+        "then": [
+          {
+            "op": "format",
+            "template": "Sure — when should I remind you to {text}? Give me a day and a time (like \"tomorrow at 5pm\").",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "compute",
+            "fn": "now",
+            "into": "createdAt"
+          },
+          {
+            "op": "write_record",
+            "typeId": "reminder",
+            "fields": {
+              "text": { "var": "text" },
+              "remindAt": { "var": "when" },
+              "createdAt": { "var": "createdAt" }
+            },
+            "into": "newReminder"
+          },
+          {
+            "op": "compute",
+            "fn": "format_date",
+            "args": [ { "var": "when" }, "EEEE" ],
+            "into": "dayLabel"
+          },
+          {
+            "op": "compute",
+            "fn": "format_time",
+            "args": [ { "var": "when" } ],
+            "into": "timeLabel"
+          },
+          {
+            "op": "format",
+            "template": "Okay — I'll remind you to {text} on {dayLabel} at {timeLabel}.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}

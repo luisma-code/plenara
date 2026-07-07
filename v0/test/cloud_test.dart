@@ -127,7 +127,11 @@ void main() {
       expect(resp.toLowerCase(), contains('built'));
       expect(s.skills.length, before + 1);
       expect(s.skills.containsKey('log_water_intake'), isTrue);
-      expect(File('$dir/types/water_intake.json').existsSync(), isTrue);
+      // the authored typeId is model-chosen (varies across re-records) — assert the
+      // skill's DECLARED write-type was registered + persisted, not a hardcoded name.
+      final authoredType = (s.skills['log_water_intake']!['writes'] as List).first as String;
+      expect(s.types.containsKey(authoredType), isTrue);
+      expect(File('$dir/types/$authoredType.json').existsSync(), isTrue);
       expect(File('$dir/skills/log_water_intake.json').existsSync(), isTrue);
     });
   });

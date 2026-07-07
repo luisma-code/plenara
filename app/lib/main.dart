@@ -66,9 +66,14 @@ class _ChatState extends State<ChatScreen> {
         _ready = true;
         _msgs.add(Msg(
             'Hi — I\'m Plenara. Try: "add call the plumber to my list", "log a 3k run", '
-            '"remember that Mia is Sarah Mitchell\'s daughter", "what do I know about Mia", '
+            '"remind me to call mom on thursday at 5pm", "what do I know about Mia", '
             '"list my tasks", or "start tracking my water intake". "undo that" reverses the last thing.',
             false));
+        // On-open nudges: reminders whose time has already passed (can't fire a
+        // toast in the past) surface here so nothing is silently missed.
+        for (final n in _session.pendingNudges()) {
+          _msgs.add(Msg('⏰ $n', false));
+        }
       });
     } catch (e) {
       // no infinite spinner: surface the failure and let the user see it

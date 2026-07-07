@@ -5,6 +5,7 @@ library;
 
 import 'claude.dart';
 import 'interpreter.dart';
+import 'reminders.dart';
 import 'router.dart';
 import 'storage_repository.dart';
 
@@ -54,6 +55,10 @@ class Session {
   late StorageRepository repo;
   final CloudClient? _injectedCloud;
   final StorageRepository? _injectedStorage;
+  // The OS-notification adapter (Spec 04 §3.1). Null -> reminders still persist and
+  // nudge on open, they just don't arm a native toast. The reconciled armed set is
+  // DERIVED from the record store, so undo/delete cancel notifications for free.
+  final NotificationScheduler? _scheduler;
   static const _journalMax = 25; // ring depth
   final List<_JournalEntry> _journal = []; // execution journal of REVERSIBLE (write) turns
   // the immediately-previous routed turn (write OR read), so a correction targets
@@ -70,10 +75,12 @@ class Session {
   /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart); [storage]
   /// lets them inject a repository (in-memory / test double). Production leaves both
   /// null -> a live ClaudeClient over a FileStorageRepository.
-  Session(this.dataDir, {DateTime? clock, CloudClient? cloud, StorageRepository? storage})
+  Session(this.dataDir,
+      {DateTime? clock, CloudClient? cloud, StorageRepository? storage, NotificationScheduler? scheduler})
       : _fixedClock = clock,
         _injectedCloud = cloud,
-        _injectedStorage = storage;
+        _injectedStorage = storage,
+        _scheduler = scheduler;
 
   /// [retrieval] builds the embedding index (needs the embed server). Tests pass
   /// false to stay hermetic — the corpus fast-path and injected cloud need no
@@ -91,7 +98,25 @@ class Session {
     }
     _retrievalEnabled = retrieval;
     if (retrieval) await router.buildRetrievalIndex(skills);
+    await _reconcileReminders(); // arm any future reminders already on disk (re-open)
   }
+
+  /// Re-derive the armed notification set from the record store and reconcile the
+  /// OS scheduler to it. Idempotent, so calling it every turn + on open never
+  /// double-arms. A scheduler failure is contained — it must never break a turn.
+  Future<void> _reconcileReminders() async {
+    final sched = _scheduler;
+    if (sched == null) return;
+    try {
+      await reconcileReminders(sched, store, now);
+    } catch (_) {/* an OS notification hiccup is not worth failing the turn over */}
+  }
+
+  /// Past-due, not-done reminders as friendly on-open nudge lines (you can't
+  /// schedule a toast in the past — surface it in-app instead). The UI shows these
+  /// on launch; keeping it derived means a completed/undone reminder simply drops out.
+  List<String> pendingNudges() =>
+      [for (final r in dueReminders(store, now)) 'Reminder: ${r.body}'];
 
   /// Reverse a turn's writes via the repository (undo / correction).
   void _reverse(Map<String, Map<String, dynamic>?> before) {
@@ -121,6 +146,9 @@ class Session {
       _outSource = 'error';
       resp = "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
     }
+    // the turn may have added/undone/completed a reminder — keep the OS armed set
+    // in sync with the (now-updated) store. Derived, so no per-skill wiring needed.
+    await _reconcileReminders();
     // dogfood telemetry — measures clarify/cloud/correction rates in real use
     repo.logTurn({
       'at': DateTime.now().toIso8601String(),

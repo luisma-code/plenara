@@ -276,4 +276,50 @@ void main() {
       expect(r?['skillId'], 'create-task');
     });
   });
+
+  group('resolveDateTime (Spec 03 §6.2 time-of-day extension)', () {
+    // a time-of-day is REQUIRED — its absence returns null, which is what keeps a
+    // date-only phrase a task rather than a (never-firing) reminder.
+    const cases = <List<String?>>[
+      ['thursday at 5pm', '2026-07-09T17:00:00'],
+      ['on thursday at 5pm', '2026-07-09T17:00:00'],
+      ['tomorrow at 9am', '2026-07-07T09:00:00'],
+      ['today at 8:30pm', '2026-07-06T20:30:00'],
+      ['at noon', '2026-07-06T12:00:00'],
+      ['at midnight', '2026-07-07T00:00:00'], // 00:00 today already passed 09:00 -> rolls to tomorrow
+      ['in 2 days at 14:15', '2026-07-08T14:15:00'],
+      ['friday at 12pm', '2026-07-10T12:00:00'],
+      ['friday at 12am', '2026-07-10T00:00:00'],
+      ['thursday', null], // no time-of-day -> not a datetime
+      ['next week', null],
+      ['5 oclock', null], // no am/pm and no colon -> not recognized as a time
+    ];
+    for (final c in cases) {
+      test('"${c[0]}" -> ${c[1]}', () => expect(_r.resolveDateTime(c[0]!, _now), c[1]));
+    }
+
+    test('a time-only phrase already past today rolls to tomorrow', () {
+      expect(_r.resolveDateTime('at 8am', _now), '2026-07-07T08:00:00'); // 8am < 9am now
+      expect(_r.resolveDateTime('at 11am', _now), '2026-07-06T11:00:00'); // still ahead today
+    });
+  });
+
+  group('reminder vs task routing (the time discriminator)', () {
+    test('"remind me to X on <day> at <time>" -> set-reminder with a full datetime', () {
+      final r = _r.route('remind me to call mom on thursday at 5pm', clock: _now);
+      expect(r?['skillId'], 'set-reminder');
+      expect(r?['slots']['text'], 'call mom');
+      expect(r?['slots']['when'], '2026-07-09T17:00:00');
+    });
+    test('"remind me to X at <time>" -> set-reminder', () {
+      final r = _r.route('remind me to take medicine at 9am', clock: _now);
+      expect(r?['skillId'], 'set-reminder');
+      expect(r?['slots']['when'], '2026-07-07T09:00:00'); // 9am past 9:00:00 -> tomorrow
+    });
+    test('"remind me to X on <day>" (no time) still falls through to create-task', () {
+      final r = _r.route('remind me to call mom on friday', clock: _now);
+      expect(r?['skillId'], 'create-task');
+      expect(r?['slots']['dueDate'], '2026-07-10');
+    });
+  });
 }

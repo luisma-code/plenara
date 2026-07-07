@@ -140,7 +140,11 @@ class Router {
       e.slotTypes.forEach((name, type) {
         final raw = m.namedGroup(name)?.trim();
         final v = _resolveSlot(raw, type, asOf);
-        if (v == null && type == 'date') ok = false; // unparseable date -> not this template
+        // an unparseable date/datetime means this template doesn't apply — fall
+        // through. (For datetime this is also the task-vs-reminder discriminator:
+        // "on friday" has no time -> null -> the reminder template is skipped and
+        // the date-only create-task template wins.)
+        if (v == null && (type == 'date' || type == 'datetime')) ok = false;
         slots[name] = v;
       });
       if (ok) return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};
@@ -206,6 +210,8 @@ class Router {
     switch (type) {
       case 'date':
         return resolveDate(raw, asOf);
+      case 'datetime':
+        return resolveDateTime(raw, asOf);
       case 'quantity':
         final m = RegExp(r'-?\d+(\.\d+)?').firstMatch(raw);
         return m == null ? null : num.parse(m.group(0)!);
@@ -233,5 +239,58 @@ class Router {
     }
     if (RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(p)) return p.substring(0, 10);
     return null;
+  }
+
+  /// Resolve a reminder time phrase to a full ISO datetime (Spec 03 §6.2, extended
+  /// for time-of-day). A time-of-day component is REQUIRED — no clock time returns
+  /// null, which is what separates a reminder ("call mom on thursday at 5pm") from
+  /// a date-only task ("call mom on thursday"). An optional leading day phrase
+  /// (today/tomorrow/tonight/weekday/in N days/ISO) is resolved via [resolveDate];
+  /// absent, it's today, rolled to tomorrow if the time already passed.
+  String? resolveDateTime(String phrase, DateTime now) {
+    final p = phrase.toLowerCase().trim();
+    int? hh, mm;
+    if (RegExp(r'\bnoon\b').hasMatch(p)) {
+      hh = 12;
+      mm = 0;
+    } else if (RegExp(r'\bmidnight\b').hasMatch(p)) {
+      hh = 0;
+      mm = 0;
+    } else {
+      // "5pm", "5:30 pm", "at 5 pm"
+      final ampm = RegExp(r'\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b').firstMatch(p);
+      if (ampm != null) {
+        hh = int.parse(ampm.group(1)!);
+        mm = ampm.group(2) == null ? 0 : int.parse(ampm.group(2)!);
+        if (hh == 12) hh = 0; // 12am -> 0, 12pm -> 12 (added below)
+        if (ampm.group(3) == 'pm') hh += 12;
+      } else {
+        // 24-hour "17:00" — require the colon so a bare "5" is never a time
+        final h24 = RegExp(r'\b(\d{1,2}):(\d{2})\b').firstMatch(p);
+        if (h24 != null) {
+          hh = int.parse(h24.group(1)!);
+          mm = int.parse(h24.group(2)!);
+        }
+      }
+    }
+    if (hh == null || mm == null) return null; // no time-of-day -> not a datetime
+    if (hh > 23 || mm > 59) return null;
+    // strip the time + connective words to leave a (possibly empty) date phrase
+    final dateWords = p
+        .replaceAll(RegExp(r'\b\d{1,2}(?::\d{2})?\s*(am|pm)\b'), ' ')
+        .replaceAll(RegExp(r'\b\d{1,2}:\d{2}\b'), ' ')
+        .replaceAll(
+            RegExp(r'\b(noon|midnight|at|tonight|this (?:evening|afternoon|morning))\b'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final resolvedDay = dateWords.isEmpty ? null : resolveDate(dateWords, now);
+    final base = resolvedDay != null ? DateTime.parse(resolvedDay) : now;
+    var dt = DateTime(base.year, base.month, base.day, hh, mm);
+    // a time-only reminder already past today rolls to tomorrow (the natural read
+    // of "remind me at 8am" said in the afternoon); an explicit day is honored as-is.
+    if (resolvedDay == null && !dt.isAfter(now)) dt = dt.add(const Duration(days: 1));
+    String two(int x) => x.toString().padLeft(2, '0');
+    return '${dt.year.toString().padLeft(4, '0')}-${two(dt.month)}-${two(dt.day)}'
+        'T${two(dt.hour)}:${two(dt.minute)}:00';
   }
 }

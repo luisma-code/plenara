@@ -52,6 +52,22 @@ void main() {
     expect(find.textContaining('buy milk'), findsWidgets); // in both bubbles
   });
 
+  testWidgets('a past-due reminder shows as an on-open nudge bubble', (tester) async {
+    final dir = _tempData();
+    // seed a reminder for Thursday 5pm from a Monday clock (persists to `dir`)
+    final seeder = Session(dir, clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _NullCloud());
+    await seeder.init(retrieval: false);
+    await seeder.handle('remind me to call mom on thursday at 5pm');
+
+    // open the app AFTER Thursday — the reminder is now past-due -> a nudge
+    final reopened = Session(dir, clock: DateTime.parse('2026-07-10T09:00:00'), cloud: _NullCloud());
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: reopened, retrieval: false)));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining("I'm Plenara"), findsOneWidget); // greeting
+    expect(find.textContaining('Reminder: call mom'), findsOneWidget); // the nudge bubble
+  });
+
   testWidgets('tapping Send with empty input adds no bubble', (tester) async {
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
     await tester.pumpAndSettle();

@@ -82,6 +82,11 @@ class Interpreter {
         final d = _asDate(a[0]);
         if (d == null) return null;
         return a[1] == 'EEEE' ? _weekday(d) : _dateOnly(d);
+      case 'format_time':
+        final d = _asDateTime(a[0]);
+        if (d == null) return null;
+        final h12 = d.hour % 12 == 0 ? 12 : d.hour % 12;
+        return '$h12:${d.minute.toString().padLeft(2, '0')} ${d.hour < 12 ? 'AM' : 'PM'}';
       case 'start_of_week':
         final d = _asDate(a[0])!;
         return _dateOnly(d.subtract(Duration(days: d.weekday - 1)));
@@ -110,6 +115,9 @@ class Interpreter {
     return DateTime.tryParse(str.length >= 10 ? str.substring(0, 10) : str);
   }
 
+  // full datetime (keeps the time-of-day; used by format_time). Never throws.
+  static DateTime? _asDateTime(dynamic s) => s == null ? null : DateTime.tryParse(s.toString());
+
   bool cond(Map c, Map<String, dynamic> env) {
     if (c.containsKey('isNull')) return env[c['isNull']] == null;
     if (c.containsKey('notNull')) return env[c['notNull']] != null;
@@ -131,7 +139,7 @@ class Interpreter {
 
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
   static const _ops = {'read_one', 'read_many', 'read_related', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
-  static const _fns = {'now', 'today', 'format_date', 'start_of_week', 'add', 'count', 'concat'};
+  static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'add', 'count', 'concat'};
   static const _valueTypes = {'text', 'date', 'datetime', 'decimal', 'integer', 'boolean', 'entityRef', 'enum'};
 
   /// Validate an authored TYPE def (Spec 01 §3). Throws ResolveError (never a
