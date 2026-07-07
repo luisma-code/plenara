@@ -345,4 +345,26 @@ void main() {
       expect(_r.route('forget the reminder to water the plants')?['skillId'], 'cancel-reminder');
     });
   });
+
+  group('expanded offline coverage (natural phrasings that were falling to cloud)', () {
+    const cases = <List<String>>[
+      ['i need to buy milk', 'create-task'],
+      ['put buy milk on my list', 'create-task'],
+      ['list my todos', 'list-tasks'],
+      ['ping me to call mom at 5pm', 'set-reminder'],
+      ['i feel great today', 'log-mood'],
+      ['i feel tired', 'log-mood'],
+      ['i went for a run', 'log-run'],
+      ['any birthdays soon', 'upcoming-birthdays'],
+    ];
+    for (final c in cases) {
+      test('"${c[0]}" -> ${c[1]}', () => expect(_r.route(c[0], clock: _now)?['skillId'], c[1]));
+    }
+    test('the residual fixtures still MISS the corpus (no accidental capture)', () {
+      // these must stay cloud-routed; a new template must never steal them
+      expect(_r.route('jot down that I need to buy milk'), isNull);
+      expect(_r.route('put picking up dry cleaning on my to-do list'), isNull);
+      expect(_r.route('went for a 5k this afternoon'), isNull);
+    });
+  });
 }

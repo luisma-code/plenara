@@ -118,7 +118,7 @@ void main() {
             'slots': <String, dynamic>{'description': 'renew passport', 'dueDate': 'friday'},
             'source': 'cloud',
           }));
-      await s.handle('i need to renew my passport by the end of the week');
+      await s.handle('sort out the passport renewal before the weekend'); // misses the corpus -> cloud stub
       final t = s.store.values.where((x) => x['typeId'] == 'task').single;
       expect(t['dueAt'], '2026-07-10'); // resolved to ISO, not the raw "friday"
     });
