@@ -27,13 +27,18 @@ class Msg {
 }
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  /// Tests inject a Session (temp data dir + replay/offline cloud) and set
+  /// [retrieval] false; production leaves both defaulted.
+  final Session? session;
+  final bool retrieval;
+  const ChatScreen({super.key, this.session, this.retrieval = true});
   @override
   State<ChatScreen> createState() => _ChatState();
 }
 
 class _ChatState extends State<ChatScreen> {
-  final _session = Session(dataDir, clock: DateTime.parse('2026-07-06T09:00:00'));
+  late final Session _session =
+      widget.session ?? Session(dataDir, clock: DateTime.parse('2026-07-06T09:00:00'));
   final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
@@ -46,7 +51,7 @@ class _ChatState extends State<ChatScreen> {
   }
 
   Future<void> _init() async {
-    await _session.init();
+    await _session.init(retrieval: widget.retrieval);
     setState(() {
       _ready = true;
       _msgs.add(Msg(
