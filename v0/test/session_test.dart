@@ -102,6 +102,20 @@ void main() {
       await s.handle('mark call the bank done');
       expect(await s.handle('anything overdue'), contains("you're clear"));
     });
+
+    test('reschedule-task moves a due date (out of the overdue set)', () async {
+      final s = await _session(); // Monday 2026-07-06
+      await s.handle('add pay rent to my list due today');
+      await s.handle('move pay rent to friday'); // -> 2026-07-10 (future)
+      final t = s.store.values.where((x) => x['typeId'] == 'task').single;
+      expect(t['dueAt'], '2026-07-10');
+      expect((await s.handle("what's due")).contains('pay rent'), isFalse); // now future
+    });
+
+    test('rescheduling an unknown task is a clear no-op', () async {
+      final s = await _session();
+      expect(await s.handle('move buy milk to friday'), contains("couldn't find"));
+    });
   });
 
   group('recall-mood', () {

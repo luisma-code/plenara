@@ -1,0 +1,55 @@
+{
+  "skillId": "reschedule-task",
+  "displayName": "Change a task's due date",
+  "reads": [
+    "task"
+  ],
+  "writes": [
+    "task"
+  ],
+  "inputs": [
+    { "name": "description", "required": true },
+    { "name": "dueDate", "required": true, "type": "date" }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "task",
+        "match": { "description": { "var": "description" } },
+        "into": "t"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "t" },
+        "then": [
+          {
+            "op": "format",
+            "template": "I couldn't find a task \"{description}\".",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "write_record",
+            "typeId": "task",
+            "target": { "ref": "t" },
+            "fields": { "dueAt": { "var": "dueDate" } },
+            "into": "t2"
+          },
+          {
+            "op": "compute",
+            "fn": "format_date",
+            "args": [ { "var": "dueDate" }, "EEEE" ],
+            "into": "dayLabel"
+          },
+          {
+            "op": "format",
+            "template": "Moved \"{description}\" to {dayLabel} ({dueDate}).",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}

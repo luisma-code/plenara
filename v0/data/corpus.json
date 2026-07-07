@@ -83,6 +83,9 @@
   { "skillId": "due-tasks", "template": "anything overdue" },
   { "skillId": "due-tasks", "template": "what do i need to do today" },
   { "skillId": "due-tasks", "template": "what needs doing" },
+  { "skillId": "reschedule-task", "template": "move {description:text} to {dueDate:date}" },
+  { "skillId": "reschedule-task", "template": "reschedule {description:text} to {dueDate:date}" },
+  { "skillId": "reschedule-task", "template": "change {description:text} due date to {dueDate:date}" },
   { "skillId": "count-runs-this-week", "template": "how {_:text} have i run this week" },
   { "skillId": "count-runs-this-week", "template": "how many runs this week" }
 ]
