@@ -111,6 +111,22 @@ void main() {
     test('unknown cond -> throws', () => expect(() => _i().cond({'bogus': 1}, {}), throwsA(isA<ResolveError>())));
   });
 
+  group('format', () {
+    test('renders a null/absent var as empty — never leaks a literal {var}', () {
+      final skill = {
+        'skillId': 'x',
+        'steps': {
+          'main': [
+            {'op': 'format', 'template': 'Hi {name}, due {when}.', 'into': 'confirmationText'}
+          ]
+        }
+      };
+      final plan = _i().resolve(skill, {'name': 'Sam'}, {}); // `when` is absent
+      expect(plan.confirmation, 'Hi Sam, due .');
+      expect(plan.confirmation!.contains('{'), isFalse);
+    });
+  });
+
   group('create-task — NLU slots (no due date, many descriptions)', () {
     for (final d in ['call the plumber', 'buy milk', 'walk the dog', 'pay the rent',
       'schedule a dentist appointment', 'book flights to Boston', 'renew the registration']) {
@@ -516,12 +532,12 @@ void main() {
       final s = {'skillId': 'x', 'steps': {'main': [{'op': 'teleport'}]}};
       expect(() => _i().resolve(s, {}, _store()), throwsA(isA<ResolveError>()));
     });
-    test('format leaves unknown placeholder literal', () {
+    test('format renders an unknown placeholder as empty (no {var} leak to the user)', () {
       final s = {'skillId': 'x', 'steps': {'main': [
         {'op': 'format', 'template': 'hi {missing}', 'into': 'confirmationText'}
       ]}};
       final p = _i().resolve(s, {}, _store());
-      expect(p.confirmation, 'hi {missing}');
+      expect(p.confirmation, 'hi ');
     });
   });
 

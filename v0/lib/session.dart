@@ -19,7 +19,8 @@ final _helpRe = RegExp(
     caseSensitive: false);
 final _corrRe = RegExp(r'^(?:no,?|actually,?|nope,?)\s+i meant (?:to |it was )?(.+?)\.?$', caseSensitive: false);
 final _defRe = RegExp(
-    r'^(?:start tracking|track|i want to track|i want to start tracking|make me a|create a) '
+    r'^(?:start tracking|track|i want to track|i want to start tracking|make me a|create a|'
+    r'build me a|build a|set up a|set me up a) '
     r'(?:my |a |an )?(.+?)(?: tracker)?\.?$',
     caseSensitive: false);
 // Layer-1 policy floor (Spec 02 §7.6): key on harmful FRAMING, never merely a
@@ -27,12 +28,14 @@ final _defRe = RegExp(
 // my kid secretly / without their knowledge" is not. Layers 2/3 (model + review)
 // are v2.
 final _harmfulRe = RegExp(
-    // covert / non-consensual surveillance framing
-    r"secretly|covertly|without (?:their|his|her|your) (?:knowledge|consent|permission)"
+    // covert / non-consensual surveillance framing (DP-01: "…location without them knowing")
+    r"secretly|covertly"
+    r"|without (?:them|their|him|his|her|your) (?:knowing|knowledge|consent|permission|noticing|finding out)"
     r"|behind (?:their|his|her) back|\bspy on\b|\bstalk\b|keep tabs on|\bsnoop\b"
-    // self-harm, weapons, disordered-eating framing
+    // self-harm, weapons, disordered-eating framing (DP-08: "…so I can cut down harder")
     r"|self.?harm|hurt (?:myself|someone|somebody)|make a weapon|build a weapon"
-    r"|purge (?:after|my|food|meal)|hide (?:my )?(?:eating|calories)|restrict (?:my )?calories",
+    r"|purge (?:after|my|food|meal)|hide (?:my )?(?:eating|calories)|restrict (?:my )?calories"
+    r"|cut down harder|so i can cut|eat less so",
     caseSensitive: false);
 // authored ids are model output; keep them out of file paths and odd charsets
 final _idRe = RegExp(r'^[a-z0-9_-]{1,64}$');

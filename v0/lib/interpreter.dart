@@ -352,8 +352,10 @@ class Interpreter {
       case 'set':
         env[step['var']] = val(step['value'], env);
       case 'format':
+        // a null/absent var renders as empty (the spec's omitIfNull default) — never
+        // leak a literal "{var}" into the user-facing string (no silent failure, P7).
         final out = (step['template'] as String).replaceAllMapped(
-            RegExp(r'\{(\w+)\}'), (m) => '${env[m.group(1)] ?? '{${m.group(1)}}'}');
+            RegExp(r'\{(\w+)\}'), (m) => '${env[m.group(1)] ?? ''}');
         env[step['into']] = out;
         if (step['into'] == 'confirmationText') plan.confirmation = out;
       case 'read_one':
