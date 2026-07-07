@@ -169,7 +169,7 @@ void main() {
         final resp = await s.handle(u);
         expect(s.store.isEmpty, isTrue, reason: 'OOD must not write');
         expect(resp.toLowerCase(),
-            anyOf(contains('not sure'), contains("didn't catch"), contains("don't have")));
+            anyOf(contains('not sure'), contains("didn't catch"), contains("don't have"), contains('outside what')));
       });
     }
   });

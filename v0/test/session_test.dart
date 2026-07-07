@@ -183,6 +183,21 @@ void main() {
     });
   });
 
+  group('out-of-domain boundary (G-19)', () {
+    test('a world-knowledge question gets a graceful boundary, writes nothing', () async {
+      final s = await _session();
+      final r = await s.handle("what's the capital of France");
+      expect(r.toLowerCase(), contains('outside what'));
+      expect(s.store, isEmpty);
+    });
+    test('a personal-cue query is NEVER classified out-of-domain (privacy, G-19)', () async {
+      final s = await _session();
+      // "weather" would trip the world-knowledge matcher, but "what did I…" is a personal cue
+      final r = await s.handle('what did i say about the weather');
+      expect(r.toLowerCase(), isNot(contains('outside what')));
+    });
+  });
+
   group('aliases (G-24) — resolve a person by a nickname/role', () {
     test('set an alias, then reach the contact through it', () async {
       final s = await _session();

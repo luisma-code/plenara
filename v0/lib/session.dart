@@ -25,6 +25,19 @@ final _corrRe = RegExp(
     caseSensitive: false);
 // abandons a pending slot-fill dialogue (Spec 03 §6.3 ProvideSlot)
 final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
+// Out-of-domain boundary (Spec 03 §7.2, G-19). A clearly-external question with NO
+// personal cue gets a graceful "that's not what I do" instead of "I didn't catch that".
+// The personal-cue guard is a PRIVACY boundary, not just UX: "what did I say about X"
+// must NEVER be classified out-of-domain and handed to an external assistant — a records
+// query stays in the records domain even when we can't yet answer it.
+final _worldKnowledgeRe = RegExp(
+    r"\b(capital of|the weather|weather in|forecast|tell me a joke|what time is it in|"
+    r"who (is|was|were|are) (?!my |our )|what year|how (tall|far|old|big|deep|hot|cold) is|"
+    r"translate|how do you say|what does .+ mean|^define |stock price|exchange rate|"
+    r"convert |the news|latest news|score of|who won|population of|"
+    r"distance (from|to|between)|meaning of life)\b",
+    caseSensitive: false);
+final _personalCueRe = RegExp(r"\b(i|i'?ve|i'?m|my|mine|our|ours|we|us|me)\b", caseSensitive: false);
 // A tracker the app ALREADY ships — "start tracking my runs" should use it for FREE,
 // not pay Haiku to author a duplicate type (Spec 05 §3.7; the free→paid misroute). Kept
 // deliberately narrow: only unambiguous SELF trackers, and skipped entirely when a
@@ -385,6 +398,17 @@ class Session {
     }
 
     var routed = router.route(u, clock: now);
+    // Out-of-domain boundary (§7.2, G-19): a clearly-external question with NO personal
+    // cue gets a graceful "not what I do" — BEFORE spending a residual cloud call. The
+    // personal-cue guard is the privacy line: "what did I say about X" is never OOD.
+    if (routed == null && _worldKnowledgeRe.hasMatch(u) && !_personalCueRe.hasMatch(u)) {
+      final sg = await router.retrievalSuggest(u);
+      if (sg == null || sg['confident'] != true) {
+        _outSource = 'out-of-domain';
+        return "That's outside what I can help with — I'm your assistant for reminders, people, "
+            "tasks, notes, and moods, not general questions.";
+      }
+    }
     CloudErrorKind? cloudErr;
     if (routed == null) {
       switch (await claude.routeResidual(u, skills)) {
