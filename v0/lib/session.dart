@@ -32,6 +32,15 @@ final _harmfulRe = RegExp(
 // authored ids are model output; keep them out of file paths and odd charsets
 final _idRe = RegExp(r'^[a-z0-9_-]{1,64}$');
 
+/// One reversible turn (Spec 02 §5.2 / Spec 04 §3.11): the before-images to
+/// restore + a human description of what it did. The execution journal is a
+/// device-local, volatile ring of these — undo can walk back the last N turns.
+class _JournalEntry {
+  final Map<String, Map<String, dynamic>?> before;
+  final String? desc;
+  _JournalEntry(this.before, this.desc);
+}
+
 class Session {
   final String dataDir;
   final DateTime? _fixedClock;
@@ -47,8 +56,8 @@ class Session {
   late CloudClient claude;
   late HlcDevice dev;
   final CloudClient? _injectedCloud;
-  Map<String, Map<String, dynamic>?>? _lastBefore;
-  String? _lastActionDesc; // what the last undoable turn did, for a transparent undo
+  static const _journalMax = 25; // ring depth
+  final List<_JournalEntry> _journal = []; // execution journal (device-local, volatile)
 
   /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart) so
   /// the residual-routing and authoring paths run offline against recorded
@@ -98,22 +107,19 @@ class Session {
     u = u.trim();
     final now = this.now; // one frozen snapshot for the whole turn
     if (_undoRe.hasMatch(u)) {
-      if (_lastBefore == null) return 'Nothing to undo.';
-      undoTurn(_lastBefore!, '$dataDir/records', dev, store);
-      _lastBefore = null;
-      final d = _lastActionDesc;
-      _lastActionDesc = null;
+      if (_journal.isEmpty) return 'Nothing to undo.';
+      final entry = _journal.removeLast(); // walk back the ring, most-recent first
+      undoTurn(entry.before, '$dataDir/records', dev, store);
       // say WHAT was reversed — a silent "Undone." can't be trusted as the safety net
-      return d == null ? 'Undone.' : 'Undone — reversed: "$d"';
+      return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
     }
 
     final corr = _corrRe.firstMatch(u);
     if (corr != null) {
       var pre = '';
-      if (_lastBefore != null) {
-        undoTurn(_lastBefore!, '$dataDir/records', dev, store);
-        _lastBefore = null;
-        _lastActionDesc = null;
+      if (_journal.isNotEmpty) {
+        final entry = _journal.removeLast();
+        undoTurn(entry.before, '$dataDir/records', dev, store);
         pre = 'Got it — undid that. ';
       }
       return '$pre${await _handle(corr.group(1)!.trim())}';
@@ -194,8 +200,8 @@ class Session {
         tombstone(id, '$dataDir/records', dev);
       }
       if (plan.writes.isNotEmpty || plan.deletes.isNotEmpty) {
-        _lastBefore = before;
-        _lastActionDesc = plan.confirmation;
+        _journal.add(_JournalEntry(before, plan.confirmation));
+        if (_journal.length > _journalMax) _journal.removeAt(0);
       }
       if (routed['source'] == 'cloud') {
         final tmpl = router.learn(u, routed['skillId'] as String,

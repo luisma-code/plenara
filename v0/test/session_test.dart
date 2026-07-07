@@ -100,6 +100,19 @@ void main() {
       final s = await _session();
       expect(await s.handle('undo'), contains('Nothing to undo'));
     });
+    test('multi-turn undo walks back the journal ring', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      await s.handle('add walk the dog to my list');
+      await s.handle('log a 3k run');
+      expect(s.store.length, 3);
+      expect(await s.handle('undo that'), contains('run')); // reverses the most recent (the run)
+      expect(s.store.length, 2);
+      await s.handle('undo that'); // walk the dog
+      await s.handle('undo that'); // buy milk
+      expect(s.store.length, 0);
+      expect(await s.handle('undo that'), contains('Nothing to undo'));
+    });
     test('undo says what it reversed (transparent safety net)', () async {
       final s = await _session();
       await s.handle('add buy milk to my list');
