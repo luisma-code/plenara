@@ -181,6 +181,45 @@ void main() {
     });
   });
 
+  group('partial name matching + disambiguation (people reads)', () {
+    test('a first name resolves to the full-name contact', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Sam Rivera about chess');
+      final r = await s.handle('when did i last talk to Sam'); // "Sam" -> "Sam Rivera"
+      expect(r, contains('2026-07-06'));
+      expect(r.contains("don't have"), isFalse);
+    });
+
+    test('an ambiguous first name asks which one — candidates listed, no raw error', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Sam Rivera');
+      await s.handle('talked to Sam Chen');
+      final r = await s.handle('when did i last talk to Sam');
+      expect(r, contains('more than one'));
+      expect(r, contains('Sam Rivera'));
+      expect(r, contains('Sam Chen'));
+      expect(r.contains('ResolveError'), isFalse); // no internals leak
+      expect(r.contains('G-12'), isFalse);
+    });
+
+    test('an exact name still wins over a partial one (no false ambiguity)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Sam'); // contact "Sam"
+      await s.handle('talked to Sam Rivera'); // contact "Sam Rivera"
+      final r = await s.handle('when did i last talk to Sam');
+      expect(r.contains('more than one'), isFalse); // exact "Sam" resolves cleanly
+    });
+
+    test('write/find-or-create stays EXACT — a partial name makes a new contact, never merges', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Sam Rivera');
+      await s.handle('talked to Sam'); // exact read_one -> no "Sam" -> creates it
+      final names = s.store.values.where((x) => x['typeId'] == 'contact').map((c) => c['displayName']).toList();
+      expect(names, containsAll(<String>['Sam Rivera', 'Sam']));
+      expect(names.length, 2); // NOT merged into Sam Rivera
+    });
+  });
+
   group('people-loop routing', () {
     test('"talked to X about Y" -> log-interaction with a note', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));

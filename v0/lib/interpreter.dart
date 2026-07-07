@@ -10,7 +10,10 @@ import 'dates.dart';
 
 class ResolveError implements Exception {
   final String message;
-  ResolveError(this.message);
+  /// Candidate labels when the failure is an AMBIGUITY (G-12) — lets the caller ask
+  /// the user which one instead of leaking a raw error.
+  final List<String>? options;
+  ResolveError(this.message, {this.options});
   @override
   String toString() => 'ResolveError: $message';
 }
@@ -313,19 +316,25 @@ class Interpreter {
         final match = {
           for (final e in (step['match'] as Map).entries) e.key: val(e.value, env)
         };
-        final hits = store.values
-            .where((r) =>
-                r['typeId'] == step['typeId'] &&
-                match.entries.every((e) {
-                  final rv = r[e.key], mv = e.value;
-                  // case-insensitive name resolution: "mia" finds "Mia" (voice
-                  // transcripts vary in case), so we don't create a duplicate contact
-                  return (rv is String && mv is String) ? rv.toLowerCase() == mv.toLowerCase() : rv == mv;
-                }))
-            .toList();
+        bool matches(Record r, bool Function(String rv, String mv) strCmp) =>
+            r['typeId'] == step['typeId'] &&
+            match.entries.every((e) {
+              final rv = r[e.key], mv = e.value;
+              return (rv is String && mv is String) ? strCmp(rv.toLowerCase(), mv.toLowerCase()) : rv == mv;
+            });
+        // Exact (case-insensitive) resolution first — "mia" finds "Mia", never a
+        // duplicate. With `partial:true` (people lookups), fall back to a substring
+        // match so "Sam" finds "Sam Rivera" — surfacing a clarify when >1 qualifies.
+        var hits = store.values.where((r) => matches(r, (rv, mv) => rv == mv)).toList();
+        if (hits.isEmpty && step['partial'] == true) {
+          hits = store.values.where((r) => matches(r, (rv, mv) => rv.contains(mv))).toList();
+        }
         if (hits.length > 1) {
+          final labelField = (step['match'] as Map).keys.first as String;
+          final labels = hits.map((h) => (h['displayName'] ?? h[labelField] ?? h['id']).toString()).toList();
           throw ResolveError(
-              "read_one ${step['typeId']} $match matched ${hits.length} (ambiguous — G-12)");
+              "read_one ${step['typeId']} $match matched ${hits.length} (ambiguous — G-12)",
+              options: labels);
         }
         env[step['into']] = hits.isEmpty ? null : hits.first;
       case 'read_many':

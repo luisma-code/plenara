@@ -22,6 +22,7 @@
             "var": "personName"
           }
         },
+        "partial": true,
         "into": "person"
       },
       {

@@ -386,7 +386,14 @@ class Session {
       }
       return plan.confirmation ?? 'Done.';
     } on ResolveError catch (e) {
-      return "Couldn't do that: ${e.message}";
+      final opts = e.options;
+      if (opts != null && opts.isNotEmpty) {
+        // an ambiguity (G-12): ask which one instead of leaking a raw error string
+        _outSource = 'clarify';
+        final shown = opts.length <= 5 ? opts.join(', ') : '${opts.take(5).join(', ')}, …';
+        return 'I know more than one match for that — $shown. Which one? (say the full name)';
+      }
+      return "I couldn't do that: ${e.message}";
     }
   }
 }
