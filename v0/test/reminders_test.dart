@@ -205,6 +205,17 @@ void main() {
       expect(await s.handle('snooze the reminder to walk the dog to friday at 9am'),
           contains("couldn't find"));
     });
+
+    test('undo of a reschedule restores the original time and re-arms there', () async {
+      final fake = FakeScheduler();
+      final s = await _open(makeTempDataDir(), fake);
+      await s.handle('remind me to call mom on thursday at 5pm');
+      await s.handle('snooze the reminder to call mom to friday at 9am');
+      expect(fake.armed().values.single, DateTime.parse('2026-07-10T09:00:00'));
+      await s.handle('undo'); // reverse the reschedule
+      expect(fake.armed().length, 1);
+      expect(fake.armed().values.single, DateTime.parse('2026-07-09T17:00:00')); // back to Thu 5pm
+    });
   });
 
   group('full reminder lifecycle keeps the armed toast correct', () {
