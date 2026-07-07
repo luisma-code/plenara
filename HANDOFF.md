@@ -40,6 +40,39 @@ notifications + voice); verify that first.
 Commit trailers required (Co-Authored-By: Claude Opus 4.8 (1M context) + Claude-Session)
 — see `CLAUDE.md`. Line-ending (CRLF) warnings on commit are benign.
 
+## Fresh machine / new user context — environment setup
+
+The Claude auto-memory does NOT transfer across OS users/machines (it lives in
+`C:\Users\<you>\.claude\…`). This doc + `CLAUDE.md` are in the repo and are all
+you need. **First:** tell the new Claude *"read HANDOFF.md and CLAUDE.md, then
+continue."* Then, if it's a fresh clone / different user, re-establish these
+(all gitignored, so they don't come with the repo):
+
+1. **Toolchain into `Z:\code\plenara\.tools\` (~2 GB, gitignored).**
+   - **Flutter** (bundles the matching Dart): download `flutter_windows_<ver>-stable.zip`
+     from flutter.dev's release archive (we used **3.44.5**; latest stable is fine),
+     unzip to `.tools\flutter`. First `flutter\bin\flutter.bat --version` builds the tool.
+   - **Dart SDK** used by the v0 commands is a standalone at `.tools\dart-sdk\`
+     (**3.12.2**, from dart.dev's archive). Alternatively just use Flutter's bundled
+     Dart at `.tools\flutter\bin\dart.bat` and adjust the commands.
+2. **Windows build prereq:** Visual Studio **Build Tools 2019+ with "Desktop
+   development with C++"** (2019 confirmed working; 2022 fine). `flutter doctor`
+   verifies it. Native plugins (notifications, voice) also need **Windows Developer
+   Mode ON** (Settings → For developers).
+3. **API key.** The key pasted early on is **exposed — ROTATE it** at
+   console.anthropic.com. Then provide the new one by ONE of: `ANTHROPIC_API_KEY`
+   env var; `planning\specs\05a-rig\.env` as `ANTHROPIC_API_KEY=sk-ant-…` (gitignored,
+   for tests/recorder); or `~/.plenara/config.json` `"apiKey"` (for the app).
+4. **Permissions.** To match this session's autonomous flow, set the new user's
+   `~/.claude/settings.json` `permissions.defaultMode` to `bypassPermissions` (or
+   just approve interactively). This is a per-user setting, not in the repo.
+5. **Optional:** the retrieval embed server (llama-server + bge-small on `:8091`)
+   — everything degrades gracefully without it.
+
+Same machine, different user? Simplest is to copy
+`C:\Users\lmh10\.claude\projects\Z--code-plenara\` into the new user's
+`.claude\projects\` — but it's optional; the in-repo docs cover everything.
+
 ## What's built (the code)
 
 **`v0/lib/` — the engine (~pure Dart, ~1,600 lines):**
