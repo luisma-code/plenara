@@ -135,7 +135,7 @@ class Session {
       if (has('set-reminder'))
         '• Reminders — "remind me to call mom on thursday at 5pm", "what are my reminders", "snooze the reminder to X to friday at 9am", "cancel the reminder to X"',
       if (has('log-run'))
-        '• Running — "log a 3k run", "how much have I run this week", "what\'s my running streak"',
+        '• Running — "log a 3k run", "how much have I run this week", "how far have I run", "what\'s my running streak"',
       if (has('log-mood')) '• Mood — "I\'m feeling great", "how have I been feeling"',
       if (has('log-journal')) '• Journal — "journal that today was a good day", "read my journal"',
       if (has('remember-person-fact'))

@@ -112,5 +112,9 @@
   { "skillId": "run-streak", "template": "what's my running streak" },
   { "skillId": "run-streak", "template": "what's my run streak" },
   { "skillId": "run-streak", "template": "running streak" },
-  { "skillId": "run-streak", "template": "am i on a running streak" }
+  { "skillId": "run-streak", "template": "am i on a running streak" },
+  { "skillId": "total-distance", "template": "how far have i run" },
+  { "skillId": "total-distance", "template": "how far have i run in total" },
+  { "skillId": "total-distance", "template": "total distance run" },
+  { "skillId": "total-distance", "template": "how many km have i run in total" }
 ]

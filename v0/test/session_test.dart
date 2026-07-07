@@ -154,6 +154,17 @@ void main() {
     });
   });
 
+  group('total-distance (aggregation via the new sum fn)', () {
+    test('sums distance across all runs', () async {
+      final s = await _session();
+      await s.handle('log a 3k run');
+      await s.handle('log a 5k run');
+      final r = await s.handle('how far have i run');
+      expect(r, contains('8')); // 3 + 5 km
+      expect(r, contains('2 run'));
+    });
+  });
+
   group('run-streak', () {
     test('counts consecutive days of runs', () async {
       final dir = makeTempDataDir();
