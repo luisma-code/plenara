@@ -210,6 +210,26 @@ void main() {
     });
   });
 
+  group('remember-relationship (offline coverage of "X is Y\'s Z")', () {
+    test('"remember that Mia is Sarah Mitchell\'s daughter" creates the relationship, queryable both ways', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      final r = await s.handle("remember that Mia is Sarah Mitchell's daughter");
+      expect(r, contains("Mia is Sarah Mitchell's daughter"));
+      final contacts = s.store.values.where((x) => x['typeId'] == 'contact').map((c) => c['displayName']).toList();
+      expect(contacts, containsAll(<String>['Mia', 'Sarah Mitchell']));
+      expect(s.store.values.where((x) => x['typeId'] == 'contact_relationship').length, 1);
+      expect(await s.handle('who is Sarah related to'), contains('daughter: Mia'));
+      expect(await s.handle('who is Mia related to'), contains('daughter of Sarah Mitchell'));
+    });
+
+    test('a plain "remember that X <fact>" still records a fact, not a relationship', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('remember that Mia loves chess');
+      expect(await s.handle('what do i know about Mia'), contains('loves chess'));
+      expect(s.store.values.where((x) => x['typeId'] == 'contact_relationship'), isEmpty);
+    });
+  });
+
   group('list-relations', () {
     test('shows a person\'s relationships with the linked contact name resolved', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
