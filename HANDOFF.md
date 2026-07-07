@@ -8,14 +8,15 @@ The **v0 engine is complete and heavily tested**; the **Windows desktop app is
 dogfood-ready** (runs on a user-chosen synced folder + BYOK key). Latest session
 shipped **F2 reminders**, the **people loop** (Fable #3), and **on-open nudges**
 (Fable #4). **Fable's actionable priorities #1–#4 are all DONE**; #5–#8 are
-defer/do-not-build. **HEAD = `74ee048`**, working tree clean (ignore the
+defer/do-not-build. **HEAD = `6cce275`**, working tree clean (ignore the
 pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
-`.claude/settings.local.json`), **1163 Dart tests + 4 Flutter widget tests green**,
+`.claude/settings.local.json`), **1163 Dart tests + 8 Flutter widget tests green**,
 `dart analyze` clean.
 
-**The immediate next task:** grow the **app widget tests** — directive #1 flags the
-Flutter app as the thinnest-covered surface. Cover undo-in-UI, the busy/disabled
-state, multi-turn, list rendering, error surfacing. Re-record-free. See "Next task".
+**The immediate next task:** pick from the remaining options (all re-record-free
+except where noted) — see "Next task". The Fable roadmap's build items are done;
+what's left is depth (more people/tracker skills), a couple of deferred engine
+items (persisted undo journal, typed `CloudResult`), or polish. None need Luis.
 
 **One blocker for Luis (needs admin):** the native Windows toast for reminders
 needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
@@ -203,16 +204,20 @@ config (5), hardening (~20).
 
 ## Next task (build this, test-first)
 
-**Fable #1–#4 DONE.** Next: **grow the app widget tests** (directive #1 — the
-Flutter app is the thinnest-covered surface). Re-record-free. Candidates:
-- undo from the UI (send a turn, then "undo that", assert the reversal bubble);
-- the busy/disabled state (Send disabled + progress bar while a turn is in flight);
-- a multi-turn sequence keeps state (add task → list tasks shows it);
-- list rendering (list-reminders / recall-facts produce the bulleted block);
-- error surfacing (a throwing Session still shows a message, never a dead input).
-
-Then the roadmap is at deferred items (presentation archetypes — Spec 01 §9;
-persisted journal; typed CloudResult). Presentation archetypes stay DEFERRED.
+**Fable #1–#4 DONE; app widget tests grown (8).** Remaining options, roughly by
+value/risk (none need Luis):
+- **Depth in existing loops (re-record on each new skill):** `list-interactions`
+  ("what have I logged with X" — read_related interactions, formatted); tracker
+  templates; a "help / what can you do" surface.
+- **Persisted undo journal** (Spec 04 §3.11) — undo is in-memory today (dies on
+  restart). Contained to `Session` + a device-local journal file (NOT the synced
+  records folder). Medium effort; marginal UX value (rare to undo post-restart).
+- **Typed `CloudResult`** (offline vs bad-key vs rate-limited) — closes a
+  spec-vs-code gap (CLAUDE.md architecture says the client returns typed results,
+  not exceptions). HIGHER blast radius: changes the `CloudClient` interface, so it
+  ripples through `ReplayCloud`/`RecordingCloud`, every test stub, and `session`.
+  Best started fresh, not at the tail of a long session.
+- Presentation archetypes stay DEFERRED (Spec 01 §9 unwritten; chat renders fine).
 
 **When you DO add a skill later:** it grows the capability inventory → the cloud
 cassette's `invSig` keys change → **re-record** `test/fixtures/cloud.json`
