@@ -8,10 +8,13 @@ The **v0 engine is complete and heavily tested**; the **Windows desktop app is
 dogfood-ready** (runs on a user-chosen synced folder + BYOK key). Latest session
 shipped **F2 reminders**, the **people loop** (Fable #3), and **on-open nudges**
 (Fable #4). **Fable's actionable priorities #1–#4 are all DONE**; #5–#8 are
-defer/do-not-build. **HEAD = `6cce275`**, working tree clean (ignore the
-pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
-`.claude/settings.local.json`), **1163 Dart tests + 8 Flutter widget tests green**,
-`dart analyze` clean.
+defer/do-not-build. The people loop is now deep (facts, relationships,
+interactions log/last/**list**, birthdays + nudges). **HEAD = `e0268ca`**, working
+tree clean (ignore the pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log`
++ untracked `.claude/settings.local.json`), **1165 Dart tests + 8 Flutter widget
+tests green**, `dart analyze` clean, and **`flutter build windows --debug` succeeds**
+(dogfood exe builds with all new features; no ATL needed since the toast plugin is
+deferred).
 
 **The immediate next task:** pick from the remaining options (all re-record-free
 except where noted) — see "Next task". The Fable roadmap's build items are done;
@@ -148,11 +151,13 @@ The bundle is intentionally secret-free; keep it that way.
   derive/reconcile (armed set DERIVED from the record store; idempotent). Session
   reconciles on init + every turn and exposes `pendingNudges()`.
 
-**`v0/data/`** — 8 types, **18 skills** (create/list/complete/delete-task, log-run,
+**`v0/data/`** — 8 types, **19 skills** (create/list/complete/delete-task, log-run,
 log-mood, count-runs-this-week, remember-person-fact, recall-facts, set/list/
-complete/cancel-reminder, log-interaction, last-interaction, **set/when/upcoming-
-birthday**), corpus.json. DSL compute fns now incl. `format_time`, `next_annual`,
-`days_until_annual`; the date resolver handles month-name dates.
+complete/cancel-reminder, log-interaction, last-interaction, **list-interactions**,
+set/when/upcoming-birthday), corpus.json. DSL compute fns now incl. `format_time`,
+`next_annual`, `days_until_annual`; the date resolver handles month-name dates.
+`lib/dates.dart` (shared annual math), `lib/people.dart` (birthday-nudge projection),
+`lib/reminders.dart` (notification seam + reconcile).
 **`v0/bin/plenara.dart`** — console (REPL / `--demo` / one-shot) over the same Session.
 **`app/`** — Flutter Windows chat UI; `buildSession()` from config; 2 widget tests.
 
@@ -162,6 +167,11 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **list-interactions + app build verify (done, `e0268ca`, `6cce275`):**
+  "what have I logged with X" (dated bullets + notes); grew app widget tests to 8
+  (undo, multi-turn, list render, busy state); clarified count-runs-this-week's
+  displayName so Haiku stops intermittently abstaining on "since Monday"; confirmed
+  `flutter build windows` succeeds.
 - **On-open birthday nudges (done, `74ee048`):** "🎂 X's birthday is in N days" on
   launch, derived from contacts (no new skill). Factored annual-date math into
   `lib/dates.dart` (shared by the interpreter + `lib/people.dart`). `pendingNudges()`
