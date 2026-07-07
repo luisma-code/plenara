@@ -7,16 +7,17 @@ _Last updated: 2026-07-07. Written to survive a Claude process relaunch._
 The **v0 engine is complete and heavily tested**; the **Windows desktop app is
 dogfood-ready** (runs on a user-chosen synced folder + BYOK key). Latest session
 shipped **F2: reminders + notifications** end-to-end (set / list / complete /
-cancel, on-open nudges, behind a `NotificationScheduler` seam — the retention hook).
-**HEAD = `0fddb86`**, working tree clean (ignore the
+cancel, on-open nudges, behind a `NotificationScheduler` seam) and started the
+**people loop** (log-interaction + last-interaction, Fable #3).
+**HEAD = `bf6cdc4`**, working tree clean (ignore the
 pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
-`.claude/settings.local.json`), **1057 Dart tests + 3 Flutter widget tests green**,
+`.claude/settings.local.json`), **1063 Dart tests + 3 Flutter widget tests green**,
 `dart analyze` clean.
 
-**The immediate next task:** deepen the **people loop** (Fable priority #3) —
-log-interaction, "when did I last talk to X", birthdays. Reuses `read_related`
-(contact ← interactions). See "Next task" below. (Reminder management — list /
-complete / cancel — is DONE this session.)
+**The immediate next task:** finish the **people loop** — birthdays
+("whose birthday is coming up", set/recall a contact's birthday). `contact.birthday`
+already exists; the gap is date math (days-until in the year), which the DSL lacks —
+see "Next task". log-interaction + "when did I last talk to X" are DONE this session.
 
 **One blocker for Luis (needs admin):** the native Windows toast for reminders
 needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
@@ -148,9 +149,9 @@ The bundle is intentionally secret-free; keep it that way.
   derive/reconcile (armed set DERIVED from the record store; idempotent). Session
   reconciles on init + every turn and exposes `pendingNudges()`.
 
-**`v0/data/`** — 7 types, **13 skills** (create/list/complete/delete-task, log-run,
+**`v0/data/`** — 8 types, **15 skills** (create/list/complete/delete-task, log-run,
 log-mood, count-runs-this-week, remember-person-fact, recall-facts, **set/list/
-complete/cancel-reminder**), corpus.json.
+complete/cancel-reminder**, **log-interaction, last-interaction**), corpus.json.
 **`v0/bin/plenara.dart`** — console (REPL / `--demo` / one-shot) over the same Session.
 **`app/`** — Flutter Windows chat UI; `buildSession()` from config; 2 widget tests.
 
@@ -160,6 +161,12 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **People loop pt.1 (done, `bf6cdc4`):** `interaction` type (subject→contact,
+  note, at) + `log-interaction` ("talked to/called/caught up with X [about Y]",
+  finds-or-creates the contact) + `last-interaction` ("when did I last talk to X",
+  MAX date via a foreach+gte/set reduction since the DSL has no sort). +6 tests.
+- **Reminder management (done, `0fddb86`):** list / complete / cancel-reminder;
+  complete sets `done:true` and cancel deletes → reconcile cancels the toast. +8 tests.
 - **F2 reminders + notifications (done, `4d30b68`):** `NotificationScheduler`
   seam (`v0/lib/reminders.dart`) with a `FakeScheduler`; the armed set is DERIVED
   from the record store and reconciled idempotently (on init + every turn), so
@@ -188,15 +195,24 @@ config (5), hardening (~20).
 
 ## Next task (build this, test-first)
 
-**F2 reminders is DONE** (set / list / complete / cancel / nudges / seam). Next:
+**F2 reminders DONE. People loop STARTED** (log-interaction + last-interaction).
+Next: **birthdays** to round out Fable #3.
 
-**Deepen the people loop (Fable #3):**
-- log-interaction ("talked to Sarah today"), "when did I last talk to X", birthdays.
-  New `interaction` type + skills; reuses `read_related` (contact ← interactions).
-- Note: adding skills grows the capability inventory → the cloud cassette's `invSig`
-  keys change → **re-record** `test/fixtures/cloud.json` (`dart run bin/record_fixtures.dart`,
-  needs the BYOK key in the rig `.env`). Routing stayed stable across the two
-  re-records this session; check the printed routes for shifts anyway.
+- Skills: set-birthday ("Sarah's birthday is March 3"), upcoming-birthdays
+  ("whose birthday is coming up", "when is Sarah's birthday"). `contact.birthday`
+  (a `date`) already exists — `remember-person-fact` could also set it, but a
+  dedicated skill is cleaner.
+- **DSL gap to close first:** there's no date math for "days until the next
+  occurrence of MM-DD". Add a small compute fn (e.g. `days_until_annual(date)` or
+  `next_birthday(date)`) to `interpreter.dart` — whitelist it in BOTH `_fns` sets
+  (the `compute` switch ~line 76 and the static `_fns` ~line 134) and unit-test it,
+  same as `format_time`. Then upcoming-birthdays = read_many contact → foreach →
+  compute days-until → filter/format. (Sorting/top-N isn't in the DSL; a "within N
+  days" branch filter is the pragmatic shape, like list-reminders' done filter.)
+- **Every new skill grows the inventory** → the cloud cassette's `invSig` keys
+  change → **re-record** `test/fixtures/cloud.json` (`dart run bin/record_fixtures.dart`,
+  needs the BYOK key in the rig `.env`). Routing stayed stable across THREE
+  re-records this session; still eyeball the printed routes for shifts.
 
 **Reminder architecture already in place (reuse it):** `v0/lib/reminders.dart`
 holds the `NotificationScheduler` seam + `FakeScheduler` + the pure derive/reconcile
