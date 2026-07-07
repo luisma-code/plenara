@@ -5,15 +5,27 @@ _Last updated: 2026-07-07. Written to survive a Claude process relaunch._
 ## TL;DR — where we are
 
 The **v0 engine is complete and heavily tested**; the **Windows desktop app is
-dogfood-ready** (runs on a user-chosen synced folder + BYOK key). We just finished
-implementing a full Fable code review + a "Track A / foundation" phase + the
-dogfood-enablement phase. **HEAD = `f8f7736`**, working tree clean, **1019 Dart
-tests + 2 Flutter widget tests green**, `dart analyze` clean.
+dogfood-ready** (runs on a user-chosen synced folder + BYOK key). Latest session
+shipped **F2: reminders + notifications behind a `NotificationScheduler` seam**
+(the retention hook). **HEAD = `4d30b68`**, working tree clean (ignore the
+pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
+`.claude/settings.local.json`), **1049 Dart tests + 3 Flutter widget tests green**,
+`dart analyze` clean.
 
-**The immediate next task:** build **reminders/notifications, test-first, behind a
-`NotificationScheduler` adapter interface** — see "Next task" below. Luis is
-enabling **Windows Developer Mode** (unblocks native Flutter plugins for
-notifications + voice); verify that first.
+**The immediate next task:** deepen the **people loop** (Fable priority #3) —
+log-interaction, "when did I last talk to X", birthdays — OR round out reminder
+management (list/complete/cancel-reminder skills). Both reuse the existing seams.
+See "Next task" below.
+
+**One blocker for Luis (needs admin):** the native Windows toast for reminders
+needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
+install. Everything else about reminders is done + tested against a fake scheduler;
+only the real toast render is gated. Command is in "Deferred / open".
+
+**Environment note (new machine/user `luism`):** re-established this session — git
+`safe.directory` exceptions added, `luisma-code` PAT re-stored in GCM (headless
+push verified), `dart pub get` re-run for both `v0/` and `app/`. Windows Dev Mode
+is ON (registry-verified).
 
 ## Two standing directives from Luis (most important context)
 
@@ -131,9 +143,13 @@ The bundle is intentionally secret-free; keep it that way.
   > scaffolded default) + `ensureSeeded` (copies built-in defs into the user folder).
 - `store.dart` (HLC + file fns, wrapped by the repo), `embed.dart`,
   `replay_cloud.dart` (record/replay cassette), `fixture_inputs.dart`.
+- `reminders.dart` — the `NotificationScheduler` OS seam + `FakeScheduler` + pure
+  derive/reconcile (armed set DERIVED from the record store; idempotent). Session
+  reconciles on init + every turn and exposes `pendingNudges()`.
 
-**`v0/data/`** — 6 types, **9 skills** (create/list/complete/delete-task, log-run,
-log-mood, count-runs-this-week, remember-person-fact, recall-facts), corpus.json.
+**`v0/data/`** — 7 types, **10 skills** (create/list/complete/delete-task, log-run,
+log-mood, count-runs-this-week, remember-person-fact, recall-facts, **set-reminder**),
+corpus.json.
 **`v0/bin/plenara.dart`** — console (REPL / `--demo` / one-shot) over the same Session.
 **`app/`** — Flutter Windows chat UI; `buildSession()` from config; 2 widget tests.
 
@@ -143,6 +159,18 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **F2 reminders + notifications (done, `4d30b68`):** `NotificationScheduler`
+  seam (`v0/lib/reminders.dart`) with a `FakeScheduler`; the armed set is DERIVED
+  from the record store and reconciled idempotently (on init + every turn), so
+  undo/delete/complete cancel toasts for free and re-open never double-arms.
+  New `reminder` type + `set-reminder` skill (graceful missing-time clarify),
+  corpus templates, `router.resolveDateTime` (a time-of-day is required = the
+  task-vs-reminder discriminator), `interpreter.format_time`. App shows past-due
+  reminders as on-open nudges. +30 v0 tests + 1 widget. Re-recorded the cloud
+  cassette (adding a skill grows invSig). Native Windows toast deferred (ATL).
+- **Hermeticity fix (`b6ca68c`):** the authoring path rebuilt the retrieval index
+  unconditionally; now it honors `init(retrieval:)` like init does, so authoring
+  is hermetic without the embed server (was a 30s timeout on a machine without it).
 - **Dogfood enablement (Fable #1, done):** config + first-run seeding (real folder
   + BYOK key), the turn-log measurement instrument, fixed the correction/read-only
   defect Fable found, `DOGFOOD.md`.
@@ -159,18 +187,25 @@ config (5), hardening (~20).
 
 ## Next task (build this, test-first)
 
-**Reminders + on-open nudges, behind a `NotificationScheduler` adapter.**
-- Interface `NotificationScheduler` { schedule(ref, when, body); cancel(ref); armed() }
-  with a `FakeScheduler` (test) and a real Windows impl (native plugin — needs Dev Mode).
-- Product-level tests (against the fake, in CI): "reminder for Thu 5pm arms exactly
-  one notification"; "undo cancels it"; "re-open re-derives the armed set, no dupes";
-  "past-due reminder → on-open nudge". Only "does Windows render the toast" is manual.
-- Likely needs: a `reminder` concept (task `dueAt` + a time, or a reminder type),
-  date-resolver extension (times of day), the on-open nudge surface in the Flutter UI
-  (also widget-tested), wiring undo/delete → `cancel`.
-- **First step when resuming:** confirm Dev Mode is on — `cd app && <flutter> pub add
-  flutter_local_notifications` (or chosen plugin) + `<flutter> build windows`. If it
-  builds, Dev Mode worked and native plugins (incl. voice later) are unblocked.
+**F2 reminders is DONE.** Pick the next increment (both reuse existing seams):
+
+**Option A — round out reminder management** (tight completion of F2):
+- `list-reminders` ("what are my reminders"), `complete-reminder` ("I called mom",
+  sets `done:true` → reconcile cancels the toast), `cancel-reminder` ("cancel the
+  reminder to call mom" → delete_record). Corpus templates + product tests. The
+  reconcile + nudge machinery already handles the notification side.
+
+**Option B — deepen the people loop (Fable #3):**
+- log-interaction ("talked to Sarah today"), "when did I last talk to X", birthdays.
+  New `interaction` type + skills; reuses `read_related` (contact ← interactions).
+
+**Reminder architecture already in place (reuse it):** `v0/lib/reminders.dart`
+holds the `NotificationScheduler` seam + `FakeScheduler` + the pure derive/reconcile
+(`desiredArmed`, `dueReminders`, `reconcileReminders`). Session takes an optional
+`scheduler`, reconciles on init + every turn, and exposes `pendingNudges()`. The
+armed set is derived from records, so any skill that writes/updates/deletes a
+`reminder` (typeId `reminder`, `remindAt` datetime, `done` bool) participates for
+free — no per-skill notification wiring.
 
 ## Fable's ranked next-phase priorities (strategic review)
 
@@ -185,6 +220,18 @@ config (5), hardening (~20).
 
 ## Deferred / open (don't lose these)
 
+- **Native Windows toast for reminders — BLOCKED on ATL (needs admin).** The real
+  `NotificationScheduler` impl (flutter_local_notifications, native C++/WinRT) needs
+  the ATL VS component. Dev Mode is on and the plugin symlinks/compiles; it only
+  fails on `fatal error C1083: 'atlbase.h'`. Install (ADMIN shell):
+  `& 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\setup.exe' modify --installPath 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools' --add Microsoft.VisualStudio.Component.VC.ATL --quiet --norestart`
+  Then: re-add `flutter_local_notifications`, write the real impl behind the seam,
+  inject it in `buildSession()`, `flutter build windows`, smoke a real toast. All
+  logic is already tested against `FakeScheduler`; only the render is manual.
+- **Cloud residual reminder times** — Haiku may route a reminder-ish utterance to
+  set-reminder but its `when` slot isn't run through `resolveDateTime`, so a natural
+  time ("tomorrow at 3pm") may not normalize. Corpus path is exact; cloud path for
+  reminders is best-effort. Normalize cloud datetime slots in Session as a follow-up.
 - **Voice** (STT/TTS) — behind `SpeechInput`/`SpeechOutput` seams; needs Dev Mode + audio hw.
 - **iOS build** — Apple hardware.
 - **Typed `CloudResult`** — distinguish offline / bad-key / rate-limited (minor UX; deferred).
