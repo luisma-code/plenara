@@ -15,13 +15,16 @@ fallback is gone from the app path. **Fable Phase 2 is DONE too** — discoverab
 ("what can you do"), a turnlog report, and partial-name matching with a disambiguation
 clarify ("Sam" → "Sam Rivera", or a "which one?" question). Then went DEEP on Phase-5
 capability: relationship queries (both directions), forget-fact (+ a `contains` cond),
-a due-tasks agenda ("what's due"), and recall-mood. Also **de-flaked the authoring
-fixtures** (recorder + schema-drift test now drive the real Session validate→retry
-loop, so re-records stop flaking on Haiku's first-shot out-of-vocab fns). **HEAD =
-`c9fb48e`**, working tree clean (ignore the pre-existing dirty
-`planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1194 Dart tests + 8 Flutter widget tests green** (23 skills), `dart analyze` clean,
-**`flutter build windows --debug` succeeds**.
+a due-tasks agenda, recall-mood, reschedule-reminder/task (snooze), and
+remember-relationship (offline "X is Y's Z"). Fixed real bugs found along the way —
+retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder kept
+its old toast), and the flagship "remember that Mia is Sarah's daughter" being
+cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
+the real Session validate→retry loop). **HEAD = `02f4388`**, working tree clean (ignore
+the pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
+`.claude/settings.local.json`), **1202 Dart tests + 8 Flutter widget tests green**
+(26 skills, incl. a "realistic day" cross-skill integration guard), `dart analyze`
+clean, **`flutter build windows --debug` succeeds**. `DOGFOOD.md` refreshed for tonight.
 
 **Working-mode enforcement (new):** a user-level **Stop hook**
 (`~/.claude/hooks/stop-guard.ps1` + `~/.claude/settings.json`) bounces any turn whose
@@ -165,10 +168,10 @@ The bundle is intentionally secret-free; keep it that way.
   derive/reconcile (armed set DERIVED from the record store; idempotent). Session
   reconciles on init + every turn and exposes `pendingNudges()`.
 
-**`v0/data/`** — 8 types, **23 skills**: tasks (create/list/complete/delete/due),
-running (log-run, count-runs-this-week), mood (log/**recall**), reminders (set/list/
-complete/cancel), people-facts (remember/recall/forget), interactions (log/last/list),
-list-relations, birthdays (set/when/upcoming). DSL compute fns: `format_time`,
+**`v0/data/`** — 8 types, **26 skills**: tasks (create/list/complete/delete/due/**reschedule**),
+running (log-run, count-runs-this-week), mood (log/recall), reminders (set/list/
+complete/cancel/**reschedule**), people-facts (remember/recall/forget/**remember-relationship**),
+interactions (log/last/list), list-relations, birthdays (set/when/upcoming). DSL compute fns: `format_time`,
 `next_annual`, `days_until_annual`; conds incl. **`contains`**; the date resolver
 handles month-name dates. Helper libs: `dates.dart` (annual math), `people.dart`
 (birthday-nudge projection), `reminders.dart` (notification seam + reconcile),
@@ -182,6 +185,12 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **More depth + real bug fixes (done, `02f4388` … `6a17c15`):** reschedule-reminder
+  (snooze) — which exposed and FIXED a `reconcileReminders` time-change bug (armed()
+  now returns ref→time so a rescheduled reminder re-arms); reschedule-task;
+  remember-relationship (closes the flagship "X is Y's Z" offline gap, found via an
+  end-to-end console smoke); a "realistic day" cross-skill integration test; DOGFOOD.md
+  refreshed for tonight (25+ skills to try, turnlog_report, ATL→toast→voice plan).
 - **Working-mode fix (done, `627d4cc` + user-level hook):** rewrote the "keep going"
   rule to target turn-endings + added a Stop hook that enforces it. See TL;DR.
 - **recall-mood + authoring de-flake (done, `c9fb48e`, `88c11c3`):** recall-mood
