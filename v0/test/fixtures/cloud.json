@@ -1,5 +1,5 @@
 {
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001jot down that I need to buy milk": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001jot down that I need to buy milk": {
     "skillId": "create-task",
     "slots": {
       "description": "buy milk",
@@ -7,7 +7,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001put emailing the accountant on my to-do list": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001put emailing the accountant on my to-do list": {
     "skillId": "create-task",
     "slots": {
       "description": "emailing the accountant",
@@ -15,7 +15,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001put picking up dry cleaning on my to-do list": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001put picking up dry cleaning on my to-do list": {
     "skillId": "create-task",
     "slots": {
       "description": "picking up dry cleaning",
@@ -23,7 +23,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001I have to renew the car registration, add that": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001I have to renew the car registration, add that": {
     "skillId": "create-task",
     "slots": {
       "description": "renew the car registration",
@@ -31,7 +31,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001jot down that I need to water the plants": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001jot down that I need to water the plants": {
     "skillId": "create-task",
     "slots": {
       "description": "water the plants",
@@ -39,7 +39,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001stick booking flights on my list": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001stick booking flights on my list": {
     "skillId": "create-task",
     "slots": {
       "description": "stick booking flights on my list",
@@ -47,87 +47,87 @@
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001I did a 6k jog this morning": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001I did a 6k jog this morning": {
     "skillId": "log-run",
     "slots": {
       "distance": 6
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001just finished running 8 kilometers": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001just finished running 8 kilometers": {
     "skillId": "log-run",
     "slots": {
       "distance": 8
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001went for a 5k this afternoon": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001went for a 5k this afternoon": {
     "skillId": "log-run",
     "slots": {
       "distance": 5
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001clocked a quick 3k": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001clocked a quick 3k": {
     "skillId": "log-run",
     "slots": {
       "distance": 3
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001feeling pretty anxious today": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001feeling pretty anxious today": {
     "skillId": "log-mood",
     "slots": {
-      "rating": "pretty anxious"
+      "rating": "feeling pretty anxious today"
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001I am in a great mood": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001I am in a great mood": {
     "skillId": "log-mood",
     "slots": {
       "rating": "great"
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001honestly kind of down right now": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001honestly kind of down right now": {
     "skillId": "log-mood",
     "slots": {
       "rating": "honestly kind of down right now"
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001refresh my memory on Sarah Mitchell": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001refresh my memory on Sarah Mitchell": {
     "skillId": "recall-facts",
     "slots": {
       "personName": "Sarah Mitchell"
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001what have I got on Mia": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001what have I got on Mia": {
     "skillId": "recall-facts",
     "slots": {
       "personName": "Mia"
     },
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001show me my whole to-do list": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001show me my whole to-do list": {
     "skillId": "list-tasks",
     "slots": {},
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001give me a rundown of all my tasks": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001give me a rundown of all my tasks": {
     "skillId": "list-tasks",
     "slots": {},
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001how much running have I done since Monday": {
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001how much running have I done since Monday": {
     "skillId": "count-runs-this-week",
     "slots": {},
     "source": "cloud"
   },
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001what's the capital of France": null,
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001tell me a joke": null,
-  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001what time is it in Tokyo": null,
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001what's the capital of France": null,
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001tell me a joke": null,
+  "route\u0001cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-mood,log-run,recall-facts,recall-mood,remember-person-fact,set-birthday,set-reminder,upcoming-birthdays,when-birthday\u0001what time is it in Tokyo": null,
   "author\u0001\u0001water intake": {
     "type": {
       "typeId": "water_intake_log",
@@ -171,15 +171,15 @@
       "examplePhrases": [
         "I drank 16 ounces of water",
         "Log 8 glasses of water",
-        "Add 500 ml to my water intake"
+        "I had 500 ml of water"
       ],
       "steps": {
         "main": [
           {
             "op": "compute",
-            "fn": "today",
+            "fn": "now",
             "args": [],
-            "into": "logDate"
+            "into": "timestamp"
           },
           {
             "op": "write_record",
@@ -192,14 +192,14 @@
                 "var": "unit"
               },
               "loggedAt": {
-                "var": "logDate"
+                "var": "timestamp"
               }
             },
             "into": "record"
           },
           {
             "op": "format",
-            "template": "Logged {amount} {unit} of water at {logDate}",
+            "template": "Logged {amount} {unit} of water intake",
             "into": "confirmationText"
           }
         ]
@@ -212,7 +212,7 @@
       "displayName": "Gratitude Journal Entry",
       "attributes": [
         {
-          "name": "gratitude_text",
+          "name": "gratitudeText",
           "valueType": "text",
           "required": true
         },
@@ -225,21 +225,21 @@
     },
     "skill": {
       "skillId": "log_gratitude",
-      "displayName": "Log Daily Gratitude",
+      "displayName": "Log Gratitude Entry",
       "reads": [],
       "writes": [
         "gratitude_entry"
       ],
       "inputs": [
         {
-          "name": "gratitude_text",
+          "name": "gratitudeText",
           "required": true
         }
       ],
       "examplePhrases": [
-        "Log my gratitude for today",
-        "Add to my gratitude journal",
-        "Record what I'm grateful for"
+        "log my gratitude for today",
+        "add to my gratitude journal",
+        "record what I'm grateful for"
       ],
       "steps": {
         "main": [
@@ -247,24 +247,24 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "entry_date"
+            "into": "entryDate"
           },
           {
             "op": "write_record",
             "typeId": "gratitude_entry",
             "fields": {
-              "gratitude_text": {
-                "var": "gratitude_text"
+              "gratitudeText": {
+                "var": "gratitudeText"
               },
               "loggedAt": {
-                "var": "entry_date"
+                "var": "entryDate"
               }
             },
-            "into": "new_entry"
+            "into": "newEntry"
           },
           {
             "op": "format",
-            "template": "✓ Gratitude logged for {entry_date}: {gratitude_text}",
+            "template": "Gratitude logged for {entryDate}: {gratitudeText}",
             "into": "confirmationText"
           }
         ]
@@ -287,7 +287,7 @@
           "required": false
         },
         {
-          "name": "completedDate",
+          "name": "completedAt",
           "valueType": "date",
           "required": true
         },
@@ -315,14 +315,14 @@
           "required": false
         },
         {
-          "name": "completedDate",
+          "name": "completedAt",
           "required": false
         }
       ],
       "examplePhrases": [
         "I finished reading The Great Gatsby",
         "Log that I completed Dune by Frank Herbert",
-        "Add 1984 to my finished books"
+        "Add To Kill a Mockingbird to my finished books"
       ],
       "steps": {
         "main": [
@@ -330,7 +330,7 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "todayVar"
+            "into": "logDate"
           },
           {
             "op": "write_record",
@@ -342,18 +342,18 @@
               "author": {
                 "var": "author"
               },
-              "completedDate": {
-                "var": "completedDate"
+              "completedAt": {
+                "var": "completedAt"
               },
               "loggedAt": {
-                "var": "todayVar"
+                "var": "logDate"
               }
             },
             "into": "record"
           },
           {
             "op": "format",
-            "template": "Great! I've logged that you finished reading {title} by {author}.",
+            "template": "Logged finished book: {title} by {author}",
             "into": "confirmationText"
           }
         ]
@@ -362,8 +362,8 @@
   },
   "author\u0001\u0001my weight": {
     "type": {
-      "typeId": "weight_entry",
-      "displayName": "Weight Entry",
+      "typeId": "weight_log",
+      "displayName": "Weight Log",
       "attributes": [
         {
           "name": "weight",
@@ -373,7 +373,7 @@
         {
           "name": "unit",
           "valueType": "text",
-          "required": true,
+          "required": false,
           "default": "lbs"
         },
         {
@@ -388,7 +388,7 @@
       "displayName": "Log Weight",
       "reads": [],
       "writes": [
-        "weight_entry"
+        "weight_log"
       ],
       "inputs": [
         {
@@ -401,9 +401,9 @@
         }
       ],
       "examplePhrases": [
-        "my weight is 175 pounds",
-        "i weigh 80 kilos",
-        "log weight 162"
+        "my weight is 175",
+        "log weight 168.5 pounds",
+        "i weigh 72 kilograms"
       ],
       "steps": {
         "main": [
@@ -411,11 +411,11 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "todayVar"
+            "into": "today_date"
           },
           {
             "op": "write_record",
-            "typeId": "weight_entry",
+            "typeId": "weight_log",
             "fields": {
               "weight": {
                 "var": "weight"
@@ -424,14 +424,14 @@
                 "var": "unit"
               },
               "loggedAt": {
-                "var": "todayVar"
+                "var": "today_date"
               }
             },
             "into": "record"
           },
           {
             "op": "format",
-            "template": "Logged weight of {weight} {unit} on {todayVar}",
+            "template": "Logged weight of {weight} {unit} on {today_date}",
             "into": "confirmationText"
           }
         ]
@@ -441,7 +441,7 @@
   "author\u0001\u0001coffee cups per day": {
     "type": {
       "typeId": "coffee_consumption",
-      "displayName": "Coffee Consumption",
+      "displayName": "Coffee Consumption Log",
       "attributes": [
         {
           "name": "cupsPerDay",
@@ -469,9 +469,9 @@
         }
       ],
       "examplePhrases": [
-        "I had 3 coffee cups today",
-        "Log 2 cups of coffee",
-        "I drank 4 coffees today"
+        "I had 3 cups of coffee today",
+        "Log 2 coffee cups",
+        "I drank 4 cups of coffee"
       ],
       "steps": {
         "main": [
@@ -492,11 +492,11 @@
                 "var": "todayDate"
               }
             },
-            "into": "record"
+            "into": "logEntry"
           },
           {
             "op": "format",
-            "template": "Logged {cupsPerDay} coffee cups for {todayDate}",
+            "template": "Logged {cupsPerDay} cups of coffee for today",
             "into": "confirmationText"
           }
         ]

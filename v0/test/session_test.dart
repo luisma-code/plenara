@@ -104,6 +104,19 @@ void main() {
     });
   });
 
+  group('recall-mood', () {
+    test('lists logged moods, with a clear message when there are none', () async {
+      final s = await _session();
+      expect(await s.handle('how have i been feeling'), contains("haven't logged any moods"));
+      await s.handle("i'm feeling great");
+      await s.handle('log my mood as tired');
+      final r = await s.handle('show my moods');
+      expect(r, contains('2 mood'));
+      expect(r, contains('great'));
+      expect(r, contains('tired'));
+    });
+  });
+
   group('cross-skill integration: write -> read', () {
     test('log a run, then the weekly count reflects it', () async {
       final s = await _session();
