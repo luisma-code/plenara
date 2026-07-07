@@ -290,7 +290,8 @@ void main() {
         'skillId': 'x',
         'steps': {'main': [
           {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'n'}}, 'into': 'p'},
-          {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'ref': 'p'}, 'fact': 'y'}, 'into': 'f'}
+          {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'ref': 'p'}, 'fact': 'y'}, 'into': 'f'},
+          {'op': 'format', 'template': 'ok', 'into': 'confirmation'}
         ]}
       };
       expect(() => _i().validateSkill(s), returnsNormally);
@@ -300,7 +301,8 @@ void main() {
         'skillId': 'x',
         'steps': {'main': [
           {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'n'}}, 'into': 'p'},
-          {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'field': ['p', 'id']}, 'fact': 'y'}, 'into': 'f'}
+          {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'field': ['p', 'id']}, 'fact': 'y'}, 'into': 'f'},
+          {'op': 'format', 'template': 'ok', 'into': 'confirmation'}
         ]}
       };
       expect(() => _i().validateSkill(s), returnsNormally);
@@ -312,10 +314,75 @@ void main() {
           {'op': 'read_many', 'typeId': 'contact', 'into': 'ps'},
           {'op': 'foreach', 'list': {'var': 'ps'}, 'as': 'p', 'body': [
             {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'ref': 'p'}, 'fact': 'y'}, 'into': 'f'}
-          ]}
+          ]},
+          {'op': 'format', 'template': 'ok', 'into': 'confirmation'}
         ]}
       };
       expect(() => _i().validateSkill(s), returnsNormally);
+    });
+  });
+
+  group('hardened authoring gate (Fable review)', () {
+    Map<String, dynamic> skill(List main) => {'skillId': 'x', 'steps': {'main': main}};
+    final ok = {'op': 'format', 'template': 'done', 'into': 'confirmation'};
+
+    test('unknown op rejected', () {
+      expect(() => _i().validateSkill(skill([{'op': 'delete_everything'}, ok])), throwsA(isA<ResolveError>()));
+    });
+    test('spec-legal-but-unimplemented op (delete_record) rejected at the gate', () {
+      expect(() => _i().validateSkill(skill([{'op': 'delete_record', 'id': {'var': 'x'}}, ok])), throwsA(isA<ResolveError>()));
+    });
+    test('unknown compute fn (spec sum, unimplemented) rejected', () {
+      expect(() => _i().validateSkill(skill([{'op': 'compute', 'fn': 'sum', 'args': [], 'into': 'x'}, ok])), throwsA(isA<ResolveError>()));
+    });
+    test('write to unknown type rejected', () {
+      expect(() => _i().validateSkill(skill([{'op': 'write_record', 'typeId': 'ghost', 'fields': {}, 'into': 'r'}, ok])), throwsA(isA<ResolveError>()));
+    });
+    test('read_many bad filter op rejected at the gate', () {
+      expect(() => _i().validateSkill(skill([{'op': 'read_many', 'typeId': 'task', 'filter': {'field': 'dueAt', 'op': 'gte', 'value': 1}, 'into': 'ts'}, ok])), throwsA(isA<ResolveError>()));
+    });
+    test('read_many unknown filter op also throws at resolve time', () {
+      final s = skill([{'op': 'read_many', 'typeId': 'task', 'filter': {'field': 'dueAt', 'op': 'gte', 'value': 1}, 'into': 'ts'}, ok]);
+      expect(() => _i().resolve(s, {}, _store()), throwsA(isA<ResolveError>()));
+    });
+    test('missing confirmation rejected', () {
+      expect(() => _i().validateSkill(skill([{'op': 'compute', 'fn': 'today', 'into': 't'}])), throwsA(isA<ResolveError>()));
+    });
+    test('missing steps.main rejected without crashing', () {
+      expect(() => _i().validateSkill({'skillId': 'x'}), throwsA(isA<ResolveError>()));
+      expect(() => _i().validateSkill({'skillId': 'x', 'steps': {}}), throwsA(isA<ResolveError>()));
+    });
+    test('branch-leak: a var resolved only in then, used after the branch, is rejected', () {
+      final s = skill([
+        {'op': 'branch', 'cond': {'notNull': 'q'}, 'then': [
+          {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'q'}}, 'into': 'p'}
+        ], 'else': []},
+        {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'ref': 'p'}, 'fact': 'y'}, 'into': 'f'},
+        ok,
+      ]);
+      expect(() => _i().validateSkill(s), throwsA(isA<ResolveError>()));
+    });
+    test('refType mismatch: entity ref to a wrong-typed record is rejected', () {
+      final s = skill([
+        {'op': 'read_one', 'typeId': 'task', 'match': {'description': {'var': 'd'}}, 'into': 't'},
+        {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'ref': 't'}, 'fact': 'y'}, 'into': 'f'},
+        ok,
+      ]);
+      expect(() => _i().validateSkill(s), throwsA(isA<ResolveError>()));
+    });
+    test('validateType rejects unknown valueType + entity without refType; accepts valid', () {
+      expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'bogus'}]}), throwsA(isA<ResolveError>()));
+      expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'entity'}]}), throwsA(isA<ResolveError>()));
+      expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'text'}]}), returnsNormally);
+    });
+    test('mint produces unique ids across 500 fresh interpreters (no cross-session collision)', () {
+      final ids = <String>{};
+      for (var k = 0; k < 500; k++) {
+        final p = Interpreter(_types, _now).resolve(_skills['create-task']!, {'description': 'x'}, _store());
+        ids.add(p.writes.first['id'] as String);
+      }
+      expect(ids.length, 500, reason: 'every minted id must be unique across sessions');
+      expect(ids.first, startsWith('task-'));
     });
   });
 

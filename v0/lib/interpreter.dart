@@ -4,6 +4,8 @@
 /// [validateSkill] is the authoring-time static gate (Spec 02 §6.4, incl. G-17).
 library;
 
+import 'dart:math';
+
 class ResolveError implements Exception {
   final String message;
   ResolveError(this.message);
@@ -20,14 +22,31 @@ class Plan {
   String? confirmation;
 }
 
+/// Mutable accumulator threaded through static validation.
+class _VCtx {
+  final String sid;
+  bool setsConfirmation = false;
+  _VCtx(this.sid);
+}
+
 class Interpreter {
   final Map<String, TypeDef> types;
   final DateTime now;
-  int _idc = 0;
-  Interpreter(this.types, this.now);
+  final Random _rng;
+  Interpreter(this.types, this.now, {Random? rng}) : _rng = rng ?? Random();
 
-  String _mint(String typeId) =>
-      '$typeId-${(++_idc).toString().padLeft(4, '0')}';
+  /// Mint a globally-unique record id (Spec 02 §4.4). A UUID-v4 with a typeId
+  /// prefix: unique across process restarts AND across devices, so a later
+  /// session (or a second device) can never collide with a persisted record and
+  /// silently overwrite it. (A per-session sequential counter did exactly that.)
+  String _mint(String typeId) {
+    final b = List<int>.generate(16, (_) => _rng.nextInt(256));
+    b[6] = (b[6] & 0x0f) | 0x40; // version 4
+    b[8] = (b[8] & 0x3f) | 0x80; // variant
+    final h = b.map((x) => x.toRadixString(16).padLeft(2, '0')).join();
+    return '$typeId-${h.substring(0, 8)}-${h.substring(8, 12)}-${h.substring(12, 16)}-'
+        '${h.substring(16, 20)}-${h.substring(20)}';
+  }
 
   // ---- value + expression evaluation (closed vocabulary) -------------------
   dynamic val(dynamic v, Map<String, dynamic> env) {
@@ -82,7 +101,10 @@ class Interpreter {
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   static DateTime? _asDate(dynamic s) {
     if (s == null) return null;
-    return DateTime.tryParse(s.toString().substring(0, 10));
+    final str = s.toString();
+    // never throw: only take the date prefix when it's actually there. A stray
+    // non-date slot (e.g. a leaked "none" from the cloud) parses to null, not a crash.
+    return DateTime.tryParse(str.length >= 10 ? str.substring(0, 10) : str);
   }
 
   bool cond(Map c, Map<String, dynamic> env) {
@@ -104,43 +126,116 @@ class Interpreter {
     throw ResolveError('unknown cond $c');
   }
 
-  // ---- static validation (authoring-time gate; G-17) ----------------------
-  void validateSkill(Skill skill) {
-    _validate((skill['steps']['main'] as List), <String>{},
-        skill['skillId']?.toString() ?? '?');
+  // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
+  static const _ops = {'read_one', 'read_many', 'write_record', 'compute', 'set', 'format', 'branch', 'foreach'};
+  static const _fns = {'now', 'today', 'format_date', 'start_of_week', 'add', 'count', 'concat'};
+  static const _valueTypes = {'text', 'date', 'datetime', 'decimal', 'integer', 'boolean', 'entity', 'enum'};
+
+  /// Validate an authored TYPE def (Spec 01 §3). Throws ResolveError (never a
+  /// raw TypeError) so the authoring retry loop can catch it.
+  void validateType(Map<String, dynamic> type) {
+    final tid = type['typeId'];
+    if (tid is! String) throw ResolveError('type must have a string typeId');
+    final attrs = type['attributes'];
+    if (attrs is! List) throw ResolveError("type '$tid': attributes must be a list");
+    for (final a in attrs) {
+      if (a is! Map || a['name'] is! String) throw ResolveError("type '$tid': each attribute needs a name");
+      if (!_valueTypes.contains(a['valueType'])) {
+        throw ResolveError("type '$tid': attribute '${a['name']}' has unknown valueType '${a['valueType']}'");
+      }
+      if (a['valueType'] == 'entity' && a['refType'] is! String) {
+        throw ResolveError("type '$tid': entity attribute '${a['name']}' needs a refType");
+      }
+    }
   }
 
-  void _validate(List steps, Set<String> recordVars, String sid) {
-    for (final step in steps) {
+  /// The authoring gate. Total over arbitrary JSON (raises ResolveError, never a
+  /// raw Error), whitelists the closed op/fn vocabulary, checks every entity
+  /// field traces to a resolved record reference of the right refType on ALL
+  /// paths (G-17, branch-sound), and requires a confirmation to be produced.
+  void validateSkill(Skill skill) {
+    final sid = skill['skillId']?.toString() ?? '?';
+    final steps = skill['steps'];
+    if (steps is! Map || steps['main'] is! List) {
+      throw ResolveError("$sid: skill must have steps.main (a list of ops)");
+    }
+    final c = _VCtx(sid);
+    _validate(steps['main'] as List, <String, String?>{}, <String, String?>{}, c);
+    if (!c.setsConfirmation) {
+      throw ResolveError("$sid: no step produces a 'confirmation' (a format op into confirmation is required)");
+    }
+  }
+
+  // recVars: var -> typeId of a resolved RECORD; listVars: var -> element typeId of a read_many LIST.
+  void _validate(List steps, Map<String, String?> recVars, Map<String, String?> listVars, _VCtx c) {
+    for (final raw in steps) {
+      if (raw is! Map) throw ResolveError("${c.sid}: a step must be an object, got $raw");
+      final step = raw;
       final op = step['op'];
-      if (op == 'write_record') {
-        final td = types[step['typeId']]!;
-        final entity = {
-          for (final a in (td['attributes'] as List))
-            if (a['valueType'] == 'entity') a['name']
-        };
-        (step['fields'] as Map).forEach((name, fval) {
-          if (!entity.contains(name)) return;
-          final ok = fval is Map &&
-              ((recordVars.contains(fval['ref'])) ||
-                  (fval.containsKey('field') &&
-                      recordVars.contains((fval['field'] as List)[0]) &&
-                      (fval['field'] as List)[1] == 'id'));
-          if (!ok) {
-            throw ResolveError(
-                "$sid: entity field '${step['typeId']}.$name' is fed by $fval, not a "
-                "resolved record reference — resolve it via read_one first (G-17, static)");
+      if (!_ops.contains(op)) {
+        throw ResolveError("${c.sid}: unknown op '$op' (closed vocabulary: ${_ops.join(', ')})");
+      }
+      switch (op) {
+        case 'compute':
+          if (!_fns.contains(step['fn'])) throw ResolveError("${c.sid}: unknown compute fn '${step['fn']}'");
+        case 'read_one':
+          final tid = step['typeId'];
+          if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_one unknown type '$tid'");
+          if (step['into'] is String) recVars[step['into'] as String] = tid as String;
+        case 'read_many':
+          final tid = step['typeId'];
+          if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_many unknown type '$tid'");
+          final f = step['filter'];
+          if (f != null && f['op'] != 'eq') throw ResolveError("${c.sid}: read_many unsupported filter op '${f['op']}'");
+          if (step['into'] is String) listVars[step['into'] as String] = tid as String;
+        case 'write_record':
+          final tid = step['typeId'];
+          final td = types[tid];
+          if (td == null) throw ResolveError("${c.sid}: write_record unknown type '$tid'");
+          final entity = <String, dynamic>{
+            for (final a in ((td['attributes'] as List?) ?? []))
+              if (a is Map && a['valueType'] == 'entity') a['name'] as String: a['refType']
+          };
+          ((step['fields'] as Map?) ?? {}).forEach((name, fval) {
+            if (!entity.containsKey(name)) return;
+            String? srcVar;
+            if (fval is Map && fval['ref'] is String) {
+              srcVar = fval['ref'] as String;
+            } else if (fval is Map &&
+                fval['field'] is List &&
+                (fval['field'] as List).length == 2 &&
+                (fval['field'] as List)[1] == 'id') {
+              srcVar = (fval['field'] as List)[0] as String;
+            }
+            if (srcVar == null || !recVars.containsKey(srcVar)) {
+              throw ResolveError("${c.sid}: entity field '$tid.$name' must be fed by a resolved record "
+                  "reference (read_one/write_record → {ref}), not $fval (G-17, static)");
+            }
+            final refType = entity[name], srcType = recVars[srcVar];
+            if (refType is String && srcType != null && srcType != refType) {
+              throw ResolveError("${c.sid}: entity field '$tid.$name' expects a $refType, but '$srcVar' is a $srcType");
+            }
+          });
+          if (step['into'] is String) recVars[step['into'] as String] = tid as String;
+        case 'format':
+          if (step['into'] == 'confirmation') c.setsConfirmation = true;
+        case 'branch':
+          final tRec = Map<String, String?>.from(recVars), eRec = Map<String, String?>.from(recVars);
+          final tList = Map<String, String?>.from(listVars), eList = Map<String, String?>.from(listVars);
+          _validate((step['then'] as List?) ?? const [], tRec, tList, c);
+          _validate((step['else'] as List?) ?? const [], eRec, eList, c);
+          // only bindings resolved on BOTH paths (same type) survive the branch
+          for (final k in tRec.keys) {
+            if (!recVars.containsKey(k) && eRec.containsKey(k) && eRec[k] == tRec[k]) recVars[k] = tRec[k];
           }
-        });
-        if (step.containsKey('into')) recordVars.add(step['into']);
-      } else if (op == 'read_one' && step.containsKey('into')) {
-        recordVars.add(step['into']);
-      } else if (op == 'branch') {
-        _validate((step['then'] ?? []) as List, recordVars, sid);
-        _validate((step['else'] ?? []) as List, recordVars, sid);
-      } else if (op == 'foreach') {
-        final scoped = {...recordVars, step['as'] as String};
-        _validate(step['body'] as List, scoped, sid);
+        case 'foreach':
+          final listExpr = step['list'];
+          final elemType = (listExpr is Map && listExpr['var'] is String) ? listVars[listExpr['var']] : null;
+          final scoped = Map<String, String?>.from(recVars);
+          if (step['as'] is String) scoped[step['as'] as String] = elemType;
+          _validate((step['body'] as List?) ?? const [], scoped, Map<String, String?>.from(listVars), c);
+        case 'set':
+          break;
       }
     }
   }
@@ -188,8 +283,13 @@ class Interpreter {
         var recs = store.values.where((r) => r['typeId'] == step['typeId']).toList();
         final f = step['filter'];
         if (f != null) {
+          if (f['op'] != 'eq') {
+            // an unknown filter op must fail loudly — silently matching everything
+            // would turn a wrong filter into a mass write (no silent failure, P7)
+            throw ResolveError("read_many: unsupported filter op '${f['op']}' (only 'eq')");
+          }
           final fv = val(f['value'], env); // resolve {var}/{ref}/literal -> dynamic filters
-          recs = recs.where((r) => f['op'] == 'eq' ? r[f['field']] == fv : true).toList();
+          recs = recs.where((r) => r[f['field']] == fv).toList();
         }
         env[step['into']] = recs;
       case 'write_record':
