@@ -73,6 +73,37 @@ Same machine, different user? Simplest is to copy
 `C:\Users\lmh10\.claude\projects\Z--code-plenara\` into the new user's
 `.claude\projects\` — but it's optional; the in-repo docs cover everything.
 
+## Transferring the repo + credentials to the new context
+
+**Repo state: RESOLVED — origin is current.** `origin` =
+`github.com/luisma-code/plenara.git` (public). All work is pushed;
+`origin/main` == local `main`. Push auth was initially denied (this session
+commits as GitHub user `cognivita-ai`, which lacks write access to
+`luisma-code/plenara`); resolved by storing a **`luisma-code` PAT** in the OS
+credential store (Git Credential Manager). Config set for headless push:
+`credential.interactive=false`, `credential.guiPrompt=false` (so GCM never blocks
+on a GUI). Future `git push origin main` works non-interactively.
+
+> **⚠ ROTATE the PAT.** The token was transmitted in chat → treat it as
+> compromised. Generate a new fine-grained PAT (Contents: Read+Write on plenara)
+> and re-store it: `printf 'protocol=https\nhost=github.com\nusername=luisma-code\npassword=<NEW>\n\n' | git credential approve`. The remote URL is token-free (verified); the token lives only in GCM, never in the repo/bundle.
+
+- **Credential-free fallback bundle:** **`Z:\code\plenara.bundle`** has the full
+  history (verified clonable, scanned clean) for moving to a machine without git
+  creds — `git clone plenara.bundle plenara`. Regenerate: `git bundle create ../plenara.bundle --all`.
+
+**Two different "Claude keys" — don't conflate:**
+1. **Claude Code auth** (to RUN Claude as the new user): the new user signs in with
+   their OWN Claude login / subscription (or configures their own Claude Code API key).
+   Not transferable by tooling — it's per-user account auth.
+2. **Anthropic BYOK key** (the app's own API calls — routing, authoring, the fixture
+   recorder): rotate the exposed one, then supply via `ANTHROPIC_API_KEY` env /
+   `planning\specs\05a-rig\.env` / `~/.plenara/config.json` (see setup above).
+
+**Security:** move every credential (GitHub PAT, the BYOK key) **out-of-band** — a
+password manager or a secure channel — **never in the repo, a commit, or the bundle.**
+The bundle is intentionally secret-free; keep it that way.
+
 ## What's built (the code)
 
 **`v0/lib/` — the engine (~pure Dart, ~1,600 lines):**
