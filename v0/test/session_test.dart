@@ -31,6 +31,8 @@ class _MemStorage implements StorageRepository {
   @override
   void appendCorpusLearned(Map<String, dynamic> entry) => learned.add(entry);
   @override
+  void removeCorpusLearned(String template) => learned.removeWhere((e) => (e as Map)['template'] == template);
+  @override
   void writeDef(String subdir, String idKey, Map<String, dynamic> def) =>
       (subdir == 'types' ? types : skills)[def[idKey] as String] = def;
 }

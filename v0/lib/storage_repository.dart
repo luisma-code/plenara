@@ -26,6 +26,7 @@ abstract interface class StorageRepository {
   /// The learned-corpus append log (NLU corrections corpus, Spec 03 §5).
   List<dynamic> loadCorpusLearned();
   void appendCorpusLearned(Map<String, dynamic> entry);
+  void removeCorpusLearned(String template); // §5.2 negative half: forget a bad learned template
 
   /// Persist an authored type/skill definition file (Spec 02 §6 authoring).
   void writeDef(String subdir, String idKey, Map<String, dynamic> def);
@@ -60,6 +61,13 @@ class FileStorageRepository implements StorageRepository {
   @override
   void appendCorpusLearned(Map<String, dynamic> entry) {
     final list = loadCorpusLearned()..add(entry);
+    File('$dataDir/corpus-learned.json')
+        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(list));
+  }
+
+  @override
+  void removeCorpusLearned(String template) {
+    final list = loadCorpusLearned().where((e) => (e as Map)['template'] != template).toList();
     File('$dataDir/corpus-learned.json')
         .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(list));
   }

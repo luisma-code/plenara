@@ -23,6 +23,7 @@ class CorpusEntry {
 class Router {
   final List<CorpusEntry> corpus;
   final DateTime now;
+  final Set<String> _learnedTemplates = {}; // templates added by learn() / loaded as learned
   Router(this.corpus, this.now);
 
   static Router load(String path, DateTime now, {String? learnedPath}) {
@@ -30,12 +31,27 @@ class Router {
     for (final e in jsonDecode(File(path).readAsStringSync()) as List) {
       entries.add(_compile(e as Map<String, dynamic>));
     }
+    final learned = <String>{};
     if (learnedPath != null && File(learnedPath).existsSync()) {
       for (final e in jsonDecode(File(learnedPath).readAsStringSync()) as List) {
-        entries.insert(0, _compile(e as Map<String, dynamic>)); // learned tried first
+        final m = e as Map<String, dynamic>;
+        entries.insert(0, _compile(m)); // learned tried first
+        learned.add(m['template'] as String);
       }
     }
-    return Router(entries, now);
+    return Router(entries, now).._learnedTemplates.addAll(learned);
+  }
+
+  bool isLearned(String template) => _learnedTemplates.contains(template);
+
+  /// Forget a learned template (§5.2 NEGATIVE half): when a learned entry
+  /// misroutes and the user corrects it, drop it so it can't misroute again.
+  /// Only removes LEARNED templates — a seed template is never forgotten this way.
+  bool forget(String template) {
+    if (!_learnedTemplates.contains(template)) return false;
+    corpus.removeWhere((c) => c.template == template);
+    _learnedTemplates.remove(template);
+    return true;
   }
 
   /// Learn a phrasing (§5.2 write path): abstract the extracted slot values back
@@ -67,6 +83,7 @@ class Router {
     if (t.replaceAll(RegExp(r'\{\w+:\w+\}'), ' ').trim().isEmpty) return null;
     if (corpus.any((c) => c.template == t)) return null; // dedupe: nothing new to persist
     corpus.insert(0, _compile({'skillId': skillId, 'template': t}));
+    _learnedTemplates.add(t);
     return t;
   }
 
@@ -126,7 +143,7 @@ class Router {
         if (v == null && type == 'date') ok = false; // unparseable date -> not this template
         slots[name] = v;
       });
-      if (ok) return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus'};
+      if (ok) return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};
     }
     return null;
   }

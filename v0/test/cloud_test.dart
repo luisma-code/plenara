@@ -103,6 +103,20 @@ void main() {
     });
   });
 
+  group('replay through Session — corpus-learning NEGATIVE half (§5.2)', () {
+    test('a correction forgets the learned template that routed the corrected turn', () async {
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _cloud());
+      await s.init(retrieval: false);
+      const t = 'jot down that I need to {description:text}';
+      await s.handle('jot down that I need to buy milk'); // cloud routes + learns t
+      expect(s.router.isLearned(t), isTrue);
+      await s.handle('jot down that I need to sweep'); // corpus routes via the learned t
+      await s.handle('no, I meant to log a 3k run'); // correction -> forgets t
+      expect(s.router.isLearned(t), isFalse);
+      expect(s.router.route('jot down that I need to vacuum'), isNull); // t is gone from routing
+    });
+  });
+
   group('replay through Session — authoring registers a working capability', () {
     test('"start tracking my water intake" authors, validates, and registers', () async {
       final dir = makeTempDataDir();

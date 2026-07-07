@@ -35,7 +35,8 @@ final _idRe = RegExp(r'^[a-z0-9_-]{1,64}$');
 class _JournalEntry {
   final Map<String, Map<String, dynamic>?> before;
   final String? desc;
-  _JournalEntry(this.before, this.desc);
+  final String? learnedTemplate; // the LEARNED corpus template that routed this turn (if any)
+  _JournalEntry(this.before, this.desc, {this.learnedTemplate});
 }
 
 class Session {
@@ -126,6 +127,11 @@ class Session {
         final entry = _journal.removeLast();
         _reverse(entry.before);
         pre = 'Got it — undid that. ';
+        // §5.2 negative half: a correction means the routing was wrong. If a LEARNED
+        // template misrouted this turn, forget it so it can't misroute again.
+        if (entry.learnedTemplate != null && router.forget(entry.learnedTemplate!)) {
+          repo.removeCorpusLearned(entry.learnedTemplate!);
+        }
       }
       return '$pre${await _handle(corr.group(1)!.trim())}';
     }
@@ -203,7 +209,10 @@ class Session {
         repo.remove(id);
       }
       if (plan.writes.isNotEmpty || plan.deletes.isNotEmpty) {
-        _journal.add(_JournalEntry(before, plan.confirmation));
+        // remember if a LEARNED template routed this — so a correction can forget it
+        final tmpl = routed['source'] == 'corpus' ? routed['template'] as String? : null;
+        final learned = (tmpl != null && router.isLearned(tmpl)) ? tmpl : null;
+        _journal.add(_JournalEntry(before, plan.confirmation, learnedTemplate: learned));
         if (_journal.length > _journalMax) _journal.removeAt(0);
       }
       if (routed['source'] == 'cloud') {

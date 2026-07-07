@@ -251,6 +251,16 @@ void main() {
       expect(r.learn('jot down that I need to buy milk', 'create-task', {'description': 'buy milk'}), isNotNull);
       expect(r.learn('jot down that I need to sweep', 'create-task', {'description': 'sweep'}), isNull);
     });
+    test('negative half: forget removes a learned template; a seed template is never forgotten', () {
+      final r = Router.load('data/corpus.json', _now);
+      r.learn('jot down that I need to buy milk', 'create-task', {'description': 'buy milk'});
+      const t = 'jot down that I need to {description:text}';
+      expect(r.isLearned(t), isTrue);
+      expect(r.route('jot down that I need to sweep')?['skillId'], 'create-task');
+      expect(r.forget(t), isTrue);
+      expect(r.route('jot down that I need to sweep'), isNull); // forgotten
+      expect(r.forget('add {description:text} to my {_:text}'), isFalse); // seed can't be forgotten
+    });
   });
 
   group('known corpus fast-path limitations (documented; cloud handles these)', () {
