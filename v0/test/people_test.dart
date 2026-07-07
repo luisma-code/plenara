@@ -129,6 +129,29 @@ void main() {
     });
   });
 
+  group('list-interactions', () {
+    test('lists logged interactions with dates + notes, newest data intact', () async {
+      final dir = makeTempDataDir();
+      await (await _session(dir, clock: _d('2026-07-06'))).handle('talked to Sarah about the school trip');
+      await (await _session(dir, clock: _d('2026-07-08'))).handle('called Sarah');
+
+      final s = await _session(dir, clock: _d('2026-07-10'));
+      final r = await s.handle('what have i logged with Sarah');
+      expect(r, contains('2 interaction'));
+      expect(r, contains('2026-07-06'));
+      expect(r, contains('the school trip')); // the note
+      expect(r, contains('2026-07-08'));
+    });
+
+    test('unknown contact / a contact with no interactions', () async {
+      final dir = makeTempDataDir();
+      final s = await _session(dir, clock: _d('2026-07-06'));
+      expect(await s.handle('my history with Nobody'), contains("don't have"));
+      await s.handle('note that Priya loves climbing'); // contact, no interaction
+      expect(await s.handle('our history with Priya'), contains("haven't logged any"));
+    });
+  });
+
   group('on-open birthday nudges (derived, no new skill)', () {
     test('a birthday within a week nudges on open; a far-off one does not', () async {
       final dir = makeTempDataDir();

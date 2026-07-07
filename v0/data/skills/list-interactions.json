@@ -1,0 +1,120 @@
+{
+  "skillId": "list-interactions",
+  "displayName": "List your logged interactions with a person",
+  "reads": [
+    "contact",
+    "interaction"
+  ],
+  "writes": [],
+  "inputs": [
+    { "name": "personName", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          {
+            "op": "format",
+            "template": "I don't have {personName} as a contact yet.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "read_related",
+            "typeId": "interaction",
+            "via": "subject",
+            "from": { "ref": "person" },
+            "into": "ints"
+          },
+          { "op": "set", "var": "lines", "value": "" },
+          {
+            "op": "foreach",
+            "list": { "var": "ints" },
+            "as": "i",
+            "body": [
+              {
+                "op": "compute",
+                "fn": "format_date",
+                "args": [ { "field": [ "i", "at" ] }, "EEEE" ],
+                "into": "d"
+              },
+              {
+                "op": "set",
+                "var": "noteText",
+                "value": { "field": [ "i", "note" ] }
+              },
+              {
+                "op": "branch",
+                "cond": { "isNull": "noteText" },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "concat",
+                    "args": [
+                      { "var": "lines" },
+                      "\n  • ",
+                      { "field": [ "i", "at" ] },
+                      " (",
+                      { "var": "d" },
+                      ")"
+                    ],
+                    "into": "lines"
+                  }
+                ],
+                "else": [
+                  {
+                    "op": "compute",
+                    "fn": "concat",
+                    "args": [
+                      { "var": "lines" },
+                      "\n  • ",
+                      { "field": [ "i", "at" ] },
+                      " (",
+                      { "var": "d" },
+                      ") — ",
+                      { "var": "noteText" }
+                    ],
+                    "into": "lines"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "compute",
+            "fn": "count",
+            "args": [ { "var": "ints" } ],
+            "into": "n"
+          },
+          {
+            "op": "branch",
+            "cond": { "gte": [ { "var": "n" }, 1 ] },
+            "then": [
+              {
+                "op": "format",
+                "template": "You've logged {n} interaction(s) with {personName}:{lines}",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "You haven't logged any interactions with {personName} yet.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

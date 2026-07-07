@@ -1,6 +1,6 @@
 {
   "skillId": "count-runs-this-week",
-  "displayName": "Total running distance this week",
+  "displayName": "How much you've run this week / since Monday (total running distance, week-to-date)",
   "reads": [
     "workout"
   ],
