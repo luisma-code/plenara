@@ -63,6 +63,22 @@ void main() {
     test('longest_streak finds the max run', () => expect(_i().compute('longest_streak',
         [[{'date': '2026-07-01'}, {'date': '2026-07-02'}, {'date': '2026-07-03'}, {'date': '2026-07-06'}], 'date'], {}), 3));
     test('streak over empty list -> 0', () => expect(_i().compute('current_streak', [[], 'date'], {}), 0));
+    // aggregation + date math (spec §3.7)
+    test('sum over a field', () => expect(_i().compute('sum', [[{'d': 2}, {'d': 3}, {'d': 5}], 'd'], {}), 10));
+    test('sum parses numeric strings', () => expect(_i().compute('sum', [[{'d': '2.5'}, {'d': '1.5'}], 'd'], {}), 4.0));
+    test('avg over a field', () => expect(_i().compute('avg', [[{'d': 2}, {'d': 4}], 'd'], {}), 3));
+    test('avg empty -> 0', () => expect(_i().compute('avg', [[], 'd'], {}), 0));
+    test('min / max', () {
+      expect(_i().compute('min', [[{'d': 5}, {'d': 2}, {'d': 8}], 'd'], {}), 2);
+      expect(_i().compute('max', [[{'d': 5}, {'d': 2}, {'d': 8}], 'd'], {}), 8);
+    });
+    test('count_where', () => expect(_i().compute('count_where', [[{'a': 'run'}, {'a': 'walk'}, {'a': 'run'}], 'a', 'run'], {}), 2));
+    test('days_between', () => expect(_i().compute('days_between', ['2026-07-06', '2026-07-10'], {}), 4));
+    test('add_days', () => expect(_i().compute('add_days', ['2026-07-06', 5], {}), '2026-07-11'));
+    test('if ternary', () {
+      expect(_i().compute('if', [true, 'a', 'b'], {}), 'a');
+      expect(_i().compute('if', [false, 'a', 'b'], {}), 'b');
+    });
     test('start_of_week(Wed) -> Monday', () => expect(_i().compute('start_of_week', ['2026-07-08'], {}), '2026-07-06'));
     test('start_of_week(Sun) -> Monday', () => expect(_i().compute('start_of_week', ['2026-07-12'], {}), '2026-07-06'));
     test('start_of_week(Mon) -> same', () => expect(_i().compute('start_of_week', ['2026-07-06'], {}), '2026-07-06'));
@@ -109,6 +125,49 @@ void main() {
     test('contains empty needle never matches',
         () => expect(_i().cond({'contains': ['anything', '']}, {}), isFalse));
     test('unknown cond -> throws', () => expect(() => _i().cond({'bogus': 1}, {}), throwsA(isA<ResolveError>())));
+  });
+
+  group('read_many — ordering, limit, filter operators', () {
+    Map<String, Map<String, dynamic>> store() => {
+          'i-1': {'id': 'i-1', 'typeId': 'workout', 'activity': 'run', 'distance': 3, 'date': '2026-07-04'},
+          'i-2': {'id': 'i-2', 'typeId': 'workout', 'activity': 'run', 'distance': 8, 'date': '2026-07-08'},
+          'i-3': {'id': 'i-3', 'typeId': 'workout', 'activity': 'walk', 'distance': 2, 'date': '2026-07-06'},
+        };
+    String? run(List<Map<String, dynamic>> main) =>
+        _i().resolve({'skillId': 'x', 'steps': {'main': main}}, {}, store()).confirmation;
+
+    test('orderBy desc + limit 1 -> most recent (retires the foreach-MAX hack)', () {
+      expect(
+          run([
+            {'op': 'read_many', 'typeId': 'workout', 'orderBy': 'date', 'orderDir': 'desc', 'limit': 1, 'into': 'recent'},
+            {'op': 'set', 'var': 'out', 'value': ''},
+            {'op': 'foreach', 'list': {'var': 'recent'}, 'as': 'r', 'body': [
+              {'op': 'compute', 'fn': 'concat', 'args': [{'var': 'out'}, {'field': ['r', 'date']}], 'into': 'out'}
+            ]},
+            {'op': 'format', 'template': '{out}', 'into': 'confirmationText'},
+          ]),
+          '2026-07-08');
+    });
+
+    test('filter gte on date + sum over distance', () {
+      expect(
+          run([
+            {'op': 'read_many', 'typeId': 'workout', 'filter': {'field': 'date', 'op': 'gte', 'value': '2026-07-06'}, 'into': 'recent'},
+            {'op': 'compute', 'fn': 'sum', 'args': [{'var': 'recent'}, 'distance'], 'into': 'total'},
+            {'op': 'format', 'template': '{total}', 'into': 'confirmationText'},
+          ]),
+          '10'); // i-2 (8) + i-3 (2), i-1 (07-04) excluded
+    });
+
+    test('filter neq + count', () {
+      expect(
+          run([
+            {'op': 'read_many', 'typeId': 'workout', 'filter': {'field': 'activity', 'op': 'neq', 'value': 'run'}, 'into': 'nonRuns'},
+            {'op': 'compute', 'fn': 'count', 'args': [{'var': 'nonRuns'}], 'into': 'n'},
+            {'op': 'format', 'template': '{n}', 'into': 'confirmationText'},
+          ]),
+          '1'); // only the walk
+    });
   });
 
   group('format', () {
@@ -438,17 +497,17 @@ void main() {
       expect(() => _i().validateSkill(skill([{'op': 'delete_record'}, ok])), throwsA(isA<ResolveError>()));
       expect(() => _i().validateSkill(skill([{'op': 'delete_record', 'id': {'var': 'x'}}, ok])), returnsNormally);
     });
-    test('unknown compute fn (spec sum, unimplemented) rejected', () {
-      expect(() => _i().validateSkill(skill([{'op': 'compute', 'fn': 'sum', 'args': [], 'into': 'x'}, ok])), throwsA(isA<ResolveError>()));
+    test('unknown compute fn (e.g. median, unimplemented) rejected', () {
+      expect(() => _i().validateSkill(skill([{'op': 'compute', 'fn': 'median', 'args': [], 'into': 'x'}, ok])), throwsA(isA<ResolveError>()));
     });
     test('write to unknown type rejected', () {
       expect(() => _i().validateSkill(skill([{'op': 'write_record', 'typeId': 'ghost', 'fields': {}, 'into': 'r'}, ok])), throwsA(isA<ResolveError>()));
     });
     test('read_many bad filter op rejected at the gate', () {
-      expect(() => _i().validateSkill(skill([{'op': 'read_many', 'typeId': 'task', 'filter': {'field': 'dueAt', 'op': 'gte', 'value': 1}, 'into': 'ts'}, ok])), throwsA(isA<ResolveError>()));
+      expect(() => _i().validateSkill(skill([{'op': 'read_many', 'typeId': 'task', 'filter': {'field': 'dueAt', 'op': 'bogus', 'value': 1}, 'into': 'ts'}, ok])), throwsA(isA<ResolveError>()));
     });
     test('read_many unknown filter op also throws at resolve time', () {
-      final s = skill([{'op': 'read_many', 'typeId': 'task', 'filter': {'field': 'dueAt', 'op': 'gte', 'value': 1}, 'into': 'ts'}, ok]);
+      final s = skill([{'op': 'read_many', 'typeId': 'task', 'filter': {'field': 'dueAt', 'op': 'bogus', 'value': 1}, 'into': 'ts'}, ok]);
       expect(() => _i().resolve(s, {}, _store()), throwsA(isA<ResolveError>()));
     });
     test('missing confirmation rejected', () {

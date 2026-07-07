@@ -124,8 +124,31 @@ class Interpreter {
         return _dateOnly(d.subtract(Duration(days: d.weekday - 1)));
       case 'add':
         return (a[0] ?? 0) + (a[1] ?? 0);
+      case 'days_between':
+        final d1 = _asDate(a[0]), d2 = _asDate(a[1]);
+        return (d1 == null || d2 == null) ? null : d2.difference(d1).inDays;
+      case 'add_days':
+        final d = _asDate(a[0]);
+        return d == null || a[1] is! num ? null : _dateOnly(d.add(Duration(days: (a[1] as num).toInt())));
       case 'count':
         return (a[0] as List?)?.length ?? 0;
+      case 'count_where':
+        // count records in list a[0] whose field a[1] equals value a[2]
+        return ((a[0] as List?) ?? []).where((r) => r is Map && r[a[1]] == a[2]).length;
+      case 'sum':
+        return _nums(a[0], a[1]).fold<num>(0, (s, x) => s + x);
+      case 'avg':
+        final ns = _nums(a[0], a[1]);
+        return ns.isEmpty ? 0 : ns.reduce((s, x) => s + x) / ns.length;
+      case 'min':
+        final ns = _nums(a[0], a[1]);
+        return ns.isEmpty ? null : ns.reduce((x, y) => x < y ? x : y);
+      case 'max':
+        final ns = _nums(a[0], a[1]);
+        return ns.isEmpty ? null : ns.reduce((x, y) => x > y ? x : y);
+      case 'if':
+        // ternary over a boolean value: if(flag, whenTrue, whenFalse)
+        return a[0] == true ? a[1] : a[2];
       case 'concat':
         return a.map((x) => x?.toString() ?? '').join();
       default:
@@ -152,6 +175,30 @@ class Interpreter {
 
   // day number in UTC (no DST) so consecutive calendar days differ by exactly 1.
   static int _epochDay(DateTime d) => DateTime.utc(d.year, d.month, d.day).millisecondsSinceEpoch ~/ 86400000;
+  // numeric values of [field] across a record list (parses numeric strings; skips non-numbers).
+  static List<num> _nums(dynamic list, dynamic field) {
+    final out = <num>[];
+    if (list is List) {
+      for (final r in list) {
+        final v = (r is Map) ? r[field] : null;
+        final n = v is num ? v : num.tryParse(v?.toString() ?? '');
+        if (n != null) out.add(n);
+      }
+    }
+    return out;
+  }
+
+  // ordering/filter comparison: numeric when both look numeric, else lexical (ISO dates sort right).
+  static int _cmp(dynamic a, dynamic b) {
+    if (a == null && b == null) return 0;
+    if (a == null) return -1;
+    if (b == null) return 1;
+    if (a is num && b is num) return a.compareTo(b);
+    final an = num.tryParse(a.toString()), bn = num.tryParse(b.toString());
+    if (an != null && bn != null) return an.compareTo(bn);
+    return a.toString().compareTo(b.toString());
+  }
+
   // the set of distinct day-numbers a record list occupies on [field].
   static Set<int> _daysSet(dynamic list, dynamic field) {
     final out = <int>{};
@@ -193,9 +240,41 @@ class Interpreter {
     throw ResolveError('unknown cond $c');
   }
 
+  // read_many filter predicate: {field, op, value?}. op defaults to eq.
+  bool _filterMatch(Map f, Record r, Map<String, dynamic> env) {
+    final op = (f['op'] ?? 'eq') as String;
+    final rv = r[f['field']];
+    if (op == 'isNull') return rv == null;
+    if (op == 'notNull') return rv != null;
+    final fv = val(f['value'], env);
+    switch (op) {
+      case 'eq':
+        return rv == fv;
+      case 'neq':
+        return rv != fv;
+      case 'gte':
+        return _cmp(rv, fv) >= 0;
+      case 'gt':
+        return _cmp(rv, fv) > 0;
+      case 'lte':
+        return _cmp(rv, fv) <= 0;
+      case 'lt':
+        return _cmp(rv, fv) < 0;
+      case 'contains':
+        return rv is String && fv is String && rv.toLowerCase().contains(fv.toLowerCase());
+      case 'in':
+        return fv is List && fv.contains(rv);
+      default:
+        throw ResolveError("read_many: unsupported filter op '$op'");
+    }
+  }
+
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
   static const _ops = {'read_one', 'read_many', 'read_related', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
-  static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'add', 'count', 'concat', 'next_annual', 'days_until_annual', 'current_streak', 'longest_streak'};
+  static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'add', 'count', 'concat',
+    'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
+    'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if'};
+  static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};
   static const _valueTypes = {'text', 'date', 'datetime', 'decimal', 'integer', 'boolean', 'entityRef', 'enum'};
 
   /// Validate an authored TYPE def (Spec 01 §3). Throws ResolveError (never a
@@ -267,7 +346,13 @@ class Interpreter {
           if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_many unknown type '$tid'");
           c.readTypes.add(tid as String);
           final f = step['filter'];
-          if (f != null && f['op'] != 'eq') throw ResolveError("${c.sid}: read_many unsupported filter op '${f['op']}'");
+          if (f != null && f['op'] != null && !_filterOps.contains(f['op'])) {
+            throw ResolveError("${c.sid}: read_many unsupported filter op '${f['op']}' (${_filterOps.join('/')})");
+          }
+          if (step['orderDir'] != null && step['orderDir'] != 'asc' && step['orderDir'] != 'desc') {
+            throw ResolveError("${c.sid}: read_many orderDir must be 'asc' or 'desc'");
+          }
+          if (step['limit'] != null && step['limit'] is! int) throw ResolveError("${c.sid}: read_many limit must be an int");
           if (step['into'] is String) listVars[step['into'] as String] = tid;
         case 'read_related':
           final tid = step['typeId'];
@@ -387,14 +472,20 @@ class Interpreter {
         var recs = store.values.where((r) => r['typeId'] == step['typeId']).toList();
         final f = step['filter'];
         if (f != null) {
-          if (f['op'] != 'eq') {
-            // an unknown filter op must fail loudly — silently matching everything
-            // would turn a wrong filter into a mass write (no silent failure, P7)
-            throw ResolveError("read_many: unsupported filter op '${f['op']}' (only 'eq')");
-          }
-          final fv = val(f['value'], env); // resolve {var}/{ref}/literal -> dynamic filters
-          recs = recs.where((r) => r[f['field']] == fv).toList();
+          final op = (f as Map)['op'] ?? 'eq';
+          // fail loudly on a bad op even over an empty set (never silently match all)
+          if (!_filterOps.contains(op)) throw ResolveError("read_many: unsupported filter op '$op'");
+          recs = recs.where((r) => _filterMatch(f, r, env)).toList();
         }
+        // orderBy <field> [orderDir asc|desc]
+        final orderBy = step['orderBy'];
+        if (orderBy is String) {
+          final dir = step['orderDir'] == 'desc' ? -1 : 1;
+          recs.sort((x, y) => dir * _cmp(x[orderBy], y[orderBy]));
+        }
+        // limit N (top-N after ordering)
+        final limit = step['limit'];
+        if (limit is int && limit >= 0 && recs.length > limit) recs = recs.sublist(0, limit);
         env[step['into']] = recs;
       case 'read_related':
         // records of typeId whose `via` entity attr points at the `from` record's id
