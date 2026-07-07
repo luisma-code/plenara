@@ -3,7 +3,7 @@
   "displayName": "Contact Fact",
   "parentType": "contact",
   "attributes": [
-    { "name": "subject", "valueType": "entity", "refType": "contact", "required": true },
+    { "name": "subject", "valueType": "entityRef", "refType": "contact", "required": true },
     { "name": "fact", "valueType": "text", "required": true }
   ]
 }

@@ -297,7 +297,7 @@ void main() {
         'steps': {'main': [
           {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'n'}}, 'into': 'p'},
           {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'ref': 'p'}, 'fact': 'y'}, 'into': 'f'},
-          {'op': 'format', 'template': 'ok', 'into': 'confirmation'}
+          {'op': 'format', 'template': 'ok', 'into': 'confirmationText'}
         ]}
       };
       expect(() => _i().validateSkill(s), returnsNormally);
@@ -308,7 +308,7 @@ void main() {
         'steps': {'main': [
           {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'n'}}, 'into': 'p'},
           {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'field': ['p', 'id']}, 'fact': 'y'}, 'into': 'f'},
-          {'op': 'format', 'template': 'ok', 'into': 'confirmation'}
+          {'op': 'format', 'template': 'ok', 'into': 'confirmationText'}
         ]}
       };
       expect(() => _i().validateSkill(s), returnsNormally);
@@ -321,7 +321,7 @@ void main() {
           {'op': 'foreach', 'list': {'var': 'ps'}, 'as': 'p', 'body': [
             {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'ref': 'p'}, 'fact': 'y'}, 'into': 'f'}
           ]},
-          {'op': 'format', 'template': 'ok', 'into': 'confirmation'}
+          {'op': 'format', 'template': 'ok', 'into': 'confirmationText'}
         ]}
       };
       expect(() => _i().validateSkill(s), returnsNormally);
@@ -359,7 +359,7 @@ void main() {
     test('update to a non-existent target throws (no silent create)', () {
       final s = {'skillId': 'x', 'steps': {'main': [
         {'op': 'write_record', 'typeId': 'task', 'target': {'var': 'missing'}, 'fields': {'completed': true}, 'into': 't'},
-        {'op': 'format', 'template': 'ok', 'into': 'confirmation'},
+        {'op': 'format', 'template': 'ok', 'into': 'confirmationText'},
       ]}};
       expect(() => _i().resolve(s, {}, _store()), throwsA(isA<ResolveError>()));
     });
@@ -367,7 +367,7 @@ void main() {
 
   group('hardened authoring gate (Fable review)', () {
     Map<String, dynamic> skill(List main) => {'skillId': 'x', 'steps': {'main': main}};
-    final ok = {'op': 'format', 'template': 'done', 'into': 'confirmation'};
+    final ok = {'op': 'format', 'template': 'done', 'into': 'confirmationText'};
 
     test('unknown op rejected', () {
       expect(() => _i().validateSkill(skill([{'op': 'delete_everything'}, ok])), throwsA(isA<ResolveError>()));
@@ -416,7 +416,7 @@ void main() {
     });
     test('validateType rejects unknown valueType + entity without refType; accepts valid', () {
       expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'bogus'}]}), throwsA(isA<ResolveError>()));
-      expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'entity'}]}), throwsA(isA<ResolveError>()));
+      expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'entityRef'}]}), throwsA(isA<ResolveError>()));
       expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'text'}]}), returnsNormally);
     });
     test('mint produces unique ids across 500 fresh interpreters (no cross-session collision)', () {
@@ -450,7 +450,7 @@ void main() {
     });
     test('format leaves unknown placeholder literal', () {
       final s = {'skillId': 'x', 'steps': {'main': [
-        {'op': 'format', 'template': 'hi {missing}', 'into': 'confirmation'}
+        {'op': 'format', 'template': 'hi {missing}', 'into': 'confirmationText'}
       ]}};
       final p = _i().resolve(s, {}, _store());
       expect(p.confirmation, 'hi {missing}');

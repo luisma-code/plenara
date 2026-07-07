@@ -11,7 +11,7 @@
           "args": [{"var": "lines"}, "\n  • ", {"field": ["t", "description"]}], "into": "lines" }
       ] },
       { "op": "compute", "fn": "count", "args": [{"var": "tasks"}], "into": "n" },
-      { "op": "format", "template": "You have {n} task(s):{lines}", "into": "confirmation" }
+      { "op": "format", "template": "You have {n} task(s):{lines}", "into": "confirmationText" }
     ]
   }
 }

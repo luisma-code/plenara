@@ -12,7 +12,7 @@
           { "op": "compute", "fn": "add", "args": [{"var": "total"}, {"field": ["r", "distance"]}], "into": "total" }
         ] }
       ] },
-      { "op": "format", "template": "You've run {total} km so far this week.", "into": "confirmation" }
+      { "op": "format", "template": "You've run {total} km so far this week.", "into": "confirmationText" }
     ]
   }
 }

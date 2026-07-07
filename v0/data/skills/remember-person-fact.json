@@ -23,7 +23,7 @@
         { "op": "write_record", "typeId": "contact_relationship",
           "fields": { "from": {"ref": "relative"}, "to": {"ref": "person"}, "relationType": {"var": "relationType"} }, "into": "newRel" }
       ] },
-      { "op": "format", "template": "Noted that {personName} {fact}.", "into": "confirmation" }
+      { "op": "format", "template": "Noted that {personName} {fact}.", "into": "confirmationText" }
     ]
   }
 }

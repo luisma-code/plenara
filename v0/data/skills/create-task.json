@@ -13,9 +13,9 @@
         "into": "newTask" },
       { "op": "branch", "cond": { "notNull": "dueDate" }, "then": [
         { "op": "compute", "fn": "format_date", "args": [{"var": "dueDate"}, "EEEE"], "into": "dueLabel" },
-        { "op": "format", "template": "Added \"{description}\" to your tasks, due {dueLabel}.", "into": "confirmation" }
+        { "op": "format", "template": "Added \"{description}\" to your tasks, due {dueLabel}.", "into": "confirmationText" }
       ], "else": [
-        { "op": "format", "template": "Added \"{description}\" to your tasks.", "into": "confirmation" }
+        { "op": "format", "template": "Added \"{description}\" to your tasks.", "into": "confirmationText" }
       ] }
     ]
   }

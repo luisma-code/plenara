@@ -11,9 +11,9 @@
         "fields": { "activity": "run", "distance": {"var": "distance"}, "date": {"var": "today"} },
         "into": "w" },
       { "op": "branch", "cond": { "notNull": "distance" }, "then": [
-        { "op": "format", "template": "Logged a {distance} km run today.", "into": "confirmation" }
+        { "op": "format", "template": "Logged a {distance} km run today.", "into": "confirmationText" }
       ], "else": [
-        { "op": "format", "template": "Logged a run today.", "into": "confirmation" }
+        { "op": "format", "template": "Logged a run today.", "into": "confirmationText" }
       ] }
     ]
   }

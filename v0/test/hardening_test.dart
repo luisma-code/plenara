@@ -47,7 +47,7 @@ Map<String, dynamic> _authored(String typeId, String skillId) => {
         'steps': {'main': [
           {'op': 'compute', 'fn': 'today', 'into': 't'},
           {'op': 'write_record', 'typeId': typeId, 'fields': {'value': {'var': 'value'}, 'loggedAt': {'var': 't'}}, 'into': 'r'},
-          {'op': 'format', 'template': 'Logged {value}.', 'into': 'confirmation'},
+          {'op': 'format', 'template': 'Logged {value}.', 'into': 'confirmationText'},
         ]}
       },
     };

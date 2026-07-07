@@ -130,7 +130,7 @@ class Interpreter {
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
   static const _ops = {'read_one', 'read_many', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
   static const _fns = {'now', 'today', 'format_date', 'start_of_week', 'add', 'count', 'concat'};
-  static const _valueTypes = {'text', 'date', 'datetime', 'decimal', 'integer', 'boolean', 'entity', 'enum'};
+  static const _valueTypes = {'text', 'date', 'datetime', 'decimal', 'integer', 'boolean', 'entityRef', 'enum'};
 
   /// Validate an authored TYPE def (Spec 01 §3). Throws ResolveError (never a
   /// raw TypeError) so the authoring retry loop can catch it.
@@ -144,7 +144,7 @@ class Interpreter {
       if (!_valueTypes.contains(a['valueType'])) {
         throw ResolveError("type '$tid': attribute '${a['name']}' has unknown valueType '${a['valueType']}'");
       }
-      if (a['valueType'] == 'entity' && a['refType'] is! String) {
+      if (a['valueType'] == 'entityRef' && a['refType'] is! String) {
         throw ResolveError("type '$tid': entity attribute '${a['name']}' needs a refType");
       }
     }
@@ -163,7 +163,7 @@ class Interpreter {
     final c = _VCtx(sid);
     _validate(steps['main'] as List, <String, String?>{}, <String, String?>{}, c);
     if (!c.setsConfirmation) {
-      throw ResolveError("$sid: no step produces a 'confirmation' (a format op into confirmation is required)");
+      throw ResolveError("$sid: no step produces a 'confirmationText' (a format op into confirmation is required)");
     }
   }
 
@@ -195,7 +195,7 @@ class Interpreter {
           if (td == null) throw ResolveError("${c.sid}: write_record unknown type '$tid'");
           final entity = <String, dynamic>{
             for (final a in ((td['attributes'] as List?) ?? []))
-              if (a is Map && a['valueType'] == 'entity') a['name'] as String: a['refType']
+              if (a is Map && a['valueType'] == 'entityRef') a['name'] as String: a['refType']
           };
           ((step['fields'] as Map?) ?? {}).forEach((name, fval) {
             if (!entity.containsKey(name)) return;
@@ -221,7 +221,7 @@ class Interpreter {
         case 'delete_record':
           if (step['id'] == null) throw ResolveError("${c.sid}: delete_record needs an 'id'");
         case 'format':
-          if (step['into'] == 'confirmation') c.setsConfirmation = true;
+          if (step['into'] == 'confirmationText') c.setsConfirmation = true;
         case 'branch':
           final tRec = Map<String, String?>.from(recVars), eRec = Map<String, String?>.from(recVars);
           final tList = Map<String, String?>.from(listVars), eList = Map<String, String?>.from(listVars);
@@ -267,7 +267,7 @@ class Interpreter {
         final out = (step['template'] as String).replaceAllMapped(
             RegExp(r'\{(\w+)\}'), (m) => '${env[m.group(1)] ?? '{${m.group(1)}}'}');
         env[step['into']] = out;
-        if (step['into'] == 'confirmation') plan.confirmation = out;
+        if (step['into'] == 'confirmationText') plan.confirmation = out;
       case 'read_one':
         final match = {
           for (final e in (step['match'] as Map).entries) e.key: val(e.value, env)

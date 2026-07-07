@@ -78,7 +78,7 @@
   "route\u0001complete-task,count-runs-this-week,create-task,delete-task,list-tasks,log-mood,log-run,recall-facts,remember-person-fact\u0001feeling pretty anxious today": {
     "skillId": "log-mood",
     "slots": {
-      "rating": "feeling pretty anxious today"
+      "rating": "pretty anxious"
     },
     "source": "cloud"
   },
@@ -165,9 +165,9 @@
         }
       ],
       "examplePhrases": [
-        "I drank 500 milliliters of water",
+        "I drank 500 ml of water",
         "Log 8 ounces of water",
-        "Add 2 cups to my water intake"
+        "Add 2 cups of water to my intake"
       ],
       "steps": {
         "main": [
@@ -195,8 +195,8 @@
           },
           {
             "op": "format",
-            "template": "Logged {var:amount} {var:unit} of water intake",
-            "into": "confirmation"
+            "template": "Logged {amount} {unit} of water intake",
+            "into": "confirmationText"
           }
         ]
       }
@@ -229,8 +229,8 @@
         }
       ],
       "examplePhrases": [
-        "Log my gratitude for today",
-        "I'm grateful for my family",
+        "I'm grateful for my family today",
+        "Log what I'm thankful for",
         "Add to my gratitude journal"
       ],
       "steps": {
@@ -256,8 +256,8 @@
           },
           {
             "op": "format",
-            "template": "✓ Gratitude logged for {entryDate}: {gratitudeEntry}",
-            "into": "confirmation"
+            "template": "Gratitude logged for {var:entryDate}: {var:gratitudeEntry}",
+            "into": "confirmationText"
           }
         ]
       }
@@ -308,23 +308,16 @@
         }
       ],
       "examplePhrases": [
-        "I finished reading The Great Gatsby by F. Scott Fitzgerald",
-        "Log that I completed Dune today",
-        "Add 1984 to my finished books"
+        "I finished reading {title}",
+        "I just completed {title} by {author}",
+        "Mark {title} as finished"
       ],
       "steps": {
         "main": [
           {
             "op": "compute",
             "fn": "today",
-            "args": [],
             "into": "logDate"
-          },
-          {
-            "op": "compute",
-            "fn": "today",
-            "args": [],
-            "into": "completedDateVar"
           },
           {
             "op": "write_record",
@@ -347,8 +340,8 @@
           },
           {
             "op": "format",
-            "template": "Logged {title} as finished reading.",
-            "into": "confirmation"
+            "template": "Great! I've logged {title} as finished.",
+            "into": "confirmationText"
           }
         ]
       }
@@ -368,7 +361,7 @@
           "name": "unit",
           "valueType": "text",
           "required": true,
-          "default": "lb"
+          "default": "lbs"
         },
         {
           "name": "loggedAt",
@@ -391,9 +384,9 @@
         }
       ],
       "examplePhrases": [
-        "Log my weight as 175 pounds",
-        "I weigh 72 kilograms",
-        "My weight is 165 lb"
+        "I weigh 165 pounds",
+        "Log my weight as 75 kilos",
+        "My weight is 160 lbs"
       ],
       "steps": {
         "main": [
@@ -401,7 +394,7 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "todayVar"
+            "into": "logDate"
           },
           {
             "op": "write_record",
@@ -414,15 +407,15 @@
                 "var": "unit"
               },
               "loggedAt": {
-                "var": "todayVar"
+                "var": "logDate"
               }
             },
             "into": "record"
           },
           {
             "op": "format",
-            "template": "Logged weight of {weight} {unit}",
-            "into": "confirmation"
+            "template": "Weight of {weight} {unit} logged successfully.",
+            "into": "confirmationText"
           }
         ]
       }
@@ -430,8 +423,8 @@
   },
   "author\u0001\u0001coffee cups per day": {
     "type": {
-      "typeId": "coffee_cups_logged",
-      "displayName": "Coffee Cups Logged",
+      "typeId": "coffee_cups_log",
+      "displayName": "Coffee Cup Log",
       "attributes": [
         {
           "name": "cupsCount",
@@ -456,8 +449,8 @@
       ],
       "examplePhrases": [
         "I had 3 cups of coffee today",
-        "Log 2 coffees",
-        "Track 4 cups of coffee"
+        "Log 2 coffee cups",
+        "Add 4 cups to my coffee count"
       ],
       "steps": {
         "main": [
@@ -469,7 +462,7 @@
           },
           {
             "op": "write_record",
-            "typeId": "coffee_cups_logged",
+            "typeId": "coffee_cups_log",
             "fields": {
               "cupsCount": {
                 "var": "cupsCount"
@@ -482,8 +475,8 @@
           },
           {
             "op": "format",
-            "template": "Logged {cupsCount} coffee cups for today",
-            "into": "confirmation"
+            "template": "Logged {cupsCount} cups of coffee for today",
+            "into": "confirmationText"
           }
         ]
       }
