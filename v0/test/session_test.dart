@@ -332,6 +332,22 @@ void main() {
       await s.handle('undo that');
       expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
     });
+    test('correction with a natural prefix ("sorry, I meant to X") also undoes then redoes', () async {
+      final s = await _session();
+      await s.handle('log a 5k run');
+      final r = await s.handle('sorry, I meant to add buy milk to my list');
+      expect(r, contains('buy milk'));
+      expect(s.store.values.where((x) => x['typeId'] == 'workout'), isEmpty);
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1);
+    });
+    test('"no wait, I meant X" is a correction', () async {
+      final s = await _session();
+      await s.handle('log a 5k run');
+      await s.handle('no wait, I meant to log a 3k run');
+      final runs = s.store.values.where((x) => x['typeId'] == 'workout').toList();
+      expect(runs.length, 1); // the 5k was reversed, only the 3k remains
+      expect(runs.single['distance'], 3);
+    });
     test('correction after a read-only misroute does not reverse an unrelated write (Fable defect)', () async {
       final s = await _session();
       await s.handle('add buy milk to my list'); // a write, two turns back

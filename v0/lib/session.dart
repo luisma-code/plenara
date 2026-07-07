@@ -17,7 +17,12 @@ final _helpRe = RegExp(
     r'^(?:help|what can you do|what can i (?:say|do|ask)( you)?|what are your (?:skills|capabilities)|'
     r'show me what you can do)\??$',
     caseSensitive: false);
-final _corrRe = RegExp(r'^(?:no,?|actually,?|nope,?)\s+i meant (?:to |it was )?(.+?)\.?$', caseSensitive: false);
+// Correction (§3.3): a natural prefix + "I meant …" reverses the last turn and re-routes.
+// The "I meant" anchor is deliberate — a bare "no, X" is too easily a non-correction, and
+// reversing a good write on a false positive is the worse failure.
+final _corrRe = RegExp(
+    r'^(?:no,?|nope,?|actually,?|no wait,?|wait,?|sorry,?|oops,?|hang on,?)\s+i meant (?:to |it was )?(.+?)\.?$',
+    caseSensitive: false);
 // abandons a pending slot-fill dialogue (Spec 03 §6.3 ProvideSlot)
 final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
 // A tracker the app ALREADY ships — "start tracking my runs" should use it for FREE,
