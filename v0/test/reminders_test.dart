@@ -207,6 +207,29 @@ void main() {
     });
   });
 
+  group('full reminder lifecycle keeps the armed toast correct', () {
+    test('set -> snooze -> complete -> undo-complete re-arms -> cancel', () async {
+      final fake = FakeScheduler();
+      final s = await _open(makeTempDataDir(), fake);
+
+      await s.handle('remind me to call mom on thursday at 5pm');
+      expect(fake.armed().values.single, DateTime.parse('2026-07-09T17:00:00'));
+
+      await s.handle('snooze the reminder to call mom to friday at 9am');
+      expect(fake.armed().values.single, DateTime.parse('2026-07-10T09:00:00'));
+
+      await s.handle('mark the reminder to call mom done'); // done -> cancelled
+      expect(fake.armed(), isEmpty);
+
+      await s.handle('undo'); // un-complete -> re-armed at the snoozed time
+      expect(fake.armed().length, 1);
+      expect(fake.armed().values.single, DateTime.parse('2026-07-10T09:00:00'));
+
+      await s.handle('cancel the reminder to call mom'); // deleted -> gone
+      expect(fake.armed(), isEmpty);
+    });
+  });
+
   group('graceful missing-time (no silent failure)', () {
     test('a reminder intent without a time asks when, writes nothing, arms nothing', () async {
       final fake = FakeScheduler();
