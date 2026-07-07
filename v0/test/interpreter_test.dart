@@ -91,6 +91,11 @@ void main() {
     test('gte 0>=1 false', () => expect(_i().cond({'gte': [0, 1]}, {}), isFalse));
     test('eq true', () => expect(_i().cond({'eq': [1, 1]}, {}), isTrue));
     test('eq false', () => expect(_i().cond({'eq': [1, 2]}, {}), isFalse));
+    test('contains substring (case-insensitive)',
+        () => expect(_i().cond({'contains': ['She likes CHESS', 'likes chess']}, {}), isTrue));
+    test('contains miss', () => expect(_i().cond({'contains': ['plays piano', 'chess']}, {}), isFalse));
+    test('contains empty needle never matches',
+        () => expect(_i().cond({'contains': ['anything', '']}, {}), isFalse));
     test('unknown cond -> throws', () => expect(() => _i().cond({'bogus': 1}, {}), throwsA(isA<ResolveError>())));
   });
 

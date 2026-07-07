@@ -60,6 +60,8 @@
   { "skillId": "complete-task", "template": "i finished {description:text}" },
   { "skillId": "delete-task", "template": "delete {description:text} from my list" },
   { "skillId": "delete-task", "template": "remove {description:text} from my list" },
+  { "skillId": "forget-fact", "template": "forget that {personName:entity} {factQuery:text}" },
+  { "skillId": "forget-fact", "template": "delete the note that {personName:entity} {factQuery:text}" },
   { "skillId": "recall-facts", "template": "what do i know about {personName:entity}" },
   { "skillId": "recall-facts", "template": "tell me about {personName:entity}" },
   { "skillId": "list-tasks", "template": "list my tasks" },

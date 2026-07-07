@@ -181,6 +181,35 @@ void main() {
     });
   });
 
+  group('forget-fact (correcting memories)', () {
+    test('forgets a matching fact by substring, leaves the others', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('note that Mia likes chess');
+      await s.handle('note that Mia plays piano');
+      final r = await s.handle('forget that Mia likes chess');
+      expect(r.toLowerCase(), contains('forgot'));
+      final recall = await s.handle('what do i know about Mia');
+      expect(recall.contains('chess'), isFalse);
+      expect(recall, contains('piano')); // unrelated fact untouched
+    });
+
+    test('no matching note -> a clear no-op, nothing removed', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('note that Mia likes chess');
+      final r = await s.handle('forget that Mia likes golf');
+      expect(r, contains("don't have a note like"));
+      expect(await s.handle('what do i know about Mia'), contains('chess')); // untouched
+    });
+
+    test('undo restores a forgotten fact', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('note that Mia likes chess');
+      await s.handle('forget that Mia likes chess');
+      await s.handle('undo');
+      expect(await s.handle('what do i know about Mia'), contains('chess'));
+    });
+  });
+
   group('list-relations', () {
     test('shows a person\'s relationships with the linked contact name resolved', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));

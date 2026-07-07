@@ -146,6 +146,14 @@ class Interpreter {
       final ab = (c['eq'] as List).map((x) => val(x, env)).toList();
       return ab[0] == ab[1];
     }
+    if (c.containsKey('contains')) {
+      // case-insensitive substring test — lets a skill match "likes chess" within a
+      // stored fact without the user repeating it verbatim. Empty needle never matches.
+      final ab = (c['contains'] as List).map((x) => val(x, env)).toList();
+      final hay = ab[0]?.toString().toLowerCase() ?? '';
+      final needle = ab[1]?.toString().toLowerCase() ?? '';
+      return needle.isNotEmpty && hay.contains(needle);
+    }
     throw ResolveError('unknown cond $c');
   }
 
