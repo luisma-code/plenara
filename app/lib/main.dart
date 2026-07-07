@@ -2,10 +2,20 @@
 // (package:plenara/session.dart): the interpreter, router, store, and cloud
 // client are the same code the console uses. Text-first for now; voice later.
 import 'package:flutter/material.dart';
+import 'package:plenara/claude.dart';
+import 'package:plenara/config.dart';
 import 'package:plenara/session.dart';
 
-// The v0 seed data lives here (absolute so it resolves from the build dir).
-const dataDir = r'Z:\code\plenara\v0\data';
+// Where the SHIPPED built-in capability defs are copied FROM on first run.
+const sourceDataDir = r'Z:\code\plenara\v0\data';
+
+/// Build the production Session from user config: the real (synced) data folder,
+/// seeded with the built-in capabilities on first run, and the BYOK key.
+Session buildSession() {
+  final cfg = loadConfig();
+  ensureSeeded(cfg.dataDir, sourceDataDir);
+  return Session(cfg.dataDir, cloud: cfg.apiKey != null ? ClaudeClient(apiKeyOverride: cfg.apiKey) : null);
+}
 
 void main() => runApp(const PlenaraApp());
 
@@ -37,7 +47,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatState extends State<ChatScreen> {
-  late final Session _session = widget.session ?? Session(dataDir); // live wall clock
+  late final Session _session = widget.session ?? buildSession();
   final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();

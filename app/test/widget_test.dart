@@ -22,11 +22,11 @@ String _tempData() {
   final tmp = Directory.systemTemp.createTempSync('plenara_ui_');
   for (final sub in const ['types', 'skills']) {
     final dst = Directory('${tmp.path}/$sub')..createSync(recursive: true);
-    for (final f in Directory('$dataDir/$sub').listSync().whereType<File>()) {
+    for (final f in Directory('$sourceDataDir/$sub').listSync().whereType<File>()) {
       f.copySync('${dst.path}/${_base(f.path)}');
     }
   }
-  File('$dataDir/corpus.json').copySync('${tmp.path}/corpus.json');
+  File('$sourceDataDir/corpus.json').copySync('${tmp.path}/corpus.json');
   Directory('${tmp.path}/records').createSync();
   return tmp.path;
 }
