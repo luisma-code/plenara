@@ -18,6 +18,8 @@ final _helpRe = RegExp(
     r'show me what you can do)\??$',
     caseSensitive: false);
 final _corrRe = RegExp(r'^(?:no,?|actually,?|nope,?)\s+i meant (?:to |it was )?(.+?)\.?$', caseSensitive: false);
+// abandons a pending slot-fill dialogue (Spec 03 §6.3 ProvideSlot)
+final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
 final _defRe = RegExp(
     r'^(?:start tracking|track|i want to track|i want to start tracking|make me a|create a|'
     r'build me a|build a|set up a|set me up a) '
@@ -78,6 +80,10 @@ class Session {
   String _outSource = 'clarify'; // telemetry: how this turn resolved
   String? _outSkill;
   String? _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
+  // A paused turn waiting for the user to supply a missing required slot (Spec 03
+  // §6.3 ProvideSlot): {skillId, slots (partial), missing (remaining required names)}.
+  // The next turn's input fills it and the completed skill dispatches.
+  Map<String, dynamic>? _pendingFill;
   // Whether retrieval (the embed-server index) is active this session. Authoring
   // grows the inventory and must re-index — but only when retrieval is on, so the
   // authoring path stays hermetic under init(retrieval: false), like init() itself.
@@ -231,6 +237,32 @@ class Session {
   Future<String> _handle(String u) async {
     u = u.trim();
     final now = this.now; // one frozen snapshot for the whole turn
+
+    // ProvideSlot (§6.3): a paused turn is waiting for one missing slot. Treat this
+    // input as the answer — unless the user backs out — then re-ask or dispatch.
+    final pending = _pendingFill;
+    if (pending != null) {
+      _pendingFill = null; // consumed; re-set below if still incomplete
+      if (_cancelRe.hasMatch(u) || _undoRe.hasMatch(u)) {
+        _outSource = 'clarify';
+        return 'Okay — never mind.';
+      }
+      final skillId = pending['skillId'] as String;
+      final skill = skills[skillId];
+      final slots = Map<String, dynamic>.from(pending['slots'] as Map);
+      final missing = List<String>.from(pending['missing'] as List);
+      slots[missing.first] = _coerceSlot(skill, missing.first, u, now);
+      final stillMissing = _missingRequired(skill, slots);
+      if (stillMissing.isNotEmpty) {
+        _pendingFill = {'skillId': skillId, 'slots': slots, 'missing': stillMissing};
+        _outSource = 'clarify';
+        return _askForSlot(skill, stillMissing.first);
+      }
+      _outSource = 'provide-slot';
+      _outSkill = skillId;
+      return _dispatch(skillId, slots, 'corpus', now);
+    }
+
     if (_undoRe.hasMatch(u)) {
       _outSource = 'undo';
       _lastTurnTemplate = null;
@@ -363,9 +395,27 @@ class Session {
     if (routed['source'] == 'cloud') {
       _normalizeTypedSlots(skills[routed['skillId']], routed['slots'] as Map<String, dynamic>, now);
     }
+    final skillId = routed['skillId'] as String;
+    final slots = (routed['slots'] as Map).cast<String, dynamic>();
+    // ProvideSlot (§6.3): if a REQUIRED input the router couldn't fill is missing, pause
+    // and ask for it (resumable next turn) instead of dispatching a half-filled skill.
+    final missing = _missingRequired(skills[skillId], slots);
+    if (missing.isNotEmpty) {
+      _pendingFill = {'skillId': skillId, 'slots': slots, 'missing': missing};
+      _outSource = 'clarify';
+      return _askForSlot(skills[skillId], missing.first);
+    }
+    final template = routed['source'] == 'corpus' ? routed['template'] as String? : null;
+    return _dispatch(skillId, slots, routed['source'] as String, now, template: template, utterance: u);
+  }
+
+  /// Resolve → execute → persist → journal → learn for a fully-slotted skill. Shared by
+  /// the normal routing path and a completed ProvideSlot fill.
+  Future<String> _dispatch(String skillId, Map<String, dynamic> slots, String source, DateTime now,
+      {String? template, String? utterance}) async {
     try {
       final turnInterp = Interpreter(types, now); // per-turn clock (Spec 03 §4)
-      final plan = turnInterp.resolve(skills[routed['skillId']]!, routed['slots'], store);
+      final plan = turnInterp.resolve(skills[skillId]!, slots, store);
       final before = turnInterp.execute(plan, store);
       for (final w in plan.writes) {
         repo.persist(w);
@@ -375,18 +425,14 @@ class Session {
       }
       // record the previous-turn state for a correction (every routed turn, write or read)
       _lastTurnWrote = plan.writes.isNotEmpty || plan.deletes.isNotEmpty;
-      final tmpl = routed['source'] == 'corpus' ? routed['template'] as String? : null;
-      _lastTurnTemplate = (tmpl != null && router.isLearned(tmpl)) ? tmpl : null;
+      _lastTurnTemplate = (template != null && router.isLearned(template)) ? template : null;
       if (_lastTurnWrote) {
         _journal.add(_JournalEntry(before, plan.confirmation));
         if (_journal.length > _journalMax) _journal.removeAt(0);
       }
-      if (routed['source'] == 'cloud') {
-        final tmpl = router.learn(u, routed['skillId'] as String,
-            (routed['slots'] as Map).cast<String, dynamic>());
-        if (tmpl != null) {
-          repo.appendCorpusLearned({'skillId': routed['skillId'], 'template': tmpl});
-        }
+      if (source == 'cloud' && utterance != null) {
+        final tmpl = router.learn(utterance, skillId, slots);
+        if (tmpl != null) repo.appendCorpusLearned({'skillId': skillId, 'template': tmpl});
       }
       return plan.confirmation ?? 'Done.';
     } on ResolveError catch (e) {
@@ -399,5 +445,34 @@ class Session {
       }
       return "I couldn't do that: ${e.message}";
     }
+  }
+
+  /// The required input slots a routed skill left null (candidates for ProvideSlot).
+  List<String> _missingRequired(Map<String, dynamic>? skill, Map<String, dynamic> slots) {
+    final inputs = skill?['inputs'] as List?;
+    if (inputs == null) return const [];
+    return [
+      for (final i in inputs)
+        if (i is Map && i['required'] == true && slots[i['name']] == null) i['name'] as String
+    ];
+  }
+
+  String _askForSlot(Map<String, dynamic>? skill, String slotName) {
+    final inputs = skill?['inputs'] as List?;
+    final input = inputs?.cast<dynamic>().firstWhere((i) => i is Map && i['name'] == slotName, orElse: () => null);
+    final prompt = input is Map ? input['prompt'] as String? : null;
+    return prompt ?? "What's the $slotName?";
+  }
+
+  /// Resolve a slot answer through its declared type (date/datetime) so a ProvideSlot
+  /// reply like "tomorrow at 5pm" becomes a real ISO value, like the corpus path.
+  dynamic _coerceSlot(Map<String, dynamic>? skill, String slotName, String raw, DateTime now) {
+    final inputs = skill?['inputs'] as List?;
+    final input = inputs?.cast<dynamic>().firstWhere((i) => i is Map && i['name'] == slotName, orElse: () => null);
+    final type = input is Map ? input['type'] : null;
+    final r = raw.trim();
+    if (type == 'datetime') return router.resolveDateTime(r, now);
+    if (type == 'date') return router.resolveDate(r, now);
+    return r;
   }
 }

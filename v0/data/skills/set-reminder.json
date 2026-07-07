@@ -7,7 +7,7 @@
   ],
   "inputs": [
     { "name": "text", "required": true },
-    { "name": "when", "required": true, "type": "datetime" }
+    { "name": "when", "required": true, "type": "datetime", "prompt": "When should I remind you? (e.g. \"tomorrow at 5pm\")" }
   ],
   "steps": {
     "main": [

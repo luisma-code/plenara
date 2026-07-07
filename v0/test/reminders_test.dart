@@ -253,6 +253,50 @@ void main() {
     });
   });
 
+  group('ProvideSlot — missing-slot follow-up dialogue (§6.3)', () {
+    Session _reminderMissingWhen(FakeScheduler fake) => Session(makeTempDataDir(),
+        clock: _now,
+        cloud: _RouteCloud({
+          'skillId': 'set-reminder',
+          'slots': <String, dynamic>{'text': 'call the dentist', 'when': null},
+          'source': 'cloud',
+        }),
+        scheduler: fake);
+
+    test('asks for the missing time, then the NEXT turn completes and arms it', () async {
+      final fake = FakeScheduler();
+      final s = _reminderMissingWhen(fake);
+      await s.init(retrieval: false);
+      // turn 1: a corpus-missing phrase -> cloud route with no time -> ask
+      final q = await s.handle('can you make sure i ring the dentist');
+      expect(q.toLowerCase(), contains('when'));
+      expect(s.store.values.where((x) => x['typeId'] == 'reminder'), isEmpty); // nothing yet
+      expect(fake.armed(), isEmpty);
+      // turn 2: supply the time -> resolved through the datetime type, dispatched, armed
+      final done = await s.handle('thursday at 5pm');
+      expect(done, contains('call the dentist'));
+      expect(fake.armed().length, 1);
+      expect(fake.armed().values.single, _thu5pm);
+    });
+
+    test('"never mind" abandons the pending fill (nothing written)', () async {
+      final s = _reminderMissingWhen(FakeScheduler());
+      await s.init(retrieval: false);
+      await s.handle('can you make sure i ring the dentist'); // asks
+      expect((await s.handle('never mind')).toLowerCase(), contains('never mind'));
+      expect(s.store.values.where((x) => x['typeId'] == 'reminder'), isEmpty);
+    });
+
+    test('a non-parseable time answer re-asks rather than arming garbage', () async {
+      final s = _reminderMissingWhen(FakeScheduler());
+      await s.init(retrieval: false);
+      await s.handle('can you make sure i ring the dentist');
+      final again = await s.handle('sometime'); // no clock time -> still missing
+      expect(again.toLowerCase(), contains('when'));
+      expect(s.store.values.where((x) => x['typeId'] == 'reminder'), isEmpty);
+    });
+  });
+
   group('graceful missing-time (no silent failure)', () {
     test('a reminder intent without a time asks when, writes nothing, arms nothing', () async {
       final fake = FakeScheduler();
