@@ -15,13 +15,15 @@ final _router = Router.load('data/corpus.json', _now);
 final _types = loadDefs('data/types', 'typeId');
 final _skills = loadDefs('data/skills', 'skillId');
 
-/// Simulates being offline: the cloud always declines. Adversarial input then
-/// degrades to clarify rather than throwing.
+/// The cloud always abstains (Ok(null)). Adversarial input then degrades to clarify
+/// rather than throwing. (A true offline/error path is covered in claude_test.)
 class _NullCloud implements CloudClient {
   @override
-  Future<Map<String, dynamic>?> routeResidual(String u, Map<String, Map<String, dynamic>> s) async => null;
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+      const CloudOk(null);
   @override
-  Future<Map<String, dynamic>?> authorCapability(String d, {String? priorError}) async => null;
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+      const CloudOk(null);
 }
 
 Future<Session> _session() async {

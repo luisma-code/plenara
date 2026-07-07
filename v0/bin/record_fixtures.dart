@@ -21,14 +21,16 @@ Future<void> main() async {
 
   print('--- residual routing (${allResidualUtterances.length} utterances) ---');
   for (final u in allResidualUtterances) {
-    final r = await rec.routeResidual(u, skills);
-    print('  route  "$u" -> ${r?['skillId'] ?? 'none'}');
+    final r = await rec.routeResidual(u, skills); // RecordingCloud throws on a CloudError
+    final route = (r as CloudOk<Map<String, dynamic>?>).value;
+    print('  route  "$u" -> ${route?['skillId'] ?? 'none'}');
   }
 
   print('--- authoring (${authoringDescriptions.length} descriptions) ---');
   for (final d in authoringDescriptions) {
     final r = await rec.authorCapability(d);
-    print('  author "$d" -> ${(r?['skill'] as Map?)?['skillId'] ?? 'FAILED'}');
+    final authored = (r as CloudOk<Map<String, dynamic>?>).value;
+    print('  author "$d" -> ${(authored?['skill'] as Map?)?['skillId'] ?? 'FAILED'}');
   }
 
   rec.save('test/fixtures/cloud.json');

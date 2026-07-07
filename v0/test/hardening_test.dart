@@ -17,11 +17,12 @@ class _ScriptCloud implements CloudClient {
   final bool throwOnAuthor;
   _ScriptCloud({this.authorResult, this.routeResult, this.throwOnAuthor = false});
   @override
-  Future<Map<String, dynamic>?> routeResidual(String u, Map<String, Map<String, dynamic>> s) async => routeResult;
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+      CloudOk(routeResult);
   @override
-  Future<Map<String, dynamic>?> authorCapability(String d, {String? priorError}) async {
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async {
     if (throwOnAuthor) throw StateError('boom');
-    return authorResult;
+    return CloudOk(authorResult);
   }
 }
 

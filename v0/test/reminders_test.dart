@@ -17,10 +17,10 @@ final _thu5pm = DateTime.parse('2026-07-09T17:00:00'); // "thursday at 5pm" from
 /// Cloud that must never be hit (reminders route via the deterministic corpus).
 class _NoCloud implements CloudClient {
   @override
-  Future<Map<String, dynamic>?> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
       throw StateError('cloud hit for "$u" — reminder flows must be pure corpus');
   @override
-  Future<Map<String, dynamic>?> authorCapability(String d, {String? priorError}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
       throw StateError('cloud authoring hit — unexpected');
 }
 
@@ -29,9 +29,11 @@ class _RouteCloud implements CloudClient {
   final Map<String, dynamic>? route;
   _RouteCloud(this.route);
   @override
-  Future<Map<String, dynamic>?> routeResidual(String u, Map<String, Map<String, dynamic>> s) async => route;
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+      CloudOk(route);
   @override
-  Future<Map<String, dynamic>?> authorCapability(String d, {String? priorError}) async => null;
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+      const CloudOk(null);
 }
 
 Future<Session> _open(String dir, FakeScheduler fake, {DateTime? clock}) async {

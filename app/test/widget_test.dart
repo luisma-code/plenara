@@ -12,20 +12,26 @@ import 'package:plenara_app/main.dart';
 
 class _NullCloud implements CloudClient {
   @override
-  Future<Map<String, dynamic>?> routeResidual(String u, Map<String, Map<String, dynamic>> s) async => null;
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+      const CloudOk(null);
   @override
-  Future<Map<String, dynamic>?> authorCapability(String d, {String? priorError}) async => null;
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+      const CloudOk(null);
 }
 
 /// A cloud whose residual routing blocks until [gate] completes — lets a test hold
 /// a turn in flight to observe the busy/disabled UI state deterministically.
 class _GatedCloud implements CloudClient {
-  final Completer<Map<String, dynamic>?> gate;
+  final Completer<void> gate;
   _GatedCloud(this.gate);
   @override
-  Future<Map<String, dynamic>?> routeResidual(String u, Map<String, Map<String, dynamic>> s) => gate.future;
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async {
+    await gate.future;
+    return const CloudOk(null); // abstain -> clarify
+  }
   @override
-  Future<Map<String, dynamic>?> authorCapability(String d, {String? priorError}) async => null;
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+      const CloudOk(null);
 }
 
 /// Enter text + tap Send + settle. A small helper for multi-turn tests.
@@ -141,7 +147,7 @@ void main() {
   });
 
   testWidgets('the Send button disables and a progress bar shows while a turn is in flight', (tester) async {
-    final gate = Completer<Map<String, dynamic>?>();
+    final gate = Completer<void>();
     final session = Session(_tempData(),
         clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _GatedCloud(gate));
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
@@ -155,7 +161,7 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Send')).onPressed, isNull);
 
-    gate.complete(null); // release the turn -> clarify
+    gate.complete(); // release the turn -> clarify
     await tester.pumpAndSettle();
 
     expect(find.byType(LinearProgressIndicator), findsNothing);

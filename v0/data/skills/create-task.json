@@ -12,7 +12,8 @@
     },
     {
       "name": "dueDate",
-      "required": false
+      "required": false,
+      "type": "date"
     }
   ],
   "steps": {

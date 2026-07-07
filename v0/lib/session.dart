@@ -68,6 +68,7 @@ class Session {
   bool _lastTurnWrote = false;
   String _outSource = 'clarify'; // telemetry: how this turn resolved
   String? _outSkill;
+  String? _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
   // Whether retrieval (the embed-server index) is active this session. Authoring
   // grows the inventory and must re-index — but only when retrieval is on, so the
   // authoring path stays hermetic under init(retrieval: false), like init() itself.
@@ -113,6 +114,22 @@ class Session {
     } catch (_) {/* an OS notification hiccup is not worth failing the turn over */}
   }
 
+  /// Resolve a cloud-routed skill's declared date/datetime input slots through the
+  /// deterministic resolver, so the cloud path matches the corpus path's typed slots.
+  /// An unresolvable required datetime becomes null — which drops into a skill's own
+  /// "when?" clarify branch rather than persisting a wrong or unparseable time.
+  void _normalizeTypedSlots(Map<String, dynamic>? skill, Map<String, dynamic> slots, DateTime now) {
+    final inputs = skill?['inputs'] as List?;
+    if (inputs == null) return;
+    for (final i in inputs) {
+      if (i is! Map) continue;
+      final name = i['name'], type = i['type'];
+      if (name is! String || slots[name] is! String) continue;
+      if (type == 'date') slots[name] = router.resolveDate(slots[name] as String, now);
+      if (type == 'datetime') slots[name] = router.resolveDateTime(slots[name] as String, now);
+    }
+  }
+
   /// On-open nudge lines (the UI shows these on launch). Two derived sources, so
   /// each drops out the moment its record changes: past-due reminders (you can't
   /// schedule a toast in the past) and birthdays coming up within a week. Each line
@@ -143,6 +160,7 @@ class Session {
     u = u.trim();
     _outSource = 'clarify';
     _outSkill = null;
+    _cloudStatus = null;
     String resp;
     try {
       resp = await _handle(u);
@@ -153,15 +171,28 @@ class Session {
     // the turn may have added/undone/completed a reminder — keep the OS armed set
     // in sync with the (now-updated) store. Derived, so no per-skill wiring needed.
     await _reconcileReminders();
-    // dogfood telemetry — measures clarify/cloud/correction rates in real use
+    // dogfood telemetry — measures clarify/cloud/correction rates + cloud health in real use
     repo.logTurn({
       'at': DateTime.now().toIso8601String(),
       'utterance': u,
       'source': _outSource,
       if (_outSkill != null) 'skill': _outSkill,
+      if (_cloudStatus != null) 'cloud': _cloudStatus,
     });
     return resp;
   }
+
+  /// A short, honest, user-facing reason a cloud call failed — so a miss names the
+  /// cause instead of always blaming the user's phrasing (no silent degradation).
+  static String cloudReason(CloudErrorKind k) => switch (k) {
+        CloudErrorKind.noKey => "I don't have an API key set — add one in ~/.plenara/config.json.",
+        CloudErrorKind.badKey => "my API key was rejected — update it in ~/.plenara/config.json.",
+        CloudErrorKind.offline => "I'm offline right now.",
+        CloudErrorKind.timeout => "the cloud didn't respond in time.",
+        CloudErrorKind.rateLimited => "I'm being rate-limited — try again shortly.",
+        CloudErrorKind.serverError => "the cloud had a server error.",
+        CloudErrorKind.malformed => "I got an unexpected response from the cloud.",
+      };
 
   /// Process one utterance; returns the assistant's response text (may be multi-line).
   Future<String> _handle(String u) async {
@@ -207,8 +238,16 @@ class Session {
       }
       String? priorError;
       for (var attempt = 1; attempt <= 2; attempt++) {
-        final authored = await claude.authorCapability(desc, priorError: priorError);
-        if (authored == null) return "I couldn't build that right now (offline or no key).";
+        final Map<String, dynamic>? authored;
+        switch (await claude.authorCapability(desc, priorError: priorError)) {
+          case CloudError(:final kind):
+            _cloudStatus = kind.name;
+            return "I couldn't build that — ${cloudReason(kind)}"; // the real reason, not a guess
+          case CloudOk(:final value):
+            _cloudStatus = 'ok';
+            authored = value;
+        }
+        if (authored == null) return "I couldn't build that right now.";
         String? addedTypeId; // rollback removes ONLY a type we registered this attempt
         try {
           final type = (authored['type'] as Map).cast<String, dynamic>();
@@ -246,15 +285,31 @@ class Session {
     }
 
     var routed = router.route(u, clock: now);
-    routed ??= await claude.routeResidual(u, skills);
+    CloudErrorKind? cloudErr;
     if (routed == null) {
+      switch (await claude.routeResidual(u, skills)) {
+        case CloudOk(:final value):
+          _cloudStatus = 'ok';
+          routed = value; // may be null == the model abstained
+        case CloudError(:final kind):
+          _cloudStatus = kind.name;
+          cloudErr = kind;
+      }
+    }
+    if (routed == null) {
+      // A miss is corpus + (abstain | cloud error | no cloud). If the cloud FAILED,
+      // say so honestly instead of only blaming the phrasing (no silent degradation).
       final sg = await router.retrievalSuggest(u);
-      if (sg == null) return "I didn't catch that.";
-      final name = skills[sg['skillId']]!['displayName'];
-      final s1 = (sg['s1'] as double).toStringAsFixed(2);
-      return sg['confident'] == true
-          ? 'I don\'t have that phrasing learned — did you mean to "$name"? Say it a known way and I\'ll learn it.'
-          : 'I\'m not sure what you meant — closest is "$name" ($s1), below my confidence bar, so I won\'t guess.';
+      final base = sg == null
+          ? "I didn't catch that."
+          : (() {
+              final name = skills[sg['skillId']]!['displayName'];
+              final s1 = (sg['s1'] as double).toStringAsFixed(2);
+              return sg['confident'] == true
+                  ? 'I don\'t have that phrasing learned — did you mean to "$name"? Say it a known way and I\'ll learn it.'
+                  : 'I\'m not sure what you meant — closest is "$name" ($s1), below my confidence bar, so I won\'t guess.';
+            })();
+      return cloudErr == null ? base : '$base (I also couldn\'t check with the cloud: ${cloudReason(cloudErr)})';
     }
     _outSource = routed['source'] as String; // telemetry: corpus | cloud
     _outSkill = routed['skillId'] as String?;
@@ -263,6 +318,13 @@ class Session {
     // as garbage; the crash it once caused is already handled in _asDate).
     (routed['slots'] as Map?)?.updateAll(
         (k, v) => (v is String && const {'none', 'null'}.contains(v.trim().toLowerCase())) ? null : v);
+    // The corpus types its slots via the template; the cloud returns raw strings, so
+    // normalize any date/datetime input the routed skill declares (Spec 03 §6.2).
+    // A cloud "2026-07-08" for a datetime slot -> null (no midnight reminders); a raw
+    // "tomorrow at 3pm" -> a real ISO datetime (no silently-dropped reminders).
+    if (routed['source'] == 'cloud') {
+      _normalizeTypedSlots(skills[routed['skillId']], routed['slots'] as Map<String, dynamic>, now);
+    }
     try {
       final turnInterp = Interpreter(types, now); // per-turn clock (Spec 03 §4)
       final plan = turnInterp.resolve(skills[routed['skillId']]!, routed['slots'], store);

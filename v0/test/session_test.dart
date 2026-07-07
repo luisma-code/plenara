@@ -42,11 +42,11 @@ class _MemStorage implements StorageRepository {
 
 class _NoCloud implements CloudClient {
   @override
-  Future<Map<String, dynamic>?> routeResidual(
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
           String utterance, Map<String, Map<String, dynamic>> skills) async =>
       throw StateError('cloud routeResidual called for "$utterance" — expected a corpus/offline path');
   @override
-  Future<Map<String, dynamic>?> authorCapability(String description, {String? priorError}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError}) async =>
       throw StateError('cloud authorCapability called — expected a corpus/offline path');
 }
 

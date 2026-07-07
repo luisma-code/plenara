@@ -7,7 +7,7 @@
   ],
   "inputs": [
     { "name": "text", "required": true },
-    { "name": "when", "required": true }
+    { "name": "when", "required": true, "type": "datetime" }
   ],
   "steps": {
     "main": [

@@ -4,6 +4,7 @@
 /// against real schema drift in authored capabilities.
 import 'dart:io';
 
+import 'package:plenara/claude.dart';
 import 'package:plenara/fixture_inputs.dart';
 import 'package:plenara/interpreter.dart';
 import 'package:plenara/replay_cloud.dart';
@@ -17,13 +18,15 @@ final _now = DateTime.parse('2026-07-06T09:00:00');
 final _skills = loadDefs('data/skills', 'skillId');
 final _types = loadDefs('data/types', 'typeId');
 ReplayCloud _cloud() => ReplayCloud.load('test/fixtures/cloud.json');
+// unwrap a replayed result — the cassette holds only genuine (Ok) answers.
+Map<String, dynamic>? _ok(CloudResult<Map<String, dynamic>?> r) => (r as CloudOk<Map<String, dynamic>?>).value;
 
 void main() {
   group('replay — residual routing matches recorded Haiku (in-domain)', () {
     residualBySkill.forEach((skillId, utterances) {
       for (final u in utterances) {
         test('"$u" -> $skillId', () async {
-          final r = await _cloud().routeResidual(u, _skills);
+          final r = _ok(await _cloud().routeResidual(u, _skills));
           expect(r, isNotNull, reason: u);
           expect(r!['skillId'], skillId, reason: u);
           expect(r['source'], 'cloud');
@@ -35,7 +38,7 @@ void main() {
   group('replay — out-of-domain: Haiku abstains (null)', () {
     for (final u in outOfDomainUtterances) {
       test('"$u" -> null (abstain)', () async {
-        expect(await _cloud().routeResidual(u, _skills), isNull, reason: u);
+        expect(_ok(await _cloud().routeResidual(u, _skills)), isNull, reason: u);
       });
     }
   });
@@ -43,7 +46,7 @@ void main() {
   group('replay — authored capabilities pass the static validators (schema-drift guard)', () {
     for (final desc in authoringDescriptions) {
       test('author "$desc" -> a valid type + skill that the gate accepts', () async {
-        final a = await _cloud().authorCapability(desc);
+        final a = _ok(await _cloud().authorCapability(desc));
         expect(a, isNotNull, reason: desc);
         final type = (a!['type'] as Map).cast<String, dynamic>();
         final skill = (a['skill'] as Map).cast<String, dynamic>();

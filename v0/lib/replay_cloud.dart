@@ -28,18 +28,26 @@ class RecordingCloud implements CloudClient {
   final Map<String, dynamic> recorded = {};
   RecordingCloud(this.inner);
 
+  // Recording runs once with a valid key online, so every result must be a CloudOk;
+  // a CloudError mid-record means the key/network is bad — fail loudly, don't bake it in.
+  Map<String, dynamic>? _unwrap(CloudResult<Map<String, dynamic>?> r, String what) => switch (r) {
+        CloudError(:final kind) =>
+          throw StateError('recording $what hit $kind — fix the key/network and re-record'),
+        CloudOk(:final value) => value,
+      };
+
   @override
-  Future<Map<String, dynamic>?> routeResidual(
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
       String utterance, Map<String, Map<String, dynamic>> skills) async {
     final r = await inner.routeResidual(utterance, skills);
-    recorded[cloudKey('route', utterance, invSig(skills))] = r;
+    recorded[cloudKey('route', utterance, invSig(skills))] = _unwrap(r, 'route "$utterance"');
     return r;
   }
 
   @override
-  Future<Map<String, dynamic>?> authorCapability(String description, {String? priorError}) async {
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError}) async {
     final r = await inner.authorCapability(description, priorError: priorError);
-    recorded[cloudKey('author', description, priorError ?? '')] = r;
+    recorded[cloudKey('author', description, priorError ?? '')] = _unwrap(r, 'author "$description"');
     return r;
   }
 
@@ -49,6 +57,10 @@ class RecordingCloud implements CloudClient {
   }
 }
 
+/// Replays recorded results. Every recorded value is a genuine model answer (the
+/// cassette was captured online with a valid key), so it replays as [CloudOk] —
+/// a recorded null being a real "abstain". A missing key throws so a gap fails
+/// loudly instead of masquerading as a cloud outage.
 class ReplayCloud implements CloudClient {
   final Map<String, dynamic> _rec;
   ReplayCloud(this._rec);
@@ -66,11 +78,11 @@ class ReplayCloud implements CloudClient {
   }
 
   @override
-  Future<Map<String, dynamic>?> routeResidual(
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
           String utterance, Map<String, Map<String, dynamic>> skills) async =>
-      _get(cloudKey('route', utterance, invSig(skills)));
+      CloudOk(_get(cloudKey('route', utterance, invSig(skills))));
 
   @override
-  Future<Map<String, dynamic>?> authorCapability(String description, {String? priorError}) async =>
-      _get(cloudKey('author', description, priorError ?? ''));
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError}) async =>
+      CloudOk(_get(cloudKey('author', description, priorError ?? '')));
 }

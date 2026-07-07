@@ -1,23 +1,52 @@
-/// Plenara v0 — the ClaudeClient (Spec 04 §3.5). The single cloud seam. Used
-/// here for RESIDUAL routing (findings §13 E4: Haiku over the full inventory ~94%
-/// on cold-start), turning a novel phrasing the corpus/retrieval can't handle
-/// into a real route+slots — online only, BYOK. Offline or keyless -> null, and
-/// the caller degrades to clarify (no silent failure; the free tier never blocks).
+/// Plenara v0 — the ClaudeClient (Spec 04 §3.5). The single cloud seam. Used for
+/// RESIDUAL routing (findings §13 E4) and authoring, turning a novel phrasing the
+/// corpus/retrieval can't handle into a route+slots — online only, BYOK.
+///
+/// Failures are TYPED, never exceptions and never a bare null (Spec 04 §3.5): every
+/// call returns a [CloudResult] — [CloudOk] carrying the value (a route/authored
+/// capability, or a null value meaning the model deliberately ABSTAINED), or
+/// [CloudError] naming WHY (offline / bad key / rate-limited / …). The caller can
+/// then tell the user the truth instead of silently degrading to "I didn't catch
+/// that" (the no-silent-failure principle, at the seam where it matters most).
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
+/// Why a cloud call could not produce an answer. `noKey`/`badKey` are actionable
+/// by the user; `offline`/`timeout`/`rateLimited`/`serverError` are transient;
+/// `malformed` means a 200 whose body we couldn't turn into a decision.
+enum CloudErrorKind { noKey, offline, timeout, badKey, rateLimited, serverError, malformed }
+
+/// Result of a cloud call — a value or a named failure, never a thrown exception.
+sealed class CloudResult<T> {
+  const CloudResult();
+}
+
+/// Success. A null [value] from a router call means the model ABSTAINED ("none") —
+/// a real answer ("not one of my capabilities"), distinct from never hearing back.
+final class CloudOk<T> extends CloudResult<T> {
+  final T value;
+  const CloudOk(this.value);
+}
+
+/// A named failure. [detail] is for logs, never required for the user message.
+final class CloudError<T> extends CloudResult<T> {
+  final CloudErrorKind kind;
+  final String? detail;
+  const CloudError(this.kind, [this.detail]);
+}
 
 String? apiKey() {
   final env = Platform.environment['ANTHROPIC_API_KEY'];
   if (env != null && env.isNotEmpty) return env.trim();
-  // v0 dev convenience: read the BYOK key from the rig's gitignored .env
-  for (final p in const [
-    '../planning/specs/05a-rig/.env',
-    r'Z:\code\plenara\planning\specs\05a-rig\.env', // absolute fallback (UI runs from a build dir)
-  ]) {
-    final f = File(p);
-    if (!f.existsSync()) continue;
+  // v0 dev convenience for the rig (tests/recorder run from v0/): read the BYOK key
+  // from the gitignored rig .env via a RELATIVE path only. A machine-specific
+  // absolute path was removed deliberately — baked into the app binary it would let
+  // the production app silently borrow the rig key and mask a real noKey/badKey.
+  final f = File('../planning/specs/05a-rig/.env');
+  if (f.existsSync()) {
     for (final line in f.readAsLinesSync()) {
       if (line.startsWith('ANTHROPIC_API_KEY')) {
         return line.split('=')[1].trim().replaceAll('"', '').replaceAll("'", '');
@@ -30,9 +59,9 @@ String? apiKey() {
 /// The single cloud seam, as an interface so callers can inject a replay/mock
 /// implementation (lib/replay_cloud.dart) instead of hitting the network in tests.
 abstract interface class CloudClient {
-  Future<Map<String, dynamic>?> routeResidual(
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
       String utterance, Map<String, Map<String, dynamic>> skills);
-  Future<Map<String, dynamic>?> authorCapability(String description, {String? priorError});
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError});
 }
 
 class ClaudeClient implements CloudClient {
@@ -72,26 +101,31 @@ Author a LOGGING skill: compute today into a var, write_record capturing the inp
 into the type, then a format op that sets "confirmationText". Reference inputs as {"var":"<slotName>"}.
 "reads" is [] and "writes" is [the new typeId] for a logging skill. Output only JSON, no prose.''';
 
-  /// Author a new type + skill from a described need (Spec 02 §6). Returns
-  /// {type, skill} maps, or null. Deterministic validation happens in the caller.
+  /// Author a new type + skill from a described need (Spec 02 §6). Ok({type, skill})
+  /// on success, or a typed CloudError. Deterministic validation happens in the caller.
   @override
-  Future<Map<String, dynamic>?> authorCapability(String description, {String? priorError}) async {
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError}) async {
     final fix = priorError == null
         ? ''
         : '\nYour previous attempt FAILED deterministic validation with: "$priorError". '
             'Return corrected JSON that fixes exactly that.';
-    final out = await _message(_authorSys, 'Capability to build: "$description"$fix', maxTokens: 900);
-    if (out == null) return null;
-    final type = out['type'], skill = out['skill'];
-    if (type is! Map || skill is! Map) return null;
-    return {'type': type.cast<String, dynamic>(), 'skill': skill.cast<String, dynamic>()};
+    final res = await _message(_authorSys, 'Capability to build: "$description"$fix', maxTokens: 900);
+    switch (res) {
+      case CloudError(:final kind, :final detail):
+        return CloudError(kind, detail);
+      case CloudOk(:final value):
+        final type = value['type'], skill = value['skill'];
+        if (type is! Map || skill is! Map) {
+          return const CloudError(CloudErrorKind.malformed, 'response was not a {type, skill} capability');
+        }
+        return CloudOk({'type': type.cast<String, dynamic>(), 'skill': skill.cast<String, dynamic>()});
+    }
   }
 
-  /// The single HTTP path. NEVER throws (Spec 04 §3.5): any failure — offline,
-  /// non-200, timeout, malformed/refusal (200 with empty or non-text content) —
-  /// returns null. Extracts the first `text` block and the JSON object within it.
-  Future<Map<String, dynamic>?> _message(String sys, String user, {int maxTokens = 200}) async {
-    if (key == null || key!.isEmpty) return null;
+  /// The single HTTP path. NEVER throws (Spec 04 §3.5): every failure maps to a
+  /// typed [CloudError]. On 200 with a usable JSON object, [CloudOk] of that object.
+  Future<CloudResult<Map<String, dynamic>>> _message(String sys, String user, {int maxTokens = 200}) async {
+    if (key == null || key!.isEmpty) return const CloudError(CloudErrorKind.noKey);
     final body = jsonEncode({
       'model': 'claude-haiku-4-5',
       'max_tokens': maxTokens,
@@ -109,19 +143,32 @@ into the type, then a format op that sets "confirmationText". Reference inputs a
         req.add(utf8.encode(body));
         final resp = await req.close();
         final raw = await resp.transform(utf8.decoder).join();
-        if (resp.statusCode != 200) return null;
+        final code = resp.statusCode;
+        if (code == 401 || code == 403) return CloudError<Map<String, dynamic>>(CloudErrorKind.badKey, 'HTTP $code');
+        if (code == 429) return const CloudError<Map<String, dynamic>>(CloudErrorKind.rateLimited);
+        if (code != 200) return CloudError<Map<String, dynamic>>(CloudErrorKind.serverError, 'HTTP $code');
         final decoded = jsonDecode(raw);
         final content = decoded is Map ? decoded['content'] : null;
-        if (content is! List) return null; // refusal / unexpected shape
+        if (content is! List) return const CloudError<Map<String, dynamic>>(CloudErrorKind.malformed, 'no content array');
         final block = content.firstWhere(
             (b) => b is Map && b['type'] == 'text' && b['text'] is String,
             orElse: () => null);
-        if (block == null) return null; // no text block (e.g. stop_reason: refusal)
+        if (block == null) return const CloudError<Map<String, dynamic>>(CloudErrorKind.malformed, 'no text block (refusal?)');
         final jsonStr = RegExp(r'\{.*\}', dotAll: true).firstMatch((block['text'] as String).trim())?.group(0);
-        return jsonStr == null ? null : jsonDecode(jsonStr) as Map<String, dynamic>;
+        if (jsonStr == null) return const CloudError<Map<String, dynamic>>(CloudErrorKind.malformed, 'no JSON object in text');
+        final obj = jsonDecode(jsonStr);
+        if (obj is! Map<String, dynamic>) {
+          return const CloudError<Map<String, dynamic>>(CloudErrorKind.malformed, 'JSON was not an object');
+        }
+        return CloudOk<Map<String, dynamic>>(obj);
       }).timeout(const Duration(seconds: 30)); // bounds the whole exchange, not just connect
-    } catch (_) {
-      return null; // catches Exception AND Error (e.g. a shape TypeError) and TimeoutException
+    } on TimeoutException catch (_) {
+      return const CloudError(CloudErrorKind.timeout);
+    } on SocketException catch (e) {
+      return CloudError(CloudErrorKind.offline, e.message);
+    } catch (e) {
+      // malformed body (JSON parse), a shape TypeError, etc. — a 200 we couldn't use.
+      return CloudError(CloudErrorKind.malformed, e.toString());
     } finally {
       client.close();
     }
@@ -129,22 +176,30 @@ into the type, then a format op that sets "confirmationText". Reference inputs a
 
   static const _sentinels = {'none', 'null', ''};
 
-  /// Full-inventory residual routing. Returns {skillId, slots} or null.
+  /// Full-inventory residual routing. Ok({skillId, slots}) on a route, Ok(null) when
+  /// the model abstains (or names an id we don't have), or a typed CloudError.
   @override
-  Future<Map<String, dynamic>?> routeResidual(
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
       String utterance, Map<String, Map<String, dynamic>> skills) async {
     final inv = skills.values.map((s) {
       final ins = (s['inputs'] as List? ?? []).map((i) => i['name']).join(', ');
       return '- ${s['skillId']}: ${s['displayName']} (inputs: ${ins.isEmpty ? 'none' : ins})';
     }).join('\n');
-    final parsed = await _message(_sys, 'Capabilities:\n$inv\n\nUtterance: "$utterance"\n\nJSON:');
-    if (parsed == null || parsed['skillId'] == null || parsed['skillId'] == 'none') return null;
-    if (!skills.containsKey(parsed['skillId'])) return null;
-    final slots = (parsed['slots'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
-    // the model sometimes leaks the 'none' sentinel into a slot value; normalize
-    // those to a real null so they can't crash a downstream resolver.
-    slots.updateAll((k, v) =>
-        (v is String && _sentinels.contains(v.trim().toLowerCase())) ? null : v);
-    return {'skillId': parsed['skillId'], 'slots': slots, 'source': 'cloud'};
+    final res = await _message(_sys, 'Capabilities:\n$inv\n\nUtterance: "$utterance"\n\nJSON:');
+    switch (res) {
+      case CloudError(:final kind, :final detail):
+        return CloudError(kind, detail);
+      case CloudOk(:final value):
+        final parsed = value;
+        if (parsed['skillId'] == null || parsed['skillId'] == 'none' || !skills.containsKey(parsed['skillId'])) {
+          return const CloudOk<Map<String, dynamic>?>(null); // the model abstained
+        }
+        final slots = (parsed['slots'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+        // the model sometimes leaks the 'none' sentinel into a slot value; normalize
+        // those to a real null so they can't crash a downstream resolver.
+        slots.updateAll((k, v) =>
+            (v is String && _sentinels.contains(v.trim().toLowerCase())) ? null : v);
+        return CloudOk<Map<String, dynamic>?>({'skillId': parsed['skillId'], 'slots': slots, 'source': 'cloud'});
+    }
   }
 }
