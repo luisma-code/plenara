@@ -8,12 +8,19 @@ Plenara is a voice-driven, AI-augmented personal assistant app. Solo project by 
 
 ## Working mode (IMPORTANT — read first)
 
-**Work autonomously and keep going. Never ask permission to proceed.** This is the top collaboration rule and the most-repeated correction — honor it above default caution.
+**Work autonomously and keep going. Never stop for input to proceed.** Top rule, most-repeated correction — honor it above default collaborative caution. Decide, act, commit, continue.
 
-- **The answer to "should I do the next step?" is ALWAYS yes** — so never ask it. Finish an increment → commit → immediately start the next → repeat, indefinitely. **Never** end a turn with "recommended next step, whenever you want," a menu of options, "should I…", or any permission-seeking offer. Report progress as completed facts.
-- **Make the calls yourself.** Design, tooling, and sequencing decisions are yours: decide with clear rationale, record it (specs / `05b` gap register / findings / commit messages), and move on. Review happens when the work is *done*, not mid-stream — "when Luis returns, the task is finished, not waiting for input."
-- **Only stop for a genuine hard blocker** — something needing hardware only Luis has (e.g. an iPhone for the iOS spike), a real user/beta, or a truly irreversible high-stakes action — or when there is honestly nothing left to do.
-- Standing setup: the broad allowlist + bypass mode remove per-action approvals; at the start of a substantive session launch `scripts/keep-alive.ps1` in the background and kill it only when all work is complete.
+- **"Should I do the next step?" is ALWAYS yes** — never ask it. Finish an increment → commit → immediately start the next → repeat, indefinitely. Make design/tooling/sequencing calls yourself; record the rationale in the commit/handoff and move on. Review happens when the work is *done*.
+
+- **Surfacing ≠ stopping. The sin is stopping while open work remains — not surfacing.** Reporting status, reasoning, and open ponderings is *welcome*, any time. But a status note is something you emit *while continuing*, never *instead of* it: while any unblocked work remains, keep doing it **in the same turn**. The failure is always the last message — handing a decision back, or asking permission, when you could have picked the next thing and done it. So don't end a turn on a solicitation ("want me to…", "should I…", "any preference…", "let me know…", "would you like…", "or should I just…") while work is still available — pick and do it, then report. A Stop hook bounces a turn that ends on such a coda with open work remaining.
+
+- **Uncertainty is not a reason to stop.** Unsure whether more work is worth it, or which direction is best? Pick the highest-value option, state the assumption in ONE line ("Assuming X matters most — building it."), and keep going. Ponder out loud all you like — then act on the pondering rather than parking it for the user. Judgment calls become stated bets, not questions; the user redirects if a bet is wrong, which costs far less than stalling.
+
+- **The ONLY sanctioned stop** is a genuine hard blocker — hardware/credentials/approval only Luis can supply, a real user/beta, or a truly irreversible high-stakes action — or nothing left to do. State the blocker declaratively ("Native toast needs the ATL install, which needs your admin — so I'm moving to the next unblocked item.") and keep working on everything still unblocked. A hard blocker on ONE thing is never an excuse to stop ALL work.
+
+- **Exception — meta/process:** when Luis explicitly opens a decision about *how we work* (e.g. "should we rewrite this instruction?", "which approach do you prefer?"), engaging him IS correct — that's his call, not permission-seeking about the task. This exception does not extend to the work itself.
+
+- Standing setup: broad allowlist + bypass mode remove per-action approvals; at the start of a substantive session launch `scripts/keep-alive.ps1` in the background and kill it only when all work is complete.
 
 ## Planning documents
 
