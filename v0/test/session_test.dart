@@ -118,6 +118,42 @@ void main() {
     });
   });
 
+  group('realistic day — broad cross-skill integration (all offline)', () {
+    test('tasks, reminders, people, birthdays, mood all cohere in one session', () async {
+      final s = await _session(); // Monday 2026-07-06, _NoCloud (proves it's all corpus)
+
+      // tasks + due
+      await s.handle('add pay rent to my list due today');
+      await s.handle('add book flights to my list due friday');
+      expect(await s.handle("what's due"), contains('pay rent'));
+      await s.handle('move pay rent to friday');
+      expect((await s.handle("what's due")).toLowerCase(), contains("you're clear"));
+
+      // people: relationship (the offline gap we closed) + interaction, queryable
+      await s.handle("remember that Mia is Sarah Mitchell's daughter");
+      expect(await s.handle('who is Mia related to'), contains('daughter of Sarah Mitchell'));
+      await s.handle('talked to Sam about the trip');
+      expect(await s.handle('when did i last talk to Sam'), contains('2026-07-06'));
+
+      // birthdays
+      await s.handle("Sarah Mitchell's birthday is july 10");
+      expect(await s.handle('whose birthday is coming up'), contains('Sarah Mitchell'));
+
+      // mood
+      await s.handle("i'm feeling great");
+      expect(await s.handle('how have i been feeling'), contains('great'));
+
+      // undo the last write (the mood) leaves the rest intact
+      await s.handle('undo');
+      expect((await s.handle('how have i been feeling')).toLowerCase(), contains("haven't logged"));
+      expect(await s.handle('who is Mia related to'), contains('Sarah Mitchell')); // untouched
+
+      // sanity: nothing crashed, records are coherent
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 2);
+      expect(s.store.values.where((x) => x['typeId'] == 'contact_relationship').length, 1);
+    });
+  });
+
   group('recall-mood', () {
     test('lists logged moods, with a clear message when there are none', () async {
       final s = await _session();
