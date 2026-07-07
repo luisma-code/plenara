@@ -126,6 +126,15 @@ void main() {
       expect(await s.handle('undo that'), contains('Undone'));
       expect(s.store.length, 0);
     });
+    test('"what can you do" gives a grounded capability overview (no cloud, no write)', () async {
+      final s = await _session();
+      final r = await s.handle('what can you do');
+      expect(r, contains('Here\'s what I can do'));
+      expect(r, contains('Reminders'));
+      expect(r, contains('Birthdays'));
+      expect(r, contains('undo'));
+      expect(s.store, isEmpty); // discoverability is read-only
+    });
     test('undo with nothing to undo', () async {
       final s = await _session();
       expect(await s.handle('undo'), contains('Nothing to undo'));

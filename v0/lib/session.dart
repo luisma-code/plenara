@@ -11,6 +11,12 @@ import 'router.dart';
 import 'storage_repository.dart';
 
 final _undoRe = RegExp(r'^(undo|undo that|no,? take that back|scratch that)\.?$', caseSensitive: false);
+// Discoverability (Spec 03 §6.3): a clarify dead-ends without "here's what I can do".
+// A DSL skill can't introspect the skill registry, so this is a Session-level surface.
+final _helpRe = RegExp(
+    r'^(?:help|what can you do|what can i (?:say|do|ask)( you)?|what are your (?:skills|capabilities)|'
+    r'show me what you can do)\??$',
+    caseSensitive: false);
 final _corrRe = RegExp(r'^(?:no,?|actually,?|nope,?)\s+i meant (?:to |it was )?(.+?)\.?$', caseSensitive: false);
 final _defRe = RegExp(
     r'^(?:start tracking|track|i want to track|i want to start tracking|make me a|create a) '
@@ -114,6 +120,29 @@ class Session {
     } catch (_) {/* an OS notification hiccup is not worth failing the turn over */}
   }
 
+  /// A concise, capability-grounded "what can you do" surface. Grouped by area with
+  /// real example phrasings (more useful than dumping 19 raw displayNames); each line
+  /// is gated on the skill actually being registered, so it never advertises a
+  /// capability the current inventory doesn't have.
+  String _helpText() {
+    bool has(String id) => skills.containsKey(id);
+    final lines = <String>[
+      if (has('create-task'))
+        '• Tasks — "add call the plumber to my list", "list my tasks", "mark X done", "delete X"',
+      if (has('set-reminder'))
+        '• Reminders — "remind me to call mom on thursday at 5pm", "what are my reminders", "cancel the reminder to X"',
+      if (has('log-run'))
+        '• Running — "log a 3k run", "how much have I run this week"',
+      if (has('log-mood')) '• Mood — "I\'m feeling great"',
+      if (has('remember-person-fact'))
+        '• People — "remember that Mia is Sarah\'s daughter", "what do I know about Mia", "talked to Sam about the trip", "when did I last talk to Sam"',
+      if (has('set-birthday'))
+        '• Birthdays — "Sarah\'s birthday is july 16", "whose birthday is coming up"',
+      '• New trackers — "start tracking my water intake"',
+    ];
+    return 'Here\'s what I can do:\n${lines.join('\n')}\nAnd "undo that" reverses the last thing.';
+  }
+
   /// Resolve a cloud-routed skill's declared date/datetime input slots through the
   /// deterministic resolver, so the cloud path matches the corpus path's typed slots.
   /// An unresolvable required datetime becomes null — which drops into a skill's own
@@ -207,6 +236,11 @@ class Session {
       _reverse(entry.before);
       // say WHAT was reversed — a silent "Undone." can't be trusted as the safety net
       return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
+    }
+
+    if (_helpRe.hasMatch(u)) {
+      _outSource = 'help';
+      return _helpText();
     }
 
     final corr = _corrRe.firstMatch(u);

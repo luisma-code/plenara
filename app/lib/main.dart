@@ -67,7 +67,8 @@ class _ChatState extends State<ChatScreen> {
         _msgs.add(Msg(
             'Hi — I\'m Plenara. Try: "add call the plumber to my list", "log a 3k run", '
             '"remind me to call mom on thursday at 5pm", "what do I know about Mia", '
-            '"list my tasks", or "start tracking my water intake". "undo that" reverses the last thing.',
+            '"list my tasks", or "start tracking my water intake". "undo that" reverses the '
+            'last thing — and ask "what can you do" any time.',
             false));
         // On-open nudges (past-due reminders + upcoming birthdays) — each line
         // already carries its own icon, so show it as-is. Nothing silently missed.
