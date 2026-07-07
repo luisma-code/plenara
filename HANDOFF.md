@@ -15,10 +15,20 @@ fallback is gone from the app path. **Fable Phase 2 is DONE too** — discoverab
 ("what can you do"), a turnlog report, and partial-name matching with a disambiguation
 clarify ("Sam" → "Sam Rivera", or a "which one?" question). Then went DEEP on Phase-5
 capability: relationship queries (both directions), forget-fact (+ a `contains` cond),
-and a due-tasks agenda ("what's due"). **HEAD = `b21ff4e`**, working tree clean (ignore
-the pre-existing dirty `planning/specs/05a-rig/results/embed-v0.log` + untracked
-`.claude/settings.local.json`), **1193 Dart tests + 8 Flutter widget tests green**,
-`dart analyze` clean, **`flutter build windows --debug` succeeds**.
+a due-tasks agenda ("what's due"), and recall-mood. Also **de-flaked the authoring
+fixtures** (recorder + schema-drift test now drive the real Session validate→retry
+loop, so re-records stop flaking on Haiku's first-shot out-of-vocab fns). **HEAD =
+`c9fb48e`**, working tree clean (ignore the pre-existing dirty
+`planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
+**1194 Dart tests + 8 Flutter widget tests green** (23 skills), `dart analyze` clean,
+**`flutter build windows --debug` succeeds**.
+
+**Working-mode enforcement (new):** a user-level **Stop hook**
+(`~/.claude/hooks/stop-guard.ps1` + `~/.claude/settings.json`) bounces any turn whose
+final ~160 chars are a permission-seeking coda ("want me to…/should I…"), so work
+continues while unblocked items remain. Fails open. If you (a future session) get a
+"STOP BLOCKED (working-mode hook)" message, that's it — pick the next unblocked item and
+do it, don't re-ask. The rule itself is in `CLAUDE.md` "Working mode" (rewritten `627d4cc`).
 
 **The immediate next task:** NOT blocked on Luis. Keep rolling autonomously (working
 mode: never stop for input, make the sequencing call yourself). Unblocked options:
@@ -155,10 +165,10 @@ The bundle is intentionally secret-free; keep it that way.
   derive/reconcile (armed set DERIVED from the record store; idempotent). Session
   reconciles on init + every turn and exposes `pendingNudges()`.
 
-**`v0/data/`** — 8 types, **22 skills**: tasks (create/list/complete/delete/**due**),
-running (log-run, count-runs-this-week), mood (log-mood), reminders (set/list/complete/
-cancel), people-facts (remember/recall/**forget**), interactions (log/last/list),
-**list-relations**, birthdays (set/when/upcoming). DSL compute fns: `format_time`,
+**`v0/data/`** — 8 types, **23 skills**: tasks (create/list/complete/delete/due),
+running (log-run, count-runs-this-week), mood (log/**recall**), reminders (set/list/
+complete/cancel), people-facts (remember/recall/forget), interactions (log/last/list),
+list-relations, birthdays (set/when/upcoming). DSL compute fns: `format_time`,
 `next_annual`, `days_until_annual`; conds incl. **`contains`**; the date resolver
 handles month-name dates. Helper libs: `dates.dart` (annual math), `people.dart`
 (birthday-nudge projection), `reminders.dart` (notification seam + reconcile),
@@ -172,6 +182,12 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **Working-mode fix (done, `627d4cc` + user-level hook):** rewrote the "keep going"
+  rule to target turn-endings + added a Stop hook that enforces it. See TL;DR.
+- **recall-mood + authoring de-flake (done, `c9fb48e`, `88c11c3`):** recall-mood
+  ("how have I been feeling"); recorder + schema-drift test now drive the Session
+  validate→retry authoring loop so re-records no longer flake on first-attempt
+  out-of-vocab fns.
 - **Capability depth (done, `b21ff4e` … `c36d00a`):** `due-tasks` ("what's due" /
   "anything overdue" — overdue + today, excluding future/done); `forget-fact`
   ("forget that Mia likes chess") + a new `contains` cond (case-insensitive substring
