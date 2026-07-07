@@ -68,6 +68,19 @@ void main() {
     expect(find.textContaining('Reminder: call mom'), findsOneWidget); // the nudge bubble
   });
 
+  testWidgets('an upcoming birthday shows as an on-open nudge bubble', (tester) async {
+    final dir = _tempData();
+    final seeder = Session(dir, clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _NullCloud());
+    await seeder.init(retrieval: false);
+    await seeder.handle("Sarah's birthday is july 10"); // in 4 days
+
+    final reopened = Session(dir, clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _NullCloud());
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: reopened, retrieval: false)));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining("Sarah's birthday is in 4 days"), findsOneWidget);
+  });
+
   testWidgets('tapping Send with empty input adds no bubble', (tester) async {
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
     await tester.pumpAndSettle();

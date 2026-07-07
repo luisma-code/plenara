@@ -6,6 +6,8 @@ library;
 
 import 'dart:math';
 
+import 'dates.dart';
+
 class ResolveError implements Exception {
   final String message;
   ResolveError(this.message);
@@ -90,12 +92,10 @@ class Interpreter {
       case 'next_annual':
         // next occurrence of this date's MM-DD on/after today (for birthdays etc.)
         final d = _asDate(a[0]);
-        return d == null ? null : _dateOnly(_nextAnnual(d, now));
+        return d == null ? null : _dateOnly(nextAnnual(d, now));
       case 'days_until_annual':
         final d = _asDate(a[0]);
-        if (d == null) return null;
-        final today = DateTime(now.year, now.month, now.day);
-        return _nextAnnual(d, now).difference(today).inDays;
+        return d == null ? null : daysUntilAnnual(d, now);
       case 'start_of_week':
         final d = _asDate(a[0])!;
         return _dateOnly(d.subtract(Duration(days: d.weekday - 1)));
@@ -126,13 +126,6 @@ class Interpreter {
 
   // full datetime (keeps the time-of-day; used by format_time). Never throws.
   static DateTime? _asDateTime(dynamic s) => s == null ? null : DateTime.tryParse(s.toString());
-
-  // the next calendar occurrence of [d]'s month/day, on or after today (year ignored).
-  static DateTime _nextAnnual(DateTime d, DateTime now) {
-    final today = DateTime(now.year, now.month, now.day);
-    final thisYear = DateTime(now.year, d.month, d.day);
-    return thisYear.isBefore(today) ? DateTime(now.year + 1, d.month, d.day) : thisYear;
-  }
 
   bool cond(Map c, Map<String, dynamic> env) {
     if (c.containsKey('isNull')) return env[c['isNull']] == null;

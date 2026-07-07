@@ -3,6 +3,7 @@
 /// sort — that "when did I last talk to X" finds the MAX interaction date via the
 /// foreach/branch reduction, independent of insertion order.
 import 'package:plenara/claude.dart';
+import 'package:plenara/people.dart';
 import 'package:plenara/session.dart';
 import 'package:test/test.dart';
 
@@ -125,6 +126,35 @@ void main() {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
       await s.handle("Mia's birthday is december 25");
       expect(await s.handle('any birthdays coming up'), contains('No birthdays'));
+    });
+  });
+
+  group('on-open birthday nudges (derived, no new skill)', () {
+    test('a birthday within a week nudges on open; a far-off one does not', () async {
+      final dir = makeTempDataDir();
+      final s = await _session(dir, clock: _d('2026-07-06'));
+      await s.handle("Sarah's birthday is july 10"); // in 4 days
+      await s.handle("Mia's birthday is december 25"); // far off
+
+      final reopened = await _session(dir, clock: _d('2026-07-06')); // fresh open re-derives
+      final nudges = reopened.pendingNudges();
+      expect(nudges.any((n) => n.contains('Sarah') && n.contains('in 4 days')), isTrue);
+      expect(nudges.any((n) => n.contains('Mia')), isFalse);
+      expect(nudges.every((n) => n.startsWith('🎂') || n.startsWith('⏰')), isTrue);
+    });
+
+    test('pure helper: today/tomorrow phrasing, skips missing birthdays, sorted soonest-first', () {
+      final now = _d('2026-07-06');
+      final store = {
+        'contact-1': {'id': 'contact-1', 'typeId': 'contact', 'displayName': 'B', 'birthday': '2000-07-07'},
+        'contact-2': {'id': 'contact-2', 'typeId': 'contact', 'displayName': 'A', 'birthday': '2000-07-06'},
+        'contact-3': {'id': 'contact-3', 'typeId': 'contact', 'displayName': 'C'}, // no birthday
+      };
+      final n = upcomingBirthdayNudges(store, now);
+      expect(n.length, 2);
+      expect(n[0], contains('today')); // A, sorted ahead of B
+      expect(n[0], contains('A'));
+      expect(n[1], contains('tomorrow'));
     });
   });
 

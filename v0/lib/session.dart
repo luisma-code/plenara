@@ -5,6 +5,7 @@ library;
 
 import 'claude.dart';
 import 'interpreter.dart';
+import 'people.dart';
 import 'reminders.dart';
 import 'router.dart';
 import 'storage_repository.dart';
@@ -112,11 +113,14 @@ class Session {
     } catch (_) {/* an OS notification hiccup is not worth failing the turn over */}
   }
 
-  /// Past-due, not-done reminders as friendly on-open nudge lines (you can't
-  /// schedule a toast in the past — surface it in-app instead). The UI shows these
-  /// on launch; keeping it derived means a completed/undone reminder simply drops out.
-  List<String> pendingNudges() =>
-      [for (final r in dueReminders(store, now)) 'Reminder: ${r.body}'];
+  /// On-open nudge lines (the UI shows these on launch). Two derived sources, so
+  /// each drops out the moment its record changes: past-due reminders (you can't
+  /// schedule a toast in the past) and birthdays coming up within a week. Each line
+  /// carries its own icon.
+  List<String> pendingNudges() => [
+        for (final r in dueReminders(store, now)) '⏰ Reminder: ${r.body}',
+        ...upcomingBirthdayNudges(store, now),
+      ];
 
   /// Reverse a turn's writes via the repository (undo / correction).
   void _reverse(Map<String, Map<String, dynamic>?> before) {

@@ -69,10 +69,10 @@ class _ChatState extends State<ChatScreen> {
             '"remind me to call mom on thursday at 5pm", "what do I know about Mia", '
             '"list my tasks", or "start tracking my water intake". "undo that" reverses the last thing.',
             false));
-        // On-open nudges: reminders whose time has already passed (can't fire a
-        // toast in the past) surface here so nothing is silently missed.
+        // On-open nudges (past-due reminders + upcoming birthdays) — each line
+        // already carries its own icon, so show it as-is. Nothing silently missed.
         for (final n in _session.pendingNudges()) {
-          _msgs.add(Msg('⏰ $n', false));
+          _msgs.add(Msg(n, false));
         }
       });
     } catch (e) {
