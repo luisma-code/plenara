@@ -178,6 +178,15 @@ void main() {
       await s.handle('undo that');
       expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
     });
+    test('correction after a read-only misroute does not reverse an unrelated write (Fable defect)', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list'); // a write, two turns back
+      await s.handle('list my tasks'); // read-only route (no write) — the misroute
+      final r = await s.handle('no, I meant to log a 3k run'); // correction of the READ turn
+      expect(r, contains('run'));
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1); // milk task survives
+      expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
+    });
     test('scratch that / take that back also undo', () async {
       final s = await _session();
       await s.handle('add buy milk to my list');

@@ -35,8 +35,7 @@ final _idRe = RegExp(r'^[a-z0-9_-]{1,64}$');
 class _JournalEntry {
   final Map<String, Map<String, dynamic>?> before;
   final String? desc;
-  final String? learnedTemplate; // the LEARNED corpus template that routed this turn (if any)
-  _JournalEntry(this.before, this.desc, {this.learnedTemplate});
+  _JournalEntry(this.before, this.desc);
 }
 
 class Session {
@@ -56,7 +55,11 @@ class Session {
   final CloudClient? _injectedCloud;
   final StorageRepository? _injectedStorage;
   static const _journalMax = 25; // ring depth
-  final List<_JournalEntry> _journal = []; // execution journal (device-local, volatile)
+  final List<_JournalEntry> _journal = []; // execution journal of REVERSIBLE (write) turns
+  // the immediately-previous routed turn (write OR read), so a correction targets
+  // the right thing: forget its template, and reverse it ONLY if it actually wrote.
+  String? _lastTurnTemplate;
+  bool _lastTurnWrote = false;
 
   /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart); [storage]
   /// lets them inject a repository (in-memory / test double). Production leaves both
@@ -113,6 +116,8 @@ class Session {
     u = u.trim();
     final now = this.now; // one frozen snapshot for the whole turn
     if (_undoRe.hasMatch(u)) {
+      _lastTurnTemplate = null;
+      _lastTurnWrote = false; // an undo is not itself a correctable route
       if (_journal.isEmpty) return 'Nothing to undo.';
       final entry = _journal.removeLast(); // walk back the ring, most-recent first
       _reverse(entry.before);
@@ -123,16 +128,18 @@ class Session {
     final corr = _corrRe.firstMatch(u);
     if (corr != null) {
       var pre = '';
-      if (_journal.isNotEmpty) {
-        final entry = _journal.removeLast();
-        _reverse(entry.before);
-        pre = 'Got it — undid that. ';
-        // §5.2 negative half: a correction means the routing was wrong. If a LEARNED
-        // template misrouted this turn, forget it so it can't misroute again.
-        if (entry.learnedTemplate != null && router.forget(entry.learnedTemplate!)) {
-          repo.removeCorpusLearned(entry.learnedTemplate!);
-        }
+      // §5.2 negative half: the previous turn misrouted — forget the LEARNED template
+      // that routed it, whether it wrote or was read-only.
+      if (_lastTurnTemplate != null && router.forget(_lastTurnTemplate!)) {
+        repo.removeCorpusLearned(_lastTurnTemplate!);
       }
+      // reverse the previous turn ONLY if it actually wrote — never an unrelated earlier write
+      if (_lastTurnWrote && _journal.isNotEmpty) {
+        _reverse(_journal.removeLast().before);
+        pre = 'Got it — undid that. ';
+      }
+      _lastTurnTemplate = null;
+      _lastTurnWrote = false;
       return '$pre${await _handle(corr.group(1)!.trim())}';
     }
 
@@ -208,11 +215,12 @@ class Session {
       for (final id in plan.deletes) {
         repo.remove(id);
       }
-      if (plan.writes.isNotEmpty || plan.deletes.isNotEmpty) {
-        // remember if a LEARNED template routed this — so a correction can forget it
-        final tmpl = routed['source'] == 'corpus' ? routed['template'] as String? : null;
-        final learned = (tmpl != null && router.isLearned(tmpl)) ? tmpl : null;
-        _journal.add(_JournalEntry(before, plan.confirmation, learnedTemplate: learned));
+      // record the previous-turn state for a correction (every routed turn, write or read)
+      _lastTurnWrote = plan.writes.isNotEmpty || plan.deletes.isNotEmpty;
+      final tmpl = routed['source'] == 'corpus' ? routed['template'] as String? : null;
+      _lastTurnTemplate = (tmpl != null && router.isLearned(tmpl)) ? tmpl : null;
+      if (_lastTurnWrote) {
+        _journal.add(_JournalEntry(before, plan.confirmation));
         if (_journal.length > _journalMax) _journal.removeAt(0);
       }
       if (routed['source'] == 'cloud') {
