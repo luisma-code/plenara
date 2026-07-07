@@ -48,6 +48,7 @@ class Session {
   late HlcDevice dev;
   final CloudClient? _injectedCloud;
   Map<String, Map<String, dynamic>?>? _lastBefore;
+  String? _lastActionDesc; // what the last undoable turn did, for a transparent undo
 
   /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart) so
   /// the residual-routing and authoring paths run offline against recorded
@@ -100,7 +101,10 @@ class Session {
       if (_lastBefore == null) return 'Nothing to undo.';
       undoTurn(_lastBefore!, '$dataDir/records', dev, store);
       _lastBefore = null;
-      return 'Undone.';
+      final d = _lastActionDesc;
+      _lastActionDesc = null;
+      // say WHAT was reversed — a silent "Undone." can't be trusted as the safety net
+      return d == null ? 'Undone.' : 'Undone — reversed: "$d"';
     }
 
     final corr = _corrRe.firstMatch(u);
@@ -109,6 +113,7 @@ class Session {
       if (_lastBefore != null) {
         undoTurn(_lastBefore!, '$dataDir/records', dev, store);
         _lastBefore = null;
+        _lastActionDesc = null;
         pre = 'Got it — undid that. ';
       }
       return '$pre${await _handle(corr.group(1)!.trim())}';
@@ -185,7 +190,10 @@ class Session {
       for (final w in plan.writes) {
         persist(w, '$dataDir/records', dev);
       }
-      if (plan.writes.isNotEmpty) _lastBefore = before;
+      if (plan.writes.isNotEmpty) {
+        _lastBefore = before;
+        _lastActionDesc = plan.confirmation;
+      }
       if (routed['source'] == 'cloud') {
         final tmpl = router.learn(u, routed['skillId'] as String,
             (routed['slots'] as Map).cast<String, dynamic>());

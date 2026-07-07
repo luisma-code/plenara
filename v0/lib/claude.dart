@@ -36,8 +36,12 @@ abstract interface class CloudClient {
 }
 
 class ClaudeClient implements CloudClient {
-  final String? key = apiKey();
-  bool get available => key != null;
+  final String? key;
+  final String _url;
+  ClaudeClient({String? apiKeyOverride, String? url})
+      : key = apiKeyOverride ?? apiKey(),
+        _url = url ?? 'https://api.anthropic.com/v1/messages';
+  bool get available => key != null && key!.isNotEmpty;
 
   static const _sys =
       'You are the intent router for a personal-assistant app. Given the user\'s '
@@ -84,7 +88,7 @@ Output only JSON, no prose.''';
   /// non-200, timeout, malformed/refusal (200 with empty or non-text content) —
   /// returns null. Extracts the first `text` block and the JSON object within it.
   Future<Map<String, dynamic>?> _message(String sys, String user, {int maxTokens = 200}) async {
-    if (key == null) return null;
+    if (key == null || key!.isEmpty) return null;
     final body = jsonEncode({
       'model': 'claude-haiku-4-5',
       'max_tokens': maxTokens,
@@ -94,7 +98,7 @@ Output only JSON, no prose.''';
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
     try {
       return await Future(() async {
-        final req = await client.postUrl(Uri.parse('https://api.anthropic.com/v1/messages'));
+        final req = await client.postUrl(Uri.parse(_url));
         req.headers
           ..set('x-api-key', key!)
           ..set('anthropic-version', '2023-06-01')

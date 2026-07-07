@@ -100,6 +100,13 @@ void main() {
       final s = await _session();
       expect(await s.handle('undo'), contains('Nothing to undo'));
     });
+    test('undo says what it reversed (transparent safety net)', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      final r = await s.handle('undo that');
+      expect(r, contains('Undone'));
+      expect(r, contains('buy milk')); // not a bare "Undone."
+    });
     test('undo targets the last WRITE, skipping a read-only query', () async {
       final s = await _session();
       await s.handle('add buy milk to my list'); // write
