@@ -31,24 +31,33 @@ class Session {
   late Map<String, Map<String, dynamic>> store;
   late Interpreter interp;
   late Router router;
-  late ClaudeClient claude;
+  late CloudClient claude;
   late HlcDevice dev;
+  final CloudClient? _injectedCloud;
   Map<String, Map<String, dynamic>?>? _lastBefore;
 
-  Session(this.dataDir, {DateTime? clock}) : now = clock ?? DateTime.now();
+  /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart) so
+  /// the residual-routing and authoring paths run offline against recorded
+  /// real responses. Production leaves it null -> a live ClaudeClient.
+  Session(this.dataDir, {DateTime? clock, CloudClient? cloud})
+      : now = clock ?? DateTime.now(),
+        _injectedCloud = cloud;
 
-  Future<void> init() async {
+  /// [retrieval] builds the embedding index (needs the embed server). Tests pass
+  /// false to stay hermetic — the corpus fast-path and injected cloud need no
+  /// embeddings; only the cold-start suggestion on a full miss does.
+  Future<void> init({bool retrieval = true}) async {
     types = loadDefs('$dataDir/types', 'typeId');
     skills = loadDefs('$dataDir/skills', 'skillId');
     store = loadRecords('$dataDir/records');
     interp = Interpreter(types, now);
     router = Router.load('$dataDir/corpus.json', now, learnedPath: '$dataDir/corpus-learned.json');
-    claude = ClaudeClient();
+    claude = _injectedCloud ?? ClaudeClient();
     dev = HlcDevice('this-device');
     for (final s in skills.values) {
       interp.validateSkill(s);
     }
-    await router.buildRetrievalIndex(skills);
+    if (retrieval) await router.buildRetrievalIndex(skills);
   }
 
   void _persistLearned(String skillId, String template) {

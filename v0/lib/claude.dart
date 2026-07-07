@@ -27,7 +27,15 @@ String? apiKey() {
   return null;
 }
 
-class ClaudeClient {
+/// The single cloud seam, as an interface so callers can inject a replay/mock
+/// implementation (lib/replay_cloud.dart) instead of hitting the network in tests.
+abstract interface class CloudClient {
+  Future<Map<String, dynamic>?> routeResidual(
+      String utterance, Map<String, Map<String, dynamic>> skills);
+  Future<Map<String, dynamic>?> authorCapability(String description, {String? priorError});
+}
+
+class ClaudeClient implements CloudClient {
   final String? key = apiKey();
   bool get available => key != null;
 
@@ -59,6 +67,7 @@ Output only JSON, no prose.''';
 
   /// Author a new type + skill from a described need (Spec 02 §6). Returns
   /// {type, skill} maps, or null. Deterministic validation happens in the caller.
+  @override
   Future<Map<String, dynamic>?> authorCapability(String description, {String? priorError}) async {
     final fix = priorError == null
         ? ''
@@ -101,6 +110,7 @@ Output only JSON, no prose.''';
   }
 
   /// Full-inventory residual routing. Returns {skillId, slots} or null.
+  @override
   Future<Map<String, dynamic>?> routeResidual(
       String utterance, Map<String, Map<String, dynamic>> skills) async {
     if (key == null) return null;
