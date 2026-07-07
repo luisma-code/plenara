@@ -86,15 +86,16 @@ void main() {
   });
 
   group('undoTurn', () {
-    test('created record (prior null) -> removed from memory + disk', () {
+    test('created record (prior null) -> tombstoned, not resurrectable by a sync restore', () {
       final dir = _tmp();
       final dev = HlcDevice('d');
       final store = <String, Map<String, dynamic>>{'t-1': {'id': 't-1', 'typeId': 'task', 'description': 'x'}};
       persist(store['t-1']!, dir, dev);
-      expect(File('$dir/t-1.json').existsSync(), isTrue);
       undoTurn({'t-1': null}, dir, dev, store);
       expect(store.containsKey('t-1'), isFalse);
-      expect(File('$dir/t-1.json').existsSync(), isFalse);
+      expect(File('$dir/t-1.json').existsSync(), isTrue); // tombstone file remains (CRDT)
+      expect((jsonDecode(File('$dir/t-1.json').readAsStringSync()) as Map)['_meta']['deleted'], isTrue);
+      expect(loadRecords(dir), isEmpty); // and a reload cannot bring it back
     });
 
     test('updated record (prior != null) -> restored in memory + disk', () {
@@ -119,8 +120,42 @@ void main() {
       persist(store['b']!, dir, dev);
       undoTurn({'a': null, 'b': <String, dynamic>{'id': 'b', 'typeId': 'task', 'description': 'before'}}, dir, dev, store);
       expect(store.containsKey('a'), isFalse);
-      expect(File('$dir/a.json').existsSync(), isFalse);
+      expect(loadRecords(dir).containsKey('a'), isFalse); // tombstoned -> not loaded
       expect(store['b']!['description'], 'before');
+    });
+  });
+
+  group('CRDT fidelity (Fable review)', () {
+    test('stamp-on-change: an unchanged field keeps its prior stamp', () {
+      final dir = _tmp();
+      final dev = HlcDevice('d');
+      persist({'id': 't', 'typeId': 'task', 'description': 'a', 'completed': false}, dir, dev);
+      final s1 = (jsonDecode(File('$dir/t.json').readAsStringSync()) as Map)['_meta']['stamps'] as Map;
+      persist({'id': 't', 'typeId': 'task', 'description': 'a', 'completed': true}, dir, dev); // only completed changed
+      final s2 = (jsonDecode(File('$dir/t.json').readAsStringSync()) as Map)['_meta']['stamps'] as Map;
+      expect(s2['description'], s1['description'], reason: 'unchanged field keeps its stamp');
+      expect(s2['completed'], isNot(s1['completed']), reason: 'changed field gets a fresh stamp');
+    });
+    test('a corrupt/half-synced file is skipped, not fatal', () {
+      final dir = _tmp();
+      persist({'id': 'good', 'typeId': 'task', 'description': 'x'}, dir, HlcDevice('d'));
+      File('$dir/bad.json').writeAsStringSync('{ half written, not valid json ');
+      final store = loadRecords(dir);
+      expect(store.keys, ['good']);
+    });
+    test('tombstone() marks a record deleted; load skips it', () {
+      final dir = _tmp();
+      final dev = HlcDevice('d');
+      persist({'id': 'x', 'typeId': 'task', 'description': 'y'}, dir, dev);
+      tombstone('x', dir, dev);
+      expect(loadRecords(dir).containsKey('x'), isFalse);
+      expect((jsonDecode(File('$dir/x.json').readAsStringSync()) as Map)['_meta']['deleted'], isTrue);
+    });
+    test('atomic write leaves no .tmp behind', () {
+      final dir = _tmp();
+      persist({'id': 'x', 'typeId': 'task', 'description': 'y'}, dir, HlcDevice('d'));
+      expect(File('$dir/x.json.tmp').existsSync(), isFalse);
+      expect(File('$dir/x.json').existsSync(), isTrue);
     });
   });
 }
