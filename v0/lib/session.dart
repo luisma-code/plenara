@@ -62,6 +62,10 @@ class Session {
   bool _lastTurnWrote = false;
   String _outSource = 'clarify'; // telemetry: how this turn resolved
   String? _outSkill;
+  // Whether retrieval (the embed-server index) is active this session. Authoring
+  // grows the inventory and must re-index — but only when retrieval is on, so the
+  // authoring path stays hermetic under init(retrieval: false), like init() itself.
+  bool _retrievalEnabled = true;
 
   /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart); [storage]
   /// lets them inject a repository (in-memory / test double). Production leaves both
@@ -85,6 +89,7 @@ class Session {
     for (final s in skills.values) {
       interp.validateSkill(s);
     }
+    _retrievalEnabled = retrieval;
     if (retrieval) await router.buildRetrievalIndex(skills);
   }
 
@@ -195,7 +200,7 @@ class Session {
           skills[skillId] = skill;
           repo.writeDef('types', 'typeId', type);
           repo.writeDef('skills', 'skillId', skill);
-          await router.buildRetrievalIndex(skills);
+          if (_retrievalEnabled) await router.buildRetrievalIndex(skills);
           _outSource = 'authored';
           final eg = (skill['examplePhrases'] as List?)?.cast<String>();
           return 'Built "${skill['displayName'] ?? skillId}" — a new capability, authored and validated.'
