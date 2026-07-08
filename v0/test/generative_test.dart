@@ -3,6 +3,7 @@
 /// grounded in the user's real records (never invented) and that tier/connectivity
 /// failures degrade honestly. The real model call lives behind the CloudClient seam.
 import 'package:plenara/claude.dart';
+import 'package:plenara/generative.dart';
 import 'package:plenara/session.dart';
 import 'package:test/test.dart';
 
@@ -124,4 +125,160 @@ void main() {
       expect((await s.handle('brief me')).toLowerCase(), contains('offline'));
     });
   });
+
+  // The three P-10/P-11/P-20 kinds are exercised on the service directly (their
+  // session routes belong to session.dart) with the same fake cloud: assert the
+  // prompt is grounded in the hand-built store and that thin-data/tier failures
+  // degrade honestly.
+  group('weekly review — grounded in the week\'s actual activity', () {
+    test('assembles this week\'s workouts, moods, interactions, done tasks', () async {
+      final cloud = _GenCloud();
+      final g = GenerativeService(cloud);
+      final store = _store([
+        {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sarah'},
+        {'typeId': 'interaction', 'subject': 'c1', 'at': '2026-07-02', 'note': 'caught up about the trip'},
+        {'typeId': 'workout', 'activity': 'run', 'distance': 5, 'date': '2026-07-03'},
+        {'typeId': 'mood', 'rating': 'great', 'loggedAt': '2026-07-04'},
+        {'typeId': 'task', 'description': 'buy milk', 'completed': true},
+      ]);
+      final r = await g.weeklyReview(store, _now);
+      expect(cloud.lastKind, 'weekly_review');
+      expect(cloud.lastContext, contains('run 5 km on 2026-07-03'));
+      expect(cloud.lastContext, contains('great'));
+      expect(cloud.lastContext, contains('Sarah on 2026-07-02 (caught up about the trip)'));
+      expect(cloud.lastContext, contains('buy milk'));
+      expect(r, isNotEmpty);
+    });
+
+    test('records older than the week stay OUT of the prompt', () async {
+      final cloud = _GenCloud();
+      final g = GenerativeService(cloud);
+      final store = _store([
+        {'typeId': 'workout', 'activity': 'run', 'distance': 10, 'date': '2026-06-01'}, // stale
+        {'typeId': 'mood', 'rating': 'fine', 'loggedAt': '2026-07-05'},
+      ]);
+      await g.weeklyReview(store, _now);
+      expect(cloud.lastContext, isNot(contains('2026-06-01')));
+      expect(cloud.lastContext, contains('Workouts this week: none logged'));
+      expect(cloud.lastContext, contains('fine'));
+    });
+
+    test('empty week -> honest local answer, no cloud call spent', () async {
+      final cloud = _GenCloud();
+      final g = GenerativeService(cloud);
+      final r = await g.weeklyReview(_store([]), _now);
+      expect(r.toLowerCase(), contains('nothing logged'));
+      expect(cloud.lastKind, isNull);
+    });
+
+    test('offline -> honest degrade', () async {
+      final cloud = _GenCloud(err: CloudErrorKind.offline);
+      final g = GenerativeService(cloud);
+      final store = _store([
+        {'typeId': 'mood', 'rating': 'great', 'loggedAt': '2026-07-04'},
+      ]);
+      expect((await g.weeklyReview(store, _now)).toLowerCase(), contains('offline'));
+    });
+  });
+
+  group('pattern insight — a cross-record pattern grounded in the data', () {
+    test('assembles the mood and workout series into the prompt', () async {
+      final cloud = _GenCloud();
+      final g = GenerativeService(cloud);
+      final store = _store([
+        {'typeId': 'mood', 'rating': 'great', 'loggedAt': '2026-07-03'},
+        {'typeId': 'mood', 'rating': 'meh', 'loggedAt': '2026-07-05'},
+        {'typeId': 'workout', 'activity': 'run', 'distance': 5, 'date': '2026-07-03'},
+      ]);
+      await g.patternInsight(store, _now);
+      expect(cloud.lastKind, 'pattern_insight');
+      expect(cloud.lastContext, contains('2026-07-03: great'));
+      expect(cloud.lastContext, contains('2026-07-05: meh'));
+      expect(cloud.lastContext, contains('2026-07-03: run, 5 km'));
+      expect(cloud.lastContext, contains('never invent one'));
+    });
+
+    test('only one tracker logged -> honest local answer, no cloud call', () async {
+      final cloud = _GenCloud();
+      final g = GenerativeService(cloud);
+      final store = _store([
+        {'typeId': 'mood', 'rating': 'great', 'loggedAt': '2026-07-03'},
+      ]);
+      final r = await g.patternInsight(store, _now);
+      expect(r.toLowerCase(), contains('enough logged data'));
+      expect(cloud.lastKind, isNull);
+    });
+
+    test('no key -> tier degrade names it a cloud feature', () async {
+      final cloud = _GenCloud(err: CloudErrorKind.noKey);
+      final g = GenerativeService(cloud);
+      final store = _store([
+        {'typeId': 'mood', 'rating': 'great', 'loggedAt': '2026-07-03'},
+        {'typeId': 'workout', 'activity': 'run', 'date': '2026-07-03'},
+      ]);
+      expect((await g.patternInsight(store, _now)).toLowerCase(), contains('cloud feature'));
+    });
+  });
+
+  group('draft message — the user\'s voice, grounded in recent interactions', () {
+    test('assembles facts + most-recent-first interactions into the prompt', () async {
+      final cloud = _GenCloud();
+      final g = GenerativeService(cloud);
+      final store = _store([
+        {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sam'},
+        {'typeId': 'contact_fact', 'subject': 'c1', 'fact': 'loves jazz'},
+        {'typeId': 'interaction', 'subject': 'c1', 'at': '2026-06-20', 'note': 'planned the gig'},
+        {'typeId': 'interaction', 'subject': 'c1', 'at': '2026-07-01', 'note': 'talked about the concert'},
+      ]);
+      final r = await g.draftMessage('Sam', store, _now);
+      expect(cloud.lastKind, 'draft_message');
+      expect(cloud.lastContext, contains('loves jazz'));
+      expect(cloud.lastContext, contains('talked about the concert'));
+      // most recent interaction listed before the older one
+      expect(cloud.lastContext!.indexOf('2026-07-01'), lessThan(cloud.lastContext!.indexOf('2026-06-20')));
+      // the draft boundary is pinned in the prompt itself (DP-03: drafts yes, sends no)
+      expect(cloud.lastContext, contains('never sends'));
+      expect(r, isNotEmpty);
+    });
+
+    test('unknown contact -> asks to learn about them first, no cloud call', () async {
+      final cloud = _GenCloud();
+      final g = GenerativeService(cloud);
+      final r = await g.draftMessage('Nobody', _store([]), _now);
+      expect(r.toLowerCase(), contains("don't have"));
+      expect(cloud.lastKind, isNull);
+    });
+
+    test('known contact, no interactions yet -> still grounded, says so honestly', () async {
+      final cloud = _GenCloud();
+      final g = GenerativeService(cloud);
+      final store = _store([
+        {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sam'},
+      ]);
+      await g.draftMessage('Sam', store, _now);
+      expect(cloud.lastKind, 'draft_message');
+      expect(cloud.lastContext, contains('Recent interactions: none logged yet'));
+    });
+
+    test('offline -> honest degrade', () async {
+      final cloud = _GenCloud(err: CloudErrorKind.offline);
+      final g = GenerativeService(cloud);
+      final store = _store([
+        {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sam'},
+      ]);
+      expect((await g.draftMessage('Sam', store, _now)).toLowerCase(), contains('offline'));
+    });
+  });
+}
+
+/// Hand-built store keyed by record id, mirroring the shapes the real skills
+/// write (log-run/log-mood/log-interaction/create-task JSON defs).
+Map<String, Map<String, dynamic>> _store(List<Map<String, dynamic>> records) {
+  final m = <String, Map<String, dynamic>>{};
+  var i = 0;
+  for (final r in records) {
+    final id = (r['id'] as String?) ?? 'r${i++}';
+    m[id] = {...r, 'id': id};
+  }
+  return m;
 }

@@ -1,7 +1,8 @@
 /// Plenara v0 — GenerativeService (Spec 04 §3.10).
 ///
 /// The paid, grounded generative path: gathers ONLY the user's own records as
-/// context, asks the cloud for a synthesis (gift ideas, a daily briefing), and
+/// context, asks the cloud for a synthesis (gift ideas, a daily briefing, a
+/// weekly review, a pattern insight, a draft message in the user's voice), and
 /// returns the text — or an honest degrade when the cloud isn't reachable. The
 /// grounding (assembling real facts, never inventing) is the deterministic part
 /// and is unit-tested; the model call is behind the [CloudClient] seam.
@@ -106,6 +107,182 @@ class GenerativeService {
       case CloudError(:final kind):
         return _degrade('a briefing', kind);
     }
+  }
+
+  /// A reflective review of the last week's logged activity (P-10): workouts,
+  /// moods, interactions, tasks completed — grounded ONLY in records that exist.
+  Future<String> weeklyReview(Map<String, _Record> store, DateTime now) async {
+    final since = now.subtract(const Duration(days: 7));
+    bool inWeek(String? d) {
+      if (d == null) return false;
+      final t = DateTime.tryParse(d);
+      return t != null && !t.isBefore(since) && !t.isAfter(now);
+    }
+
+    final workouts = store.values
+        .where((r) => r['typeId'] == 'workout' && inWeek(r['date']?.toString()))
+        .toList()
+      ..sort((a, b) => '${a['date']}'.compareTo('${b['date']}'));
+    final moods = store.values
+        .where((r) => r['typeId'] == 'mood' && inWeek(r['loggedAt']?.toString()))
+        .toList()
+      ..sort((a, b) => '${a['loggedAt']}'.compareTo('${b['loggedAt']}'));
+    final interactions = store.values
+        .where((r) => r['typeId'] == 'interaction' && inWeek(r['at']?.toString()))
+        .toList()
+      ..sort((a, b) => '${a['at']}'.compareTo('${b['at']}'));
+    final done = store.values
+        .where((r) => r['typeId'] == 'task' && r['completed'] == true)
+        .toList();
+
+    // Nothing logged at all -> honest, no generative call spent on an empty week.
+    if (workouts.isEmpty && moods.isEmpty && interactions.isEmpty && done.isEmpty) {
+      return "There's nothing logged this past week yet — log a workout, a mood, or a "
+          "chat with someone and I can put together a weekly review.";
+    }
+
+    final ctx = StringBuffer('Week ending: ${now.toIso8601String().substring(0, 10)}\n\n');
+    ctx.write(workouts.isEmpty
+        ? 'Workouts this week: none logged.\n'
+        : 'Workouts this week:\n');
+    for (final w in workouts) {
+      final dist = w['distance'] == null ? '' : ' ${w['distance']} km';
+      ctx.write('  - ${w['activity']}$dist on ${w['date']}\n');
+    }
+    ctx.write(moods.isEmpty ? 'Moods logged: none.\n' : 'Moods logged:\n');
+    for (final m in moods) {
+      ctx.write('  - ${m['loggedAt']}: ${m['rating']}\n');
+    }
+    ctx.write(interactions.isEmpty
+        ? 'People you connected with: none logged.\n'
+        : 'People you connected with:\n');
+    for (final i in interactions) {
+      final note = i['note'] == null ? '' : ' (${i['note']})';
+      ctx.write('  - ${_contactName(i['subject'], store)} on ${i['at']}$note\n');
+    }
+    ctx.write('Tasks completed: '
+        '${done.isEmpty ? 'none' : done.map((t) => t['description'] ?? t['title']).join('; ')}\n');
+    ctx.write('\nWrite a short, reflective weekly review from the above — only what is there.');
+
+    switch (await cloud.generate('weekly_review', ctx.toString())) {
+      case CloudOk(:final value):
+        return value;
+      case CloudError(:final kind):
+        return _degrade('a weekly review', kind);
+    }
+  }
+
+  /// A cross-record pattern (P-11) — e.g. mood vs exercise days — grounded ONLY in
+  /// the logged series. Needs at least two trackers with data to compare; the model
+  /// is told to say so if the records are too thin to support a real pattern.
+  Future<String> patternInsight(Map<String, _Record> store, DateTime now) async {
+    final moods = store.values
+        .where((r) => r['typeId'] == 'mood' && r['loggedAt'] != null)
+        .toList()
+      ..sort((a, b) => '${a['loggedAt']}'.compareTo('${b['loggedAt']}'));
+    final workouts = store.values
+        .where((r) => r['typeId'] == 'workout' && r['date'] != null)
+        .toList()
+      ..sort((a, b) => '${a['date']}'.compareTo('${b['date']}'));
+    final interactions = store.values
+        .where((r) => r['typeId'] == 'interaction' && r['at'] != null)
+        .toList()
+      ..sort((a, b) => '${a['at']}'.compareTo('${b['at']}'));
+
+    // A pattern needs at least two series to relate — with less, be honest and
+    // spend nothing.
+    final series = [moods, workouts, interactions].where((s) => s.isNotEmpty).length;
+    if (series < 2) {
+      return "I don't have enough logged data to spot a pattern yet — I need at least "
+          "two things to compare (say, moods and workouts). Keep logging and ask again.";
+    }
+
+    final ctx = StringBuffer('Today: ${now.toIso8601String().substring(0, 10)}\n\n');
+    ctx.write(moods.isEmpty ? 'Mood log: none.\n' : 'Mood log (date: rating):\n');
+    for (final m in moods) {
+      ctx.write('  - ${m['loggedAt']}: ${m['rating']}\n');
+    }
+    ctx.write(workouts.isEmpty ? 'Workout days: none.\n' : 'Workout days:\n');
+    for (final w in workouts) {
+      final dist = w['distance'] == null ? '' : ', ${w['distance']} km';
+      ctx.write('  - ${w['date']}: ${w['activity']}$dist\n');
+    }
+    ctx.write(interactions.isEmpty
+        ? 'Days you connected with someone: none.\n'
+        : 'Days you connected with someone:\n');
+    for (final i in interactions) {
+      ctx.write('  - ${i['at']}: ${_contactName(i['subject'], store)}\n');
+    }
+    ctx.write('\nLooking ONLY at the records above, describe one genuine pattern across '
+        'them (for example, how mood relates to exercise days). If the data is too thin '
+        'to support a pattern, say so honestly — never invent one.');
+
+    switch (await cloud.generate('pattern_insight', ctx.toString())) {
+      case CloudOk(:final value):
+        return value;
+      case CloudError(:final kind):
+        return _degrade('a pattern insight', kind);
+    }
+  }
+
+  /// A short draft message to [personName] in the USER's own voice (P-20), grounded
+  /// in what we know about them and the recent interactions we actually logged.
+  /// A draft only — the app never sends messages (DP-03).
+  Future<String> draftMessage(String personName, Map<String, _Record> store, DateTime now) async {
+    final person = _resolveContact(personName, store);
+    if (person == null) {
+      return "I don't have $personName as a contact yet — tell me about them and log a "
+          "chat or two, and I can draft a message that sounds like you.";
+    }
+    final name = person['displayName'];
+    final facts = store.values
+        .where((r) => r['typeId'] == 'contact_fact' && r['subject'] == person['id'])
+        .map((r) => r['fact'].toString())
+        .toList();
+    final recent = store.values
+        .where((r) => r['typeId'] == 'interaction' && r['subject'] == person['id'])
+        .toList()
+      ..sort((a, b) => '${b['at']}'.compareTo('${a['at']}')); // most recent first
+    final ctx = StringBuffer('Person: $name\n');
+    if (facts.isEmpty) {
+      ctx.write('Known facts: none recorded yet.\n');
+    } else {
+      ctx.write('Known facts about them:\n');
+      for (final f in facts) {
+        ctx.write('  - $f\n');
+      }
+    }
+    if (recent.isEmpty) {
+      ctx.write('Recent interactions: none logged yet.\n');
+    } else {
+      ctx.write('Recent interactions with them (most recent first):\n');
+      for (final i in recent.take(3)) {
+        final note = i['note'] == null ? '' : ': ${i['note']}';
+        ctx.write('  - ${i['at']}$note\n');
+      }
+    }
+    ctx.write('Today: ${now.toIso8601String().substring(0, 10)}\n');
+    ctx.write('\nDraft a short, casual message from the user to $name, in the user\'s own '
+        'voice, grounded only in the above (pick up a real recent thread if there is one). '
+        'This is a draft the user will copy — the app never sends messages.');
+
+    switch (await cloud.generate('draft_message', ctx.toString())) {
+      case CloudOk(:final value):
+        return value;
+      case CloudError(:final kind):
+        return _degrade('a draft', kind);
+    }
+  }
+
+  // Resolve an interaction's subject id back to a contact display name, so the
+  // grounded context reads like the user's world ("Sarah"), never a raw id.
+  String _contactName(dynamic subjectId, Map<String, _Record> store) {
+    for (final c in store.values) {
+      if (c['typeId'] == 'contact' && c['id'] == subjectId) {
+        return (c['displayName'] as String?) ?? 'someone';
+      }
+    }
+    return 'someone';
   }
 
   // Honest, tier/connectivity-aware degrade (Spec 05 §13) — never a vague failure.
