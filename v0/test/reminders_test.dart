@@ -279,6 +279,24 @@ void main() {
       expect(fake.armed().values.single, DateTime.parse('2026-07-07T09:00:00')); // next Tue = 07-07
     });
 
+    test('biweekly ("every other tuesday") arms the first occurrence', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // Mon 07-06 9am
+      await s.init(retrieval: false);
+      final r = await s.handle('remind me every other tuesday at 9am to water the garden');
+      expect(r, contains('every other'));
+      expect(fake.armed().values.single, DateTime.parse('2026-07-07T09:00:00')); // first Tue
+    });
+    test('biweekly skips the off-week (07-07 then 07-21, not 07-14)', () async {
+      final dir = makeTempDataDir();
+      final s1 = Session(dir, clock: _now, cloud: _NoCloud(), scheduler: FakeScheduler());
+      await s1.init(retrieval: false);
+      await s1.handle('remind me every other tuesday at 9am to water the garden'); // anchor 07-07
+      final fake2 = FakeScheduler();
+      final s2 = Session(dir, clock: DateTime.parse('2026-07-08T09:00:00'), cloud: _NoCloud(), scheduler: fake2);
+      await s2.init(retrieval: false); // reopened after the first fire
+      expect(fake2.armed().values.single, DateTime.parse('2026-07-21T09:00:00')); // +14, not +7
+    });
     test('after the time passes, reopening re-arms for the NEXT day (regenerate on open)', () async {
       final dir = makeTempDataDir();
       final s1 = Session(dir, clock: _now, cloud: _NoCloud(), scheduler: FakeScheduler());

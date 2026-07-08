@@ -2,6 +2,8 @@
   { "skillId": "set-daily-reminder", "template": "remind me every day at {when:datetime} to {text:text}" },
   { "skillId": "set-daily-reminder", "template": "remind me daily at {when:datetime} to {text:text}" },
   { "skillId": "set-daily-reminder", "template": "every day at {when:datetime} remind me to {text:text}" },
+  { "skillId": "set-biweekly-reminder", "template": "remind me every other {weekday:text} at {when:datetime} to {text:text}" },
+  { "skillId": "set-biweekly-reminder", "template": "remind me every two weeks on {weekday:text} at {when:datetime} to {text:text}" },
   { "skillId": "set-weekly-reminder", "template": "remind me every {weekday:text} at {when:datetime} to {text:text}" },
   { "skillId": "set-weekly-reminder", "template": "every {weekday:text} at {when:datetime} remind me to {text:text}" },
   { "skillId": "set-reminder", "template": "remind me to {text:text} on {when:datetime}" },

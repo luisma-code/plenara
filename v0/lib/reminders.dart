@@ -81,6 +81,12 @@ Iterable<Reminder> allReminders(_Store store, DateTime now) sync* {
       at = _nextDaily(base, now);
     } else if (rec != null && rec.startsWith('weekly:')) {
       at = _nextWeekly(base, rec.substring('weekly:'.length), now);
+    } else if (rec != null && rec.startsWith('biweekly:')) {
+      // every-OTHER weekday: phase-anchored to the first matching weekday on/after the
+      // record's createdAt, then every 14 days — so "every other Tuesday" is deterministic.
+      final createdAt = DateTime.tryParse(r['createdAt']?.toString() ?? '') ?? base;
+      final anchor = _nextWeekly(base, rec.substring('biweekly:'.length), createdAt);
+      at = _advanceBiweekly(anchor, now);
     } else {
       at = base;
     }
@@ -100,6 +106,20 @@ const _weekdays = {
   'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7,
   'mon': 1, 'tue': 2, 'tues': 2, 'wed': 3, 'thu': 4, 'thur': 4, 'thurs': 4, 'fri': 5, 'sat': 6, 'sun': 7,
 };
+
+/// From a biweekly [anchor] (a specific weekday+time), the next occurrence strictly after
+/// [now] stepping 14 days at a time — so it never lands on the off-week.
+DateTime _advanceBiweekly(DateTime anchor, DateTime now) {
+  var c = anchor;
+  if (c.isBefore(now)) {
+    final periods = (now.difference(c).inDays / 14).floor(); // jump most of the way
+    c = c.add(Duration(days: 14 * periods));
+  }
+  while (!c.isAfter(now)) {
+    c = c.add(const Duration(days: 14));
+  }
+  return c;
+}
 
 /// The next occurrence of [dayName] at [base]'s time-of-day strictly after [now]. An
 /// unrecognized day falls back to a one-off at [base] (graceful, never crashes).
