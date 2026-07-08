@@ -37,10 +37,12 @@ const _activitySkill = {
 const _workoutSkills = {'log-run', 'log-walk'};
 // Same-record slot correction (F-15): "actually, 28 minutes" / "make it 3k" updates a field
 // of the just-logged workout in place (not a reverse-redispatch).
-final _durationCorrectRe =
-    RegExp(r'^(?:actually,?|no,?|make it|it was)\s+(\d+(?:\.\d+)?)\s*(?:minutes|mins?|minute)\.?$', caseSensitive: false);
-final _distanceCorrectRe =
-    RegExp(r'^(?:actually,?|no,?|make it|it was)\s+(\d+(?:\.\d+)?)\s*k(?:m|ilometers?)?\.?$', caseSensitive: false);
+final _durationCorrectRe = RegExp(
+    r"^(?:actually,?|no,?|make it|it was|that was)\s+(?:that was |it was |it'?s )?(\d+(?:\.\d+)?)\s*(?:minutes|mins?|minute)\.?$",
+    caseSensitive: false);
+final _distanceCorrectRe = RegExp(
+    r"^(?:actually,?|no,?|make it|it was|that was)\s+(?:that was |it was |it'?s )?(\d+(?:\.\d+)?)\s*k(?:m|ilometers?)?\.?$",
+    caseSensitive: false);
 // abandons a pending slot-fill dialogue (Spec 03 §6.3 ProvideSlot)
 final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
 // confirms an authored-capability draft (Spec 02 §6.5: nothing registered until "activate")

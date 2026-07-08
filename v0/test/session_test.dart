@@ -836,6 +836,15 @@ void main() {
       await s.handle('make it 3k');
       expect(s.store.values.where((x) => x['typeId'] == 'workout').single['distance'], 3);
     });
+    test('F-15: "actually that was 6k" / "that was 30 minutes" (natural correction, live-caught)', () async {
+      final s = await _session();
+      await s.handle('log a 5k run');
+      await s.handle('actually that was 6k');
+      await s.handle('that was 30 minutes');
+      final w = s.store.values.where((x) => x['typeId'] == 'workout').single;
+      expect(w['distance'], 6);
+      expect(w['duration'], 30);
+    });
     test('F-15: undo restores the pre-correction value', () async {
       final s = await _session();
       await s.handle('log a 5k run');
