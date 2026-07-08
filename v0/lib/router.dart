@@ -164,6 +164,11 @@ class Router {
   /// Embed each skill's anchors (humanized id + displayName + its corpus
   /// templates cleaned to phrases). Multi-vector: one vector per anchor (§13).
   Future<void> buildRetrievalIndex(Map<String, Map<String, dynamic>> skills) async {
+    // Probe the embed server ONCE. If it's down (the common case — it's optional), bail
+    // immediately rather than eating a 5s connection timeout PER anchor (dozens of anchors
+    // = a minute-long startup hang). Retrieval is a nice-to-have suggestion layer; without
+    // the server it's simply unavailable, and routing still works (corpus + cloud + clarify).
+    if (await embed('probe') == null) return;
     final anchors = <String, Set<String>>{};
     for (final s in skills.values) {
       final sid = s['skillId'] as String;

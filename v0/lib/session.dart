@@ -163,14 +163,19 @@ class Session {
         _injectedStorage = storage,
         _scheduler = scheduler;
 
-  /// [retrieval] builds the embedding index (needs the embed server). Tests pass
-  /// false to stay hermetic — the corpus fast-path and injected cloud need no
-  /// embeddings; only the cold-start suggestion on a full miss does.
-  Future<void> init({bool retrieval = true}) async {
+  /// [retrieval] builds the embedding index (needs the embed server, ~2s per anchor
+  /// when it's DOWN — so the app defaults it OFF). Tests pass false to stay hermetic.
+  /// [onPhase] receives a line at the start/end of each init phase — the app writes
+  /// these to its diagnostics log, so a startup HANG shows the last phase that began.
+  Future<void> init({bool retrieval = true, void Function(String msg)? onPhase}) async {
+    final sw = Stopwatch()..start();
+    void phase(String msg) => onPhase?.call('init: $msg (+${sw.elapsedMilliseconds}ms)');
+    phase('start');
     repo = _injectedStorage ?? FileStorageRepository(dataDir);
     types = repo.loadDefs('types', 'typeId');
     skills = repo.loadDefs('skills', 'skillId');
     store = repo.loadRecords();
+    phase('loaded ${types.length} types, ${skills.length} skills, ${store.length} records');
     interp = Interpreter(types, now);
     router = Router.load('$dataDir/corpus.json', now, learnedPath: '$dataDir/corpus-learned.json');
     claude = _injectedCloud ?? ClaudeClient();
@@ -178,9 +183,17 @@ class Session {
     for (final s in skills.values) {
       interp.validateSkill(s);
     }
+    phase('validated skills');
     _retrievalEnabled = retrieval;
-    if (retrieval) await router.buildRetrievalIndex(skills);
+    if (retrieval) {
+      phase('building retrieval index (embed server — may hang if it is down)…');
+      await router.buildRetrievalIndex(skills);
+      phase('retrieval index built');
+    } else {
+      phase('retrieval disabled');
+    }
     await _reconcileReminders(); // arm any future reminders already on disk (re-open)
+    phase('reminders reconciled — READY');
   }
 
   /// Re-derive the armed notification set from the record store and reconcile the

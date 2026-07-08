@@ -1,11 +1,15 @@
 // Plenara v0 — Flutter desktop chat UI. A thin front-end over the v0 engine
 // (package:plenara/session.dart): the interpreter, router, store, and cloud
 // client are the same code the console uses. Text-first for now; voice later.
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/session.dart';
 
+import 'app_log.dart';
 import 'windows_scheduler.dart';
 
 // Where the SHIPPED built-in capability defs are copied FROM on first run.
@@ -25,7 +29,20 @@ Session buildSession() {
   );
 }
 
-void main() => runApp(const PlenaraApp());
+void main() {
+  final log = AppLog.instance;
+  // Print the diagnostics log path so a manual test that goes wrong is one file away.
+  stdout.writeln('Plenara diagnostics log: ${log.file.path}');
+  log('boot: main() starting');
+  runZonedGuarded(() {
+    WidgetsFlutterBinding.ensureInitialized();
+    FlutterError.onError = (details) {
+      log('FlutterError: ${details.exceptionAsString()}\n${details.stack}');
+      FlutterError.presentError(details);
+    };
+    runApp(const PlenaraApp());
+  }, (error, stack) => log('UNCAUGHT: $error\n$stack'));
+}
 
 class PlenaraApp extends StatelessWidget {
   const PlenaraApp({super.key});
@@ -45,11 +62,13 @@ class Msg {
 }
 
 class ChatScreen extends StatefulWidget {
-  /// Tests inject a Session (temp data dir + replay/offline cloud) and set
-  /// [retrieval] false; production leaves both defaulted.
+  /// Tests inject a Session (temp data dir + replay/offline cloud). [retrieval]
+  /// defaults OFF — the embed server isn't part of the dogfood setup, and building
+  /// the index against a DOWN server costs ~2s per anchor (a minute-long startup
+  /// hang). Enable it only alongside a running embed server.
   final Session? session;
   final bool retrieval;
-  const ChatScreen({super.key, this.session, this.retrieval = true});
+  const ChatScreen({super.key, this.session, this.retrieval = false});
   @override
   State<ChatScreen> createState() => _ChatState();
 }
@@ -68,8 +87,11 @@ class _ChatState extends State<ChatScreen> {
   }
 
   Future<void> _init() async {
+    final log = AppLog.instance;
     try {
-      await _session.init(retrieval: widget.retrieval);
+      log('init: begin (retrieval=${widget.retrieval})');
+      await _session.init(retrieval: widget.retrieval, onPhase: log.log);
+      log('init: ready');
       setState(() {
         _ready = true;
         _msgs.add(Msg(
@@ -84,11 +106,15 @@ class _ChatState extends State<ChatScreen> {
           _msgs.add(Msg(n, false));
         }
       });
-    } catch (e) {
+    } catch (e, st) {
+      log('init: FAILED: $e\n$st');
       // no infinite spinner: surface the failure and let the user see it
       setState(() {
         _ready = true;
-        _msgs.add(Msg("I couldn't start up — there may be a problem reading your data folder.\n\n$e", false));
+        _msgs.add(Msg(
+            "I couldn't start up — there may be a problem reading your data folder.\n\n$e"
+            "\n\nDiagnostics: ${log.file.path}",
+            false));
       });
     }
   }
@@ -102,12 +128,16 @@ class _ChatState extends State<ChatScreen> {
       _busy = true;
     });
     _jump();
+    final log = AppLog.instance;
+    log('turn: "$t"');
     String resp;
     try {
       resp = await _session.handle(t); // already catch-all internally; belt-and-suspenders here
-    } catch (e) {
+    } catch (e, st) {
+      log('turn FAILED: $e\n$st');
       resp = 'Something went wrong: $e';
     }
+    log('turn -> ${resp.length > 140 ? '${resp.substring(0, 140)}…' : resp}');
     // _busy is always cleared, so the input can never lock up
     setState(() {
       _msgs.add(Msg(resp, false));
