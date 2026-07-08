@@ -73,6 +73,18 @@ void main() {
     });
   });
 
+  group('renderValue — per value-type formatting (Spec 07)', () {
+    test('date -> friendly label', () => expect(renderValue('2026-07-08', 'date'), 'Jul 8, 2026'));
+    test('datetime -> label with 12h time', () => expect(renderValue('2026-07-08T17:05:00', 'datetime'), 'Jul 8, 5:05 PM'));
+    test('boolean -> check / cross', () {
+      expect(renderValue(true, 'boolean'), '✓');
+      expect(renderValue(false, 'boolean'), '✗');
+    });
+    test('tag/list -> joined', () => expect(renderValue(['a', 'b'], 'tag'), 'a · b'));
+    test('null -> em dash', () => expect(renderValue(null, 'text'), '—'));
+    test('a number/text passes through', () => expect(renderValue(42, 'number'), '42'));
+  });
+
   testWidgets('the data view opens from the chat and renders a task under a checklist archetype', (tester) async {
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
     await tester.pumpAndSettle();

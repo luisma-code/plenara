@@ -38,12 +38,32 @@ String? _numField(Map<String, dynamic> typeDef) {
   return null;
 }
 
-/// Render one field value readably (dates stay as their ISO/day string; lists as chips-ish text).
-String fmtValue(dynamic v) {
+const _months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/// Render a field value per its Spec 01 §3 value type (Spec 07's per-value-type treatment):
+/// dates/datetimes as friendly labels, booleans as ✓/✗, tags/lists joined. A null [valueType]
+/// falls back to a best-effort render.
+String renderValue(dynamic v, [String? valueType]) {
   if (v == null) return '—';
-  if (v is List) return v.join(', ');
-  return '$v';
+  switch (valueType) {
+    case 'date':
+      final d = DateTime.tryParse('$v');
+      return d == null ? '$v' : '${_months[d.month]} ${d.day}, ${d.year}';
+    case 'datetime':
+      final d = DateTime.tryParse('$v');
+      if (d == null) return '$v';
+      final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
+      return '${_months[d.month]} ${d.day}, $h:${d.minute.toString().padLeft(2, '0')} ${d.hour < 12 ? 'AM' : 'PM'}';
+    case 'boolean':
+      return v == true ? '✓' : '✗';
+    default:
+      if (v is List) return v.join(' · ');
+      return '$v';
+  }
 }
+
+/// Best-effort render where the value type isn't in hand.
+String fmtValue(dynamic v) => renderValue(v, null);
 
 class DataView extends StatelessWidget {
   final Session session;
@@ -206,8 +226,8 @@ class _TypeSection extends StatelessWidget {
             ListTile(
               dense: true,
               leading: const Icon(Icons.timeline),
-              title: Text(numF == null ? '—' : fmtValue(r[numF])),
-              trailing: Text(dateF == null ? '' : fmtValue(r[dateF])),
+              title: Text(numF == null ? '—' : renderValue(r[numF], _valueTypes[numF])),
+              trailing: Text(dateF == null ? '' : renderValue(r[dateF], _valueTypes[dateF])),
             ),
         ];
       case Archetype.timeline:
@@ -218,7 +238,7 @@ class _TypeSection extends StatelessWidget {
               dense: true,
               leading: const Icon(Icons.schedule),
               title: Text(_summary(r)),
-              trailing: Text(dateF == null ? '' : fmtValue(r[dateF])),
+              trailing: Text(dateF == null ? '' : renderValue(r[dateF], _valueTypes[dateF])),
             ),
         ];
       case Archetype.collection:
@@ -229,13 +249,24 @@ class _TypeSection extends StatelessWidget {
     }
   }
 
-  /// A one-line summary of a record's non-plumbing fields.
+  /// Field name -> Spec 01 §3 value type, from the type definition (for per-type rendering).
+  Map<String, String> get _valueTypes {
+    final out = <String, String>{};
+    for (final a in ((typeDef['attributes'] as List?) ?? const []).whereType<Map>()) {
+      final n = a['name'], vt = a['valueType'];
+      if (n is String && vt is String) out[n] = vt;
+    }
+    return out;
+  }
+
+  /// A one-line summary of a record's non-plumbing fields, each rendered per its value type.
   String _summary(Map<String, dynamic> r) {
+    final vt = _valueTypes;
     final parts = <String>[];
     for (final e in r.entries) {
       if (const {'id', 'typeId', 'schemaVersion', '_meta'}.contains(e.key)) continue;
       if (e.value == null) continue;
-      parts.add('${e.key}: ${fmtValue(e.value)}');
+      parts.add('${e.key}: ${renderValue(e.value, vt[e.key])}');
     }
     return parts.isEmpty ? '(empty)' : parts.join('  ·  ');
   }
