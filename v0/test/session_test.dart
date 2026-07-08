@@ -186,6 +186,19 @@ void main() {
     });
   });
 
+  group('list-tasks hides completed (Fable#2)', () {
+    test('a completed task drops off the list', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      await s.handle('add call the dentist to my list');
+      await s.handle('mark buy milk as done');
+      final r = await s.handle('list my tasks');
+      expect(r, contains('call the dentist'));
+      expect(r, isNot(contains('buy milk')));
+      expect(r, contains('1 task'));
+    });
+  });
+
   group('record-anchored dates (F-19) — "the day before Sarah\'s birthday"', () {
     test('creates a task dated the day before the person\'s birthday', () async {
       final s = await _session();
@@ -216,6 +229,17 @@ void main() {
       // "weather" would trip the world-knowledge matcher, but "what did I…" is a personal cue
       final r = await s.handle('what did i say about the weather');
       expect(r.toLowerCase(), isNot(contains('outside what')));
+    });
+    test('"who is <a known contact>" is NOT out-of-domain (Fable#2 regression)', () async {
+      final s = await _session();
+      await s.handle('remember that Mia loves drawing'); // Mia is now a stored contact
+      final r = await s.handle('who is Mia'); // "who is" trips world-knowledge, but Mia is ours
+      expect(r.toLowerCase(), isNot(contains('outside what')));
+    });
+    test('"who is <a stranger>" still gets the boundary', () async {
+      final s = await _session();
+      final r = await s.handle('who is the president of france');
+      expect(r.toLowerCase(), contains('outside what'));
     });
   });
 

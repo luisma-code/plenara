@@ -462,7 +462,10 @@ class Session {
     // Out-of-domain boundary (§7.2, G-19): a clearly-external question with NO personal
     // cue gets a graceful "not what I do" — BEFORE spending a residual cloud call. The
     // personal-cue guard is the privacy line: "what did I say about X" is never OOD.
-    if (routed == null && _worldKnowledgeRe.hasMatch(u) && !_personalCueRe.hasMatch(u)) {
+    if (routed == null &&
+        _worldKnowledgeRe.hasMatch(u) &&
+        !_personalCueRe.hasMatch(u) &&
+        !_mentionsKnownContact(u)) {
       final sg = await router.retrievalSuggest(u);
       if (sg == null || sg['confident'] != true) {
         _outSource = 'out-of-domain';
@@ -560,6 +563,25 @@ class Session {
       }
       return "I couldn't do that: ${e.message}";
     }
+  }
+
+  /// Does the utterance name a contact we actually store (by displayName or alias)?
+  /// Used to keep a records question ("who is Mia?") from being classified out-of-domain
+  /// and handed outward — the G-19 privacy boundary (a stored-person query stays in-domain).
+  bool _mentionsKnownContact(String u) {
+    final lu = u.toLowerCase();
+    bool wordHit(String s) => s.isNotEmpty && RegExp('\\b${RegExp.escape(s)}\\b').hasMatch(lu);
+    for (final r in store.values) {
+      if (r['typeId'] != 'contact') continue;
+      if (wordHit((r['displayName'] as String?)?.toLowerCase() ?? '')) return true;
+      final a = r['aliases'];
+      if (a is String) {
+        for (final al in a.toLowerCase().split(',')) {
+          if (wordHit(al.trim())) return true;
+        }
+      }
+    }
+    return false;
   }
 
   /// The required input slots a routed skill left null (candidates for ProvideSlot).
