@@ -184,7 +184,7 @@ void main() {
       'P-15': 'structural learning / self-authoring (D7) unbuilt',
       'P-16': 'author an aggregation/report view — cloud + presentation archetype (deferred Spec 07)',
       'P-17': 'foresight (generative) unbuilt (G-27)',
-      'P-18': 'goal-progress narrative — goal type + generative unbuilt (G-32)',
+      'P-18': 'goal type + progress % BUILT (session_test "goal-progress": set-goal/goal-progress + mul/div/round); the generative NARRATIVE prose still needs cloud (G-32)',
       'P-19': 'AutomationRunner BUILT (onWrite + schedule + review feed); reconfiguring one via authoring needs cloud',
       'P-20': 'draft_message BUILT + routed (impersonation-guarded); needs a live cloud to execute',
     };

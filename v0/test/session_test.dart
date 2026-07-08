@@ -162,6 +162,19 @@ void main() {
     });
   });
 
+  group('goal-progress (P-18 offline) — set a goal, track % via mul/div/round', () {
+    test('set a goal, log runs, get progress percentage', () async {
+      final s = await _session();
+      expect((await s.handle('how am i doing on my goal')).toLowerCase(), contains("haven't set")); // no goal yet
+      await s.handle('set a goal to run 50k');
+      await s.handle('log a 3k run');
+      await s.handle('log a 2k run'); // 5 of 50 km
+      final r = await s.handle('how am i doing on my goal');
+      expect(r, contains('10%')); // round(100 * 5/50) — proves div+mul+round in a real skill
+      expect(r.toLowerCase(), contains('goal'));
+    });
+  });
+
   group('turnlog diagnostics — enough to diagnose a bad turn from the log alone', () {
     Map<String, dynamic> lastTurn(String dir) =>
         jsonDecode(File('$dir/turnlog.jsonl').readAsLinesSync().last) as Map<String, dynamic>;

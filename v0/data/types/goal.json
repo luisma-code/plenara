@@ -1,0 +1,11 @@
+{
+  "typeId": "goal",
+  "displayName": "Goal",
+  "schemaVersion": 1,
+  "attributes": [
+    { "name": "description", "valueType": "text", "required": true },
+    { "name": "target", "valueType": "decimal", "required": true },
+    { "name": "activity", "valueType": "text", "required": false },
+    { "name": "createdAt", "valueType": "date", "required": true }
+  ]
+}

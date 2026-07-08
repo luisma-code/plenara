@@ -147,5 +147,13 @@
   { "skillId": "total-distance", "template": "how far have i run" },
   { "skillId": "total-distance", "template": "how far have i run in total" },
   { "skillId": "total-distance", "template": "total distance run" },
-  { "skillId": "total-distance", "template": "how many km have i run in total" }
+  { "skillId": "total-distance", "template": "how many km have i run in total" },
+  { "skillId": "set-goal", "template": "set a goal to run {target:quantity}k" },
+  { "skillId": "set-goal", "template": "set a goal to run {target:quantity} km" },
+  { "skillId": "set-goal", "template": "my goal is to run {target:quantity}k" },
+  { "skillId": "goal-progress", "template": "how's my running goal" },
+  { "skillId": "goal-progress", "template": "how am i doing on my running goal" },
+  { "skillId": "goal-progress", "template": "how am i doing on my goal" },
+  { "skillId": "goal-progress", "template": "my goal progress" },
+  { "skillId": "goal-progress", "template": "am i on track for my goal" }
 ]

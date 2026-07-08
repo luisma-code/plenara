@@ -1,0 +1,26 @@
+{
+  "skillId": "goal-progress",
+  "displayName": "Progress toward the running goal",
+  "reads": [ "goal", "workout" ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "goal", "match": { "activity": "run" }, "into": "goal" },
+      {
+        "op": "branch",
+        "cond": { "isNull": "goal" },
+        "then": [ { "op": "format", "template": "You haven't set a running goal yet — try \"set a goal to run 50k\".", "into": "confirmationText" } ],
+        "else": [
+          { "op": "set", "var": "target", "value": { "field": [ "goal", "target" ] } },
+          { "op": "read_many", "typeId": "workout", "filter": { "field": "activity", "op": "eq", "value": "run" }, "into": "runs" },
+          { "op": "compute", "fn": "sum", "args": [ { "var": "runs" }, "distance" ], "into": "total" },
+          { "op": "compute", "fn": "div", "args": [ { "var": "total" }, { "var": "target" } ], "into": "frac" },
+          { "op": "compute", "fn": "mul", "args": [ 100, { "var": "frac" } ], "into": "pctRaw" },
+          { "op": "compute", "fn": "round", "args": [ { "var": "pctRaw" } ], "into": "pct" },
+          { "op": "format", "template": "You've run {total} km of your {target} km goal ({pct}%).", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

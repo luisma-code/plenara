@@ -1,0 +1,25 @@
+{
+  "skillId": "set-goal",
+  "displayName": "Set a running-distance goal",
+  "reads": [],
+  "writes": [ "goal" ],
+  "inputs": [ { "name": "target", "required": true } ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      { "op": "compute", "fn": "concat", "args": [ "run ", { "var": "target" }, "km" ], "into": "desc" },
+      {
+        "op": "write_record",
+        "typeId": "goal",
+        "fields": {
+          "description": { "var": "desc" },
+          "target": { "var": "target" },
+          "activity": "run",
+          "createdAt": { "var": "today" }
+        },
+        "into": "g"
+      },
+      { "op": "format", "template": "Set a goal to run {target} km. I'll track your progress.", "into": "confirmationText" }
+    ]
+  }
+}
