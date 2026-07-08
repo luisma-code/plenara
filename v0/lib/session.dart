@@ -44,6 +44,11 @@ final _briefingRe = RegExp(
     r"^(?:(?:give me |what'?s )?my (?:daily )?briefing|brief me|"
     r"what(?:'?s| does) my day look like|catch me up on my day)\??$",
     caseSensitive: false);
+final _reconnectRe = RegExp(
+    r"^(?:help me |how (?:do|can|should) i |ways to )?reconnect with (.+?)\??$"
+    r"|^i(?:'ve| have)? lost touch with (.+?)\??$"
+    r"|^i should (?:catch up with|reach out to) (.+?)\??$",
+    caseSensitive: false);
 // Out-of-domain boundary (Spec 03 §7.2, G-19). A clearly-external question with NO
 // personal cue gets a graceful "that's not what I do" instead of "I didn't catch that".
 // The personal-cue guard is a PRIVACY boundary, not just UX: "what did I say about X"
@@ -203,7 +208,7 @@ class Session {
       if (has('set-birthday'))
         '• Birthdays — "Sarah\'s birthday is july 16", "whose birthday is coming up"',
       if (has('set-alias')) '• Nicknames — "Sarah\'s nickname is Mum", then "when did I last talk to Mum"',
-      '• Ideas & briefings (needs a connection) — "gift ideas for Sarah", "give me my briefing"',
+      '• Ideas & briefings (needs a connection) — "gift ideas for Sarah", "help me reconnect with Sam", "give me my briefing"',
       '• New trackers — "start tracking my water intake"',
     ];
     return 'Here\'s what I can do:\n${lines.join('\n')}\nAnd "undo that" reverses the last thing.';
@@ -372,6 +377,13 @@ class Session {
       _outSource = 'generative';
       _outSkill = 'briefing';
       return _generative.briefing(store, now);
+    }
+    final reconnect = _reconnectRe.firstMatch(u);
+    if (reconnect != null) {
+      _outSource = 'generative';
+      _outSkill = 'reconnect';
+      final who = reconnect.group(1) ?? reconnect.group(2) ?? reconnect.group(3) ?? '';
+      return _generative.reconnect(who.trim(), store, now);
     }
 
     final def = _defRe.firstMatch(u);

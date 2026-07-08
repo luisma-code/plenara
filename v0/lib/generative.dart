@@ -48,6 +48,47 @@ class GenerativeService {
     }
   }
 
+  /// Warm, specific coaching to reconnect with someone — grounded in what we know about
+  /// them and how long it's been. Directly serves the app's purpose (be a better friend).
+  Future<String> reconnect(String personName, Map<String, _Record> store, DateTime now) async {
+    final person = _resolveContact(personName, store);
+    if (person == null) {
+      return "I don't have $personName as a contact yet — tell me about them and I can help "
+          "you reconnect.";
+    }
+    final name = person['displayName'];
+    final facts = store.values
+        .where((r) => r['typeId'] == 'contact_fact' && r['subject'] == person['id'])
+        .map((r) => r['fact'].toString())
+        .toList();
+    // most recent logged interaction with them (subject-linked, like last-interaction)
+    final dates = store.values
+        .where((r) => r['typeId'] == 'interaction' && r['subject'] == person['id'])
+        .map((r) => r['at']?.toString())
+        .whereType<String>()
+        .toList()
+      ..sort();
+    final ctx = StringBuffer('Person: $name\n');
+    if (facts.isEmpty) {
+      ctx.write('Known facts: none recorded yet.\n');
+    } else {
+      ctx.write('Known facts about them:\n');
+      for (final f in facts) {
+        ctx.write('  - $f\n');
+      }
+    }
+    ctx.write('Last time you logged talking: ${dates.isEmpty ? 'no record' : dates.last}\n');
+    ctx.write("Today: ${now.toIso8601String().substring(0, 10)}\n");
+    ctx.write('\nSuggest warm, specific ways to reconnect with $name, grounded only in the above.');
+
+    switch (await cloud.generate('reconnect', ctx.toString())) {
+      case CloudOk(:final value):
+        return value;
+      case CloudError(:final kind):
+        return _degrade('reconnect ideas', kind);
+    }
+  }
+
   /// A short, warm daily briefing grounded in what's actually on the user's plate today.
   Future<String> briefing(Map<String, _Record> store, DateTime now, {String Function()? agenda}) async {
     final ctx = StringBuffer('Date: ${now.toIso8601String().substring(0, 10)}\n\n');

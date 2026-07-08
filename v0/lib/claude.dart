@@ -205,6 +205,11 @@ into the type, then a format op that sets "confirmationText". Reference inputs a
         'You write a short, warm daily briefing from the user\'s own data provided below. '
         'Use ONLY what is given — never invent. Lead with what needs attention today '
         '(due/overdue, reminders, birthdays), then a brief encouraging note. Plain text, concise.',
+    'reconnect':
+        'You help the user reconnect with someone they care about. Using ONLY the facts and '
+        'the time-since-last-contact provided, suggest 2-3 warm, specific ways to reach out '
+        '(reference a real shared detail; if it has been a while, acknowledge that gently). '
+        'Never invent facts. Warm, concrete, plain text.',
   };
 
   @override

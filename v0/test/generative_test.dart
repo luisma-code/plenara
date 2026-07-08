@@ -80,6 +80,33 @@ void main() {
     });
   });
 
+  group('reconnect coaching — grounded in facts + time since contact', () {
+    test('assembles facts and last-contact into the prompt', () async {
+      final cloud = _GenCloud();
+      final s = await _s(cloud);
+      await s.handle('remember that Sam loves jazz');
+      await s.handle('i talked to Sam about the concert'); // logs an interaction
+      final r = await s.handle('help me reconnect with Sam');
+      expect(cloud.lastKind, 'reconnect');
+      expect(cloud.lastContext, contains('jazz'));
+      expect(cloud.lastContext, contains('Last time you logged talking'));
+      expect(r, isNotEmpty);
+    });
+    test('"i\'ve lost touch with X" phrasing also routes reconnect', () async {
+      final cloud = _GenCloud();
+      final s = await _s(cloud);
+      await s.handle('remember that Sam loves jazz');
+      await s.handle("i've lost touch with Sam");
+      expect(cloud.lastKind, 'reconnect');
+    });
+    test('offline -> honest degrade', () async {
+      final cloud = _GenCloud(err: CloudErrorKind.offline);
+      final s = await _s(cloud);
+      await s.handle('remember that Sam loves jazz');
+      expect((await s.handle('help me reconnect with Sam')).toLowerCase(), contains('offline'));
+    });
+  });
+
   group('daily briefing — grounded in what is actually on the plate', () {
     test('assembles open tasks into the briefing prompt', () async {
       final cloud = _GenCloud();
