@@ -27,23 +27,36 @@ class HlcDevice {
   }
 }
 
-Map<String, Map<String, dynamic>> loadDefs(String dir, String key) {
+/// A sink for files that fail to load — invoked instead of silently dropping them, so
+/// P2.8 (no silent failure) holds: the caller surfaces them for repair.
+typedef CorruptSink = void Function(String path, Object error);
+
+Map<String, Map<String, dynamic>> loadDefs(String dir, String key, {CorruptSink? onCorrupt}) {
   final out = <String, Map<String, dynamic>>{};
   final d = Directory(dir);
   if (!d.existsSync()) return out; // an optional subdir (e.g. templates) may be absent
   for (final f in d.listSync().whereType<File>()) {
     if (!f.path.endsWith('.json')) continue;
-    final d = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
-    out[d[key] as String] = d;
+    try {
+      final j = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
+      out[j[key] as String] = j; // a corrupt/half-synced DEF must NOT throw the whole load
+    } catch (e) {
+      onCorrupt?.call(f.path, e); // surface it (P2.8) rather than crashing startup
+    }
   }
   return out;
 }
+
+/// Write [json] via a temp file + atomic rename so a crash mid-write can't leave a
+/// half-written definition (a torn type file is the worst torn file — every record of
+/// that type reads against it). Public wrapper over the record store's atomic write.
+void writeJsonAtomic(File file, Map<String, dynamic> json) => _atomicWrite(file, json);
 
 /// Per-record files `{id,typeId,fields,_meta}` -> flat in-memory records.
 /// Tombstoned records are skipped (a delete stays present-but-invisible), and a
 /// single corrupt/partial file is skipped rather than throwing (the folder is a
 /// cloud-sync target, so half-written files are expected, not exotic).
-Map<String, Map<String, dynamic>> loadRecords(String dir) {
+Map<String, Map<String, dynamic>> loadRecords(String dir, {CorruptSink? onCorrupt}) {
   final store = <String, Map<String, dynamic>>{};
   final d = Directory(dir);
   if (!d.existsSync()) return store;
@@ -52,8 +65,9 @@ Map<String, Map<String, dynamic>> loadRecords(String dir) {
     Map<String, dynamic> rec;
     try {
       rec = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
-    } catch (_) {
-      continue; // skip a corrupt/half-synced file; don't brick the whole load
+    } catch (e) {
+      onCorrupt?.call(f.path, e); // surface it (P2.8), don't brick the whole load OR drop silently
+      continue;
     }
     final meta = rec['_meta'];
     if (meta is Map && meta['deleted'] == true) continue; // tombstone -> not in the live store

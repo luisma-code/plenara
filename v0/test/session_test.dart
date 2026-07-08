@@ -84,6 +84,24 @@ void main() {
     });
   });
 
+  group('corrupt files are surfaced, never silently dropped or crashed (P2.8, Spec 06)', () {
+    test('a corrupt record file is skipped AND surfaced for repair', () async {
+      final dataDir = makeTempDataDir();
+      Directory('$dataDir/records').createSync(recursive: true);
+      File('$dataDir/records/bad.json').writeAsStringSync('{ this is not json');
+      final s = Session(dataDir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false); // must NOT throw
+      expect(s.corruptFiles.any((p) => p.endsWith('bad.json')), isTrue);
+    });
+    test('a corrupt type def does not crash startup (loadDefs was an unguarded throw)', () async {
+      final dataDir = makeTempDataDir();
+      File('$dataDir/types/bad.json').writeAsStringSync('not json at all');
+      final s = Session(dataDir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false); // previously threw and bricked startup
+      expect(s.corruptFiles.any((p) => p.endsWith('bad.json')), isTrue);
+    });
+  });
+
   group('generative routing — weekly_review / pattern_insight / draft_message', () {
     // Each routes to GenerativeService and hits its honest no-cloud degrade path (thin data /
     // unknown contact) — so _NoCloud (which throws on generate) proves the route without a cloud call.

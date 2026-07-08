@@ -76,12 +76,17 @@ class FileStorageRepository implements StorageRepository {
     return id;
   }
 
-  @override
-  Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) =>
-      fs.loadDefs('$dataDir/$subdir', key);
+  /// Files that failed to parse during load (corrupt / half-synced), surfaced for repair
+  /// instead of silently dropped (P2.8). The Session logs these at startup.
+  final List<String> corruptFiles = [];
+  void _sink(String path, Object _) => corruptFiles.add(path);
 
   @override
-  Map<String, Map<String, dynamic>> loadRecords() => fs.loadRecords('$dataDir/records');
+  Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) =>
+      fs.loadDefs('$dataDir/$subdir', key, onCorrupt: _sink);
+
+  @override
+  Map<String, Map<String, dynamic>> loadRecords() => fs.loadRecords('$dataDir/records', onCorrupt: _sink);
 
   @override
   void persist(Map<String, dynamic> record) => fs.persist(record, '$dataDir/records', dev);
@@ -111,8 +116,9 @@ class FileStorageRepository implements StorageRepository {
 
   @override
   void writeDef(String subdir, String idKey, Map<String, dynamic> def) {
-    File('$dataDir/$subdir/${def[idKey]}.json')
-        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(def));
+    final f = File('$dataDir/$subdir/${def[idKey]}.json');
+    f.parent.createSync(recursive: true);
+    fs.writeJsonAtomic(f, def); // atomic: a torn type/skill file is unrecoverable
   }
 
   @override

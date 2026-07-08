@@ -233,6 +233,14 @@ class Session {
   /// `~/.plenara`, tests/CLI leave it null (-> [dataDir]). See FileStorageRepository.
   final String? _deviceDir;
 
+  /// Files that failed to load (corrupt / half-synced), surfaced for repair rather than
+  /// silently dropped (P2.8). Populated during [init]; empty unless a FileStorageRepository
+  /// backed the load.
+  List<String> get corruptFiles {
+    final r = repo;
+    return r is FileStorageRepository ? r.corruptFiles : const <String>[];
+  }
+
   /// [retrieval] builds the embedding index (needs the embed server, ~2s per anchor
   /// when it's DOWN — so the app defaults it OFF). Tests pass false to stay hermetic.
   /// [onPhase] receives a line at the start/end of each init phase — the app writes
@@ -247,6 +255,11 @@ class Session {
     templates = repo.loadDefs('templates', 'templateId');
     store = repo.loadRecords();
     phase('loaded ${types.length} types, ${skills.length} skills, ${store.length} records');
+    final r = repo;
+    if (r is FileStorageRepository && r.corruptFiles.isNotEmpty) {
+      // P2.8: never drop a bad file on the floor — surface it in diagnostics for repair.
+      phase('WARNING: skipped ${r.corruptFiles.length} unreadable file(s), surfaced for repair: ${r.corruptFiles.join(', ')}');
+    }
     interp = Interpreter(types, now);
     router = Router.load('$dataDir/corpus.json', now, learnedPath: '$dataDir/corpus-learned.json');
     claude = _injectedCloud ?? ClaudeClient();
