@@ -67,10 +67,13 @@ part of 5 (F-14/F-15), and more generative kinds.**
 (Blocked/deferred, do NOT pick: native toast/ATL, voice, CRDT merge engine, persisted
 journal, presentation archetypes, at-rest encryption, per-device corpus.)
 
-**One blocker for Luis (needs admin):** the native Windows toast for reminders
-needs the **ATL** VS Build Tools component (`atlbase.h`), which requires an admin
-install. Everything else about reminders is done + tested against a fake scheduler;
-only the real toast render is gated. Command is in "Deferred / open".
+**ATL + native toast: DONE (`e2ba8d8`).** ATL installed, `WindowsToastScheduler` built +
+wired + proven end-to-end (reminders fire as OS toasts; see the recent-arc entry). The
+remaining **Luis-gated** item is credential rotation: the BYOK Anthropic key (in
+`planning/specs/05a-rig/.env`) and the GitHub PAT are still exposed and unrotated — the one
+real liability the Fable review flagged. Cloud features (gift ideas, briefing, cloud
+routing) stay off until a fresh key is in the config; offline (tasks/people/journaling/
+reminders) works now.
 
 **Environment note (new machine/user `luism`):** re-established this session — git
 `safe.directory` exceptions added, `luisma-code` PAT re-stored in GCM (headless
