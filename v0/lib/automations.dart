@@ -27,9 +27,10 @@
 /// nothing here touches the OS).
 ///
 /// **Deferred:** `schedule`/cron conditions register as `deferred` (validated,
-/// surfaced, never armed) — they need the OS timer seam (Spec 04 §3.13 /
-/// NotificationScheduler) and belong to the follow-up; `onWrite` is the
-/// offline-testable core shipped here.
+/// `schedule`/cron conditions ARE armed via [tick] — a catch-up fired on app
+/// open (v0 has no background process, so a scheduled fire lands the next open
+/// after its cron time; a true background timer via NotificationScheduler,
+/// Spec 04 §3.13, is the follow-up). `onWrite` fires inline after a write.
 ///
 /// **v0 deviation, deliberate:** an automation may carry its skill INLINE under
 /// a `skill` key (an "automation-local skill") instead of a file in `skills/`.
@@ -40,6 +41,7 @@
 /// automations are fired by writes, not by voice, so it loses nothing in v0.
 library;
 
+import 'cron.dart';
 import 'interpreter.dart';
 
 /// Registration state of one automation, for the management/repair surface
@@ -141,12 +143,24 @@ class AutomationRunner {
   final List<String> refusals = [];
   int _seq = 0;
 
+  /// Last-fired instant per schedule automation (autoId → time), so a `schedule`
+  /// fires ONCE per cron time and survives restarts. The Session loads/saves it
+  /// device-local; pure tests leave it empty.
+  final Map<String, DateTime> lastFired;
+
+  /// Called when a schedule automation fires (autoId, firedAt) so the Session can
+  /// persist [lastFired]. Null → in-memory only.
+  final void Function(String autoId, DateTime firedAt)? onFired;
+
   AutomationRunner(
       {required this.types,
       required this.skills,
       required this.store,
       required this.clock,
-      this.persist});
+      this.persist,
+      Map<String, DateTime>? lastFired,
+      this.onFired})
+      : lastFired = lastFired ?? {};
 
   /// Register a folder-load of automation defs (keyed by automationId, as
   /// StorageRepository.loadDefs returns them). Deterministic order. Invalid or
@@ -193,21 +207,29 @@ class AutomationRunner {
     if (desc is! String || desc.isEmpty) return inert('missing description (why this automation exists)');
     if (cond is! Map) return inert('missing condition');
     final kind = cond['kind'];
+    if (kind != 'schedule' && kind != 'onWrite') {
+      return inert("unknown condition kind '$kind' (schedule|onWrite)");
+    }
+    // condition-specific validation
     if (kind == 'schedule') {
-      if (cond['cronExpression'] is! String) return inert('schedule condition needs a cronExpression');
-      reg.state = 'deferred';
-      reg.reason = 'schedule/cron is deferred in v0 (needs the OS timer seam) — registered, not armed';
-      return;
+      final cron = cond['cronExpression'];
+      if (cron is! String) return inert('schedule condition needs a cronExpression');
+      try {
+        cronMatches(cron, clock()); // parse/validate the expression up front
+      } on FormatException catch (e) {
+        return inert('bad cronExpression: ${e.message}');
+      }
+    } else {
+      final after = cond['afterField'];
+      if (after is! String || after.isEmpty) return inert('onWrite condition needs an afterField');
+      final td = types[target];
+      if (td == null) return inert("unresolved targetType '$target' — inert until it exists");
+      final attrs = (td['attributes'] as List?) ?? const [];
+      if (!attrs.any((a) => a is Map && a['name'] == after)) {
+        return inert("afterField '$after' is not an attribute of '$target'");
+      }
     }
-    if (kind != 'onWrite') return inert("unknown condition kind '$kind' (schedule|onWrite)");
-    final after = cond['afterField'];
-    if (after is! String || after.isEmpty) return inert('onWrite condition needs an afterField');
-    final td = types[target];
-    if (td == null) return inert("unresolved targetType '$target' — inert until it exists");
-    final attrs = (td['attributes'] as List?) ?? const [];
-    if (!attrs.any((a) => a is Map && a['name'] == after)) {
-      return inert("afterField '$after' is not an attribute of '$target'");
-    }
+    // skill validation — common to both condition kinds
     final inline = def['skill'];
     if (inline is Map) {
       final s = inline.cast<String, dynamic>();
@@ -256,7 +278,37 @@ class AutomationRunner {
     }
   }
 
-  void _fire(_Registered reg, Map<String, dynamic> rec, int depth) {
+  /// Catch-up tick (Spec 01 §4.4 `schedule`): fire each armed schedule automation whose cron
+  /// time passed since it last fired. Called on app open with the current clock — v0 has no
+  /// background process, so a scheduled fire lands the next time the app opens after its time.
+  /// A newly-seen automation is baselined to [now] (no back-fill of past occurrences) and fires
+  /// from its NEXT cron time onward; each fire records lastFired so it never repeats.
+  void tick(DateTime now) {
+    for (final reg in _regs) {
+      if (reg.state != 'active') continue;
+      final cond = reg.def['condition'] as Map;
+      if (cond['kind'] != 'schedule') continue;
+      final autoId = reg.def['automationId'] as String;
+      final since = lastFired[autoId];
+      if (since == null) {
+        lastFired[autoId] = now; // first sight — baseline, don't back-fill history
+        onFired?.call(autoId, now);
+        continue;
+      }
+      if (dueSince(cond['cronExpression'] as String, since, now) == null) continue;
+      lastFired[autoId] = now;
+      onFired?.call(autoId, now);
+      _fireScheduled(reg); // read-only -> deliver; writes -> hold for review (same gating)
+    }
+  }
+
+  void _fire(_Registered reg, Map<String, dynamic> rec, int depth) =>
+      _fireWithSlots(reg, {'recordId': rec['id']}, depth);
+
+  /// Fire a schedule automation — no triggering record; the skill runs over the whole store.
+  void _fireScheduled(_Registered reg) => _fireWithSlots(reg, const {}, 0);
+
+  void _fireWithSlots(_Registered reg, Map<String, dynamic> slots, int depth) {
     final autoId = reg.def['automationId'] as String;
     final skillId = reg.def['skillId'] as String;
     if (depth >= maxCascadeDepth) {
@@ -271,7 +323,6 @@ class AutomationRunner {
       return;
     }
     final firedAt = clock(); // the frozen clock a re-resolve reuses (Spec 02 §4.4)
-    final slots = <String, dynamic>{'recordId': rec['id']};
     final Plan plan;
     try {
       plan = Interpreter(types, firedAt).resolve(skill, slots, store);

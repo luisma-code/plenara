@@ -149,6 +149,48 @@ void main() {
     });
   });
 
+  group('schedule automations fire on open (catch-up) and persist lastFired (Spec 01 §4.4)', () {
+    void seedWeekly(String dir) {
+      Directory('$dir/automations').createSync(recursive: true);
+      File('$dir/automations/weekly.json').writeAsStringSync(jsonEncode({
+        'automationId': 'weekly-workout-summary',
+        'targetType': 'workout',
+        'condition': {'kind': 'schedule', 'cronExpression': '0 20 * * 0'}, // Sunday 8pm
+        'skillId': 'wsum',
+        'description': 'weekly workout summary',
+        'skill': {
+          'skillId': 'wsum', 'inputs': [], 'reads': ['workout'], 'writes': [],
+          'steps': {
+            'main': [
+              {'op': 'read_many', 'typeId': 'workout', 'into': 'ws'},
+              {'op': 'compute', 'fn': 'count', 'args': [{'var': 'ws'}], 'into': 'n'},
+              {'op': 'format', 'template': 'This week: {n} workout(s) logged.', 'into': 'confirmationText'},
+            ]
+          }
+        }
+      }));
+    }
+
+    test('fires once after its cron time, then not again (lastFired persists across opens)', () async {
+      final dir = makeTempDataDir();
+      final devDir = Directory.systemTemp.createTempSync('plenara-dev').path;
+      seedWeekly(dir);
+      Session open(String clock) => Session(dir, clock: DateTime.parse(clock), cloud: _NoCloud(), deviceDir: devDir);
+
+      final s1 = open('2026-07-11T09:00:00'); // Sat — first open baselines, no fire
+      await s1.init(retrieval: false);
+      expect(s1.automations.deliveries, isEmpty);
+
+      final s2 = open('2026-07-13T09:00:00'); // Mon — Sunday 8pm passed -> fires (on-open nudge)
+      await s2.init(retrieval: false);
+      expect(s2.pendingNudges().any((n) => n.toLowerCase().contains('workout')), isTrue);
+
+      final s3 = open('2026-07-13T10:00:00'); // same day — lastFired persisted -> no re-fire
+      await s3.init(retrieval: false);
+      expect(s3.automations.deliveries, isEmpty);
+    });
+  });
+
   group('generative routing — weekly_review / pattern_insight / draft_message', () {
     // Each routes to GenerativeService and hits its honest no-cloud degrade path (thin data /
     // unknown contact) — so _NoCloud (which throws on generate) proves the route without a cloud call.

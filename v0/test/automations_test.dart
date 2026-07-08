@@ -234,18 +234,23 @@ void main() {
       expect(_st(r, 'a1').reason, contains('not an attribute'));
     });
 
-    test('a schedule automation registers deferred (valid, never armed in v0)', () {
+    test('a schedule automation registers ARMED and fires on a due tick (catch-up on open)', () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final r = _runner([
         _auto('a1',
             inline: _summarySkill(),
-            condition: {'kind': 'schedule', 'cronExpression': '0 20 * * 0'})
+            condition: {'kind': 'schedule', 'cronExpression': '0 20 * * 0'}) // Sunday 8pm
       ], store: store);
-      expect(_st(r, 'a1').state, 'deferred');
-      expect(_st(r, 'a1').reason, contains('deferred'));
-      r.notifyWrites([store['workout-1']!]); // a deferred schedule never fires onWrite
+      expect(_st(r, 'a1').state, 'active');
+      r.notifyWrites([store['workout-1']!]); // a schedule never fires onWrite
       expect(r.deliveries, isEmpty);
-      expect(r.pendingReview, isEmpty);
+      r.tick(DateTime.parse('2026-07-11T09:00:00')); // Sat: first sight -> baseline, no back-fill
+      expect(r.deliveries, isEmpty);
+      r.tick(DateTime.parse('2026-07-13T09:00:00')); // Mon: Sunday 8pm passed -> read-only delivery
+      expect(r.deliveries, isNotEmpty);
+      r.takeDeliveries();
+      r.tick(DateTime.parse('2026-07-13T10:00:00')); // same window, no new cron time -> no re-fire
+      expect(r.deliveries, isEmpty);
     });
 
     test('a schedule automation without a cronExpression is inert', () {

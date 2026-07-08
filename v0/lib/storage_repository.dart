@@ -127,4 +127,23 @@ class FileStorageRepository implements StorageRepository {
     if (deviceDir != dataDir) f.parent.createSync(recursive: true); // the injected device-local dir may not exist yet
     f.writeAsStringSync('${jsonEncode(entry)}\n', mode: FileMode.append);
   }
+
+  /// Schedule-automation lastFired state (autoId → time), DEVICE-LOCAL: it's per-install
+  /// bookkeeping (when this device last fired each schedule), not synced user data.
+  Map<String, DateTime> loadAutomationState() {
+    final f = File('$deviceDir/automation-state.json');
+    if (!f.existsSync()) return {};
+    try {
+      final m = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
+      return {for (final e in m.entries) e.key: DateTime.parse(e.value as String)};
+    } catch (_) {
+      return {}; // corrupt state -> start fresh (a missed fire, never a crash)
+    }
+  }
+
+  void saveAutomationState(Map<String, DateTime> state) {
+    final f = File('$deviceDir/automation-state.json');
+    if (deviceDir != dataDir) f.parent.createSync(recursive: true);
+    fs.writeJsonAtomic(f, {for (final e in state.entries) e.key: e.value.toIso8601String()});
+  }
 }

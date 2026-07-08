@@ -277,9 +277,22 @@ class Session {
     interp = Interpreter(types, now);
     // Automations registry (Spec 01 §4.4 / Spec 04 §3.9): loaded like types/skills;
     // an absent automations/ folder is simply an empty registry (zero behavior change).
+    final autoRepo = repo;
+    final autoState =
+        autoRepo is FileStorageRepository ? autoRepo.loadAutomationState() : <String, DateTime>{};
     automations = AutomationRunner(
-        types: types, skills: skills, store: store, clock: () => now, persist: repo.persist);
+      types: types,
+      skills: skills,
+      store: store,
+      clock: () => now,
+      persist: repo.persist,
+      lastFired: autoState, // the runner mutates this map in place
+      onFired: (_, __) {
+        if (autoRepo is FileStorageRepository) autoRepo.saveAutomationState(autoState);
+      },
+    );
     automations.register(repo.loadDefs('automations', 'automationId'));
+    automations.tick(now); // fire any schedule automation whose cron time passed since last open
     if (automations.statuses.isNotEmpty) {
       phase('automations: ${automations.statuses.map((a) => '${a.automationId}=${a.state}').join(', ')}');
     }
