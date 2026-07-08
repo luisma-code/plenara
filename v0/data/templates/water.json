@@ -37,12 +37,45 @@
           }
         ]
       }
+    },
+    {
+      "skillId": "water-today",
+      "displayName": "Water logged today",
+      "reads": [ "hydration" ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          { "op": "compute", "fn": "today", "into": "today" },
+          { "op": "read_many", "typeId": "hydration", "into": "logs" },
+          { "op": "set", "var": "total", "value": 0 },
+          {
+            "op": "foreach",
+            "list": { "var": "logs" },
+            "as": "e",
+            "body": [
+              {
+                "op": "branch",
+                "cond": { "gte": [ { "field": [ "e", "loggedAt" ] }, { "var": "today" } ] },
+                "then": [
+                  { "op": "compute", "fn": "add", "args": [ { "var": "total" }, { "field": [ "e", "amount" ] } ], "into": "total" }
+                ]
+              }
+            ]
+          },
+          { "op": "format", "template": "You've logged {total} ml of water today.", "into": "confirmationText" }
+        ]
+      }
     }
   ],
   "corpus": [
     { "skillId": "log-water", "template": "log {amount:quantity}ml of water" },
     { "skillId": "log-water", "template": "i drank {amount:quantity}ml of water" },
     { "skillId": "log-water", "template": "log a glass of water" },
-    { "skillId": "log-water", "template": "i drank a glass of water" }
+    { "skillId": "log-water", "template": "i drank a glass of water" },
+    { "skillId": "water-today", "template": "how much water today" },
+    { "skillId": "water-today", "template": "how much water have i had today" },
+    { "skillId": "water-today", "template": "how much water did i drink today" },
+    { "skillId": "water-today", "template": "water today" }
   ]
 }

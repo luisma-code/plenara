@@ -311,6 +311,14 @@ void main() {
       expect(r, contains('13000'));
     });
 
+    test('a template query skill sums today: water logged today', () async {
+      final s = await _session();
+      await s.handle('start tracking my water');
+      await s.handle('log 500ml of water');
+      await s.handle('i drank 300ml of water');
+      expect(await s.handle('how much water today'), contains('800'));
+    });
+
     test('a template query skill computes a streak: reading streak (F-18)', () async {
       final s = await _session();
       await s.handle('start tracking my reading');
