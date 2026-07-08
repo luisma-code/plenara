@@ -118,6 +118,30 @@ void main() {
     expect(classifyHttp(429, 'rate limited'), CloudErrorKind.rateLimited);
     expect(classifyHttp(429, 'please purchase credits'), CloudErrorKind.insufficientCredits);
     expect(classifyHttp(500, 'boom'), CloudErrorKind.serverError);
+    // a plain (non-billing) 400 is a serverError, and a 5xx that merely mentions billing is NOT
+    // insufficientCredits (would wrongly tell the user to add credits) — Fable review.
+    expect(classifyHttp(400, 'invalid parameter: max_tokens'), CloudErrorKind.serverError);
+    expect(classifyHttp(503, 'billing subsystem unavailable'), CloudErrorKind.serverError);
+  });
+
+  test('usage tokens accumulate from a 200; costUsd math is correct (Haiku 4.5 pricing)', () async {
+    final s = await _serve((r) => _reply(
+        r, 200, '{"content":[{"type":"text","text":"OK"}],"usage":{"input_tokens":1000,"output_tokens":50}}'));
+    final c = _client(s);
+    await c.validateKey();
+    expect(c.inTokens, 1000);
+    expect(c.outTokens, 50);
+    expect(ClaudeClient.costUsd(1000, 50), closeTo((1000 * 1.0 + 50 * 5.0) / 1e6, 1e-12));
+    expect(c.spentUsd, closeTo(ClaudeClient.costUsd(1000, 50), 1e-12));
+    await s.close(force: true);
+  });
+
+  test('a 200 with NO usage payload does not crash and accumulates nothing', () async {
+    final s = await _serve((r) => _reply(r, 200, '{"content":[{"type":"text","text":"OK"}]}'));
+    final c = _client(s);
+    expect(await c.validateKey(), isA<CloudOk<String>>());
+    expect(c.inTokens, 0);
+    await s.close(force: true);
   });
 
   test('malformed JSON body -> CloudError.malformed', () async {
