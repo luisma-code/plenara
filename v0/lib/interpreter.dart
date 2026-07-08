@@ -124,6 +124,13 @@ class Interpreter {
         return _dateOnly(d.subtract(Duration(days: d.weekday - 1)));
       case 'add':
         return (a[0] ?? 0) + (a[1] ?? 0);
+      case 'mul':
+        return (a[0] is num && a[1] is num) ? (a[0] as num) * (a[1] as num) : null;
+      case 'div':
+        // guarded: divide-by-zero (or a non-number) -> null, never a crash/Infinity
+        return (a[0] is num && a[1] is num && (a[1] as num) != 0) ? (a[0] as num) / (a[1] as num) : null;
+      case 'round':
+        return a[0] is num ? (a[0] as num).round() : null;
       case 'days_between':
         final d1 = _asDate(a[0]), d2 = _asDate(a[1]);
         return (d1 == null || d2 == null) ? null : d2.difference(d1).inDays;
@@ -283,7 +290,8 @@ class Interpreter {
   static const _ops = {'read_one', 'read_many', 'read_related', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
-    'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num'};
+    'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num',
+    'mul', 'div', 'round'};
   static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};
   // The Spec 01 §3 canonical value-type set (fixed; a new one needs a kernel bump). `integer`
   // is retained only as a tolerated legacy alias for `number` (older authored types).

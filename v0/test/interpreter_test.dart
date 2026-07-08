@@ -86,6 +86,19 @@ void main() {
       test('add ${c[0]}+${c[1]}=${c[2]}', () => expect(_i().compute('add', [c[0], c[1]], {}), c[2]));
     }
     test('add with null -> treats as 0', () => expect(_i().compute('add', [5, null], {}), 5));
+    test('mul', () => expect(_i().compute('mul', [6, 7], {}), 42));
+    test('div', () => expect(_i().compute('div', [10, 4], {}), 2.5));
+    test('div by zero -> null (guarded, no crash/Infinity)', () => expect(_i().compute('div', [5, 0], {}), isNull));
+    test('div non-number -> null', () => expect(_i().compute('div', ['x', 2], {}), isNull));
+    test('round', () => expect(_i().compute('round', [2.6], {}), 3));
+    test('percentage idiom: round(100 * part/whole)', () {
+      final pct = _i().compute('round', [_i().compute('mul', [100, _i().compute('div', [30, 50], {})], {})], {});
+      expect(pct, 60);
+    });
+    test('ordinal_num maps the ordinal word', () {
+      expect(_i().compute('ordinal_num', ['second'], {}), 2);
+      expect(_i().compute('ordinal_num', ['last'], {}), -1);
+    });
     test('count list', () => expect(_i().compute('count', [[1, 2, 3]], {}), 3));
     test('count empty', () => expect(_i().compute('count', [[]], {}), 0));
     test('count null -> 0', () => expect(_i().compute('count', [null], {}), 0));
