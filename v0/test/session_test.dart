@@ -230,6 +230,18 @@ void main() {
       expect(logged, contains('500'));
       expect(s.store.values.where((x) => x['typeId'] == 'hydration').length, 1);
     });
+    for (final c in const [
+      ('reading', 'i read 30 pages', 'reading_log'),
+      ('my meds', 'i took my meds', 'medication_log'),
+    ]) {
+      test('template "${c.$1}" instantiates free and routes its log by voice', () async {
+        final s = await _session();
+        expect((await s.handle('start tracking ${c.$1}')).toLowerCase(), contains('set up'));
+        expect((await s.handle(c.$2)).toLowerCase(), contains('logged'));
+        expect(s.store.values.where((x) => x['typeId'] == c.$3).length, 1);
+      });
+    }
+
     test('re-instantiating is idempotent ("already tracking")', () async {
       final s = await _session();
       await s.handle('start tracking my water intake');

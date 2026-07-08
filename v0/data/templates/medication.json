@@ -1,0 +1,43 @@
+{
+  "templateId": "medication",
+  "displayName": "medication tracking",
+  "keywords": ["medication", "meds", "medicine", "my pills", "my medication"],
+  "example": "log that I took my meds",
+  "types": [
+    {
+      "typeId": "medication_log",
+      "displayName": "Medication",
+      "attributes": [
+        { "name": "note", "valueType": "text", "required": false },
+        { "name": "loggedAt", "valueType": "date", "required": true }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "skillId": "log-medication",
+      "displayName": "Log medication",
+      "reads": [],
+      "writes": [ "medication_log" ],
+      "inputs": [ { "name": "note", "required": false } ],
+      "steps": {
+        "main": [
+          { "op": "compute", "fn": "today", "into": "today" },
+          {
+            "op": "write_record",
+            "typeId": "medication_log",
+            "fields": { "note": { "var": "note" }, "loggedAt": { "var": "today" } },
+            "into": "m"
+          },
+          { "op": "format", "template": "Logged — you took your medication today.", "into": "confirmationText" }
+        ]
+      }
+    }
+  ],
+  "corpus": [
+    { "skillId": "log-medication", "template": "log that i took my meds" },
+    { "skillId": "log-medication", "template": "i took my meds" },
+    { "skillId": "log-medication", "template": "took my medication" },
+    { "skillId": "log-medication", "template": "i took my medication" }
+  ]
+}

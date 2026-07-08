@@ -1,0 +1,47 @@
+{
+  "templateId": "reading",
+  "displayName": "reading tracking",
+  "keywords": ["reading", "books i read", "reading habit", "pages i read", "my reading"],
+  "example": "log 30 pages of reading",
+  "types": [
+    {
+      "typeId": "reading_log",
+      "displayName": "Reading",
+      "attributes": [
+        { "name": "pages", "valueType": "decimal", "required": false },
+        { "name": "loggedAt", "valueType": "date", "required": true }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "skillId": "log-reading",
+      "displayName": "Log reading",
+      "reads": [],
+      "writes": [ "reading_log" ],
+      "inputs": [ { "name": "pages", "required": false } ],
+      "steps": {
+        "main": [
+          { "op": "compute", "fn": "today", "into": "today" },
+          {
+            "op": "write_record",
+            "typeId": "reading_log",
+            "fields": { "pages": { "var": "pages" }, "loggedAt": { "var": "today" } },
+            "into": "r"
+          },
+          {
+            "op": "branch",
+            "cond": { "notNull": "pages" },
+            "then": [ { "op": "format", "template": "Logged {pages} pages of reading today.", "into": "confirmationText" } ],
+            "else": [ { "op": "format", "template": "Logged a reading session today.", "into": "confirmationText" } ]
+          }
+        ]
+      }
+    }
+  ],
+  "corpus": [
+    { "skillId": "log-reading", "template": "log {pages:quantity} pages of reading" },
+    { "skillId": "log-reading", "template": "i read {pages:quantity} pages" },
+    { "skillId": "log-reading", "template": "log a reading session" }
+  ]
+}
