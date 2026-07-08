@@ -21,9 +21,9 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `99b9c98`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `6ce4484`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1422 Dart tests + 15 Flutter widget tests green** (35 seed skills + 5 templates that also ship
+**1427 Dart tests + 22 Flutter widget tests green** (35 seed skills + 5 templates that also ship
 QUERY skills, 9 types; DSL has ordering/limit/filter-ops + aggregation/date-math; ProvideSlot
 slot-filling; alias resolution; OOD boundary; record-integrity + scope + medical + impersonation
 + schema-edit denial floors; compound-utterance split; GenerativeService gift/briefing/reconnect
@@ -37,9 +37,12 @@ the chat; destructive refused); wired into `Session._dispatch` behind a containm
 schedule/cron is now armed too (`cron.dart` + `AutomationRunner.tick` on app open — a scheduled
 fire lands the next open after its cron time; `lastFired` persisted device-local; a true
 background timer is the only follow-up). The example
-(`workout-encouragement`) seeds + fires + surfaces in the app. (2) **Coverage gate**
-(`bin/coverage_check.dart`, Spec 09 §8) — measured **91.4%** global, floor 80%; run it after
-`dart test --coverage`. (3) **Spec 07 UI slice** (`app/lib/data_view.dart`) — a read-only "Your
+(`workout-encouragement`) seeds + fires + surfaces in the app. (2) **Full Spec 09 §8.4 quality gate as a local
+script** (`tool/precheck.sh`, 8 steps, fails on any): v0 analyze → **import-lint** (`bin/
+import_lint.dart` — dependency-rule layering, util<storage=intelligence<business-logic, unit-
+tested) → v0 tests + **coverage gate** (`bin/coverage_check.dart`, measured **91.5%**, floor 80%)
+→ app analyze/test → Windows build → `sk-ant-` secret scan → **conformance ratchet** (05a passing
+count vs `conformance-baseline.txt`=21, no decrease). Only a hosted runner remains. (3) **Spec 07 UI slice** (`app/lib/data_view.dart`) — a read-only "Your
 data" view rendering records by an archetype inferred from type STRUCTURE (checklist/personCard/
 tracker/timeline/collection), reached from the chat app-bar.
 
