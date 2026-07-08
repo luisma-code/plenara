@@ -41,6 +41,8 @@
   { "skillId": "last-interaction", "template": "when did i last talk to {personName:entity}" },
   { "skillId": "last-interaction", "template": "when did i last speak to {personName:entity}" },
   { "skillId": "last-interaction", "template": "when did i last see {personName:entity}" },
+  { "skillId": "last-interaction", "template": "how is {personName:entity} doing" },
+  { "skillId": "last-interaction", "template": "how's {personName:entity} doing" },
   { "skillId": "last-interaction", "template": "how long since i called {personName:entity}" },
   { "skillId": "last-interaction", "template": "how long since i talked to {personName:entity}" },
   { "skillId": "last-interaction", "template": "how long since i spoke to {personName:entity}" },

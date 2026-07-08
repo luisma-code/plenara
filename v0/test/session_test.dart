@@ -602,6 +602,12 @@ void main() {
       expect(w['distance'], 5);
       expect(w['duration'], 27);
     });
+    test('"how is Marco doing" routes to last-interaction (dogfood coverage)', () async {
+      final s = await _session();
+      await s.handle('i talked to Marco about the trip');
+      expect(await s.handle('how is Marco doing'), contains('Marco'));
+    });
+
     test('F-10: "how long since I called Mum" resolves via alias to last-interaction', () async {
       final s = await _session();
       await s.handle('i talked to Sarah about the trip');
