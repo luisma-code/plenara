@@ -85,12 +85,18 @@ final _schemaEditRe =
 // A "start tracking X in glasses / with calories" specifies a UNIT or FIELD a shipped template
 // can't honor — so a keyword match ("water") must NOT pre-empt it (route to authoring instead).
 // The negative lookahead excludes innocuous "in the morning"/"with my book" time/possessive tails.
-final _customizationRe =
-    RegExp(r'\b(?:in|with) (?!the\b|a\b|an\b|my\b|your\b|his\b|her\b|their\b|this\b)\w+', caseSensitive: false);
+// Require a UNIT-ish noun after in/with/per, so "water intake in glasses" / "meals with calories"
+// trigger authoring but "walks with Sarah" / "reading in bed" fall through to the free template
+// (erring toward the free template is the safe default — Fable review).
+final _customizationRe = RegExp(
+    r'\b(?:in|with|per) (?:glasses?|cups?|grams?|g|kg|ml|l|liters?|litres?|oz|ounces?|calories|cals?|'
+    r'pounds?|lbs?|servings?|portions?|pieces?|slices?|scoops?|bottles?|tb?sp|tablespoons?|teaspoons?|'
+    r'reps?|sets?|steps|miles?|km|minutes?|mins?|hours?|hrs?)\b',
+    caseSensitive: false);
 // Content search (F-12). _searchNoteRe wants a "note/entry" + "about/mentioning" shape;
 // _searchForRe catches the terse "search (my notes) for X".
 final _searchNoteRe = RegExp(
-    r'^(?:find|show me|pull up|where(?:.s| is| are))\s+(?:that\s+|my\s+|the\s+|a\s+|any\s+)?(?:notes?|entry|entries|journal(?:\s+entry)?|thing)\s+(?:about|on|mentioning|regarding|where|that\s+(?:says?|mentions?))\s+(.+?)\??$',
+    r"^(?:find|show me|pull up|where(?:'?s| is| are))\s+(?:that\s+|my\s+|the\s+|a\s+|any\s+)?(?:notes?|entry|entries|journal(?:\s+entry)?|thing)\s+(?:about|on|mentioning|regarding|where|that\s+(?:says?|mentions?))\s+(.+?)\??$",
     caseSensitive: false);
 final _searchForRe = RegExp(r'^search\s+(?:my\s+(?:notes?|journal)\s+)?(?:for\s+)?(.+?)\??$', caseSensitive: false);
 // Record-integrity floor (locked principle #7 / DP-05): refuse to fabricate the past.
@@ -476,6 +482,10 @@ class Session {
       _outError = '${e.runtimeType}: $e\n$st'; // full detail to the trace, never to the user
       resp = "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
     }
+    // Post-turn housekeeping (reminder reconcile + the diagnostics trace) must NEVER lose the
+    // already-computed response — a turnlog I/O error or a reconcile hiccup is non-fatal to the
+    // turn (Fable review: these sat outside the try). Wrap so they can't escape to the UI.
+    try {
     // the turn may have added/undone/completed a reminder — keep the OS armed set
     // in sync with the (now-updated) store. Derived, so no per-skill wiring needed.
     await _reconcileReminders();
@@ -510,6 +520,7 @@ class Session {
           if (automations.refusals.length > autoRefused0) 'refused': automations.refusals.sublist(autoRefused0),
         },
     });
+    } catch (_) {/* housekeeping/logging failure must not break the turn */}
     return resp;
   }
 
