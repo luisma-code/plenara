@@ -352,6 +352,16 @@ void main() {
       expect(s.store.values.where((r) => r['typeId'] == 'workout'), isEmpty);
       expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
     });
+    test('correction after a NON-WRITING turn does not reverse an earlier write (Fable#2 P0)', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list'); // writes a task
+      await s.handle('what can you do'); // help: early return, no write, stale-flag trap
+      final r = await s.handle('no, I meant to log a 3k run'); // correction
+      expect(r, contains('run'));
+      // the milk task must survive — the correction must not reverse an unrelated older write
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1, reason: 'milk survives');
+      expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
+    });
     test('mark a task done (update), then undo restores it as not-done', () async {
       final s = await _session();
       await s.handle('add buy milk to my list');

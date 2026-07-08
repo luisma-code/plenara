@@ -299,6 +299,15 @@ class Session {
     u = u.trim();
     final now = this.now; // one frozen snapshot for the whole turn
 
+    // Snapshot the PREVIOUS turn's write-outcome (for undo/correction), then default THIS
+    // turn to "wrote nothing" — only _dispatch upgrades it. Without this, a stale flag
+    // left by an early-return path (a clarify miss, a generative reply, an authoring turn)
+    // would make a later correction reverse an UNRELATED earlier write (data loss).
+    final prevWrote = _lastTurnWrote;
+    final prevTemplate = _lastTurnTemplate;
+    _lastTurnWrote = false;
+    _lastTurnTemplate = null;
+
     // ProvideSlot (§6.3): a paused turn is waiting for one missing slot. Treat this
     // input as the answer — unless the user backs out — then re-ask or dispatch.
     final pending = _pendingFill;
@@ -350,17 +359,16 @@ class Session {
     if (corr != null) {
       var pre = '';
       // §5.2 negative half: the previous turn misrouted — forget the LEARNED template
-      // that routed it, whether it wrote or was read-only.
-      if (_lastTurnTemplate != null && router.forget(_lastTurnTemplate!)) {
-        repo.removeCorpusLearned(_lastTurnTemplate!);
+      // that routed it, whether it wrote or was read-only. (prev* = the PRIOR turn's
+      // outcome, snapshotted at the top before this turn reset the live flags.)
+      if (prevTemplate != null && router.forget(prevTemplate)) {
+        repo.removeCorpusLearned(prevTemplate);
       }
       // reverse the previous turn ONLY if it actually wrote — never an unrelated earlier write
-      if (_lastTurnWrote && _journal.isNotEmpty) {
+      if (prevWrote && _journal.isNotEmpty) {
         _reverse(_journal.removeLast().before);
         pre = 'Got it — undid that. ';
       }
-      _lastTurnTemplate = null;
-      _lastTurnWrote = false;
       final redo = await _handle(corr.group(1)!.trim());
       _outSource = 'correction';
       return '$pre$redo';
