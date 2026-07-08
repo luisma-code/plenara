@@ -1,5 +1,6 @@
 // Tests for the Spec 07 "Your data" view: the structural archetype inference (unit) and the
 // view rendering + reachability (widget). Hermetic — an offline cloud, a temp data dir.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -86,6 +87,35 @@ void main() {
     expect(find.byKey(const Key('archetype-task')), findsOneWidget); // the task section rendered
     expect(find.textContaining('checklist'), findsWidgets); // chosen by structure, not by type name
     expect(find.textContaining('buy milk'), findsWidgets); // the record itself
+  });
+
+  testWidgets('the data view surfaces an automations card with each automation status', (tester) async {
+    final dir = _tempData();
+    Directory('$dir/automations').createSync(recursive: true);
+    File('$dir/automations/x.json').writeAsStringSync(jsonEncode({
+      'automationId': 'demo-auto',
+      'targetType': 'workout',
+      'condition': {'kind': 'onWrite', 'afterField': 'date'},
+      'skillId': 'demo',
+      'description': 'a demo automation',
+      'skill': {
+        'skillId': 'demo', 'inputs': [], 'reads': ['workout'], 'writes': [],
+        'steps': {
+          'main': [
+            {'op': 'read_many', 'typeId': 'workout', 'into': 'w'},
+            {'op': 'compute', 'fn': 'count', 'args': [{'var': 'w'}], 'into': 'n'},
+            {'op': 'format', 'template': '{n} workouts', 'into': 'confirmationText'},
+          ]
+        }
+      }
+    }));
+    final session = Session(dir, clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _NullCloud());
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.storage));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('automations-card')), findsOneWidget);
+    expect(find.text('demo-auto'), findsOneWidget);
   });
 
   testWidgets('an empty vault shows the empty state', (tester) async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plenara/automations.dart';
 import 'package:plenara/session.dart';
 
 /// A first slice of Spec 07 — a read-only "Your data" view. Records are grouped by type and each
@@ -57,21 +58,76 @@ class DataView extends StatelessWidget {
       (byType[r['typeId'] as String? ?? '?'] ??= []).add(r);
     }
     final typeIds = byType.keys.toList()..sort();
+    final autos = session.automations.statuses;
     return Scaffold(
       appBar: AppBar(title: const Text('Your data'), backgroundColor: cs.inversePrimary),
-      body: typeIds.isEmpty
-          ? const Center(child: Text('Nothing logged yet.\nStart with a task, a run, or a note.', textAlign: TextAlign.center))
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                for (final typeId in typeIds)
-                  _TypeSection(
-                    typeId: typeId,
-                    typeDef: (session.types[typeId] ?? const {}).cast<String, dynamic>(),
-                    records: byType[typeId]!,
-                  ),
-              ],
-            ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (autos.isNotEmpty) _AutomationsCard(session: session),
+          if (typeIds.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: Text('Nothing logged yet.\nStart with a task, a run, or a note.', textAlign: TextAlign.center)),
+            )
+          else
+            for (final typeId in typeIds)
+              _TypeSection(
+                typeId: typeId,
+                typeDef: (session.types[typeId] ?? const {}).cast<String, dynamic>(),
+                records: byType[typeId]!,
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A compact automation-management surface (Spec 04 §3.9): each registered automation with its
+/// live status, plus any writes awaiting review. Read-only — reviews are resolved from the chat.
+class _AutomationsCard extends StatelessWidget {
+  final Session session;
+  const _AutomationsCard({required this.session});
+
+  IconData _icon(String state) => switch (state) {
+        'active' => Icons.play_circle,
+        'pending' => Icons.hourglass_empty,
+        _ => Icons.pause_circle_outline, // deferred / inert
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final List<AutomationStatus> statuses = session.automations.statuses;
+    final pending = session.automations.pendingReview;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Automations', key: const Key('automations-card'), style: Theme.of(context).textTheme.titleMedium),
+            const Divider(),
+            for (final a in statuses)
+              ListTile(
+                dense: true,
+                leading: Icon(_icon(a.state)),
+                title: Text(a.automationId),
+                subtitle: Text(a.reason ?? a.state),
+              ),
+            if (pending.isNotEmpty) ...[
+              const Divider(),
+              for (final p in pending)
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.rule),
+                  title: Text('Review: ${p.description}'),
+                  subtitle: const Text('Say "approve it" or "dismiss it" in the chat.'),
+                ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
