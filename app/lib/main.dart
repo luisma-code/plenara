@@ -142,6 +142,7 @@ class _ChatState extends State<ChatScreen> {
     _jump();
     final log = AppLog.instance;
     log('turn: "$t"');
+    final reviewsBefore = _session.automations.pendingReview.length;
     String resp;
     try {
       resp = await _session.handle(t); // already catch-all internally; belt-and-suspenders here
@@ -152,12 +153,18 @@ class _ChatState extends State<ChatScreen> {
     log('turn -> ${resp.length > 140 ? '${resp.substring(0, 140)}…' : resp}');
     // _busy is always cleared, so the input can never lock up
     // Surface any automation deliveries this turn produced (Spec 02 §7.5 read-only "deliver"),
-    // draining them so they don't re-appear as on-open nudges next launch.
+    // draining them so they don't re-appear as on-open nudges next launch; and prompt on a NEW
+    // held write so the user can approve/dismiss it (§7.5 "hold for review").
     final deliveries = _session.automations.takeDeliveries();
+    final review = _session.automations.pendingReview;
+    final newReviews = review.length > reviewsBefore ? review.sublist(reviewsBefore) : const [];
     setState(() {
       _msgs.add(Msg(resp, false));
       for (final d in deliveries) {
         _msgs.add(Msg('✨ ${d.text}', false));
+      }
+      for (final p in newReviews) {
+        _msgs.add(Msg('📋 ${p.description} — say "approve it" or "dismiss it".', false));
       }
       _busy = false;
     });

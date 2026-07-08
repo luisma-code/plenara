@@ -44,6 +44,13 @@ final _distanceCorrectRe =
 final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
 // confirms an authored-capability draft (Spec 02 §6.5: nothing registered until "activate")
 final _activateRe = RegExp(r'^(activate|add it|yes,? add it|go ahead|do it|yes,? do it|yes)\.?$', caseSensitive: false);
+// resolves a HELD automation write (Spec 02 §7.5 Review Feed): apply it, or dismiss it.
+final _approveReviewRe = RegExp(
+    r'^(?:approve|apply|run)(?: (?:it|that|the (?:change|automation|review|suggestion|task)))?\.?$',
+    caseSensitive: false);
+final _declineReviewRe = RegExp(
+    r'^(?:decline|dismiss|reject|skip)(?: (?:it|that|the (?:change|automation|review|suggestion)))?\.?$',
+    caseSensitive: false);
 // Scope-denial floor (DF-10 / DP-03 / DP-04): external-world actions Plenara can't perform —
 // send a message, touch an external calendar, move money. A SCOPE refusal (not tier), it
 // offers what it CAN do. Anchored so reminder/list phrasings ("remind me to text mom", "add
@@ -511,6 +518,29 @@ class Session {
         return "No problem — I won't build one.";
       }
       // else: fall through and handle this new input normally
+    }
+
+    // Automation Review Feed (Spec 02 §7.5): a held automation WRITE awaits the user's call —
+    // "approve it" applies the deterministically re-resolved plan; "dismiss it" reaps it.
+    if (automations.pendingReview.isNotEmpty) {
+      if (_approveReviewRe.hasMatch(u)) {
+        final item = automations.pendingReview.first;
+        final res = automations.approve(item.id);
+        _outSource = 'automation-review';
+        _outSkill = item.skillId;
+        return switch (res.kind) {
+          'applied' => 'Done — applied "${item.description}".',
+          'planChanged' => "That automation's data changed since it queued — ${res.message ?? 'have a look and re-approve'}.",
+          'refused' => "I couldn't apply that — ${res.message ?? 'it was refused'}.",
+          _ => 'That review is no longer pending.',
+        };
+      }
+      if (_declineReviewRe.hasMatch(u)) {
+        final item = automations.pendingReview.first;
+        automations.decline(item.id);
+        _outSource = 'automation-review';
+        return 'Dismissed — I won\'t apply "${item.description}".';
+      }
     }
 
     // record-integrity floor: never fabricate history (DP-05, locked principle #7)

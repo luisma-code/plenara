@@ -2,6 +2,7 @@
 /// commands + cross-skill integration. A _NoCloud client throws if the cloud is
 /// hit, proving these flows are fully deterministic (no network). Cloud paths are
 /// covered separately in cloud_test.dart via the replay cassette.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:plenara/claude.dart';
@@ -99,6 +100,52 @@ void main() {
       final s = Session(dataDir, clock: _now, cloud: _NoCloud());
       await s.init(retrieval: false); // previously threw and bricked startup
       expect(s.corruptFiles.any((p) => p.endsWith('bad.json')), isTrue);
+    });
+  });
+
+  group('automation Review Feed — approve/decline a held write from the chat (Spec 02 §7.5)', () {
+    Map<String, dynamic> stretchAutomation() => {
+          'automationId': 'stretch-after-run',
+          'targetType': 'workout',
+          'condition': {'kind': 'onWrite', 'afterField': 'date'},
+          'skillId': 'stretch-skill',
+          'description': 'add a stretch task after a workout',
+          'skill': {
+            'skillId': 'stretch-skill', 'displayName': 'Stretch task', 'inputs': [], 'reads': [], 'writes': ['task'],
+            'steps': {
+              'main': [
+                {'op': 'compute', 'fn': 'today', 'into': 'ca'},
+                {'op': 'write_record', 'typeId': 'task', 'fields': {'description': 'stretch', 'createdAt': {'var': 'ca'}}, 'into': 'r'},
+                {'op': 'format', 'template': 'queued a stretch task', 'into': 'confirmationText'},
+              ]
+            }
+          }
+        };
+    Future<Session> withStretch() async {
+      final dir = makeTempDataDir();
+      Directory('$dir/automations').createSync(recursive: true);
+      File('$dir/automations/stretch.json').writeAsStringSync(jsonEncode(stretchAutomation()));
+      final s = Session(dir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false);
+      return s;
+    }
+
+    bool hasStretch(Session s) => s.store.values.any((x) => x['typeId'] == 'task' && x['description'] == 'stretch');
+
+    test('a writing automation is HELD (not applied) until "approve it"', () async {
+      final s = await withStretch();
+      await s.handle('log a run'); // fires the automation, whose plan WRITES -> held for review
+      expect(hasStretch(s), isFalse, reason: 'a writing automation must not auto-apply');
+      expect(s.automations.pendingReview, isNotEmpty);
+      expect((await s.handle('approve it')).toLowerCase(), contains('applied'));
+      expect(hasStretch(s), isTrue);
+    });
+    test('"dismiss it" reaps the held write, nothing applied', () async {
+      final s = await withStretch();
+      await s.handle('log a run');
+      expect((await s.handle('dismiss it')).toLowerCase(), contains('dismissed'));
+      expect(hasStretch(s), isFalse);
+      expect(s.automations.pendingReview, isEmpty);
     });
   });
 
