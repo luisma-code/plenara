@@ -21,20 +21,36 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `7b029c2`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `5b2fc47`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1335 Dart tests + 8 Flutter widget tests green** (35 seed skills + 5 templates, 9 types; DSL
-has ordering/limit/filter-ops + aggregation/date-math; ProvideSlot slot-filling; alias
-resolution; OOD boundary; record-integrity + scope + medical + impersonation + schema-edit
-denial floors; GenerativeService for gift ideas + briefing + reconnect), `dart analyze` clean,
-**`flutter build windows --debug` succeeds**. `DOGFOOD.md` refreshed for tonight.
+**1373 Dart tests + 8 Flutter widget tests green** (35 seed skills + 5 templates that also ship
+QUERY skills, 9 types; DSL has ordering/limit/filter-ops + aggregation/date-math; ProvideSlot
+slot-filling; alias resolution; OOD boundary; record-integrity + scope + medical + impersonation
++ schema-edit denial floors; compound-utterance split; GenerativeService gift/briefing/reconnect
++ weekly_review/pattern_insight/draft_message — all 6 routed with kind-specific prompts), `dart
+analyze` clean, **`flutter build windows --debug` succeeds**.
+
+**ALL 12 DEEP-DIVE SPECS NOW EXIST (research §12).** Specs 6–11 were written one-Fable-per-spec
+in parallel, then Spec 12 — Voice was chartered (03/04/08 had cited a nonexistent "Spec 06 —
+Voice"), then a cross-spec review (`05f`) + a suite-sync pass reconciled the contradictions
+(voice citations → 12; CloudErrorKind unified to the shipped 7-member set owned by 04 §5.1;
+generativeKind owned by 08 §3.3 incl. draft_message; lastModified dropped from the record
+envelope per 06; authoring model-name lives only in 08; 02 §7.6 safety build-status banner).
+`05f` carries a RESOLVED/PARTIAL/OPEN status column; CS-13..CS-26 remain OPEN (a second sync
+pass). **Two code blockers the review found are FIXED (`d956390`):** the per-install `deviceId`
+and the `turnlog` no longer live in the synced folder (device-local `~/.plenara` via an injected
+`deviceDir`) — a synced deviceId had defeated the HLC tie-break. Also landed from the specs:
+atomic `writeDef` + corrupt-file surfacing (P2.8, `1bcaf0a`), and the **DF-01 authoring offer
+gate** (`e6229a8` — no paid cloud authoring call until the user says yes; Spec 08 consent).
 
 **05a CONFORMANCE HARNESS (`v0/test/spec05a_test.dart`, G-47):** turns "complete per spec" into
 a measured number — each of the 60 worked examples runs its exact utterance offline and asserts,
-or `skip`s with a reason. **Now 20/60 offline (up from ~1/60 at the audit):** F-tier 11/20
+or `skip`s with a reason. **Now 21/60 offline (up from ~1/60 at the audit):** F-tier 11/20
 (logging, people incl. nested-fact F-07, recurrence, tracker aggregate/streak queries), DP-tier
-7/10 (all deterministic safety/scope/OOD/medical/impersonation floors), DF 2/10, P 0/20 (all
-BYOK-gated). The 40 skips ARE the live worklist. A 3-agent Fable (Claude 5) round landed
+7/10 (all deterministic safety/scope/OOD/medical/impersonation floors), DF 3/10 (DF-01 offer,
+DF-03, DF-10), P 0/20 (all BYOK-gated). The remaining skips are near the offline CEILING — they
+genuinely need cloud (paid tier), voice/STT (F-11), embeddings (F-12 semantic search), or the
+model-gated safety Layer-2/3 (G-30). A 3-agent Fable (Claude 5) round landed
 generative kinds (P-10/11/20 — built + unit-tested, not yet routed from session.dart),
 compound-utterance split (F-13 capability, `3cca666`), and nested people-fact (F-07, `8ebb59b`
 generative / this commit F-07). Remaining biggest gaps: the paid tier is 100% BYOK-gated, and
