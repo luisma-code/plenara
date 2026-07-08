@@ -66,7 +66,9 @@ String formatTurnTrace(Map<String, dynamic> t) {
   if (t['template'] != null) sb.writeln('    template: ${t['template']}');
   if (t['slots'] != null) sb.writeln('    slots:    ${t['slots']}');
   if (t['cloud'] != null) sb.writeln('    cloud:    ${t['cloud']}');
+  if (t['diag'] != null) sb.writeln('    diag:     ${t['diag']}'); // WHY a miss (corpus/cloud/nearest)
   if (t['writes'] != null) sb.writeln('    writes:   ${t['writes']}');
+  if (t['automations'] != null) sb.writeln('    automations: ${t['automations']}'); // unattended fires this turn
   if (t['response'] != null) sb.writeln('    -> ${t['response']}');
   if (t['error'] != null) sb.writeln('    ERROR: ${t['error'].toString().split('\n').first}');
   return sb.toString();

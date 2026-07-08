@@ -57,6 +57,19 @@ class _NoCloud implements CloudClient {
       throw StateError('cloud generate called — expected a corpus/offline path');
 }
 
+/// A cloud with no key set — every call fails cleanly with noKey (the common pre-BYOK dogfood
+/// state), so a miss is a real "corpus + cloud couldn't help" rather than a thrown exception.
+class _NoKeyCloud implements CloudClient {
+  @override
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+      const CloudError(CloudErrorKind.noKey);
+  @override
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+      const CloudError(CloudErrorKind.noKey);
+  @override
+  Future<CloudResult<String>> generate(String k, String c) async => const CloudError(CloudErrorKind.noKey);
+}
+
 Future<Session> _session([String? dir]) async {
   final s = Session(dir ?? makeTempDataDir(), clock: _now, cloud: _NoCloud());
   await s.init(retrieval: false);
@@ -146,6 +159,49 @@ void main() {
       expect((await s.handle('dismiss it')).toLowerCase(), contains('dismissed'));
       expect(hasStretch(s), isFalse);
       expect(s.automations.pendingReview, isEmpty);
+    });
+  });
+
+  group('turnlog diagnostics — enough to diagnose a bad turn from the log alone', () {
+    Map<String, dynamic> lastTurn(String dir) =>
+        jsonDecode(File('$dir/turnlog.jsonl').readAsLinesSync().last) as Map<String, dynamic>;
+
+    test('a MISS records diag: corpus no-match + the cloud outcome', () async {
+      final dir = makeTempDataDir();
+      final s = Session(dir, clock: _now, cloud: _NoKeyCloud());
+      await s.init(retrieval: false);
+      await s.handle('zxcvbnm qwerty nonsense that cannot match');
+      final t = lastTurn(dir);
+      expect(t['source'], 'clarify');
+      final diag = t['diag'] as Map;
+      expect(diag['corpus'], 'no-match');
+      expect(diag['cloud'], contains('noKey')); // the cloud couldn't help — and WHY
+    });
+
+    test('an unattended onWrite automation fire is recorded in the turn that triggered it', () async {
+      final dir = makeTempDataDir();
+      Directory('$dir/automations').createSync(recursive: true);
+      File('$dir/automations/enc.json').writeAsStringSync(jsonEncode({
+        'automationId': 'enc',
+        'targetType': 'workout',
+        'condition': {'kind': 'onWrite', 'afterField': 'date'},
+        'skillId': 'enc-skill',
+        'description': 'encourage',
+        'skill': {
+          'skillId': 'enc-skill', 'inputs': [], 'reads': ['workout'], 'writes': [],
+          'steps': {
+            'main': [
+              {'op': 'read_many', 'typeId': 'workout', 'into': 'w'},
+              {'op': 'compute', 'fn': 'count', 'args': [{'var': 'w'}], 'into': 'n'},
+              {'op': 'format', 'template': '{n} workouts', 'into': 'confirmationText'},
+            ]
+          }
+        }
+      }));
+      final s = Session(dir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false);
+      await s.handle('log a run'); // writes a workout -> onWrite fires (read-only -> delivered)
+      expect((lastTurn(dir)['automations'] as Map)['delivered'], 1);
     });
   });
 

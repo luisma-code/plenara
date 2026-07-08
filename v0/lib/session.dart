@@ -216,6 +216,7 @@ class Session {
   Map<String, dynamic>? _outSlots; // the slots dispatched into the skill
   final List<Map<String, dynamic>> _outWrites = []; // record ops this turn: {op,id,typeId}
   String? _outError; // exception type + message + stack, on the error path (never shown to the user)
+  Map<String, dynamic>? _outDiag; // on a MISS: the near-miss (closest skill + score) it computed
   // A paused turn waiting for the user to supply a missing required slot (Spec 03
   // §6.3 ProvideSlot): {skillId, slots (partial), missing (remaining required names)}.
   // The next turn's input fills it and the completed skill dispatches.
@@ -315,6 +316,11 @@ class Session {
     automations.tick(now); // fire any schedule automation whose cron time passed since last open
     if (automations.statuses.isNotEmpty) {
       phase('automations: ${automations.statuses.map((a) => '${a.automationId}=${a.state}').join(', ')}');
+    }
+    // schedule catch-up outcome (diagnosable from the log, not a black box)
+    if (automations.deliveries.isNotEmpty || automations.pendingReview.isNotEmpty || automations.refusals.isNotEmpty) {
+      phase('automation tick: ${automations.deliveries.length} delivered, '
+          '${automations.pendingReview.length} held, ${automations.refusals.length} refused');
     }
     router = Router.load('$dataDir/corpus.json', now, learnedPath: '$dataDir/corpus-learned.json');
     claude = _injectedCloud ?? ClaudeClient();
@@ -428,6 +434,12 @@ class Session {
     _outSlots = null;
     _outWrites.clear();
     _outError = null;
+    _outDiag = null;
+    // Snapshot the automation runner so this turn's UNATTENDED activity (onWrite fires) is
+    // visible in the trace — otherwise an automation that fired/held/refused leaves no record.
+    final autoDelivered0 = automations.deliveries.length;
+    final autoHeld0 = automations.pendingReview.length;
+    final autoRefused0 = automations.refusals.length;
     final startedAt = DateTime.now();
     String resp;
     try {
@@ -454,7 +466,16 @@ class Session {
       if (_cloudStatus != null) 'cloud': _cloudStatus,
       if (_outWrites.isNotEmpty) 'writes': _outWrites,
       'response': resp.length > 240 ? '${resp.substring(0, 240)}…' : resp,
+      if (_outDiag != null) 'diag': _outDiag,
       if (_outError != null) 'error': _outError,
+      if (automations.deliveries.length > autoDelivered0 ||
+          automations.pendingReview.length > autoHeld0 ||
+          automations.refusals.length > autoRefused0)
+        'automations': {
+          if (automations.deliveries.length > autoDelivered0) 'delivered': automations.deliveries.length - autoDelivered0,
+          if (automations.pendingReview.length > autoHeld0) 'held': automations.pendingReview.length - autoHeld0,
+          if (automations.refusals.length > autoRefused0) 'refused': automations.refusals.sublist(autoRefused0),
+        },
     });
     return resp;
   }
@@ -798,6 +819,15 @@ class Session {
       // A miss is corpus + (abstain | cloud error | no cloud). If the cloud FAILED,
       // say so honestly instead of only blaming the phrasing (no silent degradation).
       final sg = await router.retrievalSuggest(u);
+      // Diagnose the miss in the trace: corpus didn't match; what the cloud did; and the
+      // nearest skill + score (when retrieval is on) — so "why didn't it catch that?" is answerable.
+      _outDiag = {
+        'corpus': 'no-match',
+        'cloud': cloudErr != null ? 'error:${cloudErr.name}' : (_cloudStatus == 'ok' ? 'abstained' : 'not-consulted'),
+        if (sg != null) 'closest': sg['skillId'],
+        if (sg != null) 'score': sg['s1'],
+        if (sg != null) 'confident': sg['confident'],
+      };
       final base = sg == null
           ? "I didn't catch that."
           : (() {
