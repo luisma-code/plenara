@@ -21,9 +21,13 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `6ce4484`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `d92a102`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1427 Dart tests + 22 Flutter widget tests green** (35 seed skills + 5 templates that also ship
+**1434 Dart tests + 22 Flutter widget tests green**. **Every named Spec 04 business-logic
+component now exists:** DispatchOrchestrator (`session`), SkillInterpreter, SchemaRegistry
+(defs loading), **MigrationRunner** (`migration.dart` — migrate-on-read, just built),
+AuthoringService (the authoring path), ExecutionJournal (`turnlog`), AutomationRunner,
+GenerativeService, AttentionSurface (nudges + review feed). (35 seed skills + 5 templates that also ship
 QUERY skills, 9 types; DSL has ordering/limit/filter-ops + aggregation/date-math; ProvideSlot
 slot-filling; alias resolution; OOD boundary; record-integrity + scope + medical + impersonation
 + schema-edit denial floors; compound-utterance split; GenerativeService gift/briefing/reconnect
