@@ -56,6 +56,19 @@ final _scopeDenialRe = RegExp(
     r'|^(order|purchase) .+ (online|on amazon|from amazon)'
     r'|^book (a |an )?(flight|hotel|table|appointment|reservation|cab|uber)',
     caseSensitive: false);
+// Medical-conclusion guardrail (DP-06): a memory app holds health-adjacent logs but is not a
+// clinician — it can show what's logged, never diagnose.
+final _medicalRe = RegExp(
+    r"what'?s wrong with me|\bdiagnose\b|do i have (a |an )?(cancer|arthritis|diabetes|covid|the flu|an infection|a tumou?r|a disease|adhd)"
+    r"|is (this|it|that) (cancer|a tumou?r|serious|dangerous|an infection)|what medication should i (take|be on)"
+    r"|based on my (meds|medications|symptoms).{0,40}(wrong|diagnos|have|serious)",
+    caseSensitive: false);
+// Impersonation refusal (DP-09): drafts in the USER's voice, never as a third party.
+final _impersonateRe =
+    RegExp(r"\b(pretend(ing)? to be|impersonat(e|ing)|speak as (my|his|her|their)|write as (my|his|her|their))\b", caseSensitive: false);
+// Schema-edit denial (DF-03): adding a field to an EXISTING tracker is a paid authoring edit.
+final _schemaEditRe =
+    RegExp(r'\badd (a |an )?[\w-]+( [\w-]+)? (field|score|metric|column|attribute) to my \w+', caseSensitive: false);
 // Record-integrity floor (locked principle #7 / DP-05): refuse to fabricate the past.
 // Narrow, framing-keyed — a genuine backdated log ("I talked to Sam yesterday") is NOT
 // this; only "pretend/fake/fabricate a <record>" framing. The general case is the
@@ -443,6 +456,25 @@ class Session {
       _outSource = 'out-of-scope';
       return "I can't do that directly — I'm your personal memory assistant, not connected to "
           "messaging, calendars, or payments. I can set a reminder or make a note about it, though.";
+    }
+
+    // medical guardrail (DP-06): show logs, never diagnose.
+    if (_medicalRe.hasMatch(u)) {
+      _outSource = 'refused';
+      return "I'm not a medical device — I can show what you've logged and surface patterns, but "
+          "I can't diagnose or give medical advice. Please talk to a doctor about this.";
+    }
+    // impersonation refusal (DP-09): the user's own voice only.
+    if (_impersonateRe.hasMatch(u)) {
+      _outSource = 'refused';
+      return "I'll help you write in your OWN voice, but I won't impersonate someone else or put "
+          "words in their mouth.";
+    }
+    // schema-edit denial (DF-03): editing a live tracker's fields is a paid customization.
+    if (_schemaEditRe.hasMatch(u)) {
+      _outSource = 'refused';
+      return "Adding a field to an existing tracker is a schema edit — that's a paid customization. "
+          "(Choosing fields when you first set up a tracker is free.)";
     }
 
     if (_undoRe.hasMatch(u)) {

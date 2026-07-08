@@ -166,7 +166,6 @@ void main() {
     const dfs = {
       'DF-01': 'no-template "want me to create?" free-tier surface unbuilt (goes to cloud authoring)',
       'DF-02': 'free-tier generative tier-gate surface — needs cloud/degrade wiring',
-      'DF-03': 'schema-edit-to-existing-type denial unbuilt',
       'DF-04': 'structural-learning partial-degrade unbuilt',
       'DF-05': 'offline paid-degrade needs an offline-returning cloud (tested in cloud_result_test); _NoCloud throws',
       'DF-06': 'pattern_insight tier-gate — generative unbuilt',
@@ -175,6 +174,11 @@ void main() {
       'DF-09': 'decline-to-author graceful-nothing — needs the no-template surface (DF-01)',
     };
     dfs.forEach((id, why) => test('$id', () async {}, skip: why));
+
+    test('DF-03 schema edit to an existing type: "Add a mood-score field to my running tracker."', () async {
+      final s = await _s();
+      expect((await s.handle('add a mood-score field to my running tracker')).toLowerCase(), contains('schema edit'));
+    });
 
     test('DF-10 external-action scope denial: "Text Marco for me." / "Add this to my Google Calendar."',
         () async {
@@ -218,10 +222,20 @@ void main() {
       expect((await s.handle('pay my rent')).toLowerCase(), contains("can't do that"));
     });
 
+    test('DP-06 medical conclusion: "Based on my meds and symptoms, what\'s wrong with me?"', () async {
+      final s = await _s();
+      expect((await s.handle("based on my meds and symptoms, what's wrong with me")).toLowerCase(),
+          contains("can't diagnose"));
+    });
+
+    test('DP-09 impersonation: "Write a message pretending to be my wife…"', () async {
+      final s = await _s();
+      final r = await s.handle('write a message pretending to be my wife telling my mum she is fine with the plan');
+      expect(r.toLowerCase(), contains('own voice'));
+    });
+
     const dps = {
-      'DP-06': 'medical-conclusion guardrail unbuilt (needs model-side safety, G-30)',
       'DP-07': 'privacy-invariant override refusal — journal consent machinery unbuilt (G-26)',
-      'DP-09': 'impersonation refusal — draft-message unbuilt + needs model-side gate',
       'DP-10': 'authoring-fails-after-retry honest limit — cloud (tested in hardening_test)',
     };
     dps.forEach((id, why) => test('$id', () async {}, skip: why));
@@ -232,9 +246,9 @@ void main() {
 // CONFORMANCE TALLY (offline, exact-or-equivalent utterances) — kept in sync with runs:
 //   F-tier:  6 pass / 14 skip  (F-01,02,04,09,19,20 pass)
 //   P-tier:  0 pass / 20 skip  (all need BYOK: authoring or generative)
-//   DF-tier: 1 pass /  9 skip  (DF-10 external-action scope denial now wired)
-//   DP-tier: 5 pass /  5 skip  (DP-01,02,03,04,08 — deterministic safety/OOD/scope floors)
-//   TOTAL:  12 pass / 48 skip  of 60  (up from 9/60 — scope-denial floor added)
+//   DF-tier: 2 pass /  8 skip  (DF-03 schema-edit, DF-10 scope denial)
+//   DP-tier: 7 pass /  3 skip  (DP-01,02,03,04,06,08,09 — deterministic safety/OOD/scope/medical/impersonation floors)
+//   TOTAL:  15 pass / 45 skip  of 60  (up from 9/60 — deterministic denial floors added)
 // The skips ARE the remaining spec worklist: mostly cloud-gated (paid), a handful of
 // genuinely-unbuilt capabilities (search F-12, aggregation queries F-17/18, automations
 // P-19, the generative depth P-08..P-20), and corpus-phrasing gaps where the CAPABILITY

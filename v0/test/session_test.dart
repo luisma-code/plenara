@@ -312,6 +312,29 @@ void main() {
     });
   });
 
+  group('more denial floors (DP-06 medical, DP-09 impersonation, DF-03 schema-edit)', () {
+    test('DP-06 medical: refuses to diagnose, defers to a professional', () async {
+      final s = await _session();
+      expect((await s.handle("based on my meds and symptoms, what's wrong with me")).toLowerCase(),
+          contains("can't diagnose"));
+      expect((await s.handle('do i have cancer')).toLowerCase(), contains("can't diagnose"));
+    });
+    test('DP-09 impersonation: refuses to speak as a third party', () async {
+      final s = await _session();
+      final r = await s.handle('write a message pretending to be my wife telling my mum she is fine with the plan');
+      expect(r.toLowerCase(), contains('own voice'));
+    });
+    test('DF-03 schema-edit: adding a field to a live tracker is a paid change', () async {
+      final s = await _session();
+      expect((await s.handle('add a mood-score field to my running tracker')).toLowerCase(), contains('schema edit'));
+    });
+    test('normal inputs are not caught by the new floors', () async {
+      final s = await _session();
+      expect(await s.handle('add buy milk to my list'), contains('buy milk'));
+      expect((await s.handle('log a 5k run')).toLowerCase(), contains('run'));
+    });
+  });
+
   group('aliases (G-24) — resolve a person by a nickname/role', () {
     test('set an alias, then reach the contact through it', () async {
       final s = await _session();
