@@ -3,10 +3,11 @@ import 'package:plenara/config.dart';
 
 import 'settings_view.dart';
 
-/// First-run welcome (task #14). Shown when no API key is set, so a new user is walked into the
-/// guided Connect flow instead of having to discover it in Settings — but it never BLOCKS: the
-/// offline features work without a key, so "Continue" always proceeds. Reuses [SettingsView] for
-/// the actual connect. [configPath] is injectable for tests.
+/// Welcome / connect nudge (task #14). Shown whenever no API key is set — i.e. on first run AND on
+/// later launches until the user connects — so the guided Connect flow is one tap away instead of
+/// buried in Settings. It never BLOCKS: offline features work without a key, so "Continue" always
+/// proceeds into the app. (If the recurring nudge is unwanted, persist a "dismissed" flag; today
+/// it re-appears until connected by design.) Reuses [SettingsView]. [configPath] is test-injectable.
 class WelcomeScreen extends StatefulWidget {
   final VoidCallback onContinue;
   final String? configPath;
@@ -16,13 +17,16 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  bool get _connected => loadConfig(configPath: widget.configPath).apiKey != null;
+  // Load once (loadConfig reads — and on first run WRITES — the config file; doing it in build()
+  // would be filesystem I/O on every frame). Refresh only after returning from Connect.
+  late PlenaraConfig _cfg = loadConfig(configPath: widget.configPath);
+  bool get _connected => _cfg.apiKey != null;
 
   Future<void> _openConnect() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => SettingsView(configPath: widget.configPath)),
     );
-    if (mounted) setState(() {}); // reflect a key that may now be set
+    if (mounted) setState(() => _cfg = loadConfig(configPath: widget.configPath)); // reflect a key now set
   }
 
   @override

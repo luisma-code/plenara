@@ -50,17 +50,40 @@ class _SettingsViewState extends State<SettingsView> {
 
   Future<CloudResult<String>> _defaultValidate(String key) => ClaudeClient(apiKeyOverride: key).validateKey();
 
+  /// Persist a key + refresh state. Clears the field only if it still holds the SAME key we saved
+  /// (so a key typed while a test was in flight isn't wiped — Fable review).
+  void _persist(String key) {
+    saveConfig(dataDir: _cfg.dataDir, apiKey: key, configPath: widget.configPath);
+    _cfg = loadConfig(configPath: widget.configPath);
+    if (_keyCtrl.text.trim() == key) _keyCtrl.clear();
+  }
+
   void _save() {
     final key = _keyCtrl.text.trim();
-    saveConfig(dataDir: _cfg.dataDir, apiKey: key.isEmpty ? null : key, configPath: widget.configPath);
-    _keyCtrl.clear();
+    if (key.isEmpty) {
+      // Don't claim "Saved" while silently changing nothing — empty means "use Disconnect".
+      setState(() {
+        _statusMsg = 'Paste a key first — or use Disconnect to remove your key.';
+        _statusColor = Colors.orange;
+      });
+      return;
+    }
+    setState(() {
+      _persist(key);
+      _statusMsg = 'Saved — restart Plenara to apply.';
+      _statusColor = null;
+    });
+  }
+
+  /// Explicitly remove the key ('' clears; null would leave it untouched).
+  void _disconnect() {
+    saveConfig(dataDir: _cfg.dataDir, apiKey: '', configPath: widget.configPath);
     setState(() {
       _cfg = loadConfig(configPath: widget.configPath);
-      _statusMsg = null;
+      _keyCtrl.clear();
+      _statusMsg = 'Disconnected. Offline features still work.';
+      _statusColor = null;
     });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved — restart Plenara to apply.')));
-    }
   }
 
   /// Live probe: validate the pasted key, name the exact problem, and save on success.
@@ -83,12 +106,14 @@ class _SettingsViewState extends State<SettingsView> {
     setState(() {
       _testing = false;
       if (res is CloudOk<String>) {
-        saveConfig(dataDir: _cfg.dataDir, apiKey: key, configPath: widget.configPath);
-        _cfg = loadConfig(configPath: widget.configPath);
-        _keyCtrl.clear();
+        _persist(key);
         _statusMsg = "Connected ✓ — your key works and it's saved. Restart Plenara to apply.";
         _statusColor = Colors.green;
       } else if (res is CloudError<String>) {
+        // A no-credits key AUTHENTICATED — it's valid, so save it (billing is the only gap). The
+        // key is shown only once; discarding it would force the user to mint a new one after they
+        // add billing (Fable review).
+        if (res.kind == CloudErrorKind.insufficientCredits) _persist(key);
         _statusMsg = _friendly(res.kind);
         _statusColor = res.kind == CloudErrorKind.insufficientCredits ? Colors.orange : Colors.red;
       }
@@ -99,7 +124,7 @@ class _SettingsViewState extends State<SettingsView> {
         CloudErrorKind.badKey =>
           'That key was rejected. Recopy the whole key (it starts with “sk-ant-”) — it’s shown only once, so create a fresh one if needed.',
         CloudErrorKind.insufficientCredits =>
-          'Your key works, but your Anthropic account has no credits yet. In the Console, open Billing → add a payment method (new accounts get free trial credits), then Test again.',
+          'Saved your key — it works. But your Anthropic account has no credits yet: in the Console, open Billing → add a payment method (new accounts get free trial credits), then you’re all set.',
         CloudErrorKind.offline => "Couldn't reach Anthropic — check your internet connection and try again.",
         CloudErrorKind.timeout => "Anthropic didn't respond in time — try again.",
         CloudErrorKind.rateLimited => 'Rate-limited right now — wait a moment and Test again.',
@@ -166,7 +191,14 @@ class _SettingsViewState extends State<SettingsView> {
               label: const Text('Test connection'),
             ),
             const SizedBox(width: 8),
-            TextButton(onPressed: _save, child: const Text('Save without testing')),
+            TextButton(onPressed: _testing ? null : _save, child: const Text('Save without testing')),
+            const Spacer(),
+            if (_cfg.apiKey != null)
+              TextButton(
+                onPressed: _testing ? null : _disconnect,
+                style: TextButton.styleFrom(foregroundColor: cs.error),
+                child: const Text('Disconnect'),
+              ),
           ]),
           if (_statusMsg != null) ...[
             const SizedBox(height: 10),

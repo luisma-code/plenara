@@ -123,6 +123,7 @@ class _ChatState extends State<ChatScreen> {
       log('init: begin (retrieval=${widget.retrieval})');
       await _session.init(retrieval: widget.retrieval, onPhase: log.log);
       log('init: ready');
+      if (!mounted) return; // torn down during init -> don't setState
       // Opt-in diagnostic: set PLENARA_SELFTEST=1 to fire an immediate "notifications are
       // on" toast at launch (proven working; off by default so normal launches are quiet).
       if (widget.session == null && Platform.environment['PLENARA_SELFTEST'] == '1') {
@@ -176,6 +177,7 @@ class _ChatState extends State<ChatScreen> {
       log('turn FAILED: $e\n$st');
       resp = 'Something went wrong: $e';
     }
+    if (!mounted) return; // widget torn down mid-turn -> don't setState after dispose
     log('turn -> ${resp.length > 140 ? '${resp.substring(0, 140)}…' : resp}');
     // _busy is always cleared, so the input can never lock up
     // Surface any automation deliveries this turn produced (Spec 02 §7.5 read-only "deliver"),
@@ -198,12 +200,16 @@ class _ChatState extends State<ChatScreen> {
   }
 
   /// Push-to-talk: capture speech and drop the transcript into the input for the user to review
-  /// and send. The typed field is always available, so voice is purely additive.
+  /// and send. The typed field is always available, so voice is purely additive. A timeout + a
+  /// tap-to-cancel path mean a hung/never-resolving engine can never trap the UI at "Listening…".
   Future<void> _listen() async {
     if (_listening || _busy || !_speech.available) return;
     setState(() => _listening = true);
     try {
-      final text = await _speech.transcribe();
+      final text = await _speech.transcribe().timeout(const Duration(seconds: 60), onTimeout: () {
+        _speech.cancel();
+        return null;
+      });
       if (!mounted) return;
       if (text != null && text.trim().isNotEmpty) _ctrl.text = text.trim();
     } catch (e) {
@@ -211,6 +217,19 @@ class _ChatState extends State<ChatScreen> {
     } finally {
       if (mounted) setState(() => _listening = false);
     }
+  }
+
+  void _cancelListen() {
+    _speech.cancel();
+    if (mounted) setState(() => _listening = false);
+  }
+
+  @override
+  void dispose() {
+    _speech.cancel(); // never leave the recognizer recording after teardown (privacy)
+    _ctrl.dispose();
+    _scroll.dispose();
+    super.dispose();
   }
 
   void _jump() => WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -279,8 +298,8 @@ class _ChatState extends State<ChatScreen> {
                     IconButton(
                       icon: Icon(_listening ? Icons.mic : Icons.mic_none),
                       color: _listening ? cs.error : null,
-                      tooltip: _listening ? 'Listening…' : 'Speak',
-                      onPressed: _busy ? null : _listen,
+                      tooltip: _listening ? 'Stop listening' : 'Speak',
+                      onPressed: _busy ? null : (_listening ? _cancelListen : _listen),
                     ),
                     const SizedBox(width: 4),
                   ],

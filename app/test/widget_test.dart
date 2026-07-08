@@ -23,6 +23,15 @@ class _FakeSpeech implements SpeechRecognizer {
   void cancel() {}
 }
 
+class _ThrowSpeech implements SpeechRecognizer {
+  @override
+  bool get available => true;
+  @override
+  Future<String?> transcribe() async => throw StateError('engine boom');
+  @override
+  void cancel() {}
+}
+
 class _NullCloud implements CloudClient {
   @override
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
@@ -91,6 +100,24 @@ void main() {
     await tester.tap(find.byIcon(Icons.mic_none));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(TextField, 'log a 5k run'), findsOneWidget); // transcript lands in the field
+  });
+
+  testWidgets('voice: a null transcript leaves typed text untouched', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+        home: ChatScreen(session: _session(), speech: _FakeSpeech(true, null))));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'my typed note');
+    await tester.tap(find.byIcon(Icons.mic_none));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, 'my typed note'), findsOneWidget); // not overwritten
+  });
+
+  testWidgets('voice: a transcribe error is caught and the mic returns to idle', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), speech: _ThrowSpeech())));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.mic_none));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.mic_none), findsOneWidget); // idle icon, not stuck listening
   });
 
   testWidgets('renders greeting + controls, and responds to a turn', (tester) async {

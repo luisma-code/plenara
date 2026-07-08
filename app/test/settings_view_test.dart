@@ -7,10 +7,10 @@ import 'package:plenara/config.dart';
 import 'package:plenara_app/settings_view.dart';
 
 void main() {
-  String newCfg() {
+  String newCfg({String apiKey = ''}) {
     final dir = Directory.systemTemp.createTempSync('plenara_set_');
     final path = '${dir.path}/config.json';
-    File(path).writeAsStringSync('{"dataDir": "X:/data", "apiKey": ""}');
+    File(path).writeAsStringSync('{"dataDir": "X:/data", "apiKey": "$apiKey"}');
     return path;
   }
 
@@ -68,8 +68,41 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('no credits'), findsOneWidget); // the actionable billing message
-    expect(find.widgetWithText(Chip, 'not connected'), findsOneWidget); // a broken key is NOT persisted
+    if (Platform.environment['ANTHROPIC_API_KEY'] == null) {
+      expect(loadConfig(configPath: path).apiKey, 'sk-ant-nocredits'); // valid key -> SAVED, not discarded
+      expect(find.widgetWithText(Chip, 'connected ✓'), findsOneWidget);
+    }
+  });
+
+  testWidgets('Disconnect removes the saved key', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    if (Platform.environment['ANTHROPIC_API_KEY'] != null) return; // env overrides the file — skip
+    final path = newCfg(apiKey: 'sk-ant-existing');
+    await tester.pumpWidget(MaterialApp(home: SettingsView(configPath: path)));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(Chip, 'connected ✓'), findsOneWidget);
+    await tester.tap(find.text('Disconnect'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(Chip, 'not connected'), findsOneWidget);
     expect(loadConfig(configPath: path).apiKey, isNull);
+  });
+
+  testWidgets('Test connection: a rejected key maps to a recopy hint and is not saved', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final path = newCfg();
+    await tester.pumpWidget(MaterialApp(
+        home: SettingsView(configPath: path, validateKey: (k) async => const CloudError<String>(CloudErrorKind.badKey))));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'sk-ant-wrong');
+    await tester.tap(find.text('Test connection'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('rejected'), findsOneWidget);
+    if (Platform.environment['ANTHROPIC_API_KEY'] == null) {
+      expect(loadConfig(configPath: path).apiKey, isNull); // rejected -> never saved
+    }
   });
 
   testWidgets('Open Anthropic Console invokes the URL opener', (tester) async {
