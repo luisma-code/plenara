@@ -53,3 +53,25 @@ String formatSummary(TurnlogSummary s) {
   sb.write('\nClarify rate: ${pct(s.bySource['clarify'] ?? 0)}  (the make-or-break metric — lower is better)');
   return sb.toString();
 }
+
+/// One turn as a human-readable debug trace — enough to diagnose a bad turn from the log
+/// without re-running it (utterance -> route path, template, slots, record ops, response,
+/// and the first line of any error). Used by `turnlog_report --trace` / `--errors`.
+String formatTurnTrace(Map<String, dynamic> t) {
+  final head = StringBuffer('• "${t['utterance']}"  [${t['source']}');
+  if (t['skill'] != null) head.write('/${t['skill']}');
+  if (t['ms'] != null) head.write(', ${t['ms']}ms');
+  head.write(']');
+  final sb = StringBuffer('$head\n');
+  if (t['template'] != null) sb.writeln('    template: ${t['template']}');
+  if (t['slots'] != null) sb.writeln('    slots:    ${t['slots']}');
+  if (t['cloud'] != null) sb.writeln('    cloud:    ${t['cloud']}');
+  if (t['writes'] != null) sb.writeln('    writes:   ${t['writes']}');
+  if (t['response'] != null) sb.writeln('    -> ${t['response']}');
+  if (t['error'] != null) sb.writeln('    ERROR: ${t['error'].toString().split('\n').first}');
+  return sb.toString();
+}
+
+/// True if a turn is worth surfacing in a `--errors` view (failed to act or crashed).
+bool isTroubleTurn(Map<String, dynamic> t) =>
+    t.containsKey('error') || t['source'] == 'error' || t['source'] == 'clarify' || t['source'] == 'out-of-domain';

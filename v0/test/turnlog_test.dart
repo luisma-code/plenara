@@ -36,4 +36,35 @@ void main() {
     expect(formatSummary(summarizeTurns([])), contains('empty'));
     expect(summarizeTurns([]).rate('clarify'), 0);
   });
+
+  test('formatTurnTrace renders a diagnosable one-turn trace', () {
+    final line = formatTurnTrace({
+      'utterance': 'add buy milk to my list',
+      'source': 'corpus',
+      'skill': 'create-task',
+      'ms': 3,
+      'template': 'add {description:text} to my {_:text}',
+      'slots': {'description': 'buy milk', '_': 'list'},
+      'writes': [{'op': 'write', 'id': 't-1', 'typeId': 'task'}],
+      'response': 'Added "buy milk" to your tasks.',
+    });
+    expect(line, contains('add buy milk to my list'));
+    expect(line, contains('corpus/create-task'));
+    expect(line, contains('template:'));
+    expect(line, contains('buy milk'));
+    expect(line, contains('task'));
+  });
+
+  test('formatTurnTrace surfaces the error line for a crashed turn', () {
+    final line = formatTurnTrace({'utterance': 'x', 'source': 'error', 'error': 'StateError: boom\n#0 …'});
+    expect(line, contains('ERROR: StateError: boom'));
+    expect(line, isNot(contains('#0'))); // only the first line, not the whole stack
+  });
+
+  test('isTroubleTurn flags failed/clarify/OOD turns, not a clean route', () {
+    expect(isTroubleTurn({'source': 'error', 'error': 'X'}), isTrue);
+    expect(isTroubleTurn({'source': 'clarify'}), isTrue);
+    expect(isTroubleTurn({'source': 'out-of-domain'}), isTrue);
+    expect(isTroubleTurn({'source': 'corpus', 'skill': 'create-task'}), isFalse);
+  });
 }
