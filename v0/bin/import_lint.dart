@@ -18,7 +18,7 @@ const kRank = <String, int>{
   'claude': 1, 'router': 1, 'embed': 1, 'replay_cloud': 1,
   // business logic + orchestration
   'interpreter': 2, 'reminders': 2, 'people': 2, 'generative': 2,
-  'automations': 2, 'config': 2, 'turnlog': 2, 'session': 2,
+  'automations': 2, 'config': 2, 'turnlog': 2, 'migration': 2, 'session': 2,
 };
 
 /// Pure core (testable): the upward-import violations for [graph] (file → its lib imports).
