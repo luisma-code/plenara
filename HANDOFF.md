@@ -21,9 +21,17 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `f90c011`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `e5b13e9`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1449 Dart tests + 25 Flutter widget tests green** (full `tool/precheck.sh` gate passes:
+**1453 Dart tests + 25 Flutter widget tests green**. **CLOUD TIER VALIDATED LIVE** (Luis's BYOK
+key, now set in `~/.plenara/config.json`): the generative kinds produce excellent grounded output
+(gift ideas off a contact's real hobbies, briefing, weekly review honest about light logging,
+pattern-insight degrading on thin data, in-voice draft), authoring works end-to-end (DF-01 offer →
+yes → "Log Pushups" → activate → "Logged 20 pushups…"), residual routing places corpus-misses.
+**Two real bugs the fakes hid were caught + fixed (`5d1c641`):** a stuck ProvideSlot (a cloud
+reminder with no time swallowed every later turn) and an authored `{var:count}` format template
+leaking (format now accepts `{name}` and `{var:name}`; authoring prompt clarified). The app is
+now fully dogfood-ready. (full `tool/precheck.sh` gate passes:
 analyze, import-lint, coverage 91.5%, app build, secret scan, conformance ratchet). **Diagnostics
 are dogfood-ready** — a bad turn's turnlog line carries the utterance, route, template, slots,
 writes, response, timing, cloud health, error+stack, WHY a miss happened (`diag`), and unattended
