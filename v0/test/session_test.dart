@@ -498,6 +498,14 @@ void main() {
       expect(await s.handle('how much water today'), contains('800'));
     });
 
+    test('a template query answers adherence: meds today (F-16)', () async {
+      final s = await _session();
+      await s.handle('start tracking my meds');
+      expect((await s.handle('did i take my meds today')).toLowerCase(), contains('not yet'));
+      await s.handle('took my morning meds');
+      expect((await s.handle('did i take my meds today')).toLowerCase(), contains('yes'));
+    });
+
     test('a template query skill computes a streak: reading streak (F-18)', () async {
       final s = await _session();
       await s.handle('start tracking my reading');

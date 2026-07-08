@@ -125,8 +125,12 @@ void main() {
       expect(w['duration'], 28);
     }, skip: 'exact conversational log needs cloud; slot-update mechanism is built + asserted here via "log a 5k run"');
 
-    test('F-16 medication log + adherence query',
-        () async {}, skip: 'needs template instantiation + exact "took my morning meds" phrasing + a meds temporal query');
+    test('F-16 medication log + adherence: "took my morning meds" then "did I take my meds today?"', () async {
+      final s = await _s();
+      await s.handle('start tracking my meds'); // instantiate the medication template
+      await s.handle('took my morning meds');
+      expect((await s.handle('did i take my meds today')).toLowerCase(), contains('yes'));
+    });
 
     test('F-17 weekly aggregate over a tracker: "How many steps did I do this week?"', () async {
       final s = await _s();
@@ -275,11 +279,11 @@ void main() {
 
 // ─────────────────────────────────────────────────────────────────────────────────────
 // CONFORMANCE TALLY (offline, exact-or-equivalent utterances) — kept in sync with runs:
-//   F-tier: 11 pass /  9 skip  (F-01,02,04,05,07,09,10,17,18,19,20 pass)
+//   F-tier: 12 pass /  8 skip  (F-01,02,04,05,07,09,10,16,17,18,19,20)
 //   P-tier:  0 pass / 20 skip  (all need BYOK: authoring or generative)
 //   DF-tier: 3 pass /  7 skip  (DF-01 no-template offer, DF-03 schema-edit, DF-10 scope denial)
 //   DP-tier: 7 pass /  3 skip  (DP-01,02,03,04,06,08,09 — deterministic safety/OOD/scope/medical/impersonation floors)
-//   TOTAL:  21 pass / 39 skip  of 60  (up from 9/60 — denial floors, phrasings, tracker queries, people-fact, DF-01 offer)
+//   TOTAL:  22 pass / 38 skip  of 60  (up from 9/60 — denial floors, phrasings, tracker+adherence queries, people-fact, DF-01 offer)
 // The skips ARE the remaining spec worklist: mostly cloud-gated (paid), a handful of
 // genuinely-unbuilt capabilities (search F-12, aggregation queries F-17/18, automations
 // P-19, the generative depth P-08..P-20), and corpus-phrasing gaps where the CAPABILITY
