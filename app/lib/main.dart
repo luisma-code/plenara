@@ -6,15 +6,23 @@ import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/session.dart';
 
+import 'windows_scheduler.dart';
+
 // Where the SHIPPED built-in capability defs are copied FROM on first run.
 const sourceDataDir = r'Z:\code\plenara\v0\data';
 
 /// Build the production Session from user config: the real (synced) data folder,
-/// seeded with the built-in capabilities on first run, and the BYOK key.
+/// seeded with the built-in capabilities on first run, the BYOK key, and the real
+/// Windows toast scheduler (reminders now fire as OS notifications, not just on-open
+/// nudges). The scheduler self-inits lazily on first schedule/cancel.
 Session buildSession() {
   final cfg = loadConfig();
   ensureSeeded(cfg.dataDir, sourceDataDir);
-  return Session(cfg.dataDir, cloud: cfg.apiKey != null ? ClaudeClient(apiKeyOverride: cfg.apiKey) : null);
+  return Session(
+    cfg.dataDir,
+    cloud: cfg.apiKey != null ? ClaudeClient(apiKeyOverride: cfg.apiKey) : null,
+    scheduler: WindowsToastScheduler(),
+  );
 }
 
 void main() => runApp(const PlenaraApp());
