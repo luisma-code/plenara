@@ -96,9 +96,9 @@ class _ChatState extends State<ChatScreen> {
       log('init: begin (retrieval=${widget.retrieval})');
       await _session.init(retrieval: widget.retrieval, onPhase: log.log);
       log('init: ready');
-      // Production only: fire an immediate self-test toast so we know display works
-      // without waiting for a scheduled reminder (the injected test session has no real OS).
-      if (widget.session == null) {
+      // Opt-in diagnostic: set PLENARA_SELFTEST=1 to fire an immediate "notifications are
+      // on" toast at launch (proven working; off by default so normal launches are quiet).
+      if (widget.session == null && Platform.environment['PLENARA_SELFTEST'] == '1') {
         // ignore: discarded_futures
         _scheduler.selfTest();
       }
