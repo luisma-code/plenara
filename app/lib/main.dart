@@ -12,6 +12,7 @@ import 'package:plenara/session.dart';
 
 import 'app_log.dart';
 import 'data_view.dart';
+import 'settings_view.dart';
 import 'windows_scheduler.dart';
 
 // Where the SHIPPED built-in capability defs are copied FROM on first run.
@@ -195,6 +196,13 @@ class _ChatState extends State<ChatScreen> {
                 MaterialPageRoute(builder: (_) => DataView(session: _session)),
               ),
             ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsView()),
+            ),
+          ),
         ],
       ),
       body: !_ready

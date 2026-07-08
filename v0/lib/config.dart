@@ -47,6 +47,24 @@ PlenaraConfig loadConfig({String? configPath}) {
   return PlenaraConfig(dataDir, (key != null && key.trim().isNotEmpty) ? key.trim() : null);
 }
 
+/// Persist config edits from the in-app settings surface (Spec 07 §2.6): merges into the
+/// existing `~/.plenara/config.json`, preserving unknown keys. [apiKey] null leaves the key
+/// untouched; an empty string clears it. The key is written in plaintext (the accepted v0/dogfood
+/// posture — Spec 10 A-08 / G-37 tracks the secure-store follow-up); it is never logged.
+void saveConfig({required String dataDir, String? apiKey, String? configPath}) {
+  final f = File(configPath ?? defaultConfigPath());
+  Map<String, dynamic> cfg = {};
+  if (f.existsSync()) {
+    try {
+      cfg = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
+    } catch (_) {/* malformed -> start fresh */}
+  }
+  cfg['dataDir'] = dataDir;
+  if (apiKey != null) cfg['apiKey'] = apiKey;
+  f.parent.createSync(recursive: true);
+  f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(cfg));
+}
+
 /// First-run seeding: copy the shipped built-in capability defs (types, skills,
 /// corpus) into [dataDir] if it has none yet, from [sourceDir]. Records, authored
 /// defs, and the learned corpus accrete in [dataDir] thereafter — so the whole

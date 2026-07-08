@@ -49,4 +49,16 @@ void main() {
     ensureSeeded(dir.path, 'data'); // second run
     expect(Directory('${dir.path}/types').listSync().length, n); // unchanged, marker intact
   });
+
+  test('saveConfig writes a config loadConfig reads back; a null key preserves the stored one', () {
+    final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
+    final path = '${dir.path}/config.json';
+    saveConfig(dataDir: 'X:/data', apiKey: 'dummy-key-value', configPath: path);
+    final c = loadConfig(configPath: path);
+    if (Platform.environment['PLENARA_DATA'] == null) expect(c.dataDir, 'X:/data');
+    if (Platform.environment['ANTHROPIC_API_KEY'] == null) expect(c.apiKey, 'dummy-key-value');
+    saveConfig(dataDir: 'X:/data2', configPath: path); // null apiKey -> leave the key
+    final c2 = loadConfig(configPath: path);
+    if (Platform.environment['ANTHROPIC_API_KEY'] == null) expect(c2.apiKey, 'dummy-key-value');
+  });
 }
