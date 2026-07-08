@@ -30,7 +30,9 @@ CloudErrorKind? classifyHttp(int code, String body) {
   final low = body.toLowerCase();
   final looksBilling = low.contains('credit balance') || low.contains('too low') ||
       low.contains('billing') || low.contains('purchase credits');
-  if (looksBilling) return CloudErrorKind.insufficientCredits; // 400 (and occasionally 429)
+  // only a 400/429 body counts as billing — a 5xx (or other) that merely mentions "billing"
+  // must NOT tell the user to add credits when their account is fine (Fable review).
+  if ((code == 400 || code == 429) && looksBilling) return CloudErrorKind.insufficientCredits;
   if (code == 429) return CloudErrorKind.rateLimited;
   return CloudErrorKind.serverError;
 }
@@ -65,7 +67,9 @@ String? apiKey() {
   if (f.existsSync()) {
     for (final line in f.readAsLinesSync()) {
       if (line.startsWith('ANTHROPIC_API_KEY')) {
-        return line.split('=')[1].trim().replaceAll('"', '').replaceAll("'", '');
+        final parts = line.split('='); // skip(1).join('=') tolerates a bare line + '=' in the value
+        if (parts.length < 2) continue;
+        return parts.skip(1).join('=').trim().replaceAll('"', '').replaceAll("'", '');
       }
     }
   }
@@ -206,7 +210,10 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
     } catch (e) {
       return CloudError(CloudErrorKind.malformed, e.toString());
     } finally {
-      client.close();
+      // force:true so a TIMED-OUT request is actually aborted — otherwise it keeps running and,
+      // if the response lands after this turn's cost snapshot, its tokens get misattributed to the
+      // next turn (Fable review). On success the exchange is already complete, so force is a no-op.
+      client.close(force: true);
     }
   }
 

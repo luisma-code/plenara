@@ -561,7 +561,14 @@ class Session {
         final skill = skills[skillId];
         final slots = Map<String, dynamic>.from(pending['slots'] as Map);
         final missing = List<String>.from(pending['missing'] as List);
-        final coerced = _coerceSlot(skill, missing.first, u, now);
+        // A reply that is itself a NEW command — it routes to a skill, or is a search/query intent —
+        // must NOT be swallowed as the slot value (a TEXT slot coerces ANY string, so without this
+        // "what are my reminders" would be written as a meal's food). Treat it as null so the
+        // abandon-and-fall-through path below runs. (Fable review, major.)
+        final looksLikeNewCommand = router.route(u, clock: now, contacts: _knownContactTokens()) != null ||
+            _searchNoteRe.hasMatch(u) ||
+            _searchForRe.hasMatch(u);
+        final coerced = looksLikeNewCommand ? null : _coerceSlot(skill, missing.first, u, now);
         if (coerced != null) {
           _pendingFill = null; // got the answer
           slots[missing.first] = coerced;
@@ -962,7 +969,7 @@ class Session {
         } catch (_) {/* contained — an automation must never break the user's turn */}
       }
       if (source == 'cloud' && utterance != null) {
-        final tmpl = router.learn(utterance, skillId, slots);
+        final tmpl = router.learn(utterance, skillId, slots, contacts: _knownContactTokens());
         if (tmpl != null) repo.appendCorpusLearned({'skillId': skillId, 'template': tmpl});
       }
       return plan.confirmation ?? 'Done.';

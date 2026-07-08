@@ -126,11 +126,11 @@ class Interpreter {
         }
         return best;
       case 'start_of_week':
-        final d = _asDate(a[0])!;
-        return _dateOnly(d.subtract(Duration(days: d.weekday - 1)));
+        final d = _asDate(a[0]);
+        return d == null ? null : _dateOnly(d.subtract(Duration(days: d.weekday - 1)));
       case 'start_of_month':
-        final d = _asDate(a[0])!;
-        return _dateOnly(DateTime(d.year, d.month, 1));
+        final d = _asDate(a[0]);
+        return d == null ? null : _dateOnly(DateTime(d.year, d.month, 1));
       case 'add':
         return (a[0] ?? 0) + (a[1] ?? 0);
       case 'mul':
@@ -245,6 +245,10 @@ class Interpreter {
     if (c.containsKey('gte')) {
       final ab = (c['gte'] as List).map((x) => val(x, env)).toList();
       final a = ab[0], b = ab[1];
+      // a null operand (e.g. a record with a null date) is NOT >= anything — otherwise
+      // "null".compareTo("2026-…") is true ('n' > '2') and null-dated rows count as today/
+      // this-month (Fable review: calories-today, goal-progress). Mirror _cmp's null handling.
+      if (a == null || b == null) return false;
       if (a is num && b is num) return a >= b;
       // numeric when both look numeric; else lexical (correct for fixed-width ISO dates)
       final an = num.tryParse(a.toString()), bn = num.tryParse(b.toString());
@@ -405,7 +409,9 @@ class Interpreter {
       for (final s in steps) {
         if (s is! Map) continue;
         if (s['op'] == 'format' && s['template'] is String) {
-          for (final m in RegExp(r'\{(\w+)\}').allMatches(s['template'] as String)) {
+          // match {name} AND {var:name} — the runtime format op renders both, so the closure
+          // gate must check both or a typo'd {var:persoName} silently renders empty (Fable review).
+          for (final m in RegExp(r'\{(?:var:)?(\w+)\}').allMatches(s['template'] as String)) {
             refs.add(m.group(1)!);
           }
         }

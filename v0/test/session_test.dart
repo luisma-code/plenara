@@ -214,6 +214,11 @@ void main() {
       await s.handle("Sarah's daughter Mia is allergic to peanuts");
       expect((await s.handle('what is Mia allergic to')).toLowerCase(), contains('peanuts'));
     });
+    test('a trailing "?" does not leak into the fact filter (question phrasing works)', () async {
+      final s = await _session();
+      await s.handle("Sarah's daughter Mia is allergic to peanuts");
+      expect((await s.handle('what is Mia allergic to?')).toLowerCase(), contains('peanuts'));
+    });
     test('the :contact guard keeps world-knowledge OUT (no over-match to recall)', () async {
       final s = await _session();
       final r = (await s.handle('what is the capital of france')).toLowerCase();

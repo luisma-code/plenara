@@ -377,4 +377,27 @@ void main() {
       expect(_r.route('went for a 5k this afternoon'), isNull);
     });
   });
+
+  group(':contact slot + learn (Fable review fixes)', () {
+    test('learn abstracts a known contact to :contact, not :text (guard survives learning)', () {
+      final r = Router.load('data/corpus.json', _now);
+      // a NON-seed phrasing (a seed dedups to null) — the cloud could route this to recall
+      final t = r.learn('tell me what Sam is allergic to', 'recall-fact-about',
+          {'personName': 'Sam', 'query': 'allergic to'}, contacts: {'sam'});
+      expect(t, contains('{personName:contact}'));
+      expect(t, isNot(contains('{personName:text}'))); // :text here would hijack all "tell me what X is Y"
+    });
+
+    test('a :contact slot only matches a known contact', () {
+      // "the" isn't a contact -> the recall template must NOT fire on world-knowledge
+      expect(_r.route('what is the capital of france', contacts: {'mia'})?['skillId'], isNot('recall-fact-about'));
+      // "mia" is a contact -> it fires
+      expect(_r.route('what is mia allergic to', contacts: {'mia'})?['skillId'], 'recall-fact-about');
+    });
+
+    test('a trailing "?" is stripped from the captured slot', () {
+      final hit = _r.route('what is mia allergic to?', contacts: {'mia'});
+      expect(hit?['slots']['query'], 'allergic to'); // not "allergic to?"
+    });
+  });
 }

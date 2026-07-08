@@ -24,16 +24,18 @@ class ReferenceStore {
   final Map<String, Map<String, dynamic>> _byKey; // normalized key/alias -> entry
   final List<String> _keys; // canonical keys (for tier-2)
   final Map<String, List<double>> _keyVecs = {}; // lazy tier-2 cache
+  bool _vecsBuilt = false; // true only once EVERY key embedded (a partial cache must retry)
   ReferenceStore._(this.dataset, this._byKey, this._keys);
 
   static const _articles = {'a', 'an', 'the', 'some', 'my', 'of', 'one', 'this'};
 
-  /// Lowercase, strip punctuation + leading articles/quantifiers so "a Banana!" -> "banana".
+  /// Lowercase; punctuation -> space (so "stir-fry" -> "stir fry" matches the alias); drop
+  /// articles/quantifiers and bare digit counts (so "a Banana!" -> "banana", "2 eggs" -> "eggs").
   static String normalize(String s) => s
       .toLowerCase()
-      .replaceAll(RegExp(r'[^a-z0-9\s]'), '')
+      .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
       .split(RegExp(r'\s+'))
-      .where((t) => t.isNotEmpty && !_articles.contains(t))
+      .where((t) => t.isNotEmpty && !_articles.contains(t) && !RegExp(r'^\d+$').hasMatch(t))
       .join(' ');
 
   /// Load data/reference/<name>.json. A missing/broken file -> an empty store (the feature just
@@ -48,9 +50,11 @@ class ReferenceStore {
       for (final e in (j['entries'] as List).cast<Map<String, dynamic>>()) {
         final k = e['key'] as String;
         keys.add(k);
-        byKey[normalize(k)] = e;
+        final nk = normalize(k);
+        if (nk.isNotEmpty) byKey[nk] = e;
         for (final a in (e['aliases'] as List? ?? const []).cast<String>()) {
-          byKey.putIfAbsent(normalize(a), () => e);
+          final na = normalize(a);
+          if (na.isNotEmpty) byKey.putIfAbsent(na, () => e);
         }
       }
       return ReferenceStore._(name, byKey, keys);
@@ -66,9 +70,11 @@ class ReferenceStore {
     for (final e in entries) {
       final k = e['key'] as String;
       keys.add(k);
-      byKey[normalize(k)] = e;
+      final nk = normalize(k);
+      if (nk.isNotEmpty) byKey[nk] = e;
       for (final a in (e['aliases'] as List? ?? const []).cast<String>()) {
-        byKey.putIfAbsent(normalize(a), () => e);
+        final na = normalize(a);
+        if (na.isNotEmpty) byKey.putIfAbsent(na, () => e);
       }
     }
     return ReferenceStore._(name, byKey, keys);
@@ -92,11 +98,18 @@ class ReferenceStore {
     final embed = embedder ?? embedFn;
     final qv = await embed(name);
     if (qv == null) return null; // server down -> tier-2 unavailable
-    if (_keyVecs.isEmpty) {
+    if (!_vecsBuilt) {
+      var allOk = true;
       for (final k in _keys) {
+        if (_keyVecs.containsKey(k)) continue;
         final v = await embed(k);
-        if (v != null) _keyVecs[k] = v;
+        if (v != null) {
+          _keyVecs[k] = v;
+        } else {
+          allOk = false; // server died mid-build -> retry the missing keys next call
+        }
       }
+      _vecsBuilt = allOk;
     }
     String? best;
     var bestSim = 0.0;

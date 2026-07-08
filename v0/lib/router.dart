@@ -59,7 +59,7 @@ class Router {
   /// phrasing hits the fast path with no cloud call. Returns the template (for
   /// persistence) or null if nothing could be abstracted. Exact/near-exact
   /// learning; soft generalization (R9b) is deferred (findings §13).
-  String? learn(String utterance, String skillId, Map<String, dynamic> slots) {
+  String? learn(String utterance, String skillId, Map<String, dynamic> slots, {Set<String> contacts = const {}}) {
     var t = utterance.trim();
     final nonNull = slots.entries.where((e) => e.value != null).toList();
     var abstracted = 0;
@@ -67,7 +67,11 @@ class Router {
       final vs = e.value.toString();
       final idx = t.toLowerCase().indexOf(vs.toLowerCase());
       if (idx >= 0) {
-        t = '${t.substring(0, idx)}{${e.key}:${_inferType(vs)}}${t.substring(idx + vs.length)}';
+        // A slot value that IS a known contact abstracts to `:contact`, never `:text` — otherwise
+        // a learned "what is {who:text} {q:text}" would defeat the :contact guard and hijack all
+        // "what is X …" world-knowledge (Fable review, critical). Preserves the guard across learns.
+        final type = contacts.contains(vs.toLowerCase()) ? 'contact' : _inferType(vs);
+        t = '${t.substring(0, idx)}{${e.key}:$type}${t.substring(idx + vs.length)}';
         abstracted++;
       }
     }
@@ -119,7 +123,7 @@ class Router {
       i = m.end;
     }
     sb.write(_lit(tmpl.substring(i)));
-    sb.write(r'\.?$');
+    sb.write(r'[.?!]?$'); // strip a trailing . ? or ! so "what's Mia allergic to?" doesn't leak "?" into the slot
     return CorpusEntry(e['skillId'] as String, tmpl,
         RegExp(sb.toString(), caseSensitive: false), slotTypes);
   }

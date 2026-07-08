@@ -67,8 +67,10 @@ String formatSummary(TurnlogSummary s) {
   }
   if (s.paidCalls > 0) {
     sb.write('\nEstimated API spend (Haiku 4.5): \$${s.spendUsd.toStringAsFixed(4)} '
-        'over ${s.paidCalls} paid call(s) / ${s.activeDays} active day(s)\n');
-    sb.writeln('  ≈ \$${s.spendPerDayUsd.toStringAsFixed(4)}/day  ·  ~\$${(s.spendPerDayUsd * 30).toStringAsFixed(2)}/month at this rate');
+        'over ${s.paidCalls} paid call(s)${s.activeDays > 0 ? ' / ${s.activeDays} active day(s)' : ''}\n');
+    if (s.activeDays > 0) {
+      sb.writeln('  ≈ \$${s.spendPerDayUsd.toStringAsFixed(4)}/day  ·  ~\$${(s.spendPerDayUsd * 30).toStringAsFixed(2)}/month at this rate');
+    }
     sb.writeln('  (${pct(s.paidCalls)} of turns hit the cloud — the rest ran free offline)');
   }
   sb.write('\nClarify rate: ${pct(s.bySource['clarify'] ?? 0)}  (the make-or-break metric — lower is better)');
@@ -87,9 +89,9 @@ String formatTurnTrace(Map<String, dynamic> t) {
   if (t['template'] != null) sb.writeln('    template: ${t['template']}');
   if (t['slots'] != null) sb.writeln('    slots:    ${t['slots']}');
   if (t['cloud'] != null) sb.writeln('    cloud:    ${t['cloud']}');
-  if (t['cost'] != null) {
+  if (t['cost'] is Map) {
     final co = t['cost'] as Map;
-    sb.writeln('    cost:     ${co['in']} in + ${co['out']} out tok  ≈ \$${(co['usd'] as num).toStringAsFixed(4)}');
+    sb.writeln('    cost:     ${co['in']} in + ${co['out']} out tok  ≈ \$${(co['usd'] as num?)?.toStringAsFixed(4) ?? '?'}');
   }
   if (t['diag'] != null) sb.writeln('    diag:     ${t['diag']}'); // WHY a miss (corpus/cloud/nearest)
   if (t['writes'] != null) sb.writeln('    writes:   ${t['writes']}');

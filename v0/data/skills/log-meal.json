@@ -8,9 +8,10 @@
     "main": [
       { "op": "compute", "fn": "today", "into": "today" },
       { "op": "read_reference", "dataset": "nutrition", "key": { "var": "food" }, "into": "ref" },
+      { "op": "set", "var": "kcal", "value": { "field": [ "ref", "kcal" ] } },
       {
         "op": "branch",
-        "cond": { "isNull": "ref" },
+        "cond": { "isNull": "kcal" },
         "then": [
           {
             "op": "write_record",
@@ -21,7 +22,6 @@
           { "op": "format", "template": "Logged {food} — I don't have calorie data for that, so no estimate.", "into": "confirmationText" }
         ],
         "else": [
-          { "op": "set", "var": "kcal", "value": { "field": [ "ref", "kcal" ] } },
           {
             "op": "write_record",
             "typeId": "meal",
