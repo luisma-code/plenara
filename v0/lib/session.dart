@@ -644,6 +644,29 @@ class Session {
     }
 
     var routed = router.route(u, clock: now);
+    // Compound utterance (F-13): two independent commands joined by "and" — "log a run
+    // and journal that I feel great" — execute BOTH and compose the confirmations.
+    // Deliberately conservative, because MANY single commands contain "and" ("remind me
+    // to buy milk and eggs", "talked to Sam and Jo about X"): only attempted when the
+    // WHOLE utterance did not route (a whole-utterance corpus match always wins), and
+    // only when BOTH halves independently route offline with no missing required slots —
+    // so a failed split has zero side effects and falls through to the normal miss path.
+    if (routed == null) {
+      final parts = _splitCompound(u, now);
+      if (parts != null) {
+        final replies = <String>[];
+        for (final p in parts) {
+          final slots = (p['slots'] as Map).cast<String, dynamic>();
+          slots.updateAll(
+              (k, v) => (v is String && const {'none', 'null'}.contains(v.trim().toLowerCase())) ? null : v);
+          replies.add(await _dispatch(p['skillId'] as String, slots, 'corpus', now,
+              template: p['template'] as String?));
+        }
+        _outSource = 'compound'; // telemetry: one turn, two dispatches
+        _outSkill = parts.map((p) => p['skillId']).join('+');
+        return replies.join(' ');
+      }
+    }
     // Out-of-domain boundary (§7.2, G-19): a clearly-external question with NO personal
     // cue gets a graceful "not what I do" — BEFORE spending a residual cloud call. The
     // personal-cue guard is the privacy line: "what did I say about X" is never OOD.
@@ -760,6 +783,33 @@ class Session {
       }
       return "I couldn't do that: ${e.message}";
     }
+  }
+
+  /// F-13 compound-utterance split: find the FIRST " and " (or ", and ") seam where
+  /// both sides independently route through the corpus router into fully-slotted
+  /// skills. Returns the two routed halves ({skillId, slots, template} each) or null
+  /// if no seam qualifies — in which case the utterance is handled as ONE command.
+  /// Pure detection: no dispatch, no writes, so declining to split costs nothing.
+  /// Only called after the whole utterance failed to route, which is what keeps
+  /// "remind me to buy milk and eggs" (one command containing "and") unsplit.
+  /// A half that routes but is missing a required slot disqualifies the seam — a
+  /// mid-compound ProvideSlot pause can't be composed into one confirmation.
+  List<Map<String, dynamic>>? _splitCompound(String u, DateTime now) {
+    for (final m in RegExp(r',?\s+and\s+', caseSensitive: false).allMatches(u)) {
+      final left = u.substring(0, m.start).trim();
+      final right = u.substring(m.end).trim();
+      if (left.isEmpty || right.isEmpty) continue;
+      final lr = router.route(left, clock: now);
+      if (lr == null) continue;
+      final rr = router.route(right, clock: now);
+      if (rr == null) continue;
+      if (_missingRequired(skills[lr['skillId']], (lr['slots'] as Map).cast<String, dynamic>()).isNotEmpty ||
+          _missingRequired(skills[rr['skillId']], (rr['slots'] as Map).cast<String, dynamic>()).isNotEmpty) {
+        continue;
+      }
+      return [lr, rr];
+    }
+    return null;
   }
 
   /// Does the utterance name a contact we actually store (by displayName or alias)?

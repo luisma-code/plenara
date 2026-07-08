@@ -673,6 +673,106 @@ void main() {
     });
   });
 
+  group('compound utterances (F-13) — two commands joined by "and"', () {
+    test('"log a run and journal that I feel great" performs BOTH, composed confirmation', () async {
+      final s = await _session(); // _NoCloud: the split is fully offline
+      final r = await s.handle('log a run and journal that I feel great');
+      expect(r, contains('Logged a run'));
+      expect(r, contains('Saved to your journal'));
+      expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
+      final j = s.store.values.where((x) => x['typeId'] == 'journal_entry').toList();
+      expect(j.length, 1);
+      expect(j.single['entry'], 'I feel great');
+    });
+
+    test('slots survive the split: "log a 3k run and i\'m feeling great"', () async {
+      final s = await _session();
+      final r = await s.handle("log a 3k run and i'm feeling great");
+      expect(r, contains('3 km run'));
+      expect(r, contains('mood as great'));
+      expect(s.store.values.where((x) => x['typeId'] == 'workout').single['distance'], 3);
+      expect(s.store.values.where((x) => x['typeId'] == 'mood').single['rating'], 'great');
+    });
+
+    test('write-then-read compound executes in order: the read sees the write', () async {
+      final s = await _session();
+      final r = await s.handle('log a 3k run and how far have i run');
+      expect(r, contains('Logged a 3 km run'));
+      expect(r, contains("You've run 3 km")); // the total includes the run logged a moment before
+    });
+
+    test('", and" seam also splits', () async {
+      final s = await _session();
+      final r = await s.handle('log a run, and journal that I feel great');
+      expect(r, contains('Logged a run'));
+      expect(r, contains('Saved to your journal'));
+      expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
+      expect(s.store.values.where((x) => x['typeId'] == 'journal_entry').length, 1);
+    });
+
+    test('undo after a compound walks back one action at a time, most recent first', () async {
+      final s = await _session();
+      await s.handle('log a run and journal that I feel great');
+      await s.handle('undo that'); // reverses the journal entry (the most recent write)
+      expect(s.store.values.where((x) => x['typeId'] == 'journal_entry'), isEmpty);
+      expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
+      await s.handle('undo that'); // then the run
+      expect(s.store.values.where((x) => x['typeId'] == 'workout'), isEmpty);
+    });
+
+    test('compound turn is logged with source=compound and both skills (telemetry)', () async {
+      final file = FileStorageRepository('data');
+      final mem = _MemStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
+      await s.init(retrieval: false);
+      await s.handle('log a run and journal that I feel great');
+      expect(mem.turns.single['source'], 'compound');
+      expect(mem.turns.single['skill'], 'log-run+log-journal');
+    });
+
+    // ---- negative controls: single commands that CONTAIN "and" must NOT split ----
+
+    test('control: "remind me to buy milk and eggs" is ONE task, not two', () async {
+      final s = await _session();
+      final r = await s.handle('remind me to buy milk and eggs');
+      expect(r, contains('buy milk and eggs'));
+      final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();
+      expect(tasks.length, 1, reason: 'a whole-utterance corpus match always wins over a split');
+      expect(tasks.single['description'], 'buy milk and eggs');
+    });
+
+    test('control: "talked to Sam and Jo about the trip" is ONE interaction', () async {
+      final s = await _session();
+      await s.handle('talked to Sam and Jo about the trip');
+      expect(s.store.values.where((x) => x['typeId'] == 'interaction').length, 1);
+      // the compound NAME stays intact — nothing was split into two dispatches
+      expect(s.store.values.where((x) => x['typeId'] == 'contact' && x['displayName'] == 'Sam and Jo').length, 1);
+    });
+
+    test('control: seed template with a literal "and" (relational remember) still routes whole', () async {
+      final s = await _session();
+      await s.handle("remember that Mia is allergic to peanuts and she is Sarah Mitchell's daughter");
+      expect(s.store.length, 4); // contact(Mia) + fact + contact(Sarah) + relationship — unchanged
+    });
+
+    test('control: "note that Mia loves drawing and painting" keeps the fact whole', () async {
+      final s = await _session();
+      await s.handle('note that Mia loves drawing and painting');
+      final facts = s.store.values.where((x) => x['typeId'] == 'contact_fact').toList();
+      expect(facts.length, 1);
+      expect(facts.single['fact'], 'loves drawing and painting');
+    });
+
+    test('control: one half not routing means NO split and NO half-execution', () async {
+      final s = await _session();
+      // "log a run" routes but "dance a jig" does not -> not a compound; falls to the
+      // residual path (_NoCloud throws -> the safe catch-all). Crucially: NOTHING was written.
+      final r = await s.handle('log a run and dance a jig');
+      expect(r, contains("didn't do anything"));
+      expect(s.store, isEmpty, reason: 'a declined split must have zero side effects');
+    });
+  });
+
   group('multi-turn story (the full offline pipeline)', () {
     test('a realistic sequence keeps consistent state', () async {
       final s = await _session();
