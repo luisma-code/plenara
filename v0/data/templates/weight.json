@@ -1,0 +1,47 @@
+{
+  "templateId": "weight",
+  "displayName": "weight tracking",
+  "keywords": ["weight", "my weight", "body weight", "bodyweight"],
+  "example": "log my weight as 165",
+  "types": [
+    {
+      "typeId": "weight_log",
+      "displayName": "Weight",
+      "attributes": [
+        { "name": "value", "valueType": "number", "required": false },
+        { "name": "loggedAt", "valueType": "date", "required": true }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "skillId": "log-weight",
+      "displayName": "Log weight",
+      "reads": [],
+      "writes": [ "weight_log" ],
+      "inputs": [ { "name": "value", "required": false } ],
+      "steps": {
+        "main": [
+          { "op": "compute", "fn": "today", "into": "today" },
+          {
+            "op": "write_record",
+            "typeId": "weight_log",
+            "fields": { "value": { "var": "value" }, "loggedAt": { "var": "today" } },
+            "into": "w"
+          },
+          {
+            "op": "branch",
+            "cond": { "notNull": "value" },
+            "then": [ { "op": "format", "template": "Logged your weight: {value}.", "into": "confirmationText" } ],
+            "else": [ { "op": "format", "template": "Logged your weight today.", "into": "confirmationText" } ]
+          }
+        ]
+      }
+    }
+  ],
+  "corpus": [
+    { "skillId": "log-weight", "template": "log my weight as {value:quantity}" },
+    { "skillId": "log-weight", "template": "i weigh {value:quantity}" },
+    { "skillId": "log-weight", "template": "log my weight {value:quantity}" }
+  ]
+}

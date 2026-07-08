@@ -1,0 +1,47 @@
+{
+  "templateId": "steps",
+  "displayName": "step tracking",
+  "keywords": ["steps", "my steps", "step count", "daily steps", "walking steps"],
+  "example": "log 8000 steps",
+  "types": [
+    {
+      "typeId": "step_log",
+      "displayName": "Steps",
+      "attributes": [
+        { "name": "count", "valueType": "number", "required": false },
+        { "name": "loggedAt", "valueType": "date", "required": true }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "skillId": "log-steps",
+      "displayName": "Log steps",
+      "reads": [],
+      "writes": [ "step_log" ],
+      "inputs": [ { "name": "count", "required": false } ],
+      "steps": {
+        "main": [
+          { "op": "compute", "fn": "today", "into": "today" },
+          {
+            "op": "write_record",
+            "typeId": "step_log",
+            "fields": { "count": { "var": "count" }, "loggedAt": { "var": "today" } },
+            "into": "s"
+          },
+          {
+            "op": "branch",
+            "cond": { "notNull": "count" },
+            "then": [ { "op": "format", "template": "Logged {count} steps today.", "into": "confirmationText" } ],
+            "else": [ { "op": "format", "template": "Logged your steps today.", "into": "confirmationText" } ]
+          }
+        ]
+      }
+    }
+  ],
+  "corpus": [
+    { "skillId": "log-steps", "template": "log {count:quantity} steps" },
+    { "skillId": "log-steps", "template": "i walked {count:quantity} steps" },
+    { "skillId": "log-steps", "template": "i did {count:quantity} steps today" }
+  ]
+}

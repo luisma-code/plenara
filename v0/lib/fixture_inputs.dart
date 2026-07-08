@@ -54,7 +54,6 @@ const outOfDomainUtterances = <String>[
 // free and never reach the paid authoring path these fixtures exercise.
 const authoringDescriptions = <String>[
   'daily gratitude journal',
-  'my weight',
   'coffee cups per day',
 ];
 

@@ -233,6 +233,8 @@ void main() {
     for (final c in const [
       ('reading', 'i read 30 pages', 'reading_log'),
       ('my meds', 'i took my meds', 'medication_log'),
+      ('my steps', 'i walked 8000 steps', 'step_log'),
+      ('my weight', 'i weigh 165', 'weight_log'),
     ]) {
       test('template "${c.$1}" instantiates free and routes its log by voice', () async {
         final s = await _session();
