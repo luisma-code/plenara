@@ -21,9 +21,9 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `605367c`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `cfcbb51`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1286 Dart tests + 8 Flutter widget tests green** (32 skills, 9 types; DSL now has
+**1289 Dart tests + 8 Flutter widget tests green** (34 skills, 9 types; DSL now has
 ordering/limit/filter-ops + aggregation/date-math; ProvideSlot slot-filling; alias
 resolution; OOD boundary; record-integrity floor; GenerativeService for gift ideas +
 briefing), `dart analyze` clean,
