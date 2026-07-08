@@ -101,6 +101,22 @@ void main() {
     expect(find.textContaining('buy milk'), findsWidgets); // the record itself
   });
 
+  testWidgets('tapping a record opens a detail sheet showing all its fields', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'add buy milk to my list');
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.storage));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ListTile, 'buy milk')); // the task tile
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('record-detail')), findsOneWidget); // the detail sheet opened
+    expect(find.text('createdAt'), findsOneWidget); // a field shown in detail but not in the checklist summary
+  });
+
   testWidgets('the data view surfaces an automations card with each automation status', (tester) async {
     final dir = _tempData();
     Directory('$dir/automations').createSync(recursive: true);

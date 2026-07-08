@@ -197,6 +197,7 @@ class _TypeSection extends StatelessWidget {
                   ? Icons.check_circle
                   : Icons.radio_button_unchecked),
               title: Text(fmtValue(r['description'] ?? r['title'] ?? r['text'])),
+              onTap: () => _showRecord(context, r),
             ),
         ];
       case Archetype.personCard:
@@ -207,6 +208,7 @@ class _TypeSection extends StatelessWidget {
               leading: const CircleAvatar(child: Icon(Icons.person)),
               title: Text(fmtValue(r['displayName'] ?? r['name'])),
               subtitle: r['aliases'] != null ? Text('aka ${fmtValue(r['aliases'])}') : null,
+              onTap: () => _showRecord(context, r),
             ),
         ];
       case Archetype.tracker:
@@ -228,6 +230,7 @@ class _TypeSection extends StatelessWidget {
               leading: const Icon(Icons.timeline),
               title: Text(numF == null ? '—' : renderValue(r[numF], _valueTypes[numF])),
               trailing: Text(dateF == null ? '' : renderValue(r[dateF], _valueTypes[dateF])),
+              onTap: () => _showRecord(context, r),
             ),
         ];
       case Archetype.timeline:
@@ -239,12 +242,18 @@ class _TypeSection extends StatelessWidget {
               leading: const Icon(Icons.schedule),
               title: Text(_summary(r)),
               trailing: Text(dateF == null ? '' : renderValue(r[dateF], _valueTypes[dateF])),
+              onTap: () => _showRecord(context, r),
             ),
         ];
       case Archetype.collection:
         return [
           for (final r in records)
-            ListTile(dense: true, leading: const Icon(Icons.circle, size: 10), title: Text(_summary(r))),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.circle, size: 10),
+              title: Text(_summary(r)),
+              onTap: () => _showRecord(context, r),
+            ),
         ];
     }
   }
@@ -269,6 +278,31 @@ class _TypeSection extends StatelessWidget {
       parts.add('${e.key}: ${renderValue(e.value, vt[e.key])}');
     }
     return parts.isEmpty ? '(empty)' : parts.join('  ·  ');
+  }
+
+  /// Drill into one record — a bottom sheet of ALL its fields, each rendered by value type.
+  void _showRecord(BuildContext context, Map<String, dynamic> r) {
+    final vt = _valueTypes;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text((typeDef['displayName'] as String?) ?? typeId,
+                  key: const Key('record-detail'), style: Theme.of(context).textTheme.titleLarge),
+              const Divider(),
+              for (final e in r.entries)
+                if (!const {'id', 'typeId', 'schemaVersion', '_schemaVersion', '_meta'}.contains(e.key) && e.value != null)
+                  ListTile(dense: true, title: Text(e.key), trailing: Text(renderValue(e.value, vt[e.key]))),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   List<Map<String, dynamic>> _byDateDesc(List<Map<String, dynamic>> rs, String? dateF) {
