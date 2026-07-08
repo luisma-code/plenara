@@ -20,7 +20,7 @@ This document specifies:
 6. Slot extraction — how the NLU layer fills the `source: "slot"` inputs declared in a skill's `inputs` contract
 7. The recorded test-pair methodology — how NLU correctness is measured and regressed against
 
-It does **not** cover: speech-to-text transcription (Spec 06 — Voice), skill execution (Spec 02), type and skill authoring flows (Spec 01 §6, Spec 02 §6), or view rendering (Spec 07 — UI).
+It does **not** cover: speech-to-text transcription (Spec 12 — Voice), skill execution (Spec 02), type and skill authoring flows (Spec 01 §6, Spec 02 §6), or view rendering (Spec 07 — UI).
 
 ---
 
@@ -32,7 +32,7 @@ It does **not** cover: speech-to-text transcription (Spec 06 — Voice), skill e
 
 **P2.4 — Code over AI, applied to routing.** Routing a known utterance against the corrections corpus is a hash-lookup, not an inference call. The local model is invoked only when the corpus has no match. Cloud escalation is invoked only when the local model is below threshold. Inference is the slow path, not the default.
 
-**P2.5 — Aggressive layering.** The NLU layer is a pure function from `(transcript, NluContext)` to an intent object (the `NluRouter` interface, §2.6; `NluContext` defined there). It calls no storage APIs directly and emits no UI events. It **reads** the capability embedding index and the corrections corpus, and it reads skill and type metadata from the `SchemaRegistry`, all read-only. Critically, it does **not own or build** the embedding index: that index is a `SchemaRegistry`-layer artifact (Spec 01 §5.4), extended to cover skills as well as types (§3.2), and the router only queries it. The NLU layer *owns* one piece of mutable state — the corrections corpus (§5) — and even that it mutates only through an explicit write path, never as a side effect of routing. It is invoked by the Business Logic layer after transcription completes (Spec 06 signals a final transcript, §10 MD10) and before skill dispatch begins.
+**P2.5 — Aggressive layering.** The NLU layer is a pure function from `(transcript, NluContext)` to an intent object (the `NluRouter` interface, §2.6; `NluContext` defined there). It calls no storage APIs directly and emits no UI events. It **reads** the capability embedding index and the corrections corpus, and it reads skill and type metadata from the `SchemaRegistry`, all read-only. Critically, it does **not own or build** the embedding index: that index is a `SchemaRegistry`-layer artifact (Spec 01 §5.4), extended to cover skills as well as types (§3.2), and the router only queries it. The NLU layer *owns* one piece of mutable state — the corrections corpus (§5) — and even that it mutates only through an explicit write path, never as a side effect of routing. It is invoked by the Business Logic layer after transcription completes (Spec 12 signals a final transcript, §10 MD10) and before skill dispatch begins.
 
 **P2.8 — No silent failure.** The NLU layer is the sharpest test of this principle, because guessing is always the tempting shortcut. It never takes it. When confidence is genuinely low it returns a `clarification_needed` intent rather than a silent guess (§2.4); when a required slot is missing it asks a follow-up rather than dispatching a partial intent (§6.3); when an utterance needs a capability that does not exist it raises a `define_*` meta-intent (and, on the free tier, an explicit upgrade prompt) rather than dropping the request (§2.2); and when the cloud is unreachable it flags `cloudUnavailable` so the app can tell the user and queue, rather than degrading quietly (§10 MD6). Every low-confidence or blocked path in this spec ends at a user-visible surface, never a dead end.
 
@@ -68,7 +68,7 @@ Intents that operate on the capability system itself — type authoring and skil
 
 There are two capability-definition meta-intents:
 
-**`define_type`** — The user's utterance expresses a need that cannot be served by any existing type or skill, and the NLU layer judges that the domain is novel enough to warrant a new type definition. Control passes to the cloud (Haiku or Sonnet) to author the type, then optionally the skill.
+**`define_type`** — The user's utterance expresses a need that cannot be served by any existing type or skill, and the NLU layer judges that the domain is novel enough to warrant a new type definition. Control passes to the cloud authoring model (named in exactly one place: Spec 08 §3.2/D3) to author the type, then optionally the skill.
 
 ```json
 {
@@ -114,7 +114,7 @@ Intents that ask Plenara to *synthesize* something over the user's records rathe
 }
 ```
 
-`generativeKind` is one of a **fixed, binary-shipped set** — `briefing`, `gift_ideas`, `event_prep`, `reconnect_coaching`, `weekly_review`, `pattern_insight`, `meal_suggestion`, `monthly_reflection`, `foresight` (grounded forward-looking synthesis, `G-27`, Spec 04 §3.10) — closed like the primitive-op vocabulary, because each maps to a reviewed `GenerativeService` prompt assembler (Spec 04 §3.10), never to authored or fetched code. `params` carries whatever that kind needs, resolved by the **same slot machinery as a skill invocation** (§6): an `entityRef` for the target contact ("what should I get **Sarah**"), a temporal window ("the last two weeks"), a budget. A required param that is absent takes the normal missing-slot follow-up (§6.3) — "prep for dinner with whom?" — and is never silently guessed (P2.8).
+`generativeKind` is one of a **fixed, binary-shipped set** whose membership is owned by **Spec 08 §3.3's per-kind registry** (the single owner; suite-sync CS-09 — the set includes `draft_message`, P-20, alongside `briefing`, `gift_ideas`, `foresight` and the rest; this spec deliberately does not enumerate it) — closed like the primitive-op vocabulary, because each maps to a reviewed `GenerativeService` prompt assembler (Spec 04 §3.10), never to authored or fetched code. `params` carries whatever that kind needs, resolved by the **same slot machinery as a skill invocation** (§6): an `entityRef` for the target contact ("what should I get **Sarah**"), a temporal window ("the last two weeks"), a budget. A required param that is absent takes the normal missing-slot follow-up (§6.3) — "prep for dinner with whom?" — and is never silently guessed (P2.8).
 
 **Recognition.** Generative capabilities are indexed in the `CapabilityIndex` as a third candidate kind (`kind: generative`, Spec 04 §3.4), embedded over the same human-readable surface a skill uses (name, description, example phrases). Routing ranks them alongside skills and types (§3.3–§3.4); when the top candidate is `kind: generative` and clears `θ_act` (or the moderate band, acted on with transparent routing like any other), the router emits a `generative_request`. The built-in set is small and fixed, so its example phrases ship in the binary and are strong retrieval anchors.
 
@@ -179,7 +179,7 @@ Every NLU output is a single intent object. It is never a list. The category det
 | `requestedOperation` | string | if `define_skill` or `define_type` | |
 | `inferredDomain` | string | if `define_type` | |
 | `seedPhrases` | string[] | if `define_type` | |
-| `generativeKind` | enum | if `generative_request` | One of the fixed set in §2.2a. |
+| `generativeKind` | enum | if `generative_request` | One of the fixed set owned by Spec 08 §3.3 (see §2.2a). |
 | `params` | object | if `generative_request` | Resolved slots for the generative assembler — contact `entityRef`, temporal window, budget (§2.2a). |
 
 The intent object is immutable once produced. The NLU layer does not modify it after handing it to the Business Logic layer. If the user makes a correction, a new intent is produced from the correction flow (§5.2), not by patching the old one.
@@ -376,7 +376,7 @@ If the local model returns a confidence below `θ_cloud_escalate` (§4.1), the N
   > **⚠ Resize needed (Fable review, post-`G-38`) — open until measured in a beta.** This `20/hour` default was sized when Haiku was the *rare* genuine-tie-break (§7.3.2). §7.3.4 promotes Haiku to the **primary online cold-start router** (every novel phrasing, retrieval-dispatch off by default), so a *new* paid user's first hour is almost all novel phrasings and would hit this cap in ~20 utterances — during onboarding, the worst possible first impression, produced by the spec's own default. Re-derive the cap for Haiku-as-cold-start-router (a higher hourly cap, or per-day with a burst allowance) from the measured ~\$0.0004/turn, **and** state honestly that the offline/free tier's graceful-degradation depends on the corpus-learning ratchet absorbing cold-start volume fast enough (the make-or-break unknown, §7.3.4). Do not ship the `20/hour` default unchanged.
 - BYOK: the cloud path requires a valid API key. Free-tier users without a key fall back to the clarification-request path rather than calling a shared key at Luis's cost.
 
-**Cloud-escalated capability-definition.** If even Haiku returns a confidence below `θ_minimum` after escalation, and the utterance passes the capability-definition meta-intent check (§2.2), the result is a `define_type` or `define_skill` intent — which itself triggers another cloud call, this time to Sonnet for authoring (Spec 01 §6, Spec 02 §6). The NLU layer produces the meta-intent; control passes to the authoring flow, which is a separate subsystem.
+**Cloud-escalated capability-definition.** If even Haiku returns a confidence below `θ_minimum` after escalation, and the utterance passes the capability-definition meta-intent check (§2.2), the result is a `define_type` or `define_skill` intent — which itself triggers another cloud call, this time to the authoring model (Spec 08 §3.2/D3) for authoring (Spec 01 §6, Spec 02 §6). The NLU layer produces the meta-intent; control passes to the authoring flow, which is a separate subsystem.
 
 ### 3.6 Two-Representation Decision (Local vs Cloud Embeddings)
 

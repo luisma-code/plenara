@@ -86,7 +86,7 @@ The `[PAID]` gate (§3.6) is not a confirmation; it is an inability to proceed. 
 
 The app breaks the fourth wall only when it genuinely cannot determine what was requested. It never pre-confirms a routing it can act on — a moderate-confidence best guess is acted on and made transparent, not surfaced as "did you mean X? — proceed?" (this collapses the routing pre-confirmation band that Spec 03 v0.3 defined; see D2 and the reconciliation in Spec 03 §2.7/§4). The thresholds below are Spec 03's (§4.3), used here by their real names. *(Post-`G-20`, the quantities behind these names are **retrieval-similarity and margin** signals, not classifier confidence — Spec 03 §7.3.1; the interaction behavior in this section is unchanged, only what the numbers measure.)*
 
-**Transcription below the ASR floor.** The speech engine could not produce a confident transcript at all (Spec 03 §3.5).
+**Transcription below the ASR floor.** The speech engine could not produce a confident transcript at all (Spec 12 §4.6).
 > A: "I didn't quite catch that. Could you say that again?"
 
 **Missing required slot with no default.** A required field cannot be extracted from the utterance and has no fallback (e.g., no `{now}` default). The app asks exactly one question for the most-blocking missing slot, answered via `ProvideSlot` (Spec 04 §3.6 → `NluRouter.resolveFollowUp`, Spec 03 §6.3). After the answer, it acts. At most two clarification rounds per turn; after two, the app acknowledges it is confused and offers to start over.
@@ -611,22 +611,23 @@ Each refinement is a follow-up authoring call. The type is not registered until 
 
 ## 15. Paid-Tier Task P2: Synthesized Morning Briefing
 
-**Summary:** Once daily, Claude synthesizes a spoken digest across tasks, calendar, people, and trackers. Generated via the Batch API; delivered as natural speech.
+**Summary:** Once daily, Claude synthesizes a spoken digest across tasks, calendar, people, and trackers. Delivered via an OS-local notification at the configured time; generation runs at **notification-tap or next app-open** (Spec 04 §3.13, the authoritative account) — never via the Batch API, never as a background Claude call. The promise is "waiting for you at 7 AM," not "spoken at 7 AM."
 
 **Scheduling and delivery flow:**
 
 ```
-[System: AutomationRunner fires the briefing automation at the user's configured time (default: 7:00 AM)]
-[System: GenerativeService produces generativeKind=`briefing` (§3.8) — assembles the prompt: today's tasks due, upcoming reminders in the next 48 hours, people with upcoming events or overdue contact, recent tracker summary]
-[System: ClaudeClient.generate called (Haiku, generated at fire time — see freshness note below)]
-[System: response validated: text only, no write ops; delivered as notification + spoken output on next app open or immediately if app is active]
+[System: NotificationScheduler has armed an OS-local notification for the user's configured time (default: 7:00 AM) — arming is fully offline (Spec 04 §3.13)]
+[System: the OS fires the notification at 7:00 AM — "Your briefing is waiting for you"]
+[System: on TAP (or next app-open, if untapped): GenerativeService produces generativeKind=`briefing` (§3.8) — assembles the prompt: today's tasks due, upcoming reminders in the next 48 hours, people with upcoming events or overdue contact, recent tracker summary]
+[System: ClaudeClient.generate called (Haiku, detached — generated at tap/open time from CURRENT data; see freshness note below)]
+[System: response validated: text only, no write ops]
 UI: Briefing card with the full text
 A: (TTS reads the briefing aloud)
 ```
 
 **The briefing is read-only.** It never writes records. The `AutomationRunner` applies Spec 02 §7.5: a read-only result is delivered without approval gating.
 
-**Freshness over batch pricing.** The research doc's Batch-API costing (research §7.2) predates the measured numbers: an immediate Haiku briefing costs ~$0.0007 and takes ~2 s (findings §10.1), so the 50% batch discount saves a third of a tenth of a cent while introducing a real staleness problem — a batch submitted overnight completes "within 24 hours," is not guaranteed done by 7:00 AM, and is assembled from *yesterday's* data (a task added at 11 PM would be missing). The briefing therefore generates **at fire time** with an immediate call; the Batch API remains appropriate only for genuinely asynchronous, non-deadline work (e.g. the weekly consolidation pass).
+**Freshness over batch pricing.** The research doc's Batch-API costing (research §7.2) predates the measured numbers: an immediate Haiku briefing costs ~$0.0007 and takes ~2 s (findings §10.1), so the 50% batch discount saves a third of a tenth of a cent while introducing a real staleness problem — a batch submitted overnight completes "within 24 hours," is not guaranteed done by 7:00 AM, and is assembled from *yesterday's* data (a task added at 11 PM would be missing). The briefing therefore generates **on demand — at notification-tap or next app-open — with an immediate call** (Spec 04 §3.13: scheduled generation is *not* a background Claude call; the OS fires a local notification and the tap triggers generation, because iOS offers no reliable background execution); the Batch API remains appropriate only for genuinely asynchronous, non-deadline work (e.g. the weekly consolidation pass).
 
 **Canonical response example (not verbatim — Claude generates this fresh each day):**
 

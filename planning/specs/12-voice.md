@@ -400,6 +400,8 @@ The current `app/lib/main.dart` is text-first by design ("Text-first for now; vo
 
 ### 10.2 Corrections for the next reconciliation pass (this spec edits no other file)
 
+> **✅ APPLIED — suite-sync pass, 2026-07-07.** Every X-item below has been propagated to its counterpart spec (X1/X3 → Specs 03/04; X2 → Spec 08 §5.5; X4 → Spec 10 §0; X5 → Spec 05 §3.2; X6 → Spec 04 §5.1/§5.2). Kept for the record.
+
 - **X1 — Retarget "Spec 06 — Voice" citations → Spec 12:** Spec 03 §0 (scope exclusion), §1 P2.5 ("Spec 06 signals a final transcript"); Spec 04 §0 (scope), §3.8 ("Defined at research §9.2 and Spec 06"); Spec 08 §0 (scope) and §5.5 (STT/TTS row, twice). Spec 04 §4.2's subtitle sentence splits per §4.3's ownership line: rendering cite → Spec 07 §7.3 (already Spec 07 X4), dispatch-semantics cite → this spec §4.1.
 - **X2 — Spec 08 §5.5 STT/TTS row** gains this spec as its normative source ("configured on-device per Spec 12 §5.1").
 - **X3 — `SpeechEngine` naming:** Spec 04 §2.3 (component inventory) and §3.8 note the split into `SpeechInput`/`SpeechOutput` (this spec §2.1), with `SpeechEngine` retained as the collective/layer name; Spec 09 §3.1's planned seam names are confirmed as-is.

@@ -37,7 +37,7 @@ It does **not** cover: what leaves the device inside *model calls* (prompt paylo
 
 ## 2. The Local Instruments (what exists today)
 
-### 2.1 The turnlog — `<dataDir>/turnlog.jsonl`
+### 2.1 The turnlog — `<deviceDir>/turnlog.jsonl` (device-local; formerly `<dataDir>` — relocated, commit `d956390`)
 
 One JSON line is appended per turn by `Session.handle` (`v0/lib/session.dart`), via `StorageRepository.logTurn`. The v0 field set, verbatim from code:
 
@@ -50,7 +50,7 @@ One JSON line is appended per turn by `Session.handle` (`v0/lib/session.dart`), 
 | `skill` | dispatched skillId | when dispatched | F (built-in) / **Q** (authored) |
 | `template` | the corpus template matched | corpus routes | **Q** (normalized, but derived from user phrasing) |
 | `slots` | the slot values dispatched into the skill | when present | **C** |
-| `cloud` | cloud health this turn: `ok` or a `CloudErrorKind` name (`noKey \| offline \| timeout \| badKey \| rateLimited \| serverError \| malformed`, `v0/lib/claude.dart`) | cloud-consulting turns | F |
+| `cloud` | cloud health this turn: `ok` or a `CloudErrorKind` name (`noKey \| offline \| timeout \| badKey \| rateLimited \| serverError \| malformed` — the canonical sealed set, owned by Spec 04 §5.1; shipped in `v0/lib/claude.dart`) | cloud-consulting turns | F |
 | `writes` | record ops this turn: `{op, id, typeId}` | writing turns | F (opaque ids) / **Q** (authored typeIds) |
 | `response` | assistant reply, capped at 240 chars | always | **C** |
 | `error` | exception type + message + stack, error path only — never shown to the user | error turns | **C** (messages/stacks can embed values) |
@@ -74,7 +74,7 @@ The AppLog is device-local by construction (OS temp folder, never the synced dat
 
 Both instruments **do contain user content locally** — utterances, slot values, responses, raw exception text. That is deliberate and stays (D1): research §14.2's "engineered from the start to hold no PII" is hereby resolved to apply to the **submitted artifact**, not the local file — a content-free local log would defeat P11.4 (you cannot post-debug a misroute you cannot see). The consequence is absolute: **neither file is ever submitted as-is, and no submission path may read them as payload source** — outbound payloads are *derived* through the §3 boundary (gap records at capture time, §4.2; the diagnostic bundle at compose time, §5.1).
 
-One placement correction (D9): in v0 the turnlog lives in `<dataDir>` — the user's *synced* folder — which was fine for one dogfooding device but is wrong at two (interleaved appends from two devices are a sync-conflict machine, and telemetry is per-device by nature). In v1 the turnlog moves to the device-local app-support store, alongside the execution journal (Spec 04 §7.1; precedent `G-36`, per-device corpus files). Nothing about its content changes.
+One placement correction (D9) — **✅ LANDED (commit `d956390`)**: the turnlog formerly lived in `<dataDir>` — the user's *synced* folder — which was fine for one dogfooding device but wrong at two (interleaved appends from two devices are a sync-conflict machine, and telemetry is per-device by nature). It now lives in the device-local `deviceDir` (`~/.plenara`), injected by the app and off the synced folder (same mechanism moved the HLC deviceId — Spec 06 §4.3; the v1 packaging target remains app-support, alongside the execution journal, Spec 04 §7.1; precedent `G-36`). Nothing about its content changed; rotation (D12) is still pending.
 
 ---
 
@@ -210,9 +210,9 @@ Research §14.3 is explicit: no-PII/no-content "is a design constraint to be tes
 All diagnostic state is plain files, plainly named, trivially deletable — the user's machine, the user's files.
 
 - **AppLog:** one file per run in `%TEMP%/plenara-logs/` (v0 relies on OS temp cleanup); v1 prunes files older than 14 days at boot. Mobile targets need an app-support location + in-app viewer (Q3 — `%TEMP%`+stdout is desktop-shaped).
-- **turnlog:** unbounded append today; v1 rolls it into monthly segments with a total cap, device-local (D9). It is the input to the make-or-break metrics (§8), so it is kept generously — but locally.
+- **turnlog:** unbounded append today; already device-local (D9 landed, commit `d956390`); v1 rolls it into monthly segments with a total cap. It is the input to the make-or-break metrics (§8), so it is kept generously — but locally.
 - **Gap register:** a 200-entry ring; entries clear on submit or explicit dismiss.
-- **Uninstall/reset:** deleting the app-support folder removes every instrument; nothing diagnostic hides in the synced data folder after D9 lands.
+- **Uninstall/reset:** deleting the device-local folders (`~/.plenara` + app-support + temp logs) removes every instrument; nothing diagnostic hides in the synced data folder now that D9 has landed (commit `d956390`).
 
 ---
 
@@ -245,14 +245,14 @@ This is the division of labor: the **corpus** makes one install better; the **ga
 - **D6 — Authored capabilities travel as `authored:<hash8>` + a closed-vocabulary area label** assigned by the authoring Claude call (Spec 02 §6) and stored in the def — realizing research §14.1's "'nutrition' area" example without shipping user vocabulary. Route-misses report `area: unknown` + built-in candidates.
 - **D7 — Opt-in, user-initiated only.** No background transmission, no auto-prompts beyond one rate-limited post-failure line. Channels are off until used (research §14.3).
 - **D8 — The v0 instruments are formalized as-is.** The turnlog field set (§2.1, from `Session.handle`) and the AppLog boot/phase/turn/error trace (§2.2) are the specified local instruments; "diagnose from the log, not by retrying" is promoted from a dogfood convention to invariant P11.4.
-- **D9 — The turnlog moves device-local in v1** (app-support, next to the execution journal — Spec 04 §7.1; precedent `G-36`). v0's `<dataDir>/turnlog.jsonl` placement was single-device-acceptable; per-device telemetry in a synced folder is a conflict machine and a needless exposure of Class C to the sync provider beyond what `G-37` already accepts.
+- **D9 — The turnlog is device-local — ✅ LANDED (commit `d956390`):** it now lives in the app-injected `deviceDir` (`~/.plenara`; v1 packaging target remains app-support, next to the execution journal — Spec 04 §7.1; precedent `G-36`). v0's original `<dataDir>/turnlog.jsonl` placement was single-device-acceptable; per-device telemetry in a synced folder is a conflict machine and a needless exposure of Class C to the sync provider beyond what `G-37` already accepts — which is why this landed ahead of any second device.
 - **D10 — The API key is Class S: never in any log, local or outbound.** Auth failures log `badKey`/HTTP status only (already true in `v0/lib/claude.dart`); enforced by the §6.1 canary battery.
 - **D11 — No raw-log attachment option in v1.** The redacted bundle is the only submittable trace; the raw files remain reachable by hand for a user who insists.
 - **D12 — Retention:** AppLog 14-day boot-time sweep; turnlog monthly segments under a cap; gap ring of 200, cleared on submit/dismiss; everything user-deletable as plain files.
 
 ### Open
 
-- **Q1 — The area-label taxonomy.** The ~20-label closed vocabulary needs drafting, a slot in the Spec 02 §6 authoring prompt, and a rule for re-labeling on capability edit. Owner: Spec 02 amendment.
+- **Q1 — The area-label taxonomy.** The ~20-label closed vocabulary needs drafting, a slot in the Spec 02 §6 authoring prompt, and a rule for re-labeling on capability edit. **Owner: this spec (Spec 11)** — suite-sync ownership call (05f §3 item 4): the taxonomy is drafted here as a follow-up; Spec 02 §6 (prompt slot) and Spec 01 §4 (the def field) then take it up by amendment.
 - **Q2 — Whitelisting sealed-error message constants.** Spec 04 §5.1 kinds travel; message *text* is dropped even when it is a code constant, because interpolation risk is hard to prove per-site. Revisit with a lint that certifies constant-only messages.
 - **Q3 — Mobile AppLog location & viewer.** `%TEMP%` + stdout path-printing is desktop-shaped; iOS/Android need an app-support directory and an in-app log view to preserve P11.4 without a console.
 - **Q4 — Diagnostic value of hashed authored ids.** If real gap reports about authored capabilities prove undebuggable behind `authored:<hash8>` + area, consider an *explicit, per-report* user option to name the capability — a deliberate disclosure, clearly marked in the manifest. Decide after the first live reports.

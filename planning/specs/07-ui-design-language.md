@@ -84,6 +84,10 @@ One surface, two sections, reachable from the Stage chip and by voice ("what's p
 
 Not a surface — an overlay over any of the four (§7). Nothing beneath it reflows.
 
+### 2.6 Settings — a required addition this spec owns (suite-sync CS-11)
+
+The closed surface list above omitted a surface two other specs bind to, and this spec owns fixing that: **Settings must have a home here.** Required content inventory: BYOK key entry/validation/removal (Spec 08 §6.2–6.5), the user-facing per-kind "what it sends" feature catalog (Spec 08 §5.6 tier b — the table is user-facing, not just spec-facing), the local spend tally (Spec 08 Q3/§6.6), and Feedback & Diagnostics (gap list, sends, delete-all — Spec 11 §9). Placement decision pending a design pass: either a fifth top-level surface (quiet, voice-reachable like the rest) or a third section of the Operation Center (§2.4) — either is acceptable; what is not acceptable is the closed list silently excluding a surface Specs 08 and 11 depend on.
+
 ---
 
 ## 3. The View-Archetype Set

@@ -17,7 +17,7 @@ It specifies four things the research doc (§9, §12) calls for:
 3. **Error handling** — the sealed error taxonomy, the No-Silent-Failure surfacing contract that maps every failure to a visible, actionable surface, how errors are translated across boundaries, and how repair views and crash recovery consolidate the partial-failure handling scattered across Specs 01–03.
 4. **Offline behavior** — what runs with no network (the entire free tier), what requires the cloud and how each cloud dependency degrades to a surface rather than a dead end, and the connectivity/queue model.
 
-It does **not** re-specify subsystem internals: type-file format (Spec 01), primitive-operation semantics (Spec 02), routing and the corpus (Spec 03), STT/TTS (Spec 06 — Voice), sync-protocol conflict resolution (Spec 06 — Data & Sync), or view rendering (Spec 07 — UI). It defines the *contracts and control flow that bind them*, and it is the authority whenever two subsystem specs disagree about a seam.
+It does **not** re-specify subsystem internals: type-file format (Spec 01), primitive-operation semantics (Spec 02), routing and the corpus (Spec 03), STT/TTS (Spec 12 — Voice), sync-protocol conflict resolution (Spec 06 — Data & Sync), or view rendering (Spec 07 — UI). It defines the *contracts and control flow that bind them*, and it is the authority whenever two subsystem specs disagree about a seam.
 
 ---
 
@@ -64,7 +64,7 @@ The layers form a **directed acyclic dependency graph with the Business Logic la
 
 Because every dependency is an interface, something must choose the concrete implementations. That is the **composition root**: a single `AppContainer` constructed at launch (`main()`), before any layer runs, which instantiates each concrete component and injects it into the layer above. It is the *only* place in the codebase where concrete implementation types are named. This keeps the dependency rule mechanically checkable: a lint/import rule forbids any file outside the composition root from importing a concrete `*Impl` class across a layer boundary, so a violation is a build failure, not a code-review miss (§5 of the Test spec makes this a CI gate).
 
-Platform-specific implementations (the `SpeechEngine` backed by iOS `SpeechAnalyzer` vs Windows SAPI, the `CryptoBox` backed by Keychain/Secure Enclave vs DPAPI/TPM, Spec 01 §8.7) are selected here by platform channel at construction time. The layers above receive the same interface on every platform; portability is a composition-root concern, never a business-logic one.
+Platform-specific implementations (the `SpeechEngine` backed by iOS `SpeechAnalyzer` vs Windows SAPI, the `CryptoBox` backed by Keychain/Secure Enclave vs DPAPI/TPM, Spec 01 §8.7) are selected here by platform channel at construction time. *(Naming note, Spec 12 X3: the Voice layer's seams are `SpeechInput`/`SpeechOutput` per Spec 12 §2.1 — adopting Spec 09 §3.1's names — with `SpeechEngine` retained as the collective/layer name used in the tables here.)* The layers above receive the same interface on every platform; portability is a composition-root concern, never a business-logic one.
 
 **Component inventory** (each maps to exactly one layer; the interface is in §3):
 
@@ -159,7 +159,7 @@ abstract class StorageRepository {
 }
 ```
 
-**Two shapes, one boundary — do not conflate them (a v0.1 modeling gap).** The `Record` that `read`/`readMany`/`readChildren`/`readViaRelation` return and `write` accepts is the **in-memory, fully-decrypted** form — `{ id, typeId, schemaVersion, createdAt, lastModified, parentId?, fields: Map<String,Object?> }`, where `fields` holds *every* attribute value, sensitive or not, in the clear (Spec 01 §8.2: "the in-memory cache always holds fully-decrypted values"). It carries **no** `encryptedPayload` — encryption is a property of the on-disk representation, not the runtime object. The **on-disk envelope** is the split form Spec 01 §8.2 shows: plaintext `fields` (non-sensitive attributes, queryable on disk) plus a single `encryptedPayload` blob (the sensitive attributes, sealed). Storage is the *only* component that crosses between the two: `hydrate`/reads open the payload via `CryptoBox` and merge it into the decrypted `fields`; `write` re-splits `fields` using the caller-supplied `sensitiveFields` set and seals that subset. Every layer above Storage sees only the decrypted `Record`; no other component ever holds an `encryptedPayload` or touches a key (§3.1 `CryptoBox`). Storage still never interprets `fields` against a type — it splits by the names it is handed, not by schema. Filters (`readMany`/`readChildren`/`readViaRelation`) are the Spec 02 §3.6 filter-expression form, evaluated in memory over the decrypted store, which is exactly why a filter over a `sensitive` attribute works (Spec 01 §8.2).
+**Two shapes, one boundary — do not conflate them (a v0.1 modeling gap).** The `Record` that `read`/`readMany`/`readChildren`/`readViaRelation` return and `write` accepts is the **in-memory, fully-decrypted** form — `{ id, typeId, schemaVersion, createdAt, lastModified, parentId?, fields: Map<String,Object?> }` (where `lastModified` is a **derived** value, `max(stamps).ms` per Spec 06 §4.1 D5 — it is not stored on the record envelope; type/skill *definition* files, which have no `_meta` stamps, do keep a stored `lastModified`, Spec 01 §4.2), where `fields` holds *every* attribute value, sensitive or not, in the clear (Spec 01 §8.2: "the in-memory cache always holds fully-decrypted values"). It carries **no** `encryptedPayload` — encryption is a property of the on-disk representation, not the runtime object. The **on-disk envelope** is the split form Spec 01 §8.2 shows: plaintext `fields` (non-sensitive attributes, queryable on disk) plus a single `encryptedPayload` blob (the sensitive attributes, sealed). Storage is the *only* component that crosses between the two: `hydrate`/reads open the payload via `CryptoBox` and merge it into the decrypted `fields`; `write` re-splits `fields` using the caller-supplied `sensitiveFields` set and seals that subset. Every layer above Storage sees only the decrypted `Record`; no other component ever holds an `encryptedPayload` or touches a key (§3.1 `CryptoBox`). Storage still never interprets `fields` against a type — it splits by the names it is handed, not by schema. Filters (`readMany`/`readChildren`/`readViaRelation`) are the Spec 02 §3.6 filter-expression form, evaluated in memory over the decrypted store, which is exactly why a filter over a `sensitive` attribute works (Spec 01 §8.2).
 
 `CryptoBox` isolates all key handling behind one interface so no other component touches a raw key (Spec 01 §8.7 keeps keys in the platform secure store, never in the synced folder):
 
@@ -224,7 +224,7 @@ abstract class SkillInterpreter {
   /// action plan from the entry's captured before-images and applies it as a
   /// fresh, journaled, serial execution. Creates are deleted; updates restore
   /// their before-image fields; a deleted record is re-created from its
-  /// before-image with a fresh lastModified (undoable — this is what lets
+  /// before-image with fresh HLC stamps (Spec 06 §6.6) (undoable — this is what lets
   /// deletion be act-then-describe, Spec 05 §3.1/D8). Cross-device tombstone
   /// revival is a Spec 06 concern (§3.11). Undo is single-level: an undo is
   /// not itself undoable.
@@ -297,11 +297,13 @@ abstract class ClaudeClient {
   bool get available;
 
   /// Classification/extraction escalation (Spec 03 §3.5), Haiku. Returns the
-  /// structured intent JSON or a typed CloudError (offline, rateLimited,
-  /// policyBlocked, noKey) — every one of which maps to a surface (§5.2, §6.2).
+  /// structured intent JSON or a typed CloudError (the canonical
+  /// CloudErrorKind set, §5.1) — every one of which maps to a surface (§5.2, §6.2).
   Future<CloudResult<RawIntent>> classify(ClassificationRequest req);
 
-  /// Authoring (Spec 01 §6, Spec 02 §6), Sonnet. Produces a proposed type or
+  /// Authoring (Spec 01 §6, Spec 02 §6), via the pinned authoring model —
+  /// named in exactly one place, Spec 08 §3.2/D3 (Opus 4.7/4.8 target;
+  /// Haiku accepted interim). Produces a proposed type or
   /// skill definition + a safety assessment for local validation. Never
   /// returns executable code — only declarative JSON the deterministic
   /// validators check before anything is activated.
@@ -388,7 +390,7 @@ enum PreActionConfirmKind { nonUndoableDeletion }
 
 *(Named `PreActionConfirmKind`, not `ConfirmationKind` — Spec 03 §2.6 already owns the identifier `ConfirmationKind` for the corpus write-back signal (`implicit` | `clarificationSelected`), and the two are unrelated concepts; a shared name would collide in code and, worse, in readers' heads.)*
 
-`ConfirmationRequested` is now a **single-purpose** event: the one pre-action approval the system retains, a non-undoable type/skill deletion (Spec 05 §24). v0.1–v0.2 defined two kinds — a routing pre-confirmation and an action-plan approval — but act-then-describe (Spec 05 §3.1) removed both: an uncertain routing is now surfaced as a `ClarificationRequested` (a genuine `SelectCandidate` choice, not an approve/decline of one guess), and the per-skill action-plan approval is gone with Spec 02's `confirmationPolicy`. The enum is kept (rather than folded into a bare event) so a future non-undoable operation can be added as a named kind and the UI's exhaustive `switch` forced to handle it. Everything else that used to be a "confirmation surface" is either a normal act-then-describe `Done` (no surface) or a `ClarificationRequested`. The orchestrator's obligations to NLU (exactly one of `recordConfirmation`/`recordCorrection`, or neither on a plain cancel/decline) and the compound-utterance residual offer are as specified in Spec 03 §2.7; §4.2 gives the async sequencing. Non-`skill_invocation` intents resolve at the seam exactly as Spec 03 §2.7 lists: `system_command` → the app shell (`undo` via §3.11, `show_pending` → the review feed of §3.9), `clarification_needed` → a `ClarificationRequested` event, `define_*` → `AuthoringService` (§3.7) as a **detached** operation (§4.7) so a 10–30 s Sonnet authoring call never holds the turn lock, tier-gated; `generative_request` → `GenerativeService.produce` (§3.10) as a **detached**, read-only operation (§4.7), tier-gated, delivered through the operation center as a `Detached` event — it writes no records, so it has no confirmation surface and no corpus write-back (Spec 03 §2.2a/§2.7). A `delete_type`/`delete_skill` system command is what raises the `nonUndoableDeletion` `ConfirmationRequested`.
+`ConfirmationRequested` is now a **single-purpose** event: the one pre-action approval the system retains, a non-undoable type/skill deletion (Spec 05 §24). v0.1–v0.2 defined two kinds — a routing pre-confirmation and an action-plan approval — but act-then-describe (Spec 05 §3.1) removed both: an uncertain routing is now surfaced as a `ClarificationRequested` (a genuine `SelectCandidate` choice, not an approve/decline of one guess), and the per-skill action-plan approval is gone with Spec 02's `confirmationPolicy`. The enum is kept (rather than folded into a bare event) so a future non-undoable operation can be added as a named kind and the UI's exhaustive `switch` forced to handle it. Everything else that used to be a "confirmation surface" is either a normal act-then-describe `Done` (no surface) or a `ClarificationRequested`. The orchestrator's obligations to NLU (exactly one of `recordConfirmation`/`recordCorrection`, or neither on a plain cancel/decline) and the compound-utterance residual offer are as specified in Spec 03 §2.7; §4.2 gives the async sequencing. Non-`skill_invocation` intents resolve at the seam exactly as Spec 03 §2.7 lists: `system_command` → the app shell (`undo` via §3.11, `show_pending` → the review feed of §3.9), `clarification_needed` → a `ClarificationRequested` event, `define_*` → `AuthoringService` (§3.7) as a **detached** operation (§4.7) so a 10–30 s cloud authoring call (model pinned in Spec 08 §3.2/D3) never holds the turn lock, tier-gated; `generative_request` → `GenerativeService.produce` (§3.10) as a **detached**, read-only operation (§4.7), tier-gated, delivered through the operation center as a `Detached` event — it writes no records, so it has no confirmation surface and no corpus write-back (Spec 03 §2.2a/§2.7). A `delete_type`/`delete_skill` system command is what raises the `nonUndoableDeletion` `ConfirmationRequested`.
 
 **Mixed free/paid multi-target turn (resolve-stage, `G-23`).** A compound utterance whose fragments resolve to a *mix* of free and paid capabilities — F-13, *"track my mood **and** my energy"*: mood instantiates a built-in template (free), energy has no template (→ paid authoring) — does **not** fail the whole turn. The orchestrator applies the free fragment(s) act-then-describe, then surfaces the paid remainder as a single follow-up offer: *"Your mood tracker's ready — I don't have a template for energy; want me to create a custom one? [PAID]"*. This reuses the compound-utterance residual-offer machinery (Spec 03 §2.7 / MD8) with a per-fragment tier decision, so a partial-free/partial-paid turn degrades gracefully instead of all-or-nothing.
 
@@ -432,7 +434,7 @@ abstract class AuthoringService {
 
 ### 3.8 Voice — `SpeechEngine` (restated)
 
-Defined at research §9.2 and Spec 06; summarized: `startListening()`, `stopListening()`, `speak(text)`, and a `Stream<Transcript>` that signals interim and **final** transcripts. Only the final transcript enters the dispatch pipeline (Spec 03 §10 MD10, §4.2 here). Backed by platform-native STT/TTS selected at the composition root (§2.3). The Voice layer knows only the Business Logic seam; it never touches storage or the model.
+Defined at research §9.2 and Spec 12 — Voice; summarized: `startListening()`, `stopListening()`, `speak(text)`, and a `Stream<Transcript>` that signals interim and **final** transcripts. Only the final transcript enters the dispatch pipeline (Spec 03 §10 MD10, §4.2 here). Backed by platform-native STT/TTS selected at the composition root (§2.3). Concretely the layer is the `SpeechInput`/`SpeechOutput` seam pair of Spec 12 §2.1 (Spec 09 §3.1's names, confirmed by Spec 12 X3); `SpeechEngine` names the collective. The Voice layer knows only the Business Logic seam; it never touches storage or the model.
 
 ### 3.9 Business Logic — `AutomationRunner` and the Review Feed (new)
 
@@ -478,8 +480,10 @@ The paid, Claude-generated features — daily briefing narrative, gift suggestio
 
 ```dart
 abstract class GenerativeService {
-  /// Produce a generative artifact (briefing | giftIdeas | reflection |
-  /// weeklyReview). Gathers the relevant records deterministically (through
+  /// Produce a generative artifact. The closed `generativeKind` set is owned
+  /// by Spec 08 §3.3's per-kind registry (single owner; includes
+  /// `draft_message`, a shipped P-20 feature) — this docstring deliberately
+  /// does not enumerate it. Gathers the relevant records deterministically (through
   /// StorageRepository, never handing the model raw sensitive content beyond
   /// what Spec 08's payload rules permit), calls ClaudeClient.generate, and
   /// returns the rendered result. Read-only: it NEVER writes user records
@@ -505,7 +509,7 @@ abstract class GenerativeService {
 `undo` is a first-class system command (Spec 03 §2.3) — "reverse the most recent executed skill … within the undo window" — but v0.1 gave it no owner or mechanism, and it silently contradicted Spec 02 §5.4, which **reaps a journal entry the instant it reaches `done`**: if the record is gone, there is nothing to reverse. And even a retained entry only records what was *written*, not the prior state an update overwrote, so reversing an update is impossible without more. Both are fixed here; the pieces are already in §3.3.
 
 - **Retention.** A completed execution is retained in the journal's bounded most-recent-completed ring for the **undo window** (default 5 minutes), then reaped (`reapExpired`, §3.3). This narrows Spec 02 §5.4's "reap at done" to "reap at end-of-undo-window," aligned in Spec 02 §5.4. **The ring must hold more than one entry** (v1 default: the last 5 completed executions, each within its window) — *not* "the last execution only" — because the **correction flow depends on it**: "Log 5k" → "logged water" → *"no, that run was a walk"* must still be able to reverse the run's write (Spec 05 §3.3 reverse-then-redispatch), and a ring of one would have evicted it the moment the water log completed. `undo` (the bare system command) still targets only the most recent entry (Spec 05 §3.5); the deeper entries exist for the orchestrator's correction reversal, which identifies its target by the corrected intent's record, not by recency. A correction arriving after the window has closed gets the honest surface — "that was a while ago; want me to just fix the record?" — an ordinary update, never a stale reversal (P2.8).
-- **Before-images.** `execute` captures each written record's prior state (§3.3) — for a delete, that prior state is the **full record**. Undo builds the **inverse plan** from them: a create → `delete_record` of the minted id; an update → `write_record` restoring the captured fields (a field-merge back to the before-image, Spec 02 §3.2); a delete → `write_record` re-creating the record from its captured before-image, stamped with a fresh `lastModified` so the revival wins over its own tombstone on the acting device. Making delete undoable is what lets a record deletion follow act-then-describe (Spec 05 §3.1, D8) rather than needing the pre-action confirmation v0.1 gave it — the before-image was already being captured, so the revival is nearly free. **Carried-forward edge:** the cross-device race — the delete's tombstone syncs to another device before the undo re-creates the record — is a conflict the Data & Sync spec (Spec 06) must resolve under its last-writer-wins-by-`lastModified` model; the fresh `lastModified` on the revival is the intended tiebreaker, but confirming it across the real provider sync is a Spec 06 task. This does not block v1 (same-device undo within minutes is the common case). (*Type/skill* deletion remains genuinely non-undoable — it is a reverse migration, not a record restore — and keeps its pre-action confirmation, §3.6 / Spec 05 §24.)
+- **Before-images.** `execute` captures each written record's prior state (§3.3) — for a delete, that prior state is the **full record**. Undo builds the **inverse plan** from them: a create → `delete_record` of the minted id; an update → `write_record` restoring the captured fields (a field-merge back to the before-image, Spec 02 §3.2); a delete → `write_record` re-creating the record from its captured before-image, stamped with fresh per-field HLC stamps so the revival wins over its own tombstone (Spec 06 §6.6 — stored `lastModified` is dropped from the record envelope, Spec 06 §4.1 D5; HLC stamps are the only merge authority). Making delete undoable is what lets a record deletion follow act-then-describe (Spec 05 §3.1, D8) rather than needing the pre-action confirmation v0.1 gave it — the before-image was already being captured, so the revival is nearly free. **Carried-forward edge (resolved in Spec 06 §6.6):** the cross-device race — the delete's tombstone syncs to another device before the undo re-creates the record — is resolved by stamp comparison under Spec 06's HLC merge model; the revival's fresh stamps are the tiebreaker, and confirming it across the real provider sync remains a Spec 06 verification task. This does not block v1 (same-device undo within minutes is the common case). (*Type/skill* deletion remains genuinely non-undoable — it is a reverse migration, not a record restore — and keeps its pre-action confirmation, §3.6 / Spec 05 §24.)
 - **Undo is an ordinary execution.** The inverse plan runs through the same serial-execute queue and is itself journaled (idempotent, resumable). It is **single-level**: an undo is not itself undoable, so there is no undo/redo stack to keep consistent under crash or sync in v1 (deferred, §11 Q5). 
 - **Undo vs. routing correction are different signals** (Spec 03 §2.7): `undo` reverses the *action* but does not by itself zero the routing corpus entry; an `undo` followed by a `"correct"` is the negative-routing signal and flows through `recordCorrection`. The orchestrator owns that distinction; the interpreter owns only the reversal.
 
@@ -617,7 +621,7 @@ One user turn is a sequence of awaited stages, sequenced by `DispatchOrchestrato
    └─ Done(confirmationText)                                         (→ UI, and SpeechEngine.speak)
 ```
 
-Two properties make this safe. First, **the frozen clock is captured once, at NluContext assembly, and threaded through** route → resolve → execute (Spec 02 §4.4, Spec 03 §2.6) — no stage re-reads the wall clock, so a slow user or a backgrounded app cannot change the result. Second, **only the final transcript enters the pipeline**; interim STT results update a live subtitle (Spec 06) but never dispatch, so a turn starts exactly once per utterance.
+Two properties make this safe. First, **the frozen clock is captured once, at NluContext assembly, and threaded through** route → resolve → execute (Spec 02 §4.4, Spec 03 §2.6) — no stage re-reads the wall clock, so a slow user or a backgrounded app cannot change the result. Second, **only the final transcript enters the pipeline**; interim STT results update a live subtitle (rendering: Spec 07 §7.3) but never dispatch (interim/final dispatch semantics: Spec 12 §4.1), so a turn starts exactly once per utterance.
 
 ### 4.3 One Active Turn, Cancellation, and Barge-In
 
@@ -653,7 +657,7 @@ Local inference has no rate limit but is naturally serialized by the single infe
 
 ### 4.7 Detached Operations: Long Cloud Work Never Holds the Turn Lock
 
-The one-active-turn model (§4.3) is correct for the *interactive* pipeline — route, confirm, resolve, execute are each sub-second. But two operations are **not** sub-second: **authoring** (Sonnet, Spec 01 §6 / 02 §6) and **generation** (`GenerativeService`, §3.10) routinely take 10–30 s. If either ran inside the blocking turn, a `define_*` utterance would freeze all voice interaction for half a minute — the app would appear hung. They are therefore **detached**: the turn that triggers one emits a `Detached(operationId, kind)` event (§3.6) and **completes immediately**, releasing the turn lock; the long work proceeds in the background and reports through a small operation center.
+The one-active-turn model (§4.3) is correct for the *interactive* pipeline — route, confirm, resolve, execute are each sub-second. But two operations are **not** sub-second: **authoring** (the pinned authoring model, Spec 08 §3.2/D3; Spec 01 §6 / 02 §6) and **generation** (`GenerativeService`, §3.10) routinely take 10–30 s. If either ran inside the blocking turn, a `define_*` utterance would freeze all voice interaction for half a minute — the app would appear hung. They are therefore **detached**: the turn that triggers one emits a `Detached(operationId, kind)` event (§3.6) and **completes immediately**, releasing the turn lock; the long work proceeds in the background and reports through a small operation center.
 
 ```dart
 abstract class OperationCenter {
@@ -692,7 +696,8 @@ Every fallible interface either returns a **value-typed result** for an *expecte
 
 | layer | sealed set |
 |---|---|
-| Intelligence | `CloudError{offline, rateLimited, authFailed, policyBlocked, serverError}` |
+| Intelligence | `CloudError(kind)` where `CloudErrorKind = {noKey, offline, timeout, badKey, rateLimited, serverError, malformed}` — **this is the canonical definition** (shipped as `CloudErrorKind` in `v0/lib/claude.dart`); Spec 08 §2/§6.4 and Spec 11 §2.1 cite it, they do not redefine it. *(The earlier draft's `authFailed` is renamed `badKey` to match the shipped code; `policyBlocked` is retired as a transport-error kind — a model refusal arrives in-band as content and is surfaced as the caring decline of Spec 02 §7.6, not as a `CloudError`.)* |
+| Voice | `VoiceError{micPermissionDenied, sttUnavailable, sttFailed, ttsUnavailable}` (defined in Spec 12 §9.1 — the cross-spec addition recorded there as X6) |
 | Storage | `StorageError{notFound, conflict, ioFailed, corrupt}` |
 | Schema/Interpreter | `SchemaError{typeNotFound, versionTooNew, validationFailed}` · `SkillError{unresolvedRef, opFailed(index)}` |
 | NLU | `NluError{ambiguous, noCandidate}` |
@@ -706,8 +711,12 @@ No error is a swallowed null; each maps to a spoken/text surface plus an offered
 |---|---|
 | `CloudError.offline` | "That needs an internet connection — remind you when you're back?" → reminder (Spec 05 §13) |
 | `CloudError.rateLimited` | "I've hit today's limit on Claude." → retry-later |
-| `CloudError.authFailed` | "Your API key was rejected." → open settings |
-| `CloudError.policyBlocked` | the caring decline (Spec 02 §7.6) — names what and why |
+| `CloudError.noKey` | "That's a paid feature — it needs your API key." → open settings (drives the tier-degrade contract, Spec 08 §6.4 / Spec 05 §13) |
+| `CloudError.badKey` | "Your API key was rejected." → open settings |
+| `CloudError.timeout` | "Claude didn't answer in time." → retry-later |
+| `CloudError.malformed` | "I couldn't use what Claude sent back." → retry; on authoring, feeds the auto-re-author path (Spec 02 §6.4) |
+| *(model refusal — in-band content, not a `CloudError`)* | the caring decline (Spec 02 §7.6) — names what and why |
+| `VoiceError.*` | the Spec 12 §9.2 surface map (text mode is the universal safe state: mic-permission and STT failures auto-engage text mode; `sttUnavailable` also lands an `AttentionSurface` item; `ttsUnavailable` is covered by always-on subtitles, Spec 07 §7.3) |
 | `StorageError.conflict` | "This changed since I read it — redo with the new version, or keep yours?" (§4.5) |
 | `StorageError.corrupt` | routed to the repair surface (§5.5), not an interrupt |
 | `SchemaError.typeNotFound` | clarify, or offer to author (Spec 03 meta-intent) |

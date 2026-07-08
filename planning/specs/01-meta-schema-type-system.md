@@ -172,6 +172,8 @@ Each type is stored as a single JSON file in `[plenara-root]/types/`. The filena
 }
 ```
 
+**Presentation-hint vocabulary (additive fields adopted from Spec 07 — suite-sync X1).** Alongside `archetype`, `primaryField`, `secondaryField`, `timestampField`, `color`, and `icon`, the `presentation` object accepts three **optional, additive** hint fields (non-breaking per §7.1): `valueField` (names a `number`/`decimal` attribute; consumed by the `ledger`/`counter`/`progress` archetypes), `groupField` (names the attribute `ledger` groups by), and `mediaField` (names an `attachment` attribute; required by `gallery`). **Color/icon constraint (Spec 07 X3):** `presentation.color` is free-form hex *on disk*, but at registration it is **snapped to the nearest hue of Spec 07 §9.3's curated 12-hue accent ramp** — the authored value is preserved in the file, the snapped value is what renders; `icon` likewise resolves against Spec 07's glyph set with a deterministic fallback. Until this spec's planned §9 is written, **Spec 07 §§3–4 and §11 are the interim normative source** for presentation semantics.
+
 ### 4.2 Top-Level Fields
 
 | Field | Type | Required | Notes |
@@ -186,10 +188,10 @@ Each type is stored as a single JSON file in `[plenara-root]/types/`. The filena
 | `authoredBy` | `"claude"` \| `"system"` | yes | `"system"` for seed types; `"claude"` for all user-defined types. |
 | `authoredAt` | ISO 8601 datetime | yes | When the type was first authored. |
 | `safetyAssessmentId` | string \| null | yes | ID of the stored safety assessment for Claude-authored types. Null for built-in seed types. Required for any user-defined type before activation. |
-| `lastModified` | ISO 8601 datetime | yes | Updated on any change. Used for sync and startup scanning. |
+| `lastModified` | ISO 8601 datetime | yes | Updated on any change. Drives the registry's incremental re-embed (§5.4); definition-file conflicts are detected by content/`schemaVersion` comparison (§7.5, Spec 06 §7). **Scope note (suite-sync CS-06):** definition files *keep* this stored field — they carry no `_meta` HLC stamps. Record *instances* are different: their envelope stores no `lastModified` (it is derived as `max(stamps).ms`, Spec 06 §4.1 D5). |
 | `attributes` | Attribute[] | yes | The type's fields. See §4.3. May be empty only for a type whose data is entirely relations. |
 | `relations` | Relation[] | no | Typed edges to other entities; same object schema as attributes (§4.3) with `valueType: entityRef`. Omit or use `[]` if none. |
-| `presentation` | object | yes | View-archetype hints. See §9. |
+| `presentation` | object | yes | View-archetype hints: `archetype`, `primaryField`, `secondaryField`, `timestampField`, and the optional `valueField`/`groupField`/`mediaField` (see the note above §4.2), plus `color`/`icon` (snap-to-ramp/glyph-set resolution, Spec 07 X3). See §9 (planned); Spec 07 §§3–4/§11 are the interim normative source. |
 | `nluHints` | object | yes | Intent labels only (`captureIntent`, `queryIntent`). See §10 (planned). The former `confirmationTemplate` field is **retired** (§12.1, `G-03`) — the spoken confirmation is produced by a skill's `format` step (Spec 02 §7.1), never by the type. |
 | `migrations` | Migration[] | no | Declarative migration descriptors; user-defined types only. See §7.2. |
 | `parentType` | string | optional | If present, this type is *owned* by the named entity type; its instances carry a `parentId`. See §4.5. |
@@ -294,7 +296,7 @@ The concrete implementation — `LocalSchemaRegistry` — reads from `[plenara-r
 
 ### 5.2 Startup Hydration
 
-1. Scan `types/` for files modified since `lastStartupScan` (stored in `settings.json`).
+1. Scan `types/` per the bootstrap-cache **fingerprint diff** (Spec 06 §9.2): a device-local per-file fingerprint map, compared file by file. Scan state is **device-local — never in `settings.json`** (suite-sync CS-10: a per-device cursor in a synced file self-conflicts under LWW, and a single `lastStartupScan` watermark misses synced-in files carrying older mtimes — Spec 06 D13, which amends this step).
 2. Parse and validate each modified `.json` file.
 3. For seed types, verify `isBuiltIn == true` and `schemaVersion` matches the app's expected version (hard-coded in the binary). Mismatched seed types trigger an in-app migration (§7).
 4. Build (or incrementally update) the embedding index over `examplePhrases` + `description` for each type.
@@ -318,6 +320,7 @@ Most are enforced on every `register()` call; the cross-reference invariants (ma
 - `safetyAssessmentId` is present and non-null for any type where `authoredBy == "claude"`.
 - `parentType`, if present, resolves to a registered entity type (⁑, checked post-hydration). There is no `kind` field — ownership and append are orthogonal optional properties (§4.5).
 - `typeId` is immutable: a `register()` that changes an existing type's `typeId` is rejected as a new-type collision, not treated as a rename.
+- **Archetype eligibility (degrading ⁑ — cross-spec addition from Spec 07 §4.2, suite-sync X2):** `presentation.archetype` must be in Spec 07's closed archetype id set (home + child archetypes only; lens ids rejected); every hint field the archetype *requires* must name an existing attribute of an eligible value type (`timestampField` → `date`/`datetime`; `valueField` → `number`/`decimal`; `mediaField` → `attachment`); a child archetype (`key_value`, `edge`) requires `parentType` (for `edge`: at least two `entityRef` relations instead). Violations **degrade, never reject**: the type still registers (capture is never blocked by a cosmetic error, P2.8), the presentation block is marked degraded, Spec 07 §4.3's inference function assigns the fallback, and the degraded hint surfaces in the `AttentionSurface` — mirroring the degraded-relation behavior above.
 
 ### 5.4 The Embedding Index
 
@@ -492,7 +495,7 @@ Certain built-in types carry a hard-coded sensitivity mapping the app applies re
 
 - **Encrypted:** The JSON values of sensitive attributes, bundled into one `encryptedPayload` blob per record.
 - **Plaintext, alongside:** The values of non-sensitive attributes (in a `fields` object), so they stay queryable on disk without keys.
-- **Plaintext metadata:** The record's `id`, `typeId`, `schemaVersion`, `createdAt`, `lastModified`, and — for owned types — `parentId`. Needed by the StorageRepository, indexer, and migration runner without decryption.
+- **Plaintext metadata:** The record's `id`, `typeId`, `schemaVersion`, `createdAt`, the `_meta` HLC stamps, and — for owned types — `parentId`. Needed by the StorageRepository, indexer, and migration runner without decryption. **No stored `lastModified` (suite-sync CS-06):** the record envelope does not carry a `lastModified` field — it is *derived* as `max(stamps).ms` from the per-field HLC stamps, which are the only merge authority (Spec 06 §4.1 D5; a second stored clock could disagree with the stamps and was dropped rather than maintained as a lie). Type/skill *definition* files are unaffected — they have no `_meta` and keep their stored `lastModified` (§4.2).
 - **Never encrypted (structural, non-personal):** Type definition files, skill files, `settings.json`, the NLU corrections corpus, the registry embedding index.
 
 A **fully-sensitive** record (e.g. `journal_entry`) — every attribute value sits in the payload:
@@ -503,7 +506,7 @@ A **fully-sensitive** record (e.g. `journal_entry`) — every attribute value si
   "typeId": "journal_entry",
   "schemaVersion": 1,
   "createdAt": "2026-07-03T08:00:00Z",
-  "lastModified": "2026-07-03T08:05:00Z",
+  "_meta": { "stamps": { "...": "per-field HLC stamps (Spec 06 §4.1)" } },
   "encryptedPayload": "BASE64_ENCRYPTED_JSON..."
 }
 ```
@@ -516,7 +519,7 @@ A **partially-sensitive** record (e.g. `contact`) — name and relationship type
   "typeId": "contact",
   "schemaVersion": 1,
   "createdAt": "2026-07-03T08:00:00Z",
-  "lastModified": "2026-07-03T08:00:00Z",
+  "_meta": { "stamps": { "...": "per-field HLC stamps (Spec 06 §4.1)" } },
   "fields": { "displayName": "Sarah Mitchell", "birthday": "1990-11-14" },
   "encryptedPayload": "BASE64_ENCRYPTED_JSON(notes)..."
 }
@@ -645,6 +648,6 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
     {"name":"horizon","valueType":"date","required":false},
     {"name":"startedAt","valueType":"date","required":true,"defaultToNow":true},
     {"name":"status","valueType":"enum","enumValues":["active","met","dropped"],"required":false,"default":"active"}],
-  "presentation":{"archetype":"progress","primaryField":"title","timestampField":"horizon"} }
+  "presentation":{"archetype":"progress","primaryField":"title","valueField":"target","timestampField":"horizon"} }
 ```
 A **progress narrative** (P-18) is then a `generativeKind` (Spec 04 §3.10) reading `goal` + tasks + trackers over a window — not a write.

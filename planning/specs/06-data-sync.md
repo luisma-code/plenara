@@ -92,14 +92,16 @@ Never synced; everything here is rebuildable from the synced root or is volatile
 
 ```
 [app-support]/plenara/
-  device-id                           ← the per-install HLC deviceId (§4.3 — D6; v0 delta, §11)
+  device-id                           ← the per-install HLC deviceId (§4.3 — D6; landed, §11 V1)
   executions/{executionId}.json       ← the execution journal (Spec 02 §5.2, Spec 04 §3.3)
   index/                              ← CapabilityIndex binaries (Spec 01 §5.4, Spec 03 §10 MD9)
   search-index/                       ← ContentSearchIndex (Spec 04 §3.14)
   bootstrap/                          ← the hydration snapshot + fingerprint map (§9.2 — D13)
-  turnlog.jsonl                       ← per-turn diagnostics (research §14.2; v0 delta — §11)
+  turnlog.jsonl                       ← per-turn diagnostics (research §14.2; landed, §11 V6)
   nlu/plan-cache                      ← Lane 2, deferred (Spec 03 §5.1)
 ```
+
+*(v0 packaging note: v0's concrete device-local home is the app-**injected** `deviceDir` — `~/.plenara`, `config.defaultDeviceDir`, the same non-synced home as the config/key, threaded `Session → FileStorageRepository` and defaulting to `dataDir` for CLI/tests (commit `d956390`). The `[app-support]/plenara/` path above is the v1 packaging of the same role.)*
 
 The dividing rule, restated from Spec 02 §5.2 / Spec 03 §5.1: **earned user data syncs; volatile execution state and rebuildable artifacts do not.** A binary index inside the synced root would force every sync engine to special-case an exclusion no provider reliably offers (`G-37`) — so nothing device-local ever sits under the synced root.
 
@@ -172,7 +174,7 @@ Each device maintains one HLC (`store.dart HlcDevice`): a wall-clock millisecond
 
 A stable, random, per-install identifier (`dev-` + 12 hex; `storage_repository.dart _deviceId`), minted on first run and persisted. Its sole job is the HLC tiebreak: two installs sharing an id would produce indistinguishable stamps and silently corrupt the CRDT tie-break — which is why v0 replaced the earlier constant `'this-device'` before any real data was written (the code comment records this as a deliberate format decision).
 
-**Location (D6): `[app-support]/plenara/device-id` — device-local, never in the synced folder.** v0 currently persists it at `{dataDir}/.device-id`, i.e. *inside the synced root* — which syncs to the next device, which then adopts the *same* id, defeating the field's entire purpose the moment a second install exists. This is a v0 conformance delta (§11) that must land before any second install, even a test one. Per-install also means: a restore-from-backup or reinstall mints a *new* id (the old one simply stops appearing in fresh stamps; no retirement protocol is needed under state-based merge — the id lingering in old stamps and `vv` entries is inert history, one of the concrete wins over event logs, assessment §3.1).
+**Location (D6): device-local, never in the synced folder — ✅ LANDED (commit `d956390`).** v0 formerly persisted it at `{dataDir}/.device-id`, i.e. *inside the synced root* — which would sync to the next device, which would then adopt the *same* id, defeating the field's entire purpose the moment a second install exists. The fix: the deviceId now lives in a device-local `deviceDir` **injected by the app** (`~/.plenara`, `config.defaultDeviceDir`; defaults to `dataDir` only for CLI/tests), off the synced folder — V1 in §11 is closed, before any second install existed. The v1 packaging target remains `[app-support]/plenara/device-id`. Per-install also means: a restore-from-backup or reinstall mints a *new* id (the old one simply stops appearing in fresh stamps; no retirement protocol is needed under state-based merge — the id lingering in old stamps and `vv` entries is inert history, one of the concrete wins over event logs, assessment §3.1).
 
 ### 4.4 Stamp-on-change
 
@@ -388,7 +390,7 @@ Low-frequency, whole-file LWW in v1 — accepted (assessment §6.3 item 5). Two 
 
 ### 10.3 The turn log
 
-Diagnostics (research §14.2), one JSONL line per turn — device-specific by nature and append-per-turn, so it must be **device-local**: `[app-support]/plenara/turnlog.jsonl`. v0 writes it into the synced `dataDir` (`storage_repository.dart logTurn`) — expedient for single-device dogfooding, but it is a per-turn synced write (T1 re-uploads the whole growing file every turn) and a guaranteed two-device append conflict; relocation is a v0 delta (§11). Never merged, never synced; rotated locally.
+Diagnostics (research §14.2), one JSONL line per turn — device-specific by nature and append-per-turn, so it must be **device-local**: `[app-support]/plenara/turnlog.jsonl`. v0 formerly wrote it into the synced `dataDir` (`storage_repository.dart logTurn`) — expedient for single-device dogfooding, but a per-turn synced write (T1 re-uploads the whole growing file every turn) and a guaranteed two-device append conflict. **✅ Relocated (commit `d956390`):** the turnlog now lives in the app-injected device-local `deviceDir` (`~/.plenara`, same mechanism as the deviceId — §4.3), off the synced folder; V6 in §11 is closed. Never merged, never synced; rotation remains to do locally.
 
 ### 10.4 Already correctly placed
 
@@ -404,12 +406,12 @@ What the v0 implementation already got right, and the ordered list of deltas bet
 
 | # | Delta | Spec § | Urgency |
 |---|---|---|---|
-| V1 | Move `deviceId` from `{dataDir}/.device-id` (synced!) to `[app-support]/plenara/device-id` — a synced id is adopted by the next install, silently breaking the HLC tiebreak | §4.3, D6 | **Before any second install exists**, including test installs |
+| V1 | ~~Move `deviceId` from `{dataDir}/.device-id` (synced!) off the synced root~~ **✅ DONE (commit `d956390`)** — deviceId now lives in the app-injected device-local `deviceDir` (`~/.plenara`); a synced id would be adopted by the next install, silently breaking the HLC tiebreak | §4.3, D6 | Landed before any second install existed |
 | V2 | Write `schemaVersion` (and `createdAt`) into the record envelope; absent reads as 1 | §4.1, D5 | Before any type reaches schemaVersion 2 (the migration runner needs it) |
 | V3 | Add `_meta.vv`, incremented per persist | §4.1, D8 | Before the P2 merge engine; earlier is cheaper (less legacy-rule noise) |
 | V4 | Route `writeDef` through the atomic-write primitive | §5, D10 | Next v0 touch — a torn type file degrades every instance |
 | V5 | Surface skipped corrupt files into `HydrationReport`/`AttentionSurface` instead of silent `continue` | §5, P5 | With the v1 attention-surface work |
-| V6 | Relocate `turnlog.jsonl` to `[app-support]` | §10.3 | Before dogfooding on a second device |
+| V6 | ~~Relocate `turnlog.jsonl` off the synced root~~ **✅ DONE (commit `d956390`)** — turnlog now lives in the app-injected device-local `deviceDir` (`~/.plenara`); rotation still pending (§10.3) | §10.3 | Landed; rotation with the v1 diagnostics work |
 | V7 | HLC receive rule — advance the local clock on observing remote stamps at hydration/merge | §4.2 | With the merge engine (no remote stamps are observed before it) |
 | V8 | Field-removal marker (`"__absent__"`) | §4.4 | With the merge engine |
 | V9 | Migrate-on-read guard + version parking in the repository read path | §8.2, §8.3 | With the first real schemaVersion bump |
@@ -446,4 +448,4 @@ What the v0 implementation already got right, and the ordered list of deltas bet
 - **Q5 — `settings.json` per-key merge.** Retrofit the `_meta` treatment if real divergence is observed, or leave LWW forever (§10.2)?
 - **Q6 — Device retirement at P2.** Stale per-device corpus files from retired installs are inert but immortal (§10.1, §4.3); is a fold-in (merge into the live device's file + delete) worth its small race, or is "small files linger" fine for a 2–4 device fleet?
 - **Q7 — Clock-drift policy.** The receive rule adopts arbitrarily future stamps (capped-log at 1 h drift, §4.2); should a pathological clock (a device years in the future poisoning tiebreaks) get active correction or user surfacing?
-- **Q8 — Numbering drift (editorial).** Spec 04 §0 refers to both "Spec 06 — Voice" and "Spec 06 — Data & Sync"; research §12 assigns 6 to Data & Sync (this document). The voice/STT/TTS material needs a home number — flagged for the cross-spec consistency pass.
+- **Q8 — Numbering drift (editorial) — ✅ RESOLVED (suite-sync CS-03).** Spec 04 §0 formerly referred to both "Spec 06 — Voice" and "Spec 06 — Data & Sync"; research §12 assigns 6 to Data & Sync (this document). The voice/STT/TTS material now has its home: **Spec 12 — Voice**, and every "Spec 06 — Voice" citation in Specs 03/04/08 has been retargeted to Spec 12.
