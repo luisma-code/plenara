@@ -162,6 +162,25 @@ void main() {
     });
   });
 
+  group('content search (F-12) — "find that note about…", offline via keyword', () {
+    test('finds a journal entry by keyword', () async {
+      final s = await _session();
+      await s.handle('journal that the cabin trip to the lake was so peaceful');
+      final r = await s.handle('find that note about the cabin trip');
+      expect(r.toLowerCase(), contains('cabin'));
+    });
+    test('"search my notes for X" also works', () async {
+      final s = await _session();
+      await s.handle('journal that I finally fixed the leaky kitchen faucet');
+      expect((await s.handle('search my notes for the faucet')).toLowerCase(), contains('faucet'));
+    });
+    test('a miss is honest, never a silent failure', () async {
+      final s = await _session();
+      await s.handle('journal that today was a good day');
+      expect((await s.handle('find that note about quantum physics')).toLowerCase(), contains("couldn't find"));
+    });
+  });
+
   group('offline fact recall (F-08) — a :contact-guarded fact query', () {
     test('"what is Mia allergic to" recalls the filtered fact offline', () async {
       final s = await _session();

@@ -5,6 +5,7 @@ library;
 
 import 'automations.dart';
 import 'claude.dart';
+import 'content_search.dart';
 import 'generative.dart';
 import 'interpreter.dart';
 import 'migration.dart';
@@ -85,6 +86,12 @@ final _schemaEditRe =
 // The negative lookahead excludes innocuous "in the morning"/"with my book" time/possessive tails.
 final _customizationRe =
     RegExp(r'\b(?:in|with) (?!the\b|a\b|an\b|my\b|your\b|his\b|her\b|their\b|this\b)\w+', caseSensitive: false);
+// Content search (F-12). _searchNoteRe wants a "note/entry" + "about/mentioning" shape;
+// _searchForRe catches the terse "search (my notes) for X".
+final _searchNoteRe = RegExp(
+    r'^(?:find|show me|pull up|where(?:.s| is| are))\s+(?:that\s+|my\s+|the\s+|a\s+|any\s+)?(?:notes?|entry|entries|journal(?:\s+entry)?|thing)\s+(?:about|on|mentioning|regarding|where|that\s+(?:says?|mentions?))\s+(.+?)\??$',
+    caseSensitive: false);
+final _searchForRe = RegExp(r'^search\s+(?:my\s+(?:notes?|journal)\s+)?(?:for\s+)?(.+?)\??$', caseSensitive: false);
 // Record-integrity floor (locked principle #7 / DP-05): refuse to fabricate the past.
 // Narrow, framing-keyed — a genuine backdated log ("I talked to Sam yesterday") is NOT
 // this; only "pretend/fake/fabricate a <record>" framing. The general case is the
@@ -236,6 +243,7 @@ class Session {
   // grows the inventory and must re-index — but only when retrieval is on, so the
   // authoring path stays hermetic under init(retrieval: false), like init() itself.
   bool _retrievalEnabled = true;
+  ContentSearchIndex? _contentIndex; // semantic content search (F-12); null until retrieval builds it
 
   /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart); [storage]
   /// lets them inject a repository (in-memory / test double). Production leaves both
@@ -340,6 +348,8 @@ class Session {
     if (retrieval) {
       phase('building retrieval index (embed server — may hang if it is down)…');
       await router.buildRetrievalIndex(skills);
+      _contentIndex = ContentSearchIndex();
+      await _contentIndex!.build(store.values); // semantic content search (F-12); no-op if server down
       phase('retrieval index built');
     } else {
       phase('retrieval disabled');
@@ -796,6 +806,12 @@ class Session {
           "that uses your Claude credits (a paid step). Want me to go ahead?";
     }
 
+    // Content search (F-12): "find that note about the cabin trip" / "search my notes for X".
+    // Checked before corpus routing so it isn't mis-parsed; semantic when the embed index is up,
+    // keyword otherwise — so it works offline too.
+    final searchM = _searchNoteRe.firstMatch(u) ?? _searchForRe.firstMatch(u);
+    if (searchM != null) return _searchContent(searchM.group(1) ?? '');
+
     var routed = router.route(u, clock: now, contacts: _knownContactTokens());
     // Compound utterance (F-13): two independent commands joined by "and" — "log a run
     // and journal that I feel great" — execute BOTH and compose the confirmations.
@@ -1001,6 +1017,28 @@ class Session {
       }
     }
     return false;
+  }
+
+  /// Content search (F-12): semantic ranking if the embed index is up, else an always-on keyword
+  /// fallback — so "find that note about X" never silently fails. Returns the matching records'
+  /// text (journal entries, facts, tasks, interaction notes).
+  Future<String> _searchContent(String rawQuery) async {
+    final query = rawQuery.trim();
+    _outSource = 'search';
+    if (query.isEmpty) return 'What should I search your notes for?';
+    var ids = await _contentIndex?.search(query) ?? const <String>[];
+    if (ids.isEmpty) ids = ContentSearchIndex.keywordSearch(query, store.values);
+    if (ids.isEmpty) return 'I couldn\'t find anything about "$query".';
+    final byId = {for (final r in store.values) r['id']: r};
+    final lines = <String>[];
+    for (final id in ids) {
+      final r = byId[id];
+      final c = r == null ? null : ContentSearchIndex.contentOf(r);
+      if (c != null) lines.add('• $c');
+    }
+    if (lines.isEmpty) return 'I couldn\'t find anything about "$query".';
+    final head = lines.length == 1 ? 'Found 1 match:' : 'Found ${lines.length} matches:';
+    return '$head\n${lines.join('\n')}';
   }
 
   /// Lowercase set of every stored contact's display name + aliases — the vocabulary a router

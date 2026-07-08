@@ -104,8 +104,11 @@ void main() {
     test('F-11 private voice journal: "Start today\'s journal." …',
         () async {}, skip: 'voice-journal start phrasing + STT — corpus is "journal that X" (journaling itself is built)');
 
-    test('F-12 semantic search: "Find that note about the cabin trip."',
-        () async {}, skip: 'ContentSearchIndex (semantic record search) unbuilt (G-34)');
+    test('F-12 semantic search: "Find that note about the cabin trip."', () async {
+      final s = await _s();
+      await s.handle('journal that the cabin trip to the lake was wonderful');
+      expect((await s.handle('find that note about the cabin trip')).toLowerCase(), contains('cabin'));
+    }); // ContentSearchIndex: semantic when the embed server is up, keyword fallback here (offline)
 
     test('F-13 two trackers in one turn: "Track my mood and my energy."',
         () async {}, skip: 'compound-utterance split IS built + tested (session_test "compound utterances (F-13)"); this EXACT utterance stays unsplit because "energy" has no template + tracker-instantiation is the paid/cloud path (DF-01/G-23)');
@@ -282,11 +285,11 @@ void main() {
 
 // ─────────────────────────────────────────────────────────────────────────────────────
 // CONFORMANCE TALLY (offline, exact-or-equivalent utterances) — kept in sync with runs:
-//   F-tier: 13 pass /  7 skip  (F-01,02,04,05,07,08,09,10,16,17,18,19,20)
+//   F-tier: 14 pass /  6 skip  (F-01,02,04,05,07,08,09,10,12,16,17,18,19,20)
 //   P-tier:  0 pass / 20 skip  (all need BYOK: authoring or generative)
 //   DF-tier: 3 pass /  7 skip  (DF-01 no-template offer, DF-03 schema-edit, DF-10 scope denial)
 //   DP-tier: 7 pass /  3 skip  (DP-01,02,03,04,06,08,09 — deterministic safety/OOD/scope/medical/impersonation floors)
-//   TOTAL:  23 pass / 37 skip  of 60  (up from 9/60 — denial floors, phrasings, tracker+adherence+fact queries, DF-01 offer)
+//   TOTAL:  24 pass / 36 skip  of 60  (up from 9/60 — denial floors, phrasings, tracker+adherence+fact queries, content search, DF-01 offer)
 // The skips ARE the remaining spec worklist: mostly cloud-gated (paid), a handful of
 // genuinely-unbuilt capabilities (search F-12, aggregation queries F-17/18, automations
 // P-19, the generative depth P-08..P-20), and corpus-phrasing gaps where the CAPABILITY
