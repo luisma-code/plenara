@@ -12,6 +12,7 @@ import 'package:plenara/session.dart';
 
 import 'app_log.dart';
 import 'data_view.dart';
+import 'onboarding_view.dart';
 import 'settings_view.dart';
 import 'windows_scheduler.dart';
 
@@ -55,8 +56,28 @@ class PlenaraApp extends StatelessWidget {
         title: 'Plenara v0',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.teal),
-        home: const ChatScreen(),
+        home: const Home(),
       );
+}
+
+/// Chooses the first screen: a new user with no key set gets the [WelcomeScreen] (which invites,
+/// but never blocks — offline works without a key); everyone else goes straight to chat. Tests
+/// inject a Session, which always skips onboarding so the existing chat tests are unaffected.
+class Home extends StatefulWidget {
+  final Session? session;
+  final bool retrieval;
+  final String? configPath; // injectable for tests; null = the real user config
+  const Home({super.key, this.session, this.retrieval = false, this.configPath});
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  late bool _onboarding = widget.session == null && loadConfig(configPath: widget.configPath).apiKey == null;
+  @override
+  Widget build(BuildContext context) => _onboarding
+      ? WelcomeScreen(onContinue: () => setState(() => _onboarding = false), configPath: widget.configPath)
+      : ChatScreen(session: widget.session, retrieval: widget.retrieval);
 }
 
 class Msg {
