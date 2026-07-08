@@ -30,8 +30,10 @@ fact recall ("what's Mia allergic to") via a router `:contact` slot that only ma
 (no over-match); (#16) content/semantic search ("find that note about the cabin trip") — embed+
 cosine with an always-on keyword fallback; (#17) reference KB (Spec 13) — 403-food nutrition
 dataset + a `read_reference` DSL op + tiered resolver, so "I ate mac and cheese" logs ~390 cal with
-provenance and an unknown food logs honestly (no guess). REMAINING: (#18) voice/STT — in research
-(engine choice for Flutter Windows). **CLOUD TIER VALIDATED LIVE** (Luis's BYOK key, now set in `~/.plenara/config.json`): the
+provenance and an unknown food logs honestly (no guess). (#18) voice/STT — SEAM SHIPPED (mic
+button, push-to-talk, text fallback, widget-tested); concrete engine (sherpa_onnx + record,
+offline) specified in Spec 14, ready to enable, blocked only on a CMake 3.23+ bump (env has 3.20)
++ a model-provisioning choice — both Luis's, not code blockers. **CLOUD TIER VALIDATED LIVE** (Luis's BYOK key, now set in `~/.plenara/config.json`): the
 generative kinds produce excellent grounded output (gift ideas off a contact's real hobbies,
 briefing, weekly review honest about light logging, pattern-insight degrading on thin data,
 in-voice draft), authoring works end-to-end (DF-01 offer → yes → "Log Pushups"/"Log Water Intake"
