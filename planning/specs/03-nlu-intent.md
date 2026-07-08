@@ -118,6 +118,8 @@ Intents that ask Plenara to *synthesize* something over the user's records rathe
 
 **Recognition.** Generative capabilities are indexed in the `CapabilityIndex` as a third candidate kind (`kind: generative`, Spec 04 §3.4), embedded over the same human-readable surface a skill uses (name, description, example phrases). Routing ranks them alongside skills and types (§3.3–§3.4); when the top candidate is `kind: generative` and clears `θ_act` (or the moderate band, acted on with transparent routing like any other), the router emits a `generative_request`. The built-in set is small and fixed, so its example phrases ship in the binary and are strong retrieval anchors.
 
+> **v0 interim recognition posture (`G-44`).** In the v0 reference implementation, generative-request AND template/tracker-instantiation recognition is currently **deterministic regex in `session.dart`** (e.g. `_giftRe`/`_briefingRe`/`_reconnectRe`; the tracker-template keyword match), evaluated as an ordered pre-filter *before* the data-driven corpus — the same registry-code class as the system-command pre-filter (§2.3) and the Layer-1 safety floor (Spec 02 §7.6): honest, binary-shipped rule code, not a routing decision left to a model. This is acceptable for the small, fixed built-in set, but it means each new generative kind or template is a code change, not a data drop. **Planned migration:** move recognition anchors into `kind`-tagged `CapabilityIndex` data (this §2.2a / Spec 04 §3.4) — a `generative/`+`templates/` def folder indexed like skills — so the recognizer ranks them via retrieval like everything else, and only the spec-sanctioned rule pre-filters (system commands, safety, deterministic date resolver) remain as code.
+
 **Tier, cloud, and why there is no fast path.** Every generative kind requires Claude, so `generative_request` is BYOK-gated exactly as the capability-definition meta-intents are (§2.2): on the free tier the router still *produces* the intent and the orchestrator surfaces the paid-upgrade prompt (Spec 05 §3.6) rather than spending a shared key. Generation is always a multi-second **detached** cloud call (Spec 04 §3.10, §4.7), so a corpus fast-path entry would save nothing — the corpus exists to skip *inference* on high-frequency capture, and a generative request pays seconds of generation latency regardless. The fast path (§5) is therefore scoped to skill invocations; a generative request re-routes each turn at the cost of one cheap local classification, negligible beside the generation it triggers. (This is also why the corpus write paths, §2.6, are typed to `SkillInvocation` and are never called on a generative turn.)
 
 ### 2.3 System Meta-Intents
@@ -426,6 +428,18 @@ The progression for any utterance is therefore:
 **The NLU surface that survives is clarification, not routing pre-confirmation.** Under act-then-describe (Spec 05 §3.1, the confirmation-UX authority) the app does not stop to approve a routing it can act on — a moderate-confidence best guess is acted on and made transparent in the description (the `Routing` event, Spec 04 §3.6), and an uncorrected best guess records an implicit confirmation (§2.7) that graduates the phrasing toward the fast path. The one time the app asks *before* acting is when it has **no reliable best guess** — no dominant candidate below `θ_cloud_escalate`/`θ_minimum`, or a pattern flagged `requiresPreConfirm` by repeated correction — where it surfaces the top candidates as a `ClarificationRequested` event answered by `SelectCandidate` (Spec 04 §3.6). This is the v0.4 reconciliation: the v0.3 "dispatch with a *did you mean X? — proceed?* pre-confirm" band is collapsed into act-then-describe (see Decision Record and Spec 05 D2). The skill-plan approval surface (former Spec 02 §7.1 `confirmationPolicy`) is likewise gone from the interactive path; a candidate the user selects at a clarification, or a best guess they leave uncorrected, becomes a corpus entry (§5.2), improving future routing.
 
 ### 4.2 Confidence Decay
+
+> **v0 interim corpus-trust posture (`G-45`).** The v0 reference implementation ships a
+> **binary learn/forget** corpus, NOT the graded model this section (and Axis 3, §4.1)
+> describes: a learned entry has no per-entry `confidence`/`initConf*`, no temporal decay, and
+> no `requiresPreConfirm`. Mechanics: a Haiku-routed phrasing the corpus missed is templatized
+> and **inserted at full trust after one clean (uncorrected) use** — it fast-paths every
+> similar phrasing thereafter; a `"correct"` on the previous turn **forgets** (removes) the
+> learned template that routed it. Seed (shipped) templates take precedence over learned ones
+> (two-pass match) so a broad learned entry can't shadow a curated seed. The graded decay/
+> initConf/requiresPreConfirm model below is the target once dogfood data shows the binary
+> version's failure modes (over-eager learning, stale entries); until then it is deferred, and
+> the §13 make-or-break metric is measured against the binary ratchet.
 
 A flow-table entry (§5) has a confidence score that may be lower than the confidence of the intent it records. Decay adjusts that score downward over time or across repeated corrections, so the fast path does not blindly trust stale or wrong routing.
 

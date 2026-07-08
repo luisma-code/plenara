@@ -112,13 +112,53 @@ The input contract is the seam between this spec and the NLU spec (which this sp
 
 ## 3. The Primitive-Operation Vocabulary
 
-> **⚠ v0 DIALECT CONVERGENCE (Luis's call — "converge spec↔code", 2026-07).** The v0 walking skeleton (`v0/lib/interpreter.dart`, the reference implementation) uses a **structured** form of two constructs where the prose below still shows string/label forms. These structured forms are now **canonical**, because they are the ones a JSON schema can fully constrain at authoring time (which is where the measured authoring drift, `G-29`, lives) — a free-form `"expr"` string cannot be. The rest of this section reads as intent; the structured forms are the normative wire format:
-> - **`compute`** is a structured op — `{"op":"compute","fn":<name>,"args":[…],"into":"var"}` — **not** a hand-parsed string expression (§3.3's grammar). The implemented `fn` set is `now, today, format_date, start_of_week, add, count, concat`; aggregation fns (`sum`, `count_where`, …) extend this set as needed.
-> - **`branch`** carries **inline** `then` / `else` step arrays (`else` optional) — **not** label references into a top-level `steps` map (§3.4/§3.5).
-> - **`write_record`** with a `target` (`{"ref":"<recordVar>"}`) is an **update** (merge into the existing record); without a target it creates. **`delete_record`** (`{"op":"delete_record","id":<expr>}`) tombstones.
-> - Canonical names retained from this spec: the entity value type is **`entityRef`**, the confirmation slot is **`confirmationText`**, and every skill declares **`reads`/`writes`** (typeIds it may touch); `validateSkill` enforces the capability closure (§6.4 rule 3). What v0 has NOT yet adopted: `read_related`, `dangerLevel` gating, and the `sum`/`count_where`/`days_between`/`add_days` compute fns.
+> **✅ v0 NORMATIVE DIALECT (converged spec↔code, `G-41`, 2026-07).** The v0 interpreter
+> (`v0/lib/interpreter.dart`, the reference implementation) uses **structured JSON** forms
+> throughout — chosen because a JSON schema can fully constrain them at authoring time,
+> which is where the measured authoring drift (`G-29`) lives; a free-form `"expr"` string
+> cannot be. **The forms in this block are the normative wire format** and supersede the
+> string/label-expression grammars still shown in §3.3, §3.7, and §3.8 (kept as prose intent;
+> retire on the next full §3 rewrite). The vocabulary is CLOSED — `validateSkill` rejects any
+> op/fn/cond/filter-op/valueType outside these sets:
 >
-> Net: the *structure* comes from the code (reliability), the *names + skill envelope* come from this spec. When Spec 02 is next revised in-session, fold these into §3.3/§3.4/§3.5 proper and retire the string-expression grammar.
+> - **Ops (10, closed):** `read_one, read_many, read_related, write_record, delete_record,
+>   compute, set, format, branch, foreach`.
+> - **`compute`** — `{"op":"compute","fn":<name>,"args":[…],"into":"var"}`, NOT a string
+>   expression. Implemented `fn` set (20): `now, today, format_date, format_time,
+>   start_of_week, add, count, concat, next_annual, days_until_annual, current_streak,
+>   longest_streak, days_between, add_days, count_where, sum, avg, min, max, if`.
+>   (`avg([])` → `null`; decimal exact-base-10 preservation is a follow-on, `G-46`.)
+> - **`branch`** — a **structured condition object** (NOT a string, §3.8) plus **inline**
+>   `then`/`else` step arrays (`else` optional, NOT label refs into `steps`, §3.4/§3.5).
+>   Condition grammar (5 forms): `{"isNull":"var"}`, `{"notNull":"var"}`,
+>   `{"gte":[a,b]}` (numeric when both parse as numbers, else lexical),
+>   `{"eq":[a,b]}`, `{"contains":[hay,needle]}` (case-insensitive substring; empty
+>   needle never matches). This structured cond form is the **only** normative one.
+> - **`read_many`** — `filter` is `{"field","op","value"}` with `op` ∈ {`eq, neq, gt, gte,
+>   lt, lte, contains, in, isNull, notNull`} (a bad op fails loudly, even over an empty set),
+>   plus optional `orderBy`/`orderDir` (`asc`|`desc`) and `limit` (top-N). §3.6's `_or`/
+>   multi-clause AND are **not** implemented.
+> - **`read_one`** — exact match first; with `"partial":true` (people lookups) falls back to
+>   case-insensitive substring, then an **alias tier** (a record whose comma-separated
+>   `aliases` field holds the match value, `G-24`); `>1` match raises an ambiguity clarify.
+> - **`write_record`** with a `target` (`{"ref":"<recordVar>"}`) **updates** (field-merge);
+>   without a target it **creates**. **`delete_record`** (`{"op":"delete_record","id":<expr>}`)
+>   tombstones. (`dangerLevel` gating of destructive ops is not yet enforced — `G` open.)
+> - **`format`** — bare `{var}` substitution; a null/absent var renders as **empty** (the
+>   omitIfNull default, no silent `{var}` leak). The `{var, default:…}`/`suffix` modifiers of
+>   §3.11 are **not** implemented.
+> - **Value types** — the accepted set now matches Spec 01 §3 (`text, number, decimal, date,
+>   datetime, boolean, duration, enum, entityRef, tag, attachment, json`), with `integer` kept
+>   only as a tolerated legacy alias for `number` (`G-40`).
+> - Names retained from this spec: entity value type `entityRef`, confirmation slot
+>   `confirmationText`, and every skill declares `reads`/`writes`; `validateSkill` enforces
+>   capability closure (§6.4 rule 3), the branch-sound entityRef dataflow (`G-17`), and a
+>   variable-closure check (rule 4 — every `{var}`/`{field}`/`{ref}`/format-placeholder
+>   resolves to a bound name).
+>
+> Net: the *structure* is normative from the code (reliability); the *names + skill envelope*
+> are from this spec. `read_related` and the aggregation/date/streak compute fns are all
+> implemented (the earlier "not yet adopted" note is retired).
 
 Every step in a skill is one of the following primitive operations. This set is **closed and fixed**. Adding a new primitive requires a version bump to the interpreter itself — it is not an authoring decision.
 
@@ -436,6 +476,11 @@ All values in a filter may be `{variableName}` references, resolved at runtime f
 
 ### 3.7 Compute Expression Grammar
 
+> **⚠ Superseded by the §3 v0 normative-dialect block (`G-41`).** v0 `compute` is a
+> **structured** op — `{"op":"compute","fn":<name>,"args":[…],"into":"var"}` with a closed
+> `fn` set — NOT the string-expression grammar below. The prose here is retained as intent;
+> the §3 block is the normative wire format.
+
 `compute` expressions are evaluated by a small, deterministic expression engine built into the interpreter. The engine supports:
 
 **Numeric operations:** `sum(list.field)`, `avg(list.field)`, `min(list.field)`, `max(list.field)`, `count(list)`, `count_where(list, "field == value")`, arithmetic operators `+ - * /`, integer division `//`, modulo `%`, and grouping with parentheses. Division by zero yields `null`.
@@ -459,6 +504,12 @@ All values in a filter may be `{variableName}` references, resolved at runtime f
 The engine is a hand-written recursive-descent parser over this grammar; no `eval` or dynamic code generation is used.
 
 ### 3.8 Branch Condition Grammar
+
+> **⚠ Superseded by the §3 v0 normative-dialect block (`G-41`).** v0 branch conditions are a
+> **structured object** — one of `{"isNull":"var"}`, `{"notNull":"var"}`, `{"gte":[a,b]}`,
+> `{"eq":[a,b]}`, `{"contains":[hay,needle]}` — NOT the string boolean-expression grammar
+> below. The `&&`/`||`/`!` composition and comparison operators here are not implemented; the
+> §3 block is the normative form.
 
 Branch conditions are boolean expressions:
 
