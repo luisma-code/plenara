@@ -21,9 +21,9 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `3b26cbc`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `d0f9ab0`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1267 Dart tests + 8 Flutter widget tests green** (32 skills, 9 types; DSL now has
+**1284 Dart tests + 8 Flutter widget tests green** (32 skills, 9 types; DSL now has
 ordering/limit/filter-ops + aggregation/date-math; ProvideSlot slot-filling; alias
 resolution; OOD boundary; record-integrity floor; GenerativeService for gift ideas +
 briefing), `dart analyze` clean,
@@ -214,6 +214,20 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **Fable review #2 (impl + spec) — done + acted on (`d0f9ab0` … `edc4091`):** a 3-lens Fable
+  panel (architecture / spec-fidelity / strategy), synthesized in
+  [`05e-fable-review.md`](planning/specs/05e-fable-review.md). Fixed every impl bug it found:
+  a P0 correction data-loss (`edc4091`), OOD bouncing a known contact + list-tasks showing
+  completed (`3ec834b`), three CRDT format flaws before sync fossilizes them (`63c5051`),
+  ProvideSlot swallowing system commands (`3e508a3`), learned templates shadowing seeds
+  (`245c2fe`), validator var-closure (`5a1bcf7`), avg([])→null (`d0f9ab0`). Added **rich
+  per-turn debug tracing** for dogfood diagnosis (`d341308`, `72bf5b3` — turnlog now carries
+  template/slots/writes/timing/response/error+stack; `turnlog_report --trace`/`--errors`).
+  **Turned the gap register around** — filed G-39..G-48 for code→spec drift (`6a7a346`),
+  adopted the rule "a code change contradicting a spec files a G-entry in the same commit."
+  Strategy verdict (Luis-gated, unchanged): **zero real turns run yet** — the real blocker is
+  the 20-min admin window (rotate the 2 exposed creds + ATL + write the config), then dogfood.
+  **Per Luis: fix Fable issues (DONE) → push through the top-10 → then another review.**
 - **Spec-conformance program STARTED (`46d15a5` … `e62bedf`):** ran a 5-fork spec-vs-code
   audit (the ranked top-10 is in the TL;DR + the gap register `05b-gap-register.md`);
   then shipped: journaling (`journal_entry` + log/recall, F-11/G-01), streaks
