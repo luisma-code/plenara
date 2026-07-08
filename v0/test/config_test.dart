@@ -41,6 +41,11 @@ void main() {
     expect(Directory('${dir.path}/records').existsSync(), isTrue);
   });
 
+  test('ensureSeeded fails LOUDLY if the seed source is missing (no silent empty boot)', () {
+    final dir = Directory.systemTemp.createTempSync('plenara_seed_');
+    expect(() => ensureSeeded(dir.path, '/no-such-seed-source'), throwsA(isA<StateError>()));
+  });
+
   test('ensureSeeded is a no-op once the folder has defs (never wipes user data)', () {
     final dir = Directory.systemTemp.createTempSync('plenara_seed_');
     ensureSeeded(dir.path, 'data');

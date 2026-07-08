@@ -30,7 +30,11 @@ fact recall ("what's Mia allergic to") via a router `:contact` slot that only ma
 (no over-match); (#16) content/semantic search ("find that note about the cabin trip") — embed+
 cosine with an always-on keyword fallback; (#17) reference KB (Spec 13) — 403-food nutrition
 dataset + a `read_reference` DSL op + tiered resolver, so "I ate mac and cheese" logs ~390 cal with
-provenance and an unknown food logs honestly (no guess). (#18) voice/STT — SEAM SHIPPED (mic
+provenance and an unknown food logs honestly (no guess). **PRE-DISTRIBUTION TODO (not a dogfood
+blocker — works on this dev box):** the app still seeds first-run capability data from the dev path
+`sourceDataDir = Z:\code\plenara\v0\data` (`app/lib/main.dart`); `ensureSeeded` now THROWS loudly
+if that's missing (instead of a silent empty boot), but before shipping to another machine, bundle
+`v0/data/` as Flutter assets and seed from `rootBundle`. (#18) voice/STT — SEAM SHIPPED (mic
 button, push-to-talk, text fallback, widget-tested); concrete engine (sherpa_onnx + record,
 offline) specified in Spec 14, ready to enable, blocked only on a CMake 3.23+ bump (env has 3.20)
 + a model-provisioning choice — both Luis's, not code blockers. **CLOUD TIER VALIDATED LIVE** (Luis's BYOK key, now set in `~/.plenara/config.json`): the

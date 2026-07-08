@@ -72,6 +72,14 @@ void saveConfig({required String dataDir, String? apiKey, String? configPath}) {
 void ensureSeeded(String dataDir, String sourceDir) {
   final types = Directory('$dataDir/types');
   if (types.existsSync() && types.listSync().whereType<File>().isNotEmpty) return; // already seeded
+  // FAIL LOUDLY if the shipped seed data isn't where we expect — otherwise a mis-configured install
+  // silently creates empty dirs and boots with ZERO capabilities (every utterance clarify-fails).
+  // NOTE (pre-distribution): the app still points sourceDir at a dev path; before shipping, bundle
+  // data/ as Flutter assets and seed from rootBundle so this works on any machine (see HANDOFF).
+  if (!Directory('$sourceDir/types').existsSync()) {
+    throw StateError('Plenara cannot find its built-in capability data at "$sourceDir". '
+        'The app is not installed correctly (seed data missing).');
+  }
   for (final sub in const ['types', 'skills', 'templates', 'automations', 'reference']) {
     final dst = Directory('$dataDir/$sub')..createSync(recursive: true);
     final src = Directory('$sourceDir/$sub');
