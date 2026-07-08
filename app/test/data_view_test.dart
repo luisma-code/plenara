@@ -117,6 +117,25 @@ void main() {
     expect(find.text('createdAt'), findsOneWidget); // a field shown in detail but not in the checklist summary
   });
 
+  testWidgets('a task can be completed from the data view (actionable checklist)', (tester) async {
+    final session = _session();
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'add buy milk to my list');
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.storage));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget); // the incomplete task
+    await tester.tap(find.byIcon(Icons.radio_button_unchecked));
+    await tester.pumpAndSettle();
+
+    final task = session.store.values.firstWhere((r) => r['typeId'] == 'task');
+    expect(task['completed'], true); // completed through the turn engine
+    expect(find.byIcon(Icons.check_circle), findsOneWidget); // and reflected in the UI
+  });
+
   testWidgets('the data view surfaces an automations card with each automation status', (tester) async {
     final dir = _tempData();
     Directory('$dir/automations').createSync(recursive: true);

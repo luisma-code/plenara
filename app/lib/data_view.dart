@@ -65,9 +65,25 @@ String renderValue(dynamic v, [String? valueType]) {
 /// Best-effort render where the value type isn't in hand.
 String fmtValue(dynamic v) => renderValue(v, null);
 
-class DataView extends StatelessWidget {
+class DataView extends StatefulWidget {
   final Session session;
   const DataView({super.key, required this.session});
+  @override
+  State<DataView> createState() => _DataViewState();
+}
+
+class _DataViewState extends State<DataView> {
+  Session get session => widget.session;
+  bool _busy = false;
+
+  /// Complete a task from the browse view — routes through the turn engine (so undo/journal
+  /// stay intact), then rebuilds. Read paths elsewhere stay untouched.
+  Future<void> _complete(String description) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    await session.handle('mark $description done');
+    if (mounted) setState(() => _busy = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +112,7 @@ class DataView extends StatelessWidget {
                 typeId: typeId,
                 typeDef: (session.types[typeId] ?? const {}).cast<String, dynamic>(),
                 records: byType[typeId]!,
+                onComplete: _complete,
               ),
         ],
       ),
@@ -156,7 +173,8 @@ class _TypeSection extends StatelessWidget {
   final String typeId;
   final Map<String, dynamic> typeDef;
   final List<Map<String, dynamic>> records;
-  const _TypeSection({required this.typeId, required this.typeDef, required this.records});
+  final Future<void> Function(String description)? onComplete;
+  const _TypeSection({required this.typeId, required this.typeDef, required this.records, this.onComplete});
 
   @override
   Widget build(BuildContext context) {
@@ -191,14 +209,20 @@ class _TypeSection extends StatelessWidget {
       case Archetype.checklist:
         return [
           for (final r in records)
-            ListTile(
-              dense: true,
-              leading: Icon((r['done'] == true || r['completed'] == true)
-                  ? Icons.check_circle
-                  : Icons.radio_button_unchecked),
-              title: Text(fmtValue(r['description'] ?? r['title'] ?? r['text'])),
-              onTap: () => _showRecord(context, r),
-            ),
+            () {
+              final done = r['done'] == true || r['completed'] == true;
+              final desc = fmtValue(r['description'] ?? r['title'] ?? r['text']);
+              return ListTile(
+                dense: true,
+                leading: IconButton(
+                  icon: Icon(done ? Icons.check_circle : Icons.radio_button_unchecked),
+                  tooltip: done ? 'Done' : 'Mark done',
+                  onPressed: (done || onComplete == null) ? null : () => onComplete!(desc),
+                ),
+                title: Text(desc),
+                onTap: () => _showRecord(context, r),
+              );
+            }(),
         ];
       case Archetype.personCard:
         return [
