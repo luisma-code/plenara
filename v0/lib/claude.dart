@@ -212,6 +212,21 @@ into the type, then a format op that sets "confirmationText". Reference inputs a
         'the time-since-last-contact provided, suggest 2-3 warm, specific ways to reach out '
         '(reference a real shared detail; if it has been a while, acknowledge that gently). '
         'Never invent facts. Warm, concrete, plain text.',
+    'weekly_review':
+        'You write a short, reflective weekly review from the user\'s own logged data below. '
+        'Use ONLY what is given — never invent. Summarize what actually happened this week '
+        '(interactions, tasks completed, workouts, moods), note one thing that went well and '
+        'one gentle observation. If little was logged, say so warmly. Plain text, concise.',
+    'pattern_insight':
+        'You surface ONE genuine pattern across the user\'s logged records below (e.g. mood '
+        'against exercise or contact). Use ONLY the data given — if there is not enough to '
+        'support a real pattern, say so plainly and never invent one. State the pattern, the '
+        'evidence for it, and one small, kind suggestion. Plain text, concise.',
+    'draft_message':
+        'You draft a short message in the USER\'S OWN VOICE to the named contact, grounded in '
+        'the facts and recent interactions provided. It is a DRAFT the user will review and '
+        'send themselves — you never send it, and you never impersonate a third party. Use '
+        'ONLY real shared details; keep it natural and warm. Output just the message text.',
   };
 
   @override
