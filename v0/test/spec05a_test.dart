@@ -80,7 +80,7 @@ void main() {
     });
 
     test('F-08 recall through the relation graph: "What\'s Mia allergic to?"',
-        () async {}, skip: 'filtered fact query needs cloud — corpus is "what do I know about Mia" (no per-attribute filter)');
+        () async {}, skip: 'the DSL SUPPORTS the filter (contains-op value from a {var} slot + foreach/concat — a recall-fact-about skill worked in isolation); but the broad "what is {person} {query}" ROUTE template over-matches OOD world-knowledge ("what is the capital…") and instantiated template queries ("what\'s my reading streak") in the case-insensitive corpus, so flexible fact-query NLU genuinely needs the cloud (not a DSL gap)');
 
     test('F-09 last interaction: "When did I last see Marco?"', () async {
       final s = await _s();
