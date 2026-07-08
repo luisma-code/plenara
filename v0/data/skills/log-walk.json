@@ -1,0 +1,36 @@
+{
+  "skillId": "log-walk",
+  "displayName": "Log a walk",
+  "reads": [],
+  "writes": [
+    "workout"
+  ],
+  "inputs": [
+    { "name": "distance", "required": false }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      {
+        "op": "write_record",
+        "typeId": "workout",
+        "fields": {
+          "activity": "walk",
+          "distance": { "var": "distance" },
+          "date": { "var": "today" }
+        },
+        "into": "w"
+      },
+      {
+        "op": "branch",
+        "cond": { "notNull": "distance" },
+        "then": [
+          { "op": "format", "template": "Logged a {distance} km walk today.", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "Logged a walk today.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

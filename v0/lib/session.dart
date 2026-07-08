@@ -24,6 +24,15 @@ final _helpRe = RegExp(
 final _corrRe = RegExp(
     r'^(?:no,?|nope,?|actually,?|no wait,?|wait,?|sorry,?|oops,?|hang on,?)\s+i meant (?:to |it was )?(.+?)\.?$',
     caseSensitive: false);
+// Re-classification correction (F-14): "no, that was a walk" — the last log was the wrong
+// TYPE; reverse it and re-log as the corrected activity, carrying the original slots.
+final _reclassifyRe =
+    RegExp(r'^(?:no,?|actually,?|nope,?|wait,?)\s+that was (?:a |an )?(\w+)\.?$', caseSensitive: false);
+const _activitySkill = {
+  'run': 'log-run', 'running': 'log-run', 'jog': 'log-run', 'jogging': 'log-run',
+  'walk': 'log-walk', 'walking': 'log-walk',
+};
+const _workoutSkills = {'log-run', 'log-walk'};
 // abandons a pending slot-fill dialogue (Spec 03 §6.3 ProvideSlot)
 final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
 // confirms an authored-capability draft (Spec 02 §6.5: nothing registered until "activate")
@@ -137,6 +146,9 @@ class Session {
   // the right thing: forget its template, and reverse it ONLY if it actually wrote.
   String? _lastTurnTemplate;
   bool _lastTurnWrote = false;
+  // The immediately-previous WRITING dispatch {skillId, slots}, so a re-classification
+  // ("no, that was a walk", F-14) can re-log the corrected activity carrying the slots.
+  Map<String, dynamic>? _lastDispatch;
   String _outSource = 'clarify'; // telemetry: how this turn resolved
   String? _outSkill;
   String? _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
@@ -343,8 +355,10 @@ class Session {
     // would make a later correction reverse an UNRELATED earlier write (data loss).
     final prevWrote = _lastTurnWrote;
     final prevTemplate = _lastTurnTemplate;
+    final prevDispatch = _lastDispatch;
     _lastTurnWrote = false;
     _lastTurnTemplate = null;
+    _lastDispatch = null;
 
     // ProvideSlot (§6.3): a paused turn is waiting for one missing slot. Treat this
     // input as the answer — unless the user backs out — then re-ask or dispatch.
@@ -416,6 +430,20 @@ class Session {
     if (_helpRe.hasMatch(u)) {
       _outSource = 'help';
       return _helpText();
+    }
+
+    // Re-classification (F-14): "no, that was a walk" reverses the last (mis-typed) workout
+    // log and re-logs it as the corrected activity, carrying the original slots (distance).
+    final recl = _reclassifyRe.firstMatch(u);
+    if (recl != null && prevWrote && prevDispatch != null && _journal.isNotEmpty) {
+      final prevSkill = prevDispatch['skillId'] as String;
+      final target = _activitySkill[recl.group(1)!.toLowerCase()];
+      if (target != null && _workoutSkills.contains(prevSkill) && target != prevSkill) {
+        _reverse(_journal.removeLast().before); // undo the wrong-activity workout
+        final redo = await _dispatch(target, Map<String, dynamic>.from(prevDispatch['slots'] as Map), 'corpus', now);
+        _outSource = 'correction';
+        return 'Fixed that — $redo';
+      }
     }
 
     final corr = _corrRe.firstMatch(u);
@@ -618,6 +646,7 @@ class Session {
       // record the previous-turn state for a correction (every routed turn, write or read)
       _lastTurnWrote = plan.writes.isNotEmpty || plan.deletes.isNotEmpty;
       _lastTurnTemplate = (template != null && router.isLearned(template)) ? template : null;
+      if (_lastTurnWrote) _lastDispatch = {'skillId': skillId, 'slots': slots}; // for re-classify (F-14)
       if (_lastTurnWrote) {
         _journal.add(_JournalEntry(before, plan.confirmation));
         if (_journal.length > _journalMax) _journal.removeAt(0);

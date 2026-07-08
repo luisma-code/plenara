@@ -410,6 +410,17 @@ void main() {
       expect(s.store.values.where((x) => x['typeId'] == 'workout'), isEmpty);
       expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1);
     });
+    test('F-14: "no, that was a walk" reverses the run and re-logs a walk, carrying distance', () async {
+      final s = await _session();
+      await s.handle('log a 5k run');
+      expect(s.store.values.where((x) => x['typeId'] == 'workout' && x['activity'] == 'run').length, 1);
+      final r = await s.handle('no, that was a walk');
+      expect(r.toLowerCase(), contains('walk'));
+      final workouts = s.store.values.where((x) => x['typeId'] == 'workout').toList();
+      expect(workouts.length, 1, reason: 'the run was reversed, only the walk remains');
+      expect(workouts.single['activity'], 'walk');
+      expect(workouts.single['distance'], 5); // distance carried over from the run
+    });
     test('"no wait, I meant X" is a correction', () async {
       final s = await _session();
       await s.handle('log a 5k run');
