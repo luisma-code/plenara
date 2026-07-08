@@ -21,14 +21,25 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `5b2fc47`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `e76e6d1`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1373 Dart tests + 8 Flutter widget tests green** (35 seed skills + 5 templates that also ship
+**1411 Dart tests + 15 Flutter widget tests green** (35 seed skills + 5 templates that also ship
 QUERY skills, 9 types; DSL has ordering/limit/filter-ops + aggregation/date-math; ProvideSlot
 slot-filling; alias resolution; OOD boundary; record-integrity + scope + medical + impersonation
 + schema-edit denial floors; compound-utterance split; GenerativeService gift/briefing/reconnect
 + weekly_review/pattern_insight/draft_message — all 6 routed with kind-specific prompts), `dart
 analyze` clean, **`flutter build windows --debug` succeeds**.
+
+**NEW SUBSYSTEMS this session (all live + tested):** (1) **AutomationRunner** (`automations.dart`,
+Spec 01 §4.4 / 04 §3.9) — onWrite conditions fire a skill through the interpreter, gated by the
+Review Feed (read-only → deliver out-of-band; writes → HELD for "approve it"/"dismiss it" from
+the chat; destructive refused); wired into `Session._dispatch` behind a containment guard;
+schedule/cron is the one deferred piece (needs the OS timer seam). The example
+(`workout-encouragement`) seeds + fires + surfaces in the app. (2) **Coverage gate**
+(`bin/coverage_check.dart`, Spec 09 §8) — measured **91.4%** global, floor 80%; run it after
+`dart test --coverage`. (3) **Spec 07 UI slice** (`app/lib/data_view.dart`) — a read-only "Your
+data" view rendering records by an archetype inferred from type STRUCTURE (checklist/personCard/
+tracker/timeline/collection), reached from the chat app-bar.
 
 **ALL 12 DEEP-DIVE SPECS NOW EXIST (research §12).** Specs 6–11 were written one-Fable-per-spec
 in parallel, then Spec 12 — Voice was chartered (03/04/08 had cited a nonexistent "Spec 06 —
