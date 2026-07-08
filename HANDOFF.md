@@ -21,13 +21,25 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `04fafcb`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `7b029c2`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1295 Dart tests + 8 Flutter widget tests green** (35 skills, 9 types; DSL now has
-ordering/limit/filter-ops + aggregation/date-math; ProvideSlot slot-filling; alias
-resolution; OOD boundary; record-integrity floor; GenerativeService for gift ideas +
-briefing), `dart analyze` clean,
+**1335 Dart tests + 8 Flutter widget tests green** (35 seed skills + 5 templates, 9 types; DSL
+has ordering/limit/filter-ops + aggregation/date-math; ProvideSlot slot-filling; alias
+resolution; OOD boundary; record-integrity + scope + medical + impersonation + schema-edit
+denial floors; GenerativeService for gift ideas + briefing + reconnect), `dart analyze` clean,
 **`flutter build windows --debug` succeeds**. `DOGFOOD.md` refreshed for tonight.
+
+**05a CONFORMANCE HARNESS (`v0/test/spec05a_test.dart`, G-47):** turns "complete per spec" into
+a measured number — each of the 60 worked examples runs its exact utterance offline and asserts,
+or `skip`s with a reason. **Now 20/60 offline (up from ~1/60 at the audit):** F-tier 11/20
+(logging, people incl. nested-fact F-07, recurrence, tracker aggregate/streak queries), DP-tier
+7/10 (all deterministic safety/scope/OOD/medical/impersonation floors), DF 2/10, P 0/20 (all
+BYOK-gated). The 40 skips ARE the live worklist. A 3-agent Fable (Claude 5) round landed
+generative kinds (P-10/11/20 — built + unit-tested, not yet routed from session.dart),
+compound-utterance split (F-13 capability, `3cca666`), and nested people-fact (F-07, `8ebb59b`
+generative / this commit F-07). Remaining biggest gaps: the paid tier is 100% BYOK-gated, and
+free-tier F-08 (filtered fact query), F-11 (voice-journal start), F-12 (semantic search),
+DF-01 (no-template offer surface), plus safety Layer-2 (G-30) still want building.
 
 **Working-mode enforcement (new):** a user-level **Stop hook**
 (`~/.claude/hooks/stop-guard.ps1` + `~/.claude/settings.json`) bounces any turn whose

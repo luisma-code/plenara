@@ -69,8 +69,15 @@ void main() {
     test('F-06 instantiate with an inline extra field',
         () async {}, skip: 'inline field customization at instantiation needs authoring/cloud (DF-03 boundary)');
 
-    test('F-07 nested people fact (3 writes): "Sarah\'s daughter Mia is allergic to peanuts."',
-        () async {}, skip: 'exact phrasing needs cloud — offline corpus requires "remember that Mia is Sarah\'s daughter …"');
+    test('F-07 nested people fact (3 writes): "Sarah\'s daughter Mia is allergic to peanuts."', () async {
+      final s = await _s();
+      await s.handle("Sarah's daughter Mia is allergic to peanuts"); // one sentence -> contact+relationship+fact
+      final rel = s.store.values.where((x) => x['typeId'] == 'contact_relationship');
+      expect(rel.length, 1);
+      expect(rel.single['relationType'], 'daughter');
+      expect(s.store.values.where((x) => x['typeId'] == 'contact_fact').single['fact'], contains('allergic to peanuts'));
+      expect(await s.handle('who is Mia related to'), contains('Sarah'));
+    });
 
     test('F-08 recall through the relation graph: "What\'s Mia allergic to?"',
         () async {}, skip: 'filtered fact query needs cloud — corpus is "what do I know about Mia" (no per-attribute filter)');
@@ -98,7 +105,7 @@ void main() {
         () async {}, skip: 'ContentSearchIndex (semantic record search) unbuilt (G-34)');
 
     test('F-13 two trackers in one turn: "Track my mood and my energy."',
-        () async {}, skip: 'compound-utterance split unbuilt + "energy" has no template (DF-01 gap)');
+        () async {}, skip: 'compound-utterance split IS built + tested (session_test "compound utterances (F-13)"); this EXACT utterance stays unsplit because "energy" has no template + tracker-instantiation is the paid/cloud path (DF-01/G-23)');
 
     test('F-14 correction reverses a misroute: "Log 5k." … "No, that was a walk."', () async {
       // The RE-CLASSIFY mechanism is built + tested (session_test, "log a 5k run" -> "no, that was a walk").
@@ -263,11 +270,11 @@ void main() {
 
 // ─────────────────────────────────────────────────────────────────────────────────────
 // CONFORMANCE TALLY (offline, exact-or-equivalent utterances) — kept in sync with runs:
-//   F-tier: 10 pass / 10 skip  (F-01,02,04,05,09,10,17,18,19,20 pass)
+//   F-tier: 11 pass /  9 skip  (F-01,02,04,05,07,09,10,17,18,19,20 pass)
 //   P-tier:  0 pass / 20 skip  (all need BYOK: authoring or generative)
 //   DF-tier: 2 pass /  8 skip  (DF-03 schema-edit, DF-10 scope denial)
 //   DP-tier: 7 pass /  3 skip  (DP-01,02,03,04,06,08,09 — deterministic safety/OOD/scope/medical/impersonation floors)
-//   TOTAL:  19 pass / 41 skip  of 60  (up from 9/60 — denial floors + phrasings + tracker aggregate/streak queries)
+//   TOTAL:  20 pass / 40 skip  of 60  (up from 9/60 — denial floors, phrasings, tracker queries, nested people-fact)
 // The skips ARE the remaining spec worklist: mostly cloud-gated (paid), a handful of
 // genuinely-unbuilt capabilities (search F-12, aggregation queries F-17/18, automations
 // P-19, the generative depth P-08..P-20), and corpus-phrasing gaps where the CAPABILITY
