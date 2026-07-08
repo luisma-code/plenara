@@ -80,6 +80,11 @@ final _impersonateRe =
 // Schema-edit denial (DF-03): adding a field to an EXISTING tracker is a paid authoring edit.
 final _schemaEditRe =
     RegExp(r'\badd (a |an )?[\w-]+( [\w-]+)? (field|score|metric|column|attribute) to my \w+', caseSensitive: false);
+// A "start tracking X in glasses / with calories" specifies a UNIT or FIELD a shipped template
+// can't honor — so a keyword match ("water") must NOT pre-empt it (route to authoring instead).
+// The negative lookahead excludes innocuous "in the morning"/"with my book" time/possessive tails.
+final _customizationRe =
+    RegExp(r'\b(?:in|with) (?!the\b|a\b|an\b|my\b|your\b|his\b|her\b|their\b|this\b)\w+', caseSensitive: false);
 // Record-integrity floor (locked principle #7 / DP-05): refuse to fabricate the past.
 // Narrow, framing-keyed — a genuine backdated log ("I talked to Sam yesterday") is NOT
 // this; only "pretend/fake/fabricate a <record>" framing. The general case is the
@@ -1050,6 +1055,9 @@ class Session {
 
   Future<String?> _tryInstantiateTemplate(String desc, DateTime now) async {
     final d = desc.toLowerCase();
+    // "track my water intake IN GLASSES" / "meals WITH CALORIES" carries a unit/field the shipped
+    // template can't honor — don't let a keyword match pre-empt it; fall through to authoring.
+    if (_customizationRe.hasMatch(d)) return null;
     for (final t in templates.values) {
       final keywords = (t['keywords'] as List?)?.cast<String>() ?? const <String>[];
       if (!keywords.any((k) => d.contains(k.toLowerCase()))) continue;

@@ -162,6 +162,25 @@ void main() {
     });
   });
 
+  group('template vs customization overlap (live-caught) — a unit/field prefers authoring', () {
+    test('"start tracking my water intake in glasses" offers authoring, not the ml template', () async {
+      final s = await _session();
+      final r = (await s.handle('start tracking my water intake in glasses')).toLowerCase();
+      expect(r, anyOf(contains('want me to go ahead'), contains('build you a custom')));
+      expect(r, isNot(contains('ml'))); // the ml-based water template did NOT pre-empt it
+    });
+    test('plain "start tracking my water" still hits the free template', () async {
+      final s = await _session();
+      final r = (await s.handle('start tracking my water')).toLowerCase();
+      expect(r, isNot(contains('want me to go ahead'))); // template, not paid authoring
+    });
+    test('a time qualifier "in the morning" does NOT trip the customization guard', () async {
+      final s = await _session();
+      final r = (await s.handle('start tracking my steps in the morning')).toLowerCase();
+      expect(r, isNot(contains('want me to go ahead'))); // steps template still fires
+    });
+  });
+
   group('goal-progress (P-18 offline) — set a goal, track % via mul/div/round', () {
     test('set a goal, log runs, get progress percentage', () async {
       final s = await _session();
