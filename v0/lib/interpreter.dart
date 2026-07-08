@@ -7,6 +7,7 @@ library;
 import 'dart:math';
 
 import 'dates.dart';
+import 'reference.dart';
 
 class ResolveError implements Exception {
   final String message;
@@ -41,7 +42,12 @@ class Interpreter {
   final Map<String, TypeDef> types;
   final DateTime now;
   final Random _rng;
-  Interpreter(this.types, this.now, {Random? rng}) : _rng = rng ?? Random();
+  /// Reference datasets (Spec 13) keyed by name (e.g. 'nutrition'), for the read_reference op.
+  /// Empty by default so the interpreter stays pure/testable; the Session injects the real ones.
+  final Map<String, ReferenceStore> references;
+  Interpreter(this.types, this.now, {Random? rng, Map<String, ReferenceStore>? references})
+      : _rng = rng ?? Random(),
+        references = references ?? const {};
 
   /// Mint a globally-unique record id (Spec 02 §4.4). A UUID-v4 with a typeId
   /// prefix: unique across process restarts AND across devices, so a later
@@ -290,7 +296,7 @@ class Interpreter {
   }
 
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
-  static const _ops = {'read_one', 'read_many', 'read_related', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
+  static const _ops = {'read_one', 'read_many', 'read_related', 'read_reference', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num',
@@ -457,6 +463,10 @@ class Interpreter {
           }
           if (step['limit'] != null && step['limit'] is! int) throw ResolveError("${c.sid}: read_many limit must be an int");
           if (step['into'] is String) listVars[step['into'] as String] = tid;
+        case 'read_reference':
+          if (step['dataset'] is! String) throw ResolveError("${c.sid}: read_reference needs a 'dataset' name");
+          if (step['key'] == null) throw ResolveError("${c.sid}: read_reference needs a 'key'");
+          if (step['into'] is! String) throw ResolveError("${c.sid}: read_reference needs an 'into'");
         case 'read_related':
           final tid = step['typeId'];
           if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_related unknown type '$tid'");
@@ -583,6 +593,14 @@ class Interpreter {
               options: labels);
         }
         env[step['into']] = hits.isEmpty ? null : hits.first;
+      case 'read_reference':
+        // Tier-1 (sync, offline) lookup in a shipped dataset (Spec 13). A hit yields the entry
+        // fields + provenance; a miss yields null so the skill can log honestly without calories.
+        final refStore = references[step['dataset']];
+        final refKey = val(step['key'], env)?.toString() ?? '';
+        final hit = refStore?.lookup(refKey);
+        env[step['into']] =
+            hit == null ? null : {...hit.data, 'provenance': hit.provenance, 'refKey': hit.key};
       case 'read_many':
         var recs = store.values.where((r) => r['typeId'] == step['typeId']).toList();
         final f = step['filter'];

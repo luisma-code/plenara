@@ -161,5 +161,13 @@
   { "skillId": "recall-fact-about", "template": "what is {personName:contact} {query:text}" },
   { "skillId": "recall-fact-about", "template": "what's {personName:contact} {query:text}" },
   { "skillId": "recall-fact-about", "template": "what does {personName:contact} {query:text}" },
-  { "skillId": "recall-fact-about", "template": "is {personName:contact} {query:text}" }
+  { "skillId": "recall-fact-about", "template": "is {personName:contact} {query:text}" },
+  { "skillId": "log-meal", "template": "i ate {food:text}" },
+  { "skillId": "log-meal", "template": "i had {food:text}" },
+  { "skillId": "log-meal", "template": "i just ate {food:text}" },
+  { "skillId": "log-meal", "template": "log that i ate {food:text}" },
+  { "skillId": "calories-today", "template": "how many calories today" },
+  { "skillId": "calories-today", "template": "how many calories have i eaten today" },
+  { "skillId": "calories-today", "template": "how many calories did i eat today" },
+  { "skillId": "calories-today", "template": "my calories today" }
 ]

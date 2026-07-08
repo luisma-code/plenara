@@ -6,6 +6,7 @@ library;
 import 'automations.dart';
 import 'claude.dart';
 import 'content_search.dart';
+import 'reference.dart';
 import 'generative.dart';
 import 'interpreter.dart';
 import 'migration.dart';
@@ -244,6 +245,7 @@ class Session {
   // authoring path stays hermetic under init(retrieval: false), like init() itself.
   bool _retrievalEnabled = true;
   ContentSearchIndex? _contentIndex; // semantic content search (F-12); null until retrieval builds it
+  Map<String, ReferenceStore> _references = const {}; // reference KBs (Spec 13), loaded at init
 
   /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart); [storage]
   /// lets them inject a repository (in-memory / test double). Production leaves both
@@ -310,7 +312,10 @@ class Session {
     if (migrated > 0 || tooNew > 0) {
       phase('migrated $migrated record(s) to current schema${tooNew > 0 ? '; $tooNew from a newer app left as-is' : ''}');
     }
-    interp = Interpreter(types, now);
+    // Reference knowledge bases (Spec 13): shipped, read-only datasets (nutrition calories) —
+    // load once; a missing file yields an empty store (the feature just goes quiet).
+    _references = {'nutrition': ReferenceStore.load(dataDir, 'nutrition')};
+    interp = Interpreter(types, now, references: _references);
     // Automations registry (Spec 01 §4.4 / Spec 04 §3.9): loaded like types/skills;
     // an absent automations/ folder is simply an empty registry (zero behavior change).
     final autoRepo = repo;
@@ -921,7 +926,7 @@ class Session {
     _outSlots = slots;
     _outTemplate = template;
     try {
-      final turnInterp = Interpreter(types, now); // per-turn clock (Spec 03 §4)
+      final turnInterp = Interpreter(types, now, references: _references); // per-turn clock (Spec 03 §4)
       final plan = turnInterp.resolve(skills[skillId]!, slots, store);
       final before = turnInterp.execute(plan, store);
       for (final w in plan.writes) {

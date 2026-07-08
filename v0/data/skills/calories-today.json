@@ -1,0 +1,27 @@
+{
+  "skillId": "calories-today",
+  "displayName": "Calories eaten today",
+  "reads": [ "meal" ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      { "op": "read_many", "typeId": "meal", "into": "meals" },
+      { "op": "set", "var": "total", "value": 0 },
+      {
+        "op": "foreach",
+        "list": { "var": "meals" },
+        "as": "m",
+        "body": [
+          {
+            "op": "branch",
+            "cond": { "gte": [ { "field": [ "m", "loggedAt" ] }, { "var": "today" } ] },
+            "then": [ { "op": "compute", "fn": "add", "args": [ { "var": "total" }, { "field": [ "m", "kcal" ] } ], "into": "total" } ]
+          }
+        ]
+      },
+      { "op": "format", "template": "You've logged about {total} calories today.", "into": "confirmationText" }
+    ]
+  }
+}

@@ -3,6 +3,7 @@
 /// schema defaults + required-validation, read_one ambiguity, the static
 /// authoring gate (pass + many rejections), and error paths. Offline.
 import 'package:plenara/interpreter.dart';
+import 'package:plenara/reference.dart';
 import 'package:plenara/store.dart';
 import 'package:test/test.dart';
 
@@ -100,6 +101,23 @@ void main() {
       expect(_i().compute('ordinal_num', ['last'], {}), -1);
     });
     test('start_of_month', () => expect(_i().compute('start_of_month', ['2026-07-14'], {}), '2026-07-01'));
+    test('read_reference looks up a shipped dataset by key (Spec 13)', () {
+      final store = ReferenceStore.fromEntries('nutrition', [
+        {'key': 'banana', 'kcal': 105, 'category': 'fruit'}
+      ]);
+      final i = Interpreter(const {}, DateTime(2026), references: {'nutrition': store});
+      final skill = {
+        'skillId': 'x', 'inputs': [{'name': 'food'}], 'reads': [], 'writes': [],
+        'steps': {'main': [
+          {'op': 'read_reference', 'dataset': 'nutrition', 'key': {'var': 'food'}, 'into': 'ref'},
+          {'op': 'set', 'var': 'k', 'value': {'field': ['ref', 'kcal']}},
+          {'op': 'format', 'template': '{k} cal ({ref})', 'into': 'confirmationText'}
+        ]}
+      };
+      expect(i.resolve(skill, {'food': 'a banana'}, {}).confirmation, startsWith('105 cal'));
+      // a miss -> ref is null -> the field is empty, no crash
+      expect(i.resolve(skill, {'food': 'nothing'}, {}).confirmation, startsWith(' cal'));
+    });
     test('format renders {name} AND the model-variant {var:name} (authoring robustness)', () {
       final skill = {
         'skillId': 'x', 'inputs': [{'name': 'count'}], 'reads': [], 'writes': [],

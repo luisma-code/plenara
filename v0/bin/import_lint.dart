@@ -15,7 +15,7 @@ const kRank = <String, int>{
   // storage
   'store': 1, 'storage_repository': 1,
   // intelligence — NLU routing, the cloud seam, retrieval
-  'claude': 1, 'router': 1, 'embed': 1, 'replay_cloud': 1,
+  'claude': 1, 'router': 1, 'embed': 1, 'replay_cloud': 1, 'reference': 1, 'content_search': 1,
   // business logic + orchestration
   'interpreter': 2, 'reminders': 2, 'people': 2, 'generative': 2,
   'automations': 2, 'config': 2, 'turnlog': 2, 'migration': 2, 'session': 2,

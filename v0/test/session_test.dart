@@ -162,6 +162,33 @@ void main() {
     });
   });
 
+  group('reference KB — offline calorie lookup (Spec 13)', () {
+    test('a known food attaches calories + reference provenance', () async {
+      final s = await _session();
+      final r = (await s.handle('i ate mac and cheese')).toLowerCase();
+      expect(r, contains('390'));
+      final meal = s.store.values.firstWhere((x) => x['typeId'] == 'meal');
+      expect(meal['kcal'], 390);
+      expect(meal['provenance'], 'reference'); // never confused with a user-entered number
+    });
+    test('an article is normalized away ("a banana" -> banana)', () async {
+      final s = await _session();
+      expect((await s.handle('i ate a banana')).toLowerCase(), contains('105'));
+    });
+    test('an unknown food logs honestly — no guessed number', () async {
+      final s = await _session();
+      final r = (await s.handle('i ate grandmothers secret stew')).toLowerCase();
+      expect(r, contains("don't have calorie data"));
+      expect(s.store.values.firstWhere((x) => x['typeId'] == 'meal')['provenance'], 'user');
+    });
+    test('calories today sums the logged meals', () async {
+      final s = await _session();
+      await s.handle('i ate a banana'); // 105
+      await s.handle('i ate mac and cheese'); // 390
+      expect(await s.handle('how many calories today'), contains('495'));
+    });
+  });
+
   group('content search (F-12) — "find that note about…", offline via keyword', () {
     test('finds a journal entry by keyword', () async {
       final s = await _session();

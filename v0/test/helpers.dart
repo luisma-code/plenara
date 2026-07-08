@@ -11,7 +11,7 @@ String basename(String p) => p.replaceAll('\\', '/').split('/').last;
 /// and can run in parallel. Returns the dir path.
 String makeTempDataDir() {
   final tmp = Directory.systemTemp.createTempSync('plenara_test_');
-  for (final sub in const ['types', 'skills', 'templates']) {
+  for (final sub in const ['types', 'skills', 'templates', 'reference']) {
     final src = Directory('data/$sub');
     if (!src.existsSync()) continue;
     final dst = Directory('${tmp.path}/$sub')..createSync(recursive: true);
