@@ -503,6 +503,8 @@ class Session {
   static String cloudReason(CloudErrorKind k) => switch (k) {
         CloudErrorKind.noKey => "I don't have an API key set — add one in ~/.plenara/config.json.",
         CloudErrorKind.badKey => "my API key was rejected — update it in ~/.plenara/config.json.",
+        CloudErrorKind.insufficientCredits =>
+          "your Anthropic account has no credits — add a payment method or credits at console.anthropic.com (Settings → Billing). Your key is fine.",
         CloudErrorKind.offline => "I'm offline right now.",
         CloudErrorKind.timeout => "the cloud didn't respond in time.",
         CloudErrorKind.rateLimited => "I'm being rate-limited — try again shortly.",

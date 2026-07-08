@@ -14,10 +14,26 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-/// Why a cloud call could not produce an answer. `noKey`/`badKey` are actionable
-/// by the user; `offline`/`timeout`/`rateLimited`/`serverError` are transient;
-/// `malformed` means a 200 whose body we couldn't turn into a decision.
-enum CloudErrorKind { noKey, offline, timeout, badKey, rateLimited, serverError, malformed }
+/// Why a cloud call could not produce an answer. `noKey`/`badKey`/`insufficientCredits` are
+/// actionable by the user; `offline`/`timeout`/`rateLimited`/`serverError` are transient;
+/// `malformed` means a 200 whose body we couldn't turn into a decision. `insufficientCredits`
+/// is the #1 onboarding gotcha — a VALID key on an account with no billing/credits set up.
+enum CloudErrorKind { noKey, offline, timeout, badKey, insufficientCredits, rateLimited, serverError, malformed }
+
+/// Maps an HTTP status + response body to a typed error (null = success). Extracted from the
+/// request path so it's unit-testable: a no-credits account returns 400 with a "credit balance
+/// is too low" message and MUST read as insufficientCredits, not a generic serverError, so the
+/// app can send the user to add credits rather than blaming their key.
+CloudErrorKind? classifyHttp(int code, String body) {
+  if (code == 200) return null;
+  if (code == 401 || code == 403) return CloudErrorKind.badKey;
+  final low = body.toLowerCase();
+  final looksBilling = low.contains('credit balance') || low.contains('too low') ||
+      low.contains('billing') || low.contains('purchase credits');
+  if (looksBilling) return CloudErrorKind.insufficientCredits; // 400 (and occasionally 429)
+  if (code == 429) return CloudErrorKind.rateLimited;
+  return CloudErrorKind.serverError;
+}
 
 /// Result of a cloud call — a value or a named failure, never a thrown exception.
 sealed class CloudResult<T> {
@@ -83,6 +99,11 @@ class ClaudeClient implements CloudClient {
   static const inPricePerMTok = 1.0, outPricePerMTok = 5.0; // USD per million tokens
   static double costUsd(int inTok, int outTok) => (inTok * inPricePerMTok + outTok * outPricePerMTok) / 1e6;
   double get spentUsd => costUsd(inTokens, outTokens);
+
+  /// A cheap liveness probe for onboarding's "Test connection": one ~1-token call mapped to a
+  /// typed result, so the UI can say exactly what's wrong — a working key, a rejected key, or a
+  /// valid key with no credits (the case a bare paste-field would leave the user guessing about).
+  Future<CloudResult<String>> validateKey() => _rawText('Reply with OK.', 'ping', maxTokens: 1);
 
   static const _sys =
       'You are the intent router for a personal-assistant app. Given the user\'s '
@@ -162,9 +183,8 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
         final resp = await req.close();
         final raw = await resp.transform(utf8.decoder).join();
         final code = resp.statusCode;
-        if (code == 401 || code == 403) return CloudError<String>(CloudErrorKind.badKey, 'HTTP $code');
-        if (code == 429) return const CloudError<String>(CloudErrorKind.rateLimited);
-        if (code != 200) return CloudError<String>(CloudErrorKind.serverError, 'HTTP $code');
+        final httpErr = classifyHttp(code, raw);
+        if (httpErr != null) return CloudError<String>(httpErr, 'HTTP $code');
         final decoded = jsonDecode(raw);
         final usage = decoded is Map ? decoded['usage'] : null;
         if (usage is Map) {

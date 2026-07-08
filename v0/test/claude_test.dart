@@ -98,6 +98,28 @@ void main() {
     await s.close(force: true);
   });
 
+  test('400 "credit balance too low" -> insufficientCredits (billing, not a bad key)', () async {
+    final s = await _serve((r) => _reply(r, 400,
+        '{"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Claude API. Please go to Plans & Billing to purchase credits."}}'));
+    expect(_errKind(await _client(s).routeResidual('x', _skills)), CloudErrorKind.insufficientCredits);
+    await s.close(force: true);
+  });
+
+  test('validateKey probes the key and returns Ok on a 200', () async {
+    final s = await _serve((r) => _reply(r, 200, '{"content":[{"type":"text","text":"OK"}]}'));
+    expect(await _client(s).validateKey(), isA<CloudOk<String>>());
+    await s.close(force: true);
+  });
+
+  test('classifyHttp maps status+body to typed errors (pure, unit-level)', () {
+    expect(classifyHttp(200, '{}'), isNull);
+    expect(classifyHttp(401, 'invalid x-api-key'), CloudErrorKind.badKey);
+    expect(classifyHttp(400, 'Your credit balance is too low'), CloudErrorKind.insufficientCredits);
+    expect(classifyHttp(429, 'rate limited'), CloudErrorKind.rateLimited);
+    expect(classifyHttp(429, 'please purchase credits'), CloudErrorKind.insufficientCredits);
+    expect(classifyHttp(500, 'boom'), CloudErrorKind.serverError);
+  });
+
   test('malformed JSON body -> CloudError.malformed', () async {
     final s = await _serve((r) => _reply(r, 200, 'definitely not json'));
     expect(_errKind(await _client(s).routeResidual('x', _skills)), CloudErrorKind.malformed);
