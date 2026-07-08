@@ -54,7 +54,7 @@ PlenaraConfig loadConfig({String? configPath}) {
 void ensureSeeded(String dataDir, String sourceDir) {
   final types = Directory('$dataDir/types');
   if (types.existsSync() && types.listSync().whereType<File>().isNotEmpty) return; // already seeded
-  for (final sub in const ['types', 'skills', 'templates']) {
+  for (final sub in const ['types', 'skills', 'templates', 'automations']) {
     final dst = Directory('$dataDir/$sub')..createSync(recursive: true);
     final src = Directory('$sourceDir/$sub');
     if (!src.existsSync()) continue;

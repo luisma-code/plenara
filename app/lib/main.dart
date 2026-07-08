@@ -151,8 +151,14 @@ class _ChatState extends State<ChatScreen> {
     }
     log('turn -> ${resp.length > 140 ? '${resp.substring(0, 140)}…' : resp}');
     // _busy is always cleared, so the input can never lock up
+    // Surface any automation deliveries this turn produced (Spec 02 §7.5 read-only "deliver"),
+    // draining them so they don't re-appear as on-open nudges next launch.
+    final deliveries = _session.automations.takeDeliveries();
     setState(() {
       _msgs.add(Msg(resp, false));
+      for (final d in deliveries) {
+        _msgs.add(Msg('✨ ${d.text}', false));
+      }
       _busy = false;
     });
     _jump();
