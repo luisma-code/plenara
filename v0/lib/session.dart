@@ -522,23 +522,33 @@ class Session {
       final isSystemCmd =
           _undoRe.hasMatch(u) || _helpRe.hasMatch(u) || _corrRe.hasMatch(u) || _fabricationRe.hasMatch(u);
       if (!isSystemCmd) {
-        _pendingFill = null; // consumed; re-set below if still incomplete
         final skillId = pending['skillId'] as String;
         final skill = skills[skillId];
         final slots = Map<String, dynamic>.from(pending['slots'] as Map);
         final missing = List<String>.from(pending['missing'] as List);
-        slots[missing.first] = _coerceSlot(skill, missing.first, u, now);
-        final stillMissing = _missingRequired(skill, slots);
-        if (stillMissing.isNotEmpty) {
-          _pendingFill = {'skillId': skillId, 'slots': slots, 'missing': stillMissing};
-          _outSource = 'clarify';
-          return _askForSlot(skill, stillMissing.first);
+        final coerced = _coerceSlot(skill, missing.first, u, now);
+        if (coerced != null) {
+          _pendingFill = null; // got the answer
+          slots[missing.first] = coerced;
+          final stillMissing = _missingRequired(skill, slots);
+          if (stillMissing.isNotEmpty) {
+            _pendingFill = {'skillId': skillId, 'slots': slots, 'missing': stillMissing};
+            _outSource = 'clarify';
+            return _askForSlot(skill, stillMissing.first);
+          }
+          _outSource = 'provide-slot';
+          _outSkill = skillId;
+          return _dispatch(skillId, slots, 'corpus', now);
         }
-        _outSource = 'provide-slot';
-        _outSkill = skillId;
-        return _dispatch(skillId, slots, 'corpus', now);
+        // The input did NOT provide the missing slot — it's a NEW command, not a slot answer.
+        // Abandon the paused turn and handle the input normally (fall through), so the user is
+        // never trapped re-answering. (Surfaced by the live cloud tier: a cloud-routed reminder
+        // with no time swallowed every later turn as a failed "when?" answer.)
+        _pendingFill = null;
+      } else {
+        _pendingFill = null; // interrupted by a system command — handle it normally
       }
-      _pendingFill = null; // interrupted by a system command — fall through to handle it
+      // both branches cleared _pendingFill and fall through to normal handling below
     }
 
     // Authoring activation (§6.5 / G-18): a validated draft is waiting. "activate" commits

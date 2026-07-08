@@ -542,8 +542,10 @@ class Interpreter {
       case 'format':
         // a null/absent var renders as empty (the spec's omitIfNull default) — never
         // leak a literal "{var}" into the user-facing string (no silent failure, P7).
+        // accept both {name} and the model's occasional {var:name} — an authored template that
+        // slips into slot syntax must still render, not leak a literal placeholder.
         final out = (step['template'] as String).replaceAllMapped(
-            RegExp(r'\{(\w+)\}'), (m) => '${env[m.group(1)] ?? ''}');
+            RegExp(r'\{(?:var:)?(\w+)\}'), (m) => '${env[m.group(1)] ?? ''}');
         env[step['into']] = out;
         if (step['into'] == 'confirmationText') plan.confirmation = out;
       case 'read_one':

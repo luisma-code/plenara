@@ -127,5 +127,22 @@ void main() {
       final t = s.store.values.where((x) => x['typeId'] == 'task').single;
       expect(t['dueAt'], '2026-07-10'); // resolved to ISO, not the raw "friday"
     });
+
+    test('a PARTIAL cloud route asks for the missing slot, then a NEW command escapes it (not trapped)',
+        () async {
+      // The live-cloud bug: a cloud-routed reminder with no time asked "when?" and then swallowed
+      // EVERY later turn as a failed answer. A new command must abandon the ask and be handled.
+      final s = await _session(
+          makeTempDataDir(),
+          _RouteCloud({
+            'skillId': 'set-reminder',
+            'slots': <String, dynamic>{'text': 'water the plants'}, // no 'when' -> ProvideSlot
+            'source': 'cloud',
+          }));
+      expect((await s.handle('jot down that i should water the plants')).toLowerCase(), contains('when'));
+      // a genuine new command (not a time) -> abandons the paused fill and is handled normally
+      expect(await s.handle('add buy milk to my list'), contains('buy milk'));
+      expect(s.store.values.any((x) => x['typeId'] == 'reminder'), isFalse); // no half-filled reminder written
+    });
   });
 }

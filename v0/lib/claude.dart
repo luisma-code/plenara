@@ -102,10 +102,11 @@ typeDef: {"typeId","displayName","attributes":[{"name","valueType","required",("
 skillDef uses ONLY this closed op vocabulary:
   {"op":"compute","fn":<now|today|format_date|add|count>,"args":[...],"into":"var"}
   {"op":"write_record","typeId":"...","fields":{"<attr>":{"var":"<slot>"}|<literal>},"into":"var"}
-  {"op":"format","template":"... {slotOrVar} ...","into":"confirmationText"}
+  {"op":"format","template":"Logged {count} for {date}.","into":"confirmationText"}
 Shape: {"skillId","displayName","reads":[<typeIds read>],"writes":[<typeIds written>],"inputs":[{"name","required"}],"examplePhrases":[3 strings],"steps":{"main":[<ops>]}}
 Author a LOGGING skill: compute today into a var, write_record capturing the input value(s) + that date
-into the type, then a format op that sets "confirmationText". Reference inputs as {"var":"<slotName>"}.
+into the type, then a format op that sets "confirmationText". In OP ARGS/FIELDS reference a slot/var
+as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE braces {name} (never {var:name}).
 "reads" is [] and "writes" is [the new typeId] for a logging skill. Output only JSON, no prose.''';
 
   /// Author a new type + skill from a described need (Spec 02 §6). Ok({type, skill})
