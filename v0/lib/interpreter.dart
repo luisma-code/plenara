@@ -275,7 +275,13 @@ class Interpreter {
     'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if'};
   static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};
-  static const _valueTypes = {'text', 'date', 'datetime', 'decimal', 'integer', 'boolean', 'entityRef', 'enum'};
+  // The Spec 01 §3 canonical value-type set (fixed; a new one needs a kernel bump). `integer`
+  // is retained only as a tolerated legacy alias for `number` (older authored types).
+  static const _valueTypes = {
+    'text', 'number', 'decimal', 'date', 'datetime', 'boolean',
+    'duration', 'enum', 'entityRef', 'tag', 'attachment', 'json',
+    'integer', // legacy alias -> number
+  };
 
   /// Validate an authored TYPE def (Spec 01 §3). Throws ResolveError (never a
   /// raw TypeError) so the authoring retry loop can catch it.

@@ -95,7 +95,9 @@ You author capabilities for a personal-assistant app as DATA (never code). Given
 described need, output ONLY a JSON object: {"type": <typeDef>, "skill": <skillDef>}.
 
 typeDef: {"typeId","displayName","attributes":[{"name","valueType","required",("default"?)}]}
-  valueType in: text|date|decimal|integer|boolean. Always include a "loggedAt" date attribute (required:true).
+  valueType in: text|number|decimal|date|datetime|boolean|duration|enum (Spec 01 §3; use `number`
+  for approximate quantities, `decimal` only for money, `duration` for time spans in seconds).
+  Always include a "loggedAt" date attribute (required:true).
 
 skillDef uses ONLY this closed op vocabulary:
   {"op":"compute","fn":<now|today|format_date|add|count>,"args":[...],"into":"var"}

@@ -576,6 +576,12 @@ void main() {
       expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'entityRef'}]}), throwsA(isA<ResolveError>()));
       expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': 'text'}]}), returnsNormally);
     });
+    test('validateType accepts the Spec 01 §3 value-type set (G-40 alignment)', () {
+      for (final vt in const ['number', 'decimal', 'duration', 'tag', 'attachment', 'json', 'datetime', 'boolean']) {
+        expect(() => _i().validateType({'typeId': 't', 'attributes': [{'name': 'x', 'valueType': vt}]}),
+            returnsNormally, reason: vt);
+      }
+    });
     test('capability closure: writing an undeclared type is rejected', () {
       final s = {'skillId': 'x', 'reads': [], 'writes': ['task'], 'steps': {'main': [
         {'op': 'compute', 'fn': 'today', 'into': 't'},
