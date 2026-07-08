@@ -190,7 +190,6 @@ void main() {
   // ── Free-tier denials (DF-01 … DF-10) — must refuse cleanly, not silently ────────────
   group('05a §4 — Free-tier denials (DF-01..DF-10)', () {
     const dfs = {
-      'DF-01': 'no-template "want me to create?" free-tier surface unbuilt (goes to cloud authoring)',
       'DF-02': 'free-tier generative tier-gate surface — needs cloud/degrade wiring',
       'DF-04': 'structural-learning partial-degrade unbuilt',
       'DF-05': 'offline paid-degrade needs an offline-returning cloud (tested in cloud_result_test); _NoCloud throws',
@@ -200,6 +199,12 @@ void main() {
       'DF-09': 'decline-to-author graceful-nothing — needs the no-template surface (DF-01)',
     };
     dfs.forEach((id, why) => test('$id', () async {}, skip: why));
+
+    test('DF-01 no-template -> offer a paid custom build: "Start tracking which restaurants I visit."', () async {
+      final s = await _s();
+      final r = await s.handle('start tracking which restaurants i visit'); // no builtin, no template
+      expect(r.toLowerCase(), contains('want me to go ahead')); // offers authoring, spends no cloud until yes
+    });
 
     test('DF-03 schema edit to an existing type: "Add a mood-score field to my running tracker."', () async {
       final s = await _s();
@@ -272,9 +277,9 @@ void main() {
 // CONFORMANCE TALLY (offline, exact-or-equivalent utterances) — kept in sync with runs:
 //   F-tier: 11 pass /  9 skip  (F-01,02,04,05,07,09,10,17,18,19,20 pass)
 //   P-tier:  0 pass / 20 skip  (all need BYOK: authoring or generative)
-//   DF-tier: 2 pass /  8 skip  (DF-03 schema-edit, DF-10 scope denial)
+//   DF-tier: 3 pass /  7 skip  (DF-01 no-template offer, DF-03 schema-edit, DF-10 scope denial)
 //   DP-tier: 7 pass /  3 skip  (DP-01,02,03,04,06,08,09 — deterministic safety/OOD/scope/medical/impersonation floors)
-//   TOTAL:  20 pass / 40 skip  of 60  (up from 9/60 — denial floors, phrasings, tracker queries, nested people-fact)
+//   TOTAL:  21 pass / 39 skip  of 60  (up from 9/60 — denial floors, phrasings, tracker queries, people-fact, DF-01 offer)
 // The skips ARE the remaining spec worklist: mostly cloud-gated (paid), a handful of
 // genuinely-unbuilt capabilities (search F-12, aggregation queries F-17/18, automations
 // P-19, the generative depth P-08..P-20), and corpus-phrasing gaps where the CAPABILITY

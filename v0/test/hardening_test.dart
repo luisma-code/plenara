@@ -58,9 +58,10 @@ Map<String, dynamic> _authored(String typeId, String skillId) => {
 
 void main() {
   group('authoring hardening (Fable review)', () {
-    test('a valid authored capability previews, then activates and registers (§6.5)', () async {
+    test('a valid authored capability offers, then previews on yes, then activates (§6.5, DF-01)', () async {
       final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
-      final preview = await s.handle('start tracking my pushups');
+      expect((await s.handle('start tracking my pushups')).toLowerCase(), contains('want me to go ahead')); // DF-01: no cloud yet
+      final preview = await s.handle('yes');
       expect(preview.toLowerCase(), contains('activate'));
       expect(s.types.containsKey('water_intake'), isFalse, reason: 'nothing registered until activate');
       expect(s.skills.containsKey('log_water'), isFalse);
@@ -70,14 +71,22 @@ void main() {
     });
     test('a previewed capability can be declined with "never mind" (nothing registered)', () async {
       final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
-      expect((await s.handle('start tracking my pushups')).toLowerCase(), contains('activate'));
+      expect((await s.handle('start tracking my pushups')).toLowerCase(), contains('want me to go ahead'));
+      expect((await s.handle('yes')).toLowerCase(), contains('activate'));
       expect((await s.handle('never mind')).toLowerCase(), contains("won't add"));
       expect(s.types.containsKey('water_intake'), isFalse);
       expect(s.skills.containsKey('log_water'), isFalse);
     });
+    test('declining the OFFER itself builds nothing, no cloud call (DF-01)', () async {
+      final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
+      expect((await s.handle('start tracking my pushups')).toLowerCase(), contains('want me to go ahead'));
+      expect((await s.handle('never mind')).toLowerCase(), contains("won't build"));
+      expect(s.types.containsKey('water_intake'), isFalse);
+    });
     test('moving on without activating drops the draft and handles the new input', () async {
       final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
-      expect((await s.handle('start tracking my pushups')).toLowerCase(), contains('activate'));
+      expect((await s.handle('start tracking my pushups')).toLowerCase(), contains('want me to go ahead'));
+      expect((await s.handle('yes')).toLowerCase(), contains('activate'));
       expect(await s.handle('add buy milk to my list'), contains('buy milk')); // handled normally
       expect(s.types.containsKey('water_intake'), isFalse); // draft dropped, never registered
     });
@@ -85,7 +94,8 @@ void main() {
     test('a colliding typeId cannot clobber or delete a built-in type', () async {
       final s = await _session(_ScriptCloud(authorResult: _authored('task', 'log_task_thing')));
       final before = s.types['task'];
-      final r = await s.handle('start tracking my task thing');
+      await s.handle('start tracking my task thing'); // DF-01 offer
+      final r = await s.handle('yes');
       expect(r, isNot(contains('Built')));
       expect(s.types['task'], same(before)); // built-in intact — not overwritten or removed on rollback
       expect(await s.handle('add buy milk to my list'), contains('buy milk')); // still works
@@ -93,19 +103,22 @@ void main() {
 
     test('a path-traversal / bad-charset id is rejected, nothing registered', () async {
       final s = await _session(_ScriptCloud(authorResult: _authored('../evil', 'log_evil')));
-      final r = await s.handle('start tracking my evil thing');
+      await s.handle('start tracking my evil thing'); // DF-01 offer
+      final r = await s.handle('yes');
       expect(r, contains('could not be validated'));
       expect(s.types.containsKey('../evil'), isFalse);
     });
 
     test('a malformed authoring shape degrades gracefully (no crash)', () async {
       final s = await _session(_ScriptCloud(authorResult: {'type': 'not a map', 'skill': 42}));
-      expect(await s.handle('start tracking my something'), contains('could not be validated'));
+      await s.handle('start tracking my something'); // DF-01 offer
+      expect(await s.handle('yes'), contains('could not be validated'));
     });
 
     test('a throwing cloud is caught by the boundary (no exception escapes)', () async {
       final s = await _session(_ScriptCloud(throwOnAuthor: true));
-      expect(await s.handle('start tracking my whatever'), contains('something went wrong'));
+      await s.handle('start tracking my whatever'); // DF-01 offer
+      expect(await s.handle('yes'), contains('something went wrong'));
     });
   });
 

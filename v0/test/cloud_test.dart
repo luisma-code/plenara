@@ -52,7 +52,9 @@ void main() {
         final s = Session(makeTempDataDir(), clock: _now, cloud: _cloud());
         await s.init(retrieval: false);
         final before = s.skills.length;
-        final preview = await s.handle('start tracking $desc');
+        expect((await s.handle('start tracking $desc')).toLowerCase(), contains('want me to go ahead'),
+            reason: '"$desc" DF-01 offer'); // no cloud spent until yes
+        final preview = await s.handle('yes');
         expect(preview.toLowerCase(), contains('activate'), reason: '"$desc": $preview');
         expect(s.skills.length, before, reason: 'nothing registered until activate ($desc)');
         final added = await s.handle('activate');
@@ -126,7 +128,8 @@ void main() {
       final s = Session(dir, clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
       final beforeSkills = s.skills.keys.toSet();
-      final preview = await s.handle('start tracking coffee cups per day'); // no template -> authors
+      await s.handle('start tracking coffee cups per day'); // no template -> DF-01 offer
+      final preview = await s.handle('yes'); // accept -> authors
       expect(preview.toLowerCase(), contains('activate'));
       expect(s.skills.keys.toSet(), beforeSkills, reason: 'nothing registered until activate');
       final added = await s.handle('activate');

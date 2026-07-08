@@ -209,6 +209,7 @@ class Session {
   // A validated-but-UNREGISTERED authored capability awaiting the user's "activate"
   // (Spec 02 §6.5 / G-18): {type, skill, typeId, skillId, displayName, examples}.
   Map<String, dynamic>? _pendingActivation;
+  String? _pendingAuthorOffer; // DF-01: a "start tracking X" awaiting a yes before paid authoring
   // Whether retrieval (the embed-server index) is active this session. Authoring
   // grows the inventory and must re-index — but only when retrieval is on, so the
   // authoring path stays hermetic under init(retrieval: false), like init() itself.
@@ -477,6 +478,22 @@ class Session {
       _pendingActivation = null; // moved on — drop the draft, handle this input normally
     }
 
+    // Authoring OFFER (DF-01): a "start tracking X" with no built-in tracker and no template
+    // was offered a paid custom build. A yes spends the cloud call; a decline drops it; any
+    // other input abandons the offer and is handled normally (nothing was built).
+    final offer = _pendingAuthorOffer;
+    if (offer != null) {
+      _pendingAuthorOffer = null;
+      if (_activateRe.hasMatch(u)) {
+        return _authorAndPreview(offer, now);
+      }
+      if (_cancelRe.hasMatch(u)) {
+        _outSource = 'clarify';
+        return "No problem — I won't build one.";
+      }
+      // else: fall through and handle this new input normally
+    }
+
     // record-integrity floor: never fabricate history (DP-05, locked principle #7)
     if (_fabricationRe.hasMatch(u)) {
       _outSource = 'refused';
@@ -638,58 +655,12 @@ class Session {
         final instantiated = await _tryInstantiateTemplate(desc, now);
         if (instantiated != null) return instantiated;
       }
-      String? priorError;
-      for (var attempt = 1; attempt <= 2; attempt++) {
-        final Map<String, dynamic>? authored;
-        switch (await claude.authorCapability(desc, priorError: priorError)) {
-          case CloudError(:final kind):
-            _cloudStatus = kind.name;
-            return "I couldn't build that — ${cloudReason(kind)}"; // the real reason, not a guess
-          case CloudOk(:final value):
-            _cloudStatus = 'ok';
-            authored = value;
-        }
-        if (authored == null) return "I couldn't build that right now.";
-        String? tempType; // temporarily registered so validateSkill sees the type; rolled back
-        try {
-          final type = (authored['type'] as Map).cast<String, dynamic>();
-          final skill = (authored['skill'] as Map).cast<String, dynamic>();
-          final typeId = type['typeId'], skillId = skill['skillId'];
-          if (typeId is! String || skillId is! String) {
-            throw ResolveError('authored capability is missing a string typeId/skillId');
-          }
-          if (!_idRe.hasMatch(typeId) || !_idRe.hasMatch(skillId)) {
-            // model-controlled ids must never steer a file path or carry odd chars
-            throw ResolveError('authored id must match [a-z0-9_-] (1-64 chars)');
-          }
-          if (types.containsKey(typeId) || skills.containsKey(skillId)) {
-            // never overwrite a built-in / existing capability
-            throw ResolveError('a capability like "$skillId" already exists — nothing built');
-          }
-          // Validate WITHOUT committing (§6.5 / G-18): temporarily register the type so
-          // validateSkill can resolve it, then roll it back — nothing is registered until
-          // the user says "activate".
-          interp.validateType(type);
-          types[typeId] = type;
-          tempType = typeId;
-          interp.validateSkill(skill);
-          types.remove(tempType);
-          tempType = null;
-          final eg = (skill['examplePhrases'] as List?)?.cast<String>() ?? const <String>[];
-          _pendingActivation = {
-            'type': type, 'skill': skill, 'typeId': typeId, 'skillId': skillId,
-            'displayName': skill['displayName'] ?? skillId, 'examples': eg,
-          };
-          _outSource = 'authoring-preview';
-          return 'I can build "${skill['displayName'] ?? skillId}" for you'
-              '${eg.isNotEmpty ? ' — you\'d be able to say things like "${eg.first}"' : ''}. '
-              'Say "activate" to add it, or "never mind" to skip.';
-        } catch (e) {
-          if (tempType != null) types.remove(tempType); // safe rollback
-          priorError = e is ResolveError ? e.message : e.toString();
-          if (attempt == 2) return 'I drafted that but it could not be validated — nothing was registered.';
-        }
-      }
+      // DF-01: no built-in tracker, no template -> OFFER a paid custom build; don't spend the
+      // authoring cloud call until the user says yes (Spec 08 per-invocation paid consent).
+      _pendingAuthorOffer = desc;
+      _outSource = 'author-offer';
+      return "I don't have a built-in tracker for that yet. I can build you a custom one — "
+          "that uses your Claude credits (a paid step). Want me to go ahead?";
     }
 
     var routed = router.route(u, clock: now);
@@ -884,6 +855,65 @@ class Session {
   /// no cloud: register its type(s) + skill(s), persist them, and inject its bundled corpus
   /// so the new tracker works by voice right away. Returns the confirmation, or null if no
   /// template matches [desc] (→ falls through to paid authoring).
+  /// The paid authoring path (§6.5 / G-18): author the capability via the cloud, validate it
+  /// WITHOUT committing, and stage it as a pending activation. Reached ONLY after the DF-01
+  /// offer is accepted, so the cloud call is never spent on an unrequested build.
+  Future<String> _authorAndPreview(String desc, DateTime now) async {
+    String? priorError;
+    for (var attempt = 1; attempt <= 2; attempt++) {
+      final Map<String, dynamic>? authored;
+      switch (await claude.authorCapability(desc, priorError: priorError)) {
+        case CloudError(:final kind):
+          _cloudStatus = kind.name;
+          return "I couldn't build that — ${cloudReason(kind)}"; // the real reason, not a guess
+        case CloudOk(:final value):
+          _cloudStatus = 'ok';
+          authored = value;
+      }
+      if (authored == null) return "I couldn't build that right now.";
+      String? tempType; // temporarily registered so validateSkill sees the type; rolled back
+      try {
+        final type = (authored['type'] as Map).cast<String, dynamic>();
+        final skill = (authored['skill'] as Map).cast<String, dynamic>();
+        final typeId = type['typeId'], skillId = skill['skillId'];
+        if (typeId is! String || skillId is! String) {
+          throw ResolveError('authored capability is missing a string typeId/skillId');
+        }
+        if (!_idRe.hasMatch(typeId) || !_idRe.hasMatch(skillId)) {
+          // model-controlled ids must never steer a file path or carry odd chars
+          throw ResolveError('authored id must match [a-z0-9_-] (1-64 chars)');
+        }
+        if (types.containsKey(typeId) || skills.containsKey(skillId)) {
+          // never overwrite a built-in / existing capability
+          throw ResolveError('a capability like "$skillId" already exists — nothing built');
+        }
+        // Validate WITHOUT committing (§6.5 / G-18): temporarily register the type so
+        // validateSkill can resolve it, then roll it back — nothing is registered until
+        // the user says "activate".
+        interp.validateType(type);
+        types[typeId] = type;
+        tempType = typeId;
+        interp.validateSkill(skill);
+        types.remove(tempType);
+        tempType = null;
+        final eg = (skill['examplePhrases'] as List?)?.cast<String>() ?? const <String>[];
+        _pendingActivation = {
+          'type': type, 'skill': skill, 'typeId': typeId, 'skillId': skillId,
+          'displayName': skill['displayName'] ?? skillId, 'examples': eg,
+        };
+        _outSource = 'authoring-preview';
+        return 'I can build "${skill['displayName'] ?? skillId}" for you'
+            '${eg.isNotEmpty ? ' — you\'d be able to say things like "${eg.first}"' : ''}. '
+            'Say "activate" to add it, or "never mind" to skip.';
+      } catch (e) {
+        if (tempType != null) types.remove(tempType); // safe rollback
+        priorError = e is ResolveError ? e.message : e.toString();
+        if (attempt == 2) return 'I drafted that but it could not be validated — nothing was registered.';
+      }
+    }
+    return "I couldn't build that right now."; // loop always returns; satisfies the analyzer
+  }
+
   Future<String?> _tryInstantiateTemplate(String desc, DateTime now) async {
     final d = desc.toLowerCase();
     for (final t in templates.values) {
