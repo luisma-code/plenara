@@ -448,6 +448,11 @@ class Session {
     final autoHeld0 = automations.pendingReview.length;
     final autoRefused0 = automations.refusals.length;
     final startedAt = DateTime.now();
+    // Cost telemetry: snapshot the cloud token counters so this turn's spend is logged per-turn
+    // (the turnlog is append-only, so summing 'cost.usd' across it gives a real running total).
+    final c = claude;
+    final inTok0 = c is ClaudeClient ? c.inTokens : 0;
+    final outTok0 = c is ClaudeClient ? c.outTokens : 0;
     String resp;
     try {
       resp = await _handle(u);
@@ -471,6 +476,12 @@ class Session {
       if (_outTemplate != null) 'template': _outTemplate,
       if (_outSlots != null && _outSlots!.isNotEmpty) 'slots': _outSlots,
       if (_cloudStatus != null) 'cloud': _cloudStatus,
+      if (c is ClaudeClient && (c.inTokens - inTok0 > 0 || c.outTokens - outTok0 > 0))
+        'cost': {
+          'in': c.inTokens - inTok0,
+          'out': c.outTokens - outTok0,
+          'usd': ClaudeClient.costUsd(c.inTokens - inTok0, c.outTokens - outTok0),
+        },
       if (_outWrites.isNotEmpty) 'writes': _outWrites,
       'response': resp.length > 240 ? '${resp.substring(0, 240)}…' : resp,
       if (_outDiag != null) 'diag': _outDiag,

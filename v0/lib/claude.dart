@@ -77,6 +77,13 @@ class ClaudeClient implements CloudClient {
         _url = url ?? 'https://api.anthropic.com/v1/messages';
   bool get available => key != null && key!.isNotEmpty;
 
+  // Cost telemetry (Haiku 4.5 pricing). Cumulative input/output tokens across this client's
+  // lifetime; the Session reads the delta each turn to log per-turn cost and persist a total.
+  int inTokens = 0, outTokens = 0;
+  static const inPricePerMTok = 1.0, outPricePerMTok = 5.0; // USD per million tokens
+  static double costUsd(int inTok, int outTok) => (inTok * inPricePerMTok + outTok * outPricePerMTok) / 1e6;
+  double get spentUsd => costUsd(inTokens, outTokens);
+
   static const _sys =
       'You are the intent router for a personal-assistant app. Given the user\'s '
       'utterance and the app\'s full capability inventory (each with an id, a '
@@ -159,6 +166,11 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
         if (code == 429) return const CloudError<String>(CloudErrorKind.rateLimited);
         if (code != 200) return CloudError<String>(CloudErrorKind.serverError, 'HTTP $code');
         final decoded = jsonDecode(raw);
+        final usage = decoded is Map ? decoded['usage'] : null;
+        if (usage is Map) {
+          inTokens += (usage['input_tokens'] as num?)?.toInt() ?? 0;
+          outTokens += (usage['output_tokens'] as num?)?.toInt() ?? 0;
+        }
         final content = decoded is Map ? decoded['content'] : null;
         if (content is! List) return const CloudError<String>(CloudErrorKind.malformed, 'no content array');
         final block = content.firstWhere(

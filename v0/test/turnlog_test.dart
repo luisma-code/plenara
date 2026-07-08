@@ -37,6 +37,23 @@ void main() {
     expect(summarizeTurns([]).rate('clarify'), 0);
   });
 
+  test('cost: sums spend across paid turns and derives spend-per-active-day', () {
+    final t = <Map<String, dynamic>>[
+      {'source': 'corpus', 'at': '2026-07-07T09:00:00'}, // free
+      {'source': 'cloud', 'at': '2026-07-07T09:01:00', 'cost': {'in': 1000, 'out': 40, 'usd': 0.0012}},
+      {'source': 'cloud', 'at': '2026-07-08T10:00:00', 'cost': {'in': 175, 'out': 150, 'usd': 0.000925}},
+    ];
+    final s = summarizeTurns(t);
+    expect(s.paidCalls, 2);
+    expect(s.activeDays, 2);
+    expect(s.spendUsd, closeTo(0.002125, 1e-9));
+    expect(s.spendPerDayUsd, closeTo(0.0010625, 1e-9)); // total / 2 days
+    final r = formatSummary(s);
+    expect(r, contains('Estimated API spend'));
+    expect(r, contains('/day'));
+    expect(r, contains('/month'));
+  });
+
   test('formatTurnTrace renders a diagnosable one-turn trace', () {
     final line = formatTurnTrace({
       'utterance': 'add buy milk to my list',
