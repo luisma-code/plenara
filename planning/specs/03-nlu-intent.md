@@ -3,6 +3,7 @@
 **Status:** v0.5 — July 2026 (Sonnet skeleton v0.1 → Opus hardening v0.2 → Opus 4.8 design-level review v0.3 → act-then-describe reconciliation v0.4 → generative-request routing v0.5; bones challenged, calls made and recorded — see Decision Record §11 and review-logs Appendix B/C/D/E)  
 **Depends on:** Spec 01 — Meta-Schema & Type System (§4.1, §5.4, §6, §8.2, §8.7); Spec 02 — Skill DSL (§2.2, §2.3, §4.4, §5.5, §7.1, §7.3)  
 **Blocks:** Architecture spec, UI spec
+**Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
 
 ---
 
@@ -524,8 +525,8 @@ The resulting layout (detailed in §5.2–§5.3):
 
 | Store | Home | Encryption | Lane | Status |
 |---|---|---|---|---|
-| `nlu/flow-table.json` | synced Plenara root (non-sensitive templates only) | plaintext | 1 — corrections corpus | **built in v1** |
-| `[app-support]/plenara/nlu/plan-cache` | device-local | encrypted at rest | 2 — plan cache | deferred (§5.1) |
+| `corpus.json` (seeded, read-only) + `corpus-learned.json` — the shipped/normative names (Spec 06 §10.1; the draft's `nlu/flow-table.json` is retired — renamed at most once, at the P2 per-device split) | synced Plenara root (non-sensitive templates only) | plaintext | 1 — corrections corpus | **built in v1** |
+| `[app-support]/plenara/nlu/plan-cache` | device-local | encrypted at rest *when Spec 01 §8.7 ships; v1 posture: plaintext device-local per Spec 04 §3.1 (moot until built)* | 2 — plan cache | deferred (§5.1) |
 
 > **Corpus file layout — v1 = single file (Luis's call, 2026-07).** The storage-sync assessment §6.3 item 4 recommends **per-device** corpus files (`nlu/corpus-{deviceId}.json`) "now rather than pre-P2" to avoid whole-file last-writer-wins when two devices sync. For **v1 (single-device)** the single `flow-table.json` above ships as written; **per-device split is deferred to the multi-device (P2) work**, landing together with the record-level CRDT merge engine (the corpus has the same convergence needs as records, so it converts at the same time). Tracked so the assessment and this section agree rather than contradict. v0 uses a single `corpus.json` + `corpus-learned.json`, consistent with this.
 
@@ -585,7 +586,7 @@ Person-referencing skills therefore declare **both** a `…Id?` and a `…Name` 
 A **pure-code** component in the NLU post-processor — **never the model** (models hallucinate the actual date; findings §3). It takes the temporal *expression* the model extracted plus the frozen `now`/`today`, and returns a resolved `datetime`/`date`/RRULE (+ `allDay`). It owns **all** date math so skills receive a literal `dueAt`:
 - **Relative** ("Thursday", "in three weeks") → concrete date; `date→datetime` coercion + `allDay` (Spec 01 §7.3).
 - **Recurring** ("every second Tuesday") → RRULE (`FREQ=WEEKLY;INTERVAL=2;BYDAY=TU`).
-- **Anniversary / next-occurrence** (`G-15`) → `next_anniversary(date)` / `next_occurrence` — the MM-DD logic the compute grammar lacks; it lives **here**, not in the DSL.
+- **Anniversary / next-occurrence** (`G-15`) → `next_anniversary(date)` / `next_occurrence` MM-DD logic. **Ownership split, amended per `G-42` (05b — suite-sync CS-23):** the earlier "lives here, not in the DSL" claim is reversed to *either home is valid*: v0 ships the math as DSL compute fns (`next_annual`, `days_until_annual` — in Spec 02 §3.7's closed fn set) plus a skill (`task-before-birthday`), and that stands. The resolver remains the home for **utterance-time** resolution (turning a spoken temporal expression into a literal NLU slot); the compute fns are the home for **skill-time** math (a step deriving a date from record data mid-plan).
 - **Record-anchored** (`G-14`) → given a *structured* anchor `(contactRef, field, offsetDays)` — NLU resolves the contact via §6.1 and maps the field word ("birthday" → the `birthday` attribute) — the resolver does a **scoped graph-read** of that field, applies `next_anniversary` + offset, and returns the literal `dueAt`. **This supersedes the skill-side anchor branch sketched in 05a-traces §3A:** `create-reminder` receives a resolved `dueAt` and needs no `read_one`/`compute` anchor logic in the common case.
 - **Missing anchor data** (`G-16`) → if the anchor field is null (Sarah's birthday unknown), the resolver cannot produce a date → it raises a **missing-slot follow-up** (§6.3): *"When's Sarah's birthday?"* The answer resolves this reminder (and the app may offer to save it to the contact — a separate act).
 

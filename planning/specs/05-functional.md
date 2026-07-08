@@ -3,6 +3,7 @@
 **Status:** v0.4 — July 2026 (Opus 4.8; v0.3 act-then-describe hardening → v0.4 generative-request routing + capability-name canonicalization. This pass closes the last open cross-spec seam — voice-invoked generative features (Spec 04 Q6) — so every marquee flow traces end-to-end through Specs 01–04. See Decision Record §26 D9 and Appendix B.)
 **Depends on:** Spec 01 — Meta-Schema & Type System; Spec 02 — Skill DSL; Spec 03 — NLU / Intent; Spec 04 — Architecture
 **Blocks:** Spec 07 — UI & Design-Language; Spec 09 — Test
+**Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
 
 ---
 
@@ -650,7 +651,7 @@ NLU routes to `generative_request`, generativeKind=`briefing` (Spec 03 §2.2a �
 [System: execute — updates the AutomationRunner schedule for the briefing automation]
 > A: "Briefing moved to 6:30 AM."
 
-*E5 — Briefing mentions sensitive data.* Claude's briefing prompt includes only plaintext fields from records (sensitive fields excluded from the prompt, per the privacy contract in Spec 08). What Claude sees is bounded by what the prompt assembler includes; it never sees encrypted payloads.
+*E5 — Briefing mentions sensitive data.* What Claude sees is bounded by what the prompt assembler includes — and the briefing assembler's declared record classes (task descriptions, reminder texts, birthday nudge lines — Spec 08 §5.5 row) contain no `sensitive`-flagged fields, and journal text is categorically excluded outside tier-c consent (Spec 08 §5.4). That class-scoping — not a blanket "sensitive fields excluded" rule, which Spec 08 does not state — is the actual privacy contract (suite-sync CS-18).
 
 ---
 

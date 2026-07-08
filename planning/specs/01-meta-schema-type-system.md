@@ -3,6 +3,7 @@
 **Status:** Draft v0.3 — July 2026 (reviewed & revised by Claude — see Appendix A)  
 **Depends on:** Research doc v0.10 (§4, §8, §9)  
 **Blocks:** Skill DSL spec, NLU spec, Architecture spec, Data & Sync spec, UI spec
+**Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
 
 ---
 
@@ -191,7 +192,7 @@ Each type is stored as a single JSON file in `[plenara-root]/types/`. The filena
 | `lastModified` | ISO 8601 datetime | yes | Updated on any change. Drives the registry's incremental re-embed (§5.4); definition-file conflicts are detected by content/`schemaVersion` comparison (§7.5, Spec 06 §7). **Scope note (suite-sync CS-06):** definition files *keep* this stored field — they carry no `_meta` HLC stamps. Record *instances* are different: their envelope stores no `lastModified` (it is derived as `max(stamps).ms`, Spec 06 §4.1 D5). |
 | `attributes` | Attribute[] | yes | The type's fields. See §4.3. May be empty only for a type whose data is entirely relations. |
 | `relations` | Relation[] | no | Typed edges to other entities; same object schema as attributes (§4.3) with `valueType: entityRef`. Omit or use `[]` if none. |
-| `presentation` | object | yes | View-archetype hints: `archetype`, `primaryField`, `secondaryField`, `timestampField`, and the optional `valueField`/`groupField`/`mediaField` (see the note above §4.2), plus `color`/`icon` (snap-to-ramp/glyph-set resolution, Spec 07 X3). See §9 (planned); Spec 07 §§3–4/§11 are the interim normative source. |
+| `presentation` | object | yes | View-archetype hints: `archetype`, `primaryField`, `secondaryField`, `timestampField`, and the optional `valueField`/`groupField`/`mediaField` (see the note above §4.2), plus `color`/`icon` (snap-to-ramp/glyph-set resolution, Spec 07 X3). Format: §9; archetype semantics owned by Spec 07 §§3–4. |
 | `nluHints` | object | yes | Intent labels only (`captureIntent`, `queryIntent`). See §10 (planned). The former `confirmationTemplate` field is **retired** (§12.1, `G-03`) — the spoken confirmation is produced by a skill's `format` step (Spec 02 §7.1), never by the type. |
 | `migrations` | Migration[] | no | Declarative migration descriptors; user-defined types only. See §7.2. |
 | `parentType` | string | optional | If present, this type is *owned* by the named entity type; its instances carry a `parentId`. See §4.5. |
@@ -551,9 +552,35 @@ When shipped, it is the single reader/writer of **every** encrypted store: the p
 
 ---
 
+## 9. Presentation Hints *(suite-sync CS-14 — the landing zone for Spec 07 X1–X3)*
+
+The `presentation` object (§4.2) is the type file's rendering contract. This section owns its **format** — the fields a type file may carry. The archetype *set*, the per-archetype **eligibility predicates**, and the **inference function** are owned by **Spec 07 §§3–4** and are deliberately not restated here (one normative home, so the registry and the renderer cannot drift — the same single-owner rule as the egress registry, 08 §5.5).
+
+### 9.1 The presentation object
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `archetype` | string | yes | One of Spec 07's **closed archetype id set** (ten home + two child archetypes; lens ids are rejected — Spec 07 §3, §4.2). The `grouped-aggregation` placeholder once promised by `G-31` is **retired**: grouped aggregation is delivered as `ledger` + `groupField` (Spec 07 A3); authoring guidance must name `ledger`. |
+| `primaryField` | string | yes | Names an attribute of the type; the dominant text of every rendering. |
+| `secondaryField` | string | no | Supporting attribute. |
+| `timestampField` | string | archetype-dependent | Must name a `date`/`datetime` attribute (Spec 07 §4.2). |
+| `valueField` | string | archetype-dependent | Must name a `number`/`decimal` attribute — `ledger`/`counter`/`progress` (Spec 07 X1). |
+| `groupField` | string | no | An `enum`/`tag` attribute; enables `ledger` grouped subtotals (Spec 07 X1, A3). |
+| `mediaField` | string | `gallery` only | Must name an `attachment` attribute (Spec 07 X1). |
+| `color` | string | no | Authored value **preserved on disk**; the *rendered* value is snapped to the app's accent ramp at registration (Spec 07 §9.3, X3). |
+| `icon` | string | no | Same preservation/resolution rule, against the shipped glyph set (Spec 07 §9.3, X3). |
+
+All hint fields are optional, additive, and non-breaking per §7.1; a hint added to a registered type is a non-breaking edit.
+
+### 9.2 Validation and inference — by reference
+
+Eligibility checks run inside `SchemaRegistry.register()` as the degrading ⁑ invariant of §5.3 (from Spec 07 §4.2): violations **degrade, never reject** — the type registers, the presentation block is marked degraded, Spec 07 §4.3's ordered inference function assigns the fallback and fills missing hint fields by its conventions, and the degraded hint surfaces on the `AttentionSurface`. Seed-type assignments (§12.3–§12.4) are adopted verbatim by Spec 07 (X5); the `goal` seed carries its `valueField`/`timestampField` bindings explicitly.
+
+---
+
 ## 12. Seed Types & the People-Knowledge Model *(resolve-stage addition)*
 
-*Added by the Phase-3 resolve stage (see [`05a-traces.md`](05a-traces.md), [`05b-gap-register.md`](05b-gap-register.md)). Fills the seed-type definitions the suite references, and folds in resolutions **G-01, G-02, G-03, G-10, G-11**. The earlier-planned §§9–11 (presentation archetypes, nluHints, migration edge-cases) remain to be written; this section is numbered §12 per the cross-references to "seed types (§12)".*
+*Added by the Phase-3 resolve stage (see [`05a-traces.md`](05a-traces.md), [`05b-gap-register.md`](05b-gap-register.md)). Fills the seed-type definitions the suite references, and folds in resolutions **G-01, G-02, G-03, G-10, G-11**. §9 (presentation hints) is now written (suite-sync CS-14); the earlier-planned §§10–11 (nluHints, migration edge-cases) remain to be written; this section is numbered §12 per the cross-references to "seed types (§12)".*
 
 ### 12.1 Two small kernel-schema amendments
 - **`default` on attributes (G-02).** The Attribute object (§4.3) gains an optional `default` — a literal value bound at **create** when the attribute is absent and not `required`. Complements `defaultToNow`. Lets a type declare e.g. `{"name":"completed","valueType":"boolean","default":false}` instead of every skill hand-writing the default. (Not a kernel-*primitive* change; a schema field addition.)
@@ -635,7 +662,7 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
 
 ### 12.4 Corpus resolve additions (`G-22`, `G-24`, `G-32`)
 - **Contact aliases (`G-24`).** `contact` gains `{"name":"aliases","label":"Also known as","valueType":"tag","required":false}` (nicknames/roles: "Mum", "the boss"). `entityNames.resolve` (Spec 03 §6.1) matches `displayName` **or** any alias; common role words map via aliases or a small role table. A **group** name ("the Garcias") resolves to a *set* of contacts (for `event_prep`, P-08).
-- **Tracker-template model (`G-22`).** A built-in template is a binary-shipped **`(type + bundled skills)`** pair — a seed type definition (as in §12.3) plus its `log-<tracker>` and (where relevant) `show-streak`/summary skills. `instantiate-template` (Spec 02 §9) registers the type + binds its skills locally with **no cloud call** (Spec 05 §6 E4). Adding an optional field *at instantiation* is free template configuration; adding one to a *registered* type later is authoring (paid, DF-03). Shipped templates: Run, Walk, Water, Reading, Mood, Sleep, Weight, Meals, Habit, Medication.
+- **Tracker-template model (`G-22`).** A built-in template is a binary-shipped **`(type + bundled skills)`** pair — a seed type definition (as in §12.3) plus its `log-<tracker>` and (where relevant) `show-streak`/summary skills. `instantiate-template` (Spec 02 §9) registers the type + binds its skills locally with **no cloud call** (Spec 05 §6 E4). *Storage note (suite-sync CS-22): the binary-shipped templates are materialized into the synced `templates/` folder at seeding; the binary stays authoritative and the read path is defined in Spec 06 §3.3.* Adding an optional field *at instantiation* is free template configuration; adding one to a *registered* type later is authoring (paid, DF-03). Shipped templates: Run, Walk, Water, Reading, Mood, Sleep, Weight, Meals, Habit, Medication.
 - **Goals as a seed type (`G-32`).** Ship a seed `goal` type so "how am I doing on my January goals?" needs no authoring:
 ```json
 { "typeId":"goal","displayName":"Goal","displayNamePlural":"Goals",

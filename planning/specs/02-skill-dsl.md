@@ -3,6 +3,7 @@
 **Status:** Draft v0.4 — July 2026 (Sonnet skeleton v0.1 → Opus hardening v0.2 → Opus 4.8 review v0.3 → act-then-describe reconciliation v0.4 — see Appendix A)  
 **Depends on:** Spec 01 — Meta-Schema & Type System (§2–§5, §8)  
 **Blocks:** NLU spec, Architecture spec, Data & Sync spec, UI spec
+**Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
 
 ---
 
@@ -593,6 +594,8 @@ The execution journal does **not** live in the skill file, and it does **not** l
 
 Location: `[app-support]/plenara/executions/{executionId}.json` (encrypted). One file per in-flight execution.
 
+> **v1 posture (suite-sync CS-17):** "encrypted at rest" activates when Spec 01 §8.7 ships; until then `CryptoBox` is a pass-through and the journal is **plaintext device-local** (Spec 04 §3.1's posture note). Device-local placement — the sync-correctness and definition-stability arguments above — holds regardless.
+
 ### 5.3 Structure
 
 An execution-journal entry records one in-flight execution:
@@ -661,7 +664,7 @@ A `define_type` (novel domain) or `define_skill` (existing type, missing operati
 Before authoring a *type*, run the similarity search (Spec 01 §6.1): `similarTo(candidateDescription)` → any hit > 0.85 is surfaced to Claude, which reuses/extends rather than creating a near-duplicate; a strong hit triggers the one allowed clarify ("add to your existing X, or keep separate?"). `define_skill` against an existing type skips this (there is nothing to reconcile — the type is fixed).
 
 ### 6.3 The author call and its constraints
-`ClaudeClient.author` receives the request + reconciliation candidates + the closed-vocabulary contract, and must return **declarative JSON only** — a `type` and/or `skill` definition + a `safetyAssessment`. The prompt is built from schema/metadata, never from user record content (the §7.3 prompt-injection defense).
+`ClaudeClient.author` receives the request + reconciliation candidates + the closed-vocabulary contract — which includes Spec 07's closed archetype id set for `presentation.archetype` (the *real* ids: `ledger`, not the retired `grouped-aggregation` placeholder of `G-31` — Spec 01 §9.1, suite-sync CS-21) — and must return **declarative JSON only** — a `type` and/or `skill` definition + a `safetyAssessment`. The prompt is built from schema/metadata, never from user record content (the §7.3 prompt-injection defense).
 
 **Reliability scales inversely with skill complexity — and the fix is structured output (`G-29`, findings §10.2).** All seven measured models authored a *simple* single-write skill as valid closed-vocabulary DSL (the core P2.7 feasibility result). But on *complex* multi-step skills (a computed-write, a grouped aggregation) all but Opus 4.7/4.8 **drifted the step schema** — right logic, wrong serialization (`{"step":…,"expression":…}` instead of the DSL's `{"op":…,"expr":…,"into":…}`). The vocabulary is not the limit (grouped aggregation *is* expressible); serialization discipline is. So the author call **(a)** uses **structured / JSON-schema-constrained output** pinning the exact step schema, **(b)** **pins a capable authoring model** (Opus 4.7/4.8 — the pin of record, its cost envelope, and the accepted v0 Haiku interim are owned by Spec 08 §3.2/D3), and **(c)** leans on the §6.4 validate→retry loop to catch any residual drift.
 
@@ -730,6 +733,8 @@ Skills are **data, not code**: the closed vocabulary (§3) is interpreted, never
 - **Multi-write idiom (`G-13`):** one utterance → N records is sequential `branch`/`write_record` steps in one plan; ids minted at resolve thread across writes (§4.4); the `format` composes one line over the created records; `undo` reverses all N atomically (Spec 05 §3.5).
 
 ### 9.2 Canonical seed skills
+
+**The counting rule (suite-sync CS-19).** This table is the canonical *index* of seed-skill shapes, not a headcount: the `log-<tracker>`/`show-streak` rows expand per shipped tracker template (§12.4 lists ten), and the set's membership rule remains "the union the free-tier flows require" (Spec 05 §3.7) — so the concrete skill count varies by snapshot (v0 ships 36 files in `v0/data/skills/` at time of writing). Any spec citing a *number* of seed skills must cite it as test-enumerated against this rule (Spec 09 §4 does), never as a constant of this section.
 
 | skillId | reads | writes | shape |
 |---|---|---|---|

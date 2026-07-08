@@ -2,7 +2,7 @@
 
 **Status:** v0.1 — July 2026 (first full draft. Unusually for this series, part of the machinery already exists in code — the per-turn **turnlog** (`v0/lib/session.dart`, `v0/lib/turnlog.dart`) and the timestamped **AppLog** (`app/lib/app_log.dart`, `app/lib/main.dart`) are live dogfood instruments. This spec formalizes what they collect, draws the redaction boundary between what stays local and what may ever be submitted, and designs the two outbound channels of research §14. Decisions recorded in §10.)
 **Depends on:** research §12 item 11 + §14 (the mandate); Spec 03 — NLU/Intent (§2.5 `routingSource`, §2.6/§5 corrections corpus, §7.3 routing amendments); Spec 04 — Architecture (§3.5 `ClaudeClient`/`CloudError`, §3.12 `AttentionSurface`, §5 sealed error taxonomy, §7.1 device-local vs synced stores); Spec 02 — Skill DSL (§6 authoring seam, used by the area-label decision D6)
-**Blocks:** release-candidate hardening (research §11.5 — "the diagnostics and feedback loop runs continuously from v1 and gates the first shared build"); informs the unwritten Spec 08 (AI Cost & Privacy) and Spec 10 (Security & Privacy threat model)
+**Blocks:** release-candidate hardening (research §11.5 — "the diagnostics and feedback loop runs continuously from v1 and gates the first shared build"); informs Spec 08 (AI Cost & Privacy) and Spec 10 (Security & Privacy threat model) — both now written (suite-sync CS-20)
 
 ---
 
@@ -21,7 +21,7 @@ It does **not** cover: what leaves the device inside *model calls* (prompt paylo
 
 ## 1. Governing Principles
 
-**P11.1 — Everything is local by default; there is no telemetry endpoint.** The instruments write only to the user's own machine: the turnlog to the data folder (`StorageRepository.logTurn` → `<dataDir>/turnlog.jsonl`, `v0/lib/storage_repository.dart`), the AppLog to the OS temp folder (`%TEMP%/plenara-logs/`, `app/lib/app_log.dart`). No code path in the logging layer opens a socket. Submission, when the user chooses it, goes through the user's *own* mail client / OS share sheet (§4.3) — Plenara operates no server, consistent with the no-backend BYOK posture (research §15.1).
+**P11.1 — Everything is local by default; there is no telemetry endpoint.** The instruments write only to the user's own machine: the turnlog to the device-local `deviceDir` (`StorageRepository.logTurn` → `<deviceDir>/turnlog.jsonl`, `v0/lib/storage_repository.dart` — relocated from `<dataDir>`, commit `d956390`, §2.1), the AppLog to the OS temp folder (`%TEMP%/plenara-logs/`, `app/lib/app_log.dart`). No code path in the logging layer opens a socket. Submission, when the user chooses it, goes through the user's *own* mail client / OS share sheet (§4.3) — Plenara operates no server, consistent with the no-backend BYOK posture (research §15.1).
 
 **P11.2 — Two zones, one boundary.** The **local zone** may hold user content, because real diagnosis needs it (you cannot debug a misroute without the utterance that misrouted). The **outbound zone** may hold *no PII and no user content, ever* (research §14.3). The boundary is enforced *structurally* — outbound payloads are built from typed structures whose fields can only hold enums, shipped-inventory ids, hashes, numbers, and shape descriptors — never by scrubbing free text after the fact (§3.3).
 
@@ -57,7 +57,7 @@ One JSON line is appended per turn by `Session.handle` (`v0/lib/session.dart`), 
 
 The reporting tool is `v0/bin/turnlog_report.dart`: a summary view (source mix, cloud health, top skills, and the clarify rate), `--errors` (full trace of every failed/clarify/OOD turn — the `isTroubleTurn` predicate in `v0/lib/turnlog.dart`), and `--trace N`. The summary aggregation (`summarizeTurns`/`formatSummary`) is the prototype of the submittable aggregate metrics in §8.
 
-**Continuity with Spec 03.** `source` is the v0 rendering of Spec 03 §2.5's `routingSource`; when the v1 router lands, the turnlog records the full closed enum (`corpus_hit`, `retrieval`, `cloud_model`, `rule_match`, `anaphora`) plus the retrieval margin — all Class F, all gap-report-eligible.
+**Continuity with Spec 03 (suite-sync CS-13 — the two-axis split).** The v0 `source` field conflates two axes: *how the route was derived* and *how the turn ended* (`undo`, `error`, `clarify` are outcomes, not routing sources). When the v1 router lands, the turnlog splits it into **two fields**: `routingSource` — Spec 03 §2.5's closed enum **verbatim**, including the reserved `local_model` member (`corpus_hit`, `retrieval`, `local_model`, `cloud_model`, `rule_match`, `anaphora`; membership owned by Spec 03) plus the retrieval margin — and `outcome` (`dispatched | clarified | corrected | undone | refused | error | out_of_domain`). Spec 09 §10.1's metric definitions then read off `outcome` (09 O8(a), resolved by this split). All Class F, all gap-report-eligible.
 
 ### 2.2 The AppLog — `%TEMP%/plenara-logs/plenara-<timestamp>.log`
 
@@ -134,7 +134,7 @@ Gap records are written to the device-local diagnostics store (a `gaps.jsonl` ri
   "turnRef": "2026-07-07T09:14:22.184",     // local join key into turnlog; useless off-device
   "kind": "route_miss",
   "layer": "nlu",                            // nlu | interpreter | authoring | cloud | storage
-  "source": "clarify",                       // the Spec 03 §2.5 routingSource / v0 source enum
+  "source": "clarify",                       // the v0 source enum (splits into routingSource + outcome at v1 — §2.1, CS-13)
   "area": "unknown",                         // closed vocab (§3.2) or "unknown"
   "candidates": [                            // what retrieval offered, with margins
     {"skillId": "create-task", "score": 0.41},
@@ -257,4 +257,4 @@ This is the division of labor: the **corpus** makes one install better; the **ga
 - **Q3 — Mobile AppLog location & viewer.** `%TEMP%` + stdout path-printing is desktop-shaped; iOS/Android need an app-support directory and an in-app log view to preserve P11.4 without a console.
 - **Q4 — Diagnostic value of hashed authored ids.** If real gap reports about authored capabilities prove undebuggable behind `authored:<hash8>` + area, consider an *explicit, per-report* user option to name the capability — a deliberate disclosure, clearly marked in the manifest. Decide after the first live reports.
 - **Q5 — Transport limits.** `mailto:` body-size limits vs. share-sheet attachments per platform; a bundle may need to ship as an attached `.json` with the manifest in the body.
-- **Q6 — Sync-provider exposure of local Class C stores.** Post-D9, remaining Class C in the synced folder (records, journal, learned corpus) is the already-accepted `G-37` plaintext posture — but the threat model (Spec 10, unwritten) should re-examine it together with §8.7 at-rest encryption; this spec's stores will be encrypted-at-rest whenever that lands, for free (device-local app-support is already the journal's encrypted home per Spec 04 §7.1).
+- **Q6 — Sync-provider exposure of local Class C stores.** Post-D9, remaining Class C in the synced folder (records, journal, learned corpus) is the already-accepted `G-37` plaintext posture — re-examined and accepted by Spec 10 §4/R-01 (the analysis this question asked for, with its honesty conditions), together with §8.7 at-rest encryption; this spec's stores will be encrypted-at-rest whenever §8.7 lands, for free (device-local app-support is the journal's home per Spec 04 §7.1 — plaintext until §8.7, per Spec 04 §3.1's posture note).

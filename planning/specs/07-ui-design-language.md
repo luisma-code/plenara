@@ -260,7 +260,7 @@ The single pre-action confirmation in the app (Spec 05 §24) and deliberately th
 
 ### 6.7 The AttentionSurface & Review Feed rendering
 
-One list grammar for every item kind (Spec 04 §3.12): glyph, one-sentence plain-language description, one primary action chip, optional dismiss. Kind-specific bodies: sync conflicts get the diff-style two-column view (Spec 01 §7.5); consolidation proposals get the merge framing of Spec 01 §6.2 verbatim ("You have 12 Meal records and 3 Food log records…"); review-feed automation writes get approve/undo per Spec 04 §3.9; locked records get the §5.3 treatment with a count. The Stage chip (§2.1) is the only ambient signal of a non-empty surface — a count in quiet text, never a red badge (P8).
+One list grammar for every item kind (Spec 04 §3.12): glyph, one-sentence plain-language description, one primary action chip, optional dismiss. Kind-specific bodies: *definition* sync conflicts get the diff-style two-column view (Spec 01 §7.5); *record* conflicts (`recordConflicts`, Spec 06 §6.1 — P2) get a two-value picker like the automation case, not the def-diff view — records auto-resolve, so the surface is review/recovery, never a gate; consolidation proposals get the merge framing of Spec 01 §6.2 verbatim ("You have 12 Meal records and 3 Food log records…"); review-feed automation writes get approve/undo per Spec 04 §3.9; locked records get the §5.3 treatment with a count. The Stage chip (§2.1) is the only ambient signal of a non-empty surface — a count in quiet text, never a red badge (P8).
 
 ### 6.8 The authoring preview
 
@@ -373,11 +373,11 @@ The invariant across all rungs: the archetype registry, the mapping pipeline (§
 
 ## 11. Cross-Spec Additions & Corrections (for the next reconciliation pass)
 
-- **X1 — New presentation hint fields (→ Spec 01 §9, planned).** `valueField` (ledger/counter/progress), `groupField` (ledger grouping), `mediaField` (gallery). Optional, additive, non-breaking per Spec 01 §7.1.
-- **X2 — New registry invariants (→ Spec 01 §5.3).** The archetype eligibility checks of §4.2, degrading (never rejecting) on violation, surfaced via AttentionSurface.
-- **X3 — Constraint semantics for `presentation.color`/`icon` (→ Spec 01 §4.2 notes).** Snap-to-ramp and glyph-set resolution (§9.3): authored values preserved on disk, resolution applied at registration.
-- **X4 — Miscite fix (→ Spec 04 §4.2).** "interim STT results update a live subtitle (Spec 06)" should cite this spec (§7.3); Spec 06 is Data & Sync.
-- **X5 — Archetype vocabulary confirmation (→ Spec 01 §12.3).** Seed assignments adopted verbatim; `meal`'s example assignment (`timeline`, Spec 01 §4.1) is eligible under §4.2. `goal`'s `progress` assignment requires `valueField: "target"`/`timestampField: "horizon"` bindings — inference fills them today (§4.3), but the seed files should carry them explicitly once X1 lands.
+- **X1 — New presentation hint fields (✅ landed — Spec 01 §9/§4.2, suite-sync CS-14).** `valueField` (ledger/counter/progress), `groupField` (ledger grouping), `mediaField` (gallery). Optional, additive, non-breaking per Spec 01 §7.1.
+- **X2 — New registry invariants (✅ landed — Spec 01 §5.3).** The archetype eligibility checks of §4.2, degrading (never rejecting) on violation, surfaced via AttentionSurface.
+- **X3 — Constraint semantics for `presentation.color`/`icon` (✅ landed — Spec 01 §4.2/§9.1).** Snap-to-ramp and glyph-set resolution (§9.3): authored values preserved on disk, resolution applied at registration.
+- **X4 — Miscite fix (✅ landed — Spec 04 §4.2 now cites §7.3 for rendering, Spec 12 §4.1 for dispatch).** Spec 06 is Data & Sync.
+- **X5 — Archetype vocabulary confirmation (✅ landed — Spec 01 §12.3/§12.4).** Seed assignments adopted verbatim; `meal`'s example assignment (`timeline`, Spec 01 §4.1) is eligible under §4.2. `goal`'s `progress` assignment carries its `valueField: "target"`/`timestampField: "horizon"` bindings explicitly in the seed JSON.
 
 ---
 

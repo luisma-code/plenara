@@ -3,6 +3,7 @@
 **Status:** v0.4 — July 2026 (Opus 4.8 first draft v0.1 → Opus 4.8 design-level hardening v0.2 → act-then-describe reconciliation v0.3 → generative-request routing v0.4; bones challenged, calls made and recorded — see Decision Record §9 and Appendix B/C/D review logs)  
 **Depends on:** Spec 01 — Meta-Schema & Type System (§4.4, §5, §7, §8); Spec 02 — Skill DSL (§2.3, §4, §5, §7.5); Spec 03 — NLU / Intent (§2.3, §2.6, §2.7, §3.5, §5); Research doc §2.5, §8, §9  
 **Blocks:** Spec 05 — Functional; Spec 06 — Data & Sync; Spec 07 — UI; Spec 09 — Test
+**Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
 
 ---
 
@@ -530,7 +531,10 @@ abstract class AttentionSurface {
 //   unresolvedReferences — degraded refType/parentType/automation targets (Spec 01 §5.3)
 //   failedMigrations     — records left at old schemaVersion (Spec 01 §7.4)
 //   lockedRecords        — sensitive records unreadable, key unavailable (§3.1, §5.4)
-//   typeConflicts        — sync conflicts awaiting human review (Spec 01 §7.5)
+//   typeConflicts        — DEFINITION-file sync conflicts awaiting human review (Spec 01 §7.5)
+//   recordConflicts      — record-level concurrent-edit losers stashed in _meta.conflicts,
+//                          auto-resolved, surfaced for review/recovery (Spec 06 §6.1; fires
+//                          only when the P2 merge engine ships — suite-sync CS-15)
 //   pendingDrafts        — offline/free-tier authoring awaiting activation (§3.7, §6.3)
 //   reviewFeed           — automation plans awaiting approval (§3.9, Spec 02 §7.5)
 ```
@@ -566,7 +570,7 @@ abstract class ContentSearchIndex {
 }
 ```
 
-- **Device-local and encrypted at rest** (`[app-support]/plenara/search-index/`, never synced): content embeddings are **invertible enough to leak meaning** — a journal embedding reconstructs approximate topics — so this is the mechanism behind Spec 05 §12 E4's "the embedding is not stored in the cloud." **Journal** content is embedded under the same never-synced rule as the journal itself (§3.10, `G-26`/`G-37`).
+- **Device-local and encrypted at rest** (`[app-support]/plenara/search-index/`, never synced; encryption activates with Spec 01 §8.7 — v1 posture: plaintext device-local per §3.1, suite-sync CS-17): content embeddings are **invertible enough to leak meaning** — a journal embedding reconstructs approximate topics — so this is the mechanism behind Spec 05 §12 E4's "the embedding is not stored in the cloud." **Journal** content is embedded under the same never-synced rule as the journal itself (§3.10, `G-26`/`G-37`).
 - **Incremental, not rebuilt:** `upsert` on each record write; embedding every record ever written at startup is far heavier than the ~hundred capability descriptions in the `CapabilityIndex`. A cold index builds lazily in the background; search degrades to substring match until warm (a *named* temporary degrade, P2.8 — not silence).
 - **Reuses the retrieval embedder** (bge-small, §7.3.4/`G-38`) — no second model ships. Owner: a Storage-adjacent BL component; referenced by Spec 05 §12, Spec 01 §5.4.
 
@@ -642,7 +646,7 @@ Cross-*device* concurrency is not an interpreter or orchestrator concern — it 
 
 The in-memory object store is owned by, and only mutated on, the UI isolate — so there is no intra-app race on it despite the IO happening on worker isolates: a `write` computes and encrypts on a worker, then the store mutation and the completion are applied back on the UI isolate's event loop. The ordering guarantee callers rely on: **a `write` future does not complete until the in-memory store reflects the write**, so a read issued after a completed `write` on the UI isolate always sees it (read-after-write consistency within the app). The file write and the store mutation are applied together before completion; a crash between them is caught by the store being rebuildable from files at next launch (§5.5). Reads never block on IO because they are served from the store (§3.1, §4.1).
 
-**Reads during partial hydration.** The store fills incrementally at launch (§7.1), so for a brief window it is not yet complete. Two read audiences are treated differently, and the distinction is a correctness requirement, not a nicety: *display* reads (the UI browsing records to render) tolerate a partial store and simply re-render as it fills; but the *dispatch pipeline* must never resolve a skill against a half-loaded store (a `read_many` that silently missed un-hydrated records would produce a wrong action plan). The gate is already in the startup sequence — the orchestrator does not accept turns, and the `AutomationRunner` does not fire, until hydration, registry cross-referencing, pending migrations, and execution-resume are complete (§7.1 steps 2–6, before step 7 "Ready"). So every read the interpreter issues is served from a complete store, while the UI can be interactive for browsing sooner.
+**Reads during partial hydration.** The store fills incrementally at launch (§7.1), so for a brief window it is not yet complete. Two read audiences are treated differently, and the distinction is a correctness requirement, not a nicety: *display* reads (the UI browsing records to render) tolerate a partial store and simply re-render as it fills; but the *dispatch pipeline* must never resolve a skill against a half-loaded store (a `read_many` that silently missed un-hydrated records would produce a wrong action plan). The gate is already in the startup sequence — the orchestrator does not accept turns, and the `AutomationRunner` does not fire, until hydration, registry cross-referencing, pending migrations, and execution-resume are complete (§7.1 steps 1–6, before step 7 "Ready"). So every read the interpreter issues is served from a complete store, while the UI can be interactive for browsing sooner.
 
 The one genuinely concurrent writer is **the outside world**: the OS's cloud-sync client (iCloud/OneDrive/Drive) rewrites files under the app at arbitrary times (research §8.1). `StorageRepository.watch()` surfaces those as a **debounced** `Stream<FileChangeEvent>` — debounced because sync clients often rewrite many files in a burst, and reacting per-file would thrash the registry and indexes. On a settled batch the Business Logic layer reconciles: re-hydrate changed records into the store, re-register changed type files (running any needed migration first, Spec 01 §7.4), incrementally patch the affected `CapabilityIndex` entries (Spec 01 §5.4), and — for a type-file *conflict* — surface the review UI rather than auto-merging (Spec 01 §7.5). A file change that arrives mid-turn does not mutate the turn's already-frozen inputs; it is reconciled into the store and caught, if relevant, by the execute-phase re-verify (Spec 02 §4.2).
 
@@ -762,11 +766,13 @@ Offline/free-tier authoring accumulates **`pendingDrafts`** (§3.7) — inert, n
 
 ### 7.1 Cold start
 
-On launch, before the turn pipeline (§4.2) accepts any utterance, the app runs a fixed, **fully offline** sequence:
-1. Open the storage folder; **hydrate the in-memory object store** (§3.1) from the per-record JSON files.
+On launch, before the turn pipeline (§4.2) accepts any utterance, the app runs a fixed, **fully offline** sequence (steps 1–6 are the dispatch gate §4.5 cites; Spec 06 §9.1 owns the storage mechanics inside steps 1 and 5):
+1. Open the storage folder; **hydrate the in-memory object store** (§3.1) via the bootstrap-cache fingerprint diff (Spec 06 §9.2) — re-parse only changed/new files.
 2. Build the `CapabilityIndex` (§3.4) from the registered type/skill definitions.
-3. Load the corrections corpus (Spec 03 §5.1 Lane 1) from the **synced** folder (per-device files, `G-36`); the plan cache (Lane 2, deferred) and the execution journal are the device-local stores.
+3. Load the corrections corpus (Spec 03 §5.1 Lane 1) from the **synced** folder — a **single `corpus-learned.json` in v1; per-device files at P2** (Spec 06 §10.1, `G-36`); the plan cache (Lane 2, deferred) and the execution journal are the device-local stores.
 4. **Journal recovery** (§5.4): roll back or complete any `executing` `ExecutionRecord`; reap `done` entries past their window.
-5. Start the file watcher (§4.5) so external/synced edits keep the cache coherent thereafter.
+5. **Pending migrations**: the per-record `schemaVersion` check (Spec 06 §8.1) queues and runs any needed migration batch — the migrate-on-read guard (Spec 06 §8.2) is what keeps this step cheap.
+6. Start the file watcher (§4.5) so external/synced edits keep the cache coherent thereafter.
+7. **Ready** — the dispatch gate opens (§4.5); the conflict-copy sweep and GC (Spec 06 §6.5/§7) run after the gate, off the critical path.
 
 The **execution** journal and plan cache are device-local/encrypted (never synced — volatile execution state), so they load from app-support; the corrections corpus (Lane 1), the user's **journal entries**, and all records load from the possibly-syncing storage folder (journal entries sync too, `G-37`). A file that fails to parse during hydration is routed to the repair surface (§5.5) and **does not block startup** — the rest of the store loads, so one corrupt record never bricks the app. No startup step touches the network.
