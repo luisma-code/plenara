@@ -21,10 +21,17 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `205706f`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `fedfa5e`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1457 Dart tests + 25 Flutter widget tests green** (full `precheck.sh` gate passes, coverage
-91.4%). **CLOUD TIER VALIDATED LIVE** (Luis's BYOK key, now set in `~/.plenara/config.json`): the
+**1483 Dart tests + ~34 Flutter widget tests green** (full `precheck.sh` gate passes, coverage
+91.6%, conformance 24/60). **PRE-DOGFOOD FEATURE PUSH (4 of 5 done):** (#14) first-run
+onboarding — a keyless launch lands on a WelcomeScreen into the guided Connect flow; (#15) OFFLINE
+fact recall ("what's Mia allergic to") via a router `:contact` slot that only matches known people
+(no over-match); (#16) content/semantic search ("find that note about the cabin trip") — embed+
+cosine with an always-on keyword fallback; (#17) reference KB (Spec 13) — 403-food nutrition
+dataset + a `read_reference` DSL op + tiered resolver, so "I ate mac and cheese" logs ~390 cal with
+provenance and an unknown food logs honestly (no guess). REMAINING: (#18) voice/STT — in research
+(engine choice for Flutter Windows). **CLOUD TIER VALIDATED LIVE** (Luis's BYOK key, now set in `~/.plenara/config.json`): the
 generative kinds produce excellent grounded output (gift ideas off a contact's real hobbies,
 briefing, weekly review honest about light logging, pattern-insight degrading on thin data,
 in-voice draft), authoring works end-to-end (DF-01 offer → yes → "Log Pushups"/"Log Water Intake"
@@ -86,7 +93,7 @@ gate** (`e6229a8` — no paid cloud authoring call until the user says yes; Spec
 
 **05a CONFORMANCE HARNESS (`v0/test/spec05a_test.dart`, G-47):** turns "complete per spec" into
 a measured number — each of the 60 worked examples runs its exact utterance offline and asserts,
-or `skip`s with a reason. **Now 22/60 offline (up from ~1/60 at the audit; ratchet baseline 22):** F-tier 12/20
+or `skip`s with a reason. **Now 24/60 offline (up from ~1/60 at the audit; ratchet baseline 24):** F-tier 14/20
 (logging, people incl. nested-fact F-07, recurrence, tracker aggregate/streak queries), DP-tier
 7/10 (all deterministic safety/scope/OOD/medical/impersonation floors), DF 3/10 (DF-01 offer,
 DF-03, DF-10), P 0/20 (all BYOK-gated). The remaining skips are near the offline CEILING — they
