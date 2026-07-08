@@ -37,11 +37,35 @@
           }
         ]
       }
+    },
+    {
+      "skillId": "reading-streak",
+      "displayName": "Your reading streak",
+      "reads": [ "reading_log" ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          { "op": "read_many", "typeId": "reading_log", "into": "logs" },
+          { "op": "compute", "fn": "current_streak", "args": [ { "var": "logs" }, "loggedAt" ], "into": "cur" },
+          { "op": "compute", "fn": "longest_streak", "args": [ { "var": "logs" }, "loggedAt" ], "into": "best" },
+          {
+            "op": "branch",
+            "cond": { "gte": [ { "var": "best" }, 1 ] },
+            "then": [ { "op": "format", "template": "Reading streak: {cur} day(s) current, {best} day(s) longest.", "into": "confirmationText" } ],
+            "else": [ { "op": "format", "template": "No reading logged yet — log a session to start a streak.", "into": "confirmationText" } ]
+          }
+        ]
+      }
     }
   ],
   "corpus": [
     { "skillId": "log-reading", "template": "log {pages:quantity} pages of reading" },
     { "skillId": "log-reading", "template": "i read {pages:quantity} pages" },
-    { "skillId": "log-reading", "template": "log a reading session" }
+    { "skillId": "log-reading", "template": "log a reading session" },
+    { "skillId": "reading-streak", "template": "what's my longest reading streak" },
+    { "skillId": "reading-streak", "template": "what's my reading streak" },
+    { "skillId": "reading-streak", "template": "reading streak" },
+    { "skillId": "reading-streak", "template": "am i on a reading streak" }
   ]
 }

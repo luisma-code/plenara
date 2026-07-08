@@ -253,6 +253,13 @@ void main() {
       expect(r, contains('13000'));
     });
 
+    test('a template query skill computes a streak: reading streak (F-18)', () async {
+      final s = await _session();
+      await s.handle('start tracking my reading');
+      await s.handle('i read 30 pages');
+      expect((await s.handle("what's my longest reading streak")).toLowerCase(), contains('streak'));
+    });
+
     test('re-instantiating is idempotent ("already tracking")', () async {
       final s = await _session();
       await s.handle('start tracking my water intake');
