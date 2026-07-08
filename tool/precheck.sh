@@ -9,26 +9,29 @@ ROOT="$(git rev-parse --show-toplevel)"
 DART="$ROOT/.tools/dart-sdk/bin/dart.exe"
 FLUTTER="$ROOT/.tools/flutter/bin/flutter.bat"
 
-echo "== [1/6] analyze v0 (lib bin test) =="
+echo "== [1/7] analyze v0 (lib bin test) =="
 ( cd "$ROOT/v0" && "$DART" analyze lib bin test )
 
-echo "== [2/6] v0 tests + coverage gate (incl. the 05a conformance suite) =="
+echo "== [2/7] import-lint (dependency-rule layering gate, §8.4 step 5) =="
+( cd "$ROOT/v0" && "$DART" bin/import_lint.dart )
+
+echo "== [3/7] v0 tests + coverage gate (incl. the 05a conformance suite) =="
 ( cd "$ROOT/v0" \
     && "$DART" test --coverage=coverage \
     && "$DART" run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info \
         --report-on=lib --packages=.dart_tool/package_config.json \
     && "$DART" bin/coverage_check.dart )
 
-echo "== [3/6] analyze app (lib test) =="
+echo "== [4/7] analyze app (lib test) =="
 ( cd "$ROOT/app" && "$FLUTTER" analyze lib test )
 
-echo "== [4/6] app widget tests =="
+echo "== [5/7] app widget tests =="
 ( cd "$ROOT/app" && "$FLUTTER" test )
 
-echo "== [5/6] windows build (the 'it still builds' floor) =="
+echo "== [6/7] windows build (the 'it still builds' floor) =="
 ( cd "$ROOT/app" && "$FLUTTER" build windows --debug )
 
-echo "== [6/6] secret scan (no BYOK/API keys in tracked files) =="
+echo "== [7/7] secret scan (no BYOK/API keys in tracked files) =="
 if git -C "$ROOT" grep -nE "sk-ant-[A-Za-z0-9]{20}" -- . >/dev/null 2>&1; then
   echo "!! SECRET DETECTED in a tracked file — aborting." >&2
   exit 1
