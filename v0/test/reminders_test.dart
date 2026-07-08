@@ -270,6 +270,15 @@ void main() {
       expect(fake.armed().values.single, DateTime.parse('2026-07-06T17:00:00')); // today 5pm (now is 9am)
     });
 
+    test('weekly reminder arms at the next occurrence of that weekday', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // Mon 2026-07-06 9am
+      await s.init(retrieval: false);
+      final r = await s.handle('remind me every tuesday at 9am to water the plants');
+      expect(r, contains('every tuesday'));
+      expect(fake.armed().values.single, DateTime.parse('2026-07-07T09:00:00')); // next Tue = 07-07
+    });
+
     test('after the time passes, reopening re-arms for the NEXT day (regenerate on open)', () async {
       final dir = makeTempDataDir();
       final s1 = Session(dir, clock: _now, cloud: _NoCloud(), scheduler: FakeScheduler());

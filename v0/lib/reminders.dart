@@ -75,7 +75,15 @@ Iterable<Reminder> allReminders(_Store store, DateTime now) sync* {
     if (r['done'] == true) continue;
     final base = DateTime.tryParse(r['remindAt']?.toString() ?? '');
     if (base == null) continue;
-    final at = r['recurrence'] == 'daily' ? _nextDaily(base, now) : base;
+    final rec = r['recurrence']?.toString();
+    final DateTime at;
+    if (rec == 'daily') {
+      at = _nextDaily(base, now);
+    } else if (rec != null && rec.startsWith('weekly:')) {
+      at = _nextWeekly(base, rec.substring('weekly:'.length), now);
+    } else {
+      at = base;
+    }
     yield Reminder(r['id'] as String, r['text']?.toString() ?? 'reminder', at);
   }
 }
@@ -85,6 +93,24 @@ Iterable<Reminder> allReminders(_Store store, DateTime now) sync* {
 DateTime _nextDaily(DateTime base, DateTime now) {
   var c = DateTime(now.year, now.month, now.day, base.hour, base.minute, base.second);
   if (!c.isAfter(now)) c = c.add(const Duration(days: 1));
+  return c;
+}
+
+const _weekdays = {
+  'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7,
+  'mon': 1, 'tue': 2, 'tues': 2, 'wed': 3, 'thu': 4, 'thur': 4, 'thurs': 4, 'fri': 5, 'sat': 6, 'sun': 7,
+};
+
+/// The next occurrence of [dayName] at [base]'s time-of-day strictly after [now]. An
+/// unrecognized day falls back to a one-off at [base] (graceful, never crashes).
+DateTime _nextWeekly(DateTime base, String dayName, DateTime now) {
+  final target = _weekdays[dayName.toLowerCase().trim()];
+  if (target == null) return base;
+  var c = DateTime(now.year, now.month, now.day, base.hour, base.minute, base.second);
+  var ahead = (target - c.weekday) % 7;
+  if (ahead < 0) ahead += 7;
+  c = c.add(Duration(days: ahead));
+  if (!c.isAfter(now)) c = c.add(const Duration(days: 7)); // today's slot already passed
   return c;
 }
 
