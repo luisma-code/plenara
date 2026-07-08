@@ -92,6 +92,17 @@ final _reconnectRe = RegExp(
     r"|^i(?:'ve| have)? lost touch with (.+?)\??$"
     r"|^i should (?:catch up with|reach out to) (.+?)\??$",
     caseSensitive: false);
+final _weeklyReviewRe = RegExp(
+    r"^(?:how was my week|weekly review|recap (?:of )?my week|"
+    r"summar(?:ise|ize) my week|how did my week go|review my week)\??$",
+    caseSensitive: false);
+final _patternInsightRe = RegExp(
+    r"^(?:(?:do you )?(?:notice|see) any patterns\??|any patterns\??|any insights\??|"
+    r"what patterns do you see\??|surface a pattern\??|what have you noticed about me\??)$",
+    caseSensitive: false);
+final _draftMessageRe = RegExp(
+    r"^(?:draft|write|compose|help me write) (?:a |an )?(?:message|note|text|reply) (?:to|for) (.+?)\??$",
+    caseSensitive: false);
 // Out-of-domain boundary (Spec 03 §7.2, G-19). A clearly-external question with NO
 // personal cue gets a graceful "that's not what I do" instead of "I didn't catch that".
 // The personal-cue guard is a PRIVACY boundary, not just UX: "what did I say about X"
@@ -577,6 +588,22 @@ class Session {
       _outSkill = 'reconnect';
       final who = reconnect.group(1) ?? reconnect.group(2) ?? reconnect.group(3) ?? '';
       return _generative.reconnect(who.trim(), store, now);
+    }
+    if (_weeklyReviewRe.hasMatch(u)) {
+      _outSource = 'generative';
+      _outSkill = 'weekly_review';
+      return _generative.weeklyReview(store, now);
+    }
+    if (_patternInsightRe.hasMatch(u)) {
+      _outSource = 'generative';
+      _outSkill = 'pattern_insight';
+      return _generative.patternInsight(store, now);
+    }
+    final draftMsg = _draftMessageRe.firstMatch(u);
+    if (draftMsg != null) {
+      _outSource = 'generative';
+      _outSkill = 'draft_message';
+      return _generative.draftMessage(draftMsg.group(1)!.trim(), store, now);
     }
 
     final def = _defRe.firstMatch(u);

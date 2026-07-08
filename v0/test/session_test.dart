@@ -84,6 +84,23 @@ void main() {
     });
   });
 
+  group('generative routing — weekly_review / pattern_insight / draft_message', () {
+    // Each routes to GenerativeService and hits its honest no-cloud degrade path (thin data /
+    // unknown contact) — so _NoCloud (which throws on generate) proves the route without a cloud call.
+    test('"how was my week" -> weekly_review (empty week degrades locally)', () async {
+      final s = await _session();
+      expect((await s.handle('how was my week')).toLowerCase(), contains('nothing logged this past week'));
+    });
+    test('"any patterns" -> pattern_insight (thin data degrades locally)', () async {
+      final s = await _session();
+      expect((await s.handle('any patterns')).toLowerCase(), contains("don't have enough logged data"));
+    });
+    test('"draft a message to Sam" -> draft_message (unknown contact asks honestly)', () async {
+      final s = await _session();
+      expect(await s.handle('draft a message to Sam'), contains("don't have Sam as a contact"));
+    });
+  });
+
   group('hero-example turns route + describe (offline corpus)', () {
     final cases = <String, String>{
       'add call the plumber to my to-do list': 'call the plumber',
