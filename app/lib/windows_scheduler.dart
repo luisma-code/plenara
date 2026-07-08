@@ -60,6 +60,10 @@ class WindowsToastScheduler implements NotificationScheduler {
   @override
   Future<void> cancel(String ref) async {
     await _ensureReady();
+    // NOTE: on an UNPACKAGED app (no MSIX identity), the native cancel is a no-op — a
+    // scheduled toast can't be recalled, so a completed/rescheduled reminder's original
+    // toast may still fire. In-memory state stays correct; packaging (package:msix) later
+    // gives real cancel. Not a blocker for dogfood — toasts still FIRE, which is the point.
     await _plugin.cancel(id: _idFor(ref));
     _armed.remove(ref);
   }
