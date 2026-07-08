@@ -172,8 +172,8 @@ void main() {
       'P-07': 'gift_ideas (generative) — cloud (grounding tested in generative_test)',
       'P-08': 'event_prep (generative, group resolve) unbuilt',
       'P-09': 'reconnect_coaching (generative) — cloud (grounding tested in generative_test)',
-      'P-10': 'weekly_review (generative) unbuilt',
-      'P-11': 'pattern_insight (generative + journal consent) unbuilt',
+      'P-10': 'weekly_review BUILT + routed (session + _genSys); needs a live cloud to execute',
+      'P-11': 'pattern_insight BUILT + routed; needs a live cloud + the journal-consent gate',
       'P-12': 'meal_suggestion (generative) unbuilt',
       'P-13': 'monthly_reflection (generative + consent) unbuilt',
       'P-14': 'generative->act chain (needs addressable generative items, G-25) unbuilt',
@@ -181,8 +181,8 @@ void main() {
       'P-16': 'author an aggregation/report view — cloud + presentation archetype (deferred Spec 07)',
       'P-17': 'foresight (generative) unbuilt (G-27)',
       'P-18': 'goal-progress narrative — goal type + generative unbuilt (G-32)',
-      'P-19': 'automation reconfig — AutomationRunner unbuilt',
-      'P-20': 'draft-message (generative) unbuilt',
+      'P-19': 'AutomationRunner BUILT (onWrite + schedule + review feed); reconfiguring one via authoring needs cloud',
+      'P-20': 'draft_message BUILT + routed (impersonation-guarded); needs a live cloud to execute',
     };
     paid.forEach((id, why) => test('$id', () async {}, skip: why));
   });
