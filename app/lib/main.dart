@@ -11,6 +11,7 @@ import 'package:plenara/reminders.dart';
 import 'package:plenara/session.dart';
 
 import 'app_log.dart';
+import 'data_view.dart';
 import 'windows_scheduler.dart';
 
 // Where the SHIPPED built-in capability defs are copied FROM on first run.
@@ -182,7 +183,20 @@ class _ChatState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Plenara'), backgroundColor: cs.inversePrimary),
+      appBar: AppBar(
+        title: const Text('Plenara'),
+        backgroundColor: cs.inversePrimary,
+        actions: [
+          if (_ready)
+            IconButton(
+              icon: const Icon(Icons.storage),
+              tooltip: 'Your data',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => DataView(session: _session)),
+              ),
+            ),
+        ],
+      ),
       body: !_ready
           ? const Center(child: CircularProgressIndicator())
           : Column(children: [
