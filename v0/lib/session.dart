@@ -312,25 +312,33 @@ class Session {
     // input as the answer — unless the user backs out — then re-ask or dispatch.
     final pending = _pendingFill;
     if (pending != null) {
-      _pendingFill = null; // consumed; re-set below if still incomplete
-      if (_cancelRe.hasMatch(u) || _undoRe.hasMatch(u)) {
+      if (_cancelRe.hasMatch(u)) {
+        _pendingFill = null;
         _outSource = 'clarify';
         return 'Okay — never mind.';
       }
-      final skillId = pending['skillId'] as String;
-      final skill = skills[skillId];
-      final slots = Map<String, dynamic>.from(pending['slots'] as Map);
-      final missing = List<String>.from(pending['missing'] as List);
-      slots[missing.first] = _coerceSlot(skill, missing.first, u, now);
-      final stillMissing = _missingRequired(skill, slots);
-      if (stillMissing.isNotEmpty) {
-        _pendingFill = {'skillId': skillId, 'slots': slots, 'missing': stillMissing};
-        _outSource = 'clarify';
-        return _askForSlot(skill, stillMissing.first);
+      // A system command interrupts the slot-fill and is handled normally below, rather
+      // than being swallowed as the slot answer ("help"/"undo"/"no, I meant …" mid-fill).
+      final isSystemCmd =
+          _undoRe.hasMatch(u) || _helpRe.hasMatch(u) || _corrRe.hasMatch(u) || _fabricationRe.hasMatch(u);
+      if (!isSystemCmd) {
+        _pendingFill = null; // consumed; re-set below if still incomplete
+        final skillId = pending['skillId'] as String;
+        final skill = skills[skillId];
+        final slots = Map<String, dynamic>.from(pending['slots'] as Map);
+        final missing = List<String>.from(pending['missing'] as List);
+        slots[missing.first] = _coerceSlot(skill, missing.first, u, now);
+        final stillMissing = _missingRequired(skill, slots);
+        if (stillMissing.isNotEmpty) {
+          _pendingFill = {'skillId': skillId, 'slots': slots, 'missing': stillMissing};
+          _outSource = 'clarify';
+          return _askForSlot(skill, stillMissing.first);
+        }
+        _outSource = 'provide-slot';
+        _outSkill = skillId;
+        return _dispatch(skillId, slots, 'corpus', now);
       }
-      _outSource = 'provide-slot';
-      _outSkill = skillId;
-      return _dispatch(skillId, slots, 'corpus', now);
+      _pendingFill = null; // interrupted by a system command — fall through to handle it
     }
 
     // record-integrity floor: never fabricate history (DP-05, locked principle #7)

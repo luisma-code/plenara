@@ -292,6 +292,16 @@ void main() {
       expect(s.store.values.where((x) => x['typeId'] == 'reminder'), isEmpty);
     });
 
+    test('a system command (help) interrupts the fill instead of becoming the slot value', () async {
+      final s = _reminderMissingWhen(FakeScheduler());
+      await s.init(retrieval: false);
+      await s.handle('can you make sure i ring the dentist'); // asks for the time
+      final r = await s.handle('what can you do'); // help — NOT a time answer
+      expect(r.toLowerCase(), contains('reminder')); // got the help surface
+      expect(r.toLowerCase(), isNot(contains('when should i'))); // did not re-ask for the slot
+      expect(s.store.values.where((x) => x['typeId'] == 'reminder'), isEmpty); // fill abandoned
+    });
+
     test('a non-parseable time answer re-asks rather than arming garbage', () async {
       final s = _reminderMissingWhen(FakeScheduler());
       await s.init(retrieval: false);
