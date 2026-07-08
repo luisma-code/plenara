@@ -9,6 +9,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara_app/main.dart';
+import 'package:plenara_app/speech.dart';
+
+class _FakeSpeech implements SpeechRecognizer {
+  final bool avail;
+  final String? result;
+  _FakeSpeech(this.avail, this.result);
+  @override
+  bool get available => avail;
+  @override
+  Future<String?> transcribe() async => result;
+  @override
+  void cancel() {}
+}
 
 class _NullCloud implements CloudClient {
   @override
@@ -64,6 +77,22 @@ Session _session() => Session(_tempData(),
     clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _NullCloud());
 
 void main() {
+  testWidgets('voice: no mic button when speech is unavailable (default Noop)', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.mic_none), findsNothing); // typing-only, nothing broken
+  });
+
+  testWidgets('voice: the mic button transcribes into the input when available', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+        home: ChatScreen(session: _session(), speech: _FakeSpeech(true, 'log a 5k run'))));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.mic_none), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.mic_none));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, 'log a 5k run'), findsOneWidget); // transcript lands in the field
+  });
+
   testWidgets('renders greeting + controls, and responds to a turn', (tester) async {
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
     await tester.pumpAndSettle();

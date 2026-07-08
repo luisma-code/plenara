@@ -14,6 +14,7 @@ import 'app_log.dart';
 import 'data_view.dart';
 import 'onboarding_view.dart';
 import 'settings_view.dart';
+import 'speech.dart';
 import 'windows_scheduler.dart';
 
 // Where the SHIPPED built-in capability defs are copied FROM on first run.
@@ -93,7 +94,8 @@ class ChatScreen extends StatefulWidget {
   /// hang). Enable it only alongside a running embed server.
   final Session? session;
   final bool retrieval;
-  const ChatScreen({super.key, this.session, this.retrieval = false});
+  final SpeechRecognizer? speech; // voice input (task #18); Noop by default -> mic hidden
+  const ChatScreen({super.key, this.session, this.retrieval = false, this.speech});
   @override
   State<ChatScreen> createState() => _ChatState();
 }
@@ -103,10 +105,11 @@ class _ChatState extends State<ChatScreen> {
   // injected test session never constructs the native plugin.
   late final WindowsToastScheduler _scheduler = WindowsToastScheduler();
   late final Session _session = widget.session ?? buildSession(scheduler: _scheduler);
+  late final SpeechRecognizer _speech = widget.speech ?? NoopSpeechRecognizer();
   final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
-  bool _ready = false, _busy = false;
+  bool _ready = false, _busy = false, _listening = false;
 
   @override
   void initState() {
@@ -194,6 +197,22 @@ class _ChatState extends State<ChatScreen> {
     _jump();
   }
 
+  /// Push-to-talk: capture speech and drop the transcript into the input for the user to review
+  /// and send. The typed field is always available, so voice is purely additive.
+  Future<void> _listen() async {
+    if (_listening || _busy || !_speech.available) return;
+    setState(() => _listening = true);
+    try {
+      final text = await _speech.transcribe();
+      if (!mounted) return;
+      if (text != null && text.trim().isNotEmpty) _ctrl.text = text.trim();
+    } catch (e) {
+      AppLog.instance.log('speech: transcribe failed: $e');
+    } finally {
+      if (mounted) setState(() => _listening = false);
+    }
+  }
+
   void _jump() => WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scroll.hasClients) {
           _scroll.animateTo(_scroll.position.maxScrollExtent,
@@ -256,13 +275,23 @@ class _ChatState extends State<ChatScreen> {
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(children: [
+                  if (_speech.available) ...[
+                    IconButton(
+                      icon: Icon(_listening ? Icons.mic : Icons.mic_none),
+                      color: _listening ? cs.error : null,
+                      tooltip: _listening ? 'Listening…' : 'Speak',
+                      onPressed: _busy ? null : _listen,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
                   Expanded(
                     child: TextField(
                       controller: _ctrl,
                       autofocus: true,
                       onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(
-                          hintText: 'Say something…', border: OutlineInputBorder()),
+                      decoration: InputDecoration(
+                          hintText: _listening ? 'Listening…' : 'Say something…',
+                          border: const OutlineInputBorder()),
                     ),
                   ),
                   const SizedBox(width: 8),
