@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
+import 'package:plenara/reminders.dart';
 import 'package:plenara/session.dart';
 
 import 'app_log.dart';
@@ -19,13 +20,13 @@ const sourceDataDir = r'Z:\code\plenara\v0\data';
 /// seeded with the built-in capabilities on first run, the BYOK key, and the real
 /// Windows toast scheduler (reminders now fire as OS notifications, not just on-open
 /// nudges). The scheduler self-inits lazily on first schedule/cancel.
-Session buildSession() {
+Session buildSession({NotificationScheduler? scheduler}) {
   final cfg = loadConfig();
   ensureSeeded(cfg.dataDir, sourceDataDir);
   return Session(
     cfg.dataDir,
     cloud: cfg.apiKey != null ? ClaudeClient(apiKeyOverride: cfg.apiKey) : null,
-    scheduler: WindowsToastScheduler(),
+    scheduler: scheduler,
   );
 }
 
@@ -74,7 +75,10 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatState extends State<ChatScreen> {
-  late final Session _session = widget.session ?? buildSession();
+  // Held so we can run a launch-time toast self-test (production only). `late` so an
+  // injected test session never constructs the native plugin.
+  late final WindowsToastScheduler _scheduler = WindowsToastScheduler();
+  late final Session _session = widget.session ?? buildSession(scheduler: _scheduler);
   final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
@@ -92,13 +96,20 @@ class _ChatState extends State<ChatScreen> {
       log('init: begin (retrieval=${widget.retrieval})');
       await _session.init(retrieval: widget.retrieval, onPhase: log.log);
       log('init: ready');
+      // Production only: fire an immediate self-test toast so we know display works
+      // without waiting for a scheduled reminder (the injected test session has no real OS).
+      if (widget.session == null) {
+        // ignore: discarded_futures
+        _scheduler.selfTest();
+      }
       setState(() {
         _ready = true;
         _msgs.add(Msg(
             'Hi — I\'m Plenara. Try: "add call the plumber to my list", "log a 3k run", '
             '"remind me to call mom on thursday at 5pm", "what do I know about Mia", '
             '"list my tasks", or "start tracking my water intake". "undo that" reverses the '
-            'last thing — and ask "what can you do" any time.',
+            'last thing — and ask "what can you do" any time.\n\n'
+            'Diagnostics log: ${log.file.path}',
             false));
         // On-open nudges (past-due reminders + upcoming birthdays) — each line
         // already carries its own icon, so show it as-is. Nothing silently missed.
