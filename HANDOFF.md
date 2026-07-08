@@ -21,9 +21,9 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `aa793b4`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `3b26cbc`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1265 Dart tests + 8 Flutter widget tests green** (31 skills, 9 types; DSL now has
+**1267 Dart tests + 8 Flutter widget tests green** (32 skills, 9 types; DSL now has
 ordering/limit/filter-ops + aggregation/date-math; ProvideSlot slot-filling; alias
 resolution; OOD boundary; record-integrity floor; GenerativeService for gift ideas +
 briefing), `dart analyze` clean,
@@ -54,15 +54,16 @@ increment — grounded gift ideas + daily briefing behind a CloudClient.generate
 cloud tested; more kinds — reconnect/weekly-review/draft-message — can follow); 7 authoring
 preview→refine→activate +
 reconcile + pin Opus + structured output (§6 G-18/29, L); 8 recurrence RRULE +
-record-anchored dates (§6.2 G-14/15, M — record-anchored needs raw slot text to reach
-Session, a router change); 9 safety — record-integrity floor ✅ DONE (`cba5c50`, DP-05);
+record-anchored dates (§6.2 G-14/15, M) — record-anchored ✅ DONE (`3b26cbc`,
+task-before-birthday: next_annual−1day, fully DSL-expressible, no router change needed);
+recurring RRULE reminders still open; 9 safety — record-integrity floor ✅ DONE (`cba5c50`, DP-05);
 Layer-2/3 model gate still deferred (G-30); 10 records-vs-OOD boundary ✅ DONE (`925ceda`,
 with the personal-cue privacy guard). Also-done this session: all 3 correctness defects
 (`c29732c`, `f9e2695`), journaling/F-11, streaks/G-21, total-distance (aggregation demo).
 **Net: 7 of the top-10 built (1,2,4,5,6,9,10) + slice of 3. The heavy half is underway —
-GenerativeService (the biggest) is in. Remaining: 7 authoring refine→activate loop (L), 8
-recurrence + record-anchored dates (M), full 3 template library, and the hard part of 5
-(F-14/F-15).**
+GenerativeService (biggest) + record-anchored dates are both in. Remaining: 7 authoring
+refine→activate loop (L), the recurring-RRULE half of 8, full 3 template library, the hard
+part of 5 (F-14/F-15), and more generative kinds.**
 (Blocked/deferred, do NOT pick: native toast/ATL, voice, CRDT merge engine, persisted
 journal, presentation archetypes, at-rest encryption, per-device corpus.)
 
