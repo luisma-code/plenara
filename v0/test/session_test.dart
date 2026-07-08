@@ -149,6 +149,40 @@ void main() {
     });
   });
 
+  group('migrate-on-read brings old records forward (Spec 01 §7.4 / Spec 06 D12)', () {
+    test('a v1 record gains a v2 type\'s new attribute (default) on open', () async {
+      final dir = makeTempDataDir();
+      // a custom type at schemaVersion 2 with a newly-added optional attr
+      File('$dir/types/widget.json').writeAsStringSync(jsonEncode({
+        'typeId': 'widget',
+        'displayName': 'Widget',
+        'schemaVersion': 2,
+        'attributes': [
+          {'name': 'name', 'valueType': 'text', 'required': true},
+          {'name': 'color', 'valueType': 'text', 'required': false, 'default': 'blue'},
+        ]
+      }));
+      // a record written under v1 (no _schemaVersion, missing `color`), in the on-disk envelope
+      Directory('$dir/records').createSync(recursive: true);
+      File('$dir/records/w1.json').writeAsStringSync(jsonEncode({
+        'id': 'w1', 'typeId': 'widget', 'fields': {'name': 'x'}, '_meta': {'stamps': {}}
+      }));
+
+      final s = Session(dir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false); // migrate-on-read runs here
+      final rec = s.store['w1']!;
+      expect(rec['name'], 'x'); // preserved
+      expect(rec['color'], 'blue'); // new attr defaulted in
+      expect(rec['_schemaVersion'], 2); // stamped forward
+
+      // and it PERSISTED — a reopen sees the migrated record, no re-migration churn
+      final s2 = Session(dir, clock: _now, cloud: _NoCloud());
+      await s2.init(retrieval: false);
+      expect(s2.store['w1']!['color'], 'blue');
+      expect(s2.store['w1']!['_schemaVersion'], 2);
+    });
+  });
+
   group('schedule automations fire on open (catch-up) and persist lastFired (Spec 01 §4.4)', () {
     void seedWeekly(String dir) {
       Directory('$dir/automations').createSync(recursive: true);

@@ -7,6 +7,7 @@ import 'automations.dart';
 import 'claude.dart';
 import 'generative.dart';
 import 'interpreter.dart';
+import 'migration.dart';
 import 'people.dart';
 import 'reminders.dart';
 import 'router.dart';
@@ -273,6 +274,25 @@ class Session {
     if (r is FileStorageRepository && r.corruptFiles.isNotEmpty) {
       // P2.8: never drop a bad file on the floor — surface it in diagnostics for repair.
       phase('WARNING: skipped ${r.corruptFiles.length} unreadable file(s), surfaced for repair: ${r.corruptFiles.join(', ')}');
+    }
+    // Migrate-on-read (Spec 01 §7.4 / Spec 06 D12): bring records written under an older schema
+    // forward to their type's current version, re-persisting only what changed. A future-versioned
+    // record (a newer app wrote it) is left intact and surfaced, never mangled.
+    var migrated = 0, tooNew = 0;
+    for (final e in store.entries.toList()) {
+      final td = types[e.value['typeId']];
+      if (td == null) continue;
+      final m = migrateRecord(e.value, td);
+      if (m.changed) {
+        store[e.key] = m.record;
+        repo.persist(m.record);
+        migrated++;
+      } else if (isFutureVersioned(e.value, td)) {
+        tooNew++;
+      }
+    }
+    if (migrated > 0 || tooNew > 0) {
+      phase('migrated $migrated record(s) to current schema${tooNew > 0 ? '; $tooNew from a newer app left as-is' : ''}');
     }
     interp = Interpreter(types, now);
     // Automations registry (Spec 01 §4.4 / Spec 04 §3.9): loaded like types/skills;

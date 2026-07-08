@@ -264,7 +264,7 @@ class _TypeSection extends StatelessWidget {
     final vt = _valueTypes;
     final parts = <String>[];
     for (final e in r.entries) {
-      if (const {'id', 'typeId', 'schemaVersion', '_meta'}.contains(e.key)) continue;
+      if (const {'id', 'typeId', 'schemaVersion', '_schemaVersion', '_meta'}.contains(e.key)) continue;
       if (e.value == null) continue;
       parts.add('${e.key}: ${renderValue(e.value, vt[e.key])}');
     }
