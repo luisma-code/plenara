@@ -26,6 +26,8 @@ final _corrRe = RegExp(
     caseSensitive: false);
 // abandons a pending slot-fill dialogue (Spec 03 §6.3 ProvideSlot)
 final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
+// confirms an authored-capability draft (Spec 02 §6.5: nothing registered until "activate")
+final _activateRe = RegExp(r'^(activate|add it|yes,? add it|go ahead|do it|yes,? do it|yes)\.?$', caseSensitive: false);
 // Record-integrity floor (locked principle #7 / DP-05): refuse to fabricate the past.
 // Narrow, framing-keyed — a genuine backdated log ("I talked to Sam yesterday") is NOT
 // this; only "pretend/fake/fabricate a <record>" framing. The general case is the
@@ -148,6 +150,9 @@ class Session {
   // §6.3 ProvideSlot): {skillId, slots (partial), missing (remaining required names)}.
   // The next turn's input fills it and the completed skill dispatches.
   Map<String, dynamic>? _pendingFill;
+  // A validated-but-UNREGISTERED authored capability awaiting the user's "activate"
+  // (Spec 02 §6.5 / G-18): {type, skill, typeId, skillId, displayName, examples}.
+  Map<String, dynamic>? _pendingActivation;
   // Whether retrieval (the embed-server index) is active this session. Authoring
   // grows the inventory and must re-index — but only when retrieval is on, so the
   // authoring path stays hermetic under init(retrieval: false), like init() itself.
@@ -374,6 +379,23 @@ class Session {
       _pendingFill = null; // interrupted by a system command — fall through to handle it
     }
 
+    // Authoring activation (§6.5 / G-18): a validated draft is waiting. "activate" commits
+    // it; "never mind" discards it; anything else abandons the draft and is handled normally
+    // (nothing was registered while it sat pending).
+    final draft = _pendingActivation;
+    if (draft != null) {
+      if (_activateRe.hasMatch(u)) {
+        _pendingActivation = null;
+        return _activateCapability(draft);
+      }
+      if (_cancelRe.hasMatch(u)) {
+        _pendingActivation = null;
+        _outSource = 'clarify';
+        return "Okay — I won't add that.";
+      }
+      _pendingActivation = null; // moved on — drop the draft, handle this input normally
+    }
+
     // record-integrity floor: never fabricate history (DP-05, locked principle #7)
     if (_fabricationRe.hasMatch(u)) {
       _outSource = 'refused';
@@ -463,7 +485,7 @@ class Session {
             authored = value;
         }
         if (authored == null) return "I couldn't build that right now.";
-        String? addedTypeId; // rollback removes ONLY a type we registered this attempt
+        String? tempType; // temporarily registered so validateSkill sees the type; rolled back
         try {
           final type = (authored['type'] as Map).cast<String, dynamic>();
           final skill = (authored['skill'] as Map).cast<String, dynamic>();
@@ -479,20 +501,26 @@ class Session {
             // never overwrite a built-in / existing capability
             throw ResolveError('a capability like "$skillId" already exists — nothing built');
           }
+          // Validate WITHOUT committing (§6.5 / G-18): temporarily register the type so
+          // validateSkill can resolve it, then roll it back — nothing is registered until
+          // the user says "activate".
           interp.validateType(type);
           types[typeId] = type;
-          addedTypeId = typeId;
+          tempType = typeId;
           interp.validateSkill(skill);
-          skills[skillId] = skill;
-          repo.writeDef('types', 'typeId', type);
-          repo.writeDef('skills', 'skillId', skill);
-          if (_retrievalEnabled) await router.buildRetrievalIndex(skills);
-          _outSource = 'authored';
-          final eg = (skill['examplePhrases'] as List?)?.cast<String>();
-          return 'Built "${skill['displayName'] ?? skillId}" — a new capability, authored and validated.'
-              '${eg != null && eg.isNotEmpty ? ' Try: "${eg.first}".' : ''}';
+          types.remove(tempType);
+          tempType = null;
+          final eg = (skill['examplePhrases'] as List?)?.cast<String>() ?? const <String>[];
+          _pendingActivation = {
+            'type': type, 'skill': skill, 'typeId': typeId, 'skillId': skillId,
+            'displayName': skill['displayName'] ?? skillId, 'examples': eg,
+          };
+          _outSource = 'authoring-preview';
+          return 'I can build "${skill['displayName'] ?? skillId}" for you'
+              '${eg.isNotEmpty ? ' — you\'d be able to say things like "${eg.first}"' : ''}. '
+              'Say "activate" to add it, or "never mind" to skip.';
         } catch (e) {
-          if (addedTypeId != null) types.remove(addedTypeId); // safe rollback
+          if (tempType != null) types.remove(tempType); // safe rollback
           priorError = e is ResolveError ? e.message : e.toString();
           if (attempt == 2) return 'I drafted that but it could not be validated — nothing was registered.';
         }
@@ -628,6 +656,34 @@ class Session {
       }
     }
     return false;
+  }
+
+  /// Commit a validated authored-capability draft (Spec 02 §6.5 "activate"): register the
+  /// type + skill, persist them, refresh retrieval. Re-checks collisions since state may
+  /// have changed while the draft sat pending.
+  Future<String> _activateCapability(Map<String, dynamic> draft) async {
+    final type = (draft['type'] as Map).cast<String, dynamic>();
+    final skill = (draft['skill'] as Map).cast<String, dynamic>();
+    final typeId = draft['typeId'] as String;
+    final skillId = draft['skillId'] as String;
+    _outSource = 'authored';
+    if (types.containsKey(typeId) || skills.containsKey(skillId)) {
+      return 'A capability like "$skillId" already exists now — nothing added.';
+    }
+    try {
+      interp.validateType(type);
+      types[typeId] = type;
+      interp.validateSkill(skill);
+      skills[skillId] = skill;
+      repo.writeDef('types', 'typeId', type);
+      repo.writeDef('skills', 'skillId', skill);
+      if (_retrievalEnabled) await router.buildRetrievalIndex(skills);
+      final eg = (draft['examples'] as List).cast<String>();
+      return 'Added "${draft['displayName']}".${eg.isNotEmpty ? ' Try: "${eg.first}".' : ''}';
+    } catch (e) {
+      types.remove(typeId); // rollback — never leave a half-registered capability
+      return "I couldn't add that after all: ${e is ResolveError ? e.message : e}";
+    }
   }
 
   /// The required input slots a routed skill left null (candidates for ProvideSlot).

@@ -46,14 +46,17 @@ void main() {
   // capability. Driving the loop (not just the raw first attempt) matches production:
   // a first-attempt out-of-vocab fn is corrected on the recorded retry, so this catches
   // genuine drift without flaking on Haiku's first-shot imperfections.
-  group('replay — authoring registers a valid capability for every description', () {
+  group('replay — authoring previews then activates a valid capability for every description', () {
     for (final desc in authoringDescriptions) {
-      test('"start tracking $desc" authors, validates, and registers', () async {
+      test('"start tracking $desc" previews, then "activate" registers it', () async {
         final s = Session(makeTempDataDir(), clock: _now, cloud: _cloud());
         await s.init(retrieval: false);
         final before = s.skills.length;
-        final resp = await s.handle('start tracking $desc');
-        expect(resp.toLowerCase(), contains('built'), reason: '"$desc": $resp');
+        final preview = await s.handle('start tracking $desc');
+        expect(preview.toLowerCase(), contains('activate'), reason: '"$desc": $preview');
+        expect(s.skills.length, before, reason: 'nothing registered until activate ($desc)');
+        final added = await s.handle('activate');
+        expect(added.toLowerCase(), contains('added'), reason: '"$desc": $added');
         expect(s.skills.length, before + 1);
       });
     }
@@ -117,14 +120,18 @@ void main() {
     });
   });
 
-  group('replay through Session — authoring registers a working capability', () {
-    test('"start tracking my water intake" authors, validates, and registers', () async {
+  group('replay through Session — authoring activates a working capability', () {
+    test('"start tracking my water intake" previews, then "activate" registers + persists', () async {
       final dir = makeTempDataDir();
       final s = Session(dir, clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
       final before = s.skills.length;
-      final resp = await s.handle('start tracking my water intake');
-      expect(resp.toLowerCase(), contains('built'));
+      final preview = await s.handle('start tracking my water intake');
+      expect(preview.toLowerCase(), contains('activate'));
+      expect(s.skills.length, before, reason: 'nothing registered until activate');
+      expect(File('$dir/skills/log_water_intake.json').existsSync(), isFalse, reason: 'not persisted yet');
+      final added = await s.handle('activate');
+      expect(added.toLowerCase(), contains('added'));
       expect(s.skills.length, before + 1);
       expect(s.skills.containsKey('log_water_intake'), isTrue);
       // the authored typeId is model-chosen (varies across re-records) — assert the

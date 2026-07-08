@@ -58,11 +58,28 @@ Map<String, dynamic> _authored(String typeId, String skillId) => {
 
 void main() {
   group('authoring hardening (Fable review)', () {
-    test('a valid authored capability registers and works', () async {
+    test('a valid authored capability previews, then activates and registers (§6.5)', () async {
       final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
-      expect(await s.handle('start tracking my water intake'), contains('Built'));
+      final preview = await s.handle('start tracking my water intake');
+      expect(preview.toLowerCase(), contains('activate'));
+      expect(s.types.containsKey('water_intake'), isFalse, reason: 'nothing registered until activate');
+      expect(s.skills.containsKey('log_water'), isFalse);
+      expect((await s.handle('activate')).toLowerCase(), contains('added'));
       expect(s.types.containsKey('water_intake'), isTrue);
       expect(s.skills.containsKey('log_water'), isTrue);
+    });
+    test('a previewed capability can be declined with "never mind" (nothing registered)', () async {
+      final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
+      expect((await s.handle('start tracking my water intake')).toLowerCase(), contains('activate'));
+      expect((await s.handle('never mind')).toLowerCase(), contains("won't add"));
+      expect(s.types.containsKey('water_intake'), isFalse);
+      expect(s.skills.containsKey('log_water'), isFalse);
+    });
+    test('moving on without activating drops the draft and handles the new input', () async {
+      final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
+      expect((await s.handle('start tracking my water intake')).toLowerCase(), contains('activate'));
+      expect(await s.handle('add buy milk to my list'), contains('buy milk')); // handled normally
+      expect(s.types.containsKey('water_intake'), isFalse); // draft dropped, never registered
     });
 
     test('a colliding typeId cannot clobber or delete a built-in type', () async {
