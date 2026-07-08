@@ -7,6 +7,7 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'store.dart' as fs;
 
@@ -41,8 +42,31 @@ abstract interface class StorageRepository {
 class FileStorageRepository implements StorageRepository {
   final String dataDir;
   final fs.HlcDevice dev;
-  FileStorageRepository(this.dataDir, {fs.HlcDevice? device})
-      : dev = device ?? fs.HlcDevice('this-device');
+  FileStorageRepository(String dataDir, {fs.HlcDevice? device})
+      : dataDir = dataDir,
+        dev = device ?? fs.HlcDevice(_deviceId(dataDir));
+
+  /// A STABLE, per-install device id (persisted in the data dir), NOT the constant
+  /// 'this-device'. The HLC deviceId exists solely to tie-break concurrent per-field
+  /// stamps across devices; a shared constant makes two synced installs produce
+  /// indistinguishable stamps and silently lose the CRDT tie-break. Format decision —
+  /// fixed now, before any real data is written on a synced folder.
+  static String _deviceId(String dataDir) {
+    final f = File('$dataDir/.device-id');
+    try {
+      if (f.existsSync()) {
+        final id = f.readAsStringSync().trim();
+        if (id.isNotEmpty) return id;
+      }
+    } catch (_) {/* fall through to mint a fresh one */}
+    final rnd = Random();
+    final id = 'dev-${List.generate(12, (_) => rnd.nextInt(16).toRadixString(16)).join()}';
+    try {
+      f.parent.createSync(recursive: true);
+      f.writeAsStringSync(id);
+    } catch (_) {/* best-effort; a non-persisted id is still better than a shared constant */}
+    return id;
+  }
 
   @override
   Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) =>

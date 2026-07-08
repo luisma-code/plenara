@@ -5,11 +5,33 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:plenara/store.dart';
+import 'package:plenara/storage_repository.dart';
 import 'package:test/test.dart';
 
 String _tmp() => Directory.systemTemp.createTempSync('plenara_store_').path;
 
 void main() {
+  group('Fable#2 CRDT format fixes', () {
+    test('tombstone of a never-persisted id still writes a tombstone (no resurrection)', () {
+      final dir = _tmp();
+      tombstone('ghost-1', dir, HlcDevice('d')); // record was never on disk
+      expect(loadRecords(dir), isEmpty); // tombstone stays out of the live store
+      final f = File('$dir/ghost-1.json');
+      expect(f.existsSync(), isTrue, reason: 'a tombstone file must exist to block resurrection');
+      final rec = jsonDecode(f.readAsStringSync()) as Map;
+      expect((rec['_meta'] as Map)['deleted'], true);
+    });
+
+    test('device id is stable per install, distinct across installs, never the shared constant', () {
+      final d1 = _tmp(), d2 = _tmp();
+      final id1 = FileStorageRepository(d1).dev.stamp()['deviceId'] as String;
+      final id1again = FileStorageRepository(d1).dev.stamp()['deviceId'] as String; // same dir
+      final id2 = FileStorageRepository(d2).dev.stamp()['deviceId'] as String; // other dir
+      expect(id1, id1again, reason: 'a reopened install keeps its id');
+      expect(id1, isNot('this-device'));
+      expect(id1, isNot(id2), reason: 'two installs must tie-break distinctly');
+    });
+  });
   group('loadDefs', () {
     test('indexes type defs by typeId', () {
       final types = loadDefs('data/types', 'typeId');

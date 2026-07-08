@@ -118,15 +118,22 @@ void persist(Map<String, dynamic> flat, String dir, HlcDevice dev) {
 /// removing the file — a hard delete resurrects on the next sync restore.
 void tombstone(String id, String dir, HlcDevice dev) {
   final file = File('$dir/$id.json');
-  if (!file.existsSync()) return;
+  // Write the tombstone UNCONDITIONALLY — even if the record isn't on disk locally.
+  // A delete that arrives for a record synced-in-but-not-yet-persisted must still leave
+  // a tombstone, or the record resurrects on the next sync restore.
+  Map<String, dynamic> rec;
   try {
-    final rec = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-    final meta = (rec['_meta'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
-    meta['deleted'] = true;
-    meta['deletedStamp'] = dev.stamp();
-    rec['_meta'] = meta;
-    _atomicWrite(file, rec);
-  } catch (_) {/* unreadable -> leave as-is */}
+    rec = file.existsSync()
+        ? (jsonDecode(file.readAsStringSync()) as Map<String, dynamic>)
+        : <String, dynamic>{'id': id};
+  } catch (_) {
+    rec = <String, dynamic>{'id': id};
+  }
+  final meta = (rec['_meta'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+  meta['deleted'] = true;
+  meta['deletedStamp'] = dev.stamp();
+  rec['_meta'] = meta;
+  _atomicWrite(file, rec);
 }
 
 /// Write via a temp file + rename so a crash mid-write can't leave a half-written
@@ -134,6 +141,17 @@ void tombstone(String id, String dir, HlcDevice dev) {
 void _atomicWrite(File file, Map<String, dynamic> json) {
   final tmp = File('${file.path}.tmp');
   tmp.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(json));
-  if (file.existsSync()) file.deleteSync();
-  tmp.renameSync(file.path);
+  try {
+    // Atomic replace where the OS supports it (POSIX rename overwrites in one step).
+    tmp.renameSync(file.path);
+  } on FileSystemException {
+    // Windows: rename fails if the destination exists. Move the current file ASIDE first
+    // (not delete-then-rename) so a crash mid-replace leaves the data recoverable in the
+    // .bak or .tmp — never a window where the record is simply gone.
+    final bak = File('${file.path}.bak');
+    if (bak.existsSync()) bak.deleteSync();
+    if (file.existsSync()) file.renameSync(bak.path);
+    tmp.renameSync(file.path);
+    if (bak.existsSync()) bak.deleteSync();
+  }
 }
