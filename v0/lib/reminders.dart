@@ -65,28 +65,40 @@ class FakeScheduler implements NotificationScheduler {
 
 typedef _Store = Map<String, Map<String, dynamic>>;
 
-/// Every not-done reminder record with a parseable `remindAt`, as a [Reminder].
-Iterable<Reminder> allReminders(_Store store) sync* {
+/// Every not-done reminder record with a parseable `remindAt`, as a [Reminder]. For a
+/// RECURRING reminder (`recurrence: "daily"`) the effective time is the NEXT occurrence
+/// at or after [now] (regenerate-on-open, Spec 04 §3.13) — so it's always future-dated
+/// and never falls into the past-due bucket.
+Iterable<Reminder> allReminders(_Store store, DateTime now) sync* {
   for (final r in store.values) {
     if (r['typeId'] != reminderTypeId) continue;
     if (r['done'] == true) continue;
-    final at = DateTime.tryParse(r['remindAt']?.toString() ?? '');
-    if (at == null) continue;
+    final base = DateTime.tryParse(r['remindAt']?.toString() ?? '');
+    if (base == null) continue;
+    final at = r['recurrence'] == 'daily' ? _nextDaily(base, now) : base;
     yield Reminder(r['id'] as String, r['text']?.toString() ?? 'reminder', at);
   }
+}
+
+/// The next occurrence of [base]'s time-of-day strictly after [now] (today if still
+/// ahead, else tomorrow) — the daily-recurrence fire time.
+DateTime _nextDaily(DateTime base, DateTime now) {
+  var c = DateTime(now.year, now.month, now.day, base.hour, base.minute, base.second);
+  if (!c.isAfter(now)) c = c.add(const Duration(days: 1));
+  return c;
 }
 
 /// Reminders still in the future — the set that should be armed as OS notifications,
 /// keyed by record id.
 Map<String, Reminder> desiredArmed(_Store store, DateTime now) => {
-      for (final rem in allReminders(store))
+      for (final rem in allReminders(store, now))
         if (rem.at.isAfter(now)) rem.ref: rem
     };
 
 /// Past-due, not-done reminders — surfaced as on-open nudges (you can't schedule a
-/// toast in the past), soonest-missed first.
+/// toast in the past), soonest-missed first. (Recurring reminders are always future.)
 List<Reminder> dueReminders(_Store store, DateTime now) => [
-      for (final rem in allReminders(store))
+      for (final rem in allReminders(store, now))
         if (!rem.at.isAfter(now)) rem
     ]..sort((a, b) => a.at.compareTo(b.at));
 

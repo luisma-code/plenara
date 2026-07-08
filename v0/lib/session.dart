@@ -222,7 +222,7 @@ class Session {
       if (has('create-task'))
         '• Tasks — "add call the plumber to my list", "list my tasks", "what\'s due", "move X to friday", "mark X done", "delete X"',
       if (has('set-reminder'))
-        '• Reminders — "remind me to call mom on thursday at 5pm", "what are my reminders", "snooze the reminder to X to friday at 9am", "cancel the reminder to X"',
+        '• Reminders — "remind me to call mom on thursday at 5pm", "remind me every day at 9am to take my meds", "what are my reminders", "snooze the reminder to X to friday at 9am", "cancel the reminder to X"',
       if (has('log-run'))
         '• Running — "log a 3k run", "how much have I run this week", "how far have I run", "what\'s my running streak"',
       if (has('log-mood')) '• Mood — "I\'m feeling great", "how have I been feeling"',

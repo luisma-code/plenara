@@ -258,6 +258,31 @@ void main() {
     });
   });
 
+  group('daily recurring reminders (F-03 / #8)', () {
+    test('arms at the next occurrence of the daily time', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake);
+      await s.init(retrieval: false);
+      final r = await s.handle('remind me every day at 5pm to take my meds');
+      expect(r, contains('every day'));
+      expect(r, contains('take my meds'));
+      expect(fake.armed().length, 1);
+      expect(fake.armed().values.single, DateTime.parse('2026-07-06T17:00:00')); // today 5pm (now is 9am)
+    });
+
+    test('after the time passes, reopening re-arms for the NEXT day (regenerate on open)', () async {
+      final dir = makeTempDataDir();
+      final s1 = Session(dir, clock: _now, cloud: _NoCloud(), scheduler: FakeScheduler());
+      await s1.init(retrieval: false);
+      await s1.handle('remind me every day at 5pm to take my meds');
+      // reopen at 6pm, past today's 5pm fire
+      final fake2 = FakeScheduler();
+      final s2 = Session(dir, clock: DateTime.parse('2026-07-06T18:00:00'), cloud: _NoCloud(), scheduler: fake2);
+      await s2.init(retrieval: false);
+      expect(fake2.armed().values.single, DateTime.parse('2026-07-07T17:00:00')); // tomorrow 5pm
+    });
+  });
+
   group('ProvideSlot — missing-slot follow-up dialogue (§6.3)', () {
     Session _reminderMissingWhen(FakeScheduler fake) => Session(makeTempDataDir(),
         clock: _now,

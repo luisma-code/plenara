@@ -5,6 +5,7 @@
     { "name": "text", "valueType": "text", "required": true },
     { "name": "remindAt", "valueType": "datetime", "required": true },
     { "name": "createdAt", "valueType": "datetime", "required": true },
-    { "name": "done", "valueType": "boolean", "required": false, "default": false }
+    { "name": "done", "valueType": "boolean", "required": false, "default": false },
+    { "name": "recurrence", "valueType": "text", "required": false }
   ]
 }
