@@ -480,6 +480,36 @@ void main() {
       expect(mem.turns[0]['skill'], 'create-task');
       expect(mem.turns[1]['skill'], 'list-tasks');
     });
+
+    test('turn log is a rich debug trace — template, slots, writes, timing, response', () async {
+      final file = FileStorageRepository('data');
+      final mem = _MemStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
+      await s.init(retrieval: false);
+      await s.handle('add buy milk to my list');
+      final t = mem.turns.single;
+      expect(t['template'], 'add {description:text} to my {_:text}'); // which corpus template fired
+      expect((t['slots'] as Map)['description'], 'buy milk'); // what was extracted
+      final writes = (t['writes'] as List).cast<Map>();
+      expect(writes.single['op'], 'write');
+      expect(writes.single['typeId'], 'task'); // what record was written
+      expect(t['response'], contains('buy milk')); // what the user was told
+      expect(t['ms'], isA<int>()); // timing
+      expect(t.containsKey('error'), isFalse);
+    });
+
+    test('a crashing turn logs the exception + stack to the trace (never to the user)', () async {
+      final file = FileStorageRepository('data');
+      final mem = _MemStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      // a cloud that throws forces the handle() catch-all on a corpus-miss turn
+      final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
+      await s.init(retrieval: false);
+      final resp = await s.handle('zubble frotz wibble'); // corpus miss -> _NoCloud throws
+      expect(resp, contains("didn't do anything")); // user sees the safe message
+      final t = mem.turns.single;
+      expect(t['source'], 'error');
+      expect(t['error'], contains('StateError')); // full detail is in the trace
+    });
   });
 
   group('multi-turn story (the full offline pipeline)', () {

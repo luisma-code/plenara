@@ -138,6 +138,12 @@ class Session {
   String _outSource = 'clarify'; // telemetry: how this turn resolved
   String? _outSkill;
   String? _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
+  // Rich debug-trace fields (dogfood diagnosis: read the turnlog instead of retrying) —
+  // reset each turn in handle(), populated as the turn resolves.
+  String? _outTemplate; // the corpus template matched, if a corpus route
+  Map<String, dynamic>? _outSlots; // the slots dispatched into the skill
+  final List<Map<String, dynamic>> _outWrites = []; // record ops this turn: {op,id,typeId}
+  String? _outError; // exception type + message + stack, on the error path (never shown to the user)
   // A paused turn waiting for the user to supply a missing required slot (Spec 03
   // §6.3 ProvideSlot): {skillId, slots (partial), missing (remaining required names)}.
   // The next turn's input fills it and the completed skill dispatches.
@@ -261,23 +267,37 @@ class Session {
     _outSource = 'clarify';
     _outSkill = null;
     _cloudStatus = null;
+    _outTemplate = null;
+    _outSlots = null;
+    _outWrites.clear();
+    _outError = null;
+    final startedAt = DateTime.now();
     String resp;
     try {
       resp = await _handle(u);
-    } catch (e) {
+    } catch (e, st) {
       _outSource = 'error';
+      _outError = '${e.runtimeType}: $e\n$st'; // full detail to the trace, never to the user
       resp = "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
     }
     // the turn may have added/undone/completed a reminder — keep the OS armed set
     // in sync with the (now-updated) store. Derived, so no per-skill wiring needed.
     await _reconcileReminders();
-    // dogfood telemetry — measures clarify/cloud/correction rates + cloud health in real use
+    // Rich per-turn trace (dogfood): summary telemetry (clarify/cloud/correction rates) PLUS
+    // enough to DIAGNOSE a bad turn from the log alone — route path, matched template,
+    // extracted slots, records written/deleted, the response, and any error + stack.
     repo.logTurn({
-      'at': DateTime.now().toIso8601String(),
+      'at': startedAt.toIso8601String(),
+      'ms': DateTime.now().difference(startedAt).inMilliseconds,
       'utterance': u,
       'source': _outSource,
       if (_outSkill != null) 'skill': _outSkill,
+      if (_outTemplate != null) 'template': _outTemplate,
+      if (_outSlots != null && _outSlots!.isNotEmpty) 'slots': _outSlots,
       if (_cloudStatus != null) 'cloud': _cloudStatus,
+      if (_outWrites.isNotEmpty) 'writes': _outWrites,
+      'response': resp.length > 240 ? '${resp.substring(0, 240)}…' : resp,
+      if (_outError != null) 'error': _outError,
     });
     return resp;
   }
@@ -539,15 +559,20 @@ class Session {
   /// the normal routing path and a completed ProvideSlot fill.
   Future<String> _dispatch(String skillId, Map<String, dynamic> slots, String source, DateTime now,
       {String? template, String? utterance}) async {
+    _outSkill = skillId; // debug trace
+    _outSlots = slots;
+    _outTemplate = template;
     try {
       final turnInterp = Interpreter(types, now); // per-turn clock (Spec 03 §4)
       final plan = turnInterp.resolve(skills[skillId]!, slots, store);
       final before = turnInterp.execute(plan, store);
       for (final w in plan.writes) {
         repo.persist(w);
+        _outWrites.add({'op': 'write', 'id': w['id'], 'typeId': w['typeId']}); // debug trace
       }
       for (final id in plan.deletes) {
         repo.remove(id);
+        _outWrites.add({'op': 'delete', 'id': id}); // debug trace
       }
       // record the previous-turn state for a correction (every routed turn, write or read)
       _lastTurnWrote = plan.writes.isNotEmpty || plan.deletes.isNotEmpty;
