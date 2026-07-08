@@ -1,0 +1,48 @@
+{
+  "templateId": "water",
+  "displayName": "water tracking",
+  "keywords": ["water", "hydration", "water intake", "drinking water", "my water"],
+  "example": "log 500ml of water",
+  "types": [
+    {
+      "typeId": "hydration",
+      "displayName": "Water",
+      "attributes": [
+        { "name": "amount", "valueType": "decimal", "required": false },
+        { "name": "loggedAt", "valueType": "date", "required": true }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "skillId": "log-water",
+      "displayName": "Log water",
+      "reads": [],
+      "writes": [ "hydration" ],
+      "inputs": [ { "name": "amount", "required": false } ],
+      "steps": {
+        "main": [
+          { "op": "compute", "fn": "today", "into": "today" },
+          {
+            "op": "write_record",
+            "typeId": "hydration",
+            "fields": { "amount": { "var": "amount" }, "loggedAt": { "var": "today" } },
+            "into": "w"
+          },
+          {
+            "op": "branch",
+            "cond": { "notNull": "amount" },
+            "then": [ { "op": "format", "template": "Logged {amount} ml of water.", "into": "confirmationText" } ],
+            "else": [ { "op": "format", "template": "Logged a glass of water.", "into": "confirmationText" } ]
+          }
+        ]
+      }
+    }
+  ],
+  "corpus": [
+    { "skillId": "log-water", "template": "log {amount:quantity}ml of water" },
+    { "skillId": "log-water", "template": "i drank {amount:quantity}ml of water" },
+    { "skillId": "log-water", "template": "log a glass of water" },
+    { "skillId": "log-water", "template": "i drank a glass of water" }
+  ]
+}

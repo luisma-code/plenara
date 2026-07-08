@@ -29,7 +29,9 @@ class HlcDevice {
 
 Map<String, Map<String, dynamic>> loadDefs(String dir, String key) {
   final out = <String, Map<String, dynamic>>{};
-  for (final f in Directory(dir).listSync().whereType<File>()) {
+  final d = Directory(dir);
+  if (!d.existsSync()) return out; // an optional subdir (e.g. templates) may be absent
+  for (final f in d.listSync().whereType<File>()) {
     if (!f.path.endsWith('.json')) continue;
     final d = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
     out[d[key] as String] = d;

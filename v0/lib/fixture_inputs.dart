@@ -50,8 +50,9 @@ const outOfDomainUtterances = <String>[
 
 /// Capability descriptions for the authoring path (Spec 02 §6). Each should
 /// author a valid type + logging skill that passes the static validators.
+// NOTE: none of these may match a built-in TEMPLATE (e.g. water) — those instantiate for
+// free and never reach the paid authoring path these fixtures exercise.
 const authoringDescriptions = <String>[
-  'water intake',
   'daily gratitude journal',
   'books I have finished reading',
   'my weight',

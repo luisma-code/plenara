@@ -20,7 +20,8 @@ class _MemStorage implements StorageRepository {
   final List<Map<String, dynamic>> turns = [];
   _MemStorage(this.types, this.skills);
   @override
-  Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) => subdir == 'types' ? types : skills;
+  Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) =>
+      subdir == 'types' ? types : (subdir == 'skills' ? skills : <String, Map<String, dynamic>>{});
   @override
   Map<String, Map<String, dynamic>> loadRecords() => {for (final e in records.entries) e.key: Map.of(e.value)};
   @override
@@ -214,6 +215,36 @@ void main() {
       final r = await s.handle("add call the florist the day before Nobody's birthday");
       expect(r.toLowerCase(), contains("don't have"));
       expect(s.store.values.where((x) => x['typeId'] == 'task'), isEmpty);
+    });
+  });
+
+  group('template instantiation (G-22 / #3)', () {
+    test('"start tracking my water intake" instantiates the template free (no cloud), works by voice', () async {
+      final s = await _session(); // _NoCloud throws if the cloud is hit
+      final r = await s.handle('start tracking my water intake');
+      expect(r.toLowerCase(), contains('set up'));
+      expect(s.skills.containsKey('log-water'), isTrue);
+      expect(s.types.containsKey('hydration'), isTrue);
+      // corpus injected -> the new tracker routes immediately
+      final logged = await s.handle('log 500ml of water');
+      expect(logged, contains('500'));
+      expect(s.store.values.where((x) => x['typeId'] == 'hydration').length, 1);
+    });
+    test('re-instantiating is idempotent ("already tracking")', () async {
+      final s = await _session();
+      await s.handle('start tracking my water intake');
+      expect((await s.handle('start tracking my water')).toLowerCase(), contains('already'));
+      expect(s.store.values.where((x) => x['typeId'] == 'hydration'), isEmpty);
+    });
+    test('an instantiated tracker survives a restart (defs + corpus persisted)', () async {
+      final dir = makeTempDataDir();
+      final s1 = Session(dir, clock: _now, cloud: _NoCloud());
+      await s1.init(retrieval: false);
+      await s1.handle('start tracking my water intake');
+      final s2 = Session(dir, clock: _now, cloud: _NoCloud());
+      await s2.init(retrieval: false);
+      expect(s2.skills.containsKey('log-water'), isTrue); // skill def persisted + loaded
+      expect(await s2.handle('log 300ml of water'), contains('300')); // corpus persisted + loaded
     });
   });
 

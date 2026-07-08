@@ -68,7 +68,7 @@ void main() {
 
     test('authoring with no key -> the true reason, not the old "offline or no key" guess', () async {
       final s = await _session(makeTempDataDir(), _ErrCloud(CloudErrorKind.noKey));
-      final r = await s.handle('start tracking my water intake');
+      final r = await s.handle('start tracking my pushups');
       expect(r.toLowerCase(), contains('api key'));
       expect(r.contains('offline or no key'), isFalse);
     });

@@ -87,6 +87,15 @@ class Router {
     return t;
   }
 
+  /// Add an ALREADY-ABSTRACTED corpus template (from an instantiated template's bundled
+  /// corpus, Spec 05 §6). Marked learned so it persists + loads like a learned entry, but
+  /// it's curated (shipped), so it routes the new tracker's phrasings immediately.
+  void addLearned(String skillId, String template) {
+    if (corpus.any((c) => c.template == template)) return; // already present
+    corpus.insert(0, _compile({'skillId': skillId, 'template': template}));
+    _learnedTemplates.add(template);
+  }
+
   static String _inferType(String v) {
     if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(v)) return 'date';
     if (RegExp(r'^\d+(\.\d+)?$').hasMatch(v)) return 'quantity';

@@ -121,25 +121,23 @@ void main() {
   });
 
   group('replay through Session — authoring activates a working capability', () {
-    test('"start tracking my water intake" previews, then "activate" registers + persists', () async {
+    test('an authored capability previews, then "activate" registers + persists its files', () async {
       final dir = makeTempDataDir();
       final s = Session(dir, clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
-      final before = s.skills.length;
-      final preview = await s.handle('start tracking my water intake');
+      final beforeSkills = s.skills.keys.toSet();
+      final preview = await s.handle('start tracking coffee cups per day'); // no template -> authors
       expect(preview.toLowerCase(), contains('activate'));
-      expect(s.skills.length, before, reason: 'nothing registered until activate');
-      expect(File('$dir/skills/log_water_intake.json').existsSync(), isFalse, reason: 'not persisted yet');
+      expect(s.skills.keys.toSet(), beforeSkills, reason: 'nothing registered until activate');
       final added = await s.handle('activate');
       expect(added.toLowerCase(), contains('added'));
-      expect(s.skills.length, before + 1);
-      expect(s.skills.containsKey('log_water_intake'), isTrue);
-      // the authored typeId is model-chosen (varies across re-records) — assert the
-      // skill's DECLARED write-type was registered + persisted, not a hardcoded name.
-      final authoredType = (s.skills['log_water_intake']!['writes'] as List).first as String;
+      // the authored id is model-chosen (varies across re-records) — find the new skill and
+      // assert its DECLARED write-type was registered + persisted, not a hardcoded name.
+      final newSkill = s.skills.keys.toSet().difference(beforeSkills).single;
+      expect(File('$dir/skills/$newSkill.json').existsSync(), isTrue);
+      final authoredType = (s.skills[newSkill]!['writes'] as List).first as String;
       expect(s.types.containsKey(authoredType), isTrue);
       expect(File('$dir/types/$authoredType.json').existsSync(), isTrue);
-      expect(File('$dir/skills/log_water_intake.json').existsSync(), isTrue);
     });
   });
 

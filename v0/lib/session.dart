@@ -134,6 +134,7 @@ class Session {
   DateTime get now => _fixedClock ?? DateTime.now();
   late Map<String, Map<String, dynamic>> types;
   late Map<String, Map<String, dynamic>> skills;
+  late Map<String, Map<String, dynamic>> templates; // binary-shipped tracker templates (Spec 05 §6)
   late Map<String, Map<String, dynamic>> store;
   late Interpreter interp;
   late Router router;
@@ -197,6 +198,7 @@ class Session {
     repo = _injectedStorage ?? FileStorageRepository(dataDir);
     types = repo.loadDefs('types', 'typeId');
     skills = repo.loadDefs('skills', 'skillId');
+    templates = repo.loadDefs('templates', 'templateId');
     store = repo.loadRecords();
     phase('loaded ${types.length} types, ${skills.length} skills, ${store.length} records');
     interp = Interpreter(types, now);
@@ -530,6 +532,9 @@ class Session {
             return 'You can already track that — try "${e.value}". No need to build a new one.';
           }
         }
+        // A binary-shipped template? Instantiate it FREE (no cloud), before paid authoring.
+        final instantiated = await _tryInstantiateTemplate(desc, now);
+        if (instantiated != null) return instantiated;
       }
       String? priorError;
       for (var attempt = 1; attempt <= 2; attempt++) {
@@ -721,6 +726,47 @@ class Session {
       }
     }
     return false;
+  }
+
+  /// Instantiate a binary-shipped tracker template (Spec 05 §6 E4 / G-22) — FREE, immediate,
+  /// no cloud: register its type(s) + skill(s), persist them, and inject its bundled corpus
+  /// so the new tracker works by voice right away. Returns the confirmation, or null if no
+  /// template matches [desc] (→ falls through to paid authoring).
+  Future<String?> _tryInstantiateTemplate(String desc, DateTime now) async {
+    final d = desc.toLowerCase();
+    for (final t in templates.values) {
+      final keywords = (t['keywords'] as List?)?.cast<String>() ?? const <String>[];
+      if (!keywords.any((k) => d.contains(k.toLowerCase()))) continue;
+      final skillDefs = (t['skills'] as List).map((s) => (s as Map).cast<String, dynamic>()).toList();
+      final eg = t['example']?.toString() ?? 'logging one';
+      _outSource = 'template';
+      if (skillDefs.any((s) => skills.containsKey(s['skillId']))) {
+        return 'You\'re already tracking that — try "$eg".';
+      }
+      try {
+        for (final ty in (t['types'] as List)) {
+          final type = (ty as Map).cast<String, dynamic>();
+          interp.validateType(type);
+          types[type['typeId'] as String] = type;
+          repo.writeDef('types', 'typeId', type);
+        }
+        for (final skill in skillDefs) {
+          interp.validateSkill(skill);
+          skills[skill['skillId'] as String] = skill;
+          repo.writeDef('skills', 'skillId', skill);
+        }
+        for (final c in (t['corpus'] as List)) {
+          final sid = (c as Map)['skillId'] as String, tmpl = c['template'] as String;
+          router.addLearned(sid, tmpl);
+          repo.appendCorpusLearned({'skillId': sid, 'template': tmpl});
+        }
+        if (_retrievalEnabled) await router.buildRetrievalIndex(skills);
+        return 'Set up ${t['displayName'] ?? t['templateId']} — it\'s ready. Try "$eg".';
+      } catch (e) {
+        return "I couldn't set that up: ${e is ResolveError ? e.message : e}";
+      }
+    }
+    return null;
   }
 
   /// Commit a validated authored-capability draft (Spec 02 §6.5 "activate"): register the
