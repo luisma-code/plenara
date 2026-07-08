@@ -21,9 +21,16 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `e2e241e`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `f90c011`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1435 Dart tests + 24 Flutter widget tests green**. The app now has a **"Your data" view**
+**1449 Dart tests + 25 Flutter widget tests green** (full `tool/precheck.sh` gate passes:
+analyze, import-lint, coverage 91.5%, app build, secret scan, conformance ratchet). **Diagnostics
+are dogfood-ready** — a bad turn's turnlog line carries the utterance, route, template, slots,
+writes, response, timing, cloud health, error+stack, WHY a miss happened (`diag`), and unattended
+`automations` activity. **Recent hero-scenario → DSL work:** F-03 ordinal recurrence (+`ordinal_num`
+fn), F-16 medication adherence, `mul`/`div`/`round` DSL primitives, and P-18 goal-progress % (offline).
+Spec 13 (reference knowledge bases — nutrition/calorie KB) written + greenlit, staged post-dogfood.
+The app now has a **"Your data" view**
 (archetype-rendered records, value-type-aware, tap-to-detail, automations card) and a
 **Settings screen** (in-app BYOK key entry + data folder + diagnostics path) — the last
 hand-edit-a-JSON step before dogfood is gone. **Every named Spec 04 business-logic
@@ -68,7 +75,7 @@ gate** (`e6229a8` — no paid cloud authoring call until the user says yes; Spec
 
 **05a CONFORMANCE HARNESS (`v0/test/spec05a_test.dart`, G-47):** turns "complete per spec" into
 a measured number — each of the 60 worked examples runs its exact utterance offline and asserts,
-or `skip`s with a reason. **Now 21/60 offline (up from ~1/60 at the audit):** F-tier 11/20
+or `skip`s with a reason. **Now 22/60 offline (up from ~1/60 at the audit; ratchet baseline 22):** F-tier 12/20
 (logging, people incl. nested-fact F-07, recurrence, tracker aggregate/streak queries), DP-tier
 7/10 (all deterministic safety/scope/OOD/medical/impersonation floors), DF 3/10 (DF-01 offer,
 DF-03, DF-10), P 0/20 (all BYOK-gated). The remaining skips are near the offline CEILING — they
