@@ -207,11 +207,20 @@ class Session {
   /// lets them inject a repository (in-memory / test double). Production leaves both
   /// null -> a live ClaudeClient over a FileStorageRepository.
   Session(this.dataDir,
-      {DateTime? clock, CloudClient? cloud, StorageRepository? storage, NotificationScheduler? scheduler})
+      {DateTime? clock,
+      CloudClient? cloud,
+      StorageRepository? storage,
+      NotificationScheduler? scheduler,
+      String? deviceDir})
       : _fixedClock = clock,
         _injectedCloud = cloud,
         _injectedStorage = storage,
-        _scheduler = scheduler;
+        _scheduler = scheduler,
+        _deviceDir = deviceDir;
+
+  /// A device-local (non-synced) dir for the deviceId + turnlog; the app injects
+  /// `~/.plenara`, tests/CLI leave it null (-> [dataDir]). See FileStorageRepository.
+  final String? _deviceDir;
 
   /// [retrieval] builds the embedding index (needs the embed server, ~2s per anchor
   /// when it's DOWN — so the app defaults it OFF). Tests pass false to stay hermetic.
@@ -221,7 +230,7 @@ class Session {
     final sw = Stopwatch()..start();
     void phase(String msg) => onPhase?.call('init: $msg (+${sw.elapsedMilliseconds}ms)');
     phase('start');
-    repo = _injectedStorage ?? FileStorageRepository(dataDir);
+    repo = _injectedStorage ?? FileStorageRepository(dataDir, deviceDir: _deviceDir);
     types = repo.loadDefs('types', 'typeId');
     skills = repo.loadDefs('skills', 'skillId');
     templates = repo.loadDefs('templates', 'templateId');

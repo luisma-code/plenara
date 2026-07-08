@@ -27,6 +27,7 @@ Session buildSession({NotificationScheduler? scheduler}) {
     cfg.dataDir,
     cloud: cfg.apiKey != null ? ClaudeClient(apiKeyOverride: cfg.apiKey) : null,
     scheduler: scheduler,
+    deviceDir: defaultDeviceDir(), // deviceId + turnlog stay device-local, off the synced folder
   );
 }
 

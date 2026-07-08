@@ -2,6 +2,8 @@
 /// commands + cross-skill integration. A _NoCloud client throws if the cloud is
 /// hit, proving these flows are fully deterministic (no network). Cloud paths are
 /// covered separately in cloud_test.dart via the replay cassette.
+import 'dart:io';
+
 import 'package:plenara/claude.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara/storage_repository.dart';
@@ -61,6 +63,27 @@ Future<Session> _session([String? dir]) async {
 }
 
 void main() {
+  group('device-local artifacts stay off the synced folder (CS-01/CS-02)', () {
+    test('injected deviceDir holds deviceId + turnlog; the synced dataDir stays clean', () async {
+      final dataDir = makeTempDataDir();
+      final deviceDir = Directory.systemTemp.createTempSync('plenara-dev').path;
+      final s = Session(dataDir, clock: _now, cloud: _NoCloud(), deviceDir: deviceDir);
+      await s.init(retrieval: false);
+      await s.handle('log a run'); // a real turn -> a turnlog line + a minted deviceId
+      expect(File('$deviceDir/.device-id').existsSync(), isTrue);
+      expect(File('$deviceDir/turnlog.jsonl').existsSync(), isTrue);
+      expect(File('$dataDir/.device-id').existsSync(), isFalse, reason: 'a synced deviceId defeats the HLC tie-break');
+      expect(File('$dataDir/turnlog.jsonl').existsSync(), isFalse, reason: 'telemetry must not ride the sync folder');
+    });
+    test('default deviceDir keeps them in dataDir (backward-compatible CLI/tests)', () async {
+      final dataDir = makeTempDataDir();
+      final s = Session(dataDir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false);
+      await s.handle('log a run');
+      expect(File('$dataDir/turnlog.jsonl').existsSync(), isTrue);
+    });
+  });
+
   group('hero-example turns route + describe (offline corpus)', () {
     final cases = <String, String>{
       'add call the plumber to my to-do list': 'call the plumber',

@@ -41,18 +41,26 @@ abstract interface class StorageRepository {
 /// The filesystem implementation — the current per-record JSON store.
 class FileStorageRepository implements StorageRepository {
   final String dataDir;
-  final fs.HlcDevice dev;
-  FileStorageRepository(String dataDir, {fs.HlcDevice? device})
-      : dataDir = dataDir,
-        dev = device ?? fs.HlcDevice(_deviceId(dataDir));
 
-  /// A STABLE, per-install device id (persisted in the data dir), NOT the constant
+  /// A DEVICE-LOCAL (non-synced) directory for artifacts that must NOT ride the sync
+  /// provider: the per-install `deviceId` (a synced id makes two installs share it and
+  /// silently defeats the HLC tie-break) and the `turnlog` (content-bearing telemetry
+  /// that would otherwise re-upload every turn and conflict across devices). The app
+  /// injects `~/.plenara` (see config.defaultDeviceDir); it defaults to [dataDir] so the
+  /// CLI/tests are unchanged.
+  final String deviceDir;
+  final fs.HlcDevice dev;
+  FileStorageRepository(this.dataDir, {String? deviceDir, fs.HlcDevice? device})
+      : deviceDir = deviceDir ?? dataDir,
+        dev = device ?? fs.HlcDevice(_deviceId(deviceDir ?? dataDir));
+
+  /// A STABLE, per-install device id (persisted in the DEVICE-LOCAL dir), NOT the constant
   /// 'this-device'. The HLC deviceId exists solely to tie-break concurrent per-field
   /// stamps across devices; a shared constant makes two synced installs produce
-  /// indistinguishable stamps and silently lose the CRDT tie-break. Format decision —
-  /// fixed now, before any real data is written on a synced folder.
-  static String _deviceId(String dataDir) {
-    final f = File('$dataDir/.device-id');
+  /// indistinguishable stamps and silently lose the CRDT tie-break. It must live OUTSIDE
+  /// the synced folder — a synced `.device-id` is read by the second install and collides.
+  static String _deviceId(String deviceDir) {
+    final f = File('$deviceDir/.device-id');
     try {
       if (f.existsSync()) {
         final id = f.readAsStringSync().trim();
@@ -109,6 +117,8 @@ class FileStorageRepository implements StorageRepository {
 
   @override
   void logTurn(Map<String, dynamic> entry) {
-    File('$dataDir/turnlog.jsonl').writeAsStringSync('${jsonEncode(entry)}\n', mode: FileMode.append);
+    final f = File('$deviceDir/turnlog.jsonl');
+    if (deviceDir != dataDir) f.parent.createSync(recursive: true); // the injected device-local dir may not exist yet
+    f.writeAsStringSync('${jsonEncode(entry)}\n', mode: FileMode.append);
   }
 }

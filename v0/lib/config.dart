@@ -18,6 +18,12 @@ String _home() => Platform.environment['USERPROFILE'] ?? Platform.environment['H
 /// The user config file location (`~/.plenara/config.json`), overridable for tests.
 String defaultConfigPath() => '${_home()}/.plenara/config.json';
 
+/// The DEVICE-LOCAL (non-synced) app directory — `~/.plenara`, the same home as the
+/// config + key. The deviceId and turnlog live here, NOT in the synced [dataDir]: a
+/// synced `.device-id` is adopted by a second install and defeats the HLC tie-break,
+/// and a synced turnlog re-uploads every turn and conflicts across devices.
+String defaultDeviceDir() => '${_home()}/.plenara';
+
 PlenaraConfig loadConfig({String? configPath}) {
   final f = File(configPath ?? defaultConfigPath());
   Map<String, dynamic> cfg = {};
