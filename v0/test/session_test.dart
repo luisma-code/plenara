@@ -186,6 +186,24 @@ void main() {
     });
   });
 
+  group('record-anchored dates (F-19) — "the day before Sarah\'s birthday"', () {
+    test('creates a task dated the day before the person\'s birthday', () async {
+      final s = await _session();
+      await s.handle("Sarah's birthday is july 16"); // creates Sarah + birthday
+      final r = await s.handle("remind me to buy flowers the day before Sarah's birthday");
+      expect(r, contains('buy flowers'));
+      final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();
+      expect(tasks.length, 1);
+      expect(tasks.single['dueAt'], '2026-07-15'); // 16th minus one day
+    });
+    test('unknown person -> asks for their birthday, writes nothing', () async {
+      final s = await _session();
+      final r = await s.handle("add call the florist the day before Nobody's birthday");
+      expect(r.toLowerCase(), contains("don't have"));
+      expect(s.store.values.where((x) => x['typeId'] == 'task'), isEmpty);
+    });
+  });
+
   group('out-of-domain boundary (G-19)', () {
     test('a world-knowledge question gets a graceful boundary, writes nothing', () async {
       final s = await _session();
