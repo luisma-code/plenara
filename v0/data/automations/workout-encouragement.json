@@ -1,0 +1,36 @@
+{
+  "automationId": "workout-encouragement",
+  "targetType": "workout",
+  "condition": { "kind": "onWrite", "afterField": "date" },
+  "skillId": "workout-encouragement-skill",
+  "pendingSkill": false,
+  "description": "After a workout is logged, deliver a read-only encouragement with this week's count and the current streak.",
+  "skill": {
+    "skillId": "workout-encouragement-skill",
+    "displayName": "Workout encouragement",
+    "description": "Automation-local, read-only: summarizes this week's workouts and the current streak after one is logged. Inline (not in skills/) so it never enters the routing inventory — see lib/automations.dart.",
+    "inputs": [],
+    "reads": ["workout"],
+    "writes": [],
+    "steps": {
+      "main": [
+        { "op": "compute", "fn": "today", "into": "todayD" },
+        { "op": "compute", "fn": "start_of_week", "args": [{ "var": "todayD" }], "into": "weekStart" },
+        {
+          "op": "read_many",
+          "typeId": "workout",
+          "filter": { "field": "date", "op": "gte", "value": { "var": "weekStart" } },
+          "into": "weekWorkouts"
+        },
+        { "op": "compute", "fn": "count", "args": [{ "var": "weekWorkouts" }], "into": "weekCount" },
+        { "op": "read_many", "typeId": "workout", "into": "allWorkouts" },
+        { "op": "compute", "fn": "current_streak", "args": [{ "var": "allWorkouts" }, "date"], "into": "streak" },
+        {
+          "op": "format",
+          "template": "Nice work — that's {weekCount} workout(s) this week and a {streak}-day streak. Keep it up!",
+          "into": "confirmationText"
+        }
+      ]
+    }
+  }
+}

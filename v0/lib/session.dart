@@ -3,6 +3,7 @@
 /// returns the response text instead of printing, so any front-end can present it.
 library;
 
+import 'automations.dart';
 import 'claude.dart';
 import 'generative.dart';
 import 'interpreter.dart';
@@ -174,6 +175,11 @@ class Session {
   late Map<String, Map<String, dynamic>> templates; // binary-shipped tracker templates (Spec 05 §6)
   late Map<String, Map<String, dynamic>> store;
   late Interpreter interp;
+  /// The AutomationRunner + Review Feed (Spec 04 §3.9). Fired after _dispatch's
+  /// writes via the onWrite seam (§4.8); read-only results are delivered
+  /// (pendingNudges / takeDeliveries), writing plans are HELD in
+  /// [AutomationRunner.pendingReview] for the user's approval (Spec 02 §7.5).
+  late AutomationRunner automations;
   late Router router;
   late CloudClient claude;
   late GenerativeService _generative;
@@ -262,6 +268,14 @@ class Session {
       phase('WARNING: skipped ${r.corruptFiles.length} unreadable file(s), surfaced for repair: ${r.corruptFiles.join(', ')}');
     }
     interp = Interpreter(types, now);
+    // Automations registry (Spec 01 §4.4 / Spec 04 §3.9): loaded like types/skills;
+    // an absent automations/ folder is simply an empty registry (zero behavior change).
+    automations = AutomationRunner(
+        types: types, skills: skills, store: store, clock: () => now, persist: repo.persist);
+    automations.register(repo.loadDefs('automations', 'automationId'));
+    if (automations.statuses.isNotEmpty) {
+      phase('automations: ${automations.statuses.map((a) => '${a.automationId}=${a.state}').join(', ')}');
+    }
     router = Router.load('$dataDir/corpus.json', now, learnedPath: '$dataDir/corpus-learned.json');
     claude = _injectedCloud ?? ClaudeClient();
     _generative = GenerativeService(claude);
@@ -341,6 +355,11 @@ class Session {
   List<String> pendingNudges() => [
         for (final r in dueReminders(store, now)) '⏰ Reminder: ${r.body}',
         ...upcomingBirthdayNudges(store, now),
+        // read-only automation results (Spec 02 §7.5 "deliver") — shown until drained
+        for (final d in automations.deliveries) '✨ ${d.text}',
+        // held automation writes (Spec 02 §7.5 "hold for review") — never auto-applied
+        for (final p in automations.pendingReview)
+          '📋 Pending review: ${p.preview ?? p.description} (from ${p.automationId})',
       ];
 
   /// Reverse a turn's writes via the repository (undo / correction).
@@ -787,6 +806,16 @@ class Session {
       if (_lastTurnWrote) {
         _journal.add(_JournalEntry(before, plan.confirmation));
         if (_journal.length > _journalMax) _journal.removeAt(0);
+      }
+      // onWrite automations (Spec 04 §4.8): the hook lives at the completion of
+      // this turn's writes. Read-only results are delivered out-of-band; writing
+      // plans are HELD in the review feed (Spec 02 §7.5) — the turn's response
+      // is never changed by an automation, and a runner fault never fails the
+      // turn (failures surface via automations.refusals, P2.8).
+      if (plan.writes.isNotEmpty) {
+        try {
+          automations.notifyWrites(plan.writes);
+        } catch (_) {/* contained — an automation must never break the user's turn */}
       }
       if (source == 'cloud' && utterance != null) {
         final tmpl = router.learn(utterance, skillId, slots);

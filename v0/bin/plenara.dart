@@ -52,7 +52,16 @@ Future<void> main(List<String> args) async {
 
   Future<void> turn(String u) async {
     stdout.writeln('U: $u');
-    stdout.writeln('A: ${await session.handle(u)}\n');
+    stdout.writeln('A: ${await session.handle(u)}');
+    // Automation surfaces (Spec 02 §7.5): read-only results deliver out-of-band;
+    // writing plans are HELD for review, never auto-applied.
+    for (final d in session.automations.takeDeliveries()) {
+      stdout.writeln('✨ ${d.text}');
+    }
+    for (final p in session.automations.pendingReview) {
+      stdout.writeln('📋 Pending review (${p.id}): ${p.preview ?? p.description}');
+    }
+    stdout.writeln('');
   }
 
   if (args.contains('--demo')) {
