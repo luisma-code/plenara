@@ -33,6 +33,12 @@ const _activitySkill = {
   'walk': 'log-walk', 'walking': 'log-walk',
 };
 const _workoutSkills = {'log-run', 'log-walk'};
+// Same-record slot correction (F-15): "actually, 28 minutes" / "make it 3k" updates a field
+// of the just-logged workout in place (not a reverse-redispatch).
+final _durationCorrectRe =
+    RegExp(r'^(?:actually,?|no,?|make it|it was)\s+(\d+(?:\.\d+)?)\s*(?:minutes|mins?|minute)\.?$', caseSensitive: false);
+final _distanceCorrectRe =
+    RegExp(r'^(?:actually,?|no,?|make it|it was)\s+(\d+(?:\.\d+)?)\s*k(?:m|ilometers?)?\.?$', caseSensitive: false);
 // abandons a pending slot-fill dialogue (Spec 03 §6.3 ProvideSlot)
 final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
 // confirms an authored-capability draft (Spec 02 §6.5: nothing registered until "activate")
@@ -446,6 +452,30 @@ class Session {
       }
     }
 
+    // Same-record slot correction (F-15): "actually, 28 minutes" / "make it 3k" updates a
+    // field of the just-logged workout IN PLACE (distinguished from F-14: same record, not a
+    // reverse-redispatch), journaled so undo restores the prior value.
+    if (prevWrote && prevDispatch != null && _workoutSkills.contains(prevDispatch['skillId'])) {
+      final dm = _durationCorrectRe.firstMatch(u);
+      final km = _distanceCorrectRe.firstMatch(u);
+      final id = prevDispatch['writtenId'] as String?;
+      if ((dm != null || km != null) && id != null && store.containsKey(id)) {
+        final field = dm != null ? 'duration' : 'distance';
+        final value = num.tryParse((dm ?? km)!.group(1)!);
+        if (value != null) {
+          final rec = store[id]!;
+          _journal.add(_JournalEntry({id: Map<String, dynamic>.from(rec)}, 'updated $field'));
+          if (_journal.length > _journalMax) _journal.removeAt(0);
+          rec[field] = value;
+          repo.persist(rec);
+          _lastTurnWrote = true;
+          _lastDispatch = prevDispatch; // keep context so a further correction chains
+          _outSource = 'correction';
+          return 'Updated — that ${rec['activity']} was $value ${field == 'duration' ? 'minutes' : 'km'}.';
+        }
+      }
+    }
+
     final corr = _corrRe.firstMatch(u);
     if (corr != null) {
       var pre = '';
@@ -646,7 +676,13 @@ class Session {
       // record the previous-turn state for a correction (every routed turn, write or read)
       _lastTurnWrote = plan.writes.isNotEmpty || plan.deletes.isNotEmpty;
       _lastTurnTemplate = (template != null && router.isLearned(template)) ? template : null;
-      if (_lastTurnWrote) _lastDispatch = {'skillId': skillId, 'slots': slots}; // for re-classify (F-14)
+      if (_lastTurnWrote) {
+        // for re-classify (F-14) + same-record slot correction (F-15)
+        _lastDispatch = {
+          'skillId': skillId, 'slots': slots,
+          if (plan.writes.isNotEmpty) 'writtenId': plan.writes.first['id'],
+        };
+      }
       if (_lastTurnWrote) {
         _journal.add(_JournalEntry(before, plan.confirmation));
         if (_journal.length > _journalMax) _journal.removeAt(0);

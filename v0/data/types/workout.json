@@ -4,6 +4,7 @@
   "attributes": [
     { "name": "activity", "valueType": "text", "required": true },
     { "name": "distance", "valueType": "decimal", "required": false },
+    { "name": "duration", "valueType": "decimal", "required": false },
     { "name": "date", "valueType": "date", "required": true }
   ]
 }

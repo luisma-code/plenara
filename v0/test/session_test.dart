@@ -421,6 +421,30 @@ void main() {
       expect(workouts.single['activity'], 'walk');
       expect(workouts.single['distance'], 5); // distance carried over from the run
     });
+    test('F-15: "actually, 28 minutes" updates the last workout in place (not a reverse)', () async {
+      final s = await _session();
+      await s.handle('log a 5k run');
+      final r = await s.handle('actually, 28 minutes');
+      expect(r, contains('28'));
+      final w = s.store.values.where((x) => x['typeId'] == 'workout').toList();
+      expect(w.length, 1, reason: 'same record updated, not reversed+recreated');
+      expect(w.single['duration'], 28);
+      expect(w.single['distance'], 5); // untouched
+      expect(w.single['activity'], 'run'); // still a run
+    });
+    test('F-15: "make it 3k" updates the distance of the last workout', () async {
+      final s = await _session();
+      await s.handle('log a 5k run');
+      await s.handle('make it 3k');
+      expect(s.store.values.where((x) => x['typeId'] == 'workout').single['distance'], 3);
+    });
+    test('F-15: undo restores the pre-correction value', () async {
+      final s = await _session();
+      await s.handle('log a 5k run');
+      await s.handle('actually, 28 minutes');
+      expect(await s.handle('undo that'), contains('Undone'));
+      expect(s.store.values.where((x) => x['typeId'] == 'workout').single['duration'], isNull);
+    });
     test('"no wait, I meant X" is a correction', () async {
       final s = await _session();
       await s.handle('log a 5k run');
