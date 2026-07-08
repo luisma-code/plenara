@@ -122,6 +122,9 @@ class Interpreter {
       case 'start_of_week':
         final d = _asDate(a[0])!;
         return _dateOnly(d.subtract(Duration(days: d.weekday - 1)));
+      case 'start_of_month':
+        final d = _asDate(a[0])!;
+        return _dateOnly(DateTime(d.year, d.month, 1));
       case 'add':
         return (a[0] ?? 0) + (a[1] ?? 0);
       case 'mul':
@@ -288,7 +291,7 @@ class Interpreter {
 
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
   static const _ops = {'read_one', 'read_many', 'read_related', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
-  static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'add', 'count', 'concat',
+  static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num',
     'mul', 'div', 'round'};

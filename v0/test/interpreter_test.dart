@@ -99,6 +99,7 @@ void main() {
       expect(_i().compute('ordinal_num', ['second'], {}), 2);
       expect(_i().compute('ordinal_num', ['last'], {}), -1);
     });
+    test('start_of_month', () => expect(_i().compute('start_of_month', ['2026-07-14'], {}), '2026-07-01'));
     test('count list', () => expect(_i().compute('count', [[1, 2, 3]], {}), 3));
     test('count empty', () => expect(_i().compute('count', [[]], {}), 0));
     test('count null -> 0', () => expect(_i().compute('count', [null], {}), 0));
