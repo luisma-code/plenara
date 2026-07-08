@@ -21,9 +21,12 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `d92a102`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `e2e241e`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1434 Dart tests + 22 Flutter widget tests green**. **Every named Spec 04 business-logic
+**1435 Dart tests + 24 Flutter widget tests green**. The app now has a **"Your data" view**
+(archetype-rendered records, value-type-aware, tap-to-detail, automations card) and a
+**Settings screen** (in-app BYOK key entry + data folder + diagnostics path) — the last
+hand-edit-a-JSON step before dogfood is gone. **Every named Spec 04 business-logic
 component now exists:** DispatchOrchestrator (`session`), SkillInterpreter, SchemaRegistry
 (defs loading), **MigrationRunner** (`migration.dart` — migrate-on-read, just built),
 AuthoringService (the authoring path), ExecutionJournal (`turnlog`), AutomationRunner,
