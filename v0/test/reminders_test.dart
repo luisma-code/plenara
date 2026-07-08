@@ -22,6 +22,9 @@ class _NoCloud implements CloudClient {
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
       throw StateError('cloud authoring hit — unexpected');
+  @override
+  Future<CloudResult<String>> generate(String kind, String context) async =>
+      throw StateError('cloud generate hit — unexpected');
 }
 
 /// Cloud returning one scripted residual route (to drive the missing-time path).
@@ -34,6 +37,8 @@ class _RouteCloud implements CloudClient {
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
       const CloudOk(null);
+  @override
+  Future<CloudResult<String>> generate(String kind, String context) async => const CloudError(CloudErrorKind.noKey);
 }
 
 Future<Session> _open(String dir, FakeScheduler fake, {DateTime? clock}) async {

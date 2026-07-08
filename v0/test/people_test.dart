@@ -16,6 +16,9 @@ class _NoCloud implements CloudClient {
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
       throw StateError('unexpected authoring');
+  @override
+  Future<CloudResult<String>> generate(String kind, String context) async =>
+      throw StateError('unexpected generate');
 }
 
 Future<Session> _session(String dir, {required DateTime clock}) async {

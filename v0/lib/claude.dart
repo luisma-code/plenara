@@ -62,6 +62,11 @@ abstract interface class CloudClient {
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(
       String utterance, Map<String, Map<String, dynamic>> skills);
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError});
+
+  /// Free-text generation for a grounded generative kind (Spec 04 §3.10) — e.g.
+  /// 'gift_ideas', 'briefing'. [context] is the grounded facts assembled by the caller;
+  /// the model must use ONLY those. Returns the assistant text, or a typed CloudError.
+  Future<CloudResult<String>> generate(String kind, String context);
 }
 
 class ClaudeClient implements CloudClient {
@@ -124,7 +129,10 @@ into the type, then a format op that sets "confirmationText". Reference inputs a
 
   /// The single HTTP path. NEVER throws (Spec 04 §3.5): every failure maps to a
   /// typed [CloudError]. On 200 with a usable JSON object, [CloudOk] of that object.
-  Future<CloudResult<Map<String, dynamic>>> _message(String sys, String user, {int maxTokens = 200}) async {
+  /// The raw text-returning HTTP path. NEVER throws (Spec 04 §3.5): every failure maps
+  /// to a typed [CloudError]. On 200 with a usable text block, [CloudOk] of that text.
+  /// [_message] (JSON) and [generate] (free text) both build on this.
+  Future<CloudResult<String>> _rawText(String sys, String user, {int maxTokens = 200}) async {
     if (key == null || key!.isEmpty) return const CloudError(CloudErrorKind.noKey);
     final body = jsonEncode({
       'model': 'claude-haiku-4-5',
@@ -144,35 +152,65 @@ into the type, then a format op that sets "confirmationText". Reference inputs a
         final resp = await req.close();
         final raw = await resp.transform(utf8.decoder).join();
         final code = resp.statusCode;
-        if (code == 401 || code == 403) return CloudError<Map<String, dynamic>>(CloudErrorKind.badKey, 'HTTP $code');
-        if (code == 429) return const CloudError<Map<String, dynamic>>(CloudErrorKind.rateLimited);
-        if (code != 200) return CloudError<Map<String, dynamic>>(CloudErrorKind.serverError, 'HTTP $code');
+        if (code == 401 || code == 403) return CloudError<String>(CloudErrorKind.badKey, 'HTTP $code');
+        if (code == 429) return const CloudError<String>(CloudErrorKind.rateLimited);
+        if (code != 200) return CloudError<String>(CloudErrorKind.serverError, 'HTTP $code');
         final decoded = jsonDecode(raw);
         final content = decoded is Map ? decoded['content'] : null;
-        if (content is! List) return const CloudError<Map<String, dynamic>>(CloudErrorKind.malformed, 'no content array');
+        if (content is! List) return const CloudError<String>(CloudErrorKind.malformed, 'no content array');
         final block = content.firstWhere(
             (b) => b is Map && b['type'] == 'text' && b['text'] is String,
             orElse: () => null);
-        if (block == null) return const CloudError<Map<String, dynamic>>(CloudErrorKind.malformed, 'no text block (refusal?)');
-        final jsonStr = RegExp(r'\{.*\}', dotAll: true).firstMatch((block['text'] as String).trim())?.group(0);
-        if (jsonStr == null) return const CloudError<Map<String, dynamic>>(CloudErrorKind.malformed, 'no JSON object in text');
-        final obj = jsonDecode(jsonStr);
-        if (obj is! Map<String, dynamic>) {
-          return const CloudError<Map<String, dynamic>>(CloudErrorKind.malformed, 'JSON was not an object');
-        }
-        return CloudOk<Map<String, dynamic>>(obj);
+        if (block == null) return const CloudError<String>(CloudErrorKind.malformed, 'no text block (refusal?)');
+        return CloudOk<String>((block['text'] as String).trim());
       }).timeout(const Duration(seconds: 30)); // bounds the whole exchange, not just connect
     } on TimeoutException catch (_) {
       return const CloudError(CloudErrorKind.timeout);
     } on SocketException catch (e) {
       return CloudError(CloudErrorKind.offline, e.message);
     } catch (e) {
-      // malformed body (JSON parse), a shape TypeError, etc. — a 200 we couldn't use.
       return CloudError(CloudErrorKind.malformed, e.toString());
     } finally {
       client.close();
     }
   }
+
+  /// JSON path (routing/authoring): extracts the first JSON object from the model text.
+  Future<CloudResult<Map<String, dynamic>>> _message(String sys, String user, {int maxTokens = 200}) async {
+    switch (await _rawText(sys, user, maxTokens: maxTokens)) {
+      case CloudError(:final kind, :final detail):
+        return CloudError(kind, detail);
+      case CloudOk(:final value):
+        try {
+          final jsonStr = RegExp(r'\{.*\}', dotAll: true).firstMatch(value)?.group(0);
+          if (jsonStr == null) return const CloudError(CloudErrorKind.malformed, 'no JSON object in text');
+          final obj = jsonDecode(jsonStr);
+          if (obj is! Map<String, dynamic>) {
+            return const CloudError(CloudErrorKind.malformed, 'JSON was not an object');
+          }
+          return CloudOk<Map<String, dynamic>>(obj);
+        } catch (e) {
+          return CloudError(CloudErrorKind.malformed, e.toString());
+        }
+    }
+  }
+
+  static const _genSys = <String, String>{
+    'gift_ideas':
+        'You suggest thoughtful gift ideas for someone the user cares about. Use ONLY the '
+        'facts provided about them — never invent details. Give 3-4 concrete ideas, each '
+        'tied to a specific fact ("because they …"). If the facts are thin, say so honestly '
+        'and suggest what to learn. Warm, concise, plain text (no preamble).',
+    'briefing':
+        'You write a short, warm daily briefing from the user\'s own data provided below. '
+        'Use ONLY what is given — never invent. Lead with what needs attention today '
+        '(due/overdue, reminders, birthdays), then a brief encouraging note. Plain text, concise.',
+  };
+
+  @override
+  Future<CloudResult<String>> generate(String kind, String context) =>
+      _rawText(_genSys[kind] ?? 'You are a warm, grounded personal assistant. Use ONLY the facts given.',
+          context, maxTokens: 400);
 
   static const _sentinels = {'none', 'null', ''};
 

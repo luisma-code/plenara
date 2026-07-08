@@ -48,6 +48,9 @@ class _NoCloud implements CloudClient {
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError}) async =>
       throw StateError('cloud authorCapability called — expected a corpus/offline path');
+  @override
+  Future<CloudResult<String>> generate(String kind, String context) async =>
+      throw StateError('cloud generate called — expected a corpus/offline path');
 }
 
 Future<Session> _session([String? dir]) async {

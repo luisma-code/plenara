@@ -4,6 +4,7 @@
 library;
 
 import 'claude.dart';
+import 'generative.dart';
 import 'interpreter.dart';
 import 'people.dart';
 import 'reminders.dart';
@@ -33,6 +34,15 @@ final _fabricationRe = RegExp(
     r"\b(pretend (that |i )|make it look like|falsify|fabricate|"
     r"(log|add|create|make|record) (a |an |some )?fake|fake (a |an |some )?"
     r"(interaction|call|meeting|conversation|entry|record|note|log|visit|chat))\b",
+    caseSensitive: false);
+// Generative-request intents (Spec 04 §3.10) — paid, grounded synthesis.
+final _giftRe = RegExp(
+    r"^(?:(?:gift|present)\s+ideas?\s+for\s+|what\s+(?:should|can|could)\s+i\s+(?:get|buy|give)\s+|"
+    r"what\s+to\s+(?:get|buy|give)\s+)(.+?)(?:\s+for\s+(?:his|her|their)\s+(?:birthday|present|gift))?\??$",
+    caseSensitive: false);
+final _briefingRe = RegExp(
+    r"^(?:(?:give me |what'?s )?my (?:daily )?briefing|brief me|"
+    r"what(?:'?s| does) my day look like|catch me up on my day)\??$",
     caseSensitive: false);
 // Out-of-domain boundary (Spec 03 §7.2, G-19). A clearly-external question with NO
 // personal cue gets a graceful "that's not what I do" instead of "I didn't catch that".
@@ -106,6 +116,7 @@ class Session {
   late Interpreter interp;
   late Router router;
   late CloudClient claude;
+  late GenerativeService _generative;
   late StorageRepository repo;
   final CloudClient? _injectedCloud;
   final StorageRepository? _injectedStorage;
@@ -152,6 +163,7 @@ class Session {
     interp = Interpreter(types, now);
     router = Router.load('$dataDir/corpus.json', now, learnedPath: '$dataDir/corpus-learned.json');
     claude = _injectedCloud ?? ClaudeClient();
+    _generative = GenerativeService(claude);
     for (final s in skills.values) {
       interp.validateSkill(s);
     }
@@ -191,6 +203,7 @@ class Session {
       if (has('set-birthday'))
         '• Birthdays — "Sarah\'s birthday is july 16", "whose birthday is coming up"',
       if (has('set-alias')) '• Nicknames — "Sarah\'s nickname is Mum", then "when did I last talk to Mum"',
+      '• Ideas & briefings (needs a connection) — "gift ideas for Sarah", "give me my briefing"',
       '• New trackers — "start tracking my water intake"',
     ];
     return 'Here\'s what I can do:\n${lines.join('\n')}\nAnd "undo that" reverses the last thing.';
@@ -346,6 +359,19 @@ class Session {
       final redo = await _handle(corr.group(1)!.trim());
       _outSource = 'correction';
       return '$pre$redo';
+    }
+
+    // Generative requests (§3.10): grounded, paid synthesis over the user's own records.
+    final gift = _giftRe.firstMatch(u);
+    if (gift != null) {
+      _outSource = 'generative';
+      _outSkill = 'gift_ideas';
+      return _generative.giftIdeas(gift.group(1)!.trim(), store, now);
+    }
+    if (_briefingRe.hasMatch(u)) {
+      _outSource = 'generative';
+      _outSkill = 'briefing';
+      return _generative.briefing(store, now);
     }
 
     final def = _defRe.firstMatch(u);

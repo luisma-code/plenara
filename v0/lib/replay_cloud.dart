@@ -51,6 +51,12 @@ class RecordingCloud implements CloudClient {
     return r;
   }
 
+  // Generative output is grounded in dynamic per-session context, so it is NOT part of
+  // the deterministic cassette (those flows are tested with a fake generative cloud);
+  // recording just passes through so a live run still works.
+  @override
+  Future<CloudResult<String>> generate(String kind, String context) => inner.generate(kind, context);
+
   void save(String path) {
     File(path).parent.createSync(recursive: true);
     File(path).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(recorded));
@@ -85,4 +91,10 @@ class ReplayCloud implements CloudClient {
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError}) async =>
       CloudOk(_get(cloudKey('author', description, priorError ?? '')));
+
+  // Not cassette-backed (see RecordingCloud.generate): generative flows use a fake cloud
+  // in tests. If a replay-backed path ever reaches here, fail loudly rather than fake it.
+  @override
+  Future<CloudResult<String>> generate(String kind, String context) async =>
+      throw StateError('ReplayCloud has no generative fixtures — generative flows must use a fake cloud');
 }

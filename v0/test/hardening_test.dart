@@ -24,6 +24,8 @@ class _ScriptCloud implements CloudClient {
     if (throwOnAuthor) throw StateError('boom');
     return CloudOk(authorResult);
   }
+  @override
+  Future<CloudResult<String>> generate(String kind, String context) async => const CloudError(CloudErrorKind.noKey);
 }
 
 Future<Session> _session(CloudClient cloud) async {

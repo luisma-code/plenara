@@ -24,6 +24,8 @@ class _NullCloud implements CloudClient {
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
       const CloudOk(null);
+  @override
+  Future<CloudResult<String>> generate(String k, String c) async => const CloudError(CloudErrorKind.noKey);
 }
 
 Future<Session> _session() async {
