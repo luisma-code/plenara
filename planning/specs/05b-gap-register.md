@@ -177,3 +177,36 @@ The define-as-we-trace pass completed every section the corpus **hot paths** tou
 **Progress:** ✅ Spec 04 §4.8–§7, ✅ Spec 02 §5.4–§5.5, ✅ Spec 05 §20 + §21–24, ✅ **Spec 03 §5.2–5.6** (corpus/correction spine), ✅ **Spec 01 §8.7** (CryptoBox/key store). **Every P1 completeness gap is now closed.** Remaining: **P2** — Spec 01 §9 (presentation archetypes, incl. `G-31`), §10 (nluHints); Spec 02 §7.x/§8.x numbered anchors; Spec 05 §21–23 full flows. **Deferred (churny, low-risk):** the Spec 03 body **consolidation** (fold §7.3 into §3/§4, demote the NO-GO'd design to an appendix — the supersession banners already prevent misbuilding). **P3** (Decision Records, open-Qs, appendices) is archival. **Strategic note:** with the P1 core-spec gaps closed, the highest-value next work is **Phase-0 spikes** (research §11.1) — meta-schema/DSL hand-encode, the iOS-file-sync spike (Fable D-1), and a local-routing spike to start measuring real phrasing-reuse (§13) — writing specs 6–11 just-in-time as the spikes need them.
 
 **→ DONE + BUILT (this session):** Phase-0 spikes are all green ([`spikes/`](../../spikes/) — DSL/meta-schema viability, storage-CRDT, plus the earlier local-model NO-GO + retrieval measurements), and the **v0 walking skeleton is built and tested in real Dart** ([`v0/`](../../v0/)). It validates the design in **running code**: capabilities-as-data, a two-phase static-validated interpreter (incl. the *static* G-17 check), the full §13 routing cascade (corpus fast-path → Haiku residual → clarify), the **corpus-learning ratchet** (the §13 make-or-break — a phrasing routed by Haiku once fast-paths thereafter), act-then-describe + undo + correction, per-record **CRDT-format** storage, and **AI authoring** of new capabilities (G-29 validate→retry + the G-30 deterministic safety floor). 8 seed skills, 9 tests green, `dart analyze` clean. The remaining big leaps — **Flutter UI, voice, iOS build** — are gated on **VS 2022 / on-device speech libs / Apple hardware** (setup + hardware, not unresolved design). Specs 6–11 get written just-in-time as those layers land.
+
+---
+
+## 6. Code→Spec drift ledger (Fable review #2, 2026-07-07) — the register turned around
+
+Until now gaps flowed spec→code. The Fable spec-fidelity review found the build has grown a
+second dialect that no spec records, so drift now accrues silently. Per its recommendation,
+every code decision that contradicts or extends a spec'd resolution gets an ID here — the
+reverse of the trace→fold-back flow. Disposition: **align code**, **amend spec**, or
+**accept-with-rationale (interim v0 posture, written into the target spec)**.
+
+| ID | Drift (code vs spec) | Where | Disposition |
+|---|---|---|---|
+| **G-39** | `reminder` is a **separate type** (`remindAt` datetime); spec says a reminder IS a `task` with datetime `dueAt` (01 §12.3, 02 §9.2). User-visible: "what's due" and "my reminders" are disjoint; `generative.briefing` already queries both. | `data/types/reminder.json`, `set-reminder` | **DECIDE** — merge to task+`dueAt:datetime`+`allDay`, or amend 01 §12 to canonicalize two types with rationale. (Luis's call; leans merge.) |
+| **G-40** | Value-type fork: code has `integer`, rejects spec's `number/tag/duration/json/attachment`; the authoring prompt (`claude.dart`) propagates the fork into every authored type. `aliases` is comma-text, not `tag`. | `interpreter.dart` `_valueTypes`, `claude.dart` `_authorSys` | **align + amend** — pick the set once, amend 01 §3, fix the authoring prompt. |
+| **G-41** | The branch-**condition grammar** (`{isNull/notNull/gte/eq/contains}`) exists only in Dart; Spec 02 §3.8 still defines a string grammar; the §3 convergence banner is silent on conds and stale (claims v0 lacks `read_related`/`sum`/etc., now implemented). | `interpreter.dart` `cond()` | **amend spec** — fold the real dialect (structured conds, `contains`, single-clause filters, `partial`, the fn inventory, `format` empty-on-null) into 02 §3; refresh the banner. |
+| **G-42** | G-14/15 anchored/anniversary date math is a **skill + compute fns** (`next_annual`/`add_days`, `task-before-birthday`), reversing 03 §6.2's "lives in the resolver, supersedes the skill-side branch." | `interpreter.dart`, `task-before-birthday.json` | **amend spec** — the DSL-side approach works and needs no resolver; record the reversal in 03 §6.2. |
+| **G-43** | G-18 **instant activation**: authored capabilities register immediately; spec says "nothing is registered until 'activate'." No pre-authoring `similarTo` reconciliation. | `session.dart` authoring path | **open (impl)** — top-10 item 7. 05b §4 should read G-18 "resolved (spec) / open (impl)". |
+| **G-44** | **Generative + template recognition is code, not data** (`_giftRe`/`_briefingRe`/`_reconnectRe`/`_builtinTrackers`), vs the spec's `kind:generative` CapabilityIndex + binary-shipped template files (03 §2.2a, 04 §3.4, G-22). Each new kind is a recompile — the P2.6 crack. | `session.dart` intent regexes | **accept-as-v0 + plan** — write the interim "recognition regexes are registry code" posture into 03, and plan migration to a `generative/`+`templates/` def folder indexed like skills. |
+| **G-45** | Corpus **trust ratchet is binary** (learn/forget); spec has graded `initConf`/decay/`requiresPreConfirm`/boost (03 §4.2/§5.2). The §13 learning-*curve* metric assumes the graded model. | `router.learn`/`forget` | **accept-as-v0** — write "v0: binary learn/forget, no confidence field" into 03 §5 as the explicit interim; revisit with dogfood data. |
+| **G-46** | `avg([])` returns `0` vs spec `null`; `decimal` not preserved (`sum` folds `double`, 02 §3.7 mandates exact base-10). | `interpreter.dart` compute | **align code** — small: `avg([])→null`; decimal arithmetic when the type is decimal. |
+| **G-47** | **No 05a conformance harness** — "47/60 fail → N fail" is a hand audit that rots (the §3 banner drifted within hours). | `v0/test/` | **build** — a table-driven `test/spec05a/` (utterance → expected route/write/surface, `skip`+G-ref for unbuilt); doubles as the drift ledger. |
+| **G-48** | **Journal privacy posture contradicts across docs** — 05a F-11 "never written to disk, never synced" vs 05c F-2 "device-local" vs the standing decision (syncs; 01 §12.3 / 05 §11). | 05a F-11, 05c F-2 | **align docs** — one-line edits: 05a F-11 → syncs; superseded-note on 05c F-2. |
+
+**Standing rule (adopted):** any code change that contradicts or extends a spec'd resolution
+files a G-entry here in the same commit — so code→spec drift has a ledger, like spec→code did.
+
+**Dispositioned this session (Fable review #2 fixes, code side):** the review's *bug* findings
+— turn-state data-loss, OOD-bounces-a-known-contact, `list-tasks` shows completed, the three
+CRDT format flaws, ProvideSlot swallowing system commands, learned-template shadowing, and the
+validator var-closure gap (G-46-adjacent) — are all **fixed** (commits `edc4091`…`5a1bcf7`),
+plus a **rich per-turn debug trace** added for dogfood diagnosis. The items above (G-39–G-48)
+are the *fidelity/spec* remainder.
