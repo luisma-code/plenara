@@ -288,6 +288,30 @@ void main() {
     });
   });
 
+  group('scope-denial floor (DF-10 / DP-03 / DP-04)', () {
+    for (final u in const [
+      'text Marco for me',
+      'text Marco this opener',
+      'add this to my Google Calendar',
+      'buy the hiking boots for Sarah',
+      'pay my rent',
+      'send money to Sam',
+      'book a table for two',
+    ]) {
+      test('refuses external action, offers the in-scope alternative: "$u"', () async {
+        final s = await _session();
+        final r = await s.handle(u);
+        expect(r.toLowerCase(), contains("can't do that"));
+        expect(s.store, isEmpty, reason: 'a scope refusal must not write');
+      });
+    }
+    test('a real reminder/task containing "text"/"buy" is NOT refused', () async {
+      final s = await _session();
+      expect(await s.handle('remind me to text mom on thursday at 5pm'), isNot(contains("can't do that")));
+      expect(await s.handle('add buy milk to my list'), contains('buy milk'));
+    });
+  });
+
   group('aliases (G-24) — resolve a person by a nickname/role', () {
     test('set an alias, then reach the contact through it', () async {
       final s = await _session();

@@ -43,6 +43,19 @@ final _distanceCorrectRe =
 final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
 // confirms an authored-capability draft (Spec 02 §6.5: nothing registered until "activate")
 final _activateRe = RegExp(r'^(activate|add it|yes,? add it|go ahead|do it|yes,? do it|yes)\.?$', caseSensitive: false);
+// Scope-denial floor (DF-10 / DP-03 / DP-04): external-world actions Plenara can't perform —
+// send a message, touch an external calendar, move money. A SCOPE refusal (not tier), it
+// offers what it CAN do. Anchored so reminder/list phrasings ("remind me to text mom", "add
+// buy milk to my list") never trip it.
+final _scopeDenialRe = RegExp(
+    r'^(text|message|email|e-mail|dm|whatsapp|imessage|slack|tweet|post) \w+'
+    r'|(add|put) .+ (to|on) my (google |outlook |apple |work )?calendar'
+    r'|^(pay|transfer|venmo|wire|refund) '
+    r'|^send (money|\$|payment)'
+    r'|^buy .+ for \w+'
+    r'|^(order|purchase) .+ (online|on amazon|from amazon)'
+    r'|^book (a |an )?(flight|hotel|table|appointment|reservation|cab|uber)',
+    caseSensitive: false);
 // Record-integrity floor (locked principle #7 / DP-05): refuse to fabricate the past.
 // Narrow, framing-keyed — a genuine backdated log ("I talked to Sam yesterday") is NOT
 // this; only "pretend/fake/fabricate a <record>" framing. The general case is the
@@ -422,6 +435,14 @@ class Session {
     if (_fabricationRe.hasMatch(u)) {
       _outSource = 'refused';
       return "I won't record things that didn't happen — I can only log what's real.";
+    }
+
+    // scope floor: external-world actions are outside what a personal-memory app does (DF-10,
+    // DP-03/04). A scope refusal that offers the in-scope alternative.
+    if (_scopeDenialRe.hasMatch(u)) {
+      _outSource = 'out-of-scope';
+      return "I can't do that directly — I'm your personal memory assistant, not connected to "
+          "messaging, calendars, or payments. I can set a reminder or make a note about it, though.";
     }
 
     if (_undoRe.hasMatch(u)) {
