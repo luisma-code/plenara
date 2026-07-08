@@ -1,0 +1,42 @@
+{
+  "skillId": "recall-fact-about",
+  "displayName": "Recall a specific fact about a person",
+  "reads": [ "contact", "contact_fact" ],
+  "writes": [],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "query", "required": true }
+  ],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personName" } }, "partial": true, "into": "person" },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [ { "op": "format", "template": "I don't know anyone named {personName} yet.", "into": "confirmationText" } ],
+        "else": [
+          { "op": "read_related", "typeId": "contact_fact", "via": "subject", "from": { "ref": "person" }, "into": "facts" },
+          { "op": "set", "var": "matches", "value": "" },
+          {
+            "op": "foreach",
+            "list": { "var": "facts" },
+            "as": "f",
+            "body": [
+              {
+                "op": "branch",
+                "cond": { "contains": [ { "field": [ "f", "fact" ] }, { "var": "query" } ] },
+                "then": [ { "op": "compute", "fn": "concat", "args": [ { "var": "matches" }, { "field": [ "f", "fact" ] }, "; " ], "into": "matches" } ]
+              }
+            ]
+          },
+          {
+            "op": "branch",
+            "cond": { "eq": [ { "var": "matches" }, "" ] },
+            "then": [ { "op": "format", "template": "I don't have anything noted about {personName} and \"{query}\".", "into": "confirmationText" } ],
+            "else": [ { "op": "format", "template": "{personName}: {matches}", "into": "confirmationText" } ]
+          }
+        ]
+      }
+    ]
+  }
+}

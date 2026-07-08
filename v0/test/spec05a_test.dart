@@ -79,8 +79,11 @@ void main() {
       expect(await s.handle('who is Mia related to'), contains('Sarah'));
     });
 
-    test('F-08 recall through the relation graph: "What\'s Mia allergic to?"',
-        () async {}, skip: 'the DSL SUPPORTS the filter (contains-op value from a {var} slot + foreach/concat — a recall-fact-about skill worked in isolation); but the broad "what is {person} {query}" ROUTE template over-matches OOD world-knowledge ("what is the capital…") and instantiated template queries ("what\'s my reading streak") in the case-insensitive corpus, so flexible fact-query NLU genuinely needs the cloud (not a DSL gap)');
+    test('F-08 recall through the relation graph: "What\'s Mia allergic to?"', () async {
+      final s = await _s();
+      await s.handle("Sarah's daughter Mia is allergic to peanuts"); // sets up Mia + the allergy fact
+      expect((await s.handle("what's Mia allergic to")).toLowerCase(), contains('peanuts'));
+    }); // now OFFLINE via a :contact-guarded route template (recall-fact-about) — no over-match
 
     test('F-09 last interaction: "When did I last see Marco?"', () async {
       final s = await _s();
@@ -279,11 +282,11 @@ void main() {
 
 // ─────────────────────────────────────────────────────────────────────────────────────
 // CONFORMANCE TALLY (offline, exact-or-equivalent utterances) — kept in sync with runs:
-//   F-tier: 12 pass /  8 skip  (F-01,02,04,05,07,09,10,16,17,18,19,20)
+//   F-tier: 13 pass /  7 skip  (F-01,02,04,05,07,08,09,10,16,17,18,19,20)
 //   P-tier:  0 pass / 20 skip  (all need BYOK: authoring or generative)
 //   DF-tier: 3 pass /  7 skip  (DF-01 no-template offer, DF-03 schema-edit, DF-10 scope denial)
 //   DP-tier: 7 pass /  3 skip  (DP-01,02,03,04,06,08,09 — deterministic safety/OOD/scope/medical/impersonation floors)
-//   TOTAL:  22 pass / 38 skip  of 60  (up from 9/60 — denial floors, phrasings, tracker+adherence queries, people-fact, DF-01 offer)
+//   TOTAL:  23 pass / 37 skip  of 60  (up from 9/60 — denial floors, phrasings, tracker+adherence+fact queries, DF-01 offer)
 // The skips ARE the remaining spec worklist: mostly cloud-gated (paid), a handful of
 // genuinely-unbuilt capabilities (search F-12, aggregation queries F-17/18, automations
 // P-19, the generative depth P-08..P-20), and corpus-phrasing gaps where the CAPABILITY

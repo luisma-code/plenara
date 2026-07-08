@@ -770,7 +770,7 @@ class Session {
     }
 
     final def = _defRe.firstMatch(u);
-    if (def != null && router.route(u, clock: now) == null) {
+    if (def != null && router.route(u, clock: now, contacts: _knownContactTokens()) == null) {
       final desc = def.group(1)!;
       if (_harmfulRe.hasMatch('$desc $u')) {
         return "I can't build that — it could monitor someone without consent or cause harm, "
@@ -796,7 +796,7 @@ class Session {
           "that uses your Claude credits (a paid step). Want me to go ahead?";
     }
 
-    var routed = router.route(u, clock: now);
+    var routed = router.route(u, clock: now, contacts: _knownContactTokens());
     // Compound utterance (F-13): two independent commands joined by "and" — "log a run
     // and journal that I feel great" — execute BOTH and compose the confirmations.
     // Deliberately conservative, because MANY single commands contain "and" ("remind me
@@ -971,9 +971,9 @@ class Session {
       final left = u.substring(0, m.start).trim();
       final right = u.substring(m.end).trim();
       if (left.isEmpty || right.isEmpty) continue;
-      final lr = router.route(left, clock: now);
+      final lr = router.route(left, clock: now, contacts: _knownContactTokens());
       if (lr == null) continue;
-      final rr = router.route(right, clock: now);
+      final rr = router.route(right, clock: now, contacts: _knownContactTokens());
       if (rr == null) continue;
       if (_missingRequired(skills[lr['skillId']], (lr['slots'] as Map).cast<String, dynamic>()).isNotEmpty ||
           _missingRequired(skills[rr['skillId']], (rr['slots'] as Map).cast<String, dynamic>()).isNotEmpty) {
@@ -1001,6 +1001,25 @@ class Session {
       }
     }
     return false;
+  }
+
+  /// Lowercase set of every stored contact's display name + aliases — the vocabulary a router
+  /// `:contact` slot may match, so a fact-recall template only fires for a real person.
+  Set<String> _knownContactTokens() {
+    final s = <String>{};
+    for (final r in store.values) {
+      if (r['typeId'] != 'contact') continue;
+      final dn = (r['displayName'] as String?)?.toLowerCase().trim();
+      if (dn != null && dn.isNotEmpty) s.add(dn);
+      final a = r['aliases'];
+      if (a is String) {
+        for (final al in a.toLowerCase().split(',')) {
+          final t = al.trim();
+          if (t.isNotEmpty) s.add(t);
+        }
+      }
+    }
+    return s;
   }
 
   /// Instantiate a binary-shipped tracker template (Spec 05 §6 E4 / G-22) — FREE, immediate,

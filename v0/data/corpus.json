@@ -157,5 +157,9 @@
   { "skillId": "goal-progress", "template": "how am i doing on my running goal" },
   { "skillId": "goal-progress", "template": "how am i doing on my goal" },
   { "skillId": "goal-progress", "template": "my goal progress" },
-  { "skillId": "goal-progress", "template": "am i on track for my goal" }
+  { "skillId": "goal-progress", "template": "am i on track for my goal" },
+  { "skillId": "recall-fact-about", "template": "what is {personName:contact} {query:text}" },
+  { "skillId": "recall-fact-about", "template": "what's {personName:contact} {query:text}" },
+  { "skillId": "recall-fact-about", "template": "what does {personName:contact} {query:text}" },
+  { "skillId": "recall-fact-about", "template": "is {personName:contact} {query:text}" }
 ]

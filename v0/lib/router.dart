@@ -138,7 +138,11 @@ class Router {
   /// Returns {skillId, slots} for a corpus hit, else null (=> retrieval/clarify).
   /// [clock] is the turn's frozen now for date resolution (Spec 03 §4); defaults
   /// to the router's construction time.
-  Map<String, dynamic>? route(String utterance, {DateTime? clock}) {
+  /// [contacts] is the lowercase set of known contact names + aliases; a `:contact` slot only
+  /// matches one of these, so a broad "what is {who:contact} {q:text}" template is safe — it
+  /// can't shadow OOD world-knowledge ("what is the capital…") or template queries ("what's my
+  /// reading streak"), because "the"/"my" aren't contacts.
+  Map<String, dynamic>? route(String utterance, {DateTime? clock, Set<String> contacts = const {}}) {
     final u = utterance.trim();
     final asOf = clock ?? now;
     // Curated SEED templates take precedence over LEARNED ones (two passes), so a broad
@@ -153,12 +157,14 @@ class Router {
         var ok = true;
         e.slotTypes.forEach((name, type) {
           final raw = m.namedGroup(name)?.trim();
-          final v = _resolveSlot(raw, type, asOf);
-          // an unparseable date/datetime means this template doesn't apply — fall
-          // through. (For datetime this is also the task-vs-reminder discriminator:
-          // "on friday" has no time -> null -> the reminder template is skipped and
-          // the date-only create-task template wins.)
-          if (v == null && (type == 'date' || type == 'datetime')) ok = false;
+          final v = type == 'contact'
+              ? (raw != null && contacts.contains(raw.toLowerCase()) ? raw : null)
+              : _resolveSlot(raw, type, asOf);
+          // an unparseable date/datetime — or a :contact slot that isn't a known person — means
+          // this template doesn't apply; fall through. (For datetime this is also the task-vs-
+          // reminder discriminator: "on friday" has no time -> null -> the reminder template is
+          // skipped and the date-only create-task template wins.)
+          if (v == null && (type == 'date' || type == 'datetime' || type == 'contact')) ok = false;
           slots[name] = v;
         });
         if (ok) return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};

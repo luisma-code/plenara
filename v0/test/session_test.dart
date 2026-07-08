@@ -162,6 +162,26 @@ void main() {
     });
   });
 
+  group('offline fact recall (F-08) — a :contact-guarded fact query', () {
+    test('"what is Mia allergic to" recalls the filtered fact offline', () async {
+      final s = await _session();
+      await s.handle("Sarah's daughter Mia is allergic to peanuts");
+      expect((await s.handle('what is Mia allergic to')).toLowerCase(), contains('peanuts'));
+    });
+    test('the :contact guard keeps world-knowledge OUT (no over-match to recall)', () async {
+      final s = await _session();
+      final r = (await s.handle('what is the capital of france')).toLowerCase();
+      expect(r, isNot(contains("don't know anyone named the"))); // recall-fact-about did NOT fire
+    });
+    test('the :contact guard lets template queries win ("my" is not a contact)', () async {
+      final s = await _session();
+      await s.handle('start tracking my reading');
+      await s.handle('i read 20 pages');
+      final r = (await s.handle("what's my reading streak")).toLowerCase();
+      expect(r, isNot(contains("don't know anyone"))); // reading-streak, not recall-fact-about
+    });
+  });
+
   group('template vs customization overlap (live-caught) — a unit/field prefers authoring', () {
     test('"start tracking my water intake in glasses" offers authoring, not the ml template', () async {
       final s = await _session();
