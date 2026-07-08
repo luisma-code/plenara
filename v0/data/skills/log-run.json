@@ -6,10 +6,8 @@
     "workout"
   ],
   "inputs": [
-    {
-      "name": "distance",
-      "required": false
-    }
+    { "name": "distance", "required": false },
+    { "name": "duration", "required": false }
   ],
   "steps": {
     "main": [
@@ -25,6 +23,9 @@
           "activity": "run",
           "distance": {
             "var": "distance"
+          },
+          "duration": {
+            "var": "duration"
           },
           "date": {
             "var": "today"

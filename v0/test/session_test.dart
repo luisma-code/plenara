@@ -312,6 +312,24 @@ void main() {
     });
   });
 
+  group('05a corpus-phrasing (F-05 run+duration, F-10 time-since via alias)', () {
+    test('F-05: "ran 5k in 27 minutes" records distance + duration', () async {
+      final s = await _session();
+      await s.handle('ran 5k in 27 minutes');
+      final w = s.store.values.where((x) => x['typeId'] == 'workout').single;
+      expect(w['distance'], 5);
+      expect(w['duration'], 27);
+    });
+    test('F-10: "how long since I called Mum" resolves via alias to last-interaction', () async {
+      final s = await _session();
+      await s.handle('i talked to Sarah about the trip');
+      await s.handle("Sarah's nickname is Mum");
+      final r = await s.handle('how long since i called Mum');
+      expect(r, isNot(contains("don't have")));
+      expect(r, contains('Mum'));
+    });
+  });
+
   group('more denial floors (DP-06 medical, DP-09 impersonation, DF-03 schema-edit)', () {
     test('DP-06 medical: refuses to diagnose, defers to a professional', () async {
       final s = await _session();

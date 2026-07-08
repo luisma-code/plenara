@@ -58,8 +58,13 @@ void main() {
       expect(r.toLowerCase(), contains('already track')); // runs already ship -> built-in recognizer, no cloud
     });
 
-    test('F-05 multi-slot conversational log: "Ran 5k in 27 minutes on the river trail."',
-        () async {}, skip: 'conversational multi-slot (distance+duration+route) needs cloud extraction — corpus is "log a Nk run"');
+    test('F-05 multi-slot log: "Ran 5k in 27 minutes." (distance+duration offline; route slot needs cloud)', () async {
+      final s = await _s();
+      await s.handle('ran 5k in 27 minutes');
+      final w = s.store.values.where((x) => x['typeId'] == 'workout').single;
+      expect(w['distance'], 5);
+      expect(w['duration'], 27); // the "on the river trail" route slot still needs cloud extraction
+    });
 
     test('F-06 instantiate with an inline extra field',
         () async {}, skip: 'inline field customization at instantiation needs authoring/cloud (DF-03 boundary)');
@@ -78,8 +83,13 @@ void main() {
       expect(r.toLowerCase(), anyOf(contains('last talked'), contains('last')));
     });
 
-    test('F-10 time-since with medium filter: "How long since I called Mum?"',
-        () async {}, skip: 'medium filter + "how long since" phrasing + role-alias needs cloud/corpus additions');
+    test('F-10 time-since via alias: "How long since I called Mum?"', () async {
+      final s = await _s();
+      await s.handle('i talked to Sarah about the trip');
+      await s.handle("Sarah's nickname is Mum");
+      final r = await s.handle('how long since i called Mum'); // alias + "how long since" phrasing, offline
+      expect(r, contains('Mum'));
+    });
 
     test('F-11 private voice journal: "Start today\'s journal." …',
         () async {}, skip: 'voice-journal start phrasing + STT — corpus is "journal that X" (journaling itself is built)');
@@ -244,11 +254,11 @@ void main() {
 
 // ─────────────────────────────────────────────────────────────────────────────────────
 // CONFORMANCE TALLY (offline, exact-or-equivalent utterances) — kept in sync with runs:
-//   F-tier:  6 pass / 14 skip  (F-01,02,04,09,19,20 pass)
+//   F-tier:  8 pass / 12 skip  (F-01,02,04,05,09,10,19,20 pass)
 //   P-tier:  0 pass / 20 skip  (all need BYOK: authoring or generative)
 //   DF-tier: 2 pass /  8 skip  (DF-03 schema-edit, DF-10 scope denial)
 //   DP-tier: 7 pass /  3 skip  (DP-01,02,03,04,06,08,09 — deterministic safety/OOD/scope/medical/impersonation floors)
-//   TOTAL:  15 pass / 45 skip  of 60  (up from 9/60 — deterministic denial floors added)
+//   TOTAL:  17 pass / 43 skip  of 60  (up from 9/60 — denial floors + F-05/F-10 corpus phrasings)
 // The skips ARE the remaining spec worklist: mostly cloud-gated (paid), a handful of
 // genuinely-unbuilt capabilities (search F-12, aggregation queries F-17/18, automations
 // P-19, the generative depth P-08..P-20), and corpus-phrasing gaps where the CAPABILITY
