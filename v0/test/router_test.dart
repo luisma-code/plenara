@@ -232,6 +232,16 @@ void main() {
       expect(mood?['skillId'], 'log-mood');
       expect(mood?['slots']['rating'], 'low');
     });
+    test('a broad learned template does NOT shadow a specific seed skill (Fable#2)', () {
+      final r = Router.load('data/corpus.json', _now);
+      final tmpl = r.learn('note the milk is gone', 'create-task', {'description': 'the milk is gone'});
+      expect(tmpl, 'note {description:text}'); // a broad learned entry
+      // a phrasing the SEED "note that {person} {fact}" owns must still reach the seed skill,
+      // not the broad learned "note {description}" that also matches it
+      expect(r.route('note that Mia loves drawing')?['skillId'], 'remember-person-fact');
+      // but the learned entry still fast-paths a phrasing no seed matches
+      expect(r.route('note the dog needs a walk')?['skillId'], 'create-task');
+    });
     test('a resolved-date slot that is not in the surface -> not abstracted -> null', () {
       final r = Router.load('data/corpus.json', _now);
       // slot value is the ISO date, which does not appear in the surface text

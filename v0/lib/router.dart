@@ -132,22 +132,28 @@ class Router {
   Map<String, dynamic>? route(String utterance, {DateTime? clock}) {
     final u = utterance.trim();
     final asOf = clock ?? now;
-    for (final e in corpus) {
-      final m = e.regex.firstMatch(u);
-      if (m == null) continue;
-      final slots = <String, dynamic>{};
-      var ok = true;
-      e.slotTypes.forEach((name, type) {
-        final raw = m.namedGroup(name)?.trim();
-        final v = _resolveSlot(raw, type, asOf);
-        // an unparseable date/datetime means this template doesn't apply — fall
-        // through. (For datetime this is also the task-vs-reminder discriminator:
-        // "on friday" has no time -> null -> the reminder template is skipped and
-        // the date-only create-task template wins.)
-        if (v == null && (type == 'date' || type == 'datetime')) ok = false;
-        slots[name] = v;
-      });
-      if (ok) return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};
+    // Curated SEED templates take precedence over LEARNED ones (two passes), so a broad
+    // learned entry ("note {text}") can never permanently shadow a specific seed
+    // ("note that {person} {fact}"). Learned templates only fast-path phrasings no seed matches.
+    for (final wantLearned in const [false, true]) {
+      for (final e in corpus) {
+        if (_learnedTemplates.contains(e.template) != wantLearned) continue;
+        final m = e.regex.firstMatch(u);
+        if (m == null) continue;
+        final slots = <String, dynamic>{};
+        var ok = true;
+        e.slotTypes.forEach((name, type) {
+          final raw = m.namedGroup(name)?.trim();
+          final v = _resolveSlot(raw, type, asOf);
+          // an unparseable date/datetime means this template doesn't apply — fall
+          // through. (For datetime this is also the task-vs-reminder discriminator:
+          // "on friday" has no time -> null -> the reminder template is skipped and
+          // the date-only create-task template wins.)
+          if (v == null && (type == 'date' || type == 'datetime')) ok = false;
+          slots[name] = v;
+        });
+        if (ok) return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};
+      }
     }
     return null;
   }
