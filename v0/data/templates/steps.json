@@ -37,11 +37,45 @@
           }
         ]
       }
+    },
+    {
+      "skillId": "steps-this-week",
+      "displayName": "Total steps this week",
+      "reads": [ "step_log" ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          { "op": "compute", "fn": "start_of_week", "args": [ { "fn": "today" } ], "into": "weekStart" },
+          { "op": "read_many", "typeId": "step_log", "into": "logs" },
+          { "op": "set", "var": "total", "value": 0 },
+          {
+            "op": "foreach",
+            "list": { "var": "logs" },
+            "as": "e",
+            "body": [
+              {
+                "op": "branch",
+                "cond": { "gte": [ { "field": [ "e", "loggedAt" ] }, { "var": "weekStart" } ] },
+                "then": [
+                  { "op": "compute", "fn": "add", "args": [ { "var": "total" }, { "field": [ "e", "count" ] } ], "into": "total" }
+                ]
+              }
+            ]
+          },
+          { "op": "format", "template": "You've logged {total} steps so far this week.", "into": "confirmationText" }
+        ]
+      }
     }
   ],
   "corpus": [
     { "skillId": "log-steps", "template": "log {count:quantity} steps" },
     { "skillId": "log-steps", "template": "i walked {count:quantity} steps" },
-    { "skillId": "log-steps", "template": "i did {count:quantity} steps today" }
+    { "skillId": "log-steps", "template": "i did {count:quantity} steps today" },
+    { "skillId": "steps-this-week", "template": "how many steps this week" },
+    { "skillId": "steps-this-week", "template": "how many steps have i done this week" },
+    { "skillId": "steps-this-week", "template": "how many steps did i do this week" },
+    { "skillId": "steps-this-week", "template": "what's my step count this week" },
+    { "skillId": "steps-this-week", "template": "steps this week" }
   ]
 }

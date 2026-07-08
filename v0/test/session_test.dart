@@ -244,6 +244,15 @@ void main() {
       });
     }
 
+    test('a template ships a QUERY skill too: "how many steps this week" aggregates (F-17)', () async {
+      final s = await _session();
+      await s.handle('start tracking my steps');
+      await s.handle('i walked 8000 steps');
+      await s.handle('i did 5000 steps today');
+      final r = await s.handle('how many steps this week');
+      expect(r, contains('13000'));
+    });
+
     test('re-instantiating is idempotent ("already tracking")', () async {
       final s = await _session();
       await s.handle('start tracking my water intake');

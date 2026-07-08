@@ -121,8 +121,13 @@ void main() {
     test('F-16 medication log + adherence query',
         () async {}, skip: 'needs template instantiation + exact "took my morning meds" phrasing + a meds temporal query');
 
-    test('F-17 backdated log + weekly aggregate: "How many steps did I do this week?"',
-        () async {}, skip: 'steps tracker + backdated loggedAt + aggregate query not built as-worded (aggregation fns exist)');
+    test('F-17 weekly aggregate over a tracker: "How many steps did I do this week?"', () async {
+      final s = await _s();
+      await s.handle('start tracking my steps'); // instantiate the steps template (ships log + query skills)
+      await s.handle('i walked 8000 steps');
+      await s.handle('i did 5000 steps today');
+      expect(await s.handle('how many steps did i do this week'), contains('13000'));
+    });
 
     test('F-18 longest streak: "What\'s my longest reading streak?"',
         () async {}, skip: 'reading-streak query unbuilt (run-streak exists; needs reading template instantiation + a streak skill)');
@@ -254,11 +259,11 @@ void main() {
 
 // ─────────────────────────────────────────────────────────────────────────────────────
 // CONFORMANCE TALLY (offline, exact-or-equivalent utterances) — kept in sync with runs:
-//   F-tier:  8 pass / 12 skip  (F-01,02,04,05,09,10,19,20 pass)
+//   F-tier:  9 pass / 11 skip  (F-01,02,04,05,09,10,17,19,20 pass)
 //   P-tier:  0 pass / 20 skip  (all need BYOK: authoring or generative)
 //   DF-tier: 2 pass /  8 skip  (DF-03 schema-edit, DF-10 scope denial)
 //   DP-tier: 7 pass /  3 skip  (DP-01,02,03,04,06,08,09 — deterministic safety/OOD/scope/medical/impersonation floors)
-//   TOTAL:  17 pass / 43 skip  of 60  (up from 9/60 — denial floors + F-05/F-10 corpus phrasings)
+//   TOTAL:  18 pass / 42 skip  of 60  (up from 9/60 — denial floors + F-05/F-10 phrasings + F-17 tracker aggregate)
 // The skips ARE the remaining spec worklist: mostly cloud-gated (paid), a handful of
 // genuinely-unbuilt capabilities (search F-12, aggregation queries F-17/18, automations
 // P-19, the generative depth P-08..P-20), and corpus-phrasing gaps where the CAPABILITY
