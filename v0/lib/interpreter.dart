@@ -310,6 +310,7 @@ class Interpreter {
     if (!c.setsConfirmation) {
       throw ResolveError("$sid: no step produces a 'confirmationText' (a format op into confirmationText is required)");
     }
+    _checkVarClosure(steps['main'] as List, skill, sid);
     // capability closure (Spec 02 §6.4 rule 3): if the skill declares reads/writes,
     // it may not touch a type it didn't declare. Enforced-if-present.
     final declaredReads = (skill['reads'] as List?)?.map((e) => e.toString()).toSet();
@@ -325,6 +326,81 @@ class Interpreter {
   }
 
   // recVars: var -> typeId of a resolved RECORD; listVars: var -> element typeId of a read_many LIST.
+  /// Static var-closure (Spec 02 §6.4 rule 4): every {var}/{field}/{ref} reference and
+  /// every format placeholder must resolve to a bound name (an input, or a prior step's
+  /// `into`/`set var`/`foreach as`). A typo'd `{persoName}` would otherwise pass the gate
+  /// and silently render as empty at runtime — the exact silent failure P7 forbids, moved
+  /// to authoring time. Conservative (bound-anywhere) so it never rejects a valid skill.
+  void _checkVarClosure(List main, Skill skill, String sid) {
+    final bound = <String>{};
+    for (final i in (skill['inputs'] as List? ?? const [])) {
+      if (i is Map && i['name'] is String) bound.add(i['name'] as String);
+    }
+    void collect(dynamic steps) {
+      if (steps is! List) return;
+      for (final s in steps) {
+        if (s is! Map) continue;
+        if (s['into'] is String) bound.add(s['into'] as String);
+        if (s['op'] == 'set' && s['var'] is String) bound.add(s['var'] as String); // set's target binds
+        if (s['op'] == 'foreach' && s['as'] is String) bound.add(s['as'] as String);
+        collect(s['then']);
+        collect(s['else']);
+        collect(s['body']);
+      }
+    }
+
+    collect(main);
+    final refs = <String>{};
+    void refsIn(dynamic node) {
+      if (node is Map) {
+        if (node['var'] is String) refs.add(node['var'] as String);
+        if (node['ref'] is String) refs.add(node['ref'] as String);
+        final f = node['field'];
+        if (f is List && f.isNotEmpty && f.first is String) refs.add(f.first as String);
+        node.forEach((k, v) {
+          if (k != 'into' && k != 'as' && k != 'var') refsIn(v); // skip binding sites
+        });
+      } else if (node is List) {
+        for (final e in node) {
+          refsIn(e);
+        }
+      }
+    }
+
+    void scanRefs(dynamic steps) {
+      if (steps is! List) return;
+      for (final s in steps) {
+        if (s is! Map) continue;
+        if (s['op'] == 'format' && s['template'] is String) {
+          for (final m in RegExp(r'\{(\w+)\}').allMatches(s['template'] as String)) {
+            refs.add(m.group(1)!);
+          }
+        }
+        final cond = s['cond'];
+        if (cond is Map) {
+          for (final key in const ['isNull', 'notNull']) {
+            if (cond[key] is String) refs.add(cond[key] as String); // cond takes a bare var name
+          }
+          refsIn(cond);
+        }
+        for (final key in const ['value', 'args', 'fields', 'filter', 'list', 'from', 'match']) {
+          refsIn(s[key]);
+        }
+        scanRefs(s['then']);
+        scanRefs(s['else']);
+        scanRefs(s['body']);
+      }
+    }
+
+    scanRefs(main);
+    for (final r in refs) {
+      if (!bound.contains(r)) {
+        throw ResolveError("$sid: references unbound variable '$r' "
+            "(typo? not an input, a prior step's 'into'/'set', or a foreach 'as')");
+      }
+    }
+  }
+
   void _validate(List steps, Map<String, String?> recVars, Map<String, String?> listVars, _VCtx c) {
     for (final raw in steps) {
       if (raw is! Map) throw ResolveError("${c.sid}: a step must be an object, got $raw");

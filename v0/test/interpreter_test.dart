@@ -420,9 +420,20 @@ void main() {
       };
       expect(() => _i().validateSkill(s), throwsA(isA<ResolveError>()));
     });
+    test('reject: an unbound variable (typo) — closure rule 4 (Fable#2)', () {
+      final s = {
+        'skillId': 'x',
+        'inputs': [{'name': 'name'}],
+        'steps': {'main': [
+          {'op': 'format', 'template': 'hi {naem}', 'into': 'confirmationText'} // typo: naem, not name
+        ]}
+      };
+      expect(() => _i().validateSkill(s), throwsA(isA<ResolveError>()));
+    });
     test('accept: entity fed by {ref} to a read_one record', () {
       final s = {
         'skillId': 'x',
+        'inputs': [{'name': 'n'}],
         'steps': {'main': [
           {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'n'}}, 'into': 'p'},
           {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'ref': 'p'}, 'fact': 'y'}, 'into': 'f'},
@@ -434,6 +445,7 @@ void main() {
     test('accept: entity fed by {field:[rec, id]}', () {
       final s = {
         'skillId': 'x',
+        'inputs': [{'name': 'n'}],
         'steps': {'main': [
           {'op': 'read_one', 'typeId': 'contact', 'match': {'displayName': {'var': 'n'}}, 'into': 'p'},
           {'op': 'write_record', 'typeId': 'contact_fact', 'fields': {'subject': {'field': ['p', 'id']}, 'fact': 'y'}, 'into': 'f'},
