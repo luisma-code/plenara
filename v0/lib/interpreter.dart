@@ -151,6 +151,16 @@ class Interpreter {
         return a[0] == true ? a[1] : a[2];
       case 'concat':
         return a.map((x) => x?.toString() ?? '').join();
+      case 'ordinal_num':
+        // an ordinal WORD -> its number (1..4), or -1 for "last" — for monthly recurrence math.
+        return switch ((a.isEmpty ? '' : '${a[0]}').toLowerCase().trim()) {
+          'first' || '1st' || 'one' => 1,
+          'second' || '2nd' || 'two' => 2,
+          'third' || '3rd' || 'three' => 3,
+          'fourth' || '4th' || 'four' => 4,
+          'last' => -1,
+          _ => 1,
+        };
       default:
         throw ResolveError("unknown compute fn '$fn'");
     }
@@ -273,7 +283,7 @@ class Interpreter {
   static const _ops = {'read_one', 'read_many', 'read_related', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
-    'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if'};
+    'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num'};
   static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};
   // The Spec 01 §3 canonical value-type set (fixed; a new one needs a kernel bump). `integer`
   // is retained only as a tolerated legacy alias for `number` (older authored types).

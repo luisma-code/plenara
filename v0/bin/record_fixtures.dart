@@ -53,7 +53,8 @@ Future<void> main() async {
   for (final d in authoringDescriptions) {
     final s = Session(_tempData(), clock: clock, cloud: rec);
     await s.init(retrieval: false);
-    final resp = await s.handle('start tracking $d'); // def-triggered authoring
+    await s.handle('start tracking $d'); // DF-01: this only OFFERS a paid build (no cloud call yet)
+    final resp = await s.handle('yes'); // accepting the offer triggers the real authoring cloud call
     print('  author "$d" -> $resp');
   }
 

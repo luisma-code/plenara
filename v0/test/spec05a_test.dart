@@ -50,7 +50,7 @@ void main() {
     });
 
     test('F-03 ordinal recurrence: "Every second Tuesday, take the bins out."',
-        () async {}, skip: 'interval RRULE (FREQ=WEEKLY;INTERVAL=2) unbuilt — only daily/weekly recurrence (G-8/F-03)');
+        () async {}, skip: 'ordinal-monthly recurrence BUILT + tested (reminders_test "monthly ordinal": set-monthly-reminder + the ordinal_num DSL fn + _nextMonthlyOrdinal date math); the EXACT terse utterance carries NO time -> ProvideSlot asks for one, so it does not complete in a single offline turn');
 
     test('F-04 spin up a tracker: "Start tracking my runs."', () async {
       final s = await _s();

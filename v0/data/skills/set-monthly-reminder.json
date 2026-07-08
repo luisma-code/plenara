@@ -1,0 +1,34 @@
+{
+  "skillId": "set-monthly-reminder",
+  "displayName": "Set a monthly Nth-weekday recurring reminder",
+  "reads": [],
+  "writes": [
+    "reminder"
+  ],
+  "inputs": [
+    { "name": "text", "required": true },
+    { "name": "ordinal", "required": true },
+    { "name": "weekday", "required": true },
+    { "name": "when", "required": true, "type": "datetime", "prompt": "What time? (e.g. \"9am\")" }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "now", "into": "createdAt" },
+      { "op": "compute", "fn": "ordinal_num", "args": [ { "var": "ordinal" } ], "into": "ordNum" },
+      { "op": "compute", "fn": "concat", "args": [ "monthly:", { "var": "ordNum" }, ":", { "var": "weekday" } ], "into": "recur" },
+      {
+        "op": "write_record",
+        "typeId": "reminder",
+        "fields": {
+          "text": { "var": "text" },
+          "remindAt": { "var": "when" },
+          "recurrence": { "var": "recur" },
+          "createdAt": { "var": "createdAt" }
+        },
+        "into": "newReminder"
+      },
+      { "op": "compute", "fn": "format_time", "args": [ { "var": "when" } ], "into": "timeLabel" },
+      { "op": "format", "template": "Okay — I'll remind you to {text} on the {ordinal} {weekday} of each month at {timeLabel}.", "into": "confirmationText" }
+    ]
+  }
+}

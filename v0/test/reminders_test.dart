@@ -287,6 +287,23 @@ void main() {
       expect(r, contains('every other'));
       expect(fake.armed().values.single, DateTime.parse('2026-07-07T09:00:00')); // first Tue
     });
+    test('monthly ordinal ("every second tuesday") arms at the 2nd Tuesday (F-03)', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // Mon 2026-07-06
+      await s.init(retrieval: false);
+      final r = await s.handle('remind me every second tuesday at 9am to take the bins out');
+      expect(r.toLowerCase(), contains('second tuesday'));
+      // July 2026: 1st Tue = 07-07, 2nd Tue = 07-14 (both after the 07-06 clock)
+      expect(fake.armed().values.single, DateTime.parse('2026-07-14T09:00:00'));
+    });
+    test('monthly ordinal "last friday" arms at the last Friday of the month', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake);
+      await s.init(retrieval: false);
+      await s.handle('remind me on the last friday of every month at 5pm to file my report');
+      // last Friday of July 2026 is 07-31
+      expect(fake.armed().values.single, DateTime.parse('2026-07-31T17:00:00'));
+    });
     test('biweekly skips the off-week (07-07 then 07-21, not 07-14)', () async {
       final dir = makeTempDataDir();
       final s1 = Session(dir, clock: _now, cloud: _NoCloud(), scheduler: FakeScheduler());

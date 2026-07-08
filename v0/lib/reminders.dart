@@ -87,6 +87,11 @@ Iterable<Reminder> allReminders(_Store store, DateTime now) sync* {
       final createdAt = DateTime.tryParse(r['createdAt']?.toString() ?? '') ?? base;
       final anchor = _nextWeekly(base, rec.substring('biweekly:'.length), createdAt);
       at = _advanceBiweekly(anchor, now);
+    } else if (rec != null && rec.startsWith('monthly:')) {
+      // Nth weekday of each month — "2nd Tuesday", "last Friday". Format: monthly:<ordinal>:<day>,
+      // ordinal 1..4 or -1 (last).
+      final parts = rec.substring('monthly:'.length).split(':');
+      at = _nextMonthlyOrdinal(base, int.tryParse(parts.first) ?? 1, parts.length > 1 ? parts[1] : '', now);
     } else {
       at = base;
     }
@@ -106,6 +111,42 @@ const _weekdays = {
   'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7,
   'mon': 1, 'tue': 2, 'tues': 2, 'wed': 3, 'thu': 4, 'thur': 4, 'thurs': 4, 'fri': 5, 'sat': 6, 'sun': 7,
 };
+
+/// The next "[ordinal]th [dayName] of the month" at [base]'s time-of-day strictly after [now].
+/// [ordinal] is 1..4 (nth) or -1 (last). A month with no such occurrence (e.g. a 5th Tuesday) is
+/// skipped. Deterministic date math — the scheduler drives it, never a model.
+DateTime _nextMonthlyOrdinal(DateTime base, int ordinal, String dayName, DateTime now) {
+  final wd = _weekdays[dayName.toLowerCase().trim()];
+  if (wd == null) return base; // graceful fallback — never crash the schedule
+  DateTime? occurrenceIn(int year, int month) {
+    if (ordinal == -1) {
+      var d = DateTime(year, month + 1, 0); // last day of the month
+      while (d.weekday != wd) {
+        d = d.subtract(const Duration(days: 1));
+      }
+      return DateTime(year, month, d.day, base.hour, base.minute);
+    }
+    var d = DateTime(year, month, 1);
+    while (d.weekday != wd) {
+      d = d.add(const Duration(days: 1)); // first [wd] of the month
+    }
+    d = d.add(Duration(days: 7 * (ordinal - 1))); // then the (ordinal-1)th week
+    if (d.month != month) return null; // e.g. no 5th Tuesday this month
+    return DateTime(year, month, d.day, base.hour, base.minute);
+  }
+
+  var y = now.year, m = now.month;
+  for (var i = 0; i < 24; i++) {
+    final occ = occurrenceIn(y, m);
+    if (occ != null && occ.isAfter(now)) return occ;
+    m++;
+    if (m > 12) {
+      m = 1;
+      y++;
+    }
+  }
+  return base;
+}
 
 /// From a biweekly [anchor] (a specific weekday+time), the next occurrence strictly after
 /// [now] stepping 14 days at a time — so it never lands on the off-week.
