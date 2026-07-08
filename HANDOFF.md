@@ -21,7 +21,7 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `d0f9ab0`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `e2ba8d8`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
 **1284 Dart tests + 8 Flutter widget tests green** (32 skills, 9 types; DSL now has
 ordering/limit/filter-ops + aggregation/date-math; ProvideSlot slot-filling; alias
@@ -214,6 +214,20 @@ config (5), hardening (~20).
 
 ## Recent arc (what just happened, newest first)
 
+- **Reminders FIRE — real Windows toast, proven end-to-end (`e2ba8d8` … `73b1959`):** ATL
+  installed → the `flutter_local_notifications_windows` native code compiles →
+  `WindowsToastScheduler` (real `NotificationScheduler` backend) wired into `buildSession()`.
+  Fixed a **startup hang** (retrieval index hit the down embed server, ~2s × 70 anchors =
+  140s → now 103ms: probe-once + app defaults `retrieval:false`). Added **diagnostics
+  logging** the whole flow was missing: `AppLog` writes a timestamped, flushed log to
+  `%TEMP%\plenara-logs\` (path shown in the app greeting; a GUI app can't print to the
+  launching console) capturing boot, every init phase, every turn, scheduler init/ARM/fail,
+  and uncaught/Flutter errors. **Verified the toast path fully automated** (no typing): seed
+  a future reminder record → launch → log shows `plugin.initialize()->true` + `sched: ARMED
+  … in 68s`; display proven by an immediate self-test `show()` (now gated behind
+  `PLENARA_SELFTEST=1`). The app is genuinely dogfood-ready: starts in ~100ms, reminders
+  fire as OS toasts, every turn + startup is diagnosable from the log. (Unpackaged limit:
+  `cancel` is a no-op until MSIX packaging — toasts still fire.)
 - **Fable review #2 (impl + spec) — done + acted on (`d0f9ab0` … `edc4091`):** a 3-lens Fable
   panel (architecture / spec-fidelity / strategy), synthesized in
   [`05e-fable-review.md`](planning/specs/05e-fable-review.md). Fixed every impl bug it found:
