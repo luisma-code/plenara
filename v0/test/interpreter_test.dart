@@ -67,7 +67,7 @@ void main() {
     test('sum over a field', () => expect(_i().compute('sum', [[{'d': 2}, {'d': 3}, {'d': 5}], 'd'], {}), 10));
     test('sum parses numeric strings', () => expect(_i().compute('sum', [[{'d': '2.5'}, {'d': '1.5'}], 'd'], {}), 4.0));
     test('avg over a field', () => expect(_i().compute('avg', [[{'d': 2}, {'d': 4}], 'd'], {}), 3));
-    test('avg empty -> 0', () => expect(_i().compute('avg', [[], 'd'], {}), 0));
+    test('avg empty -> null (no data, not a misleading 0)', () => expect(_i().compute('avg', [[], 'd'], {}), isNull));
     test('min / max', () {
       expect(_i().compute('min', [[{'d': 5}, {'d': 2}, {'d': 8}], 'd'], {}), 2);
       expect(_i().compute('max', [[{'d': 5}, {'d': 2}, {'d': 8}], 'd'], {}), 8);

@@ -139,7 +139,7 @@ class Interpreter {
         return _nums(a[0], a[1]).fold<num>(0, (s, x) => s + x);
       case 'avg':
         final ns = _nums(a[0], a[1]);
-        return ns.isEmpty ? 0 : ns.reduce((s, x) => s + x) / ns.length;
+        return ns.isEmpty ? null : ns.reduce((s, x) => s + x) / ns.length; // no data -> null, not a misleading 0 (spec §3.7)
       case 'min':
         final ns = _nums(a[0], a[1]);
         return ns.isEmpty ? null : ns.reduce((x, y) => x < y ? x : y);

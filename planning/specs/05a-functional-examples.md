@@ -105,7 +105,7 @@ Exercises: `query-last-interaction` filtered by `medium=phone`. Stretch: a slot 
 
 **F-11 — Private on-device voice journal.**
 `U: "Start today's journal." … (speaks 47s) … "Done."`
-Exercises: `add-journal-entry`; continuous on-device STT, audio discarded. Stretch: the privacy invariant (never written to disk, never synced, never sent to cloud) — a testable contract, not a model call. Surface: `journal_entry` + `add-journal-entry`. Models: on-device STT only (no LLM).
+Exercises: `add-journal-entry`; continuous on-device STT, audio discarded. Privacy posture (**revised, G-37**): the journal **syncs like any record** (durable across device loss); keeping content unreadable by the cloud *provider* is a deferred at-rest-encryption concern, and the surviving invariant is that journal text is **never sent to a cloud model without per-session consent** (G-26) — a testable contract, not a model call. Surface: `journal_entry` + `add-journal-entry`. Models: on-device STT only (no LLM). *(Superseded the earlier "never written to disk, never synced" wording — that invariant was dropped as trading a privacy leak for data loss.)*
 
 **F-12 — Semantic search by meaning.**
 `U: "Find that note about the cabin trip."`
