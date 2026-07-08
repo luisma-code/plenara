@@ -21,9 +21,9 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `7b96daa`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `04fafcb`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1293 Dart tests + 8 Flutter widget tests green** (35 skills, 9 types; DSL now has
+**1295 Dart tests + 8 Flutter widget tests green** (35 skills, 9 types; DSL now has
 ordering/limit/filter-ops + aggregation/date-math; ProvideSlot slot-filling; alias
 resolution; OOD boundary; record-integrity floor; GenerativeService for gift ideas +
 briefing), `dart analyze` clean,
@@ -60,16 +60,17 @@ recurring RRULE reminders still open; 9 safety — record-integrity floor ✅ DO
 Layer-2/3 model gate still deferred (G-30); 10 records-vs-OOD boundary ✅ DONE (`925ceda`,
 with the personal-cue privacy guard). Also-done this session: all 3 correctness defects
 (`c29732c`, `f9e2695`), journaling/F-11, streaks/G-21, total-distance (aggregation demo).
-**Net: the main increment of ALL 10 top-10 items is now built** (1 DSL, 2 ProvideSlot, 3
-built-in tracker recognizer, 4 aliases, 5 correction-prefixes, 6 GenerativeService, 7
-authoring preview→activate `605367c`, 8 record-anchored dates, 9 record-integrity floor, 10
-OOD boundary). **Remaining sub-items to "complete per spec"** (Luis: build to spec BEFORE
-dogfooding — see the `spec-complete-before-dogfood` memory): full 3 template library
-(instantiate NEW types), recurring-RRULE half of 8, hard part of 5 (F-14 re-classify / F-15
-same-record slot update), authoring ≤5-turn refine + similarTo reconcile + pinned-Opus/
-structured-output (G-29), safety Layer-2/3 model gate (G-30), the G-39..G-48 code→spec
-aligns (G-46/G-48 done), and an 05a conformance harness (G-47) to make spec-completeness
-measurable.
+**Net: ALL 10 top-10 items are now built, most fully:** 1 DSL, 2 ProvideSlot, 3 template
+library (`04fafcb` — instantiate NEW types free + built-in recognizer), 4 aliases, 5
+corrections (prefixes + F-14 re-classify `073eae9` + F-15 slot-update `7b96daa`), 6
+GenerativeService (gift/briefing/reconnect), 7 authoring preview→activate (`605367c`), 8
+record-anchored dates + daily/weekly recurring reminders (`296a56b`/`cfcbb51`), 9
+record-integrity floor, 10 OOD boundary. **Remaining (smaller/specialized) to fully complete
+per spec** (Luis: build to spec BEFORE dogfooding — see `spec-complete-before-dogfood`
+memory): interval RRULE ("every second Tuesday"); authoring ≤5-turn refine + similarTo
+reconcile + pinned-Opus/structured-output (G-29); safety Layer-2/3 model gate (G-30); the
+value-type dialect align (G-40); remaining G-39..G-48 aligns; more templates
+(reading/meds/steps — trivial data adds); and an 05a conformance harness (G-47).
 (Blocked/deferred, do NOT pick: native toast/ATL, voice, CRDT merge engine, persisted
 journal, presentation archetypes, at-rest encryption, per-device corpus.)
 
