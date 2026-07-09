@@ -565,6 +565,48 @@ void main() {
     });
   });
 
+  group('due-tasks date filters (gap #57)', () {
+    Future<dynamic> seeded() async {
+      final s = await _session(); // Monday 2026-07-06
+      await s.handle('add book flights to my list due tomorrow'); // 07-07
+      await s.handle('add pay rent to my list due friday'); // 07-10
+      await s.handle('add file taxes to my list due next monday'); // 07-13
+      return s;
+    }
+
+    test('"what\'s due tomorrow" -> only that day', () async {
+      final r = await (await seeded()).handle("what's due tomorrow");
+      expect(r, contains('book flights'));
+      expect(r.contains('pay rent'), isFalse);
+      expect(r.contains('file taxes'), isFalse);
+    });
+
+    test('"what\'s due this week" -> Mon–Sun, excludes next Monday', () async {
+      final r = await (await seeded()).handle("what's due this week");
+      expect(r, contains('book flights')); // 07-07
+      expect(r, contains('pay rent')); // 07-10
+      expect(r.contains('file taxes'), isFalse); // 07-13 is next week
+    });
+
+    test('"what\'s due by friday" -> on or before the cutoff', () async {
+      final r = await (await seeded()).handle("what's due by friday");
+      expect(r, contains('book flights'));
+      expect(r, contains('pay rent')); // due exactly friday
+      expect(r.contains('file taxes'), isFalse);
+    });
+
+    test('"what\'s due friday" -> only that day', () async {
+      final r = await (await seeded()).handle("what's due friday");
+      expect(r, contains('pay rent'));
+      expect(r.contains('book flights'), isFalse);
+    });
+
+    test('a clear day says nothing is due', () async {
+      final r = await (await seeded()).handle("what's due wednesday");
+      expect(r.toLowerCase(), contains('nothing due'));
+    });
+  });
+
   group('realistic day — broad cross-skill integration (all offline)', () {
     test('tasks, reminders, people, birthdays, mood all cohere in one session', () async {
       final s = await _session(); // Monday 2026-07-06, _NoCloud (proves it's all corpus)

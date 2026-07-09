@@ -1,0 +1,53 @@
+{
+  "skillId": "due-by",
+  "displayName": "Show tasks due on or before a day",
+  "reads": [
+    "task"
+  ],
+  "writes": [],
+  "inputs": [
+    { "name": "cutoff", "required": true, "type": "date" }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "task",
+        "filter": [
+          { "field": "completed", "op": "neq", "value": true },
+          { "field": "dueAt", "op": "lte", "value": { "var": "cutoff" } }
+        ],
+        "orderBy": "dueAt",
+        "orderDir": "asc",
+        "into": "tasks"
+      },
+      { "op": "set", "var": "lines", "value": "" },
+      {
+        "op": "foreach",
+        "list": { "var": "tasks" },
+        "as": "t",
+        "body": [
+          { "op": "compute", "fn": "format_date", "args": [ { "field": [ "t", "dueAt" ] }, "EEEE" ], "into": "d" },
+          {
+            "op": "compute",
+            "fn": "concat",
+            "args": [ { "var": "lines" }, "\n  • ", { "field": [ "t", "description" ] }, " — ", { "var": "d" } ],
+            "into": "lines"
+          }
+        ]
+      },
+      { "op": "compute", "fn": "count", "args": [ { "var": "tasks" } ], "into": "n" },
+      { "op": "compute", "fn": "format_date", "args": [ { "var": "cutoff" }, "EEEE" ], "into": "cutoffLabel" },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "{n} task(s) due by {cutoffLabel}:{lines}", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "Nothing due by {cutoffLabel}.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}
