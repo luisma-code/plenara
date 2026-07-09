@@ -100,6 +100,21 @@ class Router {
     _learnedTemplates.add(template);
   }
 
+  // A name/entity capture ({personName:entity}) must look like a name, not an article/pronoun —
+  // otherwise "remember {who:entity} {fact}" swallows "remember the alamo" (who="the") and
+  // "note that {who:entity} {fact}" swallows "note that the meeting is at five". Reject when the
+  // FIRST token is one of these (names never start with them). Keeps capture broad for real names.
+  static const _entityStop = {
+    'the', 'a', 'an', 'my', 'your', 'his', 'her', 'their', 'our', 'its', 'this', 'that', 'these',
+    'those', 'i', 'it', 'we', 'they', 'you', 'he', 'she', 'myself', 'yourself', 'himself', 'herself',
+    'itself', 'ourselves', 'themselves', 'some', 'any', 'no', 'every', 'to', 'about', 'for'
+  };
+  static bool _entityOk(String? raw) {
+    if (raw == null || raw.isEmpty) return false;
+    final first = raw.toLowerCase().split(RegExp(r'\s+')).first;
+    return first.isNotEmpty && !_entityStop.contains(first);
+  }
+
   static String _inferType(String v) {
     if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(v)) return 'date';
     if (RegExp(r'^\d+(\.\d+)?$').hasMatch(v)) return 'quantity';
@@ -163,12 +178,14 @@ class Router {
           final raw = m.namedGroup(name)?.trim();
           final v = type == 'contact'
               ? (raw != null && contacts.contains(raw.toLowerCase()) ? raw : null)
-              : _resolveSlot(raw, type, asOf);
-          // an unparseable date/datetime — or a :contact slot that isn't a known person — means
-          // this template doesn't apply; fall through. (For datetime this is also the task-vs-
+              : type == 'entity'
+                  ? (_entityOk(raw) ? raw : null) // a NAME slot can't start with the/a/my/I/... (G-12)
+                  : _resolveSlot(raw, type, asOf);
+          // an unparseable date/datetime — or a :contact/:entity slot that isn't a plausible name —
+          // means this template doesn't apply; fall through. (For datetime this is also the task-vs-
           // reminder discriminator: "on friday" has no time -> null -> the reminder template is
           // skipped and the date-only create-task template wins.)
-          if (v == null && (type == 'date' || type == 'datetime' || type == 'contact')) ok = false;
+          if (v == null && (type == 'date' || type == 'datetime' || type == 'contact' || type == 'entity')) ok = false;
           slots[name] = v;
         });
         if (ok) return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};

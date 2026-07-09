@@ -1,0 +1,152 @@
+{
+  "cluster": "queries-meta",
+  "additions": [
+    { "skillId": "steps-this-week", "template": "step count for the week", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "how many steps have i taken this week", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "how many steps did i take this week", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "how many steps have i walked this week", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "how many steps so far this week", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "steps so far this week", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "total steps this week", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "my steps this week", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "what's my step total this week", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "weekly step count", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "show me my steps this week", "targetFile": "templates/steps.json" },
+    { "skillId": "steps-this-week", "template": "what are my steps for this week", "targetFile": "templates/steps.json" },
+
+    { "skillId": "water-today", "template": "how much water have i drunk today", "targetFile": "templates/water.json" },
+    { "skillId": "water-today", "template": "how much water so far today", "targetFile": "templates/water.json" },
+    { "skillId": "water-today", "template": "what's my water intake today", "targetFile": "templates/water.json" },
+    { "skillId": "water-today", "template": "water intake today", "targetFile": "templates/water.json" },
+    { "skillId": "water-today", "template": "my water today", "targetFile": "templates/water.json" },
+    { "skillId": "water-today", "template": "total water today", "targetFile": "templates/water.json" },
+    { "skillId": "water-today", "template": "how many ml of water today", "targetFile": "templates/water.json" },
+    { "skillId": "water-today", "template": "how much water have i logged today", "targetFile": "templates/water.json" },
+    { "skillId": "water-today", "template": "show me my water today", "targetFile": "templates/water.json" },
+    { "skillId": "water-today", "template": "hydration today", "targetFile": "templates/water.json" },
+    { "skillId": "water-today", "template": "what's my hydration today", "targetFile": "templates/water.json" },
+
+    { "skillId": "run-streak", "template": "how many days in a row have i run", "targetFile": "corpus.json" },
+    { "skillId": "run-streak", "template": "how many days straight have i run", "targetFile": "corpus.json" },
+    { "skillId": "run-streak", "template": "how many consecutive days have i run", "targetFile": "corpus.json" },
+    { "skillId": "run-streak", "template": "what's my current running streak", "targetFile": "corpus.json" },
+    { "skillId": "run-streak", "template": "how long is my running streak", "targetFile": "corpus.json" },
+    { "skillId": "run-streak", "template": "run streak", "targetFile": "corpus.json" },
+    { "skillId": "run-streak", "template": "am i on a run streak", "targetFile": "corpus.json" },
+    { "skillId": "run-streak", "template": "do i have a running streak", "targetFile": "corpus.json" },
+    { "skillId": "run-streak", "template": "what's my longest running streak", "targetFile": "corpus.json" },
+    { "skillId": "run-streak", "template": "my running streak", "targetFile": "corpus.json" },
+
+    { "skillId": "reading-streak", "template": "how many days in a row have i read", "targetFile": "templates/reading.json" },
+    { "skillId": "reading-streak", "template": "how many days straight have i read", "targetFile": "templates/reading.json" },
+    { "skillId": "reading-streak", "template": "how many consecutive days have i read", "targetFile": "templates/reading.json" },
+    { "skillId": "reading-streak", "template": "what's my current reading streak", "targetFile": "templates/reading.json" },
+    { "skillId": "reading-streak", "template": "how long is my reading streak", "targetFile": "templates/reading.json" },
+    { "skillId": "reading-streak", "template": "do i have a reading streak", "targetFile": "templates/reading.json" },
+    { "skillId": "reading-streak", "template": "my reading streak", "targetFile": "templates/reading.json" },
+
+    { "skillId": "total-distance", "template": "how far have i run total", "targetFile": "corpus.json" },
+    { "skillId": "total-distance", "template": "how far have i run altogether", "targetFile": "corpus.json" },
+    { "skillId": "total-distance", "template": "how far have i run all time", "targetFile": "corpus.json" },
+    { "skillId": "total-distance", "template": "how many kilometers have i run", "targetFile": "corpus.json" },
+    { "skillId": "total-distance", "template": "how many km have i run", "targetFile": "corpus.json" },
+    { "skillId": "total-distance", "template": "total km run", "targetFile": "corpus.json" },
+    { "skillId": "total-distance", "template": "what's my total running distance", "targetFile": "corpus.json" },
+    { "skillId": "total-distance", "template": "what's my lifetime running distance", "targetFile": "corpus.json" },
+    { "skillId": "total-distance", "template": "my total running distance", "targetFile": "corpus.json" },
+
+    { "skillId": "meds-today", "template": "did i take my meds", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "have i taken my meds", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "did i take my medication today", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "have i had my meds today", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "did i have my meds today", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "did i take my pills today", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "have i taken my pills today", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "did i take my pills", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "did i take my medicine today", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "have i taken my medicine today", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "did i remember to take my meds", "targetFile": "templates/medication.json" },
+    { "skillId": "meds-today", "template": "did i remember my meds today", "targetFile": "templates/medication.json" },
+
+    { "skillId": "calories-today", "template": "how many calories have i had today", "targetFile": "corpus.json" },
+    { "skillId": "calories-today", "template": "how many calories so far today", "targetFile": "corpus.json" },
+    { "skillId": "calories-today", "template": "how many cals today", "targetFile": "corpus.json" },
+    { "skillId": "calories-today", "template": "calories today", "targetFile": "corpus.json" },
+    { "skillId": "calories-today", "template": "calorie count today", "targetFile": "corpus.json" },
+    { "skillId": "calories-today", "template": "what's my calorie count today", "targetFile": "corpus.json" },
+    { "skillId": "calories-today", "template": "what's my calorie total today", "targetFile": "corpus.json" },
+    { "skillId": "calories-today", "template": "total calories today", "targetFile": "corpus.json" },
+    { "skillId": "calories-today", "template": "what are my calories today", "targetFile": "corpus.json" },
+    { "skillId": "calories-today", "template": "show me my calories today", "targetFile": "corpus.json" },
+    { "skillId": "calories-today", "template": "how much have i eaten today", "targetFile": "corpus.json" },
+
+    { "skillId": "count-runs-this-week", "template": "how many runs did i do this week", "targetFile": "corpus.json" },
+    { "skillId": "count-runs-this-week", "template": "runs this week", "targetFile": "corpus.json" },
+
+    { "skillId": "explain-task-list", "template": "start a task list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "create a task list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "make a task list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "new task list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "set up a task list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "can i make a todo list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "i want to make a todo list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "how do i start a todo list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "how do i create a todo list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "do you have a todo list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "is there a todo list", "targetFile": "corpus.json" },
+    { "skillId": "explain-task-list", "template": "can you keep a todo list for me", "targetFile": "corpus.json" }
+  ],
+  "metaRegex": [
+    {
+      "name": "_undoRe",
+      "current": "^(undo|undo that|no,? take that back|scratch that)\\.?$",
+      "improved": "^(?:(?:no,?|never ?mind,?|wait,?|actually,?)\\s+)?(?:(?:can|could|will) you\\s+)?(?:please\\s+)?(?:undo|revert|take (?:that|it) back|scratch that|roll (?:that|it) back)(?:\\s+(?:that|it|this|please|(?:the|my|that) last (?:one|thing|entry|log)))?[.!]?$",
+      "rationale": "Adds 'undo the last thing', 'undo my last entry', 'never mind, undo that', bare 'take that back', 'revert (that)', 'roll it back', 'can you undo that', 'undo please'. Still fully anchored with a strictly bounded tail (that/it/this/please/the-last-X), so 'undo' embedded in a normal sentence ('undo the knot reminder') cannot match — any unlisted tail fails the anchor. 'scratch that' stays exact-only (no tail) via the same bounded-tail rule; 'scratch that, X' correction phrasing is deliberately NOT added (see notes)."
+    },
+    {
+      "name": "_helpRe",
+      "current": "^(?:help|what can you do|what can i (?:say|do|ask)( you)?|what are your (?:skills|capabilities)|show me what you can do)\\??$",
+      "improved": "^(?:help|help me|what (?:can|do) you do|what else can you do|what can i (?:say|do|ask)(?: you)?|what (?:are|do) (?:your|you have for) (?:skills|capabilities|commands|features)|what are (?:my|the) options|what (?:commands|features) (?:do you have|are there|can i use)|show me (?:what you can do|the commands|your skills)|list (?:your )?(?:commands|skills|capabilities)|how do i use (?:this|you|it|the app)|how does this (?:app )?work|what (?:can|does) (?:this|the) app do|what can plenara do|give me (?:some )?examples|what should i say|i don'?t know what to (?:say|do|ask)(?: you)?)\\??$",
+      "rationale": "Adds 'what are my options', 'how do i use this', 'how does this work', 'list commands', 'what features do you have', 'give me some examples', 'i don't know what to say', 'what can plenara do'. 'help me' matches only as the ENTIRE utterance — 'help me reconnect with Sam' keeps its tail so it falls through to _reconnectRe (which runs later at session.dart:770; _helpRe fires at :707, so the anchor is what protects reconnect, not ordering). All alternatives remain full-utterance anchored."
+    },
+    {
+      "name": "_corrRe",
+      "current": "^(?:no,?|nope,?|actually,?|no wait,?|wait,?|sorry,?|oops,?|hang on,?)\\s+i meant (?:to |it was )?(.+?)\\.?$",
+      "improved": "^(?:(?:no,?|nope,?|actually,?|no wait,?|wait,?|sorry,?|oops,?|whoops,?|hang on,?|hold on,?|my bad,?|my mistake,?)\\s+)?(?:i meant(?: to say)?|i actually meant|correction[:,]?|that'?s wrong[,:]?\\s*i meant)\\s+(?:to |it was |that )?(.+?)\\.?$",
+      "rationale": "Keeps the deliberate explicit-marker design (session.dart comment: bare 'no, X' reverses a good write on false positives) but widens both halves: more prefixes (whoops/hold on/my bad/my mistake), 'i meant to say', 'i actually meant', and makes the prefix OPTIONAL so bare 'i meant X' / 'correction: X' / 'correction X' fire. Every alternative still contains an unambiguous correction marker ('i meant' or 'correction'), and the single capture group is preserved (code uses corr.group(1)). 'that's wrong, X' WITHOUT 'i meant' and bare 'I said X' are deliberately excluded — 'I said I'd help Sam move' is a plausible journal/log utterance and a false positive here reverses the previous write. Note _fabricationRe/_scopeDenialRe run before _corrRe (session.dart:664-694), so the redispatched inner text still passes those floors via the recursive _handle call."
+    },
+    {
+      "name": "_durationCorrectRe",
+      "current": "^(?:actually,?|no,?|make it|it was|that was)\\s+(?:that was |it was |it'?s )?(\\d+(?:\\.\\d+)?)\\s*(?:minutes|mins?|minute)\\.?$",
+      "improved": "^(?:actually,?|no,?|nope,?|wait,?|sorry,?|make (?:it|that)|change (?:it|that) to|it was|that was|(?:it|that) should (?:be|have been)|should be|correction[:,]?)\\s+(?:that was |it was |it'?s |more like )?(\\d+(?:\\.\\d+)?)\\s*(?:minutes?|mins?)\\.?$",
+      "rationale": "Adds 'make that 30 minutes', 'change it to 30 minutes', 'that should be 28 minutes', 'it should have been 30 mins', 'more like 25 minutes', 'correction: 30 minutes'. Over-match risk is inherently low: session.dart:729 only consults this regex when the PREVIOUS turn wrote a workout record, so these prefixes can't hijack unrelated turns. Capture group stays group(1) = the number."
+    },
+    {
+      "name": "_distanceCorrectRe",
+      "current": "^(?:actually,?|no,?|make it|it was|that was)\\s+(?:that was |it was |it'?s )?(\\d+(?:\\.\\d+)?)\\s*k(?:m|ilometers?)?\\.?$",
+      "improved": "^(?:actually,?|no,?|nope,?|wait,?|sorry,?|make (?:it|that)|change (?:it|that) to|it was|that was|(?:it|that) should (?:be|have been)|should be|correction[:,]?)\\s+(?:that was |it was |it'?s |more like )?(\\d+(?:\\.\\d+)?)\\s*k(?:ms?|ilomet(?:er|re)s?)?\\.?$",
+      "rationale": "Same prefix widening as _durationCorrectRe ('actually that was 6k', 'make that 5km', 'change it to 6 km', 'should be 5k', 'more like 4.5k'), plus 'kms' and British 'kilometres'. Miles ('that should be 5 miles') is deliberately NOT added: the handler writes the captured number straight into the km-typed distance field (session.dart:740), so matching miles would silently store a wrong value — flagged as a gap instead. Same last-workout context gate applies."
+    },
+    {
+      "name": "_cancelRe",
+      "current": "^(cancel|never ?mind|forget it|nvm|stop|no thanks)\\.?$",
+      "improved": "^(?:(?:no,?|nah,?|actually,?|ok(?:ay)?,?|on second thought,?)\\s+)?(?:cancel(?: (?:that|it|this))?|never ?mind(?: (?:that|it))?|forget (?:it|that|about it)|nvm|nah|stop|abort|drop it|leave it|skip it|no thanks?|no thank you|don'?t (?:bother|worry about it))[.!]?$",
+      "rationale": "Adds 'cancel that', 'never mind that', 'forget about it', bare 'nah', 'abort', 'drop it', 'leave it', 'skip it', 'don't bother', 'don't worry about it', 'actually never mind', 'on second thought, never mind'. Bare 'no' is deliberately NOT added: during a slot-fill it could be a literal slot value (e.g. a mood or note), and _activateRe's counterpart already treats non-matches as abandon. Low collision risk otherwise: _cancelRe is only consulted inside pending-flow contexts (slot-fill :561, activation :616, author-offer :633), never against a fresh utterance, and 'cancel the reminder to X' keeps its tail so it never matches the anchor and still routes to cancel-reminder. 'skip it' overlaps _declineReviewRe's 'skip' — same user intent (back out), and the pending-flow checks run before the review-feed check, so behavior stays sensible."
+    }
+  ],
+  "gaps": [
+    { "want": "how many steps today / yesterday / this month", "needs": "steps-this-week is hardcoded to start_of_week; needs a period-parameterized aggregate (a {period} slot type + DSL date-range compute fns like start_of_day/yesterday/start_of_month) or sibling skills steps-today/steps-yesterday." },
+    { "want": "have i hit my water goal / am i drinking enough", "needs": "No hydration goal exists — set-goal/goal-progress only cover running distance. Needs per-tracker goal records (target + typeId) and a goal-progress skill that reads them, or a water-goal sibling of set-goal." },
+    { "want": "did i hit 10000 steps today / step goal", "needs": "Same goal gap as water: no step target concept and no steps-today aggregate to compare against." },
+    { "want": "what's my longest streak ever (unqualified)", "needs": "Ambiguous across run/reading trackers; needs either a clarify ('which streak?') or a combined all-trackers streak summary skill. Adding it as a corpus template for either single skill would silently pick the wrong tracker." },
+    { "want": "how far have i run this week / this month", "needs": "total-distance is all-time only; period-scoped distance needs the same {period} DSL support as steps." },
+    { "want": "how far have i walked (total)", "needs": "total-distance filters activity == run; a walk-distance twin (or an {activity} slot) is needed so walk mileage isn't invisible." },
+    { "want": "how many miles have i run / actually that was 5 miles", "needs": "Distance is stored and reported in km with no unit conversion; matching mile phrasings without a miles->km convert (in DSL compute fns and in the F-15 correction handler) would store or report wrong numbers." },
+    { "want": "did i take my meds yesterday / how many days did i miss my meds this week", "needs": "meds-today is hardcoded to today; adherence-over-period needs the period-parameterized aggregate machinery plus a missed-days computation (days in range minus logged days)." },
+    { "want": "generic slot corrections outside workouts ('make it 5pm' after a reminder, 'actually 200 pages' after a reading log)", "needs": "F-15 in-place correction (session.dart:729) is gated to _workoutSkills and only knows duration/distance; a general design would map the last-written record's schema to unit-keyed correction patterns per attribute type." },
+    { "want": "'scratch that, log a 5k run' (undo-and-replace in one utterance)", "needs": "Not safely regex-able today: without an explicit 'i meant' marker, 'scratch that idea' would reverse a real write. Needs either a compound handler that only fires when the tail itself routes to a skill (route-check before reversing), or cloud-tier handling." },
+    { "want": "domain-scoped help ('what can you do with reminders', 'how do i track water')", "needs": "_helpRe and _helpText() are global-only; per-domain help needs a captured topic group and a topic->skill-registry-section lookup." },
+    { "want": "'start a shopping list' / 'start a grocery list'", "needs": "Currently unhandled: explain-task-list templates are todo/task-specific. Deliberately not added — a named special-purpose list is arguably an authoring request (custom tracker), not the built-in task list; product call needed before mapping it to explain-task-list." }
+  ],
+  "notes": "Router mechanics verified in v0/lib/router.dart: every corpus template compiles to a fully anchored case-insensitive regex with optional trailing [.?!], so all proposed slot-free templates are exact-phrase and cannot over-match mid-sentence; none contain slots, so no shadowing of slotted seeds is possible and insertion order within corpus.json/template corpus arrays does not matter for them. Duplicates against existing coverage were checked (e.g. 'how many times have i run this week' is already covered by seed 'how {_:text} have i run this week', so it was not re-added; 'what's my longest reading streak' already exists in templates/reading.json). Deliberate exclusions to avoid over-match: 'meds today' and 'water today' bare-noun variants were NOT extended further because the log-vs-query ambiguity grows as phrases shrink ('water today' already exists as a seed query; adding 'meds today' could read as a terse log-medication statement); 'what's my total distance' (unqualified) was excluded because total-distance counts runs only; 'what's my streak' (unqualified) excluded as tracker-ambiguous; 'how much have i eaten today' was included for calories-today as the closest available answer but is the weakest mapping in the set — drop it if a meal-listing skill ever ships. Meta ordering context (session.dart _handle): pending-flow checks -> fabrication/scope/medical/impersonation/schema floors -> _undoRe -> _helpRe -> _reclassifyRe -> F-15 duration/distance correction -> _corrRe -> generative. The improved _undoRe adds 'revert', which no corpus template or other meta regex uses, and the improved _corrRe keeps exactly one capture group as required by corr.group(1). All improved patterns are drop-in Dart RegExp source strings (caseSensitive: false assumed, as today)."
+}

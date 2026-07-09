@@ -15,18 +15,19 @@ import 'reminders.dart';
 import 'router.dart';
 import 'storage_repository.dart';
 
-final _undoRe = RegExp(r'^(undo|undo that|no,? take that back|scratch that)\.?$', caseSensitive: false);
+final _undoRe = RegExp(
+    r"^(?:(?:no,?|never ?mind,?|wait,?|actually,?)\s+)?(?:(?:can|could|will) you\s+)?(?:please\s+)?(?:undo|revert|take (?:that|it) back|scratch that|roll (?:that|it) back)(?:\s+(?:that|it|this|please|(?:the|my|that) last (?:one|thing|entry|log)))?[.!]?$",
+    caseSensitive: false);
 // Discoverability (Spec 03 §6.3): a clarify dead-ends without "here's what I can do".
 // A DSL skill can't introspect the skill registry, so this is a Session-level surface.
 final _helpRe = RegExp(
-    r'^(?:help|what can you do|what can i (?:say|do|ask)( you)?|what are your (?:skills|capabilities)|'
-    r'show me what you can do)\??$',
+    r"^(?:help|help me|what (?:can|do) you do|what else can you do|what can i (?:say|do|ask)(?: you)?|what (?:are|do) (?:your|you have for) (?:skills|capabilities|commands|features)|what are (?:my|the) options|what (?:commands|features) (?:do you have|are there|can i use)|show me (?:what you can do|the commands|your skills)|list (?:your )?(?:commands|skills|capabilities)|how do i use (?:this|you|it|the app)|how does this (?:app )?work|what (?:can|does) (?:this|the) app do|what can plenara do|give me (?:some )?examples|what should i say|i don'?t know what to (?:say|do|ask)(?: you)?)\??$",
     caseSensitive: false);
 // Correction (§3.3): a natural prefix + "I meant …" reverses the last turn and re-routes.
 // The "I meant" anchor is deliberate — a bare "no, X" is too easily a non-correction, and
 // reversing a good write on a false positive is the worse failure.
 final _corrRe = RegExp(
-    r'^(?:no,?|nope,?|actually,?|no wait,?|wait,?|sorry,?|oops,?|hang on,?)\s+i meant (?:to |it was )?(.+?)\.?$',
+    r"^(?:(?:no,?|nope,?|actually,?|no wait,?|wait,?|sorry,?|oops,?|whoops,?|hang on,?|hold on,?|my bad,?|my mistake,?)\s+)?(?:i meant(?: to say)?|i actually meant|correction[:,]?|that'?s wrong[,:]?\s*i meant)\s+(?:to |it was |that )?(.+?)\.?$",
     caseSensitive: false);
 // Re-classification correction (F-14): "no, that was a walk" — the last log was the wrong
 // TYPE; reverse it and re-log as the corrected activity, carrying the original slots.
@@ -40,13 +41,15 @@ const _workoutSkills = {'log-run', 'log-walk'};
 // Same-record slot correction (F-15): "actually, 28 minutes" / "make it 3k" updates a field
 // of the just-logged workout in place (not a reverse-redispatch).
 final _durationCorrectRe = RegExp(
-    r"^(?:actually,?|no,?|make it|it was|that was)\s+(?:that was |it was |it'?s )?(\d+(?:\.\d+)?)\s*(?:minutes|mins?|minute)\.?$",
+    r"^(?:actually,?|no,?|nope,?|wait,?|sorry,?|make (?:it|that)|change (?:it|that) to|it was|that was|(?:it|that) should (?:be|have been)|should be|correction[:,]?)\s+(?:that was |it was |it'?s |more like )?(\d+(?:\.\d+)?)\s*(?:minutes?|mins?)\.?$",
     caseSensitive: false);
 final _distanceCorrectRe = RegExp(
-    r"^(?:actually,?|no,?|make it|it was|that was)\s+(?:that was |it was |it'?s )?(\d+(?:\.\d+)?)\s*k(?:m|ilometers?)?\.?$",
+    r"^(?:actually,?|no,?|nope,?|wait,?|sorry,?|make (?:it|that)|change (?:it|that) to|it was|that was|(?:it|that) should (?:be|have been)|should be|correction[:,]?)\s+(?:that was |it was |it'?s |more like )?(\d+(?:\.\d+)?)\s*k(?:ms?|ilomet(?:er|re)s?)?\.?$",
     caseSensitive: false);
 // abandons a pending slot-fill dialogue (Spec 03 §6.3 ProvideSlot)
-final _cancelRe = RegExp(r'^(cancel|never ?mind|forget it|nvm|stop|no thanks)\.?$', caseSensitive: false);
+final _cancelRe = RegExp(
+    r"^(?:(?:no,?|nah,?|actually,?|ok(?:ay)?,?|on second thought,?)\s+)?(?:cancel(?: (?:that|it|this))?|never ?mind(?: (?:that|it))?|forget (?:it|that|about it)|nvm|nah|stop|abort|drop it|leave it|skip it|no thanks?|no thank you|don'?t (?:bother|worry about it))[.!]?$",
+    caseSensitive: false);
 // confirms an authored-capability draft (Spec 02 §6.5: nothing registered until "activate")
 final _activateRe = RegExp(r'^(activate|add it|yes,? add it|go ahead|do it|yes,? do it|yes)\.?$', caseSensitive: false);
 // resolves a HELD automation write (Spec 02 §7.5 Review Feed): apply it, or dismiss it.
@@ -96,9 +99,11 @@ final _customizationRe = RegExp(
 // Content search (F-12). _searchNoteRe wants a "note/entry" + "about/mentioning" shape;
 // _searchForRe catches the terse "search (my notes) for X".
 final _searchNoteRe = RegExp(
-    r"^(?:find|show me|pull up|where(?:'?s| is| are))\s+(?:that\s+|my\s+|the\s+|a\s+|any\s+)?(?:notes?|entry|entries|journal(?:\s+entry)?|thing)\s+(?:about|on|mentioning|regarding|where|that\s+(?:says?|mentions?))\s+(.+?)\??$",
+    r"^(?:can you |could you |please )?(?:(?:find|show(?: me)?|pull up|bring up|dig up|look up|look for|locate|do i have|is there|where(?:'?s| is| are))\s+(?:(?:that|my|the|a|an|any|all|old)\s+)*(?:notes?|entry|entries|journal(?:\s+entr(?:y|ies))?|thing|one)\s+(?:about|on|mentioning|regarding|where|that\s+(?:says?|mentions?))|where\s+did\s+i\s+(?:write|journal|note)\s+(?:something\s+)?(?:about|down)|what\s+did\s+i\s+(?:write|note)\s+(?:down\s+)?about)\s+(.+?)\??$",
     caseSensitive: false);
-final _searchForRe = RegExp(r'^search\s+(?:my\s+(?:notes?|journal)\s+)?(?:for\s+)?(.+?)\??$', caseSensitive: false);
+final _searchForRe = RegExp(
+    r"^(?:search\s+(?:(?:through\s+)?(?:my\s+|the\s+)?(?:notes?|journal|entries)\s+)?(?:for\s+)?|(?:look|go|dig|flip)\s+through\s+(?:my\s+|the\s+)?(?:notes?|journal|entries)\s+(?:for\s+|and\s+find\s+)|(?:check|scan)\s+(?:my\s+|the\s+)?(?:notes?|journal|entries)\s+for\s+|(?:find|look\s+up)\s+(?=.+\s+in\s+(?:my\s+|the\s+)?(?:notes?|journal)\??$))(.+?)(?:\s+in\s+(?:my\s+|the\s+)?(?:notes?|journal))?\??$",
+    caseSensitive: false);
 // Record-integrity floor (locked principle #7 / DP-05): refuse to fabricate the past.
 // Narrow, framing-keyed — a genuine backdated log ("I talked to Sam yesterday") is NOT
 // this; only "pretend/fake/fabricate a <record>" framing. The general case is the

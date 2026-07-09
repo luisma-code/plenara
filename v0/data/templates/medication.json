@@ -1,15 +1,29 @@
 {
   "templateId": "medication",
   "displayName": "medication tracking",
-  "keywords": ["medication", "meds", "medicine", "my pills", "my medication"],
+  "keywords": [
+    "medication",
+    "meds",
+    "medicine",
+    "my pills",
+    "my medication"
+  ],
   "example": "log that I took my meds",
   "types": [
     {
       "typeId": "medication_log",
       "displayName": "Medication",
       "attributes": [
-        { "name": "note", "valueType": "text", "required": false },
-        { "name": "loggedAt", "valueType": "date", "required": true }
+        {
+          "name": "note",
+          "valueType": "text",
+          "required": false
+        },
+        {
+          "name": "loggedAt",
+          "valueType": "date",
+          "required": true
+        }
       ]
     }
   ],
@@ -18,64 +32,283 @@
       "skillId": "log-medication",
       "displayName": "Log medication",
       "reads": [],
-      "writes": [ "medication_log" ],
-      "inputs": [ { "name": "note", "required": false } ],
+      "writes": [
+        "medication_log"
+      ],
+      "inputs": [
+        {
+          "name": "note",
+          "required": false
+        }
+      ],
       "steps": {
         "main": [
-          { "op": "compute", "fn": "today", "into": "today" },
+          {
+            "op": "compute",
+            "fn": "today",
+            "into": "today"
+          },
           {
             "op": "write_record",
             "typeId": "medication_log",
-            "fields": { "note": { "var": "note" }, "loggedAt": { "var": "today" } },
+            "fields": {
+              "note": {
+                "var": "note"
+              },
+              "loggedAt": {
+                "var": "today"
+              }
+            },
             "into": "m"
           },
-          { "op": "format", "template": "Logged — you took your medication today.", "into": "confirmationText" }
+          {
+            "op": "format",
+            "template": "Logged — you took your medication today.",
+            "into": "confirmationText"
+          }
         ]
       }
     },
     {
       "skillId": "meds-today",
       "displayName": "Medication taken today (adherence check)",
-      "reads": [ "medication_log" ],
+      "reads": [
+        "medication_log"
+      ],
       "writes": [],
       "inputs": [],
       "steps": {
         "main": [
-          { "op": "compute", "fn": "today", "into": "today" },
-          { "op": "read_many", "typeId": "medication_log", "into": "logs" },
-          { "op": "set", "var": "count", "value": 0 },
+          {
+            "op": "compute",
+            "fn": "today",
+            "into": "today"
+          },
+          {
+            "op": "read_many",
+            "typeId": "medication_log",
+            "into": "logs"
+          },
+          {
+            "op": "set",
+            "var": "count",
+            "value": 0
+          },
           {
             "op": "foreach",
-            "list": { "var": "logs" },
+            "list": {
+              "var": "logs"
+            },
             "as": "e",
             "body": [
               {
                 "op": "branch",
-                "cond": { "gte": [ { "field": [ "e", "loggedAt" ] }, { "var": "today" } ] },
-                "then": [ { "op": "compute", "fn": "add", "args": [ { "var": "count" }, 1 ], "into": "count" } ]
+                "cond": {
+                  "gte": [
+                    {
+                      "field": [
+                        "e",
+                        "loggedAt"
+                      ]
+                    },
+                    {
+                      "var": "today"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "add",
+                    "args": [
+                      {
+                        "var": "count"
+                      },
+                      1
+                    ],
+                    "into": "count"
+                  }
+                ]
               }
             ]
           },
           {
             "op": "branch",
-            "cond": { "gte": [ { "var": "count" }, 1 ] },
-            "then": [ { "op": "format", "template": "Yes — you've logged your medication {count} time(s) today.", "into": "confirmationText" } ],
-            "else": [ { "op": "format", "template": "Not yet today — you haven't logged your medication.", "into": "confirmationText" } ]
+            "cond": {
+              "gte": [
+                {
+                  "var": "count"
+                },
+                1
+              ]
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "Yes — you've logged your medication {count} time(s) today.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "Not yet today — you haven't logged your medication.",
+                "into": "confirmationText"
+              }
+            ]
           }
         ]
       }
     }
   ],
   "corpus": [
-    { "skillId": "log-medication", "template": "log that i took my meds" },
-    { "skillId": "log-medication", "template": "i took my meds" },
-    { "skillId": "log-medication", "template": "took my medication" },
-    { "skillId": "log-medication", "template": "i took my medication" },
-    { "skillId": "log-medication", "template": "took my morning meds" },
-    { "skillId": "log-medication", "template": "i took my morning meds" },
-    { "skillId": "meds-today", "template": "have i taken my meds today" },
-    { "skillId": "meds-today", "template": "did i take my meds today" },
-    { "skillId": "meds-today", "template": "did i take my medication" },
-    { "skillId": "meds-today", "template": "have i taken my medication today" }
+    {
+      "skillId": "log-medication",
+      "template": "log that i took my meds"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "i took my meds"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "took my medication"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "i took my medication"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "took my morning meds"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "i took my morning meds"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "have i taken my meds today"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i take my meds today"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i take my medication"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "have i taken my medication today"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "took my pills"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "i took my pills"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "had my morning pills"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "i had my morning pills"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "took my evening meds"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "i took my evening meds"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "just took my meds"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "i just took my meds"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "i've taken my meds"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "meds taken"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "took my medicine"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "i took my medicine"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "log my medication"
+    },
+    {
+      "skillId": "log-medication",
+      "template": "log my meds"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "have i had my meds today"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i take my pills today"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "have i taken my pills today"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i already take my meds"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i take my meds"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "have i taken my meds"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i take my medication today"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i have my meds today"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i take my pills"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i take my medicine today"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "have i taken my medicine today"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i remember to take my meds"
+    },
+    {
+      "skillId": "meds-today",
+      "template": "did i remember my meds today"
+    }
   ]
 }

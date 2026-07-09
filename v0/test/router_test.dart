@@ -378,6 +378,31 @@ void main() {
     });
   });
 
+  group('phrasing expansion — over-match guards + new coverage', () {
+    for (final u in const [
+      'what is the capital of france',
+      'note that the meeting is at five',
+      'remember the alamo',
+      'i had a great day',
+      'i had a rough night',
+      'tell me a joke',
+      'what is the weather like today',
+    ]) {
+      test('over-match guard: "$u" stays uncaptured', () => expect(_r.route(u), isNull));
+    }
+    const coverage = {
+      'delete all my todos': 'clear-tasks',
+      'i ate mac and cheese': 'log-meal',
+      'remember that Sarah loves hiking': 'remember-person-fact',
+      'i talked to Marco about the trip': 'log-interaction',
+      'remind me every day at 9am to stretch': 'set-daily-reminder',
+      'remind me on wednesdays at 8am to water plants': 'set-weekly-reminder',
+    };
+    coverage.forEach((u, skill) {
+      test('coverage: "$u" -> $skill', () => expect(_r.route(u)?['skillId'], skill));
+    });
+  });
+
   group(':contact slot + learn (Fable review fixes)', () {
     test('learn abstracts a known contact to :contact, not :text (guard survives learning)', () {
       final r = Router.load('data/corpus.json', _now);
