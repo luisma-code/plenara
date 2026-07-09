@@ -105,7 +105,11 @@ class _ChatState extends State<ChatScreen> {
   // injected test session never constructs the native plugin.
   late final WindowsToastScheduler _scheduler = WindowsToastScheduler();
   late final Session _session = widget.session ?? buildSession(scheduler: _scheduler);
-  late final SpeechRecognizer _speech = widget.speech ?? NoopSpeechRecognizer();
+  // Production (no injected session) uses the OS speech engine; tests get Noop unless they inject
+  // a fake. `available` stays false until init() succeeds, so the mic hides on machines with no
+  // speech engine.
+  late final SpeechRecognizer _speech =
+      widget.speech ?? (widget.session == null ? SystemSpeechRecognizer() : NoopSpeechRecognizer());
   final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
@@ -122,7 +126,8 @@ class _ChatState extends State<ChatScreen> {
     try {
       log('init: begin (retrieval=${widget.retrieval})');
       await _session.init(retrieval: widget.retrieval, onPhase: log.log);
-      log('init: ready');
+      await _speech.init(); // enable the mic if an OS speech engine is available (else stays hidden)
+      log('init: ready (voice=${_speech.available})');
       if (!mounted) return; // torn down during init -> don't setState
       // Opt-in diagnostic: set PLENARA_SELFTEST=1 to fire an immediate "notifications are
       // on" toast at launch (proven working; off by default so normal launches are quiet).

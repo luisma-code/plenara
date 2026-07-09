@@ -16,6 +16,8 @@ class _FakeSpeech implements SpeechRecognizer {
   final String? result;
   _FakeSpeech(this.avail, this.result);
   @override
+  Future<void> init() async {}
+  @override
   bool get available => avail;
   @override
   Future<String?> transcribe() async => result;
@@ -24,6 +26,8 @@ class _FakeSpeech implements SpeechRecognizer {
 }
 
 class _ThrowSpeech implements SpeechRecognizer {
+  @override
+  Future<void> init() async {}
   @override
   bool get available => true;
   @override
