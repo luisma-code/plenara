@@ -298,6 +298,20 @@ void main() {
       expect(await s.handle('who is Mia related to'), contains('daughter of Sarah Mitchell'));
     });
 
+    test('anchored predicate without "remember": "Sarah is allergic to peanuts" (gap #5)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Sarah'); // Sarah is now a known contact
+      final r = await s.handle('Sarah is allergic to peanuts');
+      expect(r, contains('is allergic to peanuts'));
+      expect(await s.handle('what do i know about Sarah'), contains('is allergic to peanuts'));
+    });
+
+    test('control: a trait about a NON-contact ("France likes wine") is ignored', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('France likes wine'); // France isn't a contact -> no capture
+      expect(s.store.values.where((x) => x['typeId'] == 'contact').isEmpty, isTrue);
+    });
+
     test('a plain "remember that X <fact>" still records a fact, not a relationship', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
       await s.handle('remember that Mia loves chess');

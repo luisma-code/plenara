@@ -1,0 +1,31 @@
+{
+  "skillId": "remember-trait",
+  "displayName": "Record a trait about a person (anchored predicate)",
+  "reads": [ "contact" ],
+  "writes": [ "contact", "contact_fact" ],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "predicate", "required": true },
+    { "name": "rest", "required": true }
+  ],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personName" } }, "partial": true, "into": "person" },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          { "op": "write_record", "typeId": "contact", "fields": { "displayName": { "var": "personName" } }, "into": "person" }
+        ]
+      },
+      { "op": "compute", "fn": "concat", "args": [ { "var": "predicate" }, " ", { "var": "rest" } ], "into": "fact" },
+      {
+        "op": "write_record",
+        "typeId": "contact_fact",
+        "fields": { "subject": { "ref": "person" }, "fact": { "var": "fact" } },
+        "into": "newFact"
+      },
+      { "op": "format", "template": "Noted that {personName} {fact}.", "into": "confirmationText" }
+    ]
+  }
+}

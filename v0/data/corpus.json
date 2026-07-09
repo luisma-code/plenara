@@ -516,6 +516,7 @@
   { "skillId": "remember-person-fact", "template": "remember that {personName:entity} {fact:text} and they are {relationTo:entity}'s {relationType:text}" },
   { "skillId": "remember-person-fact", "template": "note that {personName:entity} {fact:text} and she is {relationTo:entity}'s {relationType:text}" },
   { "skillId": "remember-person-fact", "template": "note that {personName:entity} {fact:text} and he is {relationTo:entity}'s {relationType:text}" },
+  { "skillId": "remember-trait", "template": "{personName:contact} {predicate:predword} {rest:text}" },
   { "skillId": "remember-relationship", "template": "remember {personName:entity} is {relationTo:entity}'s {relationType:text}" },
   { "skillId": "remember-relationship", "template": "don't forget that {personName:entity} is {relationTo:entity}'s {relationType:text}" },
   { "skillId": "remember-relationship", "template": "add {personName:entity} as {relationTo:entity}'s {relationType:text}" },

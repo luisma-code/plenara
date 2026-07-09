@@ -141,6 +141,14 @@ class Router {
   static const _pastdayPat =
       r'(?:yesterday|today|(?:last\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))';
 
+  /// The bounded regex for a `predword` slot — a CLOSED set of relational predicates, so
+  /// a bare "Sarah is allergic to peanuts" records a fact with the predicate preserved.
+  /// Longest alternatives first so "is allergic to" wins over "is". Paired with a
+  /// :contact personName so it only annotates KNOWN people (no world-knowledge over-match).
+  static const _predwordPat = r'(?:is allergic to|is married to|is engaged to|is dating|'
+      r'works at|works for|works as|lives in|grew up in|is from|is into|'
+      r'likes|loves|enjoys|hates|dislikes|prefers|plays|studies|studied|teaches|drives|owns)';
+
   /// The bounded regex for a `mealword` slot — the named meals, so "eggs for
   /// {mealType}" captures breakfast/lunch/dinner/etc. without a free-text slot.
   static const _mealwordPat = r'(?:breakfast|lunch|dinner|supper|brunch|a\s+snack|snack|dessert)';
@@ -183,7 +191,9 @@ class Router {
                       ? '(?<$group>$_moodwordPat)'
                       : type == 'mealword'
                           ? '(?<$group>$_mealwordPat)'
-                          : '(?<$group>.+?)');
+                          : type == 'predword'
+                              ? '(?<$group>$_predwordPat)'
+                              : '(?<$group>.+?)');
       i = m.end;
     }
     sb.write(_lit(tmpl.substring(i)));
