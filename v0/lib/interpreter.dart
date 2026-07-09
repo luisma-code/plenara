@@ -181,6 +181,20 @@ class Interpreter {
           'last' => -1,
           _ => 1,
         };
+      case 'weekday_nums':
+        // free weekday text ("monday and thursday", "tue, wed, fri", "tuesdays & fridays")
+        // -> sorted comma-joined ISO weekday numbers ("1,4"). Empty string if none parse,
+        // so the caller can validate + prompt instead of writing a broken recurrence.
+        final wtext = (a.isEmpty ? '' : '${a[0]}').toLowerCase();
+        final found = <int>{};
+        for (var tok in wtext.split(RegExp(r'[^a-z]+'))) {
+          if (tok.isEmpty) continue;
+          if (tok.endsWith('s')) tok = tok.substring(0, tok.length - 1); // "tuesdays" -> "tuesday"
+          final n = _weekdayNums[tok];
+          if (n != null) found.add(n);
+        }
+        final sortedWd = found.toList()..sort();
+        return sortedWd.join(',');
       case 'ordinal_suffix':
         // a NUMBER -> its ordinal string ("15th", "1st", "22nd") — for human-facing labels.
         final raw0 = a.isEmpty ? null : a[0];
@@ -200,6 +214,10 @@ class Interpreter {
   static const _days = [
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
   ];
+  static const _weekdayNums = {
+    'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7,
+    'mon': 1, 'tue': 2, 'tues': 2, 'wed': 3, 'thu': 4, 'thur': 4, 'thurs': 4, 'fri': 5, 'sat': 6, 'sun': 7,
+  };
   static const _months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -323,7 +341,7 @@ class Interpreter {
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num', 'ordinal_suffix',
-    'mul', 'div', 'round'};
+    'weekday_nums', 'mul', 'div', 'round'};
   static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};
   // The Spec 01 §3 canonical value-type set (fixed; a new one needs a kernel bump). `integer`
   // is retained only as a tolerated legacy alias for `number` (older authored types).

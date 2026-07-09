@@ -381,6 +381,31 @@ void main() {
       expect(r.toLowerCase(), contains('every year'));
       expect(fake.armed().values.single, DateTime.parse('2027-03-03T09:00:00')); // this year's is past
     });
+
+    test('"every monday and thursday" arms the next of those two days', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // Mon 07-06 9am
+      await s.init(retrieval: false);
+      final r = await s.handle('remind me every monday and thursday at 5pm to water the plants');
+      expect(r.toLowerCase(), contains('monday and thursday'));
+      expect(fake.armed().values.single, DateTime.parse('2026-07-06T17:00:00')); // today (Mon) 5pm
+    });
+
+    test('a three-day set ("monday, wednesday and friday") parses all three', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // Mon 07-06 9am
+      await s.init(retrieval: false);
+      await s.handle('remind me every monday, wednesday and friday at 9am to journal');
+      expect(fake.armed().values.single, DateTime.parse('2026-07-08T09:00:00')); // Wed 07-08 (Mon 9am already now)
+    });
+
+    test('a plural weekday ("every tuesdays") still resolves (gap #53)', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // Mon 07-06
+      await s.init(retrieval: false);
+      await s.handle('remind me every tuesdays at 9am to take the bins out');
+      expect(fake.armed().values.single, DateTime.parse('2026-07-07T09:00:00')); // next Tue
+    });
   });
 
   group('ProvideSlot — missing-slot follow-up dialogue (§6.3)', () {

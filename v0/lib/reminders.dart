@@ -120,11 +120,18 @@ const _weekdays = {
   'mon': 1, 'tue': 2, 'tues': 2, 'wed': 3, 'thu': 4, 'thur': 4, 'thurs': 4, 'fri': 5, 'sat': 6, 'sun': 7,
 };
 
+/// Weekday name -> ISO number, tolerating a plural ("tuesdays") and surrounding
+/// whitespace/case. Returns null for anything unrecognized (callers fall back gracefully).
+int? _lookupWeekday(String name) {
+  final n = name.toLowerCase().trim();
+  return _weekdays[n] ?? (n.endsWith('s') ? _weekdays[n.substring(0, n.length - 1)] : null);
+}
+
 /// The next "[ordinal]th [dayName] of the month" at [base]'s time-of-day strictly after [now].
 /// [ordinal] is 1..4 (nth) or -1 (last). A month with no such occurrence (e.g. a 5th Tuesday) is
 /// skipped. Deterministic date math — the scheduler drives it, never a model.
 DateTime _nextMonthlyOrdinal(DateTime base, int ordinal, String dayName, DateTime now) {
-  final wd = _weekdays[dayName.toLowerCase().trim()];
+  final wd = _lookupWeekday(dayName);
   if (wd == null) return base; // graceful fallback — never crash the schedule
   DateTime? occurrenceIn(int year, int month) {
     if (ordinal == -1) {
@@ -173,7 +180,7 @@ DateTime _advanceBiweekly(DateTime anchor, DateTime now) {
 /// The next occurrence of [dayName] at [base]'s time-of-day strictly after [now]. An
 /// unrecognized day falls back to a one-off at [base] (graceful, never crashes).
 DateTime _nextWeekly(DateTime base, String dayName, DateTime now) {
-  final target = _weekdays[dayName.toLowerCase().trim()];
+  final target = _lookupWeekday(dayName);
   if (target == null) return base;
   var c = DateTime(now.year, now.month, now.day, base.hour, base.minute, base.second);
   var ahead = (target - c.weekday) % 7;
