@@ -92,6 +92,14 @@ Iterable<Reminder> allReminders(_Store store, DateTime now) sync* {
       // ordinal 1..4 or -1 (last).
       final parts = rec.substring('monthly:'.length).split(':');
       at = _nextMonthlyOrdinal(base, int.tryParse(parts.first) ?? 1, parts.length > 1 ? parts[1] : '', now);
+    } else if (rec != null && rec.startsWith('days:')) {
+      // a set of weekdays — "every weekday" (days:1,2,3,4,5), "every weekend" (days:6,7)
+      final wanted = rec.substring('days:'.length).split(',').map(int.tryParse).whereType<int>().toSet();
+      at = _nextInWeekdaySet(base, wanted, now);
+    } else if (rec != null && rec.startsWith('monthlyday:')) {
+      at = _nextMonthlyDate(base, int.tryParse(rec.substring('monthlyday:'.length)) ?? 1, now);
+    } else if (rec == 'yearly') {
+      at = _nextYearly(base, now);
     } else {
       at = base;
     }
@@ -173,6 +181,48 @@ DateTime _nextWeekly(DateTime base, String dayName, DateTime now) {
   c = c.add(Duration(days: ahead));
   if (!c.isAfter(now)) c = c.add(const Duration(days: 7)); // today's slot already passed
   return c;
+}
+
+/// The next day whose weekday is in [wanted] (1=Mon..7=Sun) at [base]'s time-of-day
+/// strictly after [now] — "every weekday" (1..5), "every weekend" (6,7), or any subset.
+/// An empty set falls back to daily (graceful).
+DateTime _nextInWeekdaySet(DateTime base, Set<int> wanted, DateTime now) {
+  if (wanted.isEmpty) return _nextDaily(base, now);
+  var c = DateTime(now.year, now.month, now.day, base.hour, base.minute, base.second);
+  for (var i = 0; i < 8; i++) {
+    if (wanted.contains(c.weekday) && c.isAfter(now)) return c;
+    c = c.add(const Duration(days: 1));
+  }
+  return c; // unreachable given a non-empty set, but never crash
+}
+
+/// The next occurrence of day-of-month [dom] at [base]'s time-of-day strictly after [now]
+/// — "the 15th of every month". A [dom] past a short month's end is clamped to its last day
+/// (so "the 31st" fires on Feb 28), never skipped.
+DateTime _nextMonthlyDate(DateTime base, int dom, DateTime now) {
+  var y = now.year, m = now.month;
+  for (var i = 0; i < 24; i++) {
+    final lastDay = DateTime(y, m + 1, 0).day; // day 0 of next month = last of this
+    final c = DateTime(y, m, dom.clamp(1, lastDay), base.hour, base.minute, base.second);
+    if (c.isAfter(now)) return c;
+    m++;
+    if (m > 12) {
+      m = 1;
+      y++;
+    }
+  }
+  return base;
+}
+
+/// The next anniversary of [base]'s month+day at [base]'s time-of-day strictly after [now]
+/// — "every year on March 3". A Feb-29 base is clamped to Feb-28 in common years.
+DateTime _nextYearly(DateTime base, DateTime now) {
+  for (var y = now.year; y <= now.year + 2; y++) {
+    final lastDay = DateTime(y, base.month + 1, 0).day;
+    final c = DateTime(y, base.month, base.day.clamp(1, lastDay), base.hour, base.minute, base.second);
+    if (c.isAfter(now)) return c;
+  }
+  return base;
 }
 
 /// Reminders still in the future — the set that should be armed as OS notifications,

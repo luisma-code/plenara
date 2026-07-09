@@ -327,6 +327,62 @@ void main() {
     });
   });
 
+  group('weekday-set / monthly-date / yearly recurrence (gaps #46/#48/#49)', () {
+    test('"every weekday" arms the next Mon–Fri slot', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // Mon 07-06 9am
+      await s.init(retrieval: false);
+      final r = await s.handle('remind me every weekday at 5pm to check email');
+      expect(r.toLowerCase(), contains('every weekday'));
+      expect(fake.armed().values.single, DateTime.parse('2026-07-06T17:00:00')); // today (Mon) 5pm
+    });
+
+    test('"every weekday" from a Saturday skips the weekend to Monday', () async {
+      final fake = FakeScheduler();
+      final sat = DateTime.parse('2026-07-11T09:00:00'); // a Saturday
+      final s = Session(makeTempDataDir(), clock: sat, cloud: _NoCloud(), scheduler: fake);
+      await s.init(retrieval: false);
+      await s.handle('remind me every weekday at 8am to stand up');
+      expect(fake.armed().values.single, DateTime.parse('2026-07-13T08:00:00')); // Monday 8am
+    });
+
+    test('"every weekend" arms the next Sat/Sun slot', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // Mon 07-06
+      await s.init(retrieval: false);
+      final r = await s.handle('remind me every weekend at 9am to call grandma');
+      expect(r.toLowerCase(), contains('every weekend'));
+      expect(fake.armed().values.single, DateTime.parse('2026-07-11T09:00:00')); // Sat 07-11 9am
+    });
+
+    test('"the 15th of every month" arms at that day-of-month', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // 07-06
+      await s.init(retrieval: false);
+      final r = await s.handle('remind me on the 15th of every month at 9am to pay rent');
+      expect(r, contains('15th'));
+      expect(fake.armed().values.single, DateTime.parse('2026-07-15T09:00:00'));
+    });
+
+    test('a monthly day past the current one rolls to next month', () async {
+      final fake = FakeScheduler();
+      final late = DateTime.parse('2026-07-20T09:00:00');
+      final s = Session(makeTempDataDir(), clock: late, cloud: _NoCloud(), scheduler: fake);
+      await s.init(retrieval: false);
+      await s.handle('remind me on the 3rd of every month at 9am to review the budget');
+      expect(fake.armed().values.single, DateTime.parse('2026-08-03T09:00:00')); // Aug 3
+    });
+
+    test('"every year on march 3" arms the next anniversary', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // July 2026
+      await s.init(retrieval: false);
+      final r = await s.handle('remind me every year on march 3 at 9am to wish dad happy birthday');
+      expect(r.toLowerCase(), contains('every year'));
+      expect(fake.armed().values.single, DateTime.parse('2027-03-03T09:00:00')); // this year's is past
+    });
+  });
+
   group('ProvideSlot — missing-slot follow-up dialogue (§6.3)', () {
     Session _reminderMissingWhen(FakeScheduler fake) => Session(makeTempDataDir(),
         clock: _now,

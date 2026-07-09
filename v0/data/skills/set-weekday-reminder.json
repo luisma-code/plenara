@@ -1,0 +1,30 @@
+{
+  "skillId": "set-weekday-reminder",
+  "displayName": "Set a reminder for every weekday",
+  "reads": [],
+  "writes": [
+    "reminder"
+  ],
+  "inputs": [
+    { "name": "text", "required": true },
+    { "name": "when", "required": true, "type": "datetime", "prompt": "What time? (e.g. \"9am\")" }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "now", "into": "createdAt" },
+      {
+        "op": "write_record",
+        "typeId": "reminder",
+        "fields": {
+          "text": { "var": "text" },
+          "remindAt": { "var": "when" },
+          "recurrence": "days:1,2,3,4,5",
+          "createdAt": { "var": "createdAt" }
+        },
+        "into": "newReminder"
+      },
+      { "op": "compute", "fn": "format_time", "args": [ { "var": "when" } ], "into": "timeLabel" },
+      { "op": "format", "template": "Okay — I'll remind you to {text} every weekday at {timeLabel}.", "into": "confirmationText" }
+    ]
+  }
+}

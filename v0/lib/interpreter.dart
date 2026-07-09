@@ -92,7 +92,11 @@ class Interpreter {
       case 'format_date':
         final d = _asDate(a[0]);
         if (d == null) return null;
-        return a[1] == 'EEEE' ? _weekday(d) : _dateOnly(d);
+        // second arg is the format token; absent -> a friendly "March 3" (month + day, no year).
+        final fmt = a.length > 1 ? a[1] : 'MMMM d';
+        if (fmt == 'EEEE') return _weekday(d);
+        if (fmt == 'MMMM d') return '${_months[d.month - 1]} ${d.day}';
+        return _dateOnly(d);
       case 'format_time':
         final d = _asDateTime(a[0]);
         if (d == null) return null;
@@ -177,6 +181,17 @@ class Interpreter {
           'last' => -1,
           _ => 1,
         };
+      case 'ordinal_suffix':
+        // a NUMBER -> its ordinal string ("15th", "1st", "22nd") — for human-facing labels.
+        final raw0 = a.isEmpty ? null : a[0];
+        final parsed = raw0 is num ? raw0 : num.tryParse('$raw0');
+        if (parsed == null) return '$raw0';
+        final i = parsed.toInt();
+        final mod100 = i % 100;
+        final suffix = (mod100 >= 11 && mod100 <= 13)
+            ? 'th'
+            : switch (i % 10) { 1 => 'st', 2 => 'nd', 3 => 'rd', _ => 'th' };
+        return '$i$suffix';
       default:
         throw ResolveError("unknown compute fn '$fn'");
     }
@@ -184,6 +199,10 @@ class Interpreter {
 
   static const _days = [
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+  ];
+  static const _months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
   ];
   static String _weekday(DateTime d) => _days[d.weekday - 1];
   static String _dateOnly(DateTime d) =>
@@ -303,7 +322,7 @@ class Interpreter {
   static const _ops = {'read_one', 'read_many', 'read_related', 'read_reference', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
-    'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num',
+    'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num', 'ordinal_suffix',
     'mul', 'div', 'round'};
   static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};
   // The Spec 01 §3 canonical value-type set (fixed; a new one needs a kernel bump). `integer`
