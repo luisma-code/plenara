@@ -376,6 +376,25 @@ void main() {
     });
   });
 
+  group('run route capture (logging gap #10)', () {
+    test('"ran the river loop" stores the route', () async {
+      final s = await _session();
+      final r = await s.handle('ran the river loop');
+      expect(r.toLowerCase(), contains('river loop'));
+      final w = s.store.values.firstWhere((x) => x['typeId'] == 'workout');
+      expect(w['route'], 'river loop');
+      expect(w['activity'], 'run');
+    });
+
+    test('a plain distance run has no route (control)', () async {
+      final s = await _session();
+      await s.handle('log a 3k run');
+      final w = s.store.values.firstWhere((x) => x['typeId'] == 'workout');
+      expect(w['route'], isNull);
+      expect(w['distance'], 3);
+    });
+  });
+
   group('turnlog diagnostics — enough to diagnose a bad turn from the log alone', () {
     Map<String, dynamic> lastTurn(String dir) =>
         jsonDecode(File('$dir/turnlog.jsonl').readAsLinesSync().last) as Map<String, dynamic>;

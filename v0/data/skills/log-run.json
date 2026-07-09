@@ -7,7 +7,8 @@
   ],
   "inputs": [
     { "name": "distance", "required": false },
-    { "name": "duration", "required": false }
+    { "name": "duration", "required": false },
+    { "name": "route", "required": false }
   ],
   "steps": {
     "main": [
@@ -21,6 +22,9 @@
         "typeId": "workout",
         "fields": {
           "activity": "run",
+          "route": {
+            "var": "route"
+          },
           "distance": {
             "var": "distance"
           },
@@ -35,21 +39,39 @@
       },
       {
         "op": "branch",
-        "cond": {
-          "notNull": "distance"
-        },
+        "cond": { "notNull": "route" },
         "then": [
           {
-            "op": "format",
-            "template": "Logged a {distance} km run today.",
-            "into": "confirmationText"
+            "op": "branch",
+            "cond": { "notNull": "distance" },
+            "then": [
+              { "op": "format", "template": "Logged a {distance} km run on the {route} today.", "into": "confirmationText" }
+            ],
+            "else": [
+              { "op": "format", "template": "Logged your run on the {route} today.", "into": "confirmationText" }
+            ]
           }
         ],
         "else": [
           {
-            "op": "format",
-            "template": "Logged a run today.",
-            "into": "confirmationText"
+            "op": "branch",
+            "cond": {
+              "notNull": "distance"
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "Logged a {distance} km run today.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "Logged a run today.",
+                "into": "confirmationText"
+              }
+            ]
           }
         ]
       }
