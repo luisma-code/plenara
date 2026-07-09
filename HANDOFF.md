@@ -1,6 +1,62 @@
 # Plenara — Session Handoff (pick up here)
 
-_Last updated: 2026-07-07. Written to survive a Claude process relaunch._
+_Last updated: 2026-07-09. Written to survive a Claude process relaunch._
+
+## LATEST SESSION (2026-07-08/09) — phrasing-gap fill, 15 batches. HEAD = `87d708d`, 1573 Dart tests green.
+
+Worked through the catalogued phrasing gaps (`planning/phrasing/*.json`), autonomous "do them all" mode.
+Committed **15 batches (~22 gaps)**, each: skill/router/interpreter change + corpus + tests + full suite green.
+
+**Shipped this session:**
+- **Reminders (cluster complete):** relative-time (#43, prior), word-times "at five / half past six / quarter to seven"
+  (#44), date-only → dated **task** (#45, spec-correct: a date with no clock time is a task not a 9am reminder),
+  weekday-set "every weekday/weekend" (#46), multi-day "every monday and thursday" (#47), monthly-date "the 15th of
+  every month" (#48), yearly "every year on march 3" (#49), date-filtered listing "what reminders tomorrow/this week"
+  (#50), plural-weekday tolerance (#53), postfix "call mom tomorrow at 5pm" keeps the day (#54).
+- **Tasks:** positional delete "delete the first task / task 3 / the last one" (#55), due-date filters "what's due
+  tomorrow/this week/by friday" (#57), multi-task add "add milk, eggs, and bread" (#58).
+- **Journal:** recall-by-date "what did I write yesterday" (#4), delete-latest-entry (#6).
+- **People:** age "how old is Sarah" (years_since), dated interaction "talked to Sam yesterday / on last friday".
+- **Logging:** bare mood "i'm exhausted / kind of down" (#6), meal type "eggs for breakfast" (#7), run route "ran the river loop" (#10).
+- **Queries:** domain-scoped help "what can you do with reminders / how do I track water" (#10).
+
+**New DSL / router machinery added (reusable):** compute fns `ordinal_suffix`, `weekday_nums`, `date_part`,
+`time_part`, `split_list`, `position_index`, `nth`, `years_since`; `format_date` "MMMM d" + crash-safe; `read_many`
+**compound (AND-list) filters** for date ranges; recurrence forms `days:<n,..>` / `monthlyday:<N>` / `yearly`;
+constrained slot types **`dayword`** (forward), **`pastday`** (backward + "last <weekday>" in resolveDate),
+**`posword`**, **`moodword`**, **`mealword`** — each a bounded regex so the router picks the right split without
+backtracking (the #54/#11 limitation). New seed skills: set-{weekday,weekend,multiday,monthly-date,yearly}-reminder,
+set-reminder-on-day, list-reminders-{on,week}, due-{on,week,by}, delete-task-at, recall-journal-on,
+delete-journal-latest, contact-age.
+
+### ⚠️ BLOCKER — BYOK API key is DOWN (offline/malformed) as of 2026-07-09.
+Mid-session the Anthropic API stopped responding (`CloudErrorKind.offline`/`malformed`) — consistent with Luis
+rotating the compromised key (per the standing security note). **This blocks `bin/record_fixtures.dart`**, so any
+NEW seed skill (which changes the replay `invSig`) can no longer be added — cloud_test replay fails with no fixture.
+All 15 batches above were committed BEFORE the outage or used **existing-skill-only** changes (mood/meal/run-route/
+domain-help modify existing skills → no re-record needed). When the key is restored: `cd v0 && .tools/dart-sdk/bin/dart.exe
+run bin/record_fixtures.dart`, then resume the remaining gaps.
+
+**Reverse-fact-search (`find-people-by-fact`, "who do I know that likes hiking") was built and WORKS but was reverted**
+because it's a new seed skill and couldn't be re-recorded — saved to scratchpad
+(`…/scratchpad/find-people-by-fact.json` + `find-people-corpus.patch`) to re-apply once the key is back.
+
+### Remaining gaps (resume when the key is restored — most need NEW skills + re-record)
+- **Goals refactor** (journal.json #0-3): set-goal hardcodes activity='run'+km — needs activity slot, unit field, period
+  field, update/clear-goal skill; water/step/calorie goals + goal-progress variants.
+- **Period-parameterized aggregates** (queries #0,4,7): steps/distance/meds over today/yesterday/this-month — a `{period}`
+  slot + date-range compute fns; longest-streak-combined (#3, needs a clarify or all-tracker summary).
+- **Miles** (logging #1, queries #6): make log-run/total-distance/set-goal UNIT-AWARE (mi→km IN one skill — a separate
+  log-run-miles skill confused the cloud router last time, DO NOT). **Risky without live cloud validation — defer until key back.**
+- **People:** two-person relatedness (#2), self-relative "my sister Emma" (#3, needs an owner/"me" contact), neglected
+  contacts (#6), anchored-predicate "Sarah is allergic to peanuts" (#5, needs per-predicate templates or a skill that
+  prepends the anchor), per-person dates/anniversary (#8, needs a new record type).
+- **Paid-template internals:** weight-trend (logging #5), water-in-glasses/cumulative (#2/#3) — inside the paid
+  template bundles (`data/templates/*.json`), lower priority (behind the paywall).
+- **Agent-flagged NOT-safe / policy (skip):** "i did the laundry" (collides with activity logging), "today i {text}"
+  (over-matches loggables), pushups/strength (authoring path), "scratch that, log a 5k" (no safe marker), "start a
+  shopping list" (authoring path), event-relative "an hour before my meeting" (cloud path), "every second tuesday"
+  biweekly ambiguity (product decision), generic slot corrections outside workouts (F-15 generalization).
 
 ## TL;DR — where we are
 
@@ -21,10 +77,8 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `2fb3c1e`**, working tree clean (ignore the pre-existing dirty
-`planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1507 Dart tests + ~40 Flutter widget tests green** (full `precheck.sh` gate passes, coverage
-91.7%, conformance 24/60). The Windows app has been **dogfooded live** through many iterations;
+**HEAD = `87d708d`** (see LATEST SESSION block above), working tree clean (ignore untracked
+`.claude/settings.local.json`), **1573 Dart tests + ~40 Flutter widget tests green** (coverage ~91%). The Windows app has been **dogfooded live** through many iterations;
 it's running with on-device voice + the expanded corpus.
 
 **VOICE (#18) — SHIPPED, on-device.** `speech_to_text`/SAPI was too inaccurate (Fable root-caused
