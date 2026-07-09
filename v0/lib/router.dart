@@ -129,6 +129,12 @@ class Router {
       r'(?:today|tomorrow|tonight|this\s+(?:morning|afternoon|evening)|'
       r'(?:next\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))';
 
+  /// The bounded regex for a `posword` slot — a list position by ordinal word,
+  /// ordinal/plain digit, or "last". Keeps "the FIRST task" positional while "the
+  /// MILK task" falls through to a by-description match.
+  static const _poswordPat =
+      r'(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|last|\d+(?:st|nd|rd|th)?)';
+
   static CorpusEntry _compile(Map<String, dynamic> e) {
     final tmpl = e['template'] as String;
     final slotTypes = <String, String>{};
@@ -146,7 +152,11 @@ class Router {
       // match and does NOT backtrack across alternative splits (gaps #54/#11), so a
       // greedy `.+?` day would grab "mom tomorrow" and fail. A bounded pattern makes
       // the only viable split the correct one.
-      sb.write(type == 'dayword' ? '(?<$group>$_daywordPat)' : '(?<$group>.+?)');
+      sb.write(type == 'dayword'
+          ? '(?<$group>$_daywordPat)'
+          : type == 'posword'
+              ? '(?<$group>$_poswordPat)'
+              : '(?<$group>.+?)');
       i = m.end;
     }
     sb.write(_lit(tmpl.substring(i)));

@@ -206,6 +206,28 @@ class Interpreter {
             .map((e) => e.trim().replaceFirst(RegExp(r'^(?:and|&)\s+', caseSensitive: false), '').trim())
             .where((e) => e.isNotEmpty)
             .toList();
+      case 'position_index':
+        // a spoken position -> a 1-based index, with -1 meaning "last". Handles ordinal
+        // words ("first".."tenth"), ordinal/plain digits ("3rd", "3"), and "last".
+        final pt = (a.isEmpty ? '' : '${a[0]}').toLowerCase().trim();
+        if (pt.contains('last')) return -1;
+        const posWords = {
+          'first': 1, 'second': 2, 'third': 3, 'fourth': 4, 'fifth': 5,
+          'sixth': 6, 'seventh': 7, 'eighth': 8, 'ninth': 9, 'tenth': 10,
+        };
+        for (final e in posWords.entries) {
+          if (RegExp('\\b${e.key}\\b').hasMatch(pt)) return e.value;
+        }
+        final pm = RegExp(r'\d+').firstMatch(pt);
+        return pm == null ? 1 : int.parse(pm.group(0)!);
+      case 'nth':
+        // the i-th element of a list (1-based); negative i counts from the end
+        // (-1 = last). Out-of-range or non-list -> null (caller branches on it).
+        final lst = a.isEmpty ? null : a[0];
+        final ix = a.length > 1 && a[1] is num ? (a[1] as num).toInt() : null;
+        if (lst is! List || lst.isEmpty || ix == null) return null;
+        final at = ix < 0 ? lst.length + ix : ix - 1;
+        return (at < 0 || at >= lst.length) ? null : lst[at];
       case 'weekday_nums':
         // free weekday text ("monday and thursday", "tue, wed, fri", "tuesdays & fridays")
         // -> sorted comma-joined ISO weekday numbers ("1,4"). Empty string if none parse,
@@ -366,7 +388,7 @@ class Interpreter {
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num', 'ordinal_suffix',
-    'weekday_nums', 'date_part', 'time_part', 'split_list', 'mul', 'div', 'round'};
+    'weekday_nums', 'date_part', 'time_part', 'split_list', 'position_index', 'nth', 'mul', 'div', 'round'};
   static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};
   // The Spec 01 §3 canonical value-type set (fixed; a new one needs a kernel bump). `integer`
   // is retained only as a tolerated legacy alias for `number` (older authored types).

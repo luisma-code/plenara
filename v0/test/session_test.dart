@@ -597,6 +597,56 @@ void main() {
     });
   });
 
+  group('positional delete (gap #55)', () {
+    // create tasks at increasing clock times so createdAt gives a stable order
+    Future<String> threeTasks() async {
+      final dir = makeTempDataDir();
+      for (final (i, name) in ['alpha', 'beta', 'gamma'].indexed) {
+        final s = Session(dir, clock: _now.add(Duration(minutes: i)), cloud: _NoCloud());
+        await s.init(retrieval: false);
+        await s.handle('add $name to my list');
+      }
+      return dir;
+    }
+
+    Set<String> descs(Session s) =>
+        s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description'] as String).toSet();
+
+    test('"delete the first task" removes the oldest', () async {
+      final s = await _session(await threeTasks());
+      final r = await s.handle('delete the first task');
+      expect(r, contains('alpha'));
+      expect(descs(s), {'beta', 'gamma'});
+    });
+
+    test('"delete task 2" removes the second', () async {
+      final s = await _session(await threeTasks());
+      await s.handle('delete task 2');
+      expect(descs(s), {'alpha', 'gamma'});
+    });
+
+    test('"delete the last task I added" removes the newest', () async {
+      final s = await _session(await threeTasks());
+      final r = await s.handle('delete the last task i added');
+      expect(r, contains('gamma'));
+      expect(descs(s), {'alpha', 'beta'});
+    });
+
+    test('out-of-range position is a graceful no-op', () async {
+      final s = await _session(await threeTasks());
+      final r = await s.handle('delete task 9');
+      expect(r.toLowerCase(), contains("couldn't find"));
+      expect(descs(s).length, 3);
+    });
+
+    test('"delete the milk task" still matches by description, not position', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      await s.handle('delete the milk task');
+      expect(descs(s).isEmpty, isTrue);
+    });
+  });
+
   group('due-tasks date filters (gap #57)', () {
     Future<dynamic> seeded() async {
       final s = await _session(); // Monday 2026-07-06
