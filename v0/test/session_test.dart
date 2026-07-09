@@ -162,6 +162,42 @@ void main() {
     });
   });
 
+  group('gap-fill batch — new capabilities', () {
+    test('partial description: "remove milk from my list" matches "buy milk"', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      await s.handle('remove milk from my list');
+      expect(s.store.values.where((x) => x['typeId'] == 'task' && x['completed'] != true), isEmpty);
+    });
+    test('log-workout logs a generic activity', () async {
+      final s = await _session();
+      await s.handle('i did a 45 minute bike ride');
+      final w = s.store.values.firstWhere((x) => x['typeId'] == 'workout');
+      expect(w['activity'].toString().toLowerCase(), contains('bike'));
+    });
+    test('list-meals shows today\'s meals', () async {
+      final s = await _session();
+      await s.handle('i ate a banana');
+      expect((await s.handle('what did i eat today')).toLowerCase(), contains('banana'));
+    });
+    test('walk-distance totals walks', () async {
+      final s = await _session();
+      await s.handle('log a 3k walk');
+      expect(await s.handle('how far have i walked'), contains('3'));
+    });
+    test('recall-latest-journal returns the last entry', () async {
+      final s = await _session();
+      await s.handle('journal that today was productive');
+      expect((await s.handle('read my last journal entry')).toLowerCase(), contains('productive'));
+    });
+    test('list-completed-tasks after completing one', () async {
+      final s = await _session();
+      await s.handle('add call the bank to my list');
+      await s.handle('mark call the bank as done');
+      expect((await s.handle('what have i completed')).toLowerCase(), contains('bank'));
+    });
+  });
+
   group('tracker query gaps (dogfood)', () {
     test('reading-today sums pages read today', () async {
       final s = await _session();

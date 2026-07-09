@@ -1,0 +1,39 @@
+{
+  "skillId": "walk-distance",
+  "displayName": "Total distance walked",
+  "reads": [
+    "workout"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "workout",
+        "filter": {
+          "field": "activity",
+          "op": "eq",
+          "value": "walk"
+        },
+        "into": "walks"
+      },
+      {
+        "op": "compute",
+        "fn": "sum",
+        "args": [
+          {
+            "var": "walks"
+          },
+          "distance"
+        ],
+        "into": "total"
+      },
+      {
+        "op": "format",
+        "template": "You've walked {total} km in total.",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

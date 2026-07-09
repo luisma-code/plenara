@@ -23,7 +23,8 @@
             "var": "description"
           }
         },
-        "into": "t"
+        "into": "t",
+        "partial": true
       },
       {
         "op": "branch",

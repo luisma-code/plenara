@@ -1,15 +1,15 @@
 {
-  "skillId": "complete-task",
-  "displayName": "Mark a task done",
+  "skillId": "remove-alias",
+  "displayName": "Remove a nickname",
   "reads": [
-    "task"
+    "contact"
   ],
   "writes": [
-    "task"
+    "contact"
   ],
   "inputs": [
     {
-      "name": "description",
+      "name": "personName",
       "required": true
     }
   ],
@@ -17,42 +17,42 @@
     "main": [
       {
         "op": "read_one",
-        "typeId": "task",
+        "typeId": "contact",
         "match": {
-          "description": {
-            "var": "description"
+          "displayName": {
+            "var": "personName"
           }
         },
-        "into": "t",
-        "partial": true
+        "partial": true,
+        "into": "c"
       },
       {
         "op": "branch",
         "cond": {
-          "isNull": "t"
+          "isNull": "c"
         },
         "then": [
           {
             "op": "format",
-            "template": "I couldn't find a task \"{description}\".",
+            "template": "I don't know anyone named {personName}.",
             "into": "confirmationText"
           }
         ],
         "else": [
           {
             "op": "write_record",
-            "typeId": "task",
-            "target": {
-              "ref": "t"
-            },
+            "typeId": "contact",
             "fields": {
-              "completed": true
+              "aliases": ""
             },
-            "into": "t2"
+            "into": "c2",
+            "target": {
+              "ref": "c"
+            }
           },
           {
             "op": "format",
-            "template": "Marked \"{description}\" done.",
+            "template": "Cleared {personName}'s nicknames.",
             "into": "confirmationText"
           }
         ]

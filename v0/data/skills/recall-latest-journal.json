@@ -1,0 +1,50 @@
+{
+  "skillId": "recall-latest-journal",
+  "displayName": "Latest journal entry",
+  "reads": [
+    "journal_entry"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "format",
+        "template": "You haven't journaled anything yet.",
+        "into": "confirmationText"
+      },
+      {
+        "op": "read_many",
+        "typeId": "journal_entry",
+        "orderBy": "loggedAt",
+        "orderDir": "desc",
+        "limit": 1,
+        "into": "logs"
+      },
+      {
+        "op": "foreach",
+        "list": {
+          "var": "logs"
+        },
+        "as": "j",
+        "body": [
+          {
+            "op": "set",
+            "var": "e",
+            "value": {
+              "field": [
+                "j",
+                "entry"
+              ]
+            }
+          },
+          {
+            "op": "format",
+            "template": "Your last journal entry: {e}",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}
