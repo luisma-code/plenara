@@ -162,6 +162,15 @@ void main() {
     });
   });
 
+  group('helpful replies for meta-questions', () {
+    test('"can I start a todo list" explains the built-in list instead of missing', () async {
+      final s = await _session();
+      final r = (await s.handle('can i start a todo list')).toLowerCase();
+      expect(r, contains('add')); // guidance, not "I didn't catch that"
+      expect(r, isNot(contains("didn't catch")));
+    });
+  });
+
   group('reference KB — offline calorie lookup (Spec 13)', () {
     test('a known food attaches calories + reference provenance', () async {
       final s = await _session();

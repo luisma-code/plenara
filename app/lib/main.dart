@@ -204,29 +204,30 @@ class _ChatState extends State<ChatScreen> {
     _jump();
   }
 
-  /// Push-to-talk: capture speech and drop the transcript into the input for the user to review
-  /// and send. The typed field is always available, so voice is purely additive. A timeout + a
-  /// tap-to-cancel path mean a hung/never-resolving engine can never trap the UI at "Listening…".
-  Future<void> _listen() async {
-    if (_listening || _busy || !_speech.available) return;
+  /// Tap the mic to START (words stream live into the box as you talk); tap again to STOP and keep
+  /// what was captured, then review + Send. The typed field is always available, so voice is purely
+  /// additive. onDone (user stop, error, or timeout) always clears the listening state — the UI can
+  /// never get stuck at "Listening…".
+  Future<void> _toggleMic() async {
+    if (!_speech.available || _busy) return;
+    if (_listening) {
+      await _speech.stop(); // finalize; onDone will flip _listening off
+      return;
+    }
     setState(() => _listening = true);
     try {
-      final text = await _speech.transcribe().timeout(const Duration(seconds: 60), onTimeout: () {
-        _speech.cancel();
-        return null;
-      });
-      if (!mounted) return;
-      if (text != null && text.trim().isNotEmpty) _ctrl.text = text.trim();
+      await _speech.listen(
+        onResult: (t) {
+          if (mounted && t.trim().isNotEmpty) setState(() => _ctrl.text = t.trim());
+        },
+        onDone: () {
+          if (mounted) setState(() => _listening = false);
+        },
+      );
     } catch (e) {
-      AppLog.instance.log('speech: transcribe failed: $e');
-    } finally {
+      AppLog.instance.log('speech: listen failed: $e');
       if (mounted) setState(() => _listening = false);
     }
-  }
-
-  void _cancelListen() {
-    _speech.cancel();
-    if (mounted) setState(() => _listening = false);
   }
 
   @override
@@ -301,10 +302,10 @@ class _ChatState extends State<ChatScreen> {
                 child: Row(children: [
                   if (_speech.available) ...[
                     IconButton(
-                      icon: Icon(_listening ? Icons.mic : Icons.mic_none),
+                      icon: Icon(_listening ? Icons.stop_circle : Icons.mic_none),
                       color: _listening ? cs.error : null,
-                      tooltip: _listening ? 'Stop listening' : 'Speak',
-                      onPressed: _busy ? null : (_listening ? _cancelListen : _listen),
+                      tooltip: _listening ? 'Tap to stop' : 'Speak',
+                      onPressed: _busy ? null : _toggleMic,
                     ),
                     const SizedBox(width: 4),
                   ],
@@ -314,7 +315,7 @@ class _ChatState extends State<ChatScreen> {
                       autofocus: true,
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
-                          hintText: _listening ? 'Listening…' : 'Say something…',
+                          hintText: _listening ? 'Listening — tap the stop button when done…' : 'Say something…',
                           border: const OutlineInputBorder()),
                     ),
                   ),

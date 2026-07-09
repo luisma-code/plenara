@@ -169,5 +169,17 @@
   { "skillId": "calories-today", "template": "how many calories today" },
   { "skillId": "calories-today", "template": "how many calories have i eaten today" },
   { "skillId": "calories-today", "template": "how many calories did i eat today" },
-  { "skillId": "calories-today", "template": "my calories today" }
+  { "skillId": "calories-today", "template": "my calories today" },
+  { "skillId": "explain-task-list", "template": "start a todo list" },
+  { "skillId": "explain-task-list", "template": "start a to-do list" },
+  { "skillId": "explain-task-list", "template": "create a todo list" },
+  { "skillId": "explain-task-list", "template": "make a todo list" },
+  { "skillId": "explain-task-list", "template": "make me a todo list" },
+  { "skillId": "explain-task-list", "template": "new todo list" },
+  { "skillId": "explain-task-list", "template": "can i start a todo list" },
+  { "skillId": "explain-task-list", "template": "can we start a todo list" },
+  { "skillId": "explain-task-list", "template": "let's start a todo list" },
+  { "skillId": "explain-task-list", "template": "i want to start a todo list" },
+  { "skillId": "explain-task-list", "template": "how do i make a todo list" },
+  { "skillId": "explain-task-list", "template": "set up a todo list" }
 ]

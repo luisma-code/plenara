@@ -1,5 +1,5 @@
 {
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001jot down that I need to buy milk": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001jot down that I need to buy milk": {
     "skillId": "create-task",
     "slots": {
       "description": "buy milk",
@@ -7,7 +7,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001put emailing the accountant on my to-do list": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001put emailing the accountant on my to-do list": {
     "skillId": "create-task",
     "slots": {
       "description": "emailing the accountant",
@@ -15,7 +15,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001put picking up dry cleaning on my to-do list": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001put picking up dry cleaning on my to-do list": {
     "skillId": "create-task",
     "slots": {
       "description": "picking up dry cleaning",
@@ -23,7 +23,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001I have to renew the car registration, add that": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001I have to renew the car registration, add that": {
     "skillId": "create-task",
     "slots": {
       "description": "renew the car registration",
@@ -31,7 +31,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001jot down that I need to water the plants": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001jot down that I need to water the plants": {
     "skillId": "create-task",
     "slots": {
       "description": "water the plants",
@@ -39,15 +39,15 @@
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001stick booking flights on my list": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001stick booking flights on my list": {
     "skillId": "create-task",
     "slots": {
-      "description": "stick booking flights on my list",
+      "description": "booking flights",
       "dueDate": null
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001I did a 6k jog this morning": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001I did a 6k jog this morning": {
     "skillId": "log-run",
     "slots": {
       "distance": 6,
@@ -55,7 +55,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001just finished running 8 kilometers": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001just finished running 8 kilometers": {
     "skillId": "log-run",
     "slots": {
       "distance": 8,
@@ -63,7 +63,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001went for a 5k this afternoon": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001went for a 5k this afternoon": {
     "skillId": "log-run",
     "slots": {
       "distance": 5,
@@ -71,7 +71,7 @@
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001clocked a quick 3k": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001clocked a quick 3k": {
     "skillId": "log-run",
     "slots": {
       "distance": 3,
@@ -79,66 +79,66 @@
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001feeling pretty anxious today": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001feeling pretty anxious today": {
     "skillId": "log-mood",
     "slots": {
-      "rating": "feeling pretty anxious today"
+      "rating": "pretty anxious today"
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001I am in a great mood": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001I am in a great mood": {
     "skillId": "log-mood",
     "slots": {
       "rating": "great"
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001honestly kind of down right now": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001honestly kind of down right now": {
     "skillId": "log-mood",
     "slots": {
-      "rating": "kind of down"
+      "rating": "honestly kind of down right now"
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001refresh my memory on Sarah Mitchell": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001refresh my memory on Sarah Mitchell": {
     "skillId": "recall-facts",
     "slots": {
       "personName": "Sarah Mitchell"
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001what have I got on Mia": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001what have I got on Mia": {
     "skillId": "recall-facts",
     "slots": {
       "personName": "Mia"
     },
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001show me my whole to-do list": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001show me my whole to-do list": {
     "skillId": "list-tasks",
     "slots": {},
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001give me a rundown of all my tasks": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001give me a rundown of all my tasks": {
     "skillId": "list-tasks",
     "slots": {},
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001how much running have I done since Monday": {
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001how much running have I done since Monday": {
     "skillId": "count-runs-this-week",
     "slots": {},
     "source": "cloud"
   },
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001what's the capital of France": null,
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001tell me a joke": null,
-  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001what time is it in Tokyo": null,
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001what's the capital of France": null,
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001tell me a joke": null,
+  "route\u0001calories-today,cancel-reminder,complete-reminder,complete-task,count-runs-this-week,create-task,delete-task,due-tasks,explain-task-list,forget-fact,goal-progress,last-interaction,list-interactions,list-relations,list-reminders,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,recall-fact-about,recall-facts,recall-journal,recall-mood,remember-person-fact,remember-relationship,reschedule-reminder,reschedule-task,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-daily-reminder,set-goal,set-monthly-reminder,set-reminder,set-weekly-reminder,task-before-birthday,total-distance,upcoming-birthdays,when-birthday\u0001what time is it in Tokyo": null,
   "author\u0001\u0001daily gratitude journal": {
     "type": {
       "typeId": "gratitude_entry",
       "displayName": "Gratitude Entry",
       "attributes": [
         {
-          "name": "entry",
+          "name": "gratitudeText",
           "valueType": "text",
           "required": true
         },
@@ -158,14 +158,14 @@
       ],
       "inputs": [
         {
-          "name": "gratitude_text",
+          "name": "gratitudeText",
           "required": true
         }
       ],
       "examplePhrases": [
-        "Log my gratitude for today",
-        "Add to my gratitude journal",
-        "Record what I'm grateful for"
+        "I'm grateful for my family",
+        "Log my gratitude for a good day",
+        "Add to my gratitude journal"
       ],
       "steps": {
         "main": [
@@ -173,24 +173,24 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "entry_date"
+            "into": "entryDate"
           },
           {
             "op": "write_record",
             "typeId": "gratitude_entry",
             "fields": {
-              "entry": {
-                "var": "gratitude_text"
+              "gratitudeText": {
+                "var": "gratitudeText"
               },
               "loggedAt": {
-                "var": "entry_date"
+                "var": "entryDate"
               }
             },
-            "into": "saved_entry"
+            "into": "savedEntry"
           },
           {
             "op": "format",
-            "template": "Logged gratitude entry for {entry_date}.",
+            "template": "Logged gratitude for {entryDate}.",
             "into": "confirmationText"
           }
         ]
@@ -200,10 +200,10 @@
   "author\u0001\u0001coffee cups per day": {
     "type": {
       "typeId": "coffee_consumption",
-      "displayName": "Coffee Cups Per Day",
+      "displayName": "Coffee Consumption",
       "attributes": [
         {
-          "name": "cupsCount",
+          "name": "cupsConsumed",
           "valueType": "number",
           "required": true
         },
@@ -223,14 +223,14 @@
       ],
       "inputs": [
         {
-          "name": "cupsCount",
+          "name": "cupsConsumed",
           "required": true
         }
       ],
       "examplePhrases": [
         "I had 3 cups of coffee today",
-        "Log 2 coffees",
-        "Add 4 cups of coffee"
+        "Log 2 coffee cups",
+        "I drank 4 cups of coffee"
       ],
       "steps": {
         "main": [
@@ -244,8 +244,8 @@
             "op": "write_record",
             "typeId": "coffee_consumption",
             "fields": {
-              "cupsCount": {
-                "var": "cupsCount"
+              "cupsConsumed": {
+                "var": "cupsConsumed"
               },
               "loggedAt": {
                 "var": "todayDate"
@@ -255,7 +255,72 @@
           },
           {
             "op": "format",
-            "template": "Logged {cupsCount} cups of coffee for {todayDate}.",
+            "template": "Logged {cupsConsumed} cups of coffee for {loggedAt}.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    }
+  },
+  "author\u0001log_coffee_cups: references unbound variable 'loggedAt' (typo? not an input, a prior step's 'into'/'set', or a foreach 'as')\u0001coffee cups per day": {
+    "type": {
+      "typeId": "coffee_cups_log",
+      "displayName": "Coffee Cups Log",
+      "attributes": [
+        {
+          "name": "cups",
+          "valueType": "number",
+          "required": true
+        },
+        {
+          "name": "loggedAt",
+          "valueType": "date",
+          "required": true
+        }
+      ]
+    },
+    "skill": {
+      "skillId": "log_coffee_cups",
+      "displayName": "Log Coffee Cups",
+      "reads": [],
+      "writes": [
+        "coffee_cups_log"
+      ],
+      "inputs": [
+        {
+          "name": "cups",
+          "required": true
+        }
+      ],
+      "examplePhrases": [
+        "I had 2 cups of coffee",
+        "Log 3 coffees",
+        "Add 1 cup to my coffee count"
+      ],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "today",
+            "args": [],
+            "into": "loggedAt"
+          },
+          {
+            "op": "write_record",
+            "typeId": "coffee_cups_log",
+            "fields": {
+              "cups": {
+                "var": "cups"
+              },
+              "loggedAt": {
+                "var": "loggedAt"
+              }
+            },
+            "into": "record"
+          },
+          {
+            "op": "format",
+            "template": "Logged {cups} cups for {loggedAt}.",
             "into": "confirmationText"
           }
         ]
