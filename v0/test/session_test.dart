@@ -565,6 +565,38 @@ void main() {
     });
   });
 
+  group('multi-task add (gap #58)', () {
+    test('a comma list with Oxford "and" creates one task per item', () async {
+      final s = await _session();
+      final r = await s.handle('add buy milk, call mom, and gym to my list');
+      expect(r, contains('3 tasks'));
+      final descs = s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description']).toSet();
+      expect(descs, {'buy milk', 'call mom', 'gym'});
+    });
+
+    test('a plain comma list (>=2 items) splits too', () async {
+      final s = await _session();
+      await s.handle('add milk, eggs, bread to my list');
+      final descs = s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description']).toSet();
+      expect(descs, {'milk', 'eggs', 'bread'});
+    });
+
+    test('control: "buy milk and eggs" (no comma) stays ONE task', () async {
+      final s = await _session();
+      await s.handle('add buy milk and eggs to my list');
+      final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();
+      expect(tasks.length, 1);
+      expect(tasks.single['description'], 'buy milk and eggs');
+    });
+
+    test('control: a single trailing clause is not torn apart', () async {
+      final s = await _session();
+      await s.handle('add renew the registration, add that to my list');
+      final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();
+      expect(tasks.length, 1);
+    });
+  });
+
   group('due-tasks date filters (gap #57)', () {
     Future<dynamic> seeded() async {
       final s = await _session(); // Monday 2026-07-06

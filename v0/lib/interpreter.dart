@@ -191,6 +191,21 @@ class Interpreter {
           'last' => -1,
           _ => 1,
         };
+      case 'split_list':
+        // Split a spoken enumeration into items — but conservatively, so a single
+        // subordinate clause ("renew the registration, add that") is NOT torn in two.
+        // A list needs either >=2 commas ("milk, eggs, bread") or an Oxford ", and"/
+        // ", &" ("buy milk, call mom, and gym"). A bare "and" never splits on its own
+        // ("buy milk and eggs" stays ONE task). Leading "and " is stripped; empties drop.
+        final ls = (a.isEmpty ? '' : '${a[0]}').trim();
+        final commas = ','.allMatches(ls).length;
+        final oxford = RegExp(r',\s*(?:and|&)\s', caseSensitive: false).hasMatch(ls);
+        if (commas == 0 || (commas < 2 && !oxford)) return [ls];
+        return ls
+            .split(',')
+            .map((e) => e.trim().replaceFirst(RegExp(r'^(?:and|&)\s+', caseSensitive: false), '').trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
       case 'weekday_nums':
         // free weekday text ("monday and thursday", "tue, wed, fri", "tuesdays & fridays")
         // -> sorted comma-joined ISO weekday numbers ("1,4"). Empty string if none parse,
@@ -351,7 +366,7 @@ class Interpreter {
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num', 'ordinal_suffix',
-    'weekday_nums', 'date_part', 'time_part', 'mul', 'div', 'round'};
+    'weekday_nums', 'date_part', 'time_part', 'split_list', 'mul', 'div', 'round'};
   static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};
   // The Spec 01 §3 canonical value-type set (fixed; a new one needs a kernel bump). `integer`
   // is retained only as a tolerated legacy alias for `number` (older authored types).
