@@ -67,6 +67,22 @@ void main() {
       final ints = s.store.values.where((x) => x['typeId'] == 'interaction').toList();
       expect(ints.single['at'], '2026-07-03');
     });
+
+    test('reverse fact search: "who do I know that likes hiking" (gap: reverse search)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('remember that Sarah loves hiking');
+      await s.handle('remember that Ben likes chess');
+      final r = await s.handle('who do i know that likes hiking');
+      expect(r, contains('Sarah'));
+      expect(r.contains('Ben'), isFalse);
+    });
+
+    test('reverse fact search with no match says so', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('remember that Sarah loves hiking');
+      final r = await s.handle('who do i know that likes surfing');
+      expect(r.toLowerCase(), contains("don't know anyone"));
+    });
   });
 
   group('last-interaction (max date via reduction, not insertion order)', () {

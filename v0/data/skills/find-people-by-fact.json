@@ -1,0 +1,60 @@
+{
+  "skillId": "find-people-by-fact",
+  "displayName": "Find people matching a fact",
+  "reads": [
+    "contact",
+    "contact_fact"
+  ],
+  "writes": [],
+  "inputs": [
+    { "name": "query", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "contact_fact",
+        "filter": { "field": "fact", "op": "contains", "value": { "var": "query" } },
+        "into": "facts"
+      },
+      { "op": "set", "var": "lines", "value": "" },
+      { "op": "set", "var": "n", "value": 0 },
+      {
+        "op": "foreach",
+        "list": { "var": "facts" },
+        "as": "f",
+        "body": [
+          {
+            "op": "read_one",
+            "typeId": "contact",
+            "match": { "id": { "field": [ "f", "subject" ] } },
+            "into": "who"
+          },
+          {
+            "op": "branch",
+            "cond": { "notNull": "who" },
+            "then": [
+              {
+                "op": "compute",
+                "fn": "concat",
+                "args": [ { "var": "lines" }, "\n  • ", { "field": [ "who", "displayName" ] }, " — ", { "field": [ "f", "fact" ] } ],
+                "into": "lines"
+              },
+              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+            ]
+          }
+        ]
+      },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "People matching \"{query}\":{lines}", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "I don't know anyone matching \"{query}\".", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}
