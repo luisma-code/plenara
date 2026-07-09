@@ -162,6 +162,28 @@ void main() {
     });
   });
 
+  group('clear-tasks — bulk delete + undo', () {
+    test('"delete all my tasks" clears the list with a count', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      await s.handle('add call mom to my list');
+      final r = await s.handle('delete all my tasks');
+      expect(r.toLowerCase(), contains('cleared'));
+      expect(r, contains('2'));
+    });
+    test('clear on an empty list says so', () async {
+      final s = await _session();
+      expect((await s.handle('delete all todos')).toLowerCase(), contains('already empty'));
+    });
+    test('undo restores the cleared tasks', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      await s.handle('delete all my tasks');
+      await s.handle('undo that');
+      expect(await s.handle('list my tasks'), contains('buy milk'));
+    });
+  });
+
   group('helpful replies for meta-questions', () {
     test('"can I start a todo list" explains the built-in list instead of missing', () async {
       final s = await _session();

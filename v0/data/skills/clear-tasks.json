@@ -1,0 +1,27 @@
+{
+  "skillId": "clear-tasks",
+  "displayName": "Clear all tasks",
+  "reads": [ "task" ],
+  "writes": [ "task" ],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "read_many", "typeId": "task", "into": "tasks" },
+      { "op": "compute", "fn": "count", "args": [ { "var": "tasks" } ], "into": "n" },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          {
+            "op": "foreach",
+            "list": { "var": "tasks" },
+            "as": "t",
+            "body": [ { "op": "delete_record", "id": { "ref": "t" } } ]
+          },
+          { "op": "format", "template": "Cleared your task list — deleted {n} task(s). (Say \"undo that\" to restore them.)", "into": "confirmationText" }
+        ],
+        "else": [ { "op": "format", "template": "Your task list is already empty.", "into": "confirmationText" } ]
+      }
+    ]
+  }
+}

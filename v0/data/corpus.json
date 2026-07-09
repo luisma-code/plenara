@@ -181,5 +181,18 @@
   { "skillId": "explain-task-list", "template": "let's start a todo list" },
   { "skillId": "explain-task-list", "template": "i want to start a todo list" },
   { "skillId": "explain-task-list", "template": "how do i make a todo list" },
-  { "skillId": "explain-task-list", "template": "set up a todo list" }
+  { "skillId": "explain-task-list", "template": "set up a todo list" },
+  { "skillId": "clear-tasks", "template": "delete all my tasks" },
+  { "skillId": "clear-tasks", "template": "delete all tasks" },
+  { "skillId": "clear-tasks", "template": "delete all my todos" },
+  { "skillId": "clear-tasks", "template": "delete all todos" },
+  { "skillId": "clear-tasks", "template": "delete all my to-dos" },
+  { "skillId": "clear-tasks", "template": "delete all my to do's" },
+  { "skillId": "clear-tasks", "template": "clear my task list" },
+  { "skillId": "clear-tasks", "template": "clear all my tasks" },
+  { "skillId": "clear-tasks", "template": "clear my todos" },
+  { "skillId": "clear-tasks", "template": "clear my to do list" },
+  { "skillId": "clear-tasks", "template": "remove all my tasks" },
+  { "skillId": "clear-tasks", "template": "delete everything on my list" },
+  { "skillId": "clear-tasks", "template": "delete my whole list" }
 ]
