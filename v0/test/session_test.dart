@@ -427,6 +427,28 @@ void main() {
     });
   });
 
+  group('period-scoped run distance (queries gap #4)', () {
+    test('"how far have I run this week" sums distance, not a count', () async {
+      final s = await _session(); // Monday 2026-07-06
+      await s.handle('log a 3k run');
+      await s.handle('log a 2k run');
+      final r = await s.handle('how far have i run this week');
+      expect(r, contains('5 km this week'));
+    });
+
+    test('"how far have I run this month" sums the month', () async {
+      final s = await _session();
+      await s.handle('log a 4k run');
+      final r = await s.handle('how far have i run this month');
+      expect(r, contains('4 km this month'));
+    });
+
+    test('no runs -> a clear message', () async {
+      final s = await _session();
+      expect((await s.handle('how far have i run this week')).toLowerCase(), contains("haven't logged any runs"));
+    });
+  });
+
   group('turnlog diagnostics — enough to diagnose a bad turn from the log alone', () {
     Map<String, dynamic> lastTurn(String dir) =>
         jsonDecode(File('$dir/turnlog.jsonl').readAsLinesSync().last) as Map<String, dynamic>;

@@ -183,9 +183,14 @@ void main() {
     for (final u in ['list my tasks', 'show my tasks', 'what are my tasks', "what's on my to-do list"]) {
       test('"$u" -> list-tasks', () => expect(_r.route(u)?['skillId'], 'list-tasks'));
     }
-    for (final u in ['how many runs this week', 'how far have i run this week',
-      'how much have i run this week', 'how many km have i run this week']) {
+    // "how many runs" is a COUNT; "how far/much/km" is a DISTANCE (gap #4 — these used
+    // to all collapse to the count skill).
+    for (final u in ['how many runs this week']) {
       test('"$u" -> count-runs-this-week', () => expect(_r.route(u)?['skillId'], 'count-runs-this-week'));
+    }
+    for (final u in ['how far have i run this week', 'how much have i run this week',
+      'how many km have i run this week']) {
+      test('"$u" -> run-distance-this-week', () => expect(_r.route(u)?['skillId'], 'run-distance-this-week'));
     }
   });
 

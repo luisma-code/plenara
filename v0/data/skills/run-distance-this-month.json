@@ -1,0 +1,34 @@
+{
+  "skillId": "run-distance-this-month",
+  "displayName": "Distance run this month",
+  "reads": [ "workout" ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      { "op": "compute", "fn": "start_of_month", "args": [ { "var": "today" } ], "into": "monthStart" },
+      {
+        "op": "read_many",
+        "typeId": "workout",
+        "filter": [
+          { "field": "activity", "op": "eq", "value": "run" },
+          { "field": "date", "op": "gte", "value": { "var": "monthStart" } }
+        ],
+        "into": "runs"
+      },
+      { "op": "compute", "fn": "sum", "args": [ { "var": "runs" }, "distance" ], "into": "total" },
+      { "op": "compute", "fn": "count", "args": [ { "var": "runs" } ], "into": "n" },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "You've run {total} km this month across {n} run(s).", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "You haven't logged any runs this month.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}
