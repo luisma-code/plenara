@@ -206,10 +206,13 @@ class _ChatState extends State<ChatScreen> {
     _jump();
   }
 
-  /// Tap the mic to START (the transcript fills the box as it's recognized); tap the stop button to
-  /// STOP — which then AUTO-SENDS what was captured, so voice is a complete hands-free action (no
-  /// separate Send needed; the text box is optional and will eventually be hidable). onDone always
-  /// clears the listening state, so the UI can never get stuck at "Listening…".
+  /// Tap the mic to START, speak, then PAUSE — the OS engine's own end-of-utterance detection
+  /// delivers the final transcript in-session (~1s after speech ends) and we auto-send it, so
+  /// voice is a complete hands-free action. On Windows there are no partial results (the SAPI
+  /// backend only delivers finals), so the box fills at the end, not live. Tapping stop ABORTS:
+  /// the plugin kills its event pump on stop, so a not-yet-finalized transcript can't be
+  /// retrieved — don't rely on the stop tap to finalize. onDone always clears the listening
+  /// state, so the UI can never get stuck at "Listening…".
   Future<void> _toggleMic() async {
     final log = AppLog.instance;
     if (!_speech.available || _busy) {
@@ -217,8 +220,8 @@ class _ChatState extends State<ChatScreen> {
       return;
     }
     if (_listening) {
-      log.debug('speech: mic tap -> stop');
-      await _speech.stop(); // finalize; onDone fires with the final transcript, then auto-sends
+      log.debug('speech: mic tap -> stop (abort)');
+      await _speech.stop(); // abort; anything not yet finalized by the engine is lost (see above)
       return;
     }
     log.debug('speech: mic tap -> start');
@@ -229,14 +232,18 @@ class _ChatState extends State<ChatScreen> {
           final t = text.trim();
           log.debug("speech: result '$t' final=$isFinal");
           if (!mounted || t.isEmpty) return;
-          setState(() => _ctrl.text = t); // live-fill; this is also what we'll send
-          // Auto-send on the engine's FINAL result — whenever it arrives (Windows delivers it with
-          // latency, sometimes after listening has stopped). This is the reliable trigger, not the
-          // stop tap which races ahead of the transcript.
-          if (isFinal && !_busy) {
-            log.debug('speech: auto-send on final result');
+          setState(() => _ctrl.text = t); // fill the box; this is also what we'll send
+          // Auto-send on the engine's FINAL result, delivered in-session by its own
+          // end-of-utterance detection. Then STOP the engine: one utterance per tap — on Windows
+          // SAPI dictation otherwise stays active until listenFor and a second utterance would
+          // fire another (unwanted) auto-send.
+          if (isFinal) {
             setState(() => _listening = false);
-            _send();
+            unawaited(_speech.stop());
+            if (!_busy) {
+              log.debug('speech: auto-send on final result');
+              _send();
+            }
           }
         },
         onDone: () {
