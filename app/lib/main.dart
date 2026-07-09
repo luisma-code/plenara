@@ -223,23 +223,25 @@ class _ChatState extends State<ChatScreen> {
     }
     log.debug('speech: mic tap -> start');
     setState(() => _listening = true);
-    var gotVoice = false; // only auto-send when VOICE produced text (not pre-typed text)
     try {
       await _speech.listen(
-        onResult: (t) {
-          if (mounted && t.trim().isNotEmpty) {
-            gotVoice = true;
-            setState(() => _ctrl.text = t.trim());
+        onResult: (text, isFinal) {
+          final t = text.trim();
+          log.debug("speech: result '$t' final=$isFinal");
+          if (!mounted || t.isEmpty) return;
+          setState(() => _ctrl.text = t); // live-fill; this is also what we'll send
+          // Auto-send on the engine's FINAL result — whenever it arrives (Windows delivers it with
+          // latency, sometimes after listening has stopped). This is the reliable trigger, not the
+          // stop tap which races ahead of the transcript.
+          if (isFinal && !_busy) {
+            log.debug('speech: auto-send on final result');
+            setState(() => _listening = false);
+            _send();
           }
         },
         onDone: () {
-          log.debug('speech: onDone (gotVoice=$gotVoice, text="${_ctrl.text}")');
-          if (!mounted) return;
-          setState(() => _listening = false);
-          if (gotVoice && _ctrl.text.trim().isNotEmpty) {
-            log.debug('speech: auto-send');
-            _send();
-          }
+          log.debug('speech: onDone (listening=$_listening, text="${_ctrl.text}")');
+          if (mounted) setState(() => _listening = false);
         },
       );
     } catch (e) {
@@ -333,7 +335,7 @@ class _ChatState extends State<ChatScreen> {
                       autofocus: true,
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
-                          hintText: _listening ? 'Listening — tap the stop button when done…' : 'Say something…',
+                          hintText: _listening ? 'Listening — pause a moment when you\'re done…' : 'Say something…',
                           border: const OutlineInputBorder()),
                     ),
                   ),

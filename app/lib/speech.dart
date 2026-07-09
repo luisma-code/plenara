@@ -8,9 +8,12 @@ import 'package:speech_to_text/speech_to_text.dart';
 abstract class SpeechRecognizer {
   Future<void> init();
   bool get available;
-  Future<void> listen({required void Function(String text) onResult, required void Function() onDone});
-  Future<void> stop(); // finalize + keep what was captured
-  void cancel(); // discard
+  /// [onResult] fires with the running transcript; [isFinal] marks the engine's final result for
+  /// an utterance (which some engines — e.g. Windows — deliver with noticeable latency, even after
+  /// listening has stopped). [onDone] fires when listening ends.
+  Future<void> listen({required void Function(String text, bool isFinal) onResult, required void Function() onDone});
+  Future<void> stop();
+  void cancel();
 }
 
 /// The default when no engine is wired: voice unavailable — mic hidden, typing still works.
@@ -20,7 +23,8 @@ class NoopSpeechRecognizer implements SpeechRecognizer {
   @override
   bool get available => false;
   @override
-  Future<void> listen({required void Function(String) onResult, required void Function() onDone}) async => onDone();
+  Future<void> listen({required void Function(String, bool) onResult, required void Function() onDone}) async =>
+      onDone();
   @override
   Future<void> stop() async {}
   @override
@@ -67,7 +71,7 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
   bool get available => _ready;
 
   @override
-  Future<void> listen({required void Function(String) onResult, required void Function() onDone}) async {
+  Future<void> listen({required void Function(String, bool) onResult, required void Function() onDone}) async {
     if (!_ready) {
       onDone();
       return;
@@ -78,14 +82,13 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
       await _stt.listen(
         onResult: (r) {
           _log("result: '${r.recognizedWords}' final=${r.finalResult}");
-          onResult(r.recognizedWords);
+          onResult(r.recognizedWords, r.finalResult);
         },
         listenOptions: SpeechListenOptions(
           partialResults: true, // stream words as they're recognized
           cancelOnError: true,
-          // long windows — the USER decides when to stop (tap the mic), not an 8s silence guess
-          listenFor: const Duration(seconds: 120),
-          pauseFor: const Duration(seconds: 15),
+          listenFor: const Duration(seconds: 45),
+          pauseFor: const Duration(seconds: 3), // a natural ~3s pause finalizes -> delivers the result
         ),
       );
     } catch (_) {

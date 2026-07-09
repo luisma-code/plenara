@@ -20,8 +20,8 @@ class _FakeSpeech implements SpeechRecognizer {
   @override
   bool get available => avail;
   @override
-  Future<void> listen({required void Function(String) onResult, required void Function() onDone}) async {
-    if (result != null) onResult(result!);
+  Future<void> listen({required void Function(String, bool) onResult, required void Function() onDone}) async {
+    if (result != null) onResult(result!, true); // deliver as a FINAL result -> auto-send
     onDone();
   }
   @override
@@ -36,7 +36,7 @@ class _ThrowSpeech implements SpeechRecognizer {
   @override
   bool get available => true;
   @override
-  Future<void> listen({required void Function(String) onResult, required void Function() onDone}) async =>
+  Future<void> listen({required void Function(String, bool) onResult, required void Function() onDone}) async =>
       throw StateError('engine boom');
   @override
   Future<void> stop() async {}
