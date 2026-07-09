@@ -159,6 +159,87 @@
           }
         ]
       }
+    },
+    {
+      "skillId": "water-this-week",
+      "displayName": "Water this week",
+      "reads": [
+        "hydration"
+      ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "start_of_week",
+            "args": [
+              {
+                "fn": "today"
+              }
+            ],
+            "into": "today"
+          },
+          {
+            "op": "read_many",
+            "typeId": "hydration",
+            "into": "logs"
+          },
+          {
+            "op": "set",
+            "var": "total",
+            "value": 0
+          },
+          {
+            "op": "foreach",
+            "list": {
+              "var": "logs"
+            },
+            "as": "e",
+            "body": [
+              {
+                "op": "branch",
+                "cond": {
+                  "gte": [
+                    {
+                      "field": [
+                        "e",
+                        "loggedAt"
+                      ]
+                    },
+                    {
+                      "var": "today"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "add",
+                    "args": [
+                      {
+                        "var": "total"
+                      },
+                      {
+                        "field": [
+                          "e",
+                          "amount"
+                        ]
+                      }
+                    ],
+                    "into": "total"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "format",
+            "template": "You've logged {total} ml of water this week.",
+            "into": "confirmationText"
+          }
+        ]
+      }
     }
   ],
   "corpus": [
@@ -281,6 +362,22 @@
     {
       "skillId": "water-today",
       "template": "what's my hydration today"
+    },
+    {
+      "skillId": "water-this-week",
+      "template": "how much water this week"
+    },
+    {
+      "skillId": "water-this-week",
+      "template": "water this week"
+    },
+    {
+      "skillId": "water-this-week",
+      "template": "how much have i had to drink this week"
+    },
+    {
+      "skillId": "water-this-week",
+      "template": "how much water have i drunk this week"
     }
   ]
 }

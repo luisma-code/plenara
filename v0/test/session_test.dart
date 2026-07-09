@@ -162,6 +162,20 @@ void main() {
     });
   });
 
+  group('tracker query gaps (dogfood)', () {
+    test('reading-today sums pages read today', () async {
+      final s = await _session();
+      await s.handle('start tracking my reading');
+      await s.handle('i read 20 pages');
+      expect(await s.handle('how many pages today'), contains('20'));
+    });
+    test('water-this-week query routes + runs', () async {
+      final s = await _session();
+      await s.handle('start tracking my water');
+      expect((await s.handle('how much water this week')).toLowerCase(), contains('water'));
+    });
+  });
+
   group('latest-weight — weight tracker query (was missing)', () {
     test('logs then reports the most recent weight', () async {
       final s = await _session();
