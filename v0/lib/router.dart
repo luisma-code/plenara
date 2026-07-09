@@ -135,6 +135,12 @@ class Router {
   static const _poswordPat =
       r'(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|last|\d+(?:st|nd|rd|th)?)';
 
+  /// The bounded regex for a `pastday` slot — a BACKWARD-looking day expression
+  /// ("yesterday", "today", "last friday") for recall/history queries. Distinct from
+  /// `dayword` (which looks forward for scheduling).
+  static const _pastdayPat =
+      r'(?:yesterday|today|(?:last\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))';
+
   static CorpusEntry _compile(Map<String, dynamic> e) {
     final tmpl = e['template'] as String;
     final slotTypes = <String, String>{};
@@ -156,7 +162,9 @@ class Router {
           ? '(?<$group>$_daywordPat)'
           : type == 'posword'
               ? '(?<$group>$_poswordPat)'
-              : '(?<$group>.+?)');
+              : type == 'pastday'
+                  ? '(?<$group>$_pastdayPat)'
+                  : '(?<$group>.+?)');
       i = m.end;
     }
     sb.write(_lit(tmpl.substring(i)));
@@ -208,7 +216,12 @@ class Router {
           // reminder discriminator: "on friday" has no time -> null -> the reminder template is
           // skipped and the date-only create-task template wins.)
           if (v == null &&
-              (type == 'date' || type == 'dayword' || type == 'datetime' || type == 'contact' || type == 'entity')) {
+              (type == 'date' ||
+                  type == 'dayword' ||
+                  type == 'pastday' ||
+                  type == 'datetime' ||
+                  type == 'contact' ||
+                  type == 'entity')) {
             ok = false;
           }
           slots[name] = v;
@@ -282,6 +295,7 @@ class Router {
     switch (type) {
       case 'date':
       case 'dayword': // a constrained day expression — same resolution as a date slot
+      case 'pastday': // a backward-looking day expression — resolved as a date
         return resolveDate(raw, asOf);
       case 'datetime':
         return resolveDateTime(raw, asOf);
@@ -309,6 +323,12 @@ class Router {
     var m = RegExp(r'in (\d+) days?').firstMatch(p);
     if (m != null) return iso(now.add(Duration(days: int.parse(m.group(1)!))));
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    final lastWd = days.indexWhere((d) => p == 'last $d');
+    if (lastWd >= 0) {
+      var delta = (lastWd + 1) - now.weekday;
+      if (delta >= 0) delta -= 7; // the PREVIOUS occurrence (strictly before today)
+      return iso(now.add(Duration(days: delta)));
+    }
     final wd = days.indexWhere((d) => p == d || p == 'on $d' || p == 'next $d');
     if (wd >= 0) {
       var delta = (wd + 1) - now.weekday;

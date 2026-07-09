@@ -982,6 +982,34 @@ void main() {
       expect(r, contains('started a new book'));
       expect(r, contains('2026-07-06')); // dated
     });
+
+    test('recall journal by date (gap #4): "what did I write yesterday"', () async {
+      final dir = makeTempDataDir();
+      final s1 = Session(dir, clock: _now.subtract(const Duration(days: 1)), cloud: _NoCloud());
+      await s1.init(retrieval: false);
+      await s1.handle('journal that the move was exhausting');
+      final s2 = Session(dir, clock: _now, cloud: _NoCloud());
+      await s2.init(retrieval: false);
+      await s2.handle('journal that things are calmer now');
+      final r = await s2.handle('what did i write yesterday');
+      expect(r, contains('exhausting'));
+      expect(r.contains('calmer'), isFalse);
+    });
+
+    test('delete the latest journal entry (gap #6)', () async {
+      final dir = makeTempDataDir();
+      final s1 = Session(dir, clock: _now.subtract(const Duration(days: 1)), cloud: _NoCloud());
+      await s1.init(retrieval: false);
+      await s1.handle('journal that entry one happened');
+      final s2 = Session(dir, clock: _now, cloud: _NoCloud());
+      await s2.init(retrieval: false);
+      await s2.handle('journal that entry two happened');
+      final r = await s2.handle('delete my last journal entry');
+      expect(r, contains('entry two'));
+      final back = await s2.handle('read my journal');
+      expect(back, contains('entry one'));
+      expect(back.contains('entry two'), isFalse);
+    });
   });
 
   group('recall-mood', () {
