@@ -425,6 +425,21 @@ void main() {
       expect(w['route'], isNull);
       expect(w['distance'], 3);
     });
+
+    test('miles are converted to km on the SAME skill (logging gap #1)', () async {
+      final s = await _session();
+      await s.handle('ran 3 miles'); // 3 * 1.609 = 4.827 -> rounds to 5 km
+      final w = s.store.values.firstWhere((x) => x['typeId'] == 'workout');
+      expect(w['activity'], 'run');
+      expect(w['distance'], 5); // stored in km, the tracker's canonical unit
+    });
+
+    test('a 10k run in miles (6.2) lands on 10 km', () async {
+      final s = await _session();
+      await s.handle('i ran 6.2 miles');
+      final w = s.store.values.firstWhere((x) => x['typeId'] == 'workout');
+      expect(w['distance'], 10);
+    });
   });
 
   group('period-scoped run distance (queries gap #4)', () {

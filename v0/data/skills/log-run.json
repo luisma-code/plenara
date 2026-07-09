@@ -7,6 +7,7 @@
   ],
   "inputs": [
     { "name": "distance", "required": false },
+    { "name": "distanceMiles", "required": false },
     { "name": "duration", "required": false },
     { "name": "route", "required": false }
   ],
@@ -16,6 +17,14 @@
         "op": "compute",
         "fn": "today",
         "into": "today"
+      },
+      {
+        "op": "branch",
+        "cond": { "notNull": "distanceMiles" },
+        "then": [
+          { "op": "compute", "fn": "mul", "args": [ { "var": "distanceMiles" }, 1.609 ], "into": "distKm" },
+          { "op": "compute", "fn": "round", "args": [ { "var": "distKm" } ], "into": "distance" }
+        ]
       },
       {
         "op": "write_record",

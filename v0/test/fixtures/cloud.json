@@ -51,6 +51,7 @@
     "skillId": "log-run",
     "slots": {
       "distance": 6,
+      "distanceMiles": null,
       "duration": null,
       "route": null
     },
@@ -60,6 +61,7 @@
     "skillId": "log-run",
     "slots": {
       "distance": 8,
+      "distanceMiles": null,
       "duration": null,
       "route": null
     },
@@ -69,6 +71,7 @@
     "skillId": "log-run",
     "slots": {
       "distance": 5,
+      "distanceMiles": null,
       "duration": null,
       "route": null
     },
@@ -78,6 +81,7 @@
     "skillId": "log-run",
     "slots": {
       "distance": 3,
+      "distanceMiles": null,
       "duration": null,
       "route": null
     },
@@ -86,7 +90,7 @@
   "route\u0001calories-today,cancel-reminder,clear-goal,clear-tasks,complete-reminder,complete-task,contact-age,count-runs-this-week,create-task,delete-journal-latest,delete-task,delete-task-at,due-by,due-on,due-tasks,due-week,explain-task-list,find-people-by-fact,forget-fact,goal-progress,last-interaction,list-completed-tasks,list-interactions,list-meals,list-relations,list-reminders,list-reminders-on,list-reminders-week,list-tasks,log-interaction,log-journal,log-meal,log-mood,log-run,log-walk,log-workout,neglected-contacts,recall-fact-about,recall-facts,recall-journal,recall-journal-on,recall-latest-journal,recall-mood,relation-between,remember-person-fact,remember-relationship,remember-relative,remember-trait,remove-alias,reschedule-reminder,reschedule-task,run-distance-this-month,run-distance-this-week,run-streak,set-alias,set-birthday,set-biweekly-reminder,set-contact-date,set-daily-reminder,set-goal,set-monthly-date-reminder,set-monthly-reminder,set-multiday-reminder,set-reminder,set-reminder-on-day,set-weekday-reminder,set-weekend-reminder,set-weekly-reminder,set-yearly-reminder,task-before-birthday,total-distance,upcoming-birthdays,update-goal,walk-distance,when-birthday,when-contact-date\u0001feeling pretty anxious today": {
     "skillId": "log-mood",
     "slots": {
-      "rating": "pretty anxious today"
+      "rating": "feeling pretty anxious today"
     },
     "source": "cloud"
   },
@@ -139,10 +143,10 @@
   "author\u0001\u0001daily gratitude journal": {
     "type": {
       "typeId": "gratitude_entry",
-      "displayName": "Gratitude Journal Entry",
+      "displayName": "Gratitude Entry",
       "attributes": [
         {
-          "name": "entry",
+          "name": "gratitudeText",
           "valueType": "text",
           "required": true
         },
@@ -155,21 +159,21 @@
     },
     "skill": {
       "skillId": "log_gratitude",
-      "displayName": "Log Gratitude Entry",
+      "displayName": "Log Gratitude",
       "reads": [],
       "writes": [
         "gratitude_entry"
       ],
       "inputs": [
         {
-          "name": "gratitude_text",
+          "name": "gratitudeText",
           "required": true
         }
       ],
       "examplePhrases": [
-        "I'm grateful for my family",
-        "Log what I'm thankful for today",
-        "Add to my gratitude journal"
+        "Log my gratitude for today",
+        "Add a gratitude entry",
+        "I'm grateful for my family"
       ],
       "steps": {
         "main": [
@@ -183,8 +187,8 @@
             "op": "write_record",
             "typeId": "gratitude_entry",
             "fields": {
-              "entry": {
-                "var": "gratitude_text"
+              "gratitudeText": {
+                "var": "gratitudeText"
               },
               "loggedAt": {
                 "var": "entryDate"
@@ -207,7 +211,7 @@
       "displayName": "Coffee Consumption",
       "attributes": [
         {
-          "name": "cupsPerDay",
+          "name": "cupsConsumed",
           "valueType": "number",
           "required": true
         },
@@ -227,14 +231,14 @@
       ],
       "inputs": [
         {
-          "name": "cupsCount",
+          "name": "cupsConsumed",
           "required": true
         }
       ],
       "examplePhrases": [
-        "I had 3 coffee cups today",
-        "Log 2 cups of coffee",
-        "Track 4 coffees"
+        "I had 3 cups of coffee today",
+        "Log 2 coffee cups",
+        "I drank 4 cups of coffee"
       ],
       "steps": {
         "main": [
@@ -242,24 +246,24 @@
             "op": "compute",
             "fn": "today",
             "args": [],
-            "into": "logDate"
+            "into": "todayDate"
           },
           {
             "op": "write_record",
             "typeId": "coffee_consumption",
             "fields": {
-              "cupsPerDay": {
-                "var": "cupsCount"
+              "cupsConsumed": {
+                "var": "cupsConsumed"
               },
               "loggedAt": {
-                "var": "logDate"
+                "var": "todayDate"
               }
             },
             "into": "record"
           },
           {
             "op": "format",
-            "template": "Logged {cupsCount} coffee cups for {logDate}.",
+            "template": "Logged {cupsConsumed} cup(s) for {todayDate}.",
             "into": "confirmationText"
           }
         ]
