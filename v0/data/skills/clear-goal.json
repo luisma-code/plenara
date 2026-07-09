@@ -1,0 +1,23 @@
+{
+  "skillId": "clear-goal",
+  "displayName": "Clear your running goal",
+  "reads": [ "goal" ],
+  "writes": [ "goal" ],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "goal", "match": { "activity": "run" }, "into": "existing" },
+      {
+        "op": "branch",
+        "cond": { "notNull": "existing" },
+        "then": [
+          { "op": "delete_record", "id": { "field": [ "existing", "id" ] } },
+          { "op": "format", "template": "Cleared your running goal. (Say \"undo that\" to restore it.)", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "You don't have a running goal set.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

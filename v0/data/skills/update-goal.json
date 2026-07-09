@@ -1,6 +1,6 @@
 {
-  "skillId": "set-goal",
-  "displayName": "Set a running-distance goal",
+  "skillId": "update-goal",
+  "displayName": "Change your running goal",
   "reads": [ "goal" ],
   "writes": [ "goal" ],
   "inputs": [ { "name": "target", "required": true } ],
@@ -19,7 +19,8 @@
             "target": { "ref": "existing" },
             "fields": { "description": { "var": "desc" }, "target": { "var": "target" } },
             "into": "g"
-          }
+          },
+          { "op": "format", "template": "Updated your running goal to {target} km.", "into": "confirmationText" }
         ],
         "else": [
           {
@@ -32,10 +33,10 @@
               "createdAt": { "var": "today" }
             },
             "into": "g"
-          }
+          },
+          { "op": "format", "template": "Set a goal to run {target} km. I'll track your progress.", "into": "confirmationText" }
         ]
-      },
-      { "op": "format", "template": "Set a goal to run {target} km. I'll track your progress.", "into": "confirmationText" }
+      }
     ]
   }
 }

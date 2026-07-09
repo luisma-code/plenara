@@ -374,6 +374,38 @@ void main() {
       expect(r, contains('10%')); // round(100 * 5/50) — proves div+mul+round in a real skill
       expect(r.toLowerCase(), contains('goal'));
     });
+
+    test('setting a goal twice upserts (no duplicate goal) — gap #3', () async {
+      final s = await _session();
+      await s.handle('set a goal to run 50k');
+      await s.handle('set a goal to run 40k');
+      final goals = s.store.values.where((x) => x['typeId'] == 'goal').toList();
+      expect(goals.length, 1);
+      expect(goals.single['target'], 40);
+    });
+
+    test('"change my goal to 60k" updates the target (gap #3)', () async {
+      final s = await _session();
+      await s.handle('set a goal to run 50k');
+      final r = await s.handle('change my goal to 60k');
+      expect(r, contains('60'));
+      final goals = s.store.values.where((x) => x['typeId'] == 'goal').toList();
+      expect(goals.length, 1);
+      expect(goals.single['target'], 60);
+    });
+
+    test('"delete my running goal" clears it (gap #3)', () async {
+      final s = await _session();
+      await s.handle('set a goal to run 50k');
+      await s.handle('delete my running goal');
+      expect(s.store.values.where((x) => x['typeId'] == 'goal').isEmpty, isTrue);
+      expect((await s.handle('how am i doing on my goal')).toLowerCase(), contains("haven't set"));
+    });
+
+    test('clearing with no goal set is a graceful no-op', () async {
+      final s = await _session();
+      expect((await s.handle('delete my running goal')).toLowerCase(), contains("don't have a running goal"));
+    });
   });
 
   group('run route capture (logging gap #10)', () {
