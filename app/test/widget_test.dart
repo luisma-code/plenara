@@ -104,24 +104,26 @@ void main() {
     expect(find.byIcon(Icons.mic_none), findsNothing); // typing-only, nothing broken
   });
 
-  testWidgets('voice: the mic button transcribes into the input when available', (tester) async {
+  testWidgets('voice: tapping the mic transcribes AND auto-sends (hands-free)', (tester) async {
     await tester.pumpWidget(MaterialApp(
-        home: ChatScreen(session: _session(), speech: _FakeSpeech(true, 'log a 5k run'))));
+        home: ChatScreen(session: _session(), speech: _FakeSpeech(true, 'add milk to my list'))));
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.mic_none), findsOneWidget);
     await tester.tap(find.byIcon(Icons.mic_none));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(TextField, 'log a 5k run'), findsOneWidget); // transcript lands in the field
+    expect(find.text('add milk to my list'), findsOneWidget); // user bubble — auto-sent, no Send tap
+    expect(find.textContaining('Added'), findsOneWidget); // app responded
+    expect(find.widgetWithText(TextField, 'add milk to my list'), findsNothing); // field cleared after send
   });
 
-  testWidgets('voice: a null transcript leaves typed text untouched', (tester) async {
+  testWidgets('voice: a null transcript does NOT auto-send pre-typed text', (tester) async {
     await tester.pumpWidget(MaterialApp(
         home: ChatScreen(session: _session(), speech: _FakeSpeech(true, null))));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'my typed note');
     await tester.tap(find.byIcon(Icons.mic_none));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(TextField, 'my typed note'), findsOneWidget); // not overwritten
+    expect(find.widgetWithText(TextField, 'my typed note'), findsOneWidget); // still in the box, not sent
   });
 
   testWidgets('voice: a transcribe error is caught and the mic returns to idle', (tester) async {

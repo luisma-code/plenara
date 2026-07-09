@@ -204,24 +204,30 @@ class _ChatState extends State<ChatScreen> {
     _jump();
   }
 
-  /// Tap the mic to START (words stream live into the box as you talk); tap again to STOP and keep
-  /// what was captured, then review + Send. The typed field is always available, so voice is purely
-  /// additive. onDone (user stop, error, or timeout) always clears the listening state — the UI can
-  /// never get stuck at "Listening…".
+  /// Tap the mic to START (the transcript fills the box as it's recognized); tap the stop button to
+  /// STOP — which then AUTO-SENDS what was captured, so voice is a complete hands-free action (no
+  /// separate Send needed; the text box is optional and will eventually be hidable). onDone always
+  /// clears the listening state, so the UI can never get stuck at "Listening…".
   Future<void> _toggleMic() async {
     if (!_speech.available || _busy) return;
     if (_listening) {
-      await _speech.stop(); // finalize; onDone will flip _listening off
+      await _speech.stop(); // finalize; onDone fires with the final transcript, then auto-sends
       return;
     }
     setState(() => _listening = true);
+    var gotVoice = false; // only auto-send when VOICE produced text (not pre-typed text)
     try {
       await _speech.listen(
         onResult: (t) {
-          if (mounted && t.trim().isNotEmpty) setState(() => _ctrl.text = t.trim());
+          if (mounted && t.trim().isNotEmpty) {
+            gotVoice = true;
+            setState(() => _ctrl.text = t.trim());
+          }
         },
         onDone: () {
-          if (mounted) setState(() => _listening = false);
+          if (!mounted) return;
+          setState(() => _listening = false);
+          if (gotVoice && _ctrl.text.trim().isNotEmpty) _send(); // hands-free: stop -> send
         },
       );
     } catch (e) {
