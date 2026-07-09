@@ -1,0 +1,29 @@
+{
+  "skillId": "remember-relative",
+  "displayName": "Record a family member and a trait",
+  "reads": [ "contact" ],
+  "writes": [ "contact", "contact_fact" ],
+  "inputs": [
+    { "name": "relation", "required": true },
+    { "name": "personName", "required": true },
+    { "name": "predicate", "required": true },
+    { "name": "rest", "required": true }
+  ],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personName" } }, "partial": true, "into": "person" },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          { "op": "write_record", "typeId": "contact", "fields": { "displayName": { "var": "personName" } }, "into": "person" }
+        ]
+      },
+      { "op": "compute", "fn": "concat", "args": [ "is my ", { "var": "relation" } ], "into": "relFact" },
+      { "op": "write_record", "typeId": "contact_fact", "fields": { "subject": { "ref": "person" }, "fact": { "var": "relFact" } }, "into": "f1" },
+      { "op": "compute", "fn": "concat", "args": [ { "var": "predicate" }, " ", { "var": "rest" } ], "into": "traitFact" },
+      { "op": "write_record", "typeId": "contact_fact", "fields": { "subject": { "ref": "person" }, "fact": { "var": "traitFact" } }, "into": "f2" },
+      { "op": "format", "template": "Noted that {personName} is your {relation} and {traitFact}.", "into": "confirmationText" }
+    ]
+  }
+}

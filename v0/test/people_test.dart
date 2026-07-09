@@ -306,6 +306,15 @@ void main() {
       expect(await s.handle('what do i know about Sarah'), contains('is allergic to peanuts'));
     });
 
+    test('self-relative capture: "my sister Emma loves pottery" (gap #3)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      final r = await s.handle('my sister Emma loves pottery');
+      expect(r, contains('Emma'));
+      final know = await s.handle('what do i know about Emma');
+      expect(know, contains('is my sister'));
+      expect(know, contains('loves pottery'));
+    });
+
     test('control: a trait about a NON-contact ("France likes wine") is ignored', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
       await s.handle('France likes wine'); // France isn't a contact -> no capture
