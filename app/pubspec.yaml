@@ -40,6 +40,8 @@ dependencies:
   flutter_local_notifications_windows: ^3.1.1
   timezone: ^0.11.1
   speech_to_text: ^7.4.0
+  sherpa_onnx: ^1.13.4
+  record: ^7.1.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

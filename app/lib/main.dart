@@ -14,6 +14,7 @@ import 'app_log.dart';
 import 'data_view.dart';
 import 'onboarding_view.dart';
 import 'settings_view.dart';
+import 'sherpa_speech.dart';
 import 'speech.dart';
 import 'windows_scheduler.dart';
 
@@ -105,13 +106,9 @@ class _ChatState extends State<ChatScreen> {
   // injected test session never constructs the native plugin.
   late final WindowsToastScheduler _scheduler = WindowsToastScheduler();
   late final Session _session = widget.session ?? buildSession(scheduler: _scheduler);
-  // Production (no injected session) uses the OS speech engine; tests get Noop unless they inject
-  // a fake. `available` stays false until init() succeeds, so the mic hides on machines with no
-  // speech engine.
-  late final SpeechRecognizer _speech = widget.speech ??
-      (widget.session == null
-          ? SystemSpeechRecognizer(onLog: (m) => AppLog.instance.debug('speech: $m'))
-          : NoopSpeechRecognizer());
+  // Chosen in _init(): on-device sherpa_onnx if its model is present, else the OS SAPI engine,
+  // else Noop. Tests inject their own. Null until _init picks one; the mic hides while null.
+  SpeechRecognizer? _speech;
   final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
@@ -128,8 +125,8 @@ class _ChatState extends State<ChatScreen> {
     try {
       log('init: begin (retrieval=${widget.retrieval})');
       await _session.init(retrieval: widget.retrieval, onPhase: log.log);
-      await _speech.init(); // enable the mic if an OS speech engine is available (else stays hidden)
-      log('init: ready (voice=${_speech.available})');
+      _speech = await _pickSpeech(); // on-device sherpa if the model's present, else OS SAPI
+      log('init: ready (voice=${_speech?.available ?? false})');
       if (!mounted) return; // torn down during init -> don't setState
       // Opt-in diagnostic: set PLENARA_SELFTEST=1 to fire an immediate "notifications are
       // on" toast at launch (proven working; off by default so normal launches are quiet).
@@ -163,6 +160,31 @@ class _ChatState extends State<ChatScreen> {
             false));
       });
     }
+  }
+
+  /// Pick the best available recognizer: on-device sherpa_onnx (private, modern accuracy) if its
+  /// model is downloaded; else the OS SAPI engine (rough but built-in); else Noop (mic hidden).
+  /// A test-injected recognizer always wins; an injected session means "test" -> Noop.
+  Future<SpeechRecognizer> _pickSpeech() async {
+    final log = AppLog.instance;
+    if (widget.speech != null) {
+      await widget.speech!.init();
+      return widget.speech!;
+    }
+    if (widget.session != null) return NoopSpeechRecognizer();
+    final home = Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'] ?? '.';
+    final modelDir = '$home${Platform.pathSeparator}.plenara${Platform.pathSeparator}'
+        'models${Platform.pathSeparator}en-streaming-zipformer';
+    final sherpa = SherpaSpeechRecognizer(modelDir, onLog: (m) => log.debug('sherpa: $m'));
+    await sherpa.init();
+    if (sherpa.available) {
+      log('speech: using on-device sherpa_onnx');
+      return sherpa;
+    }
+    log.debug('speech: sherpa model unavailable -> falling back to OS SAPI');
+    final sys = SystemSpeechRecognizer(onLog: (m) => log.debug('speech: $m'));
+    await sys.init();
+    return sys;
   }
 
   Future<void> _send() async {
@@ -215,19 +237,19 @@ class _ChatState extends State<ChatScreen> {
   /// state, so the UI can never get stuck at "Listening…".
   Future<void> _toggleMic() async {
     final log = AppLog.instance;
-    if (!_speech.available || _busy) {
-      log.debug('speech: mic tap ignored (available=${_speech.available}, busy=$_busy)');
+    if (!(_speech?.available ?? false) || _busy) {
+      log.debug('speech: mic tap ignored (available=${_speech?.available ?? false}, busy=$_busy)');
       return;
     }
     if (_listening) {
       log.debug('speech: mic tap -> stop (abort)');
-      await _speech.stop(); // abort; anything not yet finalized by the engine is lost (see above)
+      await _speech!.stop(); // abort; anything not yet finalized by the engine is lost (see above)
       return;
     }
     log.debug('speech: mic tap -> start');
     setState(() => _listening = true);
     try {
-      await _speech.listen(
+      await _speech!.listen(
         onResult: (text, isFinal) {
           final t = text.trim();
           log.debug("speech: result '$t' final=$isFinal");
@@ -239,7 +261,7 @@ class _ChatState extends State<ChatScreen> {
           // fire another (unwanted) auto-send.
           if (isFinal) {
             setState(() => _listening = false);
-            unawaited(_speech.stop());
+            unawaited(_speech!.stop());
             if (!_busy) {
               log.debug('speech: auto-send on final result');
               _send();
@@ -259,7 +281,7 @@ class _ChatState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    _speech.cancel(); // never leave the recognizer recording after teardown (privacy)
+    _speech?.cancel(); // never leave the recognizer recording after teardown (privacy)
     _ctrl.dispose();
     _scroll.dispose();
     super.dispose();
@@ -327,7 +349,7 @@ class _ChatState extends State<ChatScreen> {
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(children: [
-                  if (_speech.available) ...[
+                  if (_speech?.available ?? false) ...[
                     IconButton(
                       icon: Icon(_listening ? Icons.stop_circle : Icons.mic_none),
                       color: _listening ? cs.error : null,
