@@ -134,6 +134,26 @@ void main() {
     });
   });
 
+  group('per-person dates / anniversaries (gap #8)', () {
+    test('set + query an anniversary, without colliding with birthdays', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle("Sarah's anniversary is august 3");
+      // a birthday on the same contact still uses the dedicated birthday field
+      await s.handle("Sarah's birthday is july 16");
+      final r = await s.handle("when is Sarah's anniversary");
+      expect(r, contains('2026-08-03'));
+      expect(r, contains('Sarah'));
+      // birthday query is unaffected
+      expect(await s.handle("when is Sarah's birthday"), contains('2026-07-16'));
+    });
+
+    test('unknown date label says so', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Sarah');
+      expect((await s.handle("when is Sarah's anniversary")).toLowerCase(), contains("don't know"));
+    });
+  });
+
   group('birthdays', () {
     test('set-birthday creates a contact with the birthday (month-name date)', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));

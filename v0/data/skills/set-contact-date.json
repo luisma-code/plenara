@@ -1,0 +1,30 @@
+{
+  "skillId": "set-contact-date",
+  "displayName": "Remember a date for a person",
+  "reads": [ "contact" ],
+  "writes": [ "contact", "contact_date" ],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "label", "required": true },
+    { "name": "date", "required": true, "type": "date" }
+  ],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personName" } }, "partial": true, "into": "person" },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          { "op": "write_record", "typeId": "contact", "fields": { "displayName": { "var": "personName" } }, "into": "person" }
+        ]
+      },
+      {
+        "op": "write_record",
+        "typeId": "contact_date",
+        "fields": { "subject": { "ref": "person" }, "label": { "var": "label" }, "date": { "var": "date" } },
+        "into": "newDate"
+      },
+      { "op": "format", "template": "Got it — {personName}'s {label} is {date}. I'll remind you when it's coming up.", "into": "confirmationText" }
+    ]
+  }
+}

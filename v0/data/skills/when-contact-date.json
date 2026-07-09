@@ -1,0 +1,45 @@
+{
+  "skillId": "when-contact-date",
+  "displayName": "When is a person's date",
+  "reads": [ "contact", "contact_date" ],
+  "writes": [],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "label", "required": true }
+  ],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personName" } }, "partial": true, "into": "person" },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          { "op": "format", "template": "I don't have {personName} as a contact yet.", "into": "confirmationText" }
+        ],
+        "else": [
+          {
+            "op": "read_one",
+            "typeId": "contact_date",
+            "match": { "subject": { "field": [ "person", "id" ] }, "label": { "var": "label" } },
+            "partial": true,
+            "into": "cd"
+          },
+          {
+            "op": "branch",
+            "cond": { "isNull": "cd" },
+            "then": [
+              { "op": "format", "template": "I don't know {personName}'s {label} yet.", "into": "confirmationText" }
+            ],
+            "else": [
+              { "op": "set", "var": "d", "value": { "field": [ "cd", "date" ] } },
+              { "op": "compute", "fn": "next_annual", "args": [ { "var": "d" } ], "into": "next" },
+              { "op": "compute", "fn": "days_until_annual", "args": [ { "var": "d" } ], "into": "days" },
+              { "op": "compute", "fn": "format_date", "args": [ { "var": "next" }, "EEEE" ], "into": "dayLabel" },
+              { "op": "format", "template": "{personName}'s {label} is {next} ({dayLabel}) — in {days} days.", "into": "confirmationText" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
