@@ -447,6 +447,13 @@ void main() {
       final s = await _session();
       expect((await s.handle('how far have i run this week')).toLowerCase(), contains("haven't logged any runs"));
     });
+
+    test('"what\'s my longest streak" routes to the streak view (queries gap #3)', () async {
+      final s = await _session();
+      await s.handle('log a 3k run');
+      final r = await s.handle("what's my longest streak");
+      expect(r.toLowerCase(), contains('longest'));
+    });
   });
 
   group('turnlog diagnostics — enough to diagnose a bad turn from the log alone', () {
