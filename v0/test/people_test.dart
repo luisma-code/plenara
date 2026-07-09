@@ -304,6 +304,21 @@ void main() {
       expect(await s.handle('what do i know about Mia'), contains('loves chess'));
       expect(s.store.values.where((x) => x['typeId'] == 'contact_relationship'), isEmpty);
     });
+
+    test('relation-between answers "how are X and Y related" in both directions (gap #2)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle("remember that Mia is Sarah's daughter");
+      expect(await s.handle('how are Sarah and Mia related'), contains("Mia is Sarah's daughter"));
+      expect(await s.handle('how are Mia and Sarah related'), contains("Mia is Sarah's daughter"));
+    });
+
+    test('relation-between with no known link says so', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Sarah');
+      await s.handle('talked to Ben');
+      expect((await s.handle('how are Sarah and Ben related')).toLowerCase(),
+          contains("don't have a relationship noted"));
+    });
   });
 
   group('list-relations', () {
