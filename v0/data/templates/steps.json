@@ -164,6 +164,82 @@
           }
         ]
       }
+    },
+    {
+      "skillId": "steps-today",
+      "displayName": "Steps today",
+      "reads": [
+        "step_log"
+      ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "today",
+            "into": "today"
+          },
+          {
+            "op": "read_many",
+            "typeId": "step_log",
+            "into": "logs"
+          },
+          {
+            "op": "set",
+            "var": "total",
+            "value": 0
+          },
+          {
+            "op": "foreach",
+            "list": {
+              "var": "logs"
+            },
+            "as": "e",
+            "body": [
+              {
+                "op": "branch",
+                "cond": {
+                  "gte": [
+                    {
+                      "field": [
+                        "e",
+                        "loggedAt"
+                      ]
+                    },
+                    {
+                      "var": "today"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "add",
+                    "args": [
+                      {
+                        "var": "total"
+                      },
+                      {
+                        "field": [
+                          "e",
+                          "count"
+                        ]
+                      }
+                    ],
+                    "into": "total"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "format",
+            "template": "You've logged {total} steps today.",
+            "into": "confirmationText"
+          }
+        ]
+      }
     }
   ],
   "corpus": [
@@ -278,6 +354,30 @@
     {
       "skillId": "steps-this-week",
       "template": "what are my steps for this week"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "how many steps today"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "how many steps have i taken today"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "steps today"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "my step count today"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "how many steps did i take today"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "step count for today"
     }
   ]
 }
