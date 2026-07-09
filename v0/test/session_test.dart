@@ -162,6 +162,19 @@ void main() {
     });
   });
 
+  group('relative-time reminders', () {
+    test('"remind me in 20 minutes to call mom" schedules it', () async {
+      final s = await _session();
+      final r = await s.handle('remind me in 20 minutes to call mom');
+      expect(r.toLowerCase(), contains('call mom'));
+      expect(s.store.values.any((x) => x['typeId'] == 'reminder'), isTrue);
+    });
+    test('"remind me to stretch in an hour"', () async {
+      final s = await _session();
+      expect((await s.handle('remind me to stretch in an hour')).toLowerCase(), contains('stretch'));
+    });
+  });
+
   group('gap-fill batch — new capabilities', () {
     test('partial description: "remove milk from my list" matches "buy milk"', () async {
       final s = await _session();

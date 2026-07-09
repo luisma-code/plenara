@@ -317,6 +317,22 @@ class Router {
   /// absent, it's today, rolled to tomorrow if the time already passed.
   String? resolveDateTime(String phrase, DateTime now) {
     final p = phrase.toLowerCase().trim();
+    // Relative offset: "in 20 minutes", "in an hour", "in half an hour", "20 mins", "2 hours".
+    // Requires a unit word (a bare number is never a relative time), so it can't over-match.
+    final rel = RegExp(r'^(?:in\s+)?(?:(\d+)|(an?)|(half an?|half a))\s+(minute|min|hour|hr)s?$').firstMatch(p);
+    if (rel != null) {
+      final perUnit = rel.group(4)!.startsWith('h') ? 60 : 1; // minutes per unit
+      final int amount;
+      if (rel.group(1) != null) {
+        amount = int.parse(rel.group(1)!) * perUnit;
+      } else if (rel.group(3) != null) {
+        amount = (perUnit / 2).round(); // "half an hour" -> 30
+      } else {
+        amount = perUnit; // "an hour" / "a minute"
+      }
+      if (amount <= 0) return null;
+      return now.add(Duration(minutes: amount)).toIso8601String();
+    }
     int? hh, mm;
     if (RegExp(r'\bnoon\b').hasMatch(p)) {
       hh = 12;
