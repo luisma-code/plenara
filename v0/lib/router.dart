@@ -141,6 +141,17 @@ class Router {
   static const _pastdayPat =
       r'(?:yesterday|today|(?:last\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))';
 
+  /// The bounded regex for a `moodword` slot — a CLOSED set of feeling adjectives, so a
+  /// bare "i'm {mood}" logs a mood without swallowing "i'm going to…" or "i'm 180 lbs".
+  static const _moodwordPat = r'(?:exhausted|tired|sleepy|drained|wiped|beat|spent|fried|'
+      r'happy|glad|good|great|amazing|wonderful|fantastic|ecstatic|joyful|cheerful|content|'
+      r'sad|down|low|blue|gloomy|miserable|depressed|lonely|upset|hurt|'
+      r'anxious|stressed|worried|nervous|overwhelmed|tense|restless|'
+      r'angry|mad|frustrated|annoyed|irritated|grumpy|cranky|'
+      r'calm|relaxed|peaceful|chill|content|'
+      r'excited|energized|energised|pumped|motivated|hopeful|refreshed|'
+      r'okay|ok|fine|alright|meh|blah|bored|unmotivated|sick|unwell|terrible|awful|rough)';
+
   static CorpusEntry _compile(Map<String, dynamic> e) {
     final tmpl = e['template'] as String;
     final slotTypes = <String, String>{};
@@ -164,7 +175,9 @@ class Router {
               ? '(?<$group>$_poswordPat)'
               : type == 'pastday'
                   ? '(?<$group>$_pastdayPat)'
-                  : '(?<$group>.+?)');
+                  : type == 'moodword'
+                      ? '(?<$group>$_moodwordPat)'
+                      : '(?<$group>.+?)');
       i = m.end;
     }
     sb.write(_lit(tmpl.substring(i)));

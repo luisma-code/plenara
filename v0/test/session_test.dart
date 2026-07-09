@@ -1023,6 +1023,22 @@ void main() {
       expect(r, contains('great'));
       expect(r, contains('tired'));
     });
+
+    test('bare mood statements log a mood (gap: bare mood)', () async {
+      final s = await _session();
+      expect(await s.handle("i'm exhausted"), contains('exhausted'));
+      expect(await s.handle('kind of down'), contains('down'));
+      expect(await s.handle("i'm a bit anxious"), contains('anxious'));
+      final moods = s.store.values.where((x) => x['typeId'] == 'mood').map((x) => x['rating']).toSet();
+      expect(moods, {'exhausted', 'down', 'anxious'});
+    });
+
+    test('control: "i\'m going to the gym" / "i\'m 180 lbs" are NOT moods', () async {
+      final s = await _session();
+      await s.handle("i'm going to the gym");
+      await s.handle("i'm 180 lbs");
+      expect(s.store.values.where((x) => x['typeId'] == 'mood').isEmpty, isTrue);
+    });
   });
 
   group('cross-skill integration: write -> read', () {
