@@ -306,11 +306,29 @@ void main() {
       ['friday at 12am', '2026-07-10T00:00:00'],
       ['thursday', null], // no time-of-day -> not a datetime
       ['next week', null],
-      ['5 oclock', null], // no am/pm and no colon -> not recognized as a time
+      ['5 oclock', null], // a bare DIGIT stays excluded (task-vs-reminder discriminator)
+      // WORD times (gap #44) — a spoken hour resolves; 1-6 default to PM (evening intent)
+      ['at five', '2026-07-06T17:00:00'],
+      ["five o'clock", '2026-07-06T17:00:00'],
+      ['half past six', '2026-07-06T18:30:00'],
+      ['quarter to seven', '2026-07-06T18:45:00'],
+      ['quarter past five', '2026-07-06T17:15:00'],
+      ['five thirty', '2026-07-06T17:30:00'],
+      ['seven pm', '2026-07-06T19:00:00'],
+      ['at eight', '2026-07-07T08:00:00'], // 7-12 stay as spoken -> 08:00 past 09:00 -> tomorrow
+      ['nine in the morning', '2026-07-07T09:00:00'], // 09:00 == now -> not after -> tomorrow
+      ['ten thirty', '2026-07-06T10:30:00'],
     ];
     for (final c in cases) {
       test('"${c[0]}" -> ${c[1]}', () => expect(_r.resolveDateTime(c[0]!, _now), c[1]));
     }
+
+    test('a word-time routes an at-reminder end to end', () {
+      final r = _r.route('remind me at five to call mom', clock: _now);
+      expect(r?['skillId'], 'set-reminder');
+      expect(r?['slots']['text'], 'call mom');
+      expect(r?['slots']['when'], '2026-07-06T17:00:00');
+    });
 
     test('a time-only phrase already past today rolls to tomorrow', () {
       expect(_r.resolveDateTime('at 8am', _now), '2026-07-07T08:00:00'); // 8am < 9am now

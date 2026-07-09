@@ -315,6 +315,53 @@ class Router {
   /// a date-only task ("call mom on thursday"). An optional leading day phrase
   /// (today/tomorrow/tonight/weekday/in N days/ISO) is resolved via [resolveDate];
   /// absent, it's today, rolled to tomorrow if the time already passed.
+  static const _numWords = {
+    'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6,
+    'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10, 'eleven': 11, 'twelve': 12,
+  };
+
+  /// Parse a spoken-word time-of-day in [p] into (hour24, minute), or null. Handles
+  /// "<word> o'clock", "half past <word>", "quarter past/to <word>", "<word> thirty/
+  /// fifteen/forty-five", and a bare "<word>" hour, plus an am/pm or morning/afternoon/
+  /// evening/night meridian. With no meridian, hours 1–6 read as PM (the common evening-
+  /// reminder intent — "remind me at five" is 5pm, not 5am); 7–12 stay as spoken.
+  static (int, int)? _wordTime(String p) {
+    final ws = _numWords.keys.join('|');
+    int? hour, minute;
+    RegExpMatch? m;
+    if ((m = RegExp('\\bhalf past ($ws)\\b').firstMatch(p)) != null) {
+      hour = _numWords[m!.group(1)];
+      minute = 30;
+    } else if ((m = RegExp('\\bquarter past ($ws)\\b').firstMatch(p)) != null) {
+      hour = _numWords[m!.group(1)];
+      minute = 15;
+    } else if ((m = RegExp('\\bquarter to ($ws)\\b').firstMatch(p)) != null) {
+      hour = (_numWords[m!.group(1)]! + 11) % 12; // hour - 1, wrapping 1 -> 12
+      if (hour == 0) hour = 12;
+      minute = 45;
+    } else if ((m = RegExp("\\b($ws)\\s+(thirty|fifteen|forty[- ]?five)\\b").firstMatch(p)) != null) {
+      hour = _numWords[m!.group(1)];
+      minute = m.group(2)!.startsWith('thirty') ? 30 : (m.group(2)!.startsWith('fifteen') ? 15 : 45);
+    } else if ((m = RegExp("\\b($ws)\\s*o'?clock\\b").firstMatch(p)) != null) {
+      hour = _numWords[m!.group(1)];
+      minute = 0;
+    } else if ((m = RegExp('^(?:at\\s+)?($ws)\\b').firstMatch(p.trim())) != null) {
+      hour = _numWords[m!.group(1)]; // a bare leading word-hour ("five", "at five")
+      minute = 0;
+    }
+    if (hour == null) return null;
+    final hasPm = RegExp(r'\bpm\b').hasMatch(p) || RegExp(r'\b(afternoon|evening|night|tonight)\b').hasMatch(p);
+    final hasAm = RegExp(r'\bam\b').hasMatch(p) || RegExp(r'\bmorning\b').hasMatch(p);
+    if (hasPm) {
+      if (hour < 12) hour += 12;
+    } else if (hasAm) {
+      if (hour == 12) hour = 0;
+    } else if (hour >= 1 && hour <= 6) {
+      hour += 12; // meridian-less evening default
+    }
+    return (hour, minute ?? 0);
+  }
+
   String? resolveDateTime(String phrase, DateTime now) {
     final p = phrase.toLowerCase().trim();
     // Relative offset: "in 20 minutes", "in an hour", "in half an hour", "20 mins", "2 hours".
@@ -357,16 +404,39 @@ class Router {
         }
       }
     }
+    // WORD times ("five o'clock", "half past six", "quarter to seven", "eight thirty",
+    // "five pm") — a spoken word-hour is unambiguously a time (you never say "five" as a
+    // date), so unlike a bare DIGIT it can safely resolve without breaking the task-vs-
+    // reminder discriminator. Only reached when no digit time matched.
+    var usedWordTime = false;
+    if (hh == null) {
+      final wt = _wordTime(p);
+      if (wt != null) {
+        hh = wt.$1;
+        mm = wt.$2;
+        usedWordTime = true;
+      }
+    }
     if (hh == null || mm == null) return null; // no time-of-day -> not a datetime
     if (hh > 23 || mm > 59) return null;
     // strip the time + connective words to leave a (possibly empty) date phrase
-    final dateWords = p
+    var dateWords = p
         .replaceAll(RegExp(r'\b\d{1,2}(?::\d{2})?\s*(am|pm)\b'), ' ')
         .replaceAll(RegExp(r'\b\d{1,2}:\d{2}\b'), ' ')
         .replaceAll(
             RegExp(r'\b(noon|midnight|at|tonight|this (?:evening|afternoon|morning))\b'), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
+    if (usedWordTime) {
+      dateWords = dateWords
+          .replaceAll(
+              RegExp(r"\b(half past|quarter past|quarter to|o'?clock|thirty|fifteen|"
+                  r"forty[- ]?five|am|pm|in the (?:morning|afternoon|evening)|at night|"
+                  r'one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b'),
+              ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+    }
     final resolvedDay = dateWords.isEmpty ? null : resolveDate(dateWords, now);
     final base = resolvedDay != null ? DateTime.parse(resolvedDay) : now;
     var dt = DateTime(base.year, base.month, base.day, hh, mm);
