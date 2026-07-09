@@ -21,23 +21,35 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `fedfa5e`**, working tree clean (ignore the pre-existing dirty
+**HEAD = `2fb3c1e`**, working tree clean (ignore the pre-existing dirty
 `planning/specs/05a-rig/results/embed-v0.log` + untracked `.claude/settings.local.json`),
-**1483 Dart tests + ~34 Flutter widget tests green** (full `precheck.sh` gate passes, coverage
-91.6%, conformance 24/60). **PRE-DOGFOOD FEATURE PUSH (4 of 5 done):** (#14) first-run
-onboarding — a keyless launch lands on a WelcomeScreen into the guided Connect flow; (#15) OFFLINE
-fact recall ("what's Mia allergic to") via a router `:contact` slot that only matches known people
-(no over-match); (#16) content/semantic search ("find that note about the cabin trip") — embed+
-cosine with an always-on keyword fallback; (#17) reference KB (Spec 13) — 403-food nutrition
-dataset + a `read_reference` DSL op + tiered resolver, so "I ate mac and cheese" logs ~390 cal with
-provenance and an unknown food logs honestly (no guess). **PRE-DISTRIBUTION TODO (not a dogfood
-blocker — works on this dev box):** the app still seeds first-run capability data from the dev path
-`sourceDataDir = Z:\code\plenara\v0\data` (`app/lib/main.dart`); `ensureSeeded` now THROWS loudly
-if that's missing (instead of a silent empty boot), but before shipping to another machine, bundle
-`v0/data/` as Flutter assets and seed from `rootBundle`. (#18) voice/STT — SEAM SHIPPED (mic
-button, push-to-talk, text fallback, widget-tested); concrete engine (sherpa_onnx + record,
-offline) specified in Spec 14, ready to enable, blocked only on a CMake 3.23+ bump (env has 3.20)
-+ a model-provisioning choice — both Luis's, not code blockers. **CLOUD TIER VALIDATED LIVE** (Luis's BYOK key, now set in `~/.plenara/config.json`): the
+**1507 Dart tests + ~40 Flutter widget tests green** (full `precheck.sh` gate passes, coverage
+91.7%, conformance 24/60). The Windows app has been **dogfooded live** through many iterations;
+it's running with on-device voice + the expanded corpus.
+
+**VOICE (#18) — SHIPPED, on-device.** `speech_to_text`/SAPI was too inaccurate (Fable root-caused
+its late-delivery bug in the C++), so switched to **sherpa_onnx Whisper base.en + Silero VAD**
+(`app/lib/sherpa_speech.dart`): tap mic → speak → a ~1s pause finalizes → auto-sends; modern
+accuracy, offline, private. Behind the same `SpeechRecognizer` seam (SAPI/Noop fallback). Toolchain:
+**CMake 4.3.4** installed + the VS2019 cmake dir symlinked to it (record_windows needs ≥3.23); model
+pre-provisioned at `~/.plenara/models/en-whisper` (TODO: download-on-first-run, ~/.plenara/models,
+int8 ~150MB — recognizer no-ops to SAPI/typing if absent). A verbose `AppLog.debug` tier (on in
+debug, off in retail) logs the full speech lifecycle.
+
+**PHRASING-COVERAGE EXPANSION.** Six Fable agents brainstormed ~30 variants/capability; corpus grew
+~190 → **640 templates** + 112 tracker phrasings across all hero scenarios (analyses + integrate.py
+in `planning/phrasing/`). Over-match hardened: new router **`:entity` guard** (a name slot can't
+start with an article/pronoun), 6 ambiguous templates dropped, 8 regex upgrades (search + meta). +13
+regression guards. **NEW dogfood-driven skills:** `clear-tasks` ("delete all my todos", undo-safe),
+`steps-today`. **~54 gaps catalogued** in `planning/phrasing/*.json` (unit conversion — note: a
+separate log-run-miles skill confused the CLOUD router, so do unit-aware single skills instead;
+weight queries, relative-time reminders, non-running goals, etc.).
+
+Earlier PRE-DOGFOOD PUSH (all shipped): (#14) first-run onboarding WelcomeScreen; (#15) OFFLINE fact
+recall via the `:contact` slot; (#16) content/semantic search; (#17) reference KB (403-food nutrition,
+`read_reference` op). **PRE-DISTRIBUTION TODO:** the app seeds first-run data from the dev path
+`sourceDataDir = Z:\code\plenara\v0\data`; `ensureSeeded` THROWS loudly if missing — bundle `v0/data/`
+as Flutter assets before shipping elsewhere. **CLOUD TIER VALIDATED LIVE** (Luis's BYOK key, now set in `~/.plenara/config.json`): the
 generative kinds produce excellent grounded output (gift ideas off a contact's real hobbies,
 briefing, weekly review honest about light logging, pattern-insight degrading on thin data,
 in-voice draft), authoring works end-to-end (DF-01 offer → yes → "Log Pushups"/"Log Water Intake"
