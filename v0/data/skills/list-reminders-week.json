@@ -1,0 +1,57 @@
+{
+  "skillId": "list-reminders-week",
+  "displayName": "List your reminders for this week",
+  "reads": [
+    "reminder"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      { "op": "compute", "fn": "start_of_week", "args": [ { "var": "today" } ], "into": "sow" },
+      { "op": "compute", "fn": "concat", "args": [ { "var": "sow" }, "T00:00:00" ], "into": "lo" },
+      { "op": "compute", "fn": "add_days", "args": [ { "var": "sow" }, 7 ], "into": "eow" },
+      { "op": "compute", "fn": "concat", "args": [ { "var": "eow" }, "T00:00:00" ], "into": "hi" },
+      {
+        "op": "read_many",
+        "typeId": "reminder",
+        "filter": [
+          { "field": "done", "op": "eq", "value": false },
+          { "field": "remindAt", "op": "gte", "value": { "var": "lo" } },
+          { "field": "remindAt", "op": "lt", "value": { "var": "hi" } }
+        ],
+        "orderBy": "remindAt",
+        "orderDir": "asc",
+        "into": "rems"
+      },
+      { "op": "set", "var": "lines", "value": "" },
+      {
+        "op": "foreach",
+        "list": { "var": "rems" },
+        "as": "r",
+        "body": [
+          { "op": "compute", "fn": "format_date", "args": [ { "field": [ "r", "remindAt" ] }, "EEEE" ], "into": "d" },
+          { "op": "compute", "fn": "format_time", "args": [ { "field": [ "r", "remindAt" ] } ], "into": "tm" },
+          {
+            "op": "compute",
+            "fn": "concat",
+            "args": [ { "var": "lines" }, "\n  • ", { "field": [ "r", "text" ] }, " — ", { "var": "d" }, " at ", { "var": "tm" } ],
+            "into": "lines"
+          }
+        ]
+      },
+      { "op": "compute", "fn": "count", "args": [ { "var": "rems" } ], "into": "n" },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "You have {n} reminder(s) this week:{lines}", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "You have no reminders this week.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

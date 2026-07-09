@@ -508,8 +508,12 @@ class Interpreter {
           if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_many unknown type '$tid'");
           c.readTypes.add(tid as String);
           final f = step['filter'];
-          if (f != null && f['op'] != null && !_filterOps.contains(f['op'])) {
-            throw ResolveError("${c.sid}: read_many unsupported filter op '${f['op']}' (${_filterOps.join('/')})");
+          if (f != null) {
+            for (final p in (f is List ? f : [f])) {
+              if (p is Map && p['op'] != null && !_filterOps.contains(p['op'])) {
+                throw ResolveError("${c.sid}: read_many unsupported filter op '${p['op']}' (${_filterOps.join('/')})");
+              }
+            }
           }
           if (step['orderDir'] != null && step['orderDir'] != 'asc' && step['orderDir'] != 'desc') {
             throw ResolveError("${c.sid}: read_many orderDir must be 'asc' or 'desc'");
@@ -658,10 +662,16 @@ class Interpreter {
         var recs = store.values.where((r) => r['typeId'] == step['typeId']).toList();
         final f = step['filter'];
         if (f != null) {
-          final op = (f as Map)['op'] ?? 'eq';
-          // fail loudly on a bad op even over an empty set (never silently match all)
-          if (!_filterOps.contains(op)) throw ResolveError("read_many: unsupported filter op '$op'");
-          recs = recs.where((r) => _filterMatch(f, r, env)).toList();
+          // filter may be a single predicate {field,op,value} OR a list of predicates
+          // (ANDed) — the list form lets a skill express a date RANGE (remindAt gte lo
+          // AND remindAt lt hi) without a dedicated compound op.
+          final preds = f is List ? f : [f];
+          for (final p in preds) {
+            final op = (p as Map)['op'] ?? 'eq';
+            // fail loudly on a bad op even over an empty set (never silently match all)
+            if (!_filterOps.contains(op)) throw ResolveError("read_many: unsupported filter op '$op'");
+          }
+          recs = recs.where((r) => preds.every((p) => _filterMatch(p as Map, r, env))).toList();
         }
         // orderBy <field> [orderDir asc|desc]
         final orderBy = step['orderBy'];

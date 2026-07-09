@@ -417,6 +417,35 @@ void main() {
     });
   });
 
+  group('date-filtered reminder listing (gap #50)', () {
+    Future<Session> seeded() async {
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: FakeScheduler());
+      await s.init(retrieval: false);
+      await s.handle('remind me to call mom tomorrow at 5pm'); // 07-07 (this week)
+      await s.handle('remind me to see the dentist next monday at 2pm'); // 07-13 (next week)
+      return s;
+    }
+
+    test('"what reminders do I have tomorrow" filters to that day', () async {
+      final r = await (await seeded()).handle('what reminders do i have tomorrow');
+      expect(r, contains('1 reminder'));
+      expect(r, contains('call mom'));
+      expect(r, isNot(contains('dentist')));
+    });
+
+    test('"what reminders do I have this week" spans Mon–Sun of the current week', () async {
+      final r = await (await seeded()).handle('what reminders do i have this week');
+      expect(r, contains('1 reminder')); // call mom is this week; dentist (next Mon) is not
+      expect(r, contains('call mom'));
+      expect(r, isNot(contains('dentist')));
+    });
+
+    test('a day with nothing scheduled says so', () async {
+      final r = await (await seeded()).handle('what reminders do i have friday');
+      expect(r.toLowerCase(), contains('no reminders'));
+    });
+  });
+
   group('ProvideSlot — missing-slot follow-up dialogue (§6.3)', () {
     Session _reminderMissingWhen(FakeScheduler fake) => Session(makeTempDataDir(),
         clock: _now,
