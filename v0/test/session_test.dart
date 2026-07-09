@@ -162,6 +162,15 @@ void main() {
     });
   });
 
+  group('latest-weight — weight tracker query (was missing)', () {
+    test('logs then reports the most recent weight', () async {
+      final s = await _session();
+      await s.handle('start tracking my weight');
+      await s.handle('i weigh 180');
+      expect((await s.handle("what's my weight")), contains('180'));
+    });
+  });
+
   group('clear-tasks — bulk delete + undo', () {
     test('"delete all my tasks" clears the list with a count', () async {
       final s = await _session();

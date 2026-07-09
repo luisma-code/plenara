@@ -82,6 +82,56 @@
           }
         ]
       }
+    },
+    {
+      "skillId": "latest-weight",
+      "displayName": "Latest weight",
+      "reads": [
+        "weight_log"
+      ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          {
+            "op": "format",
+            "template": "You haven't logged your weight yet.",
+            "into": "confirmationText"
+          },
+          {
+            "op": "read_many",
+            "typeId": "weight_log",
+            "orderBy": "loggedAt",
+            "orderDir": "desc",
+            "limit": 1,
+            "into": "logs"
+          },
+          {
+            "op": "foreach",
+            "list": {
+              "var": "logs"
+            },
+            "as": "w",
+            "body": [
+              {
+                "op": "set",
+                "var": "val",
+                "value": {
+                  "field": [
+                    "w",
+                    "value"
+                  ]
+                }
+              },
+              {
+                "op": "format",
+                "template": "Your most recent weight is {val}.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "corpus": [
@@ -144,6 +194,38 @@
     {
       "skillId": "log-weight",
       "template": "log weight {value:quantity}"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "what's my weight"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "what is my weight"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "how much do i weigh"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "my current weight"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "what's my current weight"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "what did i weigh"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "my latest weight"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "how much did i weigh"
     }
   ]
 }
