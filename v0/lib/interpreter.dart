@@ -235,6 +235,18 @@ class Interpreter {
         if (lst is! List || lst.isEmpty || ix == null) return null;
         final at = ix < 0 ? lst.length + ix : ix - 1;
         return (at < 0 || at >= lst.length) ? null : lst[at];
+      case 'dedup_list':
+        // remove case-insensitive duplicates from a list of strings, keeping first-seen
+        // order — so "milk, eggs, milk" collapses to two items before they're written.
+        final inList = a.isEmpty ? null : a[0];
+        if (inList is! List) return inList;
+        final seen = <String>{};
+        final deduped = <dynamic>[];
+        for (final e in inList) {
+          final key = '$e'.trim().toLowerCase();
+          if (seen.add(key)) deduped.add(e);
+        }
+        return deduped;
       case 'weekday_nums':
         // free weekday text ("monday and thursday", "tue, wed, fri", "tuesdays & fridays")
         // -> sorted comma-joined ISO weekday numbers ("1,4"). Empty string if none parse,
@@ -383,6 +395,10 @@ class Interpreter {
         return _cmp(rv, fv) < 0;
       case 'contains':
         return rv is String && fv is String && rv.toLowerCase().contains(fv.toLowerCase());
+      case 'ieq':
+        // case-insensitive, whitespace-trimmed string equality — for duplicate detection
+        // ("Buy Milk" == "buy milk") without depending on exact casing.
+        return rv is String && fv is String && rv.trim().toLowerCase() == fv.trim().toLowerCase();
       case 'in':
         return fv is List && fv.contains(rv);
       default:
@@ -395,8 +411,8 @@ class Interpreter {
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'years_since', 'current_streak', 'longest_streak',
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num', 'ordinal_suffix',
-    'weekday_nums', 'date_part', 'time_part', 'split_list', 'position_index', 'nth', 'mul', 'div', 'round'};
-  static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};
+    'weekday_nums', 'date_part', 'time_part', 'split_list', 'dedup_list', 'position_index', 'nth', 'mul', 'div', 'round'};
+  static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'ieq', 'in', 'isNull', 'notNull'};
   // The Spec 01 §3 canonical value-type set (fixed; a new one needs a kernel bump). `integer`
   // is retained only as a tolerated legacy alias for `number` (older authored types).
   static const _valueTypes = {

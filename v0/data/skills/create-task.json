@@ -1,113 +1,113 @@
 {
   "skillId": "create-task",
   "displayName": "Create a task",
-  "reads": [],
-  "writes": [
-    "task"
-  ],
+  "reads": [ "task" ],
+  "writes": [ "task" ],
   "inputs": [
-    {
-      "name": "description",
-      "required": true
-    },
-    {
-      "name": "dueDate",
-      "required": false,
-      "type": "date"
-    }
+    { "name": "description", "required": true },
+    { "name": "dueDate", "required": false, "type": "date" }
   ],
   "steps": {
     "main": [
-      {
-        "op": "compute",
-        "fn": "now",
-        "into": "createdAt"
-      },
-      { "op": "compute", "fn": "split_list", "args": [ { "var": "description" } ], "into": "items" },
+      { "op": "compute", "fn": "now", "into": "createdAt" },
+      { "op": "compute", "fn": "split_list", "args": [ { "var": "description" } ], "into": "items0" },
+      { "op": "compute", "fn": "dedup_list", "args": [ { "var": "items0" } ], "into": "items" },
       { "op": "compute", "fn": "count", "args": [ { "var": "items" } ], "into": "itemCount" },
       {
         "op": "branch",
         "cond": { "gte": [ { "var": "itemCount" }, 2 ] },
         "then": [
           { "op": "set", "var": "names", "value": "" },
+          { "op": "set", "var": "added", "value": 0 },
           {
             "op": "foreach",
             "list": { "var": "items" },
             "as": "item",
             "body": [
               {
-                "op": "write_record",
+                "op": "read_many",
                 "typeId": "task",
-                "fields": {
-                  "description": { "var": "item" },
-                  "dueAt": { "var": "dueDate" },
-                  "createdAt": { "var": "createdAt" }
-                },
-                "into": "newTask"
+                "filter": [
+                  { "field": "description", "op": "ieq", "value": { "var": "item" } },
+                  { "field": "completed", "op": "neq", "value": true }
+                ],
+                "into": "dupes"
               },
-              { "op": "compute", "fn": "concat", "args": [ { "var": "names" }, "\n  • ", { "var": "item" } ], "into": "names" }
+              { "op": "compute", "fn": "count", "args": [ { "var": "dupes" } ], "into": "ne" },
+              {
+                "op": "branch",
+                "cond": { "eq": [ { "var": "ne" }, 0 ] },
+                "then": [
+                  {
+                    "op": "write_record",
+                    "typeId": "task",
+                    "fields": { "description": { "var": "item" }, "dueAt": { "var": "dueDate" }, "createdAt": { "var": "createdAt" } },
+                    "into": "newTask"
+                  },
+                  { "op": "compute", "fn": "concat", "args": [ { "var": "names" }, "\n  • ", { "var": "item" } ], "into": "names" },
+                  { "op": "compute", "fn": "add", "args": [ { "var": "added" }, 1 ], "into": "added" }
+                ]
+              }
             ]
           },
           {
             "op": "branch",
-            "cond": { "notNull": "dueDate" },
+            "cond": { "gte": [ { "var": "added" }, 1 ] },
             "then": [
-              { "op": "compute", "fn": "format_date", "args": [ { "var": "dueDate" }, "EEEE" ], "into": "dueLabel" },
-              { "op": "format", "template": "Added {itemCount} tasks, due {dueLabel}:{names}", "into": "confirmationText" }
+              {
+                "op": "branch",
+                "cond": { "notNull": "dueDate" },
+                "then": [
+                  { "op": "compute", "fn": "format_date", "args": [ { "var": "dueDate" }, "EEEE" ], "into": "dueLabel" },
+                  { "op": "format", "template": "Added {added} task(s), due {dueLabel}:{names}", "into": "confirmationText" }
+                ],
+                "else": [
+                  { "op": "format", "template": "Added {added} task(s):{names}", "into": "confirmationText" }
+                ]
+              }
             ],
             "else": [
-              { "op": "format", "template": "Added {itemCount} tasks:{names}", "into": "confirmationText" }
+              { "op": "format", "template": "Those are all already on your list.", "into": "confirmationText" }
             ]
           }
         ],
         "else": [
-      {
-        "op": "write_record",
-        "typeId": "task",
-        "fields": {
-          "description": {
-            "var": "description"
-          },
-          "dueAt": {
-            "var": "dueDate"
-          },
-          "createdAt": {
-            "var": "createdAt"
-          }
-        },
-        "into": "newTask"
-      },
-      {
-        "op": "branch",
-        "cond": {
-          "notNull": "dueDate"
-        },
-        "then": [
           {
-            "op": "compute",
-            "fn": "format_date",
-            "args": [
-              {
-                "var": "dueDate"
-              },
-              "EEEE"
+            "op": "read_many",
+            "typeId": "task",
+            "filter": [
+              { "field": "description", "op": "ieq", "value": { "var": "description" } },
+              { "field": "completed", "op": "neq", "value": true }
             ],
-            "into": "dueLabel"
+            "into": "dupes"
           },
+          { "op": "compute", "fn": "count", "args": [ { "var": "dupes" } ], "into": "ne" },
           {
-            "op": "format",
-            "template": "Added \"{description}\" to your tasks, due {dueLabel}.",
-            "into": "confirmationText"
+            "op": "branch",
+            "cond": { "eq": [ { "var": "ne" }, 0 ] },
+            "then": [
+              {
+                "op": "write_record",
+                "typeId": "task",
+                "fields": { "description": { "var": "description" }, "dueAt": { "var": "dueDate" }, "createdAt": { "var": "createdAt" } },
+                "into": "newTask"
+              },
+              {
+                "op": "branch",
+                "cond": { "notNull": "dueDate" },
+                "then": [
+                  { "op": "compute", "fn": "format_date", "args": [ { "var": "dueDate" }, "EEEE" ], "into": "dueLabel" },
+                  { "op": "format", "template": "Added \"{description}\" to your tasks, due {dueLabel}.", "into": "confirmationText" }
+                ],
+                "else": [
+                  { "op": "format", "template": "Added \"{description}\" to your tasks.", "into": "confirmationText" }
+                ]
+              }
+            ],
+            "else": [
+              { "op": "format", "template": "\"{description}\" is already on your list.", "into": "confirmationText" }
+            ]
           }
-        ],
-        "else": [
-          {
-            "op": "format",
-            "template": "Added \"{description}\" to your tasks.",
-            "into": "confirmationText"
-          }
-        ]
-      }
         ]
       }
     ]

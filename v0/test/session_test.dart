@@ -672,7 +672,7 @@ void main() {
     test('a comma list with Oxford "and" creates one task per item', () async {
       final s = await _session();
       final r = await s.handle('add buy milk, call mom, and gym to my list');
-      expect(r, contains('3 tasks'));
+      expect(r, contains('Added 3 task'));
       final descs = s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description']).toSet();
       expect(descs, {'buy milk', 'call mom', 'gym'});
     });
@@ -697,6 +697,48 @@ void main() {
       await s.handle('add renew the registration, add that to my list');
       final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();
       expect(tasks.length, 1);
+    });
+  });
+
+  group('task de-duplication (user-reported)', () {
+    Set<String> taskDescs(Session s) =>
+        s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description'] as String).toSet();
+
+    test('adding the same task twice does not duplicate it', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      final r = await s.handle('add buy milk to my list');
+      expect(r.toLowerCase(), contains('already on your list'));
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1);
+    });
+
+    test('duplicate detection is case-insensitive', () async {
+      final s = await _session();
+      await s.handle('add Buy Milk to my list');
+      await s.handle('add buy milk to my list');
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1);
+    });
+
+    test('a completed task can be re-added (dedupe only guards the active list)', () async {
+      final s = await _session();
+      await s.handle('add buy milk to my list');
+      await s.handle('mark buy milk done');
+      await s.handle('add buy milk to my list'); // fresh active task
+      expect(s.store.values.where((x) => x['typeId'] == 'task' && x['completed'] != true).length, 1);
+    });
+
+    test('a multi-add collapses repeats within the utterance', () async {
+      final s = await _session();
+      await s.handle('add milk, eggs, and milk to my list');
+      expect(taskDescs(s), {'milk', 'eggs'});
+    });
+
+    test('a multi-add skips items already on the list', () async {
+      final s = await _session();
+      await s.handle('add milk to my list');
+      final r = await s.handle('add milk, eggs, and bread to my list');
+      expect(r, contains('Added 2 task')); // milk skipped, eggs + bread added
+      expect(taskDescs(s), {'milk', 'eggs', 'bread'});
     });
   });
 
