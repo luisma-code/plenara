@@ -23,6 +23,13 @@ final _undoRe = RegExp(
 final _helpRe = RegExp(
     r"^(?:help|help me|what (?:can|do) you do|what else can you do|what can i (?:say|do|ask)(?: you)?|what (?:are|do) (?:your|you have for) (?:skills|capabilities|commands|features)|what are (?:my|the) options|what (?:commands|features) (?:do you have|are there|can i use)|show me (?:what you can do|the commands|your skills)|list (?:your )?(?:commands|skills|capabilities)|how do i use (?:this|you|it|the app)|how does this (?:app )?work|what (?:can|does) (?:this|the) app do|what can plenara do|give me (?:some )?examples|what should i say|i don'?t know what to (?:say|do|ask)(?: you)?)\??$",
     caseSensitive: false);
+// Domain-scoped help (queries gap): captures the TOPIC of a help request so we can answer
+// "what can you do with reminders" / "how do I track water" with just that area's examples.
+// Only help-shaped stems match; the captured topic is validated against known domains before
+// it wins, so "tell me about Sarah"-style phrasings never reach this.
+final _helpTopicRe = RegExp(
+    r"^(?:what can (?:you|i) do with|what can i do (?:for|about)|how (?:do|can|would) i (?:use|track|log|manage|handle)|how do(?:es)?|help (?:me )?with|what are my options for)\s+(?:my |the )?(.+?)(?:\s+work)?\??$",
+    caseSensitive: false);
 // Correction (§3.3): a natural prefix + "I meant …" reverses the last turn and re-routes.
 // The "I meant" anchor is deliberate — a bare "no, X" is too easily a non-correction, and
 // reversing a good write on a false positive is the worse failure.
@@ -411,6 +418,51 @@ class Session {
     return 'Here\'s what I can do:\n${lines.join('\n')}\nAnd "undo that" reverses the last thing.';
   }
 
+  /// Domain-scoped help: given the captured topic, return just that area's examples, or
+  /// null if the topic isn't a recognized domain (so the caller falls through to routing).
+  String? _helpForTopic(String topic) {
+    final t = topic.toLowerCase();
+    bool m(List<String> kws) => kws.any(t.contains);
+    bool has(String id) => skills.containsKey(id);
+    if (m(['reminder']) && has('set-reminder')) {
+      return 'With reminders you can say things like: "remind me to call mom on thursday at 5pm", '
+          '"remind me every weekday at 9am to stretch", "remind me on the 15th of every month to pay rent", '
+          '"what reminders do I have tomorrow", "snooze the reminder to X to friday at 9am", "cancel the reminder to X".';
+    }
+    if (m(['task', 'todo', 'to-do', 'to do']) && has('create-task')) {
+      return 'With tasks you can say: "add call the plumber to my list", "add milk, eggs, and bread to my list", '
+          '"list my tasks", "what\'s due tomorrow", "move X to friday", "mark X done", "delete the first task".';
+    }
+    if (m(['run', 'jog', 'exercise', 'workout']) && has('log-run')) {
+      return 'For running: "log a 3k run", "how much have I run this week", "how far have I run", "what\'s my running streak".';
+    }
+    if (m(['mood', 'feeling', 'feel']) && has('log-mood')) {
+      return 'For mood: "I\'m feeling great", "I\'m exhausted", "how have I been feeling".';
+    }
+    if (m(['journal', 'diary']) && has('log-journal')) {
+      return 'For your journal: "journal that today was a good day", "read my journal", '
+          '"what did I write yesterday", "delete my last journal entry".';
+    }
+    if (m(['people', 'contact', 'friend', 'relationship']) && has('remember-person-fact')) {
+      return 'For people: "remember that Mia is Sarah\'s daughter", "what do I know about Mia", '
+          '"talked to Sam yesterday", "how old is Sarah", "when did I last talk to Sam".';
+    }
+    if (m(['birthday', 'bday']) && has('set-birthday')) {
+      return 'For birthdays: "Sarah\'s birthday is july 16", "when is Sarah\'s birthday", "whose birthday is coming up".';
+    }
+    if (m(['meal', 'food', 'eat', 'calorie']) && has('log-meal')) {
+      return 'For meals: "I had eggs for breakfast", "what did I eat today", "how many calories have I had today".';
+    }
+    if (m(['water', 'hydrat', 'step', 'weight', 'reading', 'medication', 'meds', 'track'])) {
+      return 'You can start a new tracker any time — e.g. "start tracking my water intake", '
+          '"start tracking my steps", or "start tracking my weight" — then log with things like "I drank 2 glasses of water".';
+    }
+    if (m(['nickname', 'alias']) && has('set-alias')) {
+      return 'For nicknames: "Sarah\'s nickname is Mum", then "when did I last talk to Mum".';
+    }
+    return null;
+  }
+
   /// Resolve a cloud-routed skill's declared date/datetime input slots through the
   /// deterministic resolver, so the cloud path matches the corpus path's typed slots.
   /// An unresolvable required datetime becomes null — which drops into a skill's own
@@ -712,6 +764,17 @@ class Session {
     if (_helpRe.hasMatch(u)) {
       _outSource = 'help';
       return _helpText();
+    }
+    // Domain-scoped help (queries gap): "what can you do with reminders", "how do I
+    // track water". Only fires for a RECOGNIZED topic — an unknown topic falls through
+    // to normal routing so it can't hijack a real query.
+    final topicMatch = _helpTopicRe.firstMatch(u);
+    if (topicMatch != null) {
+      final domainHelp = _helpForTopic(topicMatch.group(1)!);
+      if (domainHelp != null) {
+        _outSource = 'help';
+        return domainHelp;
+      }
     }
 
     // Re-classification (F-14): "no, that was a walk" reverses the last (mis-typed) workout

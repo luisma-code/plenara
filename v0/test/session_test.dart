@@ -1104,6 +1104,26 @@ void main() {
       expect(r, contains('undo'));
       expect(s.store, isEmpty); // discoverability is read-only
     });
+    test('domain-scoped help (queries gap): "what can you do with reminders"', () async {
+      final s = await _session();
+      final r = await s.handle('what can you do with reminders');
+      expect(r.toLowerCase(), contains('reminder'));
+      expect(r.contains('Here\'s what I can do'), isFalse); // focused, not the full overview
+      expect(r.contains('Birthdays'), isFalse);
+      expect(s.store, isEmpty);
+    });
+    test('"how do I track water" points at the tracker flow', () async {
+      final s = await _session();
+      final r = await s.handle('how do i track water');
+      expect(r.toLowerCase(), contains('start tracking'));
+    });
+    test('an unrecognized help topic does NOT hijack routing', () async {
+      final s = await _session();
+      // "how do i" + a non-domain topic -> falls through (no domain help returned)
+      final r = await s.handle('how do i get to the airport');
+      expect(r.contains('start tracking'), isFalse);
+      expect(r.contains('With reminders'), isFalse);
+    });
     test('undo with nothing to undo', () async {
       final s = await _session();
       expect(await s.handle('undo'), contains('Nothing to undo'));
