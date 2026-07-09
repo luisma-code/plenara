@@ -85,6 +85,30 @@ void main() {
     });
   });
 
+  group('neglected-contacts (gap: who haven\'t I talked to)', () {
+    test('surfaces stale + never-contacted people, hides the recent ones', () async {
+      final dir = makeTempDataDir();
+      // Ed: talked to long ago (2026-05-01, > 30 days before the 07-06 query)
+      final sOld = await _session(dir, clock: _d('2026-05-01'));
+      await sOld.handle('talked to Ed');
+      // Mia: a contact with no interactions (created via a birthday)
+      final sMid = await _session(dir, clock: _d('2026-07-06'));
+      await sMid.handle("Mia's birthday is august 3");
+      // Sarah: talked to today (recent)
+      await sMid.handle('talked to Sarah');
+      final r = await sMid.handle('who haven\'t i talked to in a while');
+      expect(r, contains('Ed'));
+      expect(r, contains('Mia'));
+      expect(r.contains('Sarah'), isFalse);
+    });
+
+    test('clear message when everyone is recent', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Sarah');
+      expect((await s.handle('who have i been neglecting')).toLowerCase(), contains('good touch'));
+    });
+  });
+
   group('last-interaction (max date via reduction, not insertion order)', () {
     test('reports the most recent date even when logged out of order', () async {
       final dir = makeTempDataDir();
