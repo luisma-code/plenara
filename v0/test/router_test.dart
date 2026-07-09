@@ -353,6 +353,25 @@ void main() {
       expect(r?['skillId'], 'create-task');
       expect(r?['slots']['dueDate'], '2026-07-10');
     });
+    test('postfix day + time keeps the day (gap #54): "X tomorrow at 5pm"', () {
+      final r = _r.route('remind me to call mom tomorrow at 5pm', clock: _now);
+      expect(r?['skillId'], 'set-reminder-on-day');
+      expect(r?['slots']['text'], 'call mom');
+      expect(r?['slots']['day'], '2026-07-07');
+      expect(r?['slots']['when'], '2026-07-06T17:00:00'); // just the time part is combined with the day
+    });
+    test('bare postfix day, no time -> dated create-task (gap #45): "X tomorrow"', () {
+      final r = _r.route('remind me to call mom tomorrow', clock: _now);
+      expect(r?['skillId'], 'create-task');
+      expect(r?['slots']['description'], 'call mom');
+      expect(r?['slots']['dueDate'], '2026-07-07');
+    });
+    test('leading day, no time -> dated create-task (gap #45): "remind me tomorrow to X"', () {
+      final r = _r.route('remind me tomorrow to call mom', clock: _now);
+      expect(r?['skillId'], 'create-task');
+      expect(r?['slots']['description'], 'call mom');
+      expect(r?['slots']['dueDate'], '2026-07-07');
+    });
   });
 
   group('reminder management routing (wins over task ops on overlap)', () {

@@ -123,6 +123,12 @@ class Router {
 
   /// Compile a template like "add {description:text} to my {_:text}" into a
   /// case-insensitive anchored regex with named capture groups.
+  /// The bounded regex for a `dayword` slot — the day expressions [resolveDate]
+  /// understands, longest-first so "next friday" wins over "friday".
+  static const _daywordPat =
+      r'(?:today|tomorrow|tonight|this\s+(?:morning|afternoon|evening)|'
+      r'(?:next\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))';
+
   static CorpusEntry _compile(Map<String, dynamic> e) {
     final tmpl = e['template'] as String;
     final slotTypes = <String, String>{};
@@ -134,7 +140,13 @@ class Router {
       final name = m.group(1)!, type = m.group(2)!;
       final group = name == '_' ? 'ignore${gi++}' : name;
       if (name != '_') slotTypes[name] = type;
-      sb.write('(?<$group>.+?)');
+      // A `dayword` slot is CONSTRAINED to actual day expressions ("tomorrow",
+      // "next friday", ...) rather than `.+?`. That lets a day sit between two
+      // free-text slots and still split correctly — the router validates one regex
+      // match and does NOT backtrack across alternative splits (gaps #54/#11), so a
+      // greedy `.+?` day would grab "mom tomorrow" and fail. A bounded pattern makes
+      // the only viable split the correct one.
+      sb.write(type == 'dayword' ? '(?<$group>$_daywordPat)' : '(?<$group>.+?)');
       i = m.end;
     }
     sb.write(_lit(tmpl.substring(i)));
@@ -185,7 +197,10 @@ class Router {
           // means this template doesn't apply; fall through. (For datetime this is also the task-vs-
           // reminder discriminator: "on friday" has no time -> null -> the reminder template is
           // skipped and the date-only create-task template wins.)
-          if (v == null && (type == 'date' || type == 'datetime' || type == 'contact' || type == 'entity')) ok = false;
+          if (v == null &&
+              (type == 'date' || type == 'dayword' || type == 'datetime' || type == 'contact' || type == 'entity')) {
+            ok = false;
+          }
           slots[name] = v;
         });
         if (ok) return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};
@@ -256,6 +271,7 @@ class Router {
     if (raw == null) return null;
     switch (type) {
       case 'date':
+      case 'dayword': // a constrained day expression — same resolution as a date slot
         return resolveDate(raw, asOf);
       case 'datetime':
         return resolveDateTime(raw, asOf);
@@ -273,6 +289,11 @@ class Router {
     String iso(DateTime d) =>
         '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
     if (p == 'today') return iso(now);
+    // "tonight" / "this evening|afternoon|morning" all name TODAY's date (the time-of-day
+    // is carried separately when there's a clock time).
+    if (p == 'tonight' || p == 'this evening' || p == 'this afternoon' || p == 'this morning') {
+      return iso(now);
+    }
     if (p == 'tomorrow') return iso(now.add(const Duration(days: 1)));
     if (p == 'yesterday') return iso(now.subtract(const Duration(days: 1)));
     var m = RegExp(r'in (\d+) days?').firstMatch(p);

@@ -97,6 +97,16 @@ class Interpreter {
         if (fmt == 'EEEE') return _weekday(d);
         if (fmt == 'MMMM d') return '${_months[d.month - 1]} ${d.day}';
         return _dateOnly(d);
+      case 'date_part':
+        // the YYYY-MM-DD prefix of a datetime (for recombining a day + a time slot).
+        final d = _asDate(a[0]);
+        return d == null ? null : _dateOnly(d);
+      case 'time_part':
+        // the HH:MM:SS of a datetime (00:00:00 if it had no time), for recombining.
+        final d = _asDateTime(a[0]);
+        if (d == null) return null;
+        String two(int x) => x.toString().padLeft(2, '0');
+        return '${two(d.hour)}:${two(d.minute)}:${two(d.second)}';
       case 'format_time':
         final d = _asDateTime(a[0]);
         if (d == null) return null;
@@ -341,7 +351,7 @@ class Interpreter {
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num', 'ordinal_suffix',
-    'weekday_nums', 'mul', 'div', 'round'};
+    'weekday_nums', 'date_part', 'time_part', 'mul', 'div', 'round'};
   static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};
   // The Spec 01 §3 canonical value-type set (fixed; a new one needs a kernel bump). `integer`
   // is retained only as a tolerated legacy alias for `number` (older authored types).

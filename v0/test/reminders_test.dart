@@ -406,6 +406,15 @@ void main() {
       await s.handle('remind me every tuesdays at 9am to take the bins out');
       expect(fake.armed().values.single, DateTime.parse('2026-07-07T09:00:00')); // next Tue
     });
+
+    test('postfix "X tomorrow at 5pm" arms on tomorrow at the given time (gap #54)', () async {
+      final fake = FakeScheduler();
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: fake); // Mon 07-06 9am
+      await s.init(retrieval: false);
+      final r = await s.handle('remind me to call mom tomorrow at 5pm');
+      expect(r, contains('call mom'));
+      expect(fake.armed().values.single, DateTime.parse('2026-07-07T17:00:00')); // tomorrow 5pm, day kept
+    });
   });
 
   group('ProvideSlot — missing-slot follow-up dialogue (§6.3)', () {
