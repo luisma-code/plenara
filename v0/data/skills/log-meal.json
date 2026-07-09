@@ -3,7 +3,7 @@
   "displayName": "Log a meal (with calorie lookup)",
   "reads": [],
   "writes": [ "meal" ],
-  "inputs": [ { "name": "food", "required": true } ],
+  "inputs": [ { "name": "food", "required": true }, { "name": "mealType", "required": false } ],
   "steps": {
     "main": [
       { "op": "compute", "fn": "today", "into": "today" },
@@ -16,7 +16,7 @@
           {
             "op": "write_record",
             "typeId": "meal",
-            "fields": { "food": { "var": "food" }, "provenance": "user", "loggedAt": { "var": "today" } },
+            "fields": { "food": { "var": "food" }, "mealType": { "var": "mealType" }, "provenance": "user", "loggedAt": { "var": "today" } },
             "into": "m"
           },
           { "op": "format", "template": "Logged {food} — I don't have calorie data for that, so no estimate.", "into": "confirmationText" }
@@ -27,6 +27,7 @@
             "typeId": "meal",
             "fields": {
               "food": { "var": "food" },
+              "mealType": { "var": "mealType" },
               "kcal": { "var": "kcal" },
               "provenance": { "field": [ "ref", "provenance" ] },
               "loggedAt": { "var": "today" }

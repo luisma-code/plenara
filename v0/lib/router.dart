@@ -141,6 +141,10 @@ class Router {
   static const _pastdayPat =
       r'(?:yesterday|today|(?:last\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))';
 
+  /// The bounded regex for a `mealword` slot — the named meals, so "eggs for
+  /// {mealType}" captures breakfast/lunch/dinner/etc. without a free-text slot.
+  static const _mealwordPat = r'(?:breakfast|lunch|dinner|supper|brunch|a\s+snack|snack|dessert)';
+
   /// The bounded regex for a `moodword` slot — a CLOSED set of feeling adjectives, so a
   /// bare "i'm {mood}" logs a mood without swallowing "i'm going to…" or "i'm 180 lbs".
   static const _moodwordPat = r'(?:exhausted|tired|sleepy|drained|wiped|beat|spent|fried|'
@@ -177,7 +181,9 @@ class Router {
                   ? '(?<$group>$_pastdayPat)'
                   : type == 'moodword'
                       ? '(?<$group>$_moodwordPat)'
-                      : '(?<$group>.+?)');
+                      : type == 'mealword'
+                          ? '(?<$group>$_mealwordPat)'
+                          : '(?<$group>.+?)');
       i = m.end;
     }
     sb.write(_lit(tmpl.substring(i)));

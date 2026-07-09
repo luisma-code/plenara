@@ -274,6 +274,14 @@ void main() {
       expect(meal['kcal'], 390);
       expect(meal['provenance'], 'reference'); // never confused with a user-entered number
     });
+    test('meal type is captured (gap #7): "eggs for breakfast"', () async {
+      final s = await _session();
+      await s.handle('i had eggs for breakfast');
+      await s.handle('ate pasta for dinner');
+      final meals = s.store.values.where((x) => x['typeId'] == 'meal').toList();
+      expect(meals.firstWhere((m) => m['food'] == 'eggs')['mealType'], 'breakfast');
+      expect(meals.firstWhere((m) => m['food'] == 'pasta')['mealType'], 'dinner');
+    });
     test('an article is normalized away ("a banana" -> banana)', () async {
       final s = await _session();
       expect((await s.handle('i ate a banana')).toLowerCase(), contains('105'));

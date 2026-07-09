@@ -4,6 +4,7 @@
   "schemaVersion": 1,
   "attributes": [
     { "name": "food", "valueType": "text", "required": true },
+    { "name": "mealType", "valueType": "text", "required": false },
     { "name": "kcal", "valueType": "decimal", "required": false },
     { "name": "provenance", "valueType": "text", "required": false },
     { "name": "loggedAt", "valueType": "date", "required": true }
