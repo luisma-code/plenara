@@ -119,6 +119,13 @@ class Interpreter {
       case 'days_until_annual':
         final d = _asDate(a[0]);
         return d == null ? null : daysUntilAnnual(d, now);
+      case 'years_since':
+        // completed years from a date to [now] — a person's current age from their birthday.
+        final d = _asDate(a[0]);
+        if (d == null) return null;
+        var yrs = now.year - d.year;
+        if (now.month < d.month || (now.month == d.month && now.day < d.day)) yrs -= 1;
+        return yrs;
       case 'current_streak':
         // consecutive days (ending today, or yesterday if today is blank) that the
         // list has a record for — the motivating "you're on an N-day streak".
@@ -386,7 +393,7 @@ class Interpreter {
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
   static const _ops = {'read_one', 'read_many', 'read_related', 'read_reference', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
-    'next_annual', 'days_until_annual', 'current_streak', 'longest_streak',
+    'next_annual', 'days_until_annual', 'years_since', 'current_streak', 'longest_streak',
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num', 'ordinal_suffix',
     'weekday_nums', 'date_part', 'time_part', 'split_list', 'position_index', 'nth', 'mul', 'div', 'round'};
   static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'in', 'isNull', 'notNull'};

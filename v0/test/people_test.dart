@@ -53,6 +53,20 @@ void main() {
       expect(ints.length, 2);
       expect(ints.any((i) => i['note'] == 'the school trip'), isTrue);
     });
+
+    test('captures a past date: "talked to Sarah yesterday" (gap: dated interaction)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06')); // Monday
+      await s.handle('talked to Sarah yesterday');
+      final ints = s.store.values.where((x) => x['typeId'] == 'interaction').toList();
+      expect(ints.single['at'], '2026-07-05'); // yesterday, not today
+    });
+
+    test('"spoke to Sarah on last friday" back-dates to the prior friday', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06')); // Monday 07-06
+      await s.handle('spoke to Sarah on last friday');
+      final ints = s.store.values.where((x) => x['typeId'] == 'interaction').toList();
+      expect(ints.single['at'], '2026-07-03');
+    });
   });
 
   group('last-interaction (max date via reduction, not insertion order)', () {
@@ -106,6 +120,25 @@ void main() {
       expect(r, contains('2026-07-16'));
       expect(r, contains('Thursday'));
       expect(r, contains('in 10 days'));
+    });
+
+    test('contact-age computes the current age from the birthday (gap: age)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle("Sarah's birthday is march 3"); // resolves in 1990? no — current year
+      // set a real birth year by writing directly is simpler:
+      final c = s.store.values.firstWhere((x) => x['typeId'] == 'contact');
+      c['birthday'] = '1990-03-03';
+      final r = await s.handle('how old is Sarah');
+      expect(r, contains('36')); // 2026 - 1990, march already passed
+    });
+
+    test('contact-age: birthday not yet reached this year counts one less', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Ben'); // create contact
+      final c = s.store.values.firstWhere((x) => x['typeId'] == 'contact');
+      c['birthday'] = '1990-12-25'; // birthday later this year
+      final r = await s.handle('how old is Ben');
+      expect(r, contains('35'));
     });
 
     test('when-birthday: unknown contact / no birthday set', () async {

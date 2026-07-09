@@ -10,7 +10,8 @@
   ],
   "inputs": [
     { "name": "personName", "required": true },
-    { "name": "note", "required": false }
+    { "name": "note", "required": false },
+    { "name": "at", "required": false, "type": "date" }
   ],
   "steps": {
     "main": [
@@ -35,7 +36,12 @@
       {
         "op": "compute",
         "fn": "today",
-        "into": "at"
+        "into": "todayVal"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "at" },
+        "then": [ { "op": "set", "var": "at", "value": { "var": "todayVal" } } ]
       },
       {
         "op": "write_record",

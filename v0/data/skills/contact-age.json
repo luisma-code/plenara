@@ -1,0 +1,43 @@
+{
+  "skillId": "contact-age",
+  "displayName": "How old is someone",
+  "reads": [
+    "contact"
+  ],
+  "writes": [],
+  "inputs": [
+    { "name": "personName", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "partial": true,
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          { "op": "format", "template": "I don't have {personName} as a contact yet.", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "set", "var": "bd", "value": { "field": [ "person", "birthday" ] } },
+          {
+            "op": "branch",
+            "cond": { "isNull": "bd" },
+            "then": [
+              { "op": "format", "template": "I don't know {personName}'s birthday, so I can't work out their age.", "into": "confirmationText" }
+            ],
+            "else": [
+              { "op": "compute", "fn": "years_since", "args": [ { "var": "bd" } ], "into": "age" },
+              { "op": "format", "template": "{personName} is {age}.", "into": "confirmationText" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
