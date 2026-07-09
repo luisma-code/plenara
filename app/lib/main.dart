@@ -174,7 +174,7 @@ class _ChatState extends State<ChatScreen> {
     if (widget.session != null) return NoopSpeechRecognizer();
     final home = Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'] ?? '.';
     final modelDir = '$home${Platform.pathSeparator}.plenara${Platform.pathSeparator}'
-        'models${Platform.pathSeparator}en-streaming-zipformer';
+        'models${Platform.pathSeparator}en-whisper';
     final sherpa = SherpaSpeechRecognizer(modelDir, onLog: (m) => log.debug('sherpa: $m'));
     await sherpa.init();
     if (sherpa.available) {
