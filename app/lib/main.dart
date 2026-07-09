@@ -108,8 +108,10 @@ class _ChatState extends State<ChatScreen> {
   // Production (no injected session) uses the OS speech engine; tests get Noop unless they inject
   // a fake. `available` stays false until init() succeeds, so the mic hides on machines with no
   // speech engine.
-  late final SpeechRecognizer _speech =
-      widget.speech ?? (widget.session == null ? SystemSpeechRecognizer() : NoopSpeechRecognizer());
+  late final SpeechRecognizer _speech = widget.speech ??
+      (widget.session == null
+          ? SystemSpeechRecognizer(onLog: (m) => AppLog.instance.debug('speech: $m'))
+          : NoopSpeechRecognizer());
   final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
@@ -209,11 +211,17 @@ class _ChatState extends State<ChatScreen> {
   /// separate Send needed; the text box is optional and will eventually be hidable). onDone always
   /// clears the listening state, so the UI can never get stuck at "Listening…".
   Future<void> _toggleMic() async {
-    if (!_speech.available || _busy) return;
+    final log = AppLog.instance;
+    if (!_speech.available || _busy) {
+      log.debug('speech: mic tap ignored (available=${_speech.available}, busy=$_busy)');
+      return;
+    }
     if (_listening) {
+      log.debug('speech: mic tap -> stop');
       await _speech.stop(); // finalize; onDone fires with the final transcript, then auto-sends
       return;
     }
+    log.debug('speech: mic tap -> start');
     setState(() => _listening = true);
     var gotVoice = false; // only auto-send when VOICE produced text (not pre-typed text)
     try {
@@ -225,13 +233,17 @@ class _ChatState extends State<ChatScreen> {
           }
         },
         onDone: () {
+          log.debug('speech: onDone (gotVoice=$gotVoice, text="${_ctrl.text}")');
           if (!mounted) return;
           setState(() => _listening = false);
-          if (gotVoice && _ctrl.text.trim().isNotEmpty) _send(); // hands-free: stop -> send
+          if (gotVoice && _ctrl.text.trim().isNotEmpty) {
+            log.debug('speech: auto-send');
+            _send();
+          }
         },
       );
     } catch (e) {
-      AppLog.instance.log('speech: listen failed: $e');
+      log.debug('speech: listen failed: $e');
       if (mounted) setState(() => _listening = false);
     }
   }

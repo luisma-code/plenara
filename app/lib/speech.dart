@@ -31,19 +31,28 @@ class NoopSpeechRecognizer implements SpeechRecognizer {
 /// owns the language model). Partial results stream live so the input fills as the user talks.
 class SystemSpeechRecognizer implements SpeechRecognizer {
   final SpeechToText _stt = SpeechToText();
+  final void Function(String msg)? onLog; // diagnostics: the raw engine lifecycle
   bool _ready = false;
   void Function()? _onDone;
+  SystemSpeechRecognizer({this.onLog});
+  void _log(String m) => onLog?.call(m);
 
   @override
   Future<void> init() async {
     try {
       _ready = await _stt.initialize(
-        onError: (_) => _fireDone(),
+        onError: (e) {
+          _log('error: $e');
+          _fireDone();
+        },
         onStatus: (s) {
+          _log('status: $s');
           if (s == 'done' || s == 'notListening') _fireDone();
         },
       );
-    } catch (_) {
+      _log('initialize -> $_ready');
+    } catch (e) {
+      _log('initialize threw: $e');
       _ready = false; // no engine / permission denied -> voice just unavailable
     }
   }
@@ -64,9 +73,13 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
       return;
     }
     _onDone = onDone;
+    _log('listen: start');
     try {
       await _stt.listen(
-        onResult: (r) => onResult(r.recognizedWords),
+        onResult: (r) {
+          _log("result: '${r.recognizedWords}' final=${r.finalResult}");
+          onResult(r.recognizedWords);
+        },
         listenOptions: SpeechListenOptions(
           partialResults: true, // stream words as they're recognized
           cancelOnError: true,
@@ -82,9 +95,12 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
 
   @override
   Future<void> stop() async {
+    _log('stop() requested (isListening=${_stt.isListening})');
     try {
       await _stt.stop();
-    } catch (_) {}
+    } catch (e) {
+      _log('stop threw: $e');
+    }
   }
 
   @override
