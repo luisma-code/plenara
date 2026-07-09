@@ -2,10 +2,11 @@
 
 _Last updated: 2026-07-09. Written to survive a Claude process relaunch._
 
-## LATEST SESSION (2026-07-08/09) — phrasing-gap fill, 15 batches. HEAD = `87d708d`, 1573 Dart tests green.
+## LATEST SESSION (2026-07-08/09) — phrasing-gap fill, ~28 batches. HEAD = `3e9840c`, 1599 Dart tests green.
 
 Worked through the catalogued phrasing gaps (`planning/phrasing/*.json`), autonomous "do them all" mode.
-Committed **15 batches (~22 gaps)**, each: skill/router/interpreter change + corpus + tests + full suite green.
+Committed **~28 batches (~34 gaps)**, each: skill/router/interpreter change + corpus + tests + full suite green.
+Essentially every free-tier gap is now closed (reminders, tasks, journal, people, logging, queries clusters).
 
 **Shipped this session:**
 - **Reminders (cluster complete):** relative-time (#43, prior), word-times "at five / half past six / quarter to seven"
@@ -29,34 +30,32 @@ backtracking (the #54/#11 limitation). New seed skills: set-{weekday,weekend,mul
 set-reminder-on-day, list-reminders-{on,week}, due-{on,week,by}, delete-task-at, recall-journal-on,
 delete-journal-latest, contact-age.
 
-### ⚠️ BLOCKER — BYOK API key is DOWN (offline/malformed) as of 2026-07-09.
-Mid-session the Anthropic API stopped responding (`CloudErrorKind.offline`/`malformed`) — consistent with Luis
-rotating the compromised key (per the standing security note). **This blocks `bin/record_fixtures.dart`**, so any
-NEW seed skill (which changes the replay `invSig`) can no longer be added — cloud_test replay fails with no fixture.
-All 15 batches above were committed BEFORE the outage or used **existing-skill-only** changes (mood/meal/run-route/
-domain-help modify existing skills → no re-record needed). When the key is restored: `cd v0 && .tools/dart-sdk/bin/dart.exe
-run bin/record_fixtures.dart`, then resume the remaining gaps.
+### API-key outage (RESOLVED). Mid-session the BYOK key briefly went down (offline/malformed) — Luis rotated it and
+it came back, so `bin/record_fixtures.dart` works again and new seed skills resumed. If it goes down again, only
+existing-skill changes (no invSig change) can be committed until it returns.
 
-**Reverse-fact-search (`find-people-by-fact`, "who do I know that likes hiking") was built and WORKS but was reverted**
-because it's a new seed skill and couldn't be re-recorded — saved to scratchpad
-(`…/scratchpad/find-people-by-fact.json` + `find-people-corpus.patch`) to re-apply once the key is back.
+### More shipped after the key returned (batches 16-28) — the session ran to ~28 gap batches total:
+- **Reverse fact search** — "who do I know that likes hiking" (find-people-by-fact).
+- **Goals** — update/clear + **set-goal upsert** (fixes the latent duplicate-goal bug): "change my goal to 60k", "delete my running goal".
+- **People (cluster now COMPLETE):** neglected contacts ("who haven't I talked to in a while"), two-person relatedness
+  ("how are Anna and Tom related"), **anchored predicates** ("Sarah is allergic to peanuts" — new `predword` slot,
+  :contact-guarded so "France likes wine" is ignored), **self-relative** ("my sister Emma loves pottery"),
+  **per-person dates/anniversaries** (new contact_date type + set/when skills).
+- **Queries** — period-scoped run distance ("how far have I run this week/month" — was wrongly a COUNT), unqualified longest-streak.
+- **Logging** — **runs in miles** ("ran 3 miles" → unit-aware mi→km on the SAME log-run skill via a distanceMiles input;
+  cloud_test stays green — the earlier revert was a separate skill, this isn't).
+- **Task de-duplication (user-reported):** create-task skips items already on the ACTIVE list (case-insensitive, new
+  `ieq` filter op) and collapses repeats within a multi-add (`dedup_list`); completed tasks can be re-added.
 
-### Remaining gaps (resume when the key is restored — most need NEW skills + re-record)
-- **Goals refactor** (journal.json #0-3): set-goal hardcodes activity='run'+km — needs activity slot, unit field, period
-  field, update/clear-goal skill; water/step/calorie goals + goal-progress variants.
-- **Period-parameterized aggregates** (queries #0,4,7): steps/distance/meds over today/yesterday/this-month — a `{period}`
-  slot + date-range compute fns; longest-streak-combined (#3, needs a clarify or all-tracker summary).
-- **Miles** (logging #1, queries #6): make log-run/total-distance/set-goal UNIT-AWARE (mi→km IN one skill — a separate
-  log-run-miles skill confused the cloud router last time, DO NOT). **Risky without live cloud validation — defer until key back.**
-- **People:** two-person relatedness (#2), self-relative "my sister Emma" (#3, needs an owner/"me" contact), neglected
-  contacts (#6), anchored-predicate "Sarah is allergic to peanuts" (#5, needs per-predicate templates or a skill that
-  prepends the anchor), per-person dates/anniversary (#8, needs a new record type).
-- **Paid-template internals:** weight-trend (logging #5), water-in-glasses/cumulative (#2/#3) — inside the paid
-  template bundles (`data/templates/*.json`), lower priority (behind the paywall).
+### Remaining gaps (all lower-value / deferred)
+- **Goals units/periods** (journal.json #0-2): non-running goals ("walk 10000 steps", "read 12 books", "save $500") +
+  periods — deferred: setting a non-run goal is low-value with no matching data source to track progress against.
+- **Paid-template internals:** weight-trend (logging #5), water-in-glasses/cumulative (#2/#3), steps/meds period aggregates
+  (queries #0/#7) — inside the paid template bundles (`data/templates/*.json`), behind the paywall.
 - **Agent-flagged NOT-safe / policy (skip):** "i did the laundry" (collides with activity logging), "today i {text}"
   (over-matches loggables), pushups/strength (authoring path), "scratch that, log a 5k" (no safe marker), "start a
   shopping list" (authoring path), event-relative "an hour before my meeting" (cloud path), "every second tuesday"
-  biweekly ambiguity (product decision), generic slot corrections outside workouts (F-15 generalization).
+  biweekly ambiguity (product decision), generic slot corrections outside workouts (F-15 generalization, queries #8).
 
 ## TL;DR — where we are
 
@@ -77,8 +76,8 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `87d708d`** (see LATEST SESSION block above), working tree clean (ignore untracked
-`.claude/settings.local.json`), **1573 Dart tests + ~40 Flutter widget tests green** (coverage ~91%). The Windows app has been **dogfooded live** through many iterations;
+**HEAD = `3e9840c`** (see LATEST SESSION block above), working tree clean (ignore untracked
+`.claude/settings.local.json`), **1599 Dart tests + ~40 Flutter widget tests green** (coverage ~91%). The Windows app has been **dogfooded live** through many iterations;
 it's running with on-device voice + the expanded corpus.
 
 **VOICE (#18) — SHIPPED, on-device.** `speech_to_text`/SAPI was too inaccurate (Fable root-caused
