@@ -105,6 +105,29 @@ void main() {
     }
   });
 
+  testWidgets('Free mode checkbox toggles and persists the offline-only flag', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final path = newCfg(apiKey: 'sk-ant-existing');
+    await tester.pumpWidget(MaterialApp(home: SettingsView(configPath: path)));
+    await tester.pumpAndSettle();
+
+    // defaults to paid (unchecked)
+    expect(loadConfig(configPath: path).freeTier, isFalse);
+
+    await tester.tap(find.byKey(const Key('free-mode')));
+    await tester.pumpAndSettle();
+    expect(loadConfig(configPath: path).freeTier, isTrue); // persisted
+    expect(find.textContaining('Free mode on'), findsOneWidget);
+    if (Platform.environment['ANTHROPIC_API_KEY'] == null) {
+      expect(loadConfig(configPath: path).apiKey, 'sk-ant-existing'); // key untouched by the toggle
+    }
+
+    await tester.tap(find.byKey(const Key('free-mode')));
+    await tester.pumpAndSettle();
+    expect(loadConfig(configPath: path).freeTier, isFalse); // back to paid
+  });
+
   testWidgets('Open Anthropic Console invokes the URL opener', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1000, 2200));
     addTearDown(() => tester.binding.setSurfaceSize(null));

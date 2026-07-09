@@ -66,4 +66,33 @@ void main() {
     final c2 = loadConfig(configPath: path);
     if (Platform.environment['ANTHROPIC_API_KEY'] == null) expect(c2.apiKey, 'dummy-key-value');
   });
+
+  test('freeTier defaults to false and round-trips via saveConfig', () {
+    final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
+    final path = '${dir.path}/config.json';
+    File(path).writeAsStringSync('{"dataDir": "X:/d", "apiKey": "sk-x"}');
+    expect(loadConfig(configPath: path).freeTier, isFalse); // absent -> false
+
+    saveConfig(dataDir: 'X:/d', freeTier: true, configPath: path);
+    expect(loadConfig(configPath: path).freeTier, isTrue);
+    if (Platform.environment['ANTHROPIC_API_KEY'] == null) {
+      expect(loadConfig(configPath: path).apiKey, 'sk-x'); // toggling mode leaves the key intact
+    }
+
+    saveConfig(dataDir: 'X:/d', freeTier: false, configPath: path);
+    expect(loadConfig(configPath: path).freeTier, isFalse);
+
+    // a saveConfig that omits freeTier leaves the stored mode untouched
+    saveConfig(dataDir: 'X:/d', freeTier: true, configPath: path);
+    saveConfig(dataDir: 'X:/d', apiKey: 'sk-y', configPath: path);
+    expect(loadConfig(configPath: path).freeTier, isTrue);
+  });
+
+  test('PLENARA_FREE=1 env forces free mode regardless of the file', () {
+    final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
+    final path = '${dir.path}/config.json';
+    File(path).writeAsStringSync('{"dataDir": "X:/d", "freeTier": false}');
+    // (can't set env from the test; assert the file-driven default instead)
+    expect(loadConfig(configPath: path).freeTier, Platform.environment['PLENARA_FREE'] == '1');
+  });
 }

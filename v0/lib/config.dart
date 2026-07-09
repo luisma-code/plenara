@@ -10,7 +10,12 @@ import 'dart:io';
 class PlenaraConfig {
   final String dataDir;
   final String? apiKey;
-  PlenaraConfig(this.dataDir, this.apiKey);
+  /// Free (offline-only) mode: when true, the app runs with NO cloud client even if a
+  /// key is configured — every cloud feature (residual routing, generative, authoring)
+  /// degrades to its offline path, so there is zero Anthropic spend. A dev/testing switch
+  /// for now; a real release would ship separate free/paid binaries instead.
+  final bool freeTier;
+  PlenaraConfig(this.dataDir, this.apiKey, {this.freeTier = false});
 }
 
 String _home() => Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'] ?? '.';
@@ -44,14 +49,16 @@ PlenaraConfig loadConfig({String? configPath}) {
   }
   final dataDir = Platform.environment['PLENARA_DATA'] ?? (cfg['dataDir'] as String?) ?? '${_home()}/Plenara';
   final key = Platform.environment['ANTHROPIC_API_KEY'] ?? (cfg['apiKey'] as String?);
-  return PlenaraConfig(dataDir, (key != null && key.trim().isNotEmpty) ? key.trim() : null);
+  // env PLENARA_FREE=1 forces offline mode (handy for tests/demos); else the persisted flag.
+  final free = Platform.environment['PLENARA_FREE'] == '1' || cfg['freeTier'] == true;
+  return PlenaraConfig(dataDir, (key != null && key.trim().isNotEmpty) ? key.trim() : null, freeTier: free);
 }
 
 /// Persist config edits from the in-app settings surface (Spec 07 §2.6): merges into the
 /// existing `~/.plenara/config.json`, preserving unknown keys. [apiKey] null leaves the key
 /// untouched; an empty string clears it. The key is written in plaintext (the accepted v0/dogfood
 /// posture — Spec 10 A-08 / G-37 tracks the secure-store follow-up); it is never logged.
-void saveConfig({required String dataDir, String? apiKey, String? configPath}) {
+void saveConfig({required String dataDir, String? apiKey, bool? freeTier, String? configPath}) {
   final f = File(configPath ?? defaultConfigPath());
   Map<String, dynamic> cfg = {};
   if (f.existsSync()) {
@@ -61,6 +68,7 @@ void saveConfig({required String dataDir, String? apiKey, String? configPath}) {
   }
   cfg['dataDir'] = dataDir;
   if (apiKey != null) cfg['apiKey'] = apiKey;
+  if (freeTier != null) cfg['freeTier'] = freeTier; // null leaves the mode untouched
   f.parent.createSync(recursive: true);
   f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(cfg));
 }

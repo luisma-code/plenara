@@ -75,6 +75,19 @@ class _SettingsViewState extends State<SettingsView> {
     });
   }
 
+  /// Toggle free (offline-only) mode. Persisted now; applied on next launch (like the key),
+  /// since the Session is built once at startup.
+  void _setFreeTier(bool value) {
+    saveConfig(dataDir: _cfg.dataDir, freeTier: value, configPath: widget.configPath);
+    setState(() {
+      _cfg = loadConfig(configPath: widget.configPath);
+      _statusMsg = value
+          ? 'Free mode on — restart Plenara to run fully offline.'
+          : 'Paid mode on — restart Plenara to re-enable cloud features.';
+      _statusColor = null;
+    });
+  }
+
   /// Explicitly remove the key ('' clears; null would leave it untouched).
   void _disconnect() {
     saveConfig(dataDir: _cfg.dataDir, apiKey: '', configPath: widget.configPath);
@@ -207,6 +220,18 @@ class _SettingsViewState extends State<SettingsView> {
           const SizedBox(height: 8),
           Text('Your key is stored locally and only ever sent to Anthropic when a cloud feature runs. '
               'Everything else works offline without it.', style: TextStyle(fontSize: 12, color: cs.outline)),
+          const Divider(height: 32),
+          const Text('Mode', style: TextStyle(fontWeight: FontWeight.bold)),
+          CheckboxListTile(
+            key: const Key('free-mode'),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: const Text('Free mode (offline only)'),
+            subtitle: const Text('Turns off every cloud feature — no Claude calls, no spend. Tasks, reminders, '
+                'people, logging and search all keep working on-device. Restart Plenara to apply.'),
+            value: _cfg.freeTier,
+            onChanged: (v) => _setFreeTier(v ?? false),
+          ),
           const Divider(height: 32),
           const Text('Diagnostics log', style: TextStyle(fontWeight: FontWeight.bold)),
           SelectableText(AppLog.instance.file.path),
