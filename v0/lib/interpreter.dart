@@ -659,10 +659,16 @@ class Interpreter {
     }
   }
 
+  /// The plan currently being built — exposed so the caller can still read the PARTIAL
+  /// reads/writes trace when resolve() throws mid-plan (that's exactly the turn you most
+  /// want to diagnose from the log — review low).
+  Plan? lastPlan;
+
   // ---- resolve (pure; no store mutation) ----------------------------------
   Plan resolve(Skill skill, Map<String, dynamic> slots, Map<String, Record> store) {
     final env = Map<String, dynamic>.from(slots);
     final plan = Plan();
+    lastPlan = plan;
     _run(skill['steps']['main'] as List, env, store, plan);
     return plan;
   }

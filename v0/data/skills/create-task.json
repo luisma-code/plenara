@@ -72,11 +72,12 @@
           }
         ],
         "else": [
+          { "op": "compute", "fn": "nth", "args": [ { "var": "items" }, 1 ], "into": "sole" },
           {
             "op": "read_many",
             "typeId": "task",
             "filter": [
-              { "field": "description", "op": "ieq", "value": { "var": "description" } },
+              { "field": "description", "op": "ieq", "value": { "var": "sole" } },
               { "field": "completed", "op": "neq", "value": true }
             ],
             "into": "dupes"
@@ -89,7 +90,7 @@
               {
                 "op": "write_record",
                 "typeId": "task",
-                "fields": { "description": { "var": "description" }, "dueAt": { "var": "dueDate" }, "createdAt": { "var": "createdAt" } },
+                "fields": { "description": { "var": "sole" }, "dueAt": { "var": "dueDate" }, "createdAt": { "var": "createdAt" } },
                 "into": "newTask"
               },
               {
@@ -97,15 +98,15 @@
                 "cond": { "notNull": "dueDate" },
                 "then": [
                   { "op": "compute", "fn": "format_date", "args": [ { "var": "dueDate" }, "EEEE" ], "into": "dueLabel" },
-                  { "op": "format", "template": "Added \"{description}\" to your tasks, due {dueLabel}.", "into": "confirmationText" }
+                  { "op": "format", "template": "Added \"{sole}\" to your tasks, due {dueLabel}.", "into": "confirmationText" }
                 ],
                 "else": [
-                  { "op": "format", "template": "Added \"{description}\" to your tasks.", "into": "confirmationText" }
+                  { "op": "format", "template": "Added \"{sole}\" to your tasks.", "into": "confirmationText" }
                 ]
               }
             ],
             "else": [
-              { "op": "format", "template": "\"{description}\" is already on your list.", "into": "confirmationText" }
+              { "op": "format", "template": "\"{sole}\" is already on your list.", "into": "confirmationText" }
             ]
           }
         ]

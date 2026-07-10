@@ -838,6 +838,14 @@ void main() {
       expect(taskDescs(s), {'milk', 'eggs'});
     });
 
+    test('a list that dedups to ONE writes the deduped item, not the raw string (review low)', () async {
+      final s = await _session();
+      await s.handle('add milk, milk, milk to my list'); // collapses to a single "milk"
+      final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();
+      expect(tasks.length, 1);
+      expect(tasks.single['description'], 'milk'); // not "milk, milk, milk"
+    });
+
     test('a multi-add skips items already on the list', () async {
       final s = await _session();
       await s.handle('add milk to my list');

@@ -298,10 +298,17 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
       return '- ${s['skillId']}: ${s['displayName']} (inputs: ${ins.isEmpty ? 'none' : ins})';
     }).join('\n');
     // Entity resolution: give the router the user's existing contacts so it reuses one
-    // ("Katherine" -> "Katherine Zinger") rather than minting a duplicate.
-    final contactClause = knownContacts.isEmpty
+    // ("Katherine" -> "Katherine Zinger") rather than minting a duplicate. Bounded (count +
+    // per-name length) so a huge address book — or a contact whose NAME contains prompt-like
+    // text — can't balloon or steer the routing prompt; names are quoted for the same reason.
+    final names = knownContacts.where((n) => n.trim().isNotEmpty).take(200).map((n) {
+      var v = n.replaceAll('"', '').trim();
+      if (v.length > 60) v = v.substring(0, 60);
+      return '"$v"';
+    }).toList();
+    final contactClause = names.isEmpty
         ? ''
-        : '\n\nExisting contacts: ${knownContacts.join(', ')}.\nWhen a person in the utterance is '
+        : '\n\nExisting contacts: ${names.join(', ')}.\nWhen a person in the utterance is '
             'clearly one of these (e.g. a first name matching a full name), use that contact\'s '
             'EXACT name as the slot value. Otherwise use the name as spoken.';
     // A multi-record response ({"actions":[...]}) is longer than a single route — give it

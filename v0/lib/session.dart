@@ -1079,10 +1079,9 @@ class Session {
     _outSkill = skillId; // debug trace
     _outSlots = slots;
     _outTemplate = template;
+    final turnInterp = Interpreter(types, now, references: _references); // per-turn clock (Spec 03 §4)
     try {
-      final turnInterp = Interpreter(types, now, references: _references); // per-turn clock (Spec 03 §4)
       final plan = turnInterp.resolve(skills[skillId]!, slots, store);
-      _outReads.addAll(plan.reads); // trace what each read resolved to (diagnosis)
       final before = turnInterp.execute(plan, store);
       for (final w in plan.writes) {
         repo.persist(w);
@@ -1130,6 +1129,10 @@ class Session {
         return 'I know more than one match for that — $shown. Which one? (say the full name)';
       }
       return "I couldn't do that: ${e.message}";
+    } finally {
+      // capture the read-resolution trace even when resolve/execute THREW mid-plan — that's
+      // exactly the turn you most want to diagnose from the log (review low).
+      _outReads.addAll(turnInterp.lastPlan?.reads ?? const []);
     }
   }
 
