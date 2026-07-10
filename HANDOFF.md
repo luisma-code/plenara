@@ -2,7 +2,31 @@
 
 _Last updated: 2026-07-09. Written to survive a Claude process relaunch._
 
-## LATEST SESSION (2026-07-08/09) — phrasing-gap fill, ~28 batches. HEAD = `3e9840c`, 1599 Dart tests green.
+## LATEST SESSION (2026-07-08/10) — gap-fill + cloud-router upgrade + FULL FABLE REVIEW. HEAD = `d70b96d`, 1620 Dart + 38 app tests green.
+
+Continued well past the phrasing gaps into a live-dogfood-driven arc:
+- **Cloud router upgraded** (3 phases, validated live): entity resolution (router gets the user's known
+  contacts, reuses "Katherine"→"Katherine Zinger", no dup); **multi-action** ({"actions":[...]} — "dinner
+  with X and Y" logs one record PER PERSON, reliable 6/6 after prompt tuning + a 200→700 token-cap fix);
+  **future plans vs past** (log-plan + planned flag + upcoming-interaction; "seeing X tonight" is a plan,
+  excluded from "last talked"). Relative dates now resolve against the REAL clock (model was using its stale
+  training date).
+- **General de-duplication** (user-reported): read_one `resolve` mode reuses an existing contact on a UNIQUE
+  whole-word token match, else clarifies (>1) or creates (0); applied to every contact find-or-create.
+  create-task dedups tasks (ieq + dedup_list). Merged the user's one leftover dup by hand.
+- **Observability**: turnlog now traces WHICH record each read resolved to (diagnose wrong-match from the log);
+  Settings "Cloud usage" panel (turns, offline/cloud split, spend/day/month, tokens, where-used, recent days);
+  per-reply green dot when the cloud was used (keyed on real token spend). Free/paid mode toggle.
+- **FULL FABLE REVIEW** (44 agents, 33 confirmed findings, adversarial-verified): fixed ALL 8 HIGH (resolve
+  self-relationship + ambiguity-clarify, due-by null tasks, recurring reminders in date-windowed lists,
+  multi-action undo-whole-turn, pastday bare-weekday backwards, _wordTime over-match, free-mode env-key leak,
+  non-Map slots) + key MEDIUM (goal-dup brick→first:true, filter-validation crash, multi-action skip/exception,
+  DST weekday step, cloud-dot accuracy) + LOW (thousands-comma split, reads-trace-on-throw, prompt-contact cap).
+  Findings deliberately left: same-person shorter-name reuse (prevents dup), correction-after-multi edge,
+  a few cosmetics. Review workflow: `.../workflows/scripts/fable-review-session-*.js`; live use-case harness:
+  `v0/bin/usecase_harness.dart`.
+
+### (earlier in the same session) phrasing-gap fill, ~28 batches. HEAD was `3e9840c`, 1599 Dart tests green.
 
 Worked through the catalogued phrasing gaps (`planning/phrasing/*.json`), autonomous "do them all" mode.
 Committed **~28 batches (~34 gaps)**, each: skill/router/interpreter change + corpus + tests + full suite green.
@@ -76,8 +100,8 @@ retrieval hermeticity, a **reconcile time-change bug** (a rescheduled reminder k
 its old toast), and the flagship "remember that Mia is Sarah's daughter" being
 cloud-only. De-flaked the authoring fixtures (recorder + schema-drift test now drive
 the real Session validate→retry loop), then started the spec-conformance program (below).
-**HEAD = `3e9840c`** (see LATEST SESSION block above), working tree clean (ignore untracked
-`.claude/settings.local.json`), **1599 Dart tests + ~40 Flutter widget tests green** (coverage ~91%). The Windows app has been **dogfooded live** through many iterations;
+**HEAD = `d70b96d`** (see LATEST SESSION block above), working tree clean (ignore untracked
+`.claude/settings.local.json`), **1620 Dart + 38 app tests + ~40 Flutter widget tests green** (coverage ~91%). The Windows app has been **dogfooded live** through many iterations;
 it's running with on-device voice + the expanded corpus.
 
 **VOICE (#18) — SHIPPED, on-device.** `speech_to_text`/SAPI was too inaccurate (Fable root-caused
