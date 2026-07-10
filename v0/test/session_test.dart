@@ -825,6 +825,13 @@ void main() {
       expect(s.store.values.where((x) => x['typeId'] == 'task' && x['completed'] != true).length, 1);
     });
 
+    test('a thousands-comma inside a number is not torn apart (review low)', () async {
+      final s = await _session();
+      await s.handle('add 1,000 widgets, 2,000 gadgets, and bolts to my list');
+      final descs = s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description']).toSet();
+      expect(descs, {'1,000 widgets', '2,000 gadgets', 'bolts'});
+    });
+
     test('a multi-add collapses repeats within the utterance', () async {
       final s = await _session();
       await s.handle('add milk, eggs, and milk to my list');

@@ -209,11 +209,14 @@ class Interpreter {
         // ", &" ("buy milk, call mom, and gym"). A bare "and" never splits on its own
         // ("buy milk and eggs" stays ONE task). Leading "and " is stripped; empties drop.
         final ls = (a.isEmpty ? '' : '${a[0]}').trim();
-        final commas = ','.allMatches(ls).length;
+        // a comma that is NOT a thousands separator (not digit,digit) — so "1,000 widgets"
+        // stays one item instead of tearing into "1" and "000 widgets".
+        final sepRe = RegExp(r'(?<!\d),|,(?!\d)');
+        final seps = sepRe.allMatches(ls).length;
         final oxford = RegExp(r',\s*(?:and|&)\s', caseSensitive: false).hasMatch(ls);
-        if (commas == 0 || (commas < 2 && !oxford)) return [ls];
+        if (seps == 0 || (seps < 2 && !oxford)) return [ls];
         return ls
-            .split(',')
+            .split(sepRe)
             .map((e) => e.trim().replaceFirst(RegExp(r'^(?:and|&)\s+', caseSensitive: false), '').trim())
             .where((e) => e.isNotEmpty)
             .toList();
@@ -221,7 +224,7 @@ class Interpreter {
         // a spoken position -> a 1-based index, with -1 meaning "last". Handles ordinal
         // words ("first".."tenth"), ordinal/plain digits ("3rd", "3"), and "last".
         final pt = (a.isEmpty ? '' : '${a[0]}').toLowerCase().trim();
-        if (pt.contains('last')) return -1;
+        if (RegExp(r'\blast\b').hasMatch(pt)) return -1; // 'last' as a WORD, not a substring
         const posWords = {
           'first': 1, 'second': 2, 'third': 3, 'fourth': 4, 'fifth': 5,
           'sixth': 6, 'seventh': 7, 'eighth': 8, 'ninth': 9, 'tenth': 10,
