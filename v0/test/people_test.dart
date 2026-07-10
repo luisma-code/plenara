@@ -450,13 +450,21 @@ void main() {
       expect(r.contains('more than one'), isFalse); // exact "Sam" resolves cleanly
     });
 
-    test('write/find-or-create stays EXACT — a partial name makes a new contact, never merges', () async {
+    test('find-or-create REUSES an overlapping-name contact — no duplicate (user-reported)', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
       await s.handle('talked to Sam Rivera');
-      await s.handle('talked to Sam'); // exact read_one -> no "Sam" -> creates it
+      await s.handle('talked to Sam'); // "Sam" is a whole-word subset -> reuse Sam Rivera
       final names = s.store.values.where((x) => x['typeId'] == 'contact').map((c) => c['displayName']).toList();
-      expect(names, containsAll(<String>['Sam Rivera', 'Sam']));
-      expect(names.length, 2); // NOT merged into Sam Rivera
+      expect(names.length, 1); // NOT a second contact
+      expect(names.single, 'Sam Rivera');
+    });
+
+    test('a non-token name stays distinct — "Sam" is NOT "Samantha"', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Samantha');
+      await s.handle('talked to Sam'); // "Sam" is not a whole word in "Samantha" -> distinct
+      final names = s.store.values.where((x) => x['typeId'] == 'contact').map((c) => c['displayName']).toSet();
+      expect(names, {'Samantha', 'Sam'});
     });
   });
 

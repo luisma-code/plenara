@@ -10,7 +10,7 @@
   ],
   "steps": {
     "main": [
-      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personName" } }, "partial": true, "into": "person" },
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personName" } }, "resolve": true, "into": "person" },
       {
         "op": "branch",
         "cond": { "isNull": "person" },

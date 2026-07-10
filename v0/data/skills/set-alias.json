@@ -17,7 +17,7 @@
         "op": "read_one",
         "typeId": "contact",
         "match": { "displayName": { "var": "personName" } },
-        "partial": true,
+        "resolve": true,
         "into": "person"
       },
       {

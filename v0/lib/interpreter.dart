@@ -694,7 +694,7 @@ class Interpreter {
         }
         // alias tier (G-24): a record whose comma-separated `aliases` holds the match
         // value exactly (case-insensitive) — resolves "Mum", "my boss", "the wife".
-        if (hits.isEmpty && step['partial'] == true && match['displayName'] is String) {
+        if (hits.isEmpty && (step['partial'] == true || step['resolve'] == true) && match['displayName'] is String) {
           final want = (match['displayName'] as String).toLowerCase().trim();
           hits = store.values.where((r) {
             if (r['typeId'] != step['typeId']) return false;
@@ -702,7 +702,33 @@ class Interpreter {
             return a is String && a.toLowerCase().split(',').map((s) => s.trim()).contains(want);
           }).toList();
         }
-        if (hits.length > 1) {
+        // RESOLVE (find-or-create de-duplication, G-12): reuse an existing record whose name
+        // shares WHOLE-WORD tokens with the wanted name — "Katherine" reuses "Katherine Zinger"
+        // (and vice-versa), so overlapping-name duplicates are never created; but "Sam" stays
+        // distinct from "Samantha" (not a whole-word token). Prefers an exact match, then the
+        // most specific (longest) name. Never throws — a create must not be blocked.
+        if (hits.isEmpty && step['resolve'] == true && match['displayName'] is String) {
+          Set<String> toks(String s) => s.toLowerCase().trim().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toSet();
+          final want = (match['displayName'] as String);
+          final wantToks = toks(want);
+          if (wantToks.isNotEmpty) {
+            final cands = store.values.where((r) {
+              if (r['typeId'] != step['typeId']) return false;
+              final dn = r['displayName'];
+              if (dn is! String || dn.trim().isEmpty) return false;
+              final t = toks(dn);
+              return wantToks.difference(t).isEmpty || t.difference(wantToks).isEmpty; // one ⊆ the other
+            }).toList()
+              ..sort((a, b) {
+                final an = a['displayName'] as String, bn = b['displayName'] as String;
+                final ax = an.toLowerCase().trim() == want.toLowerCase().trim() ? 0 : 1;
+                final bx = bn.toLowerCase().trim() == want.toLowerCase().trim() ? 0 : 1;
+                return ax != bx ? ax - bx : bn.length.compareTo(an.length); // exact first, else longest
+              });
+            if (cands.isNotEmpty) hits = [cands.first];
+          }
+        }
+        if (step['resolve'] != true && hits.length > 1) {
           final labelField = (step['match'] as Map).keys.first as String;
           final labels = hits.map((h) => (h['displayName'] ?? h[labelField] ?? h['id']).toString()).toList();
           throw ResolveError(

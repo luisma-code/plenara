@@ -37,6 +37,7 @@
             "var": "personName"
           }
         },
+        "resolve": true,
         "into": "person"
       },
       {
@@ -84,6 +85,7 @@
                 "var": "relationTo"
               }
             },
+            "resolve": true,
             "into": "relative"
           },
           {
