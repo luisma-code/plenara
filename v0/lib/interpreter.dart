@@ -26,6 +26,10 @@ typedef Skill = Map<String, dynamic>;
 class Plan {
   final List<Record> writes = [];
   final List<String> deletes = []; // record ids to tombstone
+  /// A lightweight trace of what each read RESOLVED to — so a wrong answer (e.g. a query
+  /// that matched the wrong duplicate contact) is diagnosable from the turnlog alone,
+  /// without re-reading records or re-running the turn.
+  final List<Map<String, dynamic>> reads = [];
   String? confirmation;
 }
 
@@ -735,7 +739,16 @@ class Interpreter {
               "read_one ${step['typeId']} $match matched ${hits.length} (ambiguous — G-12)",
               options: labels);
         }
-        env[step['into']] = hits.isEmpty ? null : hits.first;
+        final chosen = hits.isEmpty ? null : hits.first;
+        env[step['into']] = chosen;
+        plan.reads.add({
+          'op': 'read_one',
+          'type': step['typeId'],
+          'match': match.map((k, v) => MapEntry(k, '$v')),
+          'into': step['into'],
+          'resolved': chosen == null ? null : (chosen['displayName'] ?? chosen['description'] ?? chosen['id']),
+          if (chosen != null) 'id': chosen['id'],
+        });
       case 'read_reference':
         // Tier-1 (sync, offline) lookup in a shipped dataset (Spec 13). A hit yields the entry
         // fields + provenance; a miss yields null so the skill can log honestly without calories.

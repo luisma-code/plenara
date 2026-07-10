@@ -248,6 +248,7 @@ class Session {
   String? _outTemplate; // the corpus template matched, if a corpus route
   Map<String, dynamic>? _outSlots; // the slots dispatched into the skill
   final List<Map<String, dynamic>> _outWrites = []; // record ops this turn: {op,id,typeId}
+  final List<Map<String, dynamic>> _outReads = []; // what each read RESOLVED to (diagnose wrong-match bugs)
   String? _outError; // exception type + message + stack, on the error path (never shown to the user)
   Map<String, dynamic>? _outDiag; // on a MISS: the near-miss (closest skill + score) it computed
   // A paused turn waiting for the user to supply a missing required slot (Spec 03
@@ -518,6 +519,7 @@ class Session {
     _outTemplate = null;
     _outSlots = null;
     _outWrites.clear();
+    _outReads.clear();
     _outError = null;
     _outDiag = null;
     // Snapshot the automation runner so this turn's UNATTENDED activity (onWrite fires) is
@@ -564,6 +566,7 @@ class Session {
           'out': c.outTokens - outTok0,
           'usd': ClaudeClient.costUsd(c.inTokens - inTok0, c.outTokens - outTok0),
         },
+      if (_outReads.isNotEmpty) 'reads': _outReads,
       if (_outWrites.isNotEmpty) 'writes': _outWrites,
       'response': resp.length > 240 ? '${resp.substring(0, 240)}…' : resp,
       if (_outDiag != null) 'diag': _outDiag,
@@ -1040,6 +1043,7 @@ class Session {
     try {
       final turnInterp = Interpreter(types, now, references: _references); // per-turn clock (Spec 03 §4)
       final plan = turnInterp.resolve(skills[skillId]!, slots, store);
+      _outReads.addAll(plan.reads); // trace what each read resolved to (diagnosis)
       final before = turnInterp.execute(plan, store);
       for (final w in plan.writes) {
         repo.persist(w);

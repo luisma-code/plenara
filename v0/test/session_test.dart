@@ -507,6 +507,17 @@ void main() {
       expect(diag['cloud'], contains('noKey')); // the cloud couldn't help — and WHY
     });
 
+    test('the turn trace records WHICH record each read resolved to (diagnose wrong-match)', () async {
+      final dir = makeTempDataDir();
+      final s = Session(dir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false);
+      await s.handle('talked to Sam Rivera');
+      await s.handle('when did i last talk to Sam'); // resolves "Sam" -> "Sam Rivera"
+      final reads = lastTurn(dir)['reads'] as List;
+      final contactRead = reads.firstWhere((r) => r['type'] == 'contact');
+      expect(contactRead['resolved'], 'Sam Rivera'); // the log shows the exact record matched
+    });
+
     test('an unattended onWrite automation fire is recorded in the turn that triggered it', () async {
       final dir = makeTempDataDir();
       Directory('$dir/automations').createSync(recursive: true);

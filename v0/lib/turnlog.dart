@@ -94,6 +94,11 @@ String formatTurnTrace(Map<String, dynamic> t) {
     sb.writeln('    cost:     ${co['in']} in + ${co['out']} out tok  ≈ \$${(co['usd'] as num?)?.toStringAsFixed(4) ?? '?'}');
   }
   if (t['diag'] != null) sb.writeln('    diag:     ${t['diag']}'); // WHY a miss (corpus/cloud/nearest)
+  if (t['reads'] is List) {
+    for (final r in (t['reads'] as List)) {
+      if (r is Map) sb.writeln('    read:     ${r['type']} ${r['match']} -> ${r['resolved'] ?? '(none)'}');
+    }
+  }
   if (t['writes'] != null) sb.writeln('    writes:   ${t['writes']}');
   if (t['automations'] != null) sb.writeln('    automations: ${t['automations']}'); // unattended fires this turn
   if (t['response'] != null) sb.writeln('    -> ${t['response']}');
