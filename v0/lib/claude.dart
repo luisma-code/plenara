@@ -312,8 +312,11 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
         return CloudError(kind, detail);
       case CloudOk(:final value):
         final parsed = value;
-        Map<String, dynamic> normSlots(Map? raw) {
-          final s = raw?.cast<String, dynamic>() ?? <String, dynamic>{};
+        // Accept a raw slots value defensively: the model can return a non-Map (a string/list)
+        // for "slots" — coerce anything that isn't a Map to empty rather than throwing a
+        // TypeError (the CloudClient contract is that failures are typed, never exceptions).
+        Map<String, dynamic> normSlots(Object? raw) {
+          final s = raw is Map ? raw.cast<String, dynamic>() : <String, dynamic>{};
           // the model sometimes leaks the 'none' sentinel into a slot value; normalize
           // those to a real null so they can't crash a downstream resolver.
           s.updateAll((k, v) => (v is String && _sentinels.contains(v.trim().toLowerCase())) ? null : v);
@@ -327,7 +330,7 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
             if (a is! Map) continue;
             final sid = a['skillId'];
             if (sid == null || sid == 'none' || !skills.containsKey(sid)) continue;
-            actions.add({'skillId': sid, 'slots': normSlots(a['slots'] as Map?)});
+            actions.add({'skillId': sid, 'slots': normSlots(a['slots'])});
           }
           if (actions.isEmpty) return const CloudOk<Map<String, dynamic>?>(null);
           if (actions.length == 1) {
@@ -339,7 +342,7 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
           return const CloudOk<Map<String, dynamic>?>(null); // the model abstained
         }
         return CloudOk<Map<String, dynamic>?>(
-            {'skillId': parsed['skillId'], 'slots': normSlots(parsed['slots'] as Map?), 'source': 'cloud'});
+            {'skillId': parsed['skillId'], 'slots': normSlots(parsed['slots']), 'source': 'cloud'});
     }
   }
 }

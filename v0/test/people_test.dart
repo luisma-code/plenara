@@ -68,6 +68,13 @@ void main() {
       expect(ints.single['at'], '2026-07-03');
     });
 
+    test('a BARE weekday back-dates too (review #6): "talked to Sarah on friday"', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06')); // Monday 07-06
+      await s.handle('talked to Sarah on friday'); // a PAST interaction -> the PREVIOUS friday
+      final ints = s.store.values.where((x) => x['typeId'] == 'interaction').toList();
+      expect(ints.single['at'], '2026-07-03'); // not next friday (07-10)
+    });
+
     test('reverse fact search: "who do I know that likes hiking" (gap: reverse search)', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
       await s.handle('remember that Sarah loves hiking');
@@ -457,6 +464,25 @@ void main() {
       final names = s.store.values.where((x) => x['typeId'] == 'contact').map((c) => c['displayName']).toList();
       expect(names.length, 1); // NOT a second contact
       expect(names.single, 'Sam Rivera');
+    });
+
+    test('a relationship never collapses two overlapping names into a self-relationship (review #1)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Maria Elena'); // existing contact "Maria Elena"
+      await s.handle("remember that Maria is Maria Elena's mother"); // "Maria" must NOT resolve to "Maria Elena"
+      final names = s.store.values.where((x) => x['typeId'] == 'contact').map((c) => c['displayName']).toSet();
+      expect(names, {'Maria Elena', 'Maria'}); // distinct people, both present
+      final rel = s.store.values.firstWhere((x) => x['typeId'] == 'contact_relationship');
+      expect(rel['from'] == rel['to'], isFalse); // not a self-relationship
+    });
+
+    test('an ambiguous name on a WRITE clarifies instead of guessing (review #2)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to John Smith');
+      await s.handle('talked to John Doe'); // two DISTINCT Johns
+      final r = await s.handle('remember that John likes chess'); // "John" is ambiguous
+      expect(r.toLowerCase(), contains('more than one'));
+      expect(s.store.values.where((x) => x['typeId'] == 'contact_fact'), isEmpty); // nothing written on the guess
     });
 
     test('a non-token name stays distinct — "Sam" is NOT "Samantha"', () async {

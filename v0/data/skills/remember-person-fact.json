@@ -107,6 +107,13 @@
             ]
           },
           {
+            "op": "branch",
+            "cond": { "eq": [ { "field": [ "person", "id" ] }, { "field": [ "relative", "id" ] } ] },
+            "then": [
+              { "op": "write_record", "typeId": "contact", "fields": { "displayName": { "var": "personName" } }, "into": "person" }
+            ]
+          },
+          {
             "op": "write_record",
             "typeId": "contact_relationship",
             "fields": {

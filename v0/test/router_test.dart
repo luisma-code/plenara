@@ -323,6 +323,10 @@ void main() {
       ['at eight', '2026-07-07T08:00:00'], // 7-12 stay as spoken -> 08:00 past 09:00 -> tomorrow
       ['nine in the morning', '2026-07-07T09:00:00'], // 09:00 == now -> not after -> tomorrow
       ['ten thirty', '2026-07-06T10:30:00'],
+      // review #7: a phrase that merely STARTS with a number word is NOT a clock time
+      ['two apples', null],
+      ['five miles', null],
+      ['seven days', null],
     ];
     for (final c in cases) {
       test('"${c[0]}" -> ${c[1]}', () => expect(_r.resolveDateTime(c[0]!, _now), c[1]));

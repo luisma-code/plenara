@@ -28,13 +28,14 @@ const sourceDataDir = r'Z:\code\plenara\v0\data';
 Session buildSession({NotificationScheduler? scheduler}) {
   final cfg = loadConfig();
   ensureSeeded(cfg.dataDir, sourceDataDir);
-  // Free mode runs offline-only: attach NO cloud client even when a key is set, so cloud
-  // features degrade to their offline paths (zero Anthropic spend). A real release would
-  // instead ship separate free/paid binaries.
+  // Free mode runs offline-only: hand the Session an EXPLICIT offline client (empty key ->
+  // every cloud call returns noKey, zero Anthropic spend). Passing null would NOT work — the
+  // Session falls back to a default ClaudeClient() that picks the key up from the environment,
+  // so free mode has to inject a deliberately-keyless client. (A real release ships two binaries.)
   final useCloud = cfg.apiKey != null && !cfg.freeTier;
   return Session(
     cfg.dataDir,
-    cloud: useCloud ? ClaudeClient(apiKeyOverride: cfg.apiKey) : null,
+    cloud: useCloud ? ClaudeClient(apiKeyOverride: cfg.apiKey) : ClaudeClient(apiKeyOverride: ''),
     scheduler: scheduler,
     deviceDir: defaultDeviceDir(), // deviceId + turnlog stay device-local, off the synced folder
   );

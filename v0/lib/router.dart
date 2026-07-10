@@ -324,8 +324,9 @@ class Router {
     switch (type) {
       case 'date':
       case 'dayword': // a constrained day expression — same resolution as a date slot
-      case 'pastday': // a backward-looking day expression — resolved as a date
         return resolveDate(raw, asOf);
+      case 'pastday': // a BACKWARD-looking day expression — a bare weekday is the PREVIOUS one
+        return _resolvePastday(raw, asOf);
       case 'datetime':
         return resolveDateTime(raw, asOf);
       case 'quantity':
@@ -334,6 +335,22 @@ class Router {
       default: // text, entity -> the surface (entity resolution happens in the skill via read_one, G-12)
         return raw;
     }
+  }
+
+  /// Resolve a BACKWARD-looking day expression: a bare weekday ("friday") is the PREVIOUS
+  /// occurrence (you logged a past interaction), not the next one; everything else
+  /// ("yesterday", "today", "last friday") already resolves correctly via [resolveDate].
+  String? _resolvePastday(String phrase, DateTime now) {
+    final p = phrase.toLowerCase().trim();
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    final wd = days.indexOf(p);
+    if (wd >= 0) {
+      var delta = (wd + 1) - now.weekday;
+      if (delta >= 0) delta -= 7; // the PREVIOUS occurrence (strictly before today)
+      final d = now.add(Duration(days: delta));
+      return '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    }
+    return resolveDate(phrase, now);
   }
 
   /// The deterministic date resolver (Spec 03 §6.2). Relative to [now].
@@ -425,8 +442,13 @@ class Router {
     } else if ((m = RegExp("\\b($ws)\\s*o'?clock\\b").firstMatch(p)) != null) {
       hour = _numWords[m!.group(1)];
       minute = 0;
-    } else if ((m = RegExp('^(?:at\\s+)?($ws)\\b').firstMatch(p.trim())) != null) {
-      hour = _numWords[m!.group(1)]; // a bare leading word-hour ("five", "at five")
+    } else if ((m = RegExp("^(?:at\\s+)?($ws)(?:\\s+(?:[ap]\\.?m\\.?|in the (?:morning|afternoon|evening)|tonight))?\$")
+            .firstMatch(p.trim())) !=
+        null) {
+      // a bare word-hour that is the WHOLE phrase ("five", "at five", "five pm", "nine in the
+      // morning") — anchored to the end so "two apples", "five miles", "seven days" are NOT
+      // misread as clock times. The meridian itself is applied by the hasPm/hasAm scan below.
+      hour = _numWords[m!.group(1)];
       minute = 0;
     }
     if (hour == null) return null;

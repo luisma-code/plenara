@@ -573,8 +573,14 @@ class Interpreter {
           c.readTypes.add(tid as String);
           final f = step['filter'];
           if (f != null) {
-            for (final p in (f is List ? f : [f])) {
-              if (p is Map && p['op'] != null && !_filterOps.contains(p['op'])) {
+            final preds = f is List ? f : [f];
+            // an empty filter list would make the runtime's `.every` vacuously true and match
+            // ALL records — reject it at authoring time (never silently match all).
+            if (preds.isEmpty) throw ResolveError("${c.sid}: read_many filter list is empty");
+            for (final p in preds) {
+              // validation MUST reject what execution would crash on (`p as Map`): a non-Map entry.
+              if (p is! Map) throw ResolveError("${c.sid}: read_many filter entry must be an object");
+              if (p['op'] != null && !_filterOps.contains(p['op'])) {
                 throw ResolveError("${c.sid}: read_many unsupported filter op '${p['op']}' (${_filterOps.join('/')})");
               }
             }
@@ -709,30 +715,23 @@ class Interpreter {
         // RESOLVE (find-or-create de-duplication, G-12): reuse an existing record whose name
         // shares WHOLE-WORD tokens with the wanted name — "Katherine" reuses "Katherine Zinger"
         // (and vice-versa), so overlapping-name duplicates are never created; but "Sam" stays
-        // distinct from "Samantha" (not a whole-word token). Prefers an exact match, then the
-        // most specific (longest) name. Never throws — a create must not be blocked.
+        // distinct from "Samantha" (not a whole-word token). A UNIQUE token match is reused; TWO+
+        // token matches (e.g. "John" with a "John Smith" AND a "John Doe") are genuinely ambiguous
+        // and fall to the shared >1 clarify below — never a silent length-based guess.
         if (hits.isEmpty && step['resolve'] == true && match['displayName'] is String) {
           Set<String> toks(String s) => s.toLowerCase().trim().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toSet();
-          final want = (match['displayName'] as String);
-          final wantToks = toks(want);
+          final wantToks = toks(match['displayName'] as String);
           if (wantToks.isNotEmpty) {
-            final cands = store.values.where((r) {
+            hits = store.values.where((r) {
               if (r['typeId'] != step['typeId']) return false;
               final dn = r['displayName'];
               if (dn is! String || dn.trim().isEmpty) return false;
               final t = toks(dn);
               return wantToks.difference(t).isEmpty || t.difference(wantToks).isEmpty; // one ⊆ the other
-            }).toList()
-              ..sort((a, b) {
-                final an = a['displayName'] as String, bn = b['displayName'] as String;
-                final ax = an.toLowerCase().trim() == want.toLowerCase().trim() ? 0 : 1;
-                final bx = bn.toLowerCase().trim() == want.toLowerCase().trim() ? 0 : 1;
-                return ax != bx ? ax - bx : bn.length.compareTo(an.length); // exact first, else longest
-              });
-            if (cands.isNotEmpty) hits = [cands.first];
+            }).toList();
           }
         }
-        if (step['resolve'] != true && hits.length > 1) {
+        if (hits.length > 1) {
           final labelField = (step['match'] as Map).keys.first as String;
           final labels = hits.map((h) => (h['displayName'] ?? h[labelField] ?? h['id']).toString()).toList();
           throw ResolveError(

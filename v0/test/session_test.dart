@@ -912,6 +912,15 @@ void main() {
       final r = await (await seeded()).handle("what's due wednesday");
       expect(r.toLowerCase(), contains('nothing due'));
     });
+
+    test('"due by" excludes tasks with NO due date (review #3)', () async {
+      final s = await _session();
+      await s.handle('add pay rent to my list due friday'); // dated 07-10
+      await s.handle('add read that book to my list'); // NO due date
+      final r = await s.handle("what's due by friday");
+      expect(r, contains('pay rent'));
+      expect(r.contains('read that book'), isFalse); // the dateless task must not leak in
+    });
   });
 
   group('realistic day — broad cross-skill integration (all offline)', () {

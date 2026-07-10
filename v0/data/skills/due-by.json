@@ -15,6 +15,7 @@
         "typeId": "task",
         "filter": [
           { "field": "completed", "op": "neq", "value": true },
+          { "field": "dueAt", "op": "notNull" },
           { "field": "dueAt", "op": "lte", "value": { "var": "cutoff" } }
         ],
         "orderBy": "dueAt",
