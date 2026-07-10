@@ -348,6 +348,16 @@ void main() {
       expect(s.store.values.where((x) => x['typeId'] == 'contact_relationship'), isEmpty);
     });
 
+    test('recall surfaces relationships too (dogfood: spouse was stored but invisible)', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle("remember that Mia is Sarah's daughter");
+      // "tell me about X" now includes relationships, not just facts
+      expect(await s.handle('what do i know about Sarah'), contains('daughter: Mia'));
+      expect(await s.handle('what do i know about Mia'), contains('daughter of Sarah'));
+      // "who is X's <relation>" resolves the relationship in the stored direction
+      expect(await s.handle("who is Sarah's daughter"), contains('Mia'));
+    });
+
     test('relation-between answers "how are X and Y related" in both directions (gap #2)', () async {
       final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
       await s.handle("remember that Mia is Sarah's daughter");

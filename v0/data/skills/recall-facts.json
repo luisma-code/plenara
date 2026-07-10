@@ -1,116 +1,63 @@
 {
   "skillId": "recall-facts",
-  "displayName": "Recall facts about a person",
-  "reads": [
-    "contact",
-    "contact_fact"
-  ],
+  "displayName": "Recall facts and relationships about a person",
+  "reads": [ "contact", "contact_fact", "contact_relationship" ],
   "writes": [],
   "inputs": [
-    {
-      "name": "personName",
-      "required": true
-    }
+    { "name": "personName", "required": true }
   ],
   "steps": {
     "main": [
-      {
-        "op": "read_one",
-        "typeId": "contact",
-        "match": {
-          "displayName": {
-            "var": "personName"
-          }
-        },
-        "partial": true,
-        "into": "person"
-      },
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personName" } }, "partial": true, "into": "person" },
       {
         "op": "branch",
-        "cond": {
-          "isNull": "person"
-        },
+        "cond": { "isNull": "person" },
         "then": [
-          {
-            "op": "format",
-            "template": "I don't know anyone named {personName} yet.",
-            "into": "confirmationText"
-          }
+          { "op": "format", "template": "I don't know anyone named {personName} yet.", "into": "confirmationText" }
         ],
         "else": [
-          {
-            "op": "read_related",
-            "typeId": "contact_fact",
-            "via": "subject",
-            "from": {
-              "ref": "person"
-            },
-            "into": "facts"
-          },
-          {
-            "op": "set",
-            "var": "lines",
-            "value": ""
-          },
+          { "op": "set", "var": "lines", "value": "" },
+          { "op": "set", "var": "n", "value": 0 },
+          { "op": "read_related", "typeId": "contact_fact", "via": "subject", "from": { "ref": "person" }, "into": "facts" },
           {
             "op": "foreach",
-            "list": {
-              "var": "facts"
-            },
+            "list": { "var": "facts" },
             "as": "f",
             "body": [
-              {
-                "op": "compute",
-                "fn": "concat",
-                "args": [
-                  {
-                    "var": "lines"
-                  },
-                  "\n  \u2022 ",
-                  {
-                    "field": [
-                      "f",
-                      "fact"
-                    ]
-                  }
-                ],
-                "into": "lines"
-              }
+              { "op": "compute", "fn": "concat", "args": [ { "var": "lines" }, "\n  • ", { "field": [ "f", "fact" ] } ], "into": "lines" },
+              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+            ]
+          },
+          { "op": "read_related", "typeId": "contact_relationship", "via": "from", "from": { "ref": "person" }, "into": "relsFrom" },
+          {
+            "op": "foreach",
+            "list": { "var": "relsFrom" },
+            "as": "rel",
+            "body": [
+              { "op": "read_one", "typeId": "contact", "match": { "id": { "field": [ "rel", "to" ] } }, "into": "other" },
+              { "op": "compute", "fn": "concat", "args": [ { "var": "lines" }, "\n  • ", { "field": [ "rel", "relationType" ] }, ": ", { "field": [ "other", "displayName" ] } ], "into": "lines" },
+              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+            ]
+          },
+          { "op": "read_related", "typeId": "contact_relationship", "via": "to", "from": { "ref": "person" }, "into": "relsTo" },
+          {
+            "op": "foreach",
+            "list": { "var": "relsTo" },
+            "as": "rel",
+            "body": [
+              { "op": "read_one", "typeId": "contact", "match": { "id": { "field": [ "rel", "from" ] } }, "into": "other" },
+              { "op": "compute", "fn": "concat", "args": [ { "var": "lines" }, "\n  • ", { "field": [ "rel", "relationType" ] }, " of ", { "field": [ "other", "displayName" ] } ], "into": "lines" },
+              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
             ]
           },
           {
-            "op": "compute",
-            "fn": "count",
-            "args": [
-              {
-                "var": "facts"
-              }
-            ],
-            "into": "n"
-          },
-          {
             "op": "branch",
-            "cond": {
-              "gte": [
-                {
-                  "var": "n"
-                },
-                1
-              ]
-            },
+            "cond": { "gte": [ { "var": "n" }, 1 ] },
             "then": [
-              {
-                "op": "format",
-                "template": "Here's what I know about {personName}:{lines}",
-                "into": "confirmationText"
-              }
+              { "op": "format", "template": "Here's what I know about {personName}:{lines}", "into": "confirmationText" }
             ],
             "else": [
-              {
-                "op": "format",
-                "template": "I have {personName} as a contact but nothing noted yet.",
-                "into": "confirmationText"
-              }
+              { "op": "format", "template": "I have {personName} as a contact but nothing noted yet.", "into": "confirmationText" }
             ]
           }
         ]
