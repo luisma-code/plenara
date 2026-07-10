@@ -1,0 +1,36 @@
+{
+  "skillId": "log-plan",
+  "displayName": "Log an upcoming plan to see someone",
+  "reads": [ "contact" ],
+  "writes": [ "contact", "interaction" ],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "note", "required": false },
+    { "name": "at", "required": true, "type": "date" }
+  ],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personName" } }, "partial": true, "into": "person" },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          { "op": "write_record", "typeId": "contact", "fields": { "displayName": { "var": "personName" } }, "into": "person" }
+        ]
+      },
+      {
+        "op": "write_record",
+        "typeId": "interaction",
+        "fields": {
+          "subject": { "ref": "person" },
+          "note": { "var": "note" },
+          "at": { "var": "at" },
+          "planned": true
+        },
+        "into": "newPlan"
+      },
+      { "op": "compute", "fn": "format_date", "args": [ { "var": "at" }, "EEEE" ], "into": "dayLabel" },
+      { "op": "format", "template": "Got it — you're seeing {personName} on {at} ({dayLabel}).", "into": "confirmationText" }
+    ]
+  }
+}

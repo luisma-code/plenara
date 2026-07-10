@@ -85,6 +85,30 @@ void main() {
     });
   });
 
+  group('upcoming plans vs past interactions (dogfood: future logged as past)', () {
+    test('a plan is future-tensed, queryable, and NOT counted as "last talked"', () async {
+      final dir = makeTempDataDir();
+      final s = await _session(dir, clock: _d('2026-07-06')); // Monday
+      await s.handle('talked to Sarah'); // a PAST interaction, today
+      final r = await s.handle('seeing Sarah on friday'); // a FUTURE plan, 07-10
+      expect(r.toLowerCase(), contains("you're seeing sarah"));
+      final plan = s.store.values.firstWhere((x) => x['typeId'] == 'interaction' && x['planned'] == true);
+      expect(plan['at'], '2026-07-10');
+      // "when am I seeing X next" surfaces the plan
+      expect(await s.handle('when am i seeing Sarah next'), contains('2026-07-10'));
+      // "when did I last talk to X" ignores the future plan
+      final last = await s.handle('when did i last talk to Sarah');
+      expect(last, contains('2026-07-06'));
+      expect(last.contains('2026-07-10'), isFalse);
+    });
+
+    test('no plans -> a clear message', () async {
+      final s = await _session(makeTempDataDir(), clock: _d('2026-07-06'));
+      await s.handle('talked to Sarah');
+      expect((await s.handle('when am i seeing Sarah next')).toLowerCase(), contains('upcoming plans'));
+    });
+  });
+
   group('neglected-contacts (gap: who haven\'t I talked to)', () {
     test('surfaces stale + never-contacted people, hides the recent ones', () async {
       final dir = makeTempDataDir();

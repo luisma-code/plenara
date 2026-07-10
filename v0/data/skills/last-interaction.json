@@ -41,6 +41,7 @@
             "var": "latest",
             "value": ""
           },
+          { "op": "set", "var": "n", "value": 0 },
           {
             "op": "foreach",
             "list": { "var": "ints" },
@@ -48,18 +49,20 @@
             "body": [
               {
                 "op": "branch",
-                "cond": { "gte": [ { "field": [ "i", "at" ] }, { "var": "latest" } ] },
-                "then": [
-                  { "op": "set", "var": "latest", "value": { "field": [ "i", "at" ] } }
+                "cond": { "eq": [ { "field": [ "i", "planned" ] }, true ] },
+                "then": [],
+                "else": [
+                  { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" },
+                  {
+                    "op": "branch",
+                    "cond": { "gte": [ { "field": [ "i", "at" ] }, { "var": "latest" } ] },
+                    "then": [
+                      { "op": "set", "var": "latest", "value": { "field": [ "i", "at" ] } }
+                    ]
+                  }
                 ]
               }
             ]
-          },
-          {
-            "op": "compute",
-            "fn": "count",
-            "args": [ { "var": "ints" } ],
-            "into": "n"
           },
           {
             "op": "branch",
