@@ -303,7 +303,10 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
         : '\n\nExisting contacts: ${knownContacts.join(', ')}.\nWhen a person in the utterance is '
             'clearly one of these (e.g. a first name matching a full name), use that contact\'s '
             'EXACT name as the slot value. Otherwise use the name as spoken.';
-    final res = await _message(_sys, 'Capabilities:\n$inv$contactClause\n\nUtterance: "$utterance"\n\nJSON:');
+    // A multi-record response ({"actions":[...]}) is longer than a single route — give it
+    // headroom so the JSON is never truncated into a malformed reply.
+    final res = await _message(_sys, 'Capabilities:\n$inv$contactClause\n\nUtterance: "$utterance"\n\nJSON:',
+        maxTokens: 700);
     switch (res) {
       case CloudError(:final kind, :final detail):
         return CloudError(kind, detail);
