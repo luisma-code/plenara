@@ -704,6 +704,39 @@ void main() {
     });
   });
 
+  group('cloud multi-action (Phase 3: several records from one statement)', () {
+    test('executes every fully-slotted action and composes the replies', () async {
+      final route = {
+        'actions': [
+          {'skillId': 'log-mood', 'slots': {'rating': 'great'}},
+          {'skillId': 'create-task', 'slots': {'description': 'book flights'}},
+        ],
+        'source': 'cloud',
+      };
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _CapturingCloud(route));
+      await s.init(retrieval: false);
+      final r = await s.handle('some multi-thing the corpus will not catch qqzz');
+      expect(r.toLowerCase(), contains('great')); // mood logged
+      expect(r, contains('book flights')); // task added
+      expect(s.store.values.where((x) => x['typeId'] == 'mood').length, 1);
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1);
+    });
+
+    test('skips an action missing a required slot, still runs the others', () async {
+      final route = {
+        'actions': [
+          {'skillId': 'create-task', 'slots': {'description': 'call the vet'}},
+          {'skillId': 'create-task', 'slots': <String, dynamic>{}}, // no description -> skipped
+        ],
+        'source': 'cloud',
+      };
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _CapturingCloud(route));
+      await s.init(retrieval: false);
+      await s.handle('multi qqzz');
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1); // only the valid one
+    });
+  });
+
   group('multi-task add (gap #58)', () {
     test('a comma list with Oxford "and" creates one task per item', () async {
       final s = await _session();

@@ -976,6 +976,32 @@ class Session {
             })();
       return cloudErr == null ? base : '$base (I also couldn\'t check with the cloud: ${cloudReason(cloudErr)})';
     }
+    // Multi-record decomposition (cloud only): the router split a rich statement into
+    // several records ("dinner with X and Y", or a relationship AND a fact). Execute each
+    // fully-slotted action and compose the confirmations — like the F-13 compound path.
+    // An action missing a required slot is skipped (no per-action ProvideSlot in a batch).
+    if (routed['actions'] is List) {
+      final replies = <String>[];
+      final done = <String>[];
+      for (final a in (routed['actions'] as List).cast<Map>()) {
+        final sid = a['skillId'] as String?;
+        if (sid == null || !skills.containsKey(sid)) continue;
+        final slots = (a['slots'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+        slots.updateAll((k, v) => (v is String && const {'none', 'null'}.contains(v.trim().toLowerCase())) ? null : v);
+        _normalizeTypedSlots(skills[sid], slots, now);
+        if (_missingRequired(skills[sid], slots).isNotEmpty) continue;
+        replies.add(await _dispatch(sid, slots, 'cloud', now)); // no learn: a compound isn't one template
+        done.add(sid);
+      }
+      if (replies.isNotEmpty) {
+        _outSource = 'cloud-multi'; // telemetry: one turn, several records
+        _outSkill = done.join('+');
+        return replies.join(' ');
+      }
+      // every action was unusable — fall through to the honest miss path
+      _outDiag = {'corpus': 'no-match', 'cloud': 'multi-empty'};
+      return "I understood a few things there but couldn't record them cleanly — try one at a time?";
+    }
     _outSource = routed['source'] as String; // telemetry: corpus | cloud
     _outSkill = routed['skillId'] as String?;
     // normalize leaked sentinel slot values from any source before they reach a

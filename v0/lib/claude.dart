@@ -116,12 +116,21 @@ class ClaudeClient implements CloudClient {
       'description, and its input slot names), respond with ONLY a JSON object: '
       '{"skillId": "<id or none>", "slots": {<slotName>: <literal value>, ...}}. '
       'Pick the single best capability and extract its input slots from the '
-      'utterance. Rules: dates as YYYY-MM-DD; a numeric quantity like a distance '
+      'utterance. Rules: for a RELATIVE date or time (today, yesterday, tomorrow, tonight, '
+      '"last friday", "in 3 days", "at 3pm") return the user\'s expression VERBATIM as a '
+      'string — the app resolves it against the real current clock; use YYYY-MM-DD ONLY for '
+      'an explicit calendar date the user stated. A numeric quantity like a distance '
       'as a plain number with no unit (6 not "6k"); a TEXT slot (a mood rating, a '
       'name, a description) is the user\'s OWN words verbatim — never a number or a '
       'paraphrase; use JSON null (not the string "none") for a slot with no value. '
       'Use skillId "none" if it is not one of these capabilities or is a '
-      'general/world question. Output only JSON.';
+      'general/world question. '
+      'MULTIPLE RECORDS: usually return one {skillId, slots}. But if the utterance clearly '
+      'describes SEVERAL separate things to record — e.g. an interaction with two different '
+      'people, or a relationship AND a separate fact — instead return '
+      '{"actions": [{"skillId":..., "slots":{...}}, ...]} with ONE entry per record, in a '
+      'sensible order. Do NOT split a single record into actions. '
+      'Output only JSON.';
 
   static const _authorSys = '''
 You author capabilities for a personal-assistant app as DATA (never code). Given a
@@ -300,15 +309,34 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
         return CloudError(kind, detail);
       case CloudOk(:final value):
         final parsed = value;
+        Map<String, dynamic> normSlots(Map? raw) {
+          final s = raw?.cast<String, dynamic>() ?? <String, dynamic>{};
+          // the model sometimes leaks the 'none' sentinel into a slot value; normalize
+          // those to a real null so they can't crash a downstream resolver.
+          s.updateAll((k, v) => (v is String && _sentinels.contains(v.trim().toLowerCase())) ? null : v);
+          return s;
+        }
+
+        // Multi-record decomposition: keep only actions naming a real capability.
+        if (parsed['actions'] is List) {
+          final actions = <Map<String, dynamic>>[];
+          for (final a in (parsed['actions'] as List)) {
+            if (a is! Map) continue;
+            final sid = a['skillId'];
+            if (sid == null || sid == 'none' || !skills.containsKey(sid)) continue;
+            actions.add({'skillId': sid, 'slots': normSlots(a['slots'] as Map?)});
+          }
+          if (actions.isEmpty) return const CloudOk<Map<String, dynamic>?>(null);
+          if (actions.length == 1) {
+            return CloudOk<Map<String, dynamic>?>({...actions.first, 'source': 'cloud'});
+          }
+          return CloudOk<Map<String, dynamic>?>({'actions': actions, 'source': 'cloud'});
+        }
         if (parsed['skillId'] == null || parsed['skillId'] == 'none' || !skills.containsKey(parsed['skillId'])) {
           return const CloudOk<Map<String, dynamic>?>(null); // the model abstained
         }
-        final slots = (parsed['slots'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
-        // the model sometimes leaks the 'none' sentinel into a slot value; normalize
-        // those to a real null so they can't crash a downstream resolver.
-        slots.updateAll((k, v) =>
-            (v is String && _sentinels.contains(v.trim().toLowerCase())) ? null : v);
-        return CloudOk<Map<String, dynamic>?>({'skillId': parsed['skillId'], 'slots': slots, 'source': 'cloud'});
+        return CloudOk<Map<String, dynamic>?>(
+            {'skillId': parsed['skillId'], 'slots': normSlots(parsed['slots'] as Map?), 'source': 'cloud'});
     }
   }
 }
