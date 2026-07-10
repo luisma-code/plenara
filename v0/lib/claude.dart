@@ -80,7 +80,8 @@ String? apiKey() {
 /// implementation (lib/replay_cloud.dart) instead of hitting the network in tests.
 abstract interface class CloudClient {
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(
-      String utterance, Map<String, Map<String, dynamic>> skills);
+      String utterance, Map<String, Map<String, dynamic>> skills,
+      {Set<String> knownContacts = const {}});
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError});
 
   /// Free-text generation for a grounded generative kind (Spec 04 §3.10) — e.g.
@@ -280,12 +281,20 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
   /// the model abstains (or names an id we don't have), or a typed CloudError.
   @override
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(
-      String utterance, Map<String, Map<String, dynamic>> skills) async {
+      String utterance, Map<String, Map<String, dynamic>> skills,
+      {Set<String> knownContacts = const {}}) async {
     final inv = skills.values.map((s) {
       final ins = (s['inputs'] as List? ?? []).map((i) => i['name']).join(', ');
       return '- ${s['skillId']}: ${s['displayName']} (inputs: ${ins.isEmpty ? 'none' : ins})';
     }).join('\n');
-    final res = await _message(_sys, 'Capabilities:\n$inv\n\nUtterance: "$utterance"\n\nJSON:');
+    // Entity resolution: give the router the user's existing contacts so it reuses one
+    // ("Katherine" -> "Katherine Zinger") rather than minting a duplicate.
+    final contactClause = knownContacts.isEmpty
+        ? ''
+        : '\n\nExisting contacts: ${knownContacts.join(', ')}.\nWhen a person in the utterance is '
+            'clearly one of these (e.g. a first name matching a full name), use that contact\'s '
+            'EXACT name as the slot value. Otherwise use the name as spoken.';
+    final res = await _message(_sys, 'Capabilities:\n$inv$contactClause\n\nUtterance: "$utterance"\n\nJSON:');
     switch (res) {
       case CloudError(:final kind, :final detail):
         return CloudError(kind, detail);

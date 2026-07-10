@@ -47,7 +47,8 @@ class _MemStorage implements StorageRepository {
 class _NoCloud implements CloudClient {
   @override
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(
-          String utterance, Map<String, Map<String, dynamic>> skills) async =>
+          String utterance, Map<String, Map<String, dynamic>> skills,
+          {Set<String> knownContacts = const {}}) async =>
       throw StateError('cloud routeResidual called for "$utterance" — expected a corpus/offline path');
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError}) async =>
@@ -61,11 +62,30 @@ class _NoCloud implements CloudClient {
 /// state), so a miss is a real "corpus + cloud couldn't help" rather than a thrown exception.
 class _NoKeyCloud implements CloudClient {
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
       const CloudError(CloudErrorKind.noKey);
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
       const CloudError(CloudErrorKind.noKey);
+  @override
+  Future<CloudResult<String>> generate(String k, String c) async => const CloudError(CloudErrorKind.noKey);
+}
+
+/// Captures the knownContacts the session hands the router (Phase 1 entity resolution),
+/// and returns a scripted route so a turn completes.
+class _CapturingCloud implements CloudClient {
+  Set<String> lastContacts = const {};
+  final Map<String, dynamic>? route;
+  _CapturingCloud(this.route);
+  @override
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s,
+      {Set<String> knownContacts = const {}}) async {
+    lastContacts = knownContacts;
+    return CloudOk(route);
+  }
+  @override
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+      const CloudOk(null);
   @override
   Future<CloudResult<String>> generate(String k, String c) async => const CloudError(CloudErrorKind.noKey);
 }
@@ -665,6 +685,22 @@ void main() {
     test('rescheduling an unknown task is a clear no-op', () async {
       final s = await _session();
       expect(await s.handle('move buy milk to friday'), contains("couldn't find"));
+    });
+  });
+
+  group('cloud router gets known contacts (Phase 1 entity resolution)', () {
+    test('the session passes existing contact display-names to the router', () async {
+      final dir = makeTempDataDir();
+      // seed a contact via the corpus path (no cloud)
+      final seed = Session(dir, clock: _now, cloud: _NoCloud());
+      await seed.init(retrieval: false);
+      await seed.handle('talked to Katherine Zinger');
+      // now a residual (cloud) turn — capture what the router receives
+      final cap = _CapturingCloud({'skillId': 'log-mood', 'slots': {'rating': 'great'}, 'source': 'cloud'});
+      final s = Session(dir, clock: _now, cloud: cap);
+      await s.init(retrieval: false);
+      await s.handle('some phrasing the corpus will not catch xyzzy');
+      expect(cap.lastContacts, contains('Katherine Zinger'));
     });
   });
 

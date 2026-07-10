@@ -943,7 +943,7 @@ class Session {
     }
     CloudErrorKind? cloudErr;
     if (routed == null) {
-      switch (await claude.routeResidual(u, skills)) {
+      switch (await claude.routeResidual(u, skills, knownContacts: _knownContactNames())) {
         case CloudOk(:final value):
           _cloudStatus = 'ok';
           routed = value; // may be null == the model abstained
@@ -1134,6 +1134,18 @@ class Session {
 
   /// Lowercase set of every stored contact's display name + aliases — the vocabulary a router
   /// `:contact` slot may match, so a fact-recall template only fires for a real person.
+  /// The full displayNames of known contacts — passed to the cloud router so it reuses an
+  /// existing contact ("Katherine" -> "Katherine Zinger") instead of minting a duplicate.
+  Set<String> _knownContactNames() {
+    final s = <String>{};
+    for (final r in store.values) {
+      if (r['typeId'] != 'contact') continue;
+      final dn = (r['displayName'] as String?)?.trim();
+      if (dn != null && dn.isNotEmpty) s.add(dn);
+    }
+    return s;
+  }
+
   Set<String> _knownContactTokens() {
     final s = <String>{};
     for (final r in store.values) {

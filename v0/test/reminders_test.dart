@@ -17,7 +17,7 @@ final _thu5pm = DateTime.parse('2026-07-09T17:00:00'); // "thursday at 5pm" from
 /// Cloud that must never be hit (reminders route via the deterministic corpus).
 class _NoCloud implements CloudClient {
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
       throw StateError('cloud hit for "$u" — reminder flows must be pure corpus');
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
@@ -32,7 +32,7 @@ class _RouteCloud implements CloudClient {
   final Map<String, dynamic>? route;
   _RouteCloud(this.route);
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
       CloudOk(route);
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>

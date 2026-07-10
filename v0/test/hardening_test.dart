@@ -17,7 +17,7 @@ class _ScriptCloud implements CloudClient {
   final bool throwOnAuthor;
   _ScriptCloud({this.authorResult, this.routeResult, this.throwOnAuthor = false});
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
       CloudOk(routeResult);
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async {

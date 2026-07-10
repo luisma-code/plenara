@@ -14,7 +14,8 @@ final _now = DateTime.parse('2026-07-06T09:00:00');
 class _NoCloud implements CloudClient {
   @override
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(
-          String utterance, Map<String, Map<String, dynamic>> skills) async =>
+          String utterance, Map<String, Map<String, dynamic>> skills,
+          {Set<String> knownContacts = const {}}) async =>
       throw StateError('cloud routeResidual called for "$utterance" — expected a corpus/offline path');
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError}) async =>

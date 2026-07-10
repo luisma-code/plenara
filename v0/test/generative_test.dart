@@ -16,7 +16,7 @@ class _GenCloud implements CloudClient {
   String? lastKind, lastContext;
   _GenCloud({this.err});
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
       const CloudOk(null); // abstain — these flows are corpus/generative, never residual
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>

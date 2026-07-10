@@ -38,8 +38,9 @@ class RecordingCloud implements CloudClient {
 
   @override
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(
-      String utterance, Map<String, Map<String, dynamic>> skills) async {
-    final r = await inner.routeResidual(utterance, skills);
+      String utterance, Map<String, Map<String, dynamic>> skills,
+      {Set<String> knownContacts = const {}}) async {
+    final r = await inner.routeResidual(utterance, skills, knownContacts: knownContacts);
     recorded[cloudKey('route', utterance, invSig(skills))] = _unwrap(r, 'route "$utterance"');
     return r;
   }
@@ -85,7 +86,8 @@ class ReplayCloud implements CloudClient {
 
   @override
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(
-          String utterance, Map<String, Map<String, dynamic>> skills) async =>
+          String utterance, Map<String, Map<String, dynamic>> skills,
+          {Set<String> knownContacts = const {}}) async =>
       CloudOk(_get(cloudKey('route', utterance, invSig(skills))));
 
   @override
