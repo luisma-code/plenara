@@ -125,12 +125,13 @@ class ClaudeClient implements CloudClient {
       'paraphrase; use JSON null (not the string "none") for a slot with no value. '
       'Use skillId "none" if it is not one of these capabilities or is a '
       'general/world question. '
-      'MULTIPLE RECORDS: usually return one {skillId, slots}. But if the utterance clearly '
-      'describes SEVERAL separate things to record — e.g. an interaction with two different '
-      'people, or a relationship AND a separate fact — instead return '
-      '{"actions": [{"skillId":..., "slots":{...}}, ...]} with ONE entry per record, in a '
-      'sensible order. Do NOT split a single record into actions. '
-      'Output only JSON.';
+      'MULTIPLE RECORDS: usually return one {skillId, slots}. But if the utterance describes '
+      'SEVERAL separate things to record, return {"actions": [{"skillId":..., "slots":{...}}, ...]} '
+      'with ONE entry per record. Two rules that force this: (1) an interaction/plan WITH several '
+      'people ("lunch with Alice and Bob", "seeing Katherine and Corey tonight") is ONE record PER '
+      'PERSON — one action each, each naming exactly ONE person; NEVER put two names in a single '
+      'name slot. (2) a relationship AND a separate fact are separate records. Do NOT split a '
+      'single record into actions. Output only JSON.';
 
   static const _authorSys = '''
 You author capabilities for a personal-assistant app as DATA (never code). Given a
