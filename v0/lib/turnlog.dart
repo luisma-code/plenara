@@ -44,6 +44,32 @@ TurnlogSummary summarizeTurns(Iterable<Map<String, dynamic>> turns) {
       paidCalls: paidCalls, spendUsd: spend, activeDays: days.length);
 }
 
+/// One calendar day of usage — for the in-app "Cloud usage" view.
+class DayUsage {
+  final String date; // YYYY-MM-DD
+  int turns = 0;
+  int cloudCalls = 0; // turns that spent cloud tokens
+  double costUsd = 0;
+  DayUsage(this.date);
+}
+
+/// Per-day usage, most-recent day first. A "cloud call" is a turn with a recorded cost.
+List<DayUsage> dailyUsage(Iterable<Map<String, dynamic>> turns) {
+  final days = <String, DayUsage>{};
+  for (final t in turns) {
+    final at = t['at']?.toString();
+    final day = (at != null && at.length >= 10) ? at.substring(0, 10) : 'unknown';
+    final d = days.putIfAbsent(day, () => DayUsage(day));
+    d.turns++;
+    final cost = t['cost'];
+    if (cost is Map) {
+      d.cloudCalls++;
+      d.costUsd += (cost['usd'] as num?)?.toDouble() ?? 0;
+    }
+  }
+  return days.values.toList()..sort((a, b) => b.date.compareTo(a.date));
+}
+
 String formatSummary(TurnlogSummary s) {
   if (s.total == 0) return 'Turnlog is empty — no turns recorded yet.';
   String pct(int n) => '${(100 * n / s.total).toStringAsFixed(1)}%';

@@ -46,7 +46,7 @@ class _ThrowSpeech implements SpeechRecognizer {
 
 class _NullCloud implements CloudClient {
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
       const CloudOk(null);
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
@@ -61,7 +61,7 @@ class _GatedCloud implements CloudClient {
   final Completer<void> gate;
   _GatedCloud(this.gate);
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s) async {
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async {
     await gate.future;
     return const CloudOk(null); // abstain -> clarify
   }

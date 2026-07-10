@@ -89,7 +89,8 @@ class _HomeState extends State<Home> {
 class Msg {
   final String text;
   final bool user;
-  Msg(this.text, this.user);
+  final bool cloud; // this assistant reply consulted the cloud (spent tokens) -> show a green dot
+  Msg(this.text, this.user, {this.cloud = false});
 }
 
 class ChatScreen extends StatefulWidget {
@@ -211,7 +212,9 @@ class _ChatState extends State<ChatScreen> {
       resp = 'Something went wrong: $e';
     }
     if (!mounted) return; // widget torn down mid-turn -> don't setState after dispose
-    log('turn -> ${resp.length > 140 ? '${resp.substring(0, 140)}…' : resp}');
+    final usedCloud = _session.lastTurnUsedCloud;
+    log('turn -> [${_session.lastSource}${usedCloud ? ', cloud' : ', offline'}] '
+        '${resp.length > 140 ? '${resp.substring(0, 140)}…' : resp}');
     // _busy is always cleared, so the input can never lock up
     // Surface any automation deliveries this turn produced (Spec 02 §7.5 read-only "deliver"),
     // draining them so they don't re-appear as on-open nudges next launch; and prompt on a NEW
@@ -220,7 +223,7 @@ class _ChatState extends State<ChatScreen> {
     final review = _session.automations.pendingReview;
     final newReviews = review.length > reviewsBefore ? review.sublist(reviewsBefore) : const [];
     setState(() {
-      _msgs.add(Msg(resp, false));
+      _msgs.add(Msg(resp, false, cloud: usedCloud));
       for (final d in deliveries) {
         _msgs.add(Msg('✨ ${d.text}', false));
       }
@@ -343,7 +346,27 @@ class _ChatState extends State<ChatScreen> {
                           color: m.user ? cs.primaryContainer : cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: SelectableText(m.text),
+                        child: m.cloud
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 5, right: 8),
+                                    child: Tooltip(
+                                      message: 'Used the cloud (Claude) for this reply',
+                                      child: Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                            color: Color(0xFF2E7D32), shape: BoxShape.circle),
+                                      ),
+                                    ),
+                                  ),
+                                  Flexible(child: SelectableText(m.text)),
+                                ],
+                              )
+                            : SelectableText(m.text),
                       ),
                     );
                   },

@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
+import 'package:plenara/turnlog.dart';
 
 import 'app_log.dart';
 
@@ -145,6 +147,88 @@ class _SettingsViewState extends State<SettingsView> {
         _ => 'Unexpected response from Anthropic — try again in a moment.',
       };
 
+  /// Load the device-local turnlog (one JSON object per line); empty on any error.
+  List<Map<String, dynamic>> _loadTurns() {
+    try {
+      final f = File('${defaultDeviceDir()}/turnlog.jsonl');
+      if (!f.existsSync()) return const [];
+      return f
+          .readAsLinesSync()
+          .where((l) => l.trim().isNotEmpty)
+          .map((l) {
+            try {
+              return jsonDecode(l) as Map<String, dynamic>;
+            } catch (_) {
+              return <String, dynamic>{};
+            }
+          })
+          .where((m) => m.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Widget _usageSection(ColorScheme cs) {
+    final turns = _loadTurns();
+    if (turns.isEmpty) {
+      return Text('No usage recorded yet — cloud stats appear here after a few turns.',
+          style: TextStyle(fontSize: 12, color: cs.outline));
+    }
+    final s = summarizeTurns(turns);
+    final days = dailyUsage(turns);
+    var inTok = 0, outTok = 0;
+    final cloudSkills = <String, int>{};
+    for (final t in turns) {
+      final c = t['cost'];
+      if (c is Map) {
+        inTok += (c['in'] as num?)?.toInt() ?? 0;
+        outTok += (c['out'] as num?)?.toInt() ?? 0;
+        final sk = t['skill']?.toString();
+        if (sk != null) cloudSkills[sk] = (cloudSkills[sk] ?? 0) + 1;
+      }
+    }
+    String pct(int n) => s.total == 0 ? '0%' : '${(100 * n / s.total).round()}%';
+    final offline = s.total - s.paidCalls;
+    Widget row(String a, String b) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 1),
+          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text(a, style: const TextStyle(fontSize: 13)),
+            Text(b, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          ]),
+        );
+    final topCloud = cloudSkills.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      row('Turns', '${s.total}'),
+      row('Ran offline (free)', '$offline  (${pct(offline)})'),
+      row('Reached the cloud', '${s.paidCalls}  (${pct(s.paidCalls)})'),
+      const SizedBox(height: 6),
+      row('Estimated spend', '\$${s.spendUsd.toStringAsFixed(4)}'),
+      if (s.activeDays > 0)
+        row('  ~ per day / month',
+            '\$${s.spendPerDayUsd.toStringAsFixed(4)}  ·  ~\$${(s.spendPerDayUsd * 30).toStringAsFixed(2)}'),
+      row('Tokens (in / out)', '$inTok / $outTok'),
+      if (s.byCloud.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Text('Cloud health', style: TextStyle(fontSize: 12, color: cs.outline)),
+        for (final e in (s.byCloud.entries.toList()..sort((a, b) => b.value.compareTo(a.value))))
+          row('  ${e.key}', '${e.value}'),
+      ],
+      if (topCloud.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Text('Where the cloud was used', style: TextStyle(fontSize: 12, color: cs.outline)),
+        for (final e in topCloud.take(6)) row('  ${e.key}', '${e.value}'),
+      ],
+      const SizedBox(height: 8),
+      Text('Recent days', style: TextStyle(fontSize: 12, color: cs.outline)),
+      for (final d in days.take(7))
+        row('  ${d.date}', '${d.cloudCalls} cloud · \$${d.costUsd.toStringAsFixed(4)}'),
+      const SizedBox(height: 6),
+      Text('A green dot on a reply means it used the cloud; everything else ran on-device for free.',
+          style: TextStyle(fontSize: 12, color: cs.outline)),
+    ]);
+  }
+
   Widget _step(String n, String text) => Padding(
         padding: const EdgeInsets.only(bottom: 4),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -232,6 +316,10 @@ class _SettingsViewState extends State<SettingsView> {
             value: _cfg.freeTier,
             onChanged: (v) => _setFreeTier(v ?? false),
           ),
+          const Divider(height: 32),
+          const Text('Cloud usage', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          _usageSection(cs),
           const Divider(height: 32),
           const Text('Diagnostics log', style: TextStyle(fontWeight: FontWeight.bold)),
           SelectableText(AppLog.instance.file.path),

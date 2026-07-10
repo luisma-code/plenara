@@ -241,6 +241,12 @@ class Session {
   // ("no, that was a walk", F-14) can re-log the corrected activity carrying the slots.
   Map<String, dynamic>? _lastDispatch;
   String _outSource = 'clarify'; // telemetry: how this turn resolved
+  /// How the LAST turn resolved (corpus | cloud | cloud-multi | compound | generative | ...).
+  String get lastSource => _outSource;
+  /// Whether the last turn consulted the cloud (spent Anthropic tokens) — drives the per-response
+  /// cloud indicator in the UI.
+  bool get lastTurnUsedCloud =>
+      const {'cloud', 'cloud-multi', 'generative', 'authoring-preview'}.contains(_outSource);
   String? _outSkill;
   String? _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
   // Rich debug-trace fields (dogfood diagnosis: read the turnlog instead of retrying) —

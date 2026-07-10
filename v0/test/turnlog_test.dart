@@ -13,6 +13,21 @@ void main() {
     {'source': 'undo'},
   ];
 
+  test('dailyUsage buckets turns by day with cloud calls + cost, most recent first', () {
+    final t = <Map<String, dynamic>>[
+      {'source': 'corpus', 'at': '2026-07-09T10:00:00'},
+      {'source': 'cloud', 'at': '2026-07-10T09:00:00', 'cost': {'in': 100, 'out': 20, 'usd': 0.0002}},
+      {'source': 'cloud', 'at': '2026-07-10T11:00:00', 'cost': {'in': 200, 'out': 40, 'usd': 0.0004}},
+    ];
+    final days = dailyUsage(t);
+    expect(days.first.date, '2026-07-10'); // most recent first
+    expect(days.first.turns, 2);
+    expect(days.first.cloudCalls, 2);
+    expect(days.first.costUsd, closeTo(0.0006, 1e-9));
+    expect(days.last.date, '2026-07-09');
+    expect(days.last.cloudCalls, 0); // an offline day
+  });
+
   test('summarizeTurns counts sources, cloud health, and skills', () {
     final s = summarizeTurns(turns);
     expect(s.total, 6);
