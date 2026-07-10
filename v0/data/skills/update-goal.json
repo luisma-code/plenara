@@ -8,7 +8,7 @@
     "main": [
       { "op": "compute", "fn": "today", "into": "today" },
       { "op": "compute", "fn": "concat", "args": [ "run ", { "var": "target" }, "km" ], "into": "desc" },
-      { "op": "read_one", "typeId": "goal", "match": { "activity": "run" }, "into": "existing" },
+      { "op": "read_one", "typeId": "goal", "match": { "activity": "run" }, "first": true, "into": "existing" },
       {
         "op": "branch",
         "cond": { "notNull": "existing" },

@@ -731,6 +731,10 @@ class Interpreter {
             }).toList();
           }
         }
+        // `first: true` tolerates a non-unique match by taking the first — for a lookup that is
+        // not a user-facing name choice (e.g. the single running goal, which a pre-`resolve` bug
+        // could have duplicated), so those skills degrade gracefully instead of a G-12 brick.
+        if (step['first'] == true && hits.length > 1) hits = [hits.first];
         if (hits.length > 1) {
           final labelField = (step['match'] as Map).keys.first as String;
           final labels = hits.map((h) => (h['displayName'] ?? h[labelField] ?? h['id']).toString()).toList();

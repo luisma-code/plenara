@@ -194,13 +194,16 @@ DateTime _nextWeekly(DateTime base, String dayName, DateTime now) {
 /// strictly after [now] — "every weekday" (1..5), "every weekend" (6,7), or any subset.
 /// An empty set falls back to daily (graceful).
 DateTime _nextInWeekdaySet(DateTime base, Set<int> wanted, DateTime now) {
-  if (wanted.isEmpty) return _nextDaily(base, now);
-  var c = DateTime(now.year, now.month, now.day, base.hour, base.minute, base.second);
+  // only real weekdays (1..7) — a stray value (e.g. a bad "days:0") must not create a phantom.
+  final valid = wanted.where((d) => d >= 1 && d <= 7).toSet();
+  if (valid.isEmpty) return _nextDaily(base, now);
   for (var i = 0; i < 8; i++) {
-    if (wanted.contains(c.weekday) && c.isAfter(now)) return c;
-    c = c.add(const Duration(days: 1));
+    // construct each candidate DAY (DST-safe: keeps base's wall-clock time-of-day across a
+    // transition, unlike adding absolute 24h Durations).
+    final c = DateTime(now.year, now.month, now.day + i, base.hour, base.minute, base.second);
+    if (valid.contains(c.weekday) && c.isAfter(now)) return c;
   }
-  return c; // unreachable given a non-empty set, but never crash
+  return _nextDaily(base, now); // unreachable given a non-empty valid set, but never crash
 }
 
 /// The next occurrence of day-of-month [dom] at [base]'s time-of-day strictly after [now]

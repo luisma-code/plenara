@@ -6,7 +6,7 @@
   "inputs": [],
   "steps": {
     "main": [
-      { "op": "read_one", "typeId": "goal", "match": { "activity": "run" }, "into": "existing" },
+      { "op": "read_one", "typeId": "goal", "match": { "activity": "run" }, "first": true, "into": "existing" },
       {
         "op": "branch",
         "cond": { "notNull": "existing" },

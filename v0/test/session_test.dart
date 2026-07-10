@@ -733,7 +733,7 @@ void main() {
       expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1);
     });
 
-    test('skips an action missing a required slot, still runs the others', () async {
+    test('skips an action missing a required slot, still runs the others (and says so)', () async {
       final route = {
         'actions': [
           {'skillId': 'create-task', 'slots': {'description': 'call the vet'}},
@@ -743,8 +743,26 @@ void main() {
       };
       final s = Session(makeTempDataDir(), clock: _now, cloud: _CapturingCloud(route));
       await s.init(retrieval: false);
-      await s.handle('multi qqzz');
+      final r = await s.handle('multi qqzz');
       expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1); // only the valid one
+      expect(r, contains("couldn't record 1 part")); // not silently dropped (review #17)
+    });
+
+    test('undo reverses the WHOLE multi-action turn, not just the last record (review #5)', () async {
+      final route = {
+        'actions': [
+          {'skillId': 'create-task', 'slots': {'description': 'task one'}},
+          {'skillId': 'create-task', 'slots': {'description': 'task two'}},
+        ],
+        'source': 'cloud',
+      };
+      final s = Session(makeTempDataDir(), clock: _now, cloud: _CapturingCloud(route));
+      await s.init(retrieval: false);
+      await s.handle('multi qqzz');
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 2);
+      final r = await s.handle('undo');
+      expect(r.toLowerCase(), contains('undone'));
+      expect(s.store.values.where((x) => x['typeId'] == 'task').isEmpty, isTrue); // BOTH reversed
     });
   });
 

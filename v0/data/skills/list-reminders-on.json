@@ -18,6 +18,7 @@
         "typeId": "reminder",
         "filter": [
           { "field": "done", "op": "eq", "value": false },
+          { "field": "recurrence", "op": "isNull" },
           { "field": "remindAt", "op": "gte", "value": { "var": "lo" } },
           { "field": "remindAt", "op": "lt", "value": { "var": "hi" } }
         ],

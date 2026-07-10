@@ -243,10 +243,11 @@ class Session {
   String _outSource = 'clarify'; // telemetry: how this turn resolved
   /// How the LAST turn resolved (corpus | cloud | cloud-multi | compound | generative | ...).
   String get lastSource => _outSource;
-  /// Whether the last turn consulted the cloud (spent Anthropic tokens) — drives the per-response
-  /// cloud indicator in the UI.
-  bool get lastTurnUsedCloud =>
-      const {'cloud', 'cloud-multi', 'generative', 'authoring-preview'}.contains(_outSource);
+  bool _lastTurnSpentCloud = false;
+  /// Whether the last turn actually SPENT Anthropic tokens — drives the per-response cloud
+  /// indicator. Keyed on real token spend (not the route source), so a cloud/generative call
+  /// that FAILED and fell back to an offline reply shows no dot (review #22).
+  bool get lastTurnUsedCloud => _lastTurnSpentCloud;
   String? _outSkill;
   String? _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
   // Rich debug-trace fields (dogfood diagnosis: read the turnlog instead of retrying) —
@@ -547,6 +548,9 @@ class Session {
       _outError = '${e.runtimeType}: $e\n$st'; // full detail to the trace, never to the user
       resp = "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
     }
+    // Did this turn actually spend cloud tokens? (drives the per-response cloud dot — accurate
+    // even when a cloud/generative call failed to an offline reply, which spends nothing.)
+    _lastTurnSpentCloud = c is ClaudeClient && (c.inTokens - inTok0 > 0 || c.outTokens - outTok0 > 0);
     // Post-turn housekeeping (reminder reconcile + the diagnostics trace) must NEVER lose the
     // already-computed response — a turnlog I/O error or a reconcile hiccup is non-fatal to the
     // turn (Fable review: these sat outside the try). Wrap so they can't escape to the UI.
@@ -992,20 +996,49 @@ class Session {
     if (routed['actions'] is List) {
       final replies = <String>[];
       final done = <String>[];
+      var skipped = 0;
+      final journalBefore = _journal.length;
       for (final a in (routed['actions'] as List).cast<Map>()) {
         final sid = a['skillId'] as String?;
-        if (sid == null || !skills.containsKey(sid)) continue;
         final slots = (a['slots'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
         slots.updateAll((k, v) => (v is String && const {'none', 'null'}.contains(v.trim().toLowerCase())) ? null : v);
+        if (sid == null || !skills.containsKey(sid)) {
+          skipped++; // an unusable action is NOT silently dropped — the reply admits it below
+          continue;
+        }
         _normalizeTypedSlots(skills[sid], slots, now);
-        if (_missingRequired(skills[sid], slots).isNotEmpty) continue;
-        replies.add(await _dispatch(sid, slots, 'cloud', now)); // no learn: a compound isn't one template
-        done.add(sid);
+        if (_missingRequired(skills[sid], slots).isNotEmpty) {
+          skipped++;
+          continue;
+        }
+        // One bad action (model-shaped slots hitting a resolver, a clarify throw) must not abort
+        // the batch after earlier actions already persisted, nor let handle()'s catch-all falsely
+        // claim nothing was done (review #18). Contain it and count it as skipped.
+        try {
+          replies.add(await _dispatch(sid, slots, 'cloud', now)); // no learn: a compound isn't one template
+          done.add(sid);
+        } catch (_) {
+          skipped++;
+        }
       }
       if (replies.isNotEmpty) {
+        // Collapse this turn's per-action journal entries into ONE, so undo / "no, I meant"
+        // reverses the WHOLE turn — not just the last record (review #5).
+        if (_journal.length - journalBefore > 1) {
+          final merged = <String, Map<String, dynamic>?>{};
+          for (var i = journalBefore; i < _journal.length; i++) {
+            _journal[i].before.forEach((id, prior) => merged.putIfAbsent(id, () => prior));
+          }
+          _journal.removeRange(journalBefore, _journal.length);
+          _journal.add(_JournalEntry(merged, null));
+        }
+        _lastTurnWrote = _journal.length > journalBefore; // the turn is undoable as a unit
         _outSource = 'cloud-multi'; // telemetry: one turn, several records
         _outSkill = done.join('+');
-        return replies.join(' ');
+        final reply = replies.join(' ');
+        return skipped > 0
+            ? "$reply (I couldn't record $skipped part${skipped > 1 ? 's' : ''} of that — try rephrasing ${skipped > 1 ? 'them' : 'it'}.)"
+            : reply;
       }
       // every action was unusable — fall through to the honest miss path
       _outDiag = {'corpus': 'no-match', 'cloud': 'multi-empty'};

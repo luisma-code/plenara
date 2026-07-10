@@ -25,8 +25,15 @@
             "body": [
               {
                 "op": "branch",
-                "cond": { "gte": [ { "field": [ "i", "at" ] }, { "var": "latest" } ] },
-                "then": [ { "op": "set", "var": "latest", "value": { "field": [ "i", "at" ] } } ]
+                "cond": { "eq": [ { "field": [ "i", "planned" ] }, true ] },
+                "then": [],
+                "else": [
+                  {
+                    "op": "branch",
+                    "cond": { "gte": [ { "field": [ "i", "at" ] }, { "var": "latest" } ] },
+                    "then": [ { "op": "set", "var": "latest", "value": { "field": [ "i", "at" ] } } ]
+                  }
+                ]
               }
             ]
           },
@@ -39,7 +46,10 @@
                 "op": "branch",
                 "cond": { "eq": [ { "var": "latest" }, "" ] },
                 "then": [ { "op": "set", "var": "whenLabel", "value": "no interactions logged" } ],
-                "else": [ { "op": "compute", "fn": "concat", "args": [ "last talked ", { "var": "latest" } ], "into": "whenLabel" } ]
+                "else": [
+                  { "op": "compute", "fn": "format_date", "args": [ { "var": "latest" } ], "into": "latestLabel" },
+                  { "op": "compute", "fn": "concat", "args": [ "last talked ", { "var": "latestLabel" } ], "into": "whenLabel" }
+                ]
               },
               {
                 "op": "compute",

@@ -24,7 +24,7 @@
         "fields": { "subject": { "ref": "person" }, "label": { "var": "label" }, "date": { "var": "date" } },
         "into": "newDate"
       },
-      { "op": "format", "template": "Got it — {personName}'s {label} is {date}. I'll remind you when it's coming up.", "into": "confirmationText" }
+      { "op": "format", "template": "Got it — {personName}'s {label} is {date}. Ask me \"when is {personName}'s {label}\" any time.", "into": "confirmationText" }
     ]
   }
 }
