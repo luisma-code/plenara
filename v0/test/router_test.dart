@@ -227,6 +227,35 @@ void main() {
     });
   });
 
+  group('weekday abbreviations + "add a todo" (offline, was falling to cloud)', () {
+    test('"add a todo to X on Sat" -> create-task, due Saturday', () {
+      final r = _r.route('add a todo to go to the pottery studio on Sat');
+      expect(r?['skillId'], 'create-task');
+      expect(r?['slots']['description'], 'go to the pottery studio');
+      expect(r?['slots']['dueDate'], '2026-07-11'); // next Sat after Mon 2026-07-06
+    });
+    test('"add a todo to X" -> create-task, no date', () {
+      final r = _r.route('add a todo to call the dentist');
+      expect(r?['skillId'], 'create-task');
+      expect(r?['slots']['description'], 'call the dentist');
+      expect(r?['slots']['dueDate'], isNull);
+    });
+    // Clock is Monday 2026-07-06; a bare weekday resolves to its NEXT occurrence.
+    for (final c in const [
+      ['tue', '2026-07-07'], ['tues', '2026-07-07'], ['wed', '2026-07-08'], ['thu', '2026-07-09'],
+      ['thurs', '2026-07-09'], ['fri', '2026-07-10'], ['sun', '2026-07-12'], ['mon', '2026-07-13'],
+    ]) {
+      test('weekday abbrev "${c[0]}" resolves', () => expect(_r.resolveDate(c[0], _now), c[1]));
+    }
+    test('"on tue" and "next sat" keep the prefix semantics', () {
+      expect(_r.resolveDate('on tue', _now), '2026-07-07');
+      expect(_r.resolveDate('next sat', _now), '2026-07-11');
+    });
+    test('a full weekday name still resolves (no abbrev regression)', () {
+      expect(_r.resolveDate('saturday', _now), '2026-07-11');
+    });
+  });
+
   group('slot-type resolution', () {
     test('quantity -> num (not string)', () {
       expect(_r.route('log a 7k run')?['slots']['distance'], isA<num>());

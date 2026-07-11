@@ -383,7 +383,20 @@ class Router {
 
   /// The deterministic date resolver (Spec 03 §6.2). Relative to [now].
   String? resolveDate(String phrase, DateTime now) {
-    final p = phrase.toLowerCase().trim();
+    var p = phrase.toLowerCase().trim();
+    // Weekday ABBREVIATIONS ("sat", "on tue", "next thurs") -> full names, so the weekday
+    // resolution below (which matches spelled-out days) handles them uniformly. Only a bare
+    // abbreviation with an optional on/next/last prefix expands; "saturday", "may", "mar 3"
+    // don't match this shape and pass through untouched.
+    p = p.replaceFirstMapped(
+        RegExp(r'^(last\s+|next\s+|on\s+)?(mon|tues?|weds?|thu|thur|thurs|fri|sat|sun)$'), (mm) {
+      const map = {
+        'mon': 'monday', 'tue': 'tuesday', 'tues': 'tuesday', 'wed': 'wednesday', 'weds': 'wednesday',
+        'thu': 'thursday', 'thur': 'thursday', 'thurs': 'thursday', 'fri': 'friday',
+        'sat': 'saturday', 'sun': 'sunday'
+      };
+      return '${mm.group(1) ?? ''}${map[mm.group(2)]}';
+    });
     String iso(DateTime d) =>
         '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
     if (p == 'today') return iso(now);
