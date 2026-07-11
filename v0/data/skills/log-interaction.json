@@ -11,6 +11,7 @@
   "inputs": [
     { "name": "personName", "required": true },
     { "name": "note", "required": false },
+    { "name": "kind", "required": false },
     { "name": "at", "required": false, "type": "date" }
   ],
   "steps": {
@@ -50,14 +51,20 @@
         "fields": {
           "subject": { "ref": "person" },
           "note": { "var": "note" },
+          "kind": { "var": "kind" },
           "at": { "var": "at" }
         },
         "into": "newInteraction"
       },
       {
-        "op": "format",
-        "template": "Logged that you talked to {personName}.",
-        "into": "confirmationText"
+        "op": "branch",
+        "cond": { "notNull": "kind" },
+        "then": [
+          { "op": "format", "template": "Logged {kind} with {personName}.", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "Logged that you talked to {personName}.", "into": "confirmationText" }
+        ]
       }
     ]
   }

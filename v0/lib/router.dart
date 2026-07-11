@@ -213,6 +213,27 @@ class Router {
     return '$lead$core$trail';
   }
 
+  // A real sentence break: terminal punctuation followed by whitespace. Decimals ("72.5")
+  // and titles glued to punctuation ("e.g.") lack the trailing space, so they don't split.
+  static final _sentenceSplit = RegExp(r'[.!?]+\s+');
+  // A "word" for substance-counting: a run of ≥2 letters. Skips "I"/"a" and stray initials,
+  // so an abbreviation segment ("Dr", "St") counts as at most one word and is not substantial.
+  static final _wordRe = RegExp(r'[A-Za-z]{2,}');
+
+  /// True when [u] is two or more SUBSTANTIAL sentences (each ≥2 real words). This is the
+  /// compound-utterance signal: such an utterance carries multiple statements the corpus
+  /// can't split, so it belongs on the cloud multi-action path. Guards against false
+  /// positives from decimals, single trailing punctuation, and title abbreviations
+  /// ("Dr. Smith is here" → "Dr" has one word → only one substantial sentence → not compound).
+  static bool _isCompound(String u) {
+    var substantial = 0;
+    for (final seg in u.split(_sentenceSplit)) {
+      if (_wordRe.allMatches(seg).length >= 2) substantial++;
+      if (substantial >= 2) return true;
+    }
+    return false;
+  }
+
   /// Returns {skillId, slots} for a corpus hit, else null (=> retrieval/clarify).
   /// [clock] is the turn's frozen now for date resolution (Spec 03 §4); defaults
   /// to the router's construction time.
@@ -223,6 +244,13 @@ class Router {
   Map<String, dynamic>? route(String utterance, {DateTime? clock, Set<String> contacts = const {}}) {
     final u = utterance.trim();
     final asOf = clock ?? now;
+    // A COMPOUND utterance — two or more complete sentences — is not a single command.
+    // The corpus fast-path's greedy `text` slots would swallow the whole thing into ONE
+    // skill: "I just had dinner with X. I learned Rina is going to UW" hit
+    // `i just had {food:text}` and logged the entire two-sentence blob as a meal. Hand
+    // compounds to the cloud router, which decomposes them into multiple actions (dinner
+    // interaction + relationship + fact). Single trailing punctuation is NOT a compound.
+    if (_isCompound(u)) return null;
     // Curated SEED templates take precedence over LEARNED ones (two passes), so a broad
     // learned entry ("note {text}") can never permanently shadow a specific seed
     // ("note that {person} {fact}"). Learned templates only fast-path phrasings no seed matches.

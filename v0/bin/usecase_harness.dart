@@ -29,6 +29,8 @@ Future<void> run(String label, List<String> setup, String probe, String key) asy
 void main() async {
   final key = loadConfig().apiKey;
   if (key == null) { print('NO KEY'); return; }
+  await run('COMPOUND: dinner + relationship + fact', [],
+      'I just had dinner with Katherine Miller and Corey. I learned that Rina, their daughter, is going to UW for college.', key);
   await run('multi-person PAST', [], 'I had lunch with Sarah Chen and Mike Torres yesterday', key);
   await run('multi-person FUTURE', [], "I'm going to dinner with Katherine and Corey tonight at Ramie", key);
   await run('single PAST', [], 'talked to Sarah about the trip', key);

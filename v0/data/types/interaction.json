@@ -5,6 +5,7 @@
   "attributes": [
     { "name": "subject", "valueType": "entityRef", "refType": "contact", "required": true },
     { "name": "note", "valueType": "text", "required": false },
+    { "name": "kind", "valueType": "text", "required": false },
     { "name": "at", "valueType": "date", "required": true },
     { "name": "planned", "valueType": "boolean", "required": false }
   ]

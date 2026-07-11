@@ -131,7 +131,11 @@ class ClaudeClient implements CloudClient {
       'people ("lunch with Alice and Bob", "seeing Katherine and Corey tonight") is ONE record PER '
       'PERSON — one action each, each naming exactly ONE person; NEVER put two names in a single '
       'name slot. (2) a relationship AND a separate fact are separate records. Do NOT split a '
-      'single record into actions. Output only JSON.';
+      'single record into actions. '
+      'INTERACTION KIND: when log-interaction (or a plan) has a "kind" slot and the utterance names '
+      'HOW you met — dinner, lunch, breakfast, coffee, drinks, a call, a walk — put that noun in '
+      '"kind" (e.g. "had dinner with Sam" -> kind:"dinner"). A shared meal with a person is an '
+      'interaction, NOT a meal to log with calories. Output only JSON.';
 
   static const _authorSys = '''
 You author capabilities for a personal-assistant app as DATA (never code). Given a

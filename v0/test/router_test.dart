@@ -205,6 +205,28 @@ void main() {
     }
   });
 
+  group('compound utterances -> null (fall through to cloud multi-action)', () {
+    // A two-sentence utterance must NOT be swallowed by a greedy text slot. Regression
+    // for: "I just had dinner with X. I learned Rina is going to UW" logging the whole
+    // blob as a meal (food:text captured both sentences across the period).
+    const compounds = [
+      'I just had dinner with Katherine Miller and Corey. I learned that Rina, their daughter, is going to UW for college.',
+      'i had eggs for breakfast. i also went for a run this morning',
+      'add milk to my list. remind me to call mom at 5pm',
+    ];
+    for (final u in compounds) {
+      test('"${u.substring(0, u.length > 40 ? 40 : u.length)}…" -> null', () => expect(_r.route(u), isNull));
+    }
+    // But a SINGLE sentence with ordinary trailing punctuation still fast-paths, and a
+    // decimal or title abbreviation must not be mistaken for a sentence break.
+    test('single trailing period still routes', () {
+      expect(_r.route('i ate a burrito.')?['skillId'], 'log-meal');
+    });
+    test('decimal does not read as a sentence break', () {
+      expect(_r.route('log a 5.5k run')?['skillId'], 'log-run');
+    });
+  });
+
   group('slot-type resolution', () {
     test('quantity -> num (not string)', () {
       expect(_r.route('log a 7k run')?['slots']['distance'], isA<num>());
