@@ -82,9 +82,13 @@ Future<void> main(List<String> argv) async {
     final reply = await session.handle(u);
     stdout.writeln('> $u');
     stdout.writeln(reply);
+    // Always report whether the turn stayed on-device or reached the cloud back end
+    // (lastTurnUsedCloud = real Anthropic tokens spent this turn). -v adds the route + diff.
+    final where = session.lastTurnUsedCloud ? 'cloud (back end)' : 'offline (on-device)';
     if (verbose) {
-      stdout.writeln('   [source=${session.lastSource} '
-          'cloud=${session.lastTurnUsedCloud} | ${_diff(before, _byType(session))}]');
+      stdout.writeln('   [$where · source=${session.lastSource} · ${_diff(before, _byType(session))}]');
+    } else {
+      stdout.writeln('   [$where]');
     }
     stdout.writeln('');
   }
