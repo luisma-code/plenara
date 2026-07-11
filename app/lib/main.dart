@@ -12,6 +12,7 @@ import 'package:plenara/session.dart';
 
 import 'app_log.dart';
 import 'data_view.dart';
+import 'glyphs.dart';
 import 'onboarding_view.dart';
 import 'plena.dart';
 import 'settings_view.dart';
@@ -124,6 +125,18 @@ class _ChatState extends State<ChatScreen> {
   // so "speaking" is a brief flourish while a reply lands; _lastCloud tints it cooler (D2).
   bool _speaking = false, _lastCloud = false;
   Timer? _speakTimer;
+  // The glyph Plena should trace next, fired by bumping the nonce (Spec 15 §5A). apt-or-absent:
+  // most turns fire none. A short debounce keeps them from stacking during rapid dogfooding.
+  GlyphDef? _glyph;
+  int _glyphNonce = 0, _glyphPreview = 0;
+  DateTime _lastGlyphAt = DateTime.fromMillisecondsSinceEpoch(0);
+  void _fireGlyph(GlyphDef? g, {bool force = false}) {
+    if (g == null) return;
+    final now = DateTime.now();
+    if (!force && now.difference(_lastGlyphAt).inSeconds < 8) return;
+    _lastGlyphAt = now;
+    setState(() { _glyph = g; _glyphNonce++; });
+  }
   PresenceState get _presence => _listening
       ? PresenceState.listening
       : _busy
@@ -168,6 +181,10 @@ class _ChatState extends State<ChatScreen> {
           _msgs.add(Msg(n, false));
         }
       });
+      // a greeting on open — a birthday today earns the candle, otherwise a smile
+      final onOpen = _session.pendingNudges();
+      _fireGlyph(onOpen.any((n) => n.toLowerCase().contains('birthday')) ? kGlyphs['candle'] : kGlyphs['smile'],
+          force: true);
     } catch (e, st) {
       log('init: FAILED: $e\n$st');
       // no infinite spinner: surface the failure and let the user see it
@@ -251,6 +268,8 @@ class _ChatState extends State<ChatScreen> {
     _speakTimer?.cancel();
     _speakTimer = Timer(const Duration(milliseconds: 2600),
         () { if (mounted) setState(() => _speaking = false); });
+    // apt-or-absent: an occasion-appropriate glyph, or nothing (most turns)
+    _fireGlyph(glyphForTurn(_session.lastSkill, resp));
     _jump();
   }
 
@@ -351,12 +370,24 @@ class _ChatState extends State<ChatScreen> {
           : Column(children: [
               // Plena — the living presence (Spec 15). Reflects idle / listening / thinking /
               // speaking; her "thinking" state replaces the old busy spinner.
-              SizedBox(
-                height: 168,
-                width: double.infinity,
-                // Static (no ticker) under an injected test session so pumpAndSettle terminates.
-                child: PresenceView(
-                    state: _presence, difficulty: _difficulty, animate: widget.session == null),
+              // Long-press Plena to browse the glyph vocabulary (dev preview, Spec 15 §5A.8).
+              GestureDetector(
+                onLongPress: () {
+                  final all = kGlyphs.values.toList();
+                  _fireGlyph(all[_glyphPreview++ % all.length], force: true);
+                },
+                child: SizedBox(
+                  height: 168,
+                  width: double.infinity,
+                  // Static (no ticker) under an injected test session so pumpAndSettle terminates.
+                  child: PresenceView(
+                    state: _presence,
+                    difficulty: _difficulty,
+                    animate: widget.session == null,
+                    glyph: _glyph,
+                    glyphNonce: _glyphNonce,
+                  ),
+                ),
               ),
               Expanded(
                 child: ListView.builder(

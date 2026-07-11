@@ -249,6 +249,9 @@ class Session {
   /// that FAILED and fell back to an offline reply shows no dot (review #22).
   bool get lastTurnUsedCloud => _lastTurnSpentCloud;
   String? _outSkill;
+  /// The skill id (or "a+b" for a compound/multi-action turn) that the last turn dispatched.
+  /// Read by the UI to choose an occasion-appropriate presence glyph (Spec 15 §5A.5).
+  String? get lastSkill => _outSkill;
   String? _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
   // Rich debug-trace fields (dogfood diagnosis: read the turnlog instead of retrying) —
   // reset each turn in handle(), populated as the turn resolves.
