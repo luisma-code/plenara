@@ -1,6 +1,29 @@
 # Plenara — Session Handoff (pick up here)
 
-_Last updated: 2026-07-11. Written to survive a Claude process relaunch._
+_Last updated: 2026-07-11 (late). Written to survive a Claude process relaunch._
+
+## LATEST SESSION (2026-07-11, autonomous) — talk-back + the presence-primary UI. HEAD ≈ `48c0267`+, app 49 + v0 1643 green.
+
+Plena is now a two-way, voice-first presence with the redesigned surface:
+- **Talk-back (offline TTS):** `speech_out.dart` — a pluggable `SpeechOutput` (FlutterTtsSpeechOutput on
+  device: WinRT/SAPI now, AVSpeechSynthesizer on Apple later — same code; `NoopSpeechOutput` for tests/muted).
+  She speaks each reply; the *speaking* animation brackets the real audio; **barge-in** (tap to talk cuts her
+  off); a **mute** toggle silences her (captions stay). Build needs `nuget.exe` — `build.cmd` fetches it +
+  puts `.tools` on PATH.
+- **Presence-primary UI (Spec 15 §6):** only Plena + the current exchange over the void. **Tap anywhere to
+  talk**; reply materialises as ephemeral text (no chat log); a **list-shaped reply eases Plena to a corner**
+  and floats the items; **muted / no-mic raises a two-line input box**; **bottom-left mute**; settings/data/
+  tune behind a discreet "…" menu.
+- **TRUE comet-trail persistence** (`plena.dart`): a ping-pong offscreen buffer (`toImageSync`), resolution-
+  capped + scaled-on-blit (a full-res buffer stalled the raster — the fix). She leaves a real trail of herself.
+  In-app Tune sheet (hue/vibrance/brightness/breadth/gravity/looseness/trail), 49-glyph vocabulary, listening
+  shimmer (STT plugins don't surface live mic level — platform limit, honestly noted).
+- **Screenshot-driven dev:** `PrintWindow(PW_RENDERFULLCONTENT)` on the app's HWND captures her real pixels
+  even LOCKED / occluded (scratchpad `snap.ps1`). Used to iterate the redesign visually.
+- **Known minor gaps:** the calm-band-behind-text (§10.1) isn't implemented (text uses a heavy shadow instead);
+  a few vestigial fields (`_msgs`/`_scroll`/`_jump`) are now unused; true mic-level ride needs STT-plugin work.
+
+
 
 ## LATEST SESSION (2026-07-11) — Spec 15 "Plena" presence + versioning/releases + app integration. HEAD = `08f5313`, 1643 Dart + 38 app tests green.
 

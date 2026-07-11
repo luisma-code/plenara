@@ -369,6 +369,11 @@ class _PresenceViewState extends State<PresenceView>
     if (_reduce) {
       return; // reduced motion: params settle, motes hold still (Spec 15 §8.3)
     }
+    // Listening shimmer: the STT plugins don't surface live mic level, so a gentle self-driven
+    // flutter stands in — she visibly *hears* while the mic is open (Spec 15 §3.1 listening).
+    if (widget.state == PresenceState.listening) {
+      _f.energy = (_f.energy + .07 * math.sin(_phase * 7) + .04 * math.sin(_phase * 13)).clamp(0.0, 1.0);
+    }
 
     // ---- glyph state machine: Plena flies the path, sheds her tail, flourishes, rejoins ----
     final run = _run;
