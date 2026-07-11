@@ -133,9 +133,19 @@ class ClaudeClient implements CloudClient {
       'name slot. (2) a relationship AND a separate fact are separate records. Do NOT split a '
       'single record into actions. '
       'INTERACTION KIND: when log-interaction (or a plan) has a "kind" slot and the utterance names '
-      'HOW you met — dinner, lunch, breakfast, coffee, drinks, a call, a walk — put that noun in '
-      '"kind" (e.g. "had dinner with Sam" -> kind:"dinner"). A shared meal with a person is an '
-      'interaction, NOT a meal to log with calories. Output only JSON.';
+      'HOW you met, put that as a NOUN in "kind" — dinner, lunch, breakfast, coffee, drinks, a call, '
+      'a walk (e.g. "had dinner with Sam" -> kind:"dinner"). Never a bare verb; if they shared a meal '
+      'but which one is unstated ("ate with Sam"), use kind:"a meal". A shared meal with a person is '
+      'an interaction, NOT a meal to log with calories. '
+      'A relationship named in passing — "Vanessa (my wife)", "my brother Sam", "Rina, their '
+      'daughter" — is ALWAYS its own separate record IN ADDITION to the interaction; recording rich '
+      '"note" context never replaces it. '
+      'INTERACTION NOTE: also capture the SETTING and anything memorable — where it happened (a '
+      'restaurant, a neighborhood) and notable remarks (the food was great, what you talked about) '
+      '— into the "note" slot, condensed to the user\'s own words (e.g. note:"at Ramie in Capitol '
+      'Hill — refined asian food, desserts outstanding"). '
+      'A "fact" slot is a COMPLETE statement about the person ("is my wife", "loves hiking"), never '
+      'a bare noun phrase ("my wife"). Output only JSON.';
 
   static const _authorSys = '''
 You author capabilities for a personal-assistant app as DATA (never code). Given a

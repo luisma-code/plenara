@@ -60,10 +60,28 @@
         "op": "branch",
         "cond": { "notNull": "kind" },
         "then": [
-          { "op": "format", "template": "Logged {kind} with {personName}.", "into": "confirmationText" }
+          {
+            "op": "branch",
+            "cond": { "notNull": "note" },
+            "then": [
+              { "op": "format", "template": "Logged {kind} with {personName} — {note}.", "into": "confirmationText" }
+            ],
+            "else": [
+              { "op": "format", "template": "Logged {kind} with {personName}.", "into": "confirmationText" }
+            ]
+          }
         ],
         "else": [
-          { "op": "format", "template": "Logged that you talked to {personName}.", "into": "confirmationText" }
+          {
+            "op": "branch",
+            "cond": { "notNull": "note" },
+            "then": [
+              { "op": "format", "template": "Logged that you talked to {personName} — {note}.", "into": "confirmationText" }
+            ],
+            "else": [
+              { "op": "format", "template": "Logged that you talked to {personName}.", "into": "confirmationText" }
+            ]
+          }
         ]
       }
     ]
