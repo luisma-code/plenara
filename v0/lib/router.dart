@@ -257,36 +257,92 @@ class Router {
     for (final wantLearned in const [false, true]) {
       for (final e in corpus) {
         if (_learnedTemplates.contains(e.template) != wantLearned) continue;
-        final m = e.regex.firstMatch(u);
-        if (m == null) continue;
-        final slots = <String, dynamic>{};
-        var ok = true;
-        e.slotTypes.forEach((name, type) {
-          final raw = m.namedGroup(name)?.trim();
-          final v = type == 'contact'
-              ? (raw != null && contacts.contains(raw.toLowerCase()) ? raw : null)
-              : type == 'entity'
-                  ? (_entityOk(raw) ? raw : null) // a NAME slot can't start with the/a/my/I/... (G-12)
-                  : _resolveSlot(raw, type, asOf);
-          // an unparseable date/datetime — or a :contact/:entity slot that isn't a plausible name —
-          // means this template doesn't apply; fall through. (For datetime this is also the task-vs-
-          // reminder discriminator: "on friday" has no time -> null -> the reminder template is
-          // skipped and the date-only create-task template wins.)
-          if (v == null &&
-              (type == 'date' ||
-                  type == 'dayword' ||
-                  type == 'pastday' ||
-                  type == 'datetime' ||
-                  type == 'contact' ||
-                  type == 'entity')) {
-            ok = false;
-          }
-          slots[name] = v;
-        });
-        if (ok) return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};
+        final slots = _extract(e, u, asOf, contacts);
+        if (slots != null) {
+          return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};
+        }
       }
     }
     return null;
+  }
+
+  /// Match [u] against a single compiled entry and extract its resolved slots, or null if
+  /// the template doesn't apply. Shared by [route] and [learnSuggested] so a learned
+  /// template is validated by the SAME extraction the router uses at dispatch time.
+  Map<String, dynamic>? _extract(CorpusEntry e, String u, DateTime asOf, Set<String> contacts) {
+    final m = e.regex.firstMatch(u);
+    if (m == null) return null;
+    final slots = <String, dynamic>{};
+    var ok = true;
+    e.slotTypes.forEach((name, type) {
+      final raw = m.namedGroup(name)?.trim();
+      final v = type == 'contact'
+          ? (raw != null && contacts.contains(raw.toLowerCase()) ? raw : null)
+          : type == 'entity'
+              ? (_entityOk(raw) ? raw : null) // a NAME slot can't start with the/a/my/I/... (G-12)
+              : _resolveSlot(raw, type, asOf);
+      // an unparseable date/datetime — or a :contact/:entity slot that isn't a plausible name —
+      // means this template doesn't apply; fall through. (For datetime this is also the task-vs-
+      // reminder discriminator: "on friday" has no time -> null -> the reminder template is
+      // skipped and the date-only create-task template wins.)
+      if (v == null &&
+          (type == 'date' ||
+              type == 'dayword' ||
+              type == 'pastday' ||
+              type == 'datetime' ||
+              type == 'contact' ||
+              type == 'entity')) {
+        ok = false;
+      }
+      slots[name] = v;
+    });
+    return ok ? slots : null;
+  }
+
+  // The slot types a learned template may use — the closed vocabulary [_compile] understands.
+  // A cloud-suggested template naming anything else is rejected (never compiled into the corpus).
+  static const _knownSlotTypes = {
+    'text', 'date', 'datetime', 'quantity', 'entity', 'contact',
+    'dayword', 'pastday', 'posword', 'moodword', 'mealword', 'predword'
+  };
+
+  /// Learn a template SUGGESTED by the cloud in the same routing call (Spec 05 §5.2, the
+  /// "gets better with use" loop). Unlike [learn] — which reconstructs a template by finding
+  /// slot VALUES verbatim in the surface and so can't learn date/time phrasings (the resolved
+  /// value isn't in the text) — this trusts the cloud's surface abstraction but VALIDATES it by
+  /// round-trip: the template must compile, match the utterance, and re-extract to the EXACT
+  /// same slots the turn dispatched. Returns the template (to persist) or null if it fails any
+  /// guard. Safe by construction: learned templates are tried only AFTER seeds (route's second
+  /// pass), so one can never shadow a built-in.
+  String? learnSuggested(String utterance, String skillId, Map<String, dynamic> dispatched,
+      String template, {DateTime? clock, Set<String> contacts = const {}}) {
+    final t = template.trim();
+    final asOf = clock ?? now;
+    // 1. Only the closed slot-type vocabulary; placeholders must be well-formed.
+    final phs = RegExp(r'\{(\w+):(\w+)\}').allMatches(t).toList();
+    if (phs.isEmpty) return null; // a template with no slots is just a memorized utterance
+    for (final m in phs) {
+      if (!_knownSlotTypes.contains(m.group(2))) return null;
+    }
+    // 2. A literal word must survive — else "{x:text}" compiles to `^(.+?)$` and hijacks routing.
+    if (t.replaceAll(RegExp(r'\{\w+:\w+\}'), ' ').trim().isEmpty) return null;
+    // 3. Nothing to add if it's already in the corpus.
+    if (corpus.any((c) => c.template == t)) return null;
+    // 4. It must compile, match THIS utterance, and round-trip to the SAME resolved slots.
+    final CorpusEntry e;
+    try {
+      e = _compile({'skillId': skillId, 'template': t});
+    } catch (_) {
+      return null; // a malformed pattern (bad group name, etc.) is rejected, never thrown
+    }
+    final got = _extract(e, utterance.trim(), asOf, contacts);
+    if (got == null) return null;
+    for (final k in {...dispatched.keys, ...got.keys}) {
+      if (dispatched[k]?.toString() != got[k]?.toString()) return null; // resolved mismatch
+    }
+    corpus.insert(0, e);
+    _learnedTemplates.add(t);
+    return t;
   }
 
   // ---- retrieval fallback (findings §13): a candidate generator, not a router ----

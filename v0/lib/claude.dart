@@ -145,7 +145,15 @@ class ClaudeClient implements CloudClient {
       '— into the "note" slot, condensed to the user\'s own words (e.g. note:"at Ramie in Capitol '
       'Hill — refined asian food, desserts outstanding"). '
       'A "fact" slot is a COMPLETE statement about the person ("is my wife", "loves hiking"), never '
-      'a bare noun phrase ("my wife"). Output only JSON.';
+      'a bare noun phrase ("my wife"). '
+      'TEMPLATE (single {skillId,slots} route ONLY, never with "actions"): also add a "template" '
+      'field — the utterance rewritten with each slot you extracted replaced by {slotName:type}, '
+      'using the user\'s SURFACE words for the slot (e.g. "Fri", not a resolved date) and keeping '
+      'every other word literal and lowercased. type is one of: text, date, datetime, quantity, '
+      'entity. Example: "add a todo to go to the gym on Fri" with slots {description:"go to the '
+      'gym", dueDate:"Fri"} -> template "add a todo to {description:text} on {dueDate:date}". OMIT '
+      '"template" when a slot value is not a literal substring of the utterance, for a one-off '
+      'phrasing unlikely to recur, or for any multi-record response. Output only JSON.';
 
   static const _authorSys = '''
 You author capabilities for a personal-assistant app as DATA (never code). Given a
@@ -363,8 +371,15 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
         if (parsed['skillId'] == null || parsed['skillId'] == 'none' || !skills.containsKey(parsed['skillId'])) {
           return const CloudOk<Map<String, dynamic>?>(null); // the model abstained
         }
-        return CloudOk<Map<String, dynamic>?>(
-            {'skillId': parsed['skillId'], 'slots': normSlots(parsed['slots']), 'source': 'cloud'});
+        final tmpl = parsed['template'];
+        return CloudOk<Map<String, dynamic>?>({
+          'skillId': parsed['skillId'],
+          'slots': normSlots(parsed['slots']),
+          'source': 'cloud',
+          // A surface-abstracted template the router will VALIDATE (round-trip) before learning;
+          // pass it through only when it's a non-empty string.
+          if (tmpl is String && tmpl.trim().isNotEmpty) 'template': tmpl.trim(),
+        });
     }
   }
 }

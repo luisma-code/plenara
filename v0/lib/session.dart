@@ -1069,13 +1069,17 @@ class Session {
       return _askForSlot(skills[skillId], missing.first);
     }
     final template = routed['source'] == 'corpus' ? routed['template'] as String? : null;
-    return _dispatch(skillId, slots, routed['source'] as String, now, template: template, utterance: u);
+    // A cloud route may carry a SUGGESTED template (surface-abstracted) to learn — distinct
+    // from a matched corpus `template`. The router validates it by round-trip before adopting.
+    final learnTemplate = routed['source'] == 'cloud' ? routed['template'] as String? : null;
+    return _dispatch(skillId, slots, routed['source'] as String, now,
+        template: template, learnTemplate: learnTemplate, utterance: u);
   }
 
   /// Resolve → execute → persist → journal → learn for a fully-slotted skill. Shared by
   /// the normal routing path and a completed ProvideSlot fill.
   Future<String> _dispatch(String skillId, Map<String, dynamic> slots, String source, DateTime now,
-      {String? template, String? utterance}) async {
+      {String? template, String? learnTemplate, String? utterance}) async {
     _outSkill = skillId; // debug trace
     _outSlots = slots;
     _outTemplate = template;
@@ -1116,7 +1120,14 @@ class Session {
         } catch (_) {/* contained — an automation must never break the user's turn */}
       }
       if (source == 'cloud' && utterance != null) {
-        final tmpl = router.learn(utterance, skillId, slots, contacts: _knownContactTokens());
+        // Prefer the cloud's surface-abstracted suggestion (learns date/time phrasings the
+        // verbatim reconstruction can't), validated by round-trip; fall back to the mechanical
+        // abstraction when the cloud offered none or it failed a guard.
+        var tmpl = learnTemplate == null
+            ? null
+            : router.learnSuggested(utterance, skillId, slots, learnTemplate,
+                clock: now, contacts: _knownContactTokens());
+        tmpl ??= router.learn(utterance, skillId, slots, contacts: _knownContactTokens());
         if (tmpl != null) repo.appendCorpusLearned({'skillId': skillId, 'template': tmpl});
       }
       return plan.confirmation ?? 'Done.';

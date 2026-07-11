@@ -227,6 +227,70 @@ void main() {
     });
   });
 
+  group('learnSuggested — cloud-abstracted template, round-trip validated', () {
+    Router fresh() => Router.load('data/corpus.json', _now);
+
+    test('a valid surface template with a DATE slot is learned and then routes offline', () {
+      final r = fresh();
+      const u = 'jot a todo to water the plants on Fri';
+      expect(r.route(u), isNull, reason: 'no seed matches this phrasing yet');
+      // What the cloud would return for this utterance: the dispatched (resolved) slots + a
+      // surface-abstracted template. Fri -> 2026-07-10 (next Friday after Mon 2026-07-06).
+      final tmpl = r.learnSuggested(
+          u, 'create-task', {'description': 'water the plants', 'dueDate': '2026-07-10'},
+          'jot a todo to {description:text} on {dueDate:date}');
+      expect(tmpl, 'jot a todo to {description:text} on {dueDate:date}');
+      // Now the same phrasing hits the fast path with the SAME resolved slots — no cloud.
+      final hit = r.route(u);
+      expect(hit?['skillId'], 'create-task');
+      expect(hit?['slots']['description'], 'water the plants');
+      expect(hit?['slots']['dueDate'], '2026-07-10');
+      // ...and it generalizes across the slots (a different todo + day).
+      final g = r.route('jot a todo to call the vet on Sun');
+      expect(g?['slots']['description'], 'call the vet');
+      expect(g?['slots']['dueDate'], '2026-07-12');
+    });
+
+    test('rejects a template that round-trips to DIFFERENT slots (surface mismatch)', () {
+      final r = fresh();
+      // Template claims description="x" but the utterance would extract "water the plants".
+      final tmpl = r.learnSuggested('jot a todo to water the plants on Fri', 'create-task',
+          {'description': 'something else', 'dueDate': '2026-07-10'},
+          'jot a todo to {description:text} on {dueDate:date}');
+      expect(tmpl, isNull);
+    });
+
+    test('rejects an all-slots template (would hijack all routing)', () {
+      final r = fresh();
+      expect(r.learnSuggested('buy milk', 'create-task', {'description': 'buy milk'}, '{description:text}'), isNull);
+    });
+
+    test('rejects an unknown slot type', () {
+      final r = fresh();
+      expect(
+          r.learnSuggested('flag buy milk', 'create-task', {'description': 'buy milk'},
+              'flag {description:bogustype}'),
+          isNull);
+    });
+
+    test('rejects a template that does not match the utterance', () {
+      final r = fresh();
+      expect(
+          r.learnSuggested('remind me to stretch', 'create-task', {'description': 'stretch'},
+              'add a task to {description:text}'),
+          isNull);
+    });
+
+    test('a learned template can never shadow a seed (seed wins in pass 1)', () {
+      final r = fresh();
+      // Learn a broad-ish template, then confirm a seed phrasing still routes to its seed skill.
+      r.learnSuggested('log a todo to buy milk', 'create-task', {'description': 'buy milk'},
+          'log a todo to {description:text}');
+      // "i ate an apple" must still hit the log-meal seed, not any learned create-task entry.
+      expect(r.route('i ate an apple')?['skillId'], 'log-meal');
+    });
+  });
+
   group('weekday abbreviations + "add a todo" (offline, was falling to cloud)', () {
     test('"add a todo to X on Sat" -> create-task, due Saturday', () {
       final r = _r.route('add a todo to go to the pottery studio on Sat');
