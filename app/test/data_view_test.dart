@@ -12,13 +12,19 @@ import 'package:plenara_app/main.dart';
 
 class _NullCloud implements CloudClient {
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
-      const CloudOk(null);
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
+    String u,
+    Map<String, Map<String, dynamic>> s, {
+    Set<String> knownContacts = const {},
+  }) async => const CloudOk(null);
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
-      const CloudOk(null);
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(
+    String d, {
+    String? priorError,
+  }) async => const CloudOk(null);
   @override
-  Future<CloudResult<String>> generate(String k, String c) async => const CloudError(CloudErrorKind.noKey);
+  Future<CloudResult<String>> generate(String k, String c) async =>
+      const CloudError(CloudErrorKind.noKey);
 }
 
 String _base(String p) => p.replaceAll('\\', '/').split('/').last;
@@ -27,7 +33,9 @@ String _tempData() {
   final tmp = Directory.systemTemp.createTempSync('plenara_dv_');
   for (final sub in const ['types', 'skills']) {
     final dst = Directory('${tmp.path}/$sub')..createSync(recursive: true);
-    for (final f in Directory('$sourceDataDir/$sub').listSync().whereType<File>()) {
+    for (final f in Directory(
+      '$sourceDataDir/$sub',
+    ).listSync().whereType<File>()) {
       f.copySync('${dst.path}/${_base(f.path)}');
     }
   }
@@ -36,139 +44,267 @@ String _tempData() {
   return tmp.path;
 }
 
-Session _session() => Session(_tempData(), clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _NullCloud());
+Session _session() => Session(
+  _tempData(),
+  clock: DateTime.parse('2026-07-06T09:00:00'),
+  cloud: _NullCloud(),
+);
 
 void main() {
-  group('archetypeFor — structural inference (Spec 07 §4, no per-type UI code)', () {
-    Map<String, dynamic> t(List<Map<String, dynamic>> attrs) => {'attributes': attrs};
-    test('a type with a done/completed flag -> checklist', () {
-      expect(
-          archetypeFor('task', t([
-            {'name': 'description', 'valueType': 'text'},
-            {'name': 'completed', 'valueType': 'boolean'},
-          ])),
-          Archetype.checklist);
-    });
-    test('the contact type -> personCard', () {
-      expect(archetypeFor('contact', t([{'name': 'displayName', 'valueType': 'text'}])), Archetype.personCard);
-    });
-    test('a numeric measure + a date -> tracker', () {
-      expect(
-          archetypeFor('step_log', t([
-            {'name': 'count', 'valueType': 'number'},
-            {'name': 'loggedAt', 'valueType': 'date'},
-          ])),
-          Archetype.tracker);
-    });
-    test('a dated log with no number -> timeline', () {
-      expect(
-          archetypeFor('journal_entry', t([
-            {'name': 'text', 'valueType': 'text'},
-            {'name': 'loggedAt', 'valueType': 'date'},
-          ])),
-          Archetype.timeline);
-    });
-    test('no date/bool/number -> collection (the universal fallback)', () {
-      expect(archetypeFor('note', t([{'name': 'body', 'valueType': 'text'}])), Archetype.collection);
-    });
-  });
+  group(
+    'archetypeFor — structural inference (Spec 07 §4, no per-type UI code)',
+    () {
+      Map<String, dynamic> t(List<Map<String, dynamic>> attrs) => {
+        'attributes': attrs,
+      };
+      test('a type with a done/completed flag -> checklist', () {
+        expect(
+          archetypeFor(
+            'task',
+            t([
+              {'name': 'description', 'valueType': 'text'},
+              {'name': 'completed', 'valueType': 'boolean'},
+            ]),
+          ),
+          Archetype.checklist,
+        );
+      });
+      test('the contact type -> personCard', () {
+        expect(
+          archetypeFor(
+            'contact',
+            t([
+              {'name': 'displayName', 'valueType': 'text'},
+            ]),
+          ),
+          Archetype.personCard,
+        );
+      });
+      test('a numeric measure + a date -> tracker', () {
+        expect(
+          archetypeFor(
+            'step_log',
+            t([
+              {'name': 'count', 'valueType': 'number'},
+              {'name': 'loggedAt', 'valueType': 'date'},
+            ]),
+          ),
+          Archetype.tracker,
+        );
+      });
+      test('a dated log with no number -> timeline', () {
+        expect(
+          archetypeFor(
+            'journal_entry',
+            t([
+              {'name': 'text', 'valueType': 'text'},
+              {'name': 'loggedAt', 'valueType': 'date'},
+            ]),
+          ),
+          Archetype.timeline,
+        );
+      });
+      test('no date/bool/number -> collection (the universal fallback)', () {
+        expect(
+          archetypeFor(
+            'note',
+            t([
+              {'name': 'body', 'valueType': 'text'},
+            ]),
+          ),
+          Archetype.collection,
+        );
+      });
+    },
+  );
 
   group('renderValue — per value-type formatting (Spec 07)', () {
-    test('date -> friendly label', () => expect(renderValue('2026-07-08', 'date'), 'Jul 8, 2026'));
-    test('datetime -> label with 12h time', () => expect(renderValue('2026-07-08T17:05:00', 'datetime'), 'Jul 8, 5:05 PM'));
+    test(
+      'date -> friendly label',
+      () => expect(renderValue('2026-07-08', 'date'), 'Jul 8, 2026'),
+    );
+    test(
+      'datetime -> label with 12h time',
+      () => expect(
+        renderValue('2026-07-08T17:05:00', 'datetime'),
+        'Jul 8, 5:05 PM',
+      ),
+    );
     test('boolean -> check / cross', () {
       expect(renderValue(true, 'boolean'), '✓');
       expect(renderValue(false, 'boolean'), '✗');
     });
-    test('tag/list -> joined', () => expect(renderValue(['a', 'b'], 'tag'), 'a · b'));
+    test(
+      'tag/list -> joined',
+      () => expect(renderValue(['a', 'b'], 'tag'), 'a · b'),
+    );
     test('null -> em dash', () => expect(renderValue(null, 'text'), '—'));
-    test('a number/text passes through', () => expect(renderValue(42, 'number'), '42'));
+    test(
+      'a number/text passes through',
+      () => expect(renderValue(42, 'number'), '42'),
+    );
   });
 
-  testWidgets('the data view opens from the chat and renders a task under a checklist archetype', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
+  testWidgets(
+    'the data view opens from the chat and renders a task under a checklist archetype',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: ChatScreen(session: _session(), retrieval: false)),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'add buy milk to my list');
+      await tester.tap(find.text('Send'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.more_horiz)); // open the discreet menu
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Your data'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your data'), findsOneWidget);
+      expect(
+        find.byKey(const Key('archetype-task')),
+        findsOneWidget,
+      ); // the task section rendered
+      expect(
+        find.textContaining('checklist'),
+        findsWidgets,
+      ); // chosen by structure, not by type name
+      expect(
+        find.textContaining('buy milk'),
+        findsWidgets,
+      ); // the record itself
+    },
+  );
+
+  testWidgets('tapping a record opens a detail sheet showing all its fields', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(home: ChatScreen(session: _session(), retrieval: false)),
+    );
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'add buy milk to my list');
     await tester.tap(find.text('Send'));
     await tester.pumpAndSettle();
-
-    await tester.tap(find.byIcon(Icons.storage)); // open "Your data"
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Your data'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Your data'), findsOneWidget);
-    expect(find.byKey(const Key('archetype-task')), findsOneWidget); // the task section rendered
-    expect(find.textContaining('checklist'), findsWidgets); // chosen by structure, not by type name
-    expect(find.textContaining('buy milk'), findsWidgets); // the record itself
+    await tester.tap(
+      find.widgetWithText(ListTile, 'buy milk'),
+    ); // the task tile
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('record-detail')),
+      findsOneWidget,
+    ); // the detail sheet opened
+    expect(
+      find.text('createdAt'),
+      findsOneWidget,
+    ); // a field shown in detail but not in the checklist summary
   });
 
-  testWidgets('tapping a record opens a detail sheet showing all its fields', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'add buy milk to my list');
-    await tester.tap(find.text('Send'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.storage));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'a task can be completed from the data view (actionable checklist)',
+    (tester) async {
+      final session = _session();
+      await tester.pumpWidget(
+        MaterialApp(home: ChatScreen(session: session, retrieval: false)),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'add buy milk to my list');
+      await tester.tap(find.text('Send'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Your data'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ListTile, 'buy milk')); // the task tile
-    await tester.pumpAndSettle();
+      expect(
+        find.byIcon(Icons.radio_button_unchecked),
+        findsOneWidget,
+      ); // the incomplete task
+      await tester.tap(find.byIcon(Icons.radio_button_unchecked));
+      await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('record-detail')), findsOneWidget); // the detail sheet opened
-    expect(find.text('createdAt'), findsOneWidget); // a field shown in detail but not in the checklist summary
-  });
+      final task = session.store.values.firstWhere(
+        (r) => r['typeId'] == 'task',
+      );
+      expect(task['completed'], true); // completed through the turn engine
+      expect(
+        find.byIcon(Icons.check_circle),
+        findsOneWidget,
+      ); // and reflected in the UI
+    },
+  );
 
-  testWidgets('a task can be completed from the data view (actionable checklist)', (tester) async {
-    final session = _session();
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'add buy milk to my list');
-    await tester.tap(find.text('Send'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.storage));
-    await tester.pumpAndSettle();
-
-    expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget); // the incomplete task
-    await tester.tap(find.byIcon(Icons.radio_button_unchecked));
-    await tester.pumpAndSettle();
-
-    final task = session.store.values.firstWhere((r) => r['typeId'] == 'task');
-    expect(task['completed'], true); // completed through the turn engine
-    expect(find.byIcon(Icons.check_circle), findsOneWidget); // and reflected in the UI
-  });
-
-  testWidgets('the data view surfaces an automations card with each automation status', (tester) async {
-    final dir = _tempData();
-    Directory('$dir/automations').createSync(recursive: true);
-    File('$dir/automations/x.json').writeAsStringSync(jsonEncode({
-      'automationId': 'demo-auto',
-      'targetType': 'workout',
-      'condition': {'kind': 'onWrite', 'afterField': 'date'},
-      'skillId': 'demo',
-      'description': 'a demo automation',
-      'skill': {
-        'skillId': 'demo', 'inputs': [], 'reads': ['workout'], 'writes': [],
-        'steps': {
-          'main': [
-            {'op': 'read_many', 'typeId': 'workout', 'into': 'w'},
-            {'op': 'compute', 'fn': 'count', 'args': [{'var': 'w'}], 'into': 'n'},
-            {'op': 'format', 'template': '{n} workouts', 'into': 'confirmationText'},
-          ]
-        }
-      }
-    }));
-    final session = Session(dir, clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _NullCloud());
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.storage));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('automations-card')), findsOneWidget);
-    expect(find.text('demo-auto'), findsOneWidget);
-  });
+  testWidgets(
+    'the data view surfaces an automations card with each automation status',
+    (tester) async {
+      final dir = _tempData();
+      Directory('$dir/automations').createSync(recursive: true);
+      File('$dir/automations/x.json').writeAsStringSync(
+        jsonEncode({
+          'automationId': 'demo-auto',
+          'targetType': 'workout',
+          'condition': {'kind': 'onWrite', 'afterField': 'date'},
+          'skillId': 'demo',
+          'description': 'a demo automation',
+          'skill': {
+            'skillId': 'demo',
+            'inputs': [],
+            'reads': ['workout'],
+            'writes': [],
+            'steps': {
+              'main': [
+                {'op': 'read_many', 'typeId': 'workout', 'into': 'w'},
+                {
+                  'op': 'compute',
+                  'fn': 'count',
+                  'args': [
+                    {'var': 'w'},
+                  ],
+                  'into': 'n',
+                },
+                {
+                  'op': 'format',
+                  'template': '{n} workouts',
+                  'into': 'confirmationText',
+                },
+              ],
+            },
+          },
+        }),
+      );
+      final session = Session(
+        dir,
+        clock: DateTime.parse('2026-07-06T09:00:00'),
+        cloud: _NullCloud(),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: ChatScreen(session: session, retrieval: false)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Your data'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('automations-card')), findsOneWidget);
+      expect(find.text('demo-auto'), findsOneWidget);
+    },
+  );
 
   testWidgets('an empty vault shows the empty state', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session(), retrieval: false)));
+    await tester.pumpWidget(
+      MaterialApp(home: ChatScreen(session: _session(), retrieval: false)),
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.storage));
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Your data'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Nothing logged yet'), findsOneWidget);
   });

@@ -120,7 +120,8 @@ class ChatScreen extends StatefulWidget {
   final bool retrieval;
   final SpeechRecognizer?
   speech; // voice input (task #18); Noop by default -> mic hidden
-  final SpeechOutput? voice; // talk-back; tests inject a fake, injected session -> Noop
+  final SpeechOutput?
+  voice; // talk-back; tests inject a fake, injected session -> Noop
   const ChatScreen({
     super.key,
     this.session,
@@ -142,7 +143,8 @@ class _ChatState extends State<ChatScreen> {
   // else Noop. Tests inject their own. Null until _init picks one; the mic hides while null.
   SpeechRecognizer? _speech;
   SpeechOutput? _voice; // Plena's talk-back (Spec 12 §6); chosen in _init
-  bool _voiceMuted = false; // mute silences her voice; captions still show (Spec 15 §7)
+  bool _voiceMuted =
+      false; // mute silences her voice; captions still show (Spec 15 §7)
   final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
@@ -152,7 +154,9 @@ class _ChatState extends State<ChatScreen> {
   bool _speaking = false, _lastCloud = false, _deepThink = false;
   Timer? _speakTimer, _thinkTimer, _capTimer;
   String?
-  _caption; // the latest reply, materialised over Plena (Spec 15 §6.1 / §7.3)
+  _caption; // the current exchange text, materialised over the void (Spec 15 §6.1 / §7.3)
+  bool _displayIsList =
+      false; // a list-shaped reply eases Plena to a corner (§6.3)
   // The glyph Plena should trace next, fired by bumping the nonce (Spec 15 §5A). apt-or-absent:
   // most turns fire none. A short debounce keeps them from stacking during rapid dogfooding.
   GlyphDef? _glyph;
@@ -197,12 +201,15 @@ class _ChatState extends State<ChatScreen> {
       _speech =
           await _pickSpeech(); // on-device sherpa if the model's present, else OS SAPI
       // Talk-back: on-device TTS in production; a fake in tests; Noop under an injected session.
-      _voice = widget.voice ??
+      _voice =
+          widget.voice ??
           (widget.session == null
               ? FlutterTtsSpeechOutput(onLog: (m) => log.debug('tts: $m'))
               : NoopSpeechOutput());
       await _voice!.init();
-      log('init: ready (stt=${_speech?.available ?? false}, tts=${_voice?.available ?? false})');
+      log(
+        'init: ready (stt=${_speech?.available ?? false}, tts=${_voice?.available ?? false})',
+      );
       if (!mounted) return; // torn down during init -> don't setState
       // Opt-in diagnostic: set PLENARA_SELFTEST=1 to fire an immediate "notifications are
       // on" toast at launch (proven working; off by default so normal launches are quiet).
@@ -211,28 +218,27 @@ class _ChatState extends State<ChatScreen> {
         // ignore: discarded_futures
         _scheduler.selfTest();
       }
+      const greeting =
+          'Hi — I\'m Plena. Tap anywhere and talk to me — "add call the plumber to my list", '
+          '"log a 3k run", "remind me to call mom on thursday at 5pm", "what do I know about Mia", '
+          '"list my tasks". Say "undo that" to reverse the last thing. Mute me (bottom-left) to type instead.';
+      // On-open nudges (past-due reminders + upcoming birthdays) join the greeting over the void.
+      final nudges = _session.pendingNudges();
       setState(() {
         _ready = true;
-        _msgs.add(
-          Msg(
-            'Hi — I\'m Plenara. Try: "add call the plumber to my list", "log a 3k run", '
-            '"remind me to call mom on thursday at 5pm", "what do I know about Mia", '
-            '"list my tasks", or "start tracking my water intake". "undo that" reverses the '
-            'last thing — and ask "what can you do" any time.\n\n'
-            'Diagnostics log: ${log.file.path}',
-            false,
-          ),
-        );
-        // On-open nudges (past-due reminders + upcoming birthdays) — each line
-        // already carries its own icon, so show it as-is. Nothing silently missed.
-        for (final n in _session.pendingNudges()) {
+        _msgs.add(Msg(greeting, false));
+        for (final n in nudges) {
           _msgs.add(Msg(n, false));
         }
+        _caption = nudges.isEmpty
+            ? greeting
+            : '$greeting\n\n${nudges.join('\n')}';
+        _displayIsList =
+            false; // the greeting keeps Plena full-screen (list-mode is for data)
       });
       // a greeting on open — a birthday today earns the candle, otherwise a smile
-      final onOpen = _session.pendingNudges();
       _fireGlyph(
-        onOpen.any((n) => n.toLowerCase().contains('birthday'))
+        nudges.any((n) => n.toLowerCase().contains('birthday'))
             ? kGlyphs['candle']
             : kGlyphs['smile'],
         force: true,
@@ -344,21 +350,34 @@ class _ChatState extends State<ChatScreen> {
       _deepThink = false;
       _speaking = true; // Plena "speaks" the reply — a brief presence flourish
       _lastCloud = usedCloud;
-      _caption = resp; // the words materialise over Plena as she speaks (§6.1)
+      _caption =
+          resp; // the words materialise over the void as she speaks (§6.1)
+      // list-shaped (bullets / several lines) → Plena eases to a corner and it floats (§6.3)
+      _displayIsList =
+          resp.contains('•') ||
+          resp.split('\n').where((l) => l.trim().isNotEmpty).length > 2;
     });
     _thinkTimer?.cancel();
     _speakTimer?.cancel();
     _capTimer?.cancel();
-    void endSpeak() { if (mounted) setState(() => _speaking = false); }
+    void endSpeak() {
+      if (mounted) setState(() => _speaking = false);
+    }
+
     final maxMs = (1600 + resp.length * 50).clamp(2000, 14000);
     if (!_voiceMuted && (_voice?.available ?? false)) {
       // Plena actually speaks; her "speaking" animation brackets the real audio.
       _voice!.speak(
         resp,
-        onStart: () { if (mounted) setState(() => _speaking = true); },
+        onStart: () {
+          if (mounted) setState(() => _speaking = true);
+        },
         onDone: endSpeak,
       );
-      _speakTimer = Timer(Duration(milliseconds: maxMs), endSpeak); // safety: never stick "speaking"
+      _speakTimer = Timer(
+        Duration(milliseconds: maxMs),
+        endSpeak,
+      ); // safety: never stick "speaking"
     } else {
       // muted or no voice: a brief silent flourish, timed to the reply length
       final ms = (1400 + resp.length * 22).clamp(1600, 4200);
@@ -551,212 +570,233 @@ class _ChatState extends State<ChatScreen> {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Plenara'),
-        backgroundColor: cs.inversePrimary,
-        actions: [
-          if (_ready)
-            IconButton(
-              icon: const Icon(Icons.storage),
-              tooltip: 'Your data',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => DataView(session: _session)),
-              ),
-            ),
-          IconButton(
-            icon: Icon(_voiceMuted ? Icons.volume_off : Icons.volume_up),
-            tooltip: _voiceMuted ? 'Plena is muted — tap to unmute' : 'Mute Plena\'s voice',
-            onPressed: () {
-              setState(() => _voiceMuted = !_voiceMuted);
-              if (_voiceMuted && (_voice?.speaking ?? false)) {
-                _voice!.stop();
-                setState(() => _speaking = false);
-              }
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFF0A0908),
+    body: !_ready
+        ? const Center(child: CircularProgressIndicator())
+        : _presenceHome(context),
+  );
+
+  // ---- the presence-primary home (Spec 15): only Plena + the current exchange over the void ----
+  static const _ink = Color(0xFFEAE2D8);
+
+  Widget _presenceHome(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final hasStt = _speech?.available ?? false;
+    final showInput =
+        _voiceMuted ||
+        !hasStt; // keyboard path when muted, or when there's no mic
+    final hasContent = _caption != null && _caption!.trim().isNotEmpty;
+    final listMode =
+        hasContent && _displayIsList; // a list eases Plena to a corner
+
+    return Stack(
+      children: [
+        // Tap anywhere to talk (behind everything). Not while muted (text mode) or busy.
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
+            onLongPress: () {
+              final all = kGlyphs.values.toList();
+              _fireGlyph(all[_glyphPreview++ % all.length], force: true);
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.tune),
-            tooltip: 'Tune Plena',
-            onPressed: _openTuning,
+        ),
+        // Plena — full-screen, or eased to a corner when showing a list
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
+          left: listMode ? 12 : 0,
+          top: listMode ? 12 : 0,
+          width: listMode ? 260 : size.width,
+          height: listMode ? 260 : size.height,
+          child: IgnorePointer(
+            child: Semantics(
+              container: true,
+              label:
+                  'Plena — ${_presence.name}${hasContent ? '. ${_caption!}' : ''}',
+              child: PresenceView(
+                state: _presence,
+                difficulty: _difficulty,
+                animate: widget.session == null,
+                glyph: _glyph,
+                glyphNonce: _glyphNonce,
+                tuning: _tuning,
+              ),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const SettingsView())),
+        ),
+        // The current exchange, materialising over the void
+        if (hasContent)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: 1,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut,
+                child: _voidText(
+                  _caption!,
+                  list: listMode,
+                  bottomInset: showInput ? 168 : 0,
+                ),
+              ),
+            ),
+          ),
+        if (_listening)
+          const Positioned(
+            bottom: 150,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Center(
+                child: Text(
+                  'listening…',
+                  style: TextStyle(
+                    color: Color(0x99EAE2D8),
+                    fontSize: 15,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        // Muted / no-mic → the two-line input box rises from the bottom
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOut,
+          left: 0,
+          right: 0,
+          bottom: showInput ? 0 : -180,
+          child: _inputBar(context),
+        ),
+        Positioned(left: 14, bottom: 14, child: _muteButton()),
+        Positioned(right: 6, top: 6, child: _menuButton(context)),
+      ],
+    );
+  }
+
+  Widget _voidText(String text, {required bool list, double bottomInset = 0}) {
+    final style = TextStyle(
+      color: _ink,
+      fontSize: list ? 17 : 24,
+      height: 1.5,
+      fontWeight: FontWeight.w300,
+      shadows: const [
+        Shadow(blurRadius: 22, color: Colors.black),
+        Shadow(blurRadius: 8, color: Colors.black),
+      ],
+    );
+    if (list) {
+      // list floats to the right of the cornered Plena, a comfortable reading column
+      return Padding(
+        padding: EdgeInsets.fromLTRB(300, 56, 56, 120 + bottomInset),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: SingleChildScrollView(child: Text(text, style: style)),
+          ),
+        ),
+      );
+    }
+    // a caption: a centered, max-width column in the lower third — never clips
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Align(
+        alignment: const Alignment(0, 0.5),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: Text(text, textAlign: TextAlign.center, style: style),
+        ),
+      ),
+    );
+  }
+
+  Widget _inputBar(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: const BoxDecoration(
+        color: Color(0xF0100E0C),
+        border: Border(top: BorderSide(color: Color(0x1FFFFFFF))),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _ctrl,
+              minLines: 1,
+              maxLines: 2,
+              style: const TextStyle(color: _ink),
+              onSubmitted: (_) => _send(),
+              decoration: InputDecoration(
+                hintText: 'Type to Plena…',
+                hintStyle: const TextStyle(color: Color(0x66EAE2D8)),
+                filled: true,
+                fillColor: const Color(0x14FFFFFF),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          FilledButton(
+            onPressed: _busy ? null : _send,
+            child: const Text('Send'),
           ),
         ],
       ),
-      body: !_ready
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Plena — the living presence (Spec 15). Reflects idle / listening / thinking /
-                // speaking; her "thinking" state replaces the old busy spinner.
-                // Plena — the living presence, with the reply materialising over her. Long-press to
-                // browse the glyph vocabulary (dev preview, Spec 15 §5A.8).
-                Semantics(
-                  label:
-                      'Plena — ${_presence.name}${_caption != null ? '. $_caption' : ''}',
-                  container: true,
-                  child: GestureDetector(
-                    // Tap Plena to talk; long-press to browse the glyph vocabulary (dev preview).
-                    onTap: (_speech?.available ?? false) && !_busy ? _toggleMic : null,
-                    onLongPress: () {
-                      final all = kGlyphs.values.toList();
-                      _fireGlyph(
-                        all[_glyphPreview++ % all.length],
-                        force: true,
-                      );
-                    },
-                    child: SizedBox(
-                      height: 168,
-                      width: double.infinity,
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            // Static (no ticker) under an injected test session so pumpAndSettle terminates.
-                            child: PresenceView(
-                              state: _presence,
-                              difficulty: _difficulty,
-                              animate: widget.session == null,
-                              glyph: _glyph,
-                              glyphNonce: _glyphNonce,
-                              tuning: _tuning,
-                            ),
-                          ),
-                          // Caption is a production-only presence overlay; tests (injected session)
-                          // assert on the chat log, and a second copy of the reply would double it.
-                          if (widget.session == null)
-                            Positioned(
-                              left: 20,
-                              right: 20,
-                              bottom: 12,
-                              child: AnimatedOpacity(
-                                opacity: _caption == null ? 0 : 1,
-                                duration: const Duration(milliseconds: 450),
-                                curve: Curves.easeOut,
-                                child: _caption == null
-                                    ? const SizedBox.shrink()
-                                    : Text(
-                                        _caption!,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 3,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Color(0xFFEAE2D8),
-                                          fontSize: 15,
-                                          height: 1.35,
-                                          shadows: [
-                                            Shadow(
-                                              blurRadius: 14,
-                                              color: Colors.black,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    controller: _scroll,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _msgs.length,
-                    itemBuilder: (c, i) {
-                      final m = _msgs[i];
-                      return Align(
-                        alignment: m.user
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.all(12),
-                          constraints: const BoxConstraints(maxWidth: 520),
-                          decoration: BoxDecoration(
-                            color: m.user
-                                ? cs.primaryContainer
-                                : cs.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: m.cloud
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        top: 5,
-                                        right: 8,
-                                      ),
-                                      child: Tooltip(
-                                        message:
-                                            'Used the cloud (Claude) for this reply',
-                                        child: Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF2E7D32),
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Flexible(child: SelectableText(m.text)),
-                                  ],
-                                )
-                              : SelectableText(m.text),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      if (_speech?.available ?? false) ...[
-                        IconButton(
-                          icon: Icon(
-                            _listening ? Icons.stop_circle : Icons.mic_none,
-                          ),
-                          color: _listening ? cs.error : null,
-                          tooltip: _listening ? 'Tap to stop' : 'Speak',
-                          onPressed: _busy ? null : _toggleMic,
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      Expanded(
-                        child: TextField(
-                          controller: _ctrl,
-                          autofocus: true,
-                          onSubmitted: (_) => _send(),
-                          decoration: InputDecoration(
-                            hintText: _listening
-                                ? 'Listening — pause a moment when you\'re done…'
-                                : 'Say something…',
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: _busy ? null : _send,
-                        child: const Text('Send'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
+    ),
+  );
+
+  Widget _muteButton() => Material(
+    color: Colors.transparent,
+    child: IconButton(
+      icon: Icon(
+        _voiceMuted ? Icons.volume_off : Icons.volume_up,
+        color: const Color(0x88FFFFFF),
+      ),
+      tooltip: _voiceMuted
+          ? 'Plena is muted — tap to unmute'
+          : "Mute Plena's voice",
+      onPressed: () {
+        setState(() => _voiceMuted = !_voiceMuted);
+        if (_voiceMuted && (_voice?.speaking ?? false)) {
+          _voice!.stop();
+          setState(() => _speaking = false);
+        }
+      },
+    ),
+  );
+
+  Widget _menuButton(BuildContext context) => Theme(
+    data: Theme.of(
+      context,
+    ).copyWith(iconTheme: const IconThemeData(color: Color(0x66FFFFFF))),
+    child: PopupMenuButton<String>(
+      tooltip: 'More',
+      icon: const Icon(Icons.more_horiz),
+      onSelected: (v) {
+        if (v == 'data') {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => DataView(session: _session)),
+          );
+        } else if (v == 'settings') {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const SettingsView()));
+        } else if (v == 'tune') {
+          _openTuning();
+        }
+      },
+      itemBuilder: (_) => const [
+        PopupMenuItem(value: 'tune', child: Text('Tune Plena')),
+        PopupMenuItem(value: 'data', child: Text('Your data')),
+        PopupMenuItem(value: 'settings', child: Text('Settings')),
+      ],
+    ),
+  );
 }

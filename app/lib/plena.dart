@@ -83,8 +83,8 @@ class _Target {
 }
 
 const _targets = <PresenceState, _Target>{
-  PresenceState.idle: _Target(.10, 1.00, .80, .05, .42, .52, .00),
-  PresenceState.listening: _Target(.34, 1.05, .90, .10, .56, .42, .16),
+  PresenceState.idle: _Target(.12, 1.00, .72, .05, .48, .58, .00),
+  PresenceState.listening: _Target(.36, 1.05, .90, .10, .58, .42, .16),
   PresenceState.thinking: _Target(.17, 0.70, .88, .22, .36, .46, .00),
   PresenceState.speaking: _Target(.55, 1.10, .55, .13, .62, .56, .08),
 };
@@ -132,8 +132,7 @@ class _GlyphRun {
 
 class _PresenceViewState extends State<PresenceView>
     with SingleTickerProviderStateMixin {
-  static const _n =
-      1400; // mote budget (Spec 15 §9.2 T1-ish; tune per platform later)
+  static const _n = 2200; // mote budget (Spec 15 §9.2; tune per platform later)
   final _p = Float32List(_n * 4); // x,y,vx,vy in normalized [-1,1] space
   final _mode = Int8List(_n); // 0 free, 1 deposited into a glyph
   final _trav = Int8List(_n); // 1 while flying the glyph path
@@ -149,6 +148,9 @@ class _PresenceViewState extends State<PresenceView>
   late final Ticker _ticker;
   bool _running = false;
   ui.Image? _sprite;
+  ui.Image?
+  _trail; // accumulating persistence buffer — she leaves a trail of herself
+  int _tw = 0, _th = 0;
   Duration _last = Duration.zero;
   double _acc = 0;
   bool _reduce = false;
@@ -498,6 +500,7 @@ class _PresenceViewState extends State<PresenceView>
     _ticker.dispose();
     _repaint.dispose();
     _sprite?.dispose();
+    _trail?.dispose();
     super.dispose();
   }
 
@@ -555,33 +558,12 @@ class _PlenaPainter extends CustomPainter {
     final colors = <Color>[];
     final gActive = s._run != null;
     final rt = (.10 + (1 - f.coherence) * .42) * tn.breadth;
-    // Trail: a few fainter echoes behind each mote along its velocity — she leaves a bit of
-    // herself behind as she moves. Length scales with the Trail knob and the mote's speed.
-    final trailSteps = tn.trail <= .02
-        ? 0
-        : (1 + (tn.trail * 3).round()).clamp(1, 4);
-
-    void emit(double px, double py, double sz, Color c) {
-      transforms.add(
-        RSTransform.fromComponents(
-          rotation: 0,
-          scale: (sz * 2) / sprite.width,
-          anchorX: sprite.width / 2,
-          anchorY: sprite.height / 2,
-          translateX: px,
-          translateY: py,
-        ),
-      );
-      rects.add(src);
-      colors.add(c);
-    }
 
     for (var i = 0; i < _PresenceViewState._n; i++) {
       final x = s._p[i * 4], y = s._p[i * 4 + 1];
       final px = cx + x * scale, py = cy + y * scale;
       double a, sz;
-      final deposited = gActive && s._mode[i] == 1;
-      if (deposited) {
+      if (gActive && s._mode[i] == 1) {
         // deposited: Plena's TAIL — faint, wispy, holds the figure
         a = (.19 * f.luminance + .06).clamp(0.0, .28) * bri;
         sz = mind * (.013 + .02 * f.luminance);
@@ -597,30 +579,64 @@ class _PlenaPainter extends CustomPainter {
         sz = mind * (.010 + .024 * f.luminance) * (.7 + .5 * feather);
       }
       if (a <= .004) continue;
-      // trailing echoes (skip for deposits — they already hold still)
-      if (trailSteps > 0 && !deposited) {
-        final vx = s._p[i * 4 + 2], vy = s._p[i * 4 + 3];
-        for (var t = 1; t <= trailSteps; t++) {
-          final back = t * (3.0 + 9.0 * tn.trail);
-          emit(
-            px - vx * scale * back,
-            py - vy * scale * back,
-            sz * (1 - .12 * t),
-            rgb.withValues(alpha: a * (.5 / (t + 1))),
-          );
-        }
-      }
-      emit(px, py, sz, rgb.withValues(alpha: a));
+      transforms.add(
+        RSTransform.fromComponents(
+          rotation: 0,
+          scale: (sz * 2) / sprite.width,
+          anchorX: sprite.width / 2,
+          anchorY: sprite.height / 2,
+          translateX: px,
+          translateY: py,
+        ),
+      );
+      rects.add(src);
+      colors.add(rgb.withValues(alpha: a));
     }
-    canvas.drawAtlas(
-      sprite,
-      transforms,
-      rects,
-      colors,
-      BlendMode.modulate,
-      null,
-      Paint()..blendMode = BlendMode.plus,
-    );
+
+    // TRUE persistence (Spec 15): ping-pong an offscreen buffer — fade the last frame, add the
+    // motes, keep it. She leaves a real trail of herself; the Trail knob is the fade rate. The
+    // buffer is CAPPED (~760px longest side) and scaled up on blit, so per-frame toImageSync
+    // stays cheap at any window size (a full-res buffer stalls the raster).
+    if (w > 0 && h > 0) {
+      final bufScale = math.min(1.0, 760 / math.max(w, h));
+      final bw = math.max(1, (w * bufScale).round()),
+          bh = math.max(1, (h * bufScale).round());
+      final rec = ui.PictureRecorder();
+      final tc = Canvas(rec);
+      if (s._trail != null && s._tw == bw && s._th == bh) {
+        tc.drawImage(s._trail!, Offset.zero, Paint());
+        final erode = ui.lerpDouble(0.40, 0.035, tn.trail.clamp(0.0, 1.0))!;
+        tc.drawRect(
+          Rect.fromLTWH(0, 0, bw.toDouble(), bh.toDouble()),
+          Paint()
+            ..blendMode = BlendMode.dstOut
+            ..color = Color.fromRGBO(0, 0, 0, erode),
+        );
+      }
+      tc.save();
+      tc.scale(bufScale);
+      tc.drawAtlas(
+        sprite,
+        transforms,
+        rects,
+        colors,
+        BlendMode.modulate,
+        null,
+        Paint()..blendMode = BlendMode.plus,
+      );
+      tc.restore();
+      final next = rec.endRecording().toImageSync(bw, bh);
+      s._trail?.dispose();
+      s._trail = next;
+      s._tw = bw;
+      s._th = bh;
+      canvas.drawImageRect(
+        next,
+        Rect.fromLTWH(0, 0, bw.toDouble(), bh.toDouble()),
+        Offset.zero & size,
+        Paint()..blendMode = BlendMode.plus,
+      );
+    }
   }
 
   @override
