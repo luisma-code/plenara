@@ -1,6 +1,33 @@
 # Plenara — Session Handoff (pick up here)
 
-_Last updated: 2026-07-09. Written to survive a Claude process relaunch._
+_Last updated: 2026-07-11. Written to survive a Claude process relaunch._
+
+## LATEST SESSION (2026-07-11) — Spec 15 "Plena" presence + versioning/releases + app integration. HEAD = `08f5313`, 1643 Dart + 38 app tests green.
+
+Dogfood-driven engine polish, then a pivot into the UI:
+- **Engine (early in session):** compound utterances (two sentences) fall through to the cloud multi-action
+  path (fixed "I had dinner with X. I learned Y" logging the whole blob as a meal); interaction `kind`+`note`
+  capture (dinner/place/remarks preserved); weekday abbreviations ("Sat") + "add a todo …" offline templates;
+  **self-improving corpus** — the cloud now returns a surface-abstracted `template` in the same routing call,
+  the router validates it by round-trip and adopts it, so date/time phrasings learn too (`learnSuggested`).
+  New `v0/bin/dogfood.dart` CLI (drives the real engine; reports offline vs cloud per turn).
+- **Spec 15 — The Living Presence** (Fable-authored, `planning/specs/15-presence.md`): the voice-first visual
+  identity. Substrate decided by live mockup → the **particle swarm ("the murmuration")**, veil demoted to
+  alternate. The being is named **Plena**. §5A symbolic **glyph vocabulary** (50 glyphs) — occasion-appropriate
+  (apt-or-absent; a todo never earns a heart), glyphs-as-data, traced by the swarm then released. Interactive
+  mockups were iterated as an Artifact (swarm + hue/gravity/breadth tuning + comet-trail + fly-out-and-rejoin).
+- **Versioning + releases:** `releases/vX/RETROSPECTIVE.md` (v0–v6, Fable-reconstructed multi-page capsules)
+  + `releases/VERSIONS.md` manifest. **Git tags `v0`–`v6` created LOCALLY.** Root scripts: `run.cmd`,
+  `build.cmd`, `dogfood.cmd`, `prep-machine.ps1`. v6 package built to `app/build/plena-v6-win-x64.zip` (20.5 MB).
+  **⚠ PENDING (blocked on GitHub auth — the USER must run):** `git push origin main --follow-tags`, then
+  `gh release create v6 <zip> -t "v6 — The Living Presence" -F releases/v6/RETROSPECTIVE.md`. The remote is
+  MANY commits behind — the push publishes the whole v4→v6 arc. Binaries stay OUT of git (GitHub Releases only).
+- **Plena integrated into the app** (`app/lib/plena.dart` + `main.dart`): a `drawAtlas` particle-swarm
+  `PresenceView` driven by real turn state (idle/listening/thinking/speaking; brief "speaking" flourish on a
+  reply since there's no TTS yet; cloud reply → cooler D2 hue). Replaces the busy spinner. `animate:false`
+  under an injected test session so `pumpAndSettle` terminates. **Deferred to a later TUNING pass (owner OK'd):
+  comet-trail persistence, the glyph fly-out vocabulary, in-app tuning sliders** — additive to the
+  director/frame/renderer split, not a rewrite.
 
 ## LATEST SESSION (2026-07-08/10) — gap-fill + cloud-router upgrade + FULL FABLE REVIEW. HEAD = `d70b96d`, 1620 Dart + 38 app tests green.
 
