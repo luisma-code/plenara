@@ -18,6 +18,7 @@ import 'plena.dart';
 import 'settings_view.dart';
 import 'sherpa_speech.dart';
 import 'speech.dart';
+import 'speech_out.dart';
 import 'windows_scheduler.dart';
 
 // Where the SHIPPED built-in capability defs are copied FROM on first run.
@@ -119,11 +120,13 @@ class ChatScreen extends StatefulWidget {
   final bool retrieval;
   final SpeechRecognizer?
   speech; // voice input (task #18); Noop by default -> mic hidden
+  final SpeechOutput? voice; // talk-back; tests inject a fake, injected session -> Noop
   const ChatScreen({
     super.key,
     this.session,
     this.retrieval = false,
     this.speech,
+    this.voice,
   });
   @override
   State<ChatScreen> createState() => _ChatState();
@@ -138,6 +141,8 @@ class _ChatState extends State<ChatScreen> {
   // Chosen in _init(): on-device sherpa_onnx if its model is present, else the OS SAPI engine,
   // else Noop. Tests inject their own. Null until _init picks one; the mic hides while null.
   SpeechRecognizer? _speech;
+  SpeechOutput? _voice; // Plena's talk-back (Spec 12 §6); chosen in _init
+  bool _voiceMuted = false; // mute silences her voice; captions still show (Spec 15 §7)
   final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
@@ -191,7 +196,13 @@ class _ChatState extends State<ChatScreen> {
       await _session.init(retrieval: widget.retrieval, onPhase: log.log);
       _speech =
           await _pickSpeech(); // on-device sherpa if the model's present, else OS SAPI
-      log('init: ready (voice=${_speech?.available ?? false})');
+      // Talk-back: on-device TTS in production; a fake in tests; Noop under an injected session.
+      _voice = widget.voice ??
+          (widget.session == null
+              ? FlutterTtsSpeechOutput(onLog: (m) => log.debug('tts: $m'))
+              : NoopSpeechOutput());
+      await _voice!.init();
+      log('init: ready (stt=${_speech?.available ?? false}, tts=${_voice?.available ?? false})');
       if (!mounted) return; // torn down during init -> don't setState
       // Opt-in diagnostic: set PLENARA_SELFTEST=1 to fire an immediate "notifications are
       // on" toast at launch (proven working; off by default so normal launches are quiet).
@@ -336,14 +347,24 @@ class _ChatState extends State<ChatScreen> {
       _caption = resp; // the words materialise over Plena as she speaks (§6.1)
     });
     _thinkTimer?.cancel();
-    // speaking lasts a touch longer for a longer reply (a stand-in for the cadence envelope)
-    final speakMs = (1400 + resp.length * 22).clamp(1600, 4200);
     _speakTimer?.cancel();
-    _speakTimer = Timer(Duration(milliseconds: speakMs), () {
-      if (mounted) setState(() => _speaking = false);
-    });
     _capTimer?.cancel();
-    _capTimer = Timer(Duration(milliseconds: speakMs + 1400), () {
+    void endSpeak() { if (mounted) setState(() => _speaking = false); }
+    final maxMs = (1600 + resp.length * 50).clamp(2000, 14000);
+    if (!_voiceMuted && (_voice?.available ?? false)) {
+      // Plena actually speaks; her "speaking" animation brackets the real audio.
+      _voice!.speak(
+        resp,
+        onStart: () { if (mounted) setState(() => _speaking = true); },
+        onDone: endSpeak,
+      );
+      _speakTimer = Timer(Duration(milliseconds: maxMs), endSpeak); // safety: never stick "speaking"
+    } else {
+      // muted or no voice: a brief silent flourish, timed to the reply length
+      final ms = (1400 + resp.length * 22).clamp(1600, 4200);
+      _speakTimer = Timer(Duration(milliseconds: ms), endSpeak);
+    }
+    _capTimer = Timer(Duration(milliseconds: maxMs + 1600), () {
       if (mounted) setState(() => _caption = null);
     });
     // apt-or-absent: an occasion-appropriate glyph, or nothing (most turns)
@@ -371,6 +392,11 @@ class _ChatState extends State<ChatScreen> {
       await _speech!
           .stop(); // abort; anything not yet finalized by the engine is lost (see above)
       return;
+    }
+    // barge-in: if Plena is talking, cut her off the moment you start to speak (Spec 12 §7)
+    if (_voice?.speaking ?? false) {
+      await _voice!.stop();
+      if (mounted) setState(() => _speaking = false);
     }
     log.debug('speech: mic tap -> start');
     setState(() => _listening = true);
@@ -413,6 +439,7 @@ class _ChatState extends State<ChatScreen> {
   void dispose() {
     _speech
         ?.cancel(); // never leave the recognizer recording after teardown (privacy)
+    _voice?.stop(); // don't keep talking after teardown
     _speakTimer?.cancel();
     _thinkTimer?.cancel();
     _capTimer?.cancel();
@@ -539,6 +566,17 @@ class _ChatState extends State<ChatScreen> {
                 MaterialPageRoute(builder: (_) => DataView(session: _session)),
               ),
             ),
+          IconButton(
+            icon: Icon(_voiceMuted ? Icons.volume_off : Icons.volume_up),
+            tooltip: _voiceMuted ? 'Plena is muted — tap to unmute' : 'Mute Plena\'s voice',
+            onPressed: () {
+              setState(() => _voiceMuted = !_voiceMuted);
+              if (_voiceMuted && (_voice?.speaking ?? false)) {
+                _voice!.stop();
+                setState(() => _speaking = false);
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.tune),
             tooltip: 'Tune Plena',

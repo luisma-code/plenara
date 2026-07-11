@@ -11,6 +11,28 @@ import 'package:plenara/session.dart';
 import 'package:plenara_app/main.dart';
 import 'package:plenara_app/plena.dart';
 import 'package:plenara_app/speech.dart';
+import 'package:plenara_app/speech_out.dart';
+
+class _FakeVoice implements SpeechOutput {
+  final spoken = <String>[];
+  bool _speaking = false;
+  @override
+  Future<void> init() async {}
+  @override
+  bool get available => true;
+  @override
+  bool get speaking => _speaking;
+  @override
+  Future<void> speak(String text, {void Function()? onStart, void Function()? onDone}) async {
+    spoken.add(text);
+    _speaking = true;
+    onStart?.call();
+  }
+  @override
+  Future<void> stop() async {
+    _speaking = false;
+  }
+}
 
 class _FakeSpeech implements SpeechRecognizer {
   final bool avail;
@@ -253,5 +275,24 @@ void main() {
     expect(plenaState(), PresenceState.speaking);
     expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Send')).onPressed, isNotNull);
     expect(find.textContaining("didn't catch"), findsOneWidget);
+  });
+
+  testWidgets('Plena speaks the reply out loud, and muting silences her', (tester) async {
+    final voice = _FakeVoice();
+    await tester.pumpWidget(
+      MaterialApp(home: ChatScreen(session: _session(), voice: voice, retrieval: false)),
+    );
+    await tester.pumpAndSettle();
+
+    await _send(tester, 'add buy milk to my list');
+    expect(voice.spoken, isNotEmpty);
+    expect(voice.spoken.last, contains('Added')); // she said the reply
+
+    // mute → she doesn't speak the next reply
+    await tester.tap(find.byTooltip("Mute Plena's voice"));
+    await tester.pumpAndSettle();
+    final before = voice.spoken.length;
+    await _send(tester, 'list my tasks');
+    expect(voice.spoken.length, before); // silent while muted
   });
 }

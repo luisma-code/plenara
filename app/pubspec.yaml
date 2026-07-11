@@ -42,6 +42,7 @@ dependencies:
   speech_to_text: ^7.4.0
   sherpa_onnx: ^1.13.4
   record: ^7.1.1
+  flutter_tts: ^4.2.2 # on-device TTS (WinRT/SAPI on Windows, AVSpeechSynthesizer on Apple)
 dev_dependencies:
   flutter_test:
     sdk: flutter
