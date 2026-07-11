@@ -22,12 +22,21 @@ Dogfood-driven engine polish, then a pivot into the UI:
   **⚠ PENDING (blocked on GitHub auth — the USER must run):** `git push origin main --follow-tags`, then
   `gh release create v6 <zip> -t "v6 — The Living Presence" -F releases/v6/RETROSPECTIVE.md`. The remote is
   MANY commits behind — the push publishes the whole v4→v6 arc. Binaries stay OUT of git (GitHub Releases only).
-- **Plena integrated into the app** (`app/lib/plena.dart` + `main.dart`): a `drawAtlas` particle-swarm
-  `PresenceView` driven by real turn state (idle/listening/thinking/speaking; brief "speaking" flourish on a
-  reply since there's no TTS yet; cloud reply → cooler D2 hue). Replaces the busy spinner. `animate:false`
-  under an injected test session so `pumpAndSettle` terminates. **Deferred to a later TUNING pass (owner OK'd):
-  comet-trail persistence, the glyph fly-out vocabulary, in-app tuning sliders** — additive to the
-  director/frame/renderer split, not a rewrite.
+- **Plena integrated into the app** (`app/lib/plena.dart`, `glyphs.dart`, `main.dart`): a `drawAtlas`
+  particle-swarm `PresenceView` driven by real turn state (idle/listening/thinking/speaking; a "speaking"
+  flourish on a reply since there's no TTS yet; D1 in-flight → D2 once a turn is clearly working → cooler,
+  churning). Replaces the busy spinner. `animate:false` under an injected test session so `pumpAndSettle`
+  terminates; reduced-motion honoured; a Semantics label announces her state.
+- **Plena's glyph vocabulary** (`glyphs.dart`, 49 glyphs): the fly-out-and-rejoin engine (travellers fly the
+  path, deposit a faint tail to hold the figure, flitter, rejoin), fired **apt-or-absent** on real occasions
+  (`glyphForTurn`: completion→check, closeness-with-partner→heart, interaction→nod, streak→star, goal→target,
+  journal→quill, undo→undo-loop; greeting on open→smile/candle). Long-press Plena = browse the vocabulary.
+- **In-app tuning** (the Tune sheet: hue/vibrance/brightness/breadth/gravity/looseness/trail), **motion
+  trails** (velocity echoes), and a **caption** that materialises the reply over Plena. Tap Plena to talk.
+- **What's genuinely left for the presence:** TTS voice output (Spec 12, a separate feature), true
+  comet-trail *persistence* (a ui.Image ping-pong vs the current velocity echoes), listening→mic-level
+  energy, and the fuller presence-primary layout — plus aesthetic tuning, now in the owner's hands via the
+  Tune sheet. App tests **48**, v0 **1643**, analyze clean.
 
 ## LATEST SESSION (2026-07-08/10) — gap-fill + cloud-router upgrade + FULL FABLE REVIEW. HEAD = `d70b96d`, 1620 Dart + 38 app tests green.
 

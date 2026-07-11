@@ -3,9 +3,10 @@
 // traces a symbolic GLYPH from her own substance, then lets it drift home and rejoin (§5A).
 // Rendered with drawAtlas for one cheap pass.
 //
-// Still deferred to a later tuning pass (Spec 15 §6): the comet-trail *persistence* and the in-app
-// tuning controls. The director → PresenceFrame → renderer split is final in shape, so those are
-// additive, not a rewrite.
+// Live tuning (the Tune sheet), motion trails, and the glyph vocabulary are all in. The one thing
+// still approximated vs the mockup is TRUE frame persistence — trails here are per-frame velocity
+// echoes, not an accumulating buffer; a faithful version would ping-pong a ui.Image (toImageSync).
+// The director → PresenceFrame → renderer split is final in shape, so that's additive, not a rewrite.
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
