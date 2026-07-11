@@ -13,6 +13,7 @@ import 'package:plenara/session.dart';
 import 'app_log.dart';
 import 'data_view.dart';
 import 'onboarding_view.dart';
+import 'plena.dart';
 import 'settings_view.dart';
 import 'sherpa_speech.dart';
 import 'speech.dart';
@@ -119,6 +120,18 @@ class _ChatState extends State<ChatScreen> {
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
   bool _ready = false, _busy = false, _listening = false;
+  // Plena's presence state (Spec 15): derived from the real turn/speech signals. No TTS yet,
+  // so "speaking" is a brief flourish while a reply lands; _lastCloud tints it cooler (D2).
+  bool _speaking = false, _lastCloud = false;
+  Timer? _speakTimer;
+  PresenceState get _presence => _listening
+      ? PresenceState.listening
+      : _busy
+          ? PresenceState.thinking
+          : _speaking
+              ? PresenceState.speaking
+              : PresenceState.idle;
+  double get _difficulty => _busy ? 1 : (_speaking && _lastCloud ? 2 : 0);
 
   @override
   void initState() {
@@ -232,7 +245,12 @@ class _ChatState extends State<ChatScreen> {
         _msgs.add(Msg('📋 ${p.description} — say "approve it" or "dismiss it".', false));
       }
       _busy = false;
+      _speaking = true; // Plena "speaks" the reply — a brief presence flourish
+      _lastCloud = usedCloud;
     });
+    _speakTimer?.cancel();
+    _speakTimer = Timer(const Duration(milliseconds: 2600),
+        () { if (mounted) setState(() => _speaking = false); });
     _jump();
   }
 
@@ -290,6 +308,7 @@ class _ChatState extends State<ChatScreen> {
   @override
   void dispose() {
     _speech?.cancel(); // never leave the recognizer recording after teardown (privacy)
+    _speakTimer?.cancel();
     _ctrl.dispose();
     _scroll.dispose();
     super.dispose();
@@ -330,6 +349,15 @@ class _ChatState extends State<ChatScreen> {
       body: !_ready
           ? const Center(child: CircularProgressIndicator())
           : Column(children: [
+              // Plena — the living presence (Spec 15). Reflects idle / listening / thinking /
+              // speaking; her "thinking" state replaces the old busy spinner.
+              SizedBox(
+                height: 168,
+                width: double.infinity,
+                // Static (no ticker) under an injected test session so pumpAndSettle terminates.
+                child: PresenceView(
+                    state: _presence, difficulty: _difficulty, animate: widget.session == null),
+              ),
               Expanded(
                 child: ListView.builder(
                   controller: _scroll,
@@ -373,7 +401,6 @@ class _ChatState extends State<ChatScreen> {
                   },
                 ),
               ),
-              if (_busy) LinearProgressIndicator(minHeight: 2, color: cs.primary),
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(children: [

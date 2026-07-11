@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara_app/main.dart';
+import 'package:plenara_app/plena.dart';
 import 'package:plenara_app/speech.dart';
 
 class _FakeSpeech implements SpeechRecognizer {
@@ -152,6 +153,10 @@ void main() {
   });
 
   testWidgets('a past-due reminder shows as an on-open nudge bubble', (tester) async {
+    // Plena's presence band shrinks the default 600px test viewport; give the lazy list room
+    // so both the greeting and the nudge below it are built (they're off-screen otherwise).
+    await tester.binding.setSurfaceSize(const Size(800, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final dir = _tempData();
     // seed a reminder for Thursday 5pm from a Monday clock (persists to `dir`)
     final seeder = Session(dir, clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _NullCloud());
@@ -168,6 +173,8 @@ void main() {
   });
 
   testWidgets('an upcoming birthday shows as an on-open nudge bubble', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final dir = _tempData();
     final seeder = Session(dir, clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _NullCloud());
     await seeder.init(retrieval: false);
@@ -220,25 +227,30 @@ void main() {
     expect(find.textContaining("didn't catch"), findsOneWidget);
   });
 
-  testWidgets('the Send button disables and a progress bar shows while a turn is in flight', (tester) async {
+  testWidgets('the Send button disables and Plena enters "thinking" while a turn is in flight', (tester) async {
     final gate = Completer<void>();
     final session = Session(_tempData(),
         clock: DateTime.parse('2026-07-06T09:00:00'), cloud: _GatedCloud(gate));
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
     await tester.pumpAndSettle();
 
+    PresenceState plenaState() => tester.widget<PresenceView>(find.byType(PresenceView)).state;
+    expect(plenaState(), PresenceState.idle);
+
     // an unrecognized phrase misses the corpus and reaches the (gated) cloud
     await tester.enterText(find.byType(TextField), 'something the corpus cannot match');
     await tester.tap(find.text('Send'));
     await tester.pump(); // process setState(busy=true); the turn is now stuck on the gate
 
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    // Plena's "thinking" state is the busy indicator now (the old progress bar is gone)
+    expect(plenaState(), PresenceState.thinking);
     expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Send')).onPressed, isNull);
 
     gate.complete(); // release the turn -> clarify
     await tester.pumpAndSettle();
 
-    expect(find.byType(LinearProgressIndicator), findsNothing);
+    // reply lands -> a brief "speaking" flourish, then the Send button re-enables
+    expect(plenaState(), PresenceState.speaking);
     expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Send')).onPressed, isNotNull);
     expect(find.textContaining("didn't catch"), findsOneWidget);
   });
