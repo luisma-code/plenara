@@ -618,10 +618,6 @@ final Map<String, GlyphDef> kGlyphs = {
   ),
 };
 
-/// Occasion → glyph id, applied under apt-or-absent (most turns → null). The UI resolves a turn
-/// (its dispatched skill + a couple of reply keywords) to at most one of these.
-GlyphDef? glyphForOccasion(String occasion) => kGlyphs[occasion];
-
 /// Resolve a completed turn to an apt glyph, or null — Spec 15 §5A.1 "apt or absent": only a
 /// clearly-fitting moment fires; the overwhelming majority of turns return null. [skill] is the
 /// dispatched skill id ("a+b" for a compound turn); [reply] is the assistant's text.
@@ -635,8 +631,12 @@ GlyphDef? glyphForTurn(String? skill, String reply) {
   if (said('undone') || said('reverted') || said('undid') || said('reversed')) {
     return kGlyphs['undo-loop'];
   }
+  // a LAPSED streak / a miss is bad news → soften it, never celebrate (checked before the star)
+  if (said('lapsed') || said('missed') || said('streak ended') || said('streak reset') || said('broke your streak')) {
+    return kGlyphs['settle'];
+  }
   if (said('streak') || said('days running') || said('days in a row')) {
-    return kGlyphs['star']; // milestone
+    return kGlyphs['star']; // a milestone reached
   }
   if (said("that's everything") || said('all done for the day') || said('list is clear')) {
     return kGlyphs['double-check'];

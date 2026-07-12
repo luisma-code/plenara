@@ -26,10 +26,13 @@ Map<String, dynamic> _workout(String id, String activity, dynamic distance, Stri
     {'id': id, 'typeId': 'workout', 'activity': activity, 'distance': distance, 'date': date};
 
 // weekday name for the ISO dates used below
+// Expected due-date label: a weekday when the date is within the coming week, but the calendar
+// date ("MMMM d") once it's more than 6 days out — a bare "Friday" 6 months away is ambiguous
+// (reviewer b #6). 2026-12-25 is the far case; the rest are ≤6 days from Monday 2026-07-06.
 const _weekday = {
   '2026-07-06': 'Monday', '2026-07-07': 'Tuesday', '2026-07-08': 'Wednesday',
   '2026-07-09': 'Thursday', '2026-07-10': 'Friday', '2026-07-11': 'Saturday',
-  '2026-07-12': 'Sunday', '2026-12-25': 'Friday',
+  '2026-07-12': 'Sunday', '2026-12-25': 'December 25',
 };
 
 void main() {
@@ -359,9 +362,11 @@ void main() {
       final store = _store();
       final (p, _) = _run('remember-person-fact',
           {'personName': 'Mia', 'fact': 'is allergic to peanuts', 'relationTo': 'Sarah Mitchell', 'relationType': 'daughter'}, store);
+      // The relative is resolved and the relationship written BEFORE the fact now, so the fact
+      // attaches to the (possibly de-collided) person (reviewer b #3): person, relative, rel, fact.
       expect(p.writes.map((w) => w['typeId']),
-          ['contact', 'contact_fact', 'contact', 'contact_relationship']);
-      final person = p.writes[0], rel = p.writes[3], relative = p.writes[2];
+          ['contact', 'contact', 'contact_relationship', 'contact_fact']);
+      final person = p.writes[0], relative = p.writes[1], rel = p.writes[2];
       expect(rel['from'], relative['id']);
       expect(rel['to'], person['id']);
       expect(rel['relationType'], 'daughter');
@@ -376,8 +381,9 @@ void main() {
       final store = <String, Map<String, dynamic>>{'c1': {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sarah Mitchell'}};
       final (p, _) = _run('remember-person-fact',
           {'personName': 'Mia', 'fact': 'is her daughter', 'relationTo': 'Sarah Mitchell', 'relationType': 'daughter'}, store);
-      expect(p.writes.map((w) => w['typeId']), ['contact', 'contact_fact', 'contact_relationship']);
-      expect(p.writes[2]['from'], 'c1'); // resolved Sarah
+      // relationship precedes the fact now (reviewer b #3): person contact, relationship, fact.
+      expect(p.writes.map((w) => w['typeId']), ['contact', 'contact_relationship', 'contact_fact']);
+      expect(p.writes[1]['from'], 'c1'); // resolved Sarah
     });
   });
 

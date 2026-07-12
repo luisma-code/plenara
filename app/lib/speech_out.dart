@@ -9,11 +9,13 @@ abstract class SpeechOutput {
   bool get available;
   bool get speaking;
 
-  /// Speak [text]. [onStart] fires when audio begins, [onDone] when it finishes OR is stopped by
-  /// a later speak/stop — exactly once per call. Fire-and-forget: callers don't await completion.
+  /// Speak [text]. [onStart] fires when audio begins; [onDone] fires exactly once when this
+  /// utterance ends — whether it finishes naturally OR is stopped by a later speak()/stop() —
+  /// UNLESS a newer speak() superseded it first (then the newer call owns the callbacks).
+  /// Fire-and-forget: callers don't await completion.
   Future<void> speak(String text, {void Function()? onStart, void Function()? onDone});
 
-  /// Stop any current utterance (mute / barge-in). Does NOT fire the pending onDone.
+  /// Stop the current utterance (mute / barge-in). Resolves its speak() → its onDone fires once.
   Future<void> stop();
 }
 
@@ -42,25 +44,24 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
 
   final FlutterTts _tts = FlutterTts();
   bool _ready = false, _speaking = false;
-  void Function()? _onDone;
-
-  void _finish() {
-    _speaking = false;
-    final d = _onDone;
-    _onDone = null;
-    d?.call();
-  }
+  // Each speak() gets a generation. `awaitSpeakCompletion(true)` makes `_tts.speak()` resolve
+  // PER UTTERANCE (on completion or stop), so we drive onStart/onDone from that future — not the
+  // shared, un-identified engine handlers — and a stale event from a superseded utterance (gen !=
+  // _gen) can never cross-fire a newer utterance's callbacks (reviewer d #4/#5).
+  int _gen = 0;
+  void Function()? _onStart;
 
   @override
   Future<void> init() async {
     try {
-      _tts.setStartHandler(() => _speaking = true);
-      _tts.setCompletionHandler(_finish);
-      _tts.setCancelHandler(() => _speaking = false); // stop() manages its own onDone
-      _tts.setErrorHandler((m) {
-        onLog?.call('tts error: $m');
-        _finish();
+      await _tts.awaitSpeakCompletion(true); // speak() resolves when THAT utterance ends/stops
+      _tts.setStartHandler(() {
+        _speaking = true;
+        final s = _onStart;
+        _onStart = null;
+        s?.call(); // anchor the caller's onStart to real audio onset (reviewer d #9)
       });
+      _tts.setErrorHandler((m) => onLog?.call('tts error: $m'));
       await _tts.setSpeechRate(.5); // engine-normalised-ish; tune later
       await _tts.setPitch(1.0);
       _ready = true;
@@ -84,24 +85,26 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
       return;
     }
     await stop(); // one utterance at a time
-    _onDone = onDone;
+    final gen = ++_gen;
+    _onStart = onStart;
     _speaking = true;
-    onStart?.call();
     try {
-      await _tts.speak(text);
+      await _tts.speak(text); // resolves when this utterance finishes OR is stopped by a later speak
     } catch (e) {
       onLog?.call('tts speak failed: $e');
-      _finish();
     }
+    if (gen != _gen) return; // superseded by a newer speak — it owns state now, don't touch anything
+    _speaking = false;
+    onDone?.call(); // fires exactly once per non-superseded call (natural end or barge-in stop)
   }
 
   @override
   Future<void> stop() async {
-    _onDone = null; // an explicit stop is not a completion — don't fire onDone
+    _onStart = null;
     _speaking = false;
     if (!_ready) return;
     try {
-      await _tts.stop();
+      await _tts.stop(); // resolves the in-flight speak()'s future → its onDone fires once
     } catch (_) {/* best-effort */}
   }
 }

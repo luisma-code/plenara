@@ -170,6 +170,8 @@ class _PresenceViewState extends State<PresenceView>
       if (mounted) {
         setState(() => _sprite = img);
         _repaint.value++;
+      } else {
+        img.dispose(); // unmounted before it loaded — don't leak the GPU image
       }
     });
     _ticker = createTicker(_onTick);
@@ -205,6 +207,14 @@ class _PresenceViewState extends State<PresenceView>
       _ticker.stop();
     }
     if (!_animating) {
+      // don't freeze a half-drawn glyph into the static frame — abandon any flight, motes home
+      if (_run != null) {
+        _run = null;
+        _mode.fillRange(0, _n, 0);
+        _trav.fillRange(0, _n, 0);
+        _coreX = 0;
+        _coreY = 0;
+      }
       _snap();
     }
   }
@@ -280,6 +290,7 @@ class _PresenceViewState extends State<PresenceView>
         pts.add([p.dx, p.dy, s.delayMs + u * s.drawMs]);
       }
     }
+    if (pts.isEmpty) return; // a glyph with no strokes and no dots — nothing to fly
     pts.sort((a, b) => a[2].compareTo(b[2]));
     final cap = math.min(600, pts.length);
     final run = _GlyphRun();
@@ -344,7 +355,10 @@ class _PresenceViewState extends State<PresenceView>
       _acc -= 1 / 60;
       steps++;
     }
-    _repaint.value++;
+    _acc = math.min(_acc, 1 / 60); // don't bank time-debt past the step cap (no 4x sprint on recovery)
+    // repaint only when the sim actually advanced — so on a 120 Hz display the persistence buffer
+    // isn't eroded/deposited twice per 60 Hz step (which halved the trail and doubled brightness).
+    if (steps > 0) _repaint.value++;
   }
 
   void _step() {
@@ -602,46 +616,55 @@ class _PlenaPainter extends CustomPainter {
     // motes, keep it. She leaves a real trail of herself; the Trail knob is the fade rate. The
     // buffer is CAPPED (~760px longest side) and scaled up on blit, so per-frame toImageSync
     // stays cheap at any window size (a full-res buffer stalls the raster).
-    if (w > 0 && h > 0) {
-      final bufScale = math.min(1.0, 760 / math.max(w, h));
-      final bw = math.max(1, (w * bufScale).round()),
-          bh = math.max(1, (h * bufScale).round());
-      final rec = ui.PictureRecorder();
-      final tc = Canvas(rec);
-      if (s._trail != null && s._tw == bw && s._th == bh) {
-        tc.drawImage(s._trail!, Offset.zero, Paint());
-        final erode = ui.lerpDouble(0.40, 0.035, tn.trail.clamp(0.0, 1.0))!;
-        tc.drawRect(
-          Rect.fromLTWH(0, 0, bw.toDouble(), bh.toDouble()),
-          Paint()
-            ..blendMode = BlendMode.dstOut
-            ..color = Color.fromRGBO(0, 0, 0, erode),
-        );
-      }
-      tc.save();
-      tc.scale(bufScale);
-      tc.drawAtlas(
-        sprite,
-        transforms,
-        rects,
-        colors,
-        BlendMode.modulate,
-        null,
-        Paint()..blendMode = BlendMode.plus,
-      );
-      tc.restore();
-      final next = rec.endRecording().toImageSync(bw, bh);
+    if (!s._animating || w <= 0 || h <= 0) {
+      // Static / reduced-motion: no persistence — draw straight to the canvas (else repeated
+      // repaints of stationary motes accumulate toward white and ghost prior states, §8.3).
       s._trail?.dispose();
-      s._trail = next;
-      s._tw = bw;
-      s._th = bh;
-      canvas.drawImageRect(
-        next,
+      s._trail = null;
+      s._tw = 0;
+      s._th = 0;
+      if (w > 0 && h > 0) {
+        canvas.drawAtlas(sprite, transforms, rects, colors, BlendMode.modulate, null,
+            Paint()..blendMode = BlendMode.plus);
+      }
+      return;
+    }
+    // TRUE persistence (Spec 15): ping-pong a CAPPED offscreen buffer (~760px longest side, scaled
+    // on blit) so per-frame toImageSync stays cheap at any window size (a full-res buffer stalls
+    // the raster). She leaves a real trail of herself; the Trail knob is the fade rate.
+    final bufScale = math.min(1.0, 760 / math.max(w, h));
+    final bw = math.max(1, (w * bufScale).round()),
+        bh = math.max(1, (h * bufScale).round());
+    final rec = ui.PictureRecorder();
+    final tc = Canvas(rec);
+    if (s._trail != null && s._tw == bw && s._th == bh) {
+      tc.drawImage(s._trail!, Offset.zero, Paint());
+      final erode = ui.lerpDouble(0.40, 0.035, tn.trail.clamp(0.0, 1.0))!;
+      tc.drawRect(
         Rect.fromLTWH(0, 0, bw.toDouble(), bh.toDouble()),
-        Offset.zero & size,
-        Paint()..blendMode = BlendMode.plus,
+        Paint()
+          ..blendMode = BlendMode.dstOut
+          ..color = Color.fromRGBO(0, 0, 0, erode),
       );
     }
+    tc.save();
+    tc.scale(bufScale);
+    tc.drawAtlas(sprite, transforms, rects, colors, BlendMode.modulate, null,
+        Paint()..blendMode = BlendMode.plus);
+    tc.restore();
+    final pic = rec.endRecording();
+    final next = pic.toImageSync(bw, bh);
+    pic.dispose(); // the display list (and its retained ref to the prev trail) — was leaking per frame
+    s._trail?.dispose();
+    s._trail = next;
+    s._tw = bw;
+    s._th = bh;
+    canvas.drawImageRect(
+      next,
+      Rect.fromLTWH(0, 0, bw.toDouble(), bh.toDouble()),
+      Offset.zero & size,
+      Paint()..blendMode = BlendMode.plus,
+    );
   }
 
   @override

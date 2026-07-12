@@ -57,9 +57,15 @@ void main() {
 
   group('create-task — with date (6 descriptions × ${_dateCases.length} dates × 2 templates)', () {
     const dueDescs = ['call mom', 'buy milk', 'wash the car', 'pay the rent', 'walk the dog', 'book a table'];
+    // create-task.dueDate is a `futuredate`: a bare month-day that already fell earlier this year
+    // resolves to NEXT year (no due dates in the past). Relative/weekday/ISO forms are unaffected,
+    // so only the past month-name cases diverge from the plain-date expectation (reviewer b #6).
+    final relForm = RegExp(r'day|^in \d|^\d{4}-|^next |^on (mon|tue|wed|thu|fri|sat|sun)', caseSensitive: false);
+    String dueIso(String phrase, String iso) =>
+        (!relForm.hasMatch(phrase) && iso.compareTo('2026-07-06') < 0) ? '2027${iso.substring(4)}' : iso;
     for (final d in dueDescs) {
       for (final c in _dateCases) {
-        final phrase = c[0], iso = c[1];
+        final phrase = c[0], iso = dueIso(c[0], c[1]);
         // "on X" only reads naturally after "due"; skip it for the "on {date}" template
         test('"add $d to my list due $phrase" -> $iso', () {
           final r = _r.route('add $d to my list due $phrase');
@@ -98,6 +104,57 @@ void main() {
       expect(r.route('remind me to call mom on friday', clock: _now)?['slots']['dueDate'], '2026-07-10');
       final nextWeek = DateTime.parse('2026-07-13T09:00:00'); // a later Monday
       expect(r.route('remind me to call mom on friday', clock: nextWeek)?['slots']['dueDate'], '2026-07-17');
+    });
+  });
+
+  group('log-interaction — offline pastday + kind (reviewer b #1 / #4)', () {
+    test('"had dinner with Katherine yesterday" -> dinner, at=yesterday', () {
+      final r = _r.route('had dinner with Katherine yesterday');
+      expect(r?['skillId'], 'log-interaction');
+      expect(r?['slots']['personName'], 'Katherine');
+      expect(r?['slots']['kind'], 'dinner');
+      expect(r?['slots']['at'], '2026-07-05'); // the PREVIOUS day, resolved backward
+      expect(r?['source'], 'corpus');
+    });
+    test('"had lunch with Marco on friday" -> lunch, at=last friday', () {
+      final r = _r.route('had lunch with Marco on friday');
+      expect(r?['slots']['personName'], 'Marco');
+      expect(r?['slots']['kind'], 'lunch');
+      expect(r?['slots']['at'], '2026-07-03'); // bare weekday = the previous Friday
+    });
+    test('"had coffee with Sam" -> coffee, no explicit date', () {
+      final r = _r.route('had coffee with Sam');
+      expect(r?['slots']['personName'], 'Sam');
+      expect(r?['slots']['kind'], 'coffee');
+      expect(r?['slots'].containsKey('at'), isFalse); // skill defaults it to today
+    });
+    test('"i called Priya yesterday" -> call, at=yesterday', () {
+      final r = _r.route('i called Priya yesterday');
+      expect(r?['slots']['kind'], 'call');
+      expect(r?['slots']['at'], '2026-07-05');
+    });
+    test('"texted Dad" -> text kind, still routes offline', () {
+      final r = _r.route('texted Dad');
+      expect(r?['skillId'], 'log-interaction');
+      expect(r?['slots']['kind'], 'text');
+    });
+  });
+
+  group('resolveFutureDate — a past month-day rolls forward (reviewer b #6)', () {
+    test('a month-day earlier this year -> next year', () {
+      expect(_r.resolveFutureDate('march 3', _now), '2027-03-03');
+      expect(_r.resolveFutureDate('3 march', _now), '2027-03-03');
+    });
+    test('a month-day still ahead this year -> this year', () {
+      expect(_r.resolveFutureDate('december 25', _now), '2026-12-25');
+      expect(_r.resolveFutureDate('sept 9', _now), '2026-09-09');
+    });
+    test('relative + weekday forms are unaffected by preferFuture', () {
+      expect(_r.resolveFutureDate('tomorrow', _now), '2026-07-07');
+      expect(_r.resolveFutureDate('friday', _now), '2026-07-10'); // next Friday (forward)
+    });
+    test('plain resolveDate keeps the literal year so birthday anchors are intact', () {
+      expect(_r.resolveDate('march 3', _now), '2026-03-03');
     });
   });
 

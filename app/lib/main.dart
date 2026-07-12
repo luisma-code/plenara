@@ -157,8 +157,10 @@ class _ChatState extends State<ChatScreen> {
   void _fireGlyph(GlyphDef? g, {bool force = false}) {
     if (g == null) return;
     final now = DateTime.now();
-    if (!force && now.difference(_lastGlyphAt).inSeconds < 8) return;
-    _lastGlyphAt = now;
+    if (!force) {
+      if (now.difference(_lastGlyphAt).inSeconds < 8) return;
+      _lastGlyphAt = now; // only occasion-driven fires debounce; a forced greeting/preview doesn't
+    }
     setState(() {
       _glyph = g;
       _glyphNonce++;
@@ -231,6 +233,7 @@ class _ChatState extends State<ChatScreen> {
       );
     } catch (e, st) {
       log('init: FAILED: $e\n$st');
+      if (!mounted) return; // torn down during a failing init -> don't setState after dispose
       // no infinite spinner: surface the failure over the void
       setState(() {
         _ready = true;
@@ -278,6 +281,7 @@ class _ChatState extends State<ChatScreen> {
     final t = _ctrl.text.trim();
     if (t.isEmpty || _busy) return;
     _ctrl.clear();
+    if (_voice?.speaking ?? false) unawaited(_voice!.stop()); // a new turn stops any in-flight reply
     setState(() {
       _busy = true;
       _deepThink = false;
@@ -336,13 +340,20 @@ class _ChatState extends State<ChatScreen> {
     _thinkTimer?.cancel();
     _speakTimer?.cancel();
     _capTimer?.cancel();
+    // End of speaking: clear the flourish AND clear the caption a beat later. Called by the real
+    // TTS onDone (or the safety cap), so the caption follows actual speech, not a fixed timer.
     void endSpeak() {
-      if (mounted) setState(() => _speaking = false);
+      if (!mounted) return;
+      _speakTimer?.cancel();
+      setState(() => _speaking = false);
+      _capTimer?.cancel();
+      _capTimer = Timer(const Duration(milliseconds: 1600), () {
+        if (mounted) setState(() => _caption = null);
+      });
     }
 
-    final maxMs = (1600 + resp.length * 50).clamp(2000, 14000);
     if (!_voiceMuted && (_voice?.available ?? false)) {
-      // Plena actually speaks; her "speaking" animation brackets the real audio.
+      // Plena actually speaks; her "speaking" animation brackets the real audio (onDone ends it).
       _voice!.speak(
         resp,
         onStart: () {
@@ -350,76 +361,54 @@ class _ChatState extends State<ChatScreen> {
         },
         onDone: endSpeak,
       );
-      _speakTimer = Timer(
-        Duration(milliseconds: maxMs),
-        endSpeak,
-      ); // safety: never stick "speaking"
+      // safety cap only — generous (real speech at rate 0.5 can run ~30 s) so it never fires
+      // before the audio actually ends and cuts her off mid-sentence.
+      final capMs = (3000 + resp.length * 75).clamp(4000, 60000);
+      _speakTimer = Timer(Duration(milliseconds: capMs), endSpeak);
     } else {
       // muted or no voice: a brief silent flourish, timed to the reply length
       final ms = (1400 + resp.length * 22).clamp(1600, 4200);
       _speakTimer = Timer(Duration(milliseconds: ms), endSpeak);
     }
-    _capTimer = Timer(Duration(milliseconds: maxMs + 1600), () {
-      if (mounted) setState(() => _caption = null);
-    });
     // apt-or-absent: an occasion-appropriate glyph, or nothing (most turns)
     _fireGlyph(glyphForTurn(_session.lastSkill, resp));
   }
 
-  /// Tap the mic to START, speak, then PAUSE — the OS engine's own end-of-utterance detection
-  /// delivers the final transcript in-session (~1s after speech ends) and we auto-send it, so
-  /// voice is a complete hands-free action. On Windows there are no partial results (the SAPI
-  /// backend only delivers finals), so the box fills at the end, not live. Tapping stop ABORTS:
-  /// the plugin kills its event pump on stop, so a not-yet-finalized transcript can't be
-  /// retrieved — don't rely on the stop tap to finalize. onDone always clears the listening
-  /// state, so the UI can never get stuck at "Listening…".
+  /// Tap the void to START listening; the engine's end-of-utterance detection delivers the final
+  /// transcript in-session (~1s after speech ends) and we auto-send it — a complete hands-free
+  /// action. Tapping again ABORTS via cancel() (NOT stop(): a stop would flush the buffer and
+  /// auto-send a half-spoken command). onDone/catch always clear listening, so it can't get stuck.
   Future<void> _toggleMic() async {
     final log = AppLog.instance;
-    if (!(_speech?.available ?? false) || _busy) {
-      log.debug(
-        'speech: mic tap ignored (available=${_speech?.available ?? false}, busy=$_busy)',
-      );
-      return;
-    }
+    if (!(_speech?.available ?? false) || _busy) return;
     if (_listening) {
-      log.debug('speech: mic tap -> stop (abort)');
-      await _speech!
-          .stop(); // abort; anything not yet finalized by the engine is lost (see above)
+      log.debug('speech: tap -> abort');
+      if (mounted) setState(() => _listening = false); // clear synchronously (also re-entry guard)
+      _speech!.cancel(); // ABORT — do not flush/finalize a partial command
       return;
     }
-    // barge-in: if Plena is talking, cut her off the moment you start to speak (Spec 12 §7)
+    // Set listening BEFORE the barge-in await, so a second tap during it hits the abort branch
+    // instead of starting a second recognizer session (reviewer d #2).
+    setState(() => _listening = true);
     if (_voice?.speaking ?? false) {
-      await _voice!.stop();
+      await _voice!.stop(); // barge-in: cut Plena off the moment you start to speak (Spec 12 §7)
       if (mounted) setState(() => _speaking = false);
     }
-    log.debug('speech: mic tap -> start');
-    setState(() => _listening = true);
+    log.debug('speech: tap -> start');
     try {
       await _speech!.listen(
         onResult: (text, isFinal) {
           final t = text.trim();
-          log.debug("speech: result '$t' final=$isFinal");
-          if (!mounted || t.isEmpty) return;
-          setState(
-            () => _ctrl.text = t,
-          ); // fill the box; this is also what we'll send
-          // Auto-send on the engine's FINAL result, delivered in-session by its own
-          // end-of-utterance detection. Then STOP the engine: one utterance per tap — on Windows
-          // SAPI dictation otherwise stays active until listenFor and a second utterance would
-          // fire another (unwanted) auto-send.
-          if (isFinal) {
-            setState(() => _listening = false);
-            unawaited(_speech!.stop());
-            if (!_busy) {
-              log.debug('speech: auto-send on final result');
-              _send();
-            }
+          if (!mounted || t.isEmpty || !isFinal) return; // Windows delivers finals only
+          setState(() => _listening = false);
+          _speech!.cancel(); // one utterance per tap
+          if (!_busy) {
+            _ctrl.text = t; // what we send — only written when we can actually send it (no ghost)
+            log.debug('speech: auto-send on final result');
+            _send();
           }
         },
         onDone: () {
-          log.debug(
-            'speech: onDone (listening=$_listening, text="${_ctrl.text}")',
-          );
           if (mounted) setState(() => _listening = false);
         },
       );
@@ -728,9 +717,17 @@ class _ChatState extends State<ChatScreen> {
           : "Mute Plena's voice",
       onPressed: () {
         setState(() => _voiceMuted = !_voiceMuted);
-        if (_voiceMuted && (_voice?.speaking ?? false)) {
-          _voice!.stop();
-          setState(() => _speaking = false);
+        if (_voiceMuted) {
+          if (_voice?.speaking ?? false) {
+            _voice!.stop();
+            setState(() => _speaking = false);
+          }
+          // muting = switch to text mode — don't leave a hot mic with no way to stop it, and no
+          // stray transcript to overwrite/auto-send what the user is about to type (reviewer d #1)
+          if (_listening) {
+            _speech?.cancel();
+            setState(() => _listening = false);
+          }
         }
       },
     ),

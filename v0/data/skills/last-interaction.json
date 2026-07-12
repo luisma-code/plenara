@@ -57,7 +57,8 @@
                     "op": "branch",
                     "cond": { "gte": [ { "field": [ "i", "at" ] }, { "var": "latest" } ] },
                     "then": [
-                      { "op": "set", "var": "latest", "value": { "field": [ "i", "at" ] } }
+                      { "op": "set", "var": "latest", "value": { "field": [ "i", "at" ] } },
+                      { "op": "set", "var": "latestKind", "value": { "field": [ "i", "kind" ] } }
                     ]
                   }
                 ]
@@ -75,9 +76,23 @@
                 "into": "dayLabel"
               },
               {
-                "op": "format",
-                "template": "You last talked to {personName} on {latest} ({dayLabel}).",
-                "into": "confirmationText"
+                "_comment": "Name the kind of the most recent interaction when we have it ('Your last dinner with…'), else fall back to the generic 'talked to' phrasing (reviewer b #8).",
+                "op": "branch",
+                "cond": { "notNull": "latestKind" },
+                "then": [
+                  {
+                    "op": "format",
+                    "template": "Your last {latestKind} with {personName} was on {latest} ({dayLabel}).",
+                    "into": "confirmationText"
+                  }
+                ],
+                "else": [
+                  {
+                    "op": "format",
+                    "template": "You last talked to {personName} on {latest} ({dayLabel}).",
+                    "into": "confirmationText"
+                  }
+                ]
               }
             ],
             "else": [

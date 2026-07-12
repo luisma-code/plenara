@@ -49,41 +49,42 @@
                 "into": "d"
               },
               {
+                "_comment": "Build the line incrementally: date, then the kind (dinner/coffee/call…) if the interaction has one, then the note if present (reviewer b #8).",
+                "op": "compute",
+                "fn": "concat",
+                "args": [ { "var": "lines" }, "\n  • ", { "field": [ "i", "at" ] }, " (", { "var": "d" }, ")" ],
+                "into": "lines"
+              },
+              {
+                "op": "set",
+                "var": "kindText",
+                "value": { "field": [ "i", "kind" ] }
+              },
+              {
+                "op": "branch",
+                "cond": { "notNull": "kindText" },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "concat",
+                    "args": [ { "var": "lines" }, " — ", { "var": "kindText" } ],
+                    "into": "lines"
+                  }
+                ]
+              },
+              {
                 "op": "set",
                 "var": "noteText",
                 "value": { "field": [ "i", "note" ] }
               },
               {
                 "op": "branch",
-                "cond": { "isNull": "noteText" },
+                "cond": { "notNull": "noteText" },
                 "then": [
                   {
                     "op": "compute",
                     "fn": "concat",
-                    "args": [
-                      { "var": "lines" },
-                      "\n  • ",
-                      { "field": [ "i", "at" ] },
-                      " (",
-                      { "var": "d" },
-                      ")"
-                    ],
-                    "into": "lines"
-                  }
-                ],
-                "else": [
-                  {
-                    "op": "compute",
-                    "fn": "concat",
-                    "args": [
-                      { "var": "lines" },
-                      "\n  • ",
-                      { "field": [ "i", "at" ] },
-                      " (",
-                      { "var": "d" },
-                      ") — ",
-                      { "var": "noteText" }
-                    ],
+                    "args": [ { "var": "lines" }, " — ", { "var": "noteText" } ],
                     "into": "lines"
                   }
                 ]

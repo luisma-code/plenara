@@ -12,7 +12,7 @@
     { "name": "personName", "required": true },
     { "name": "note", "required": false },
     { "name": "kind", "required": false },
-    { "name": "at", "required": false, "type": "date" }
+    { "name": "at", "required": false, "type": "pastday" }
   ],
   "steps": {
     "main": [

@@ -17,7 +17,13 @@ class CorpusEntry {
   final String template;
   final RegExp regex; // named groups per slot
   final Map<String, String> slotTypes; // slotName -> text|date|entity|quantity
-  CorpusEntry(this.skillId, this.template, this.regex, this.slotTypes);
+  // Constant slots the template asserts regardless of the surface text — e.g. "had dinner with
+  // {personName}" carries `{"kind": "dinner"}` so an OFFLINE interaction records its kind, not a
+  // generic "talked to". Merged into the extracted slots at match time (never overwrites a
+  // regex-captured slot). Empty for the vast majority of entries.
+  final Map<String, dynamic> fixedSlots;
+  CorpusEntry(this.skillId, this.template, this.regex, this.slotTypes,
+      {this.fixedSlots = const {}});
 }
 
 class Router {
@@ -84,7 +90,7 @@ class Router {
     //     "{description:text}" compiles to `^(.+?)$` which matches EVERY utterance
     //     and — inserted first + persisted — permanently hijacks all routing.
     if (abstracted != nonNull.length) return null;
-    if (t.replaceAll(RegExp(r'\{\w+:\w+\}'), ' ').trim().isEmpty) return null;
+    if (!_hasStrongLiteral(t)) return null;
     if (corpus.any((c) => c.template == t)) return null; // dedupe: nothing new to persist
     corpus.insert(0, _compile({'skillId': skillId, 'template': t}));
     _learnedTemplates.add(t);
@@ -198,8 +204,10 @@ class Router {
     }
     sb.write(_lit(tmpl.substring(i)));
     sb.write(r'[.?!]?$'); // strip a trailing . ? or ! so "what's Mia allergic to?" doesn't leak "?" into the slot
+    final fixed = (e['slots'] as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
     return CorpusEntry(e['skillId'] as String, tmpl,
-        RegExp(sb.toString(), caseSensitive: false), slotTypes);
+        RegExp(sb.toString(), caseSensitive: false), slotTypes,
+        fixedSlots: fixed);
   }
 
   /// Turn literal template text into a regex fragment, preserving whitespace
@@ -219,15 +227,20 @@ class Router {
   // A "word" for substance-counting: a run of ≥2 letters. Skips "I"/"a" and stray initials,
   // so an abbreviation segment ("Dr", "St") counts as at most one word and is not substantial.
   static final _wordRe = RegExp(r'[A-Za-z]{2,}');
+  // Mid-sentence abbreviations + single-letter initials whose period is NOT a sentence break.
+  // We strip the period before splitting so "at St. Jude", "5 p.m.", "J. R." don't false-split.
+  static final _abbrev = RegExp(
+      r'\b(?:[a-z]|dr|mr|mrs|ms|st|jr|sr|vs|no|mi|ft|dept|approx|prof|gen|sgt|ave|blvd|a\.m|p\.m|e\.g|i\.e)\.',
+      caseSensitive: false);
 
-  /// True when [u] is two or more SUBSTANTIAL sentences (each ≥2 real words). This is the
-  /// compound-utterance signal: such an utterance carries multiple statements the corpus
-  /// can't split, so it belongs on the cloud multi-action path. Guards against false
-  /// positives from decimals, single trailing punctuation, and title abbreviations
-  /// ("Dr. Smith is here" → "Dr" has one word → only one substantial sentence → not compound).
+  /// True when [u] is two or more SUBSTANTIAL sentences (each ≥2 real words) — the compound
+  /// signal: multiple statements the corpus can't split, so it belongs on the cloud multi-action
+  /// path. Guards against decimals, a single trailing mark, and abbreviations/initials anywhere
+  /// ("note that Sam works at St. Jude in Memphis" stays ONE command).
   static bool _isCompound(String u) {
+    final cleaned = u.replaceAllMapped(_abbrev, (m) => m.group(0)!.replaceAll('.', ''));
     var substantial = 0;
-    for (final seg in u.split(_sentenceSplit)) {
+    for (final seg in cleaned.split(_sentenceSplit)) {
       if (_wordRe.allMatches(seg).length >= 2) substantial++;
       if (substantial >= 2) return true;
     }
@@ -287,6 +300,7 @@ class Router {
       // skipped and the date-only create-task template wins.)
       if (v == null &&
           (type == 'date' ||
+              type == 'futuredate' ||
               type == 'dayword' ||
               type == 'pastday' ||
               type == 'datetime' ||
@@ -296,15 +310,35 @@ class Router {
       }
       slots[name] = v;
     });
-    return ok ? slots : null;
+    if (!ok) return null;
+    // Fold in the template's constant slots (e.g. kind="dinner"). A regex-captured slot always
+    // wins — the constant is only a default for a slot the surface text didn't supply.
+    e.fixedSlots.forEach((k, val) => slots.putIfAbsent(k, () => val));
+    return slots;
   }
 
   // The slot types a learned template may use — the closed vocabulary [_compile] understands.
   // A cloud-suggested template naming anything else is rejected (never compiled into the corpus).
   static const _knownSlotTypes = {
-    'text', 'date', 'datetime', 'quantity', 'entity', 'contact',
+    'text', 'date', 'futuredate', 'datetime', 'quantity', 'entity', 'contact',
     'dayword', 'pastday', 'posword', 'moodword', 'mealword', 'predword'
   };
+
+  // Stop-words that don't make a template specific — a template whose only literal is one of these
+  // (or bare punctuation) is a near-catch-all and must never be learned.
+  static const _weakLiterals = {
+    'i', 'a', 'an', 'my', 'me', 'the', 'im', "i'm", 'is', 'it', 'to', 'on', 'at', 'of', 'in', 'you',
+    'so', 'no', 'do', 'we', 'that', 'this', 'and', 'or', 'for', 'be', 'am', 'was', 'had', 'have'
+  };
+  /// True iff the template keeps at least one literal WORD (≥2 letters) that isn't a stop-word, so a
+  /// learned template can't be a catch-all ("{x:text}") or near-catch-all ("i'm {mood:text}").
+  static bool _hasStrongLiteral(String template) {
+    final lit = template.replaceAll(RegExp(r'\{\w+:\w+\}'), ' ');
+    for (final m in RegExp('[A-Za-z]{2,}').allMatches(lit)) {
+      if (!_weakLiterals.contains(m.group(0)!.toLowerCase())) return true;
+    }
+    return false;
+  }
 
   /// Learn a template SUGGESTED by the cloud in the same routing call (Spec 05 §5.2, the
   /// "gets better with use" loop). Unlike [learn] — which reconstructs a template by finding
@@ -318,14 +352,17 @@ class Router {
       String template, {DateTime? clock, Set<String> contacts = const {}}) {
     final t = template.trim();
     final asOf = clock ?? now;
-    // 1. Only the closed slot-type vocabulary; placeholders must be well-formed.
+    // 1. Only the closed slot-type vocabulary; placeholders well-formed, bounded, and NAMED
+    //    (not `_`, which produces no slot so the round-trip can't validate it).
     final phs = RegExp(r'\{(\w+):(\w+)\}').allMatches(t).toList();
     if (phs.isEmpty) return null; // a template with no slots is just a memorized utterance
+    if (phs.length > 4) return null; // cap: many free-text slots invite catastrophic regex backtracking
     for (final m in phs) {
-      if (!_knownSlotTypes.contains(m.group(2))) return null;
+      if (m.group(1) == '_' || !_knownSlotTypes.contains(m.group(2))) return null;
     }
-    // 2. A literal word must survive — else "{x:text}" compiles to `^(.+?)$` and hijacks routing.
-    if (t.replaceAll(RegExp(r'\{\w+:\w+\}'), ' ').trim().isEmpty) return null;
+    // 2. A STRONG literal must survive — else "{x:text}" (catch-all) or "i'm {mood:text}"
+    //    (near-catch-all) gets learned + persisted + inserted-first, hijacking all routing.
+    if (!_hasStrongLiteral(t)) return null;
     // 3. Nothing to add if it's already in the corpus.
     if (corpus.any((c) => c.template == t)) return null;
     // 4. It must compile, match THIS utterance, and round-trip to the SAME resolved slots.
@@ -409,6 +446,8 @@ class Router {
       case 'date':
       case 'dayword': // a constrained day expression — same resolution as a date slot
         return resolveDate(raw, asOf);
+      case 'futuredate': // a FORWARD-intent date — a bare month-day that passed rolls to next year
+        return resolveDate(raw, asOf, preferFuture: true);
       case 'pastday': // a BACKWARD-looking day expression — a bare weekday is the PREVIOUS one
         return _resolvePastday(raw, asOf);
       case 'datetime':
@@ -420,6 +459,14 @@ class Router {
         return raw;
     }
   }
+
+  /// Public entry for the cloud path: resolve a past-event date phrase backward (a `pastday`-typed
+  /// input, e.g. `log-interaction.at`). Bare "friday" → the PREVIOUS Friday, not the next one.
+  String? resolvePastday(String phrase, DateTime now) => _resolvePastday(phrase, now);
+
+  /// Public entry for the cloud path: resolve a FORWARD-intent date (a `futuredate` input, e.g.
+  /// `create-task.dueDate`). A bare month-day already past this year → next year (reviewer b #6).
+  String? resolveFutureDate(String phrase, DateTime now) => resolveDate(phrase, now, preferFuture: true);
 
   /// Resolve a BACKWARD-looking day expression: a bare weekday ("friday") is the PREVIOUS
   /// occurrence (you logged a past interaction), not the next one; everything else
@@ -437,8 +484,12 @@ class Router {
     return resolveDate(phrase, now);
   }
 
-  /// The deterministic date resolver (Spec 03 §6.2). Relative to [now].
-  String? resolveDate(String phrase, DateTime now) {
+  /// The deterministic date resolver (Spec 03 §6.2). Relative to [now]. When [preferFuture]
+  /// is set (a `futuredate` slot — a task due date, a reschedule), a bare month-day that
+  /// already fell earlier this year rolls to next year, since a due date in the past is never
+  /// what "add a todo for March 3" means. Birthdays/anchors keep the literal year (preferFuture
+  /// off) and roll forward at read time via next_annual instead (reviewer b #6).
+  String? resolveDate(String phrase, DateTime now, {bool preferFuture = false}) {
     var p = phrase.toLowerCase().trim();
     // Weekday ABBREVIATIONS ("sat", "on tue", "next thurs") -> full names, so the weekday
     // resolution below (which matches spelled-out days) handles them uniformly. Only a bare
@@ -486,8 +537,15 @@ class Router {
       const abbr = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
       return abbr.indexOf(tok.length >= 3 ? tok.substring(0, 3) : tok) + 1; // 0 = not a month
     }
-    String? fromMonthDay(int mm, int dd) =>
-        (mm > 0 && dd >= 1 && dd <= 31) ? iso(DateTime(now.year, mm, dd)) : null;
+    String? fromMonthDay(int mm, int dd) {
+      if (mm <= 0 || dd < 1 || dd > 31) return null;
+      var d = DateTime(now.year, mm, dd);
+      // a due/reschedule date that already passed this year means NEXT year's occurrence
+      if (preferFuture && d.isBefore(DateTime(now.year, now.month, now.day))) {
+        d = DateTime(now.year + 1, mm, dd);
+      }
+      return iso(d);
+    }
     // "march 3", "mar 3rd", "on july 12"  (month then day)
     final m1 = RegExp(r'^(?:on\s+)?([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?$').firstMatch(p);
     if (m1 != null) {

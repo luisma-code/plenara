@@ -486,8 +486,25 @@ class Session {
       final name = i['name'], type = i['type'];
       if (name is! String || slots[name] is! String) continue;
       if (type == 'date') slots[name] = router.resolveDate(slots[name] as String, now);
+      // a FORWARD-intent date (e.g. create-task.dueDate): a bare month-day that already passed
+      // this year rolls to next year — no due dates in the past (reviewer b #6).
+      if (type == 'futuredate') slots[name] = router.resolveFutureDate(slots[name] as String, now);
       if (type == 'datetime') slots[name] = router.resolveDateTime(slots[name] as String, now);
+      // a PAST-event date (e.g. log-interaction.at): a bare "tuesday" is the PREVIOUS Tuesday, not
+      // the next — else a past interaction gets stamped with a future date (reviews a#4 / b#2).
+      if (type == 'pastday') slots[name] = router.resolvePastday(slots[name] as String, now);
     }
+  }
+
+  /// Normalise a raw slot value from any router before it reaches a resolver or gets persisted.
+  /// The cloud sometimes fills an absent optional slot with a sentinel ("none"/"null") or a blank
+  /// string; both must become a real null so the skill's own isNull branches fire and no
+  /// whitespace-only "note"/"kind" is stored as a present value (reviewer b #7).
+  static dynamic _sanitizeSlot(dynamic v) {
+    if (v is! String) return v;
+    final t = v.trim();
+    if (t.isEmpty || t.toLowerCase() == 'none' || t.toLowerCase() == 'null') return null;
+    return v;
   }
 
   /// On-open nudge lines (the UI shows these on launch). Two derived sources, so
@@ -1001,10 +1018,11 @@ class Session {
       final done = <String>[];
       var skipped = 0;
       final journalBefore = _journal.length;
+      final seen = <String>{}; // dedup: a cloud split can emit the same record twice (reviewer a #8)
       for (final a in (routed['actions'] as List).cast<Map>()) {
         final sid = a['skillId'] as String?;
         final slots = (a['slots'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
-        slots.updateAll((k, v) => (v is String && const {'none', 'null'}.contains(v.trim().toLowerCase())) ? null : v);
+        slots.updateAll((k, v) => _sanitizeSlot(v));
         if (sid == null || !skills.containsKey(sid)) {
           skipped++; // an unusable action is NOT silently dropped — the reply admits it below
           continue;
@@ -1014,6 +1032,11 @@ class Session {
           skipped++;
           continue;
         }
+        // Resolve-then-dedup: two actions that normalise to the same skill + slots are ONE
+        // record, not two (a duplicated "dinner with Katherine" would otherwise double-write).
+        final key = '$sid|${(slots.entries.toList()..sort((x, y) => x.key.compareTo(y.key)))
+            .map((e) => '${e.key}=${e.value}').join('&')}';
+        if (!seen.add(key)) continue; // silent — a dedup'd duplicate isn't a "skipped" failure
         // One bad action (model-shaped slots hitting a resolver, a clarify throw) must not abort
         // the batch after earlier actions already persisted, nor let handle()'s catch-all falsely
         // claim nothing was done (review #18). Contain it and count it as skipped.
@@ -1052,8 +1075,7 @@ class Session {
     // normalize leaked sentinel slot values from any source before they reach a
     // resolver (a replayed/live "none" for an absent date would otherwise persist
     // as garbage; the crash it once caused is already handled in _asDate).
-    (routed['slots'] as Map?)?.updateAll(
-        (k, v) => (v is String && const {'none', 'null'}.contains(v.trim().toLowerCase())) ? null : v);
+    (routed['slots'] as Map?)?.updateAll((k, v) => _sanitizeSlot(v));
     // The corpus types its slots via the template; the cloud returns raw strings, so
     // normalize any date/datetime input the routed skill declares (Spec 03 §6.2).
     // A cloud "2026-07-08" for a datetime slot -> null (no midnight reminders); a raw
@@ -1131,7 +1153,14 @@ class Session {
             : router.learnSuggested(utterance, skillId, slots, learnTemplate,
                 clock: now, contacts: _knownContactTokens());
         tmpl ??= router.learn(utterance, skillId, slots, contacts: _knownContactTokens());
-        if (tmpl != null) repo.appendCorpusLearned({'skillId': skillId, 'template': tmpl});
+        if (tmpl != null) {
+          repo.appendCorpusLearned({'skillId': skillId, 'template': tmpl});
+          // If the cloud misread this turn and we just LEARNED from it, a next-turn "no, I
+          // meant…" must be able to forget that fresh template — else the bad pattern re-routes
+          // future utterances. The matched-template branch at line ~1106 can't see it (the cloud
+          // path has no corpus `template`), so record it here (reviewer a #6).
+          _lastTurnTemplate = tmpl;
+        }
       }
       return plan.confirmation ?? 'Done.';
     } on ResolveError catch (e) {

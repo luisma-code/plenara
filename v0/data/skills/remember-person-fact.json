@@ -59,19 +59,6 @@
         ]
       },
       {
-        "op": "write_record",
-        "typeId": "contact_fact",
-        "fields": {
-          "subject": {
-            "ref": "person"
-          },
-          "fact": {
-            "var": "fact"
-          }
-        },
-        "into": "newFact"
-      },
-      {
         "op": "branch",
         "cond": {
           "notNull": "relationTo"
@@ -107,6 +94,7 @@
             ]
           },
           {
+            "_comment": "De-collide BEFORE writing the fact: if personName and relationTo fuzzy-resolved to the SAME record, rebind person to a fresh contact so the fact attaches to the right person and the relationship isn't a self-loop (reviewer b #3).",
             "op": "branch",
             "cond": { "eq": [ { "field": [ "person", "id" ] }, { "field": [ "relative", "id" ] } ] },
             "then": [
@@ -114,22 +102,42 @@
             ]
           },
           {
-            "op": "write_record",
-            "typeId": "contact_relationship",
-            "fields": {
-              "from": {
-                "ref": "relative"
-              },
-              "to": {
-                "ref": "person"
-              },
-              "relationType": {
-                "var": "relationType"
+            "_comment": "Only record a relationship when we actually captured its TYPE — a notNull relationTo alone would write a relationship with a null relationType (reviewer b #5).",
+            "op": "branch",
+            "cond": { "notNull": "relationType" },
+            "then": [
+              {
+                "op": "write_record",
+                "typeId": "contact_relationship",
+                "fields": {
+                  "from": {
+                    "ref": "relative"
+                  },
+                  "to": {
+                    "ref": "person"
+                  },
+                  "relationType": {
+                    "var": "relationType"
+                  }
+                },
+                "into": "newRel"
               }
-            },
-            "into": "newRel"
+            ]
           }
         ]
+      },
+      {
+        "op": "write_record",
+        "typeId": "contact_fact",
+        "fields": {
+          "subject": {
+            "ref": "person"
+          },
+          "fact": {
+            "var": "fact"
+          }
+        },
+        "into": "newFact"
       },
       {
         "op": "format",

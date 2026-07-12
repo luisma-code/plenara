@@ -208,6 +208,22 @@ void main() {
       final w = s.store.values.firstWhere((x) => x['typeId'] == 'workout');
       expect(w['activity'].toString().toLowerCase(), contains('bike'));
     });
+    test('offline interaction captures kind + a past date, and the list renders both (b #1/#4/#8)', () async {
+      final s = await _session();
+      final logged = await s.handle('had dinner with Katherine yesterday');
+      expect(logged.toLowerCase(), contains('dinner'));
+      final rec = s.store.values.firstWhere((x) => x['typeId'] == 'interaction');
+      expect(rec['kind'], 'dinner');
+      expect(rec['at'], '2026-07-05'); // yesterday, resolved backward — not a future date
+      final list = await s.handle('list my interactions with Katherine');
+      expect(list, contains('dinner')); // the kind is shown in the line
+    });
+    test('last-interaction names the kind of the most recent one (b #8)', () async {
+      final s = await _session();
+      await s.handle('had coffee with Priya');
+      final last = await s.handle('when did i last talk to Priya');
+      expect(last.toLowerCase(), contains('coffee'));
+    });
     test('list-meals shows today\'s meals', () async {
       final s = await _session();
       await s.handle('i ate a banana');
