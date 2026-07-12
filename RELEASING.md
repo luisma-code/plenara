@@ -52,10 +52,12 @@ The gaps the review found were **not structural** — they were (a) things the s
    (`plenara-vN-win-x64.msix`, `plenara-vN-macos-universal.dmg`) + a `SHA256SUMS`; `flutter build
    macos --release` is a universal (arm64+x86_64) binary by default, so one macOS artifact suffices.
    Record per-OS runnable status per version in `releases/VERSIONS.md`.
-5. **[Windows, can trail] MSIX + signing.** The raw zip is unsigned (SmartScreen wall) and
-   identity-less — which is *also* why reminder `cancel` is a native no-op (a deleted reminder's
-   toast still fires). The `msix` pub package gives identity (real AUMID + cancel), declares the VC++
-   dependency, and is signable. Self-signed for dogfood; a real cert for public.
+5. **[Windows — CONFIGURED, validated] MSIX + signing.** The `msix` dev dep + `msix_config` are in
+   `app/pubspec.yaml`, and `dart run msix:create` was verified to produce a signed 22.8 MB
+   `plenara_app.msix` (test cert). MSIX gives identity → a real AUMID (so reminder `cancel` actually
+   works, vs the no-op on the unpackaged zip) and declares the VC++ dependency. **Remaining:** run
+   with `--install-certificate false` in CI (non-interactive), and supply a real Developer cert for
+   public distribution (test cert only self-installs for dogfood).
 6. **[polish] Real `readme.md`** (it's literally "Placeholder") with per-OS install notes
    (macOS right-click-open until notarized; Windows SmartScreen until signed; model download; BYOK).
 

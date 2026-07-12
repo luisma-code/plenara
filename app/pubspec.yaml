@@ -55,6 +55,24 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  # Windows installer packaging (RELEASING.md #5): `dart run msix:create` produces a signed,
+  # identity-bearing MSIX. Identity is what gives the app a real AUMID (so reminder cancel actually
+  # works, vs the no-op on the unpackaged zip) and declares the VC++ dependency. For dogfood the
+  # tool signs with a generated test cert; a real Developer cert for public distribution.
+  msix: ^3.16.8
+
+# MSIX packaging config (consumed by `dart run msix:create`). Version is the pubspec version with a
+# 4th part (msix requires x.y.z.0). See RELEASING.md for the signing/distribution steps.
+msix_config:
+  display_name: Plenara
+  publisher_display_name: Plenara
+  identity_name: com.plenara.app
+  msix_version: 0.7.0.0
+  capabilities: internetClient
+  # Validated: `dart run msix:create` produces a signed 22.8 MB plenara_app.msix. For a
+  # non-interactive build (CI), add `--install-certificate false` so the tool doesn't prompt to
+  # trust the generated test cert. For public distribution supply a real Developer cert via
+  # certificate_path/certificate_password instead of the generated test cert.
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
