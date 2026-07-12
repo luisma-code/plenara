@@ -1,0 +1,45 @@
+{
+  "skillId": "recall-mood",
+  "displayName": "Show your recent moods",
+  "reads": [
+    "mood"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "read_many", "typeId": "mood", "into": "moods" },
+      { "op": "set", "var": "lines", "value": "" },
+      {
+        "op": "foreach",
+        "list": { "var": "moods" },
+        "as": "m",
+        "body": [
+          {
+            "op": "compute",
+            "fn": "concat",
+            "args": [
+              { "var": "lines" },
+              "\n  • ",
+              { "field": [ "m", "loggedAt" ] },
+              ": ",
+              { "field": [ "m", "rating" ] }
+            ],
+            "into": "lines"
+          }
+        ]
+      },
+      { "op": "compute", "fn": "count", "args": [ { "var": "moods" } ], "into": "n" },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "You've logged {n} mood(s):{lines}", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "You haven't logged any moods yet.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

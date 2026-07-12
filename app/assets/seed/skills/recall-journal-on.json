@@ -1,0 +1,47 @@
+{
+  "skillId": "recall-journal-on",
+  "displayName": "Read journal entries from a day",
+  "reads": [
+    "journal_entry"
+  ],
+  "writes": [],
+  "inputs": [
+    { "name": "day", "required": true, "type": "date" }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "journal_entry",
+        "filter": { "field": "loggedAt", "op": "eq", "value": { "var": "day" } },
+        "into": "entries"
+      },
+      { "op": "set", "var": "lines", "value": "" },
+      {
+        "op": "foreach",
+        "list": { "var": "entries" },
+        "as": "e",
+        "body": [
+          {
+            "op": "compute",
+            "fn": "concat",
+            "args": [ { "var": "lines" }, "\n  • ", { "field": [ "e", "entry" ] } ],
+            "into": "lines"
+          }
+        ]
+      },
+      { "op": "compute", "fn": "count", "args": [ { "var": "entries" } ], "into": "n" },
+      { "op": "compute", "fn": "format_date", "args": [ { "var": "day" }, "EEEE" ], "into": "dayLabel" },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "What you wrote {dayLabel}:{lines}", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "You didn't journal anything {dayLabel}.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

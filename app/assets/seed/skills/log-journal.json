@@ -1,0 +1,30 @@
+{
+  "skillId": "log-journal",
+  "displayName": "Write a journal entry",
+  "reads": [],
+  "writes": [
+    "journal_entry"
+  ],
+  "inputs": [
+    { "name": "entry", "required": true }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      {
+        "op": "write_record",
+        "typeId": "journal_entry",
+        "fields": {
+          "entry": { "var": "entry" },
+          "loggedAt": { "var": "today" }
+        },
+        "into": "j"
+      },
+      {
+        "op": "format",
+        "template": "Saved to your journal.",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

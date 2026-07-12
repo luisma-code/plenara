@@ -1,0 +1,86 @@
+{
+  "skillId": "count-runs-this-week",
+  "displayName": "How much you've run this week / since Monday (total running distance, week-to-date)",
+  "reads": [
+    "workout"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "compute",
+        "fn": "start_of_week",
+        "args": [
+          {
+            "fn": "today"
+          }
+        ],
+        "into": "weekStart"
+      },
+      {
+        "op": "read_many",
+        "typeId": "workout",
+        "filter": {
+          "field": "activity",
+          "op": "eq",
+          "value": "run"
+        },
+        "into": "runs"
+      },
+      {
+        "op": "set",
+        "var": "total",
+        "value": 0
+      },
+      {
+        "op": "foreach",
+        "list": {
+          "var": "runs"
+        },
+        "as": "r",
+        "body": [
+          {
+            "op": "branch",
+            "cond": {
+              "gte": [
+                {
+                  "field": [
+                    "r",
+                    "date"
+                  ]
+                },
+                {
+                  "var": "weekStart"
+                }
+              ]
+            },
+            "then": [
+              {
+                "op": "compute",
+                "fn": "add",
+                "args": [
+                  {
+                    "var": "total"
+                  },
+                  {
+                    "field": [
+                      "r",
+                      "distance"
+                    ]
+                  }
+                ],
+                "into": "total"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op": "format",
+        "template": "You've run {total} km so far this week.",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

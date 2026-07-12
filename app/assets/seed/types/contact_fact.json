@@ -1,0 +1,9 @@
+{
+  "typeId": "contact_fact",
+  "displayName": "Contact Fact",
+  "parentType": "contact",
+  "attributes": [
+    { "name": "subject", "valueType": "entityRef", "refType": "contact", "required": true },
+    { "name": "fact", "valueType": "text", "required": true }
+  ]
+}

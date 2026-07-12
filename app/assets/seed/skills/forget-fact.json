@@ -1,0 +1,88 @@
+{
+  "skillId": "forget-fact",
+  "displayName": "Forget a noted fact about a person",
+  "reads": [
+    "contact",
+    "contact_fact"
+  ],
+  "writes": [
+    "contact_fact"
+  ],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "factQuery", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "partial": true,
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          {
+            "op": "format",
+            "template": "I don't have {personName} as a contact yet.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "read_related",
+            "typeId": "contact_fact",
+            "via": "subject",
+            "from": { "ref": "person" },
+            "into": "facts"
+          },
+          { "op": "set", "var": "removed", "value": 0 },
+          {
+            "op": "foreach",
+            "list": { "var": "facts" },
+            "as": "f",
+            "body": [
+              {
+                "op": "branch",
+                "cond": { "contains": [ { "field": [ "f", "fact" ] }, { "var": "factQuery" } ] },
+                "then": [
+                  {
+                    "op": "delete_record",
+                    "id": { "ref": "f" }
+                  },
+                  {
+                    "op": "compute",
+                    "fn": "add",
+                    "args": [ { "var": "removed" }, 1 ],
+                    "into": "removed"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "branch",
+            "cond": { "gte": [ { "var": "removed" }, 1 ] },
+            "then": [
+              {
+                "op": "format",
+                "template": "Okay — forgot that note about {personName}.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "I don't have a note like \"{factQuery}\" for {personName}.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "skillId": "total-distance",
+  "displayName": "Total distance run (all time)",
+  "reads": [
+    "workout"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "workout",
+        "filter": { "field": "activity", "op": "eq", "value": "run" },
+        "into": "runs"
+      },
+      { "op": "compute", "fn": "sum", "args": [ { "var": "runs" }, "distance" ], "into": "total" },
+      { "op": "compute", "fn": "count", "args": [ { "var": "runs" } ], "into": "n" },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "You've run {total} km across {n} run(s).", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "No runs logged yet.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

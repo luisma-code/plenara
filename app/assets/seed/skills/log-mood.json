@@ -1,0 +1,41 @@
+{
+  "skillId": "log-mood",
+  "displayName": "Log your mood",
+  "reads": [],
+  "writes": [
+    "mood"
+  ],
+  "inputs": [
+    {
+      "name": "rating",
+      "required": true
+    }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "compute",
+        "fn": "today",
+        "into": "today"
+      },
+      {
+        "op": "write_record",
+        "typeId": "mood",
+        "fields": {
+          "rating": {
+            "var": "rating"
+          },
+          "loggedAt": {
+            "var": "today"
+          }
+        },
+        "into": "m"
+      },
+      {
+        "op": "format",
+        "template": "Logged your mood as {rating}.",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

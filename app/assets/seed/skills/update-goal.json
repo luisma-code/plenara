@@ -1,0 +1,42 @@
+{
+  "skillId": "update-goal",
+  "displayName": "Change your running goal",
+  "reads": [ "goal" ],
+  "writes": [ "goal" ],
+  "inputs": [ { "name": "target", "required": true } ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      { "op": "compute", "fn": "concat", "args": [ "run ", { "var": "target" }, "km" ], "into": "desc" },
+      { "op": "read_one", "typeId": "goal", "match": { "activity": "run" }, "first": true, "into": "existing" },
+      {
+        "op": "branch",
+        "cond": { "notNull": "existing" },
+        "then": [
+          {
+            "op": "write_record",
+            "typeId": "goal",
+            "target": { "ref": "existing" },
+            "fields": { "description": { "var": "desc" }, "target": { "var": "target" } },
+            "into": "g"
+          },
+          { "op": "format", "template": "Updated your running goal to {target} km.", "into": "confirmationText" }
+        ],
+        "else": [
+          {
+            "op": "write_record",
+            "typeId": "goal",
+            "fields": {
+              "description": { "var": "desc" },
+              "target": { "var": "target" },
+              "activity": "run",
+              "createdAt": { "var": "today" }
+            },
+            "into": "g"
+          },
+          { "op": "format", "template": "Set a goal to run {target} km. I'll track your progress.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

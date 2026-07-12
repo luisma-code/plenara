@@ -1,0 +1,383 @@
+{
+  "templateId": "water",
+  "displayName": "water tracking",
+  "keywords": [
+    "water",
+    "hydration",
+    "water intake",
+    "drinking water",
+    "my water"
+  ],
+  "example": "log 500ml of water",
+  "types": [
+    {
+      "typeId": "hydration",
+      "displayName": "Water",
+      "attributes": [
+        {
+          "name": "amount",
+          "valueType": "decimal",
+          "required": false
+        },
+        {
+          "name": "loggedAt",
+          "valueType": "date",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "skillId": "log-water",
+      "displayName": "Log water",
+      "reads": [],
+      "writes": [
+        "hydration"
+      ],
+      "inputs": [
+        {
+          "name": "amount",
+          "required": false
+        }
+      ],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "today",
+            "into": "today"
+          },
+          {
+            "op": "write_record",
+            "typeId": "hydration",
+            "fields": {
+              "amount": {
+                "var": "amount"
+              },
+              "loggedAt": {
+                "var": "today"
+              }
+            },
+            "into": "w"
+          },
+          {
+            "op": "branch",
+            "cond": {
+              "notNull": "amount"
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "Logged {amount} ml of water.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "Logged a glass of water.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "skillId": "water-today",
+      "displayName": "Water logged today",
+      "reads": [
+        "hydration"
+      ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "today",
+            "into": "today"
+          },
+          {
+            "op": "read_many",
+            "typeId": "hydration",
+            "into": "logs"
+          },
+          {
+            "op": "set",
+            "var": "total",
+            "value": 0
+          },
+          {
+            "op": "foreach",
+            "list": {
+              "var": "logs"
+            },
+            "as": "e",
+            "body": [
+              {
+                "op": "branch",
+                "cond": {
+                  "gte": [
+                    {
+                      "field": [
+                        "e",
+                        "loggedAt"
+                      ]
+                    },
+                    {
+                      "var": "today"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "add",
+                    "args": [
+                      {
+                        "var": "total"
+                      },
+                      {
+                        "field": [
+                          "e",
+                          "amount"
+                        ]
+                      }
+                    ],
+                    "into": "total"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "format",
+            "template": "You've logged {total} ml of water today.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    },
+    {
+      "skillId": "water-this-week",
+      "displayName": "Water this week",
+      "reads": [
+        "hydration"
+      ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "start_of_week",
+            "args": [
+              {
+                "fn": "today"
+              }
+            ],
+            "into": "today"
+          },
+          {
+            "op": "read_many",
+            "typeId": "hydration",
+            "into": "logs"
+          },
+          {
+            "op": "set",
+            "var": "total",
+            "value": 0
+          },
+          {
+            "op": "foreach",
+            "list": {
+              "var": "logs"
+            },
+            "as": "e",
+            "body": [
+              {
+                "op": "branch",
+                "cond": {
+                  "gte": [
+                    {
+                      "field": [
+                        "e",
+                        "loggedAt"
+                      ]
+                    },
+                    {
+                      "var": "today"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "add",
+                    "args": [
+                      {
+                        "var": "total"
+                      },
+                      {
+                        "field": [
+                          "e",
+                          "amount"
+                        ]
+                      }
+                    ],
+                    "into": "total"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "format",
+            "template": "You've logged {total} ml of water this week.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    }
+  ],
+  "corpus": [
+    {
+      "skillId": "log-water",
+      "template": "log {amount:quantity}ml of water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "i drank {amount:quantity}ml of water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "log a glass of water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "i drank a glass of water"
+    },
+    {
+      "skillId": "water-today",
+      "template": "how much water today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "how much water have i had today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "how much water did i drink today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "water today"
+    },
+    {
+      "skillId": "log-water",
+      "template": "i drank {amount:quantity} ml of water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "drank {amount:quantity}ml of water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "log {amount:quantity} ml of water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "add {amount:quantity}ml to my water log"
+    },
+    {
+      "skillId": "log-water",
+      "template": "had a glass of water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "i had a glass of water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "just drank a glass of water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "another glass of water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "drank some water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "i drank some water"
+    },
+    {
+      "skillId": "log-water",
+      "template": "log water"
+    },
+    {
+      "skillId": "water-today",
+      "template": "what's my water intake today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "how much water so far today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "how much water have i drunk today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "my water today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "water intake today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "total water today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "how many ml of water today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "how much water have i logged today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "show me my water today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "hydration today"
+    },
+    {
+      "skillId": "water-today",
+      "template": "what's my hydration today"
+    },
+    {
+      "skillId": "water-this-week",
+      "template": "how much water this week"
+    },
+    {
+      "skillId": "water-this-week",
+      "template": "water this week"
+    },
+    {
+      "skillId": "water-this-week",
+      "template": "how much have i had to drink this week"
+    },
+    {
+      "skillId": "water-this-week",
+      "template": "how much water have i drunk this week"
+    }
+  ]
+}

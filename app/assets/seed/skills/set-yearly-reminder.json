@@ -1,0 +1,30 @@
+{
+  "skillId": "set-yearly-reminder",
+  "displayName": "Set a yearly recurring reminder",
+  "reads": [],
+  "writes": [
+    "reminder"
+  ],
+  "inputs": [
+    { "name": "text", "required": true },
+    { "name": "when", "required": true, "type": "datetime", "prompt": "Which date? (e.g. \"March 3 at 9am\")" }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "now", "into": "createdAt" },
+      {
+        "op": "write_record",
+        "typeId": "reminder",
+        "fields": {
+          "text": { "var": "text" },
+          "remindAt": { "var": "when" },
+          "recurrence": "yearly",
+          "createdAt": { "var": "createdAt" }
+        },
+        "into": "newReminder"
+      },
+      { "op": "compute", "fn": "format_date", "args": [ { "var": "when" } ], "into": "dateLabel" },
+      { "op": "format", "template": "Okay — I'll remind you to {text} every year on {dateLabel}.", "into": "confirmationText" }
+    ]
+  }
+}

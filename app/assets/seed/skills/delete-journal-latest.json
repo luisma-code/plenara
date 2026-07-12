@@ -1,0 +1,36 @@
+{
+  "skillId": "delete-journal-latest",
+  "displayName": "Delete your latest journal entry",
+  "reads": [
+    "journal_entry"
+  ],
+  "writes": [
+    "journal_entry"
+  ],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "journal_entry",
+        "orderBy": "loggedAt",
+        "orderDir": "desc",
+        "limit": 1,
+        "into": "logs"
+      },
+      { "op": "compute", "fn": "nth", "args": [ { "var": "logs" }, 1 ], "into": "target" },
+      {
+        "op": "branch",
+        "cond": { "notNull": "target" },
+        "then": [
+          { "op": "set", "var": "entry", "value": { "field": [ "target", "entry" ] } },
+          { "op": "delete_record", "id": { "field": [ "target", "id" ] } },
+          { "op": "format", "template": "Deleted your last journal entry: \"{entry}\". (Say \"undo that\" to restore it.)", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "You don't have any journal entries to delete.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

@@ -22,38 +22,38 @@ The gaps the review found were **not structural** — they were (a) things the s
 - **Scheduler selection** → a single `_platformScheduler()` factory that logs the no-native fallback.
 - **`precheck.sh`** → toolchain-agnostic (`.tools` else `PATH`) + host-OS build, so the quality gate
   survives the move to a Mac. **`.flutter-version`** pins 3.44.5. Real app **version** (0.7.0+7).
+- **[was the #1 BLOCKER] Seed data now bundled as assets.** `v0/data` (the built-in def set) is
+  mirrored into `app/assets/seed/` by `tool/sync_seed.sh` and extracted on first run
+  (`seed_assets.dart`) into a staging dir that the unchanged, filesystem-pure `ensureSeeded` copies
+  from — so a shipped binary seeds itself with **no repo present**. `PLENARA_SEED_DIR` stays a dev
+  override; `precheck.sh` guards the mirror against drift. Verified hermetically (app tests).
+  *Still open (release #2, not a blocker):* seed is copy-once, so v8+ def changes won't reach
+  existing installs — version the seed set + reconcile via MigrationRunner.
 
 ## Must-do before the first macOS *release* (ordered)
 
-1. **[BLOCKER] Bundle `v0/data` as app assets.** First-run seeding copies built-in defs from a
-   filesystem path (`PLENARA_SEED_DIR` / a `Z:\` default) and `ensureSeeded` throws if absent — so a
-   distributed `.app`/`.exe` **cannot start** without the repo next to it. `v0` is pure Dart and
-   can't declare Flutter assets, so: copy `v0/data/**` into `app/assets/seed/` (build step or
-   checked-in), list it in pubspec, add an app-layer extractor (enumerate `AssetManifest` → write
-   JSONs to a staging dir → reuse the existing dir-to-dir `ensureSeeded`). Keep `PLENARA_SEED_DIR` as
-   a dev override. *Sub-item:* seed is copy-once — version the seed set + reconcile via MigrationRunner before release #2.
-2. **[gate] Stand up 2-OS CI** (`windows-latest` + `macos-latest`) running the same `precheck.sh`.
+1. **[gate] Stand up 2-OS CI** (`windows-latest` + `macos-latest`) running the same `precheck.sh`.
    The pure-Dart engine suite runs identically on both; the per-OS delta is just `flutter build` +
    widget tests. Without it, the Windows build stops being verified the day the dev machine is a Mac.
-3. **[macOS] Sign + notarize.** `Developer ID Application` cert → set `DEVELOPMENT_TEAM` in
+2. **[macOS] Sign + notarize.** `Developer ID Application` cert → set `DEVELOPMENT_TEAM` in
    `Configs/AppInfo.xcconfig` → `codesign --options runtime` (sign nested onnxruntime/sherpa dylibs
    inside-out, **not** `--deep`) → `xcrun notarytool submit` → `stapler staple` → ship a DMG. Without
    this, a downloaded `.app` is Gatekeeper-blocked ("damaged"). Watch hardened-runtime vs onnxruntime
    (may need `com.apple.security.cs.allow-unsigned-executable-memory` — verify at notarization).
-4. **[both] STT model on first run.** Whisper is hand-placed at `~/.plenara/models/en-whisper` today
+3. **[both] STT model on first run.** Whisper is hand-placed at `~/.plenara/models/en-whisper` today
    and silently degrades to SAPI/Apple Speech if absent. Host the int8 subset (~75 MB:
    `base.en-{encoder,decoder}.int8.onnx` + tokens + `silero_vad.onnx`) as a versioned Release asset
    with SHA256; add a Settings/onboarding "Download voice model" flow (temp → checksum → atomic
    rename). Make the fallback *visible* ("voice model: not installed").
-5. **[both] Per-OS artifact matrix + real versions.** Name artifacts per tag
+4. **[both] Per-OS artifact matrix + real versions.** Name artifacts per tag
    (`plenara-vN-win-x64.msix`, `plenara-vN-macos-universal.dmg`) + a `SHA256SUMS`; `flutter build
    macos --release` is a universal (arm64+x86_64) binary by default, so one macOS artifact suffices.
    Record per-OS runnable status per version in `releases/VERSIONS.md`.
-6. **[Windows, can trail] MSIX + signing.** The raw zip is unsigned (SmartScreen wall) and
+5. **[Windows, can trail] MSIX + signing.** The raw zip is unsigned (SmartScreen wall) and
    identity-less — which is *also* why reminder `cancel` is a native no-op (a deleted reminder's
    toast still fires). The `msix` pub package gives identity (real AUMID + cancel), declares the VC++
    dependency, and is signable. Self-signed for dogfood; a real cert for public.
-7. **[polish] Real `readme.md`** (it's literally "Placeholder") with per-OS install notes
+6. **[polish] Real `readme.md`** (it's literally "Placeholder") with per-OS install notes
    (macOS right-click-open until notarized; Windows SmartScreen until signed; model download; BYOK).
 
 ## Deferred seam refinements (from the review; not release-blocking)

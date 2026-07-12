@@ -1,0 +1,110 @@
+{
+  "skillId": "last-interaction",
+  "displayName": "When you last talked to someone",
+  "reads": [
+    "contact",
+    "interaction"
+  ],
+  "writes": [],
+  "inputs": [
+    { "name": "personName", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "partial": true,
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          {
+            "op": "format",
+            "template": "I don't have {personName} as a contact yet.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "read_related",
+            "typeId": "interaction",
+            "via": "subject",
+            "from": { "ref": "person" },
+            "into": "ints"
+          },
+          {
+            "op": "set",
+            "var": "latest",
+            "value": ""
+          },
+          { "op": "set", "var": "n", "value": 0 },
+          {
+            "op": "foreach",
+            "list": { "var": "ints" },
+            "as": "i",
+            "body": [
+              {
+                "op": "branch",
+                "cond": { "eq": [ { "field": [ "i", "planned" ] }, true ] },
+                "then": [],
+                "else": [
+                  { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" },
+                  {
+                    "op": "branch",
+                    "cond": { "gte": [ { "field": [ "i", "at" ] }, { "var": "latest" } ] },
+                    "then": [
+                      { "op": "set", "var": "latest", "value": { "field": [ "i", "at" ] } },
+                      { "op": "set", "var": "latestKind", "value": { "field": [ "i", "kind" ] } }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "branch",
+            "cond": { "gte": [ { "var": "n" }, 1 ] },
+            "then": [
+              {
+                "op": "compute",
+                "fn": "format_date",
+                "args": [ { "var": "latest" }, "EEEE" ],
+                "into": "dayLabel"
+              },
+              {
+                "_comment": "Name the kind of the most recent interaction when we have it ('Your last dinner with…'), else fall back to the generic 'talked to' phrasing (reviewer b #8).",
+                "op": "branch",
+                "cond": { "notNull": "latestKind" },
+                "then": [
+                  {
+                    "op": "format",
+                    "template": "Your last {latestKind} with {personName} was on {latest} ({dayLabel}).",
+                    "into": "confirmationText"
+                  }
+                ],
+                "else": [
+                  {
+                    "op": "format",
+                    "template": "You last talked to {personName} on {latest} ({dayLabel}).",
+                    "into": "confirmationText"
+                  }
+                ]
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "You haven't logged talking to {personName} yet.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

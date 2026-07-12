@@ -1,0 +1,9 @@
+{
+  "typeId": "contact_relationship",
+  "displayName": "Contact Relationship",
+  "attributes": [
+    { "name": "from", "valueType": "entityRef", "refType": "contact", "required": true },
+    { "name": "to", "valueType": "entityRef", "refType": "contact", "required": true },
+    { "name": "relationType", "valueType": "text", "required": true }
+  ]
+}

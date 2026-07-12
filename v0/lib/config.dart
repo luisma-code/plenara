@@ -77,9 +77,15 @@ void saveConfig({required String dataDir, String? apiKey, bool? freeTier, String
 /// corpus) into [dataDir] if it has none yet, from [sourceDir]. Records, authored
 /// defs, and the learned corpus accrete in [dataDir] thereafter — so the whole
 /// "capabilities are data" surface lives in the user's own synced folder.
-void ensureSeeded(String dataDir, String sourceDir) {
+/// True iff [dataDir] already holds seeded capability defs — the same short-circuit [ensureSeeded]
+/// uses. Exposed so the app can skip the (async) first-run asset extraction when it isn't needed.
+bool isSeeded(String dataDir) {
   final types = Directory('$dataDir/types');
-  if (types.existsSync() && types.listSync().whereType<File>().isNotEmpty) return; // already seeded
+  return types.existsSync() && types.listSync().whereType<File>().isNotEmpty;
+}
+
+void ensureSeeded(String dataDir, String sourceDir) {
+  if (isSeeded(dataDir)) return; // already seeded
   // FAIL LOUDLY if the shipped seed data isn't where we expect — otherwise a mis-configured install
   // silently creates empty dirs and boots with ZERO capabilities (every utterance clarify-fails).
   // NOTE (pre-distribution): the app still points sourceDir at a dev path; before shipping, bundle

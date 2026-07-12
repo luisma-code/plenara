@@ -1,0 +1,12 @@
+{
+  "skillId": "explain-task-list",
+  "displayName": "Explain the built-in task list",
+  "reads": [],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "format", "template": "You've already got a to-do list built in — just tell me things like \"add milk to my list\" and I'll track them. Say \"list my tasks\" to see everything, or \"remind me to call Sam at 5pm\" for a nudge.", "into": "confirmationText" }
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "skillId": "set-birthday",
+  "displayName": "Set someone's birthday",
+  "reads": [
+    "contact"
+  ],
+  "writes": [
+    "contact"
+  ],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "bday", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "resolve": true,
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          {
+            "op": "write_record",
+            "typeId": "contact",
+            "fields": {
+              "displayName": { "var": "personName" },
+              "birthday": { "var": "bday" }
+            },
+            "into": "p"
+          }
+        ],
+        "else": [
+          {
+            "op": "write_record",
+            "typeId": "contact",
+            "target": { "ref": "person" },
+            "fields": { "birthday": { "var": "bday" } },
+            "into": "p"
+          }
+        ]
+      },
+      {
+        "op": "format",
+        "template": "Got it — I'll remember {personName}'s birthday.",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

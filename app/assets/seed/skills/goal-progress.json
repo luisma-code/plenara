@@ -1,0 +1,40 @@
+{
+  "skillId": "goal-progress",
+  "displayName": "Progress toward the running goal",
+  "reads": [ "goal", "workout" ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "goal", "match": { "activity": "run" }, "first": true, "into": "goal" },
+      {
+        "op": "branch",
+        "cond": { "isNull": "goal" },
+        "then": [ { "op": "format", "template": "You haven't set a running goal yet — try \"set a goal to run 50k\".", "into": "confirmationText" } ],
+        "else": [
+          { "op": "set", "var": "target", "value": { "field": [ "goal", "target" ] } },
+          { "op": "compute", "fn": "today", "into": "today" },
+          { "op": "compute", "fn": "start_of_month", "args": [ { "var": "today" } ], "into": "monthStart" },
+          { "op": "read_many", "typeId": "workout", "filter": { "field": "activity", "op": "eq", "value": "run" }, "into": "runs" },
+          { "op": "set", "var": "total", "value": 0 },
+          {
+            "op": "foreach",
+            "list": { "var": "runs" },
+            "as": "r",
+            "body": [
+              {
+                "op": "branch",
+                "cond": { "gte": [ { "field": [ "r", "date" ] }, { "var": "monthStart" } ] },
+                "then": [ { "op": "compute", "fn": "add", "args": [ { "var": "total" }, { "field": [ "r", "distance" ] } ], "into": "total" } ]
+              }
+            ]
+          },
+          { "op": "compute", "fn": "div", "args": [ { "var": "total" }, { "var": "target" } ], "into": "frac" },
+          { "op": "compute", "fn": "mul", "args": [ 100, { "var": "frac" } ], "into": "pctRaw" },
+          { "op": "compute", "fn": "round", "args": [ { "var": "pctRaw" } ], "into": "pct" },
+          { "op": "format", "template": "This month you've run {total} km of your {target} km goal ({pct}%).", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

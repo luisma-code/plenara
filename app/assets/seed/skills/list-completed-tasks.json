@@ -1,0 +1,80 @@
+{
+  "skillId": "list-completed-tasks",
+  "displayName": "Completed tasks",
+  "reads": [
+    "task"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "task",
+        "filter": {
+          "field": "completed",
+          "op": "eq",
+          "value": true
+        },
+        "into": "done"
+      },
+      {
+        "op": "set",
+        "var": "out",
+        "value": ""
+      },
+      {
+        "op": "foreach",
+        "list": {
+          "var": "done"
+        },
+        "as": "t",
+        "body": [
+          {
+            "op": "compute",
+            "fn": "concat",
+            "args": [
+              {
+                "var": "out"
+              },
+              "• ",
+              {
+                "field": [
+                  "t",
+                  "description"
+                ]
+              },
+              "\n"
+            ],
+            "into": "out"
+          }
+        ]
+      },
+      {
+        "op": "branch",
+        "cond": {
+          "eq": [
+            {
+              "var": "out"
+            },
+            ""
+          ]
+        },
+        "then": [
+          {
+            "op": "format",
+            "template": "You haven't completed any tasks yet.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "format",
+            "template": "Completed:\n{out}",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}

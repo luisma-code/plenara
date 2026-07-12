@@ -1,0 +1,62 @@
+{
+  "skillId": "remove-alias",
+  "displayName": "Remove a nickname",
+  "reads": [
+    "contact"
+  ],
+  "writes": [
+    "contact"
+  ],
+  "inputs": [
+    {
+      "name": "personName",
+      "required": true
+    }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": {
+          "displayName": {
+            "var": "personName"
+          }
+        },
+        "partial": true,
+        "into": "c"
+      },
+      {
+        "op": "branch",
+        "cond": {
+          "isNull": "c"
+        },
+        "then": [
+          {
+            "op": "format",
+            "template": "I don't know anyone named {personName}.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "write_record",
+            "typeId": "contact",
+            "fields": {
+              "aliases": ""
+            },
+            "into": "c2",
+            "target": {
+              "ref": "c"
+            }
+          },
+          {
+            "op": "format",
+            "template": "Cleared {personName}'s nicknames.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}

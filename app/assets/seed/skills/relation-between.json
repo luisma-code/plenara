@@ -1,0 +1,67 @@
+{
+  "skillId": "relation-between",
+  "displayName": "How two people are related",
+  "reads": [ "contact", "contact_relationship" ],
+  "writes": [],
+  "inputs": [
+    { "name": "personA", "required": true },
+    { "name": "personB", "required": true }
+  ],
+  "steps": {
+    "main": [
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personA" } }, "partial": true, "into": "a" },
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personB" } }, "partial": true, "into": "b" },
+      {
+        "op": "branch",
+        "cond": { "isNull": "a" },
+        "then": [ { "op": "format", "template": "I don't have {personA} as a contact yet.", "into": "confirmationText" } ],
+        "else": [
+          {
+            "op": "branch",
+            "cond": { "isNull": "b" },
+            "then": [ { "op": "format", "template": "I don't have {personB} as a contact yet.", "into": "confirmationText" } ],
+            "else": [
+              { "op": "set", "var": "answer", "value": "" },
+              { "op": "read_related", "typeId": "contact_relationship", "via": "from", "from": { "ref": "a" }, "into": "relsA" },
+              {
+                "op": "foreach",
+                "list": { "var": "relsA" },
+                "as": "rel",
+                "body": [
+                  {
+                    "op": "branch",
+                    "cond": { "eq": [ { "field": [ "rel", "to" ] }, { "field": [ "b", "id" ] } ] },
+                    "then": [
+                      { "op": "compute", "fn": "concat", "args": [ { "var": "personB" }, " is ", { "var": "personA" }, "'s ", { "field": [ "rel", "relationType" ] }, "." ], "into": "answer" }
+                    ]
+                  }
+                ]
+              },
+              { "op": "read_related", "typeId": "contact_relationship", "via": "from", "from": { "ref": "b" }, "into": "relsB" },
+              {
+                "op": "foreach",
+                "list": { "var": "relsB" },
+                "as": "rel",
+                "body": [
+                  {
+                    "op": "branch",
+                    "cond": { "eq": [ { "field": [ "rel", "to" ] }, { "field": [ "a", "id" ] } ] },
+                    "then": [
+                      { "op": "compute", "fn": "concat", "args": [ { "var": "personA" }, " is ", { "var": "personB" }, "'s ", { "field": [ "rel", "relationType" ] }, "." ], "into": "answer" }
+                    ]
+                  }
+                ]
+              },
+              {
+                "op": "branch",
+                "cond": { "eq": [ { "var": "answer" }, "" ] },
+                "then": [ { "op": "format", "template": "I don't have a relationship noted between {personA} and {personB}.", "into": "confirmationText" } ],
+                "else": [ { "op": "format", "template": "{answer}", "into": "confirmationText" } ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

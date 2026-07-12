@@ -1,0 +1,355 @@
+{
+  "templateId": "reading",
+  "displayName": "reading tracking",
+  "keywords": [
+    "reading",
+    "books i read",
+    "reading habit",
+    "pages i read",
+    "my reading"
+  ],
+  "example": "log 30 pages of reading",
+  "types": [
+    {
+      "typeId": "reading_log",
+      "displayName": "Reading",
+      "attributes": [
+        {
+          "name": "pages",
+          "valueType": "decimal",
+          "required": false
+        },
+        {
+          "name": "loggedAt",
+          "valueType": "date",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "skillId": "log-reading",
+      "displayName": "Log reading",
+      "reads": [],
+      "writes": [
+        "reading_log"
+      ],
+      "inputs": [
+        {
+          "name": "pages",
+          "required": false
+        }
+      ],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "today",
+            "into": "today"
+          },
+          {
+            "op": "write_record",
+            "typeId": "reading_log",
+            "fields": {
+              "pages": {
+                "var": "pages"
+              },
+              "loggedAt": {
+                "var": "today"
+              }
+            },
+            "into": "r"
+          },
+          {
+            "op": "branch",
+            "cond": {
+              "notNull": "pages"
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "Logged {pages} pages of reading today.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "Logged a reading session today.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "skillId": "reading-streak",
+      "displayName": "Your reading streak",
+      "reads": [
+        "reading_log"
+      ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          {
+            "op": "read_many",
+            "typeId": "reading_log",
+            "into": "logs"
+          },
+          {
+            "op": "compute",
+            "fn": "current_streak",
+            "args": [
+              {
+                "var": "logs"
+              },
+              "loggedAt"
+            ],
+            "into": "cur"
+          },
+          {
+            "op": "compute",
+            "fn": "longest_streak",
+            "args": [
+              {
+                "var": "logs"
+              },
+              "loggedAt"
+            ],
+            "into": "best"
+          },
+          {
+            "op": "branch",
+            "cond": {
+              "gte": [
+                {
+                  "var": "best"
+                },
+                1
+              ]
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "Reading streak: {cur} day(s) current, {best} day(s) longest.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "No reading logged yet — log a session to start a streak.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "skillId": "reading-today",
+      "displayName": "Pages read today",
+      "reads": [
+        "reading_log"
+      ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "today",
+            "into": "today"
+          },
+          {
+            "op": "read_many",
+            "typeId": "reading_log",
+            "into": "logs"
+          },
+          {
+            "op": "set",
+            "var": "total",
+            "value": 0
+          },
+          {
+            "op": "foreach",
+            "list": {
+              "var": "logs"
+            },
+            "as": "e",
+            "body": [
+              {
+                "op": "branch",
+                "cond": {
+                  "gte": [
+                    {
+                      "field": [
+                        "e",
+                        "loggedAt"
+                      ]
+                    },
+                    {
+                      "var": "today"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "add",
+                    "args": [
+                      {
+                        "var": "total"
+                      },
+                      {
+                        "field": [
+                          "e",
+                          "pages"
+                        ]
+                      }
+                    ],
+                    "into": "total"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "format",
+            "template": "You've read {total} pages today.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    }
+  ],
+  "corpus": [
+    {
+      "skillId": "log-reading",
+      "template": "log {pages:quantity} pages of reading"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "i read {pages:quantity} pages"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "log a reading session"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "what's my longest reading streak"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "what's my reading streak"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "reading streak"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "am i on a reading streak"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "read {pages:quantity} pages"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "i read {pages:quantity} pages today"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "just read {pages:quantity} pages"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "i read {pages:quantity} pages of my book"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "finished {pages:quantity} pages"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "log that i read {pages:quantity} pages"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "i finished a chapter"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "finished a chapter"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "read a chapter"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "i did some reading"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "did some reading today"
+    },
+    {
+      "skillId": "log-reading",
+      "template": "log my reading"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "how many days in a row have i read"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "what's my current reading streak"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "how many days straight have i read"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "how many consecutive days have i read"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "how long is my reading streak"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "do i have a reading streak"
+    },
+    {
+      "skillId": "reading-streak",
+      "template": "my reading streak"
+    },
+    {
+      "skillId": "reading-today",
+      "template": "how many pages today"
+    },
+    {
+      "skillId": "reading-today",
+      "template": "how many pages have i read today"
+    },
+    {
+      "skillId": "reading-today",
+      "template": "pages read today"
+    },
+    {
+      "skillId": "reading-today",
+      "template": "how much have i read today"
+    },
+    {
+      "skillId": "reading-today",
+      "template": "how many pages did i read today"
+    }
+  ]
+}

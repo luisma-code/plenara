@@ -1,0 +1,48 @@
+{
+  "skillId": "complete-reminder",
+  "displayName": "Mark a reminder done",
+  "reads": [
+    "reminder"
+  ],
+  "writes": [
+    "reminder"
+  ],
+  "inputs": [
+    { "name": "text", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "reminder",
+        "match": { "text": { "var": "text" } },
+        "into": "r"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "r" },
+        "then": [
+          {
+            "op": "format",
+            "template": "I couldn't find a reminder to \"{text}\".",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "write_record",
+            "typeId": "reminder",
+            "target": { "ref": "r" },
+            "fields": { "done": true },
+            "into": "r2"
+          },
+          {
+            "op": "format",
+            "template": "Nice — marked the reminder to \"{text}\" done.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}

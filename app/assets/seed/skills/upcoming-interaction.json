@@ -1,0 +1,62 @@
+{
+  "skillId": "upcoming-interaction",
+  "displayName": "When you're next seeing someone",
+  "reads": [ "contact", "interaction" ],
+  "writes": [],
+  "inputs": [
+    { "name": "personName", "required": true }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      { "op": "read_one", "typeId": "contact", "match": { "displayName": { "var": "personName" } }, "partial": true, "into": "person" },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          { "op": "format", "template": "I don't have {personName} as a contact yet.", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "read_related", "typeId": "interaction", "via": "subject", "from": { "ref": "person" }, "into": "ints" },
+          { "op": "set", "var": "soonest", "value": "9999-12-31" },
+          {
+            "op": "foreach",
+            "list": { "var": "ints" },
+            "as": "i",
+            "body": [
+              {
+                "op": "branch",
+                "cond": { "eq": [ { "field": [ "i", "planned" ] }, true ] },
+                "then": [
+                  {
+                    "op": "branch",
+                    "cond": { "gte": [ { "field": [ "i", "at" ] }, { "var": "today" } ] },
+                    "then": [
+                      {
+                        "op": "branch",
+                        "cond": { "gte": [ { "field": [ "i", "at" ] }, { "var": "soonest" } ] },
+                        "then": [],
+                        "else": [ { "op": "set", "var": "soonest", "value": { "field": [ "i", "at" ] } } ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "branch",
+            "cond": { "eq": [ { "var": "soonest" }, "9999-12-31" ] },
+            "then": [
+              { "op": "format", "template": "You don't have any upcoming plans with {personName} logged.", "into": "confirmationText" }
+            ],
+            "else": [
+              { "op": "compute", "fn": "format_date", "args": [ { "var": "soonest" }, "EEEE" ], "into": "dayLabel" },
+              { "op": "format", "template": "You're next seeing {personName} on {soonest} ({dayLabel}).", "into": "confirmationText" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

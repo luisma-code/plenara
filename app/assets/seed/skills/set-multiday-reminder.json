@@ -1,0 +1,44 @@
+{
+  "skillId": "set-multiday-reminder",
+  "displayName": "Set a reminder for several days a week",
+  "reads": [],
+  "writes": [
+    "reminder"
+  ],
+  "inputs": [
+    { "name": "text", "required": true },
+    { "name": "d1", "required": true },
+    { "name": "d2", "required": true },
+    { "name": "when", "required": true, "type": "datetime", "prompt": "What time? (e.g. \"9am\")" }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "concat", "args": [ { "var": "d1" }, ",", { "var": "d2" } ], "into": "dayText" },
+      { "op": "compute", "fn": "weekday_nums", "args": [ { "var": "dayText" } ], "into": "nums" },
+      {
+        "op": "branch",
+        "cond": { "eq": [ { "var": "nums" }, "" ] },
+        "then": [
+          { "op": "format", "template": "I didn't recognize those days — try something like \"every Monday and Thursday\".", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "compute", "fn": "now", "into": "createdAt" },
+          { "op": "compute", "fn": "concat", "args": [ "days:", { "var": "nums" } ], "into": "recur" },
+          {
+            "op": "write_record",
+            "typeId": "reminder",
+            "fields": {
+              "text": { "var": "text" },
+              "remindAt": { "var": "when" },
+              "recurrence": { "var": "recur" },
+              "createdAt": { "var": "createdAt" }
+            },
+            "into": "newReminder"
+          },
+          { "op": "compute", "fn": "format_time", "args": [ { "var": "when" } ], "into": "timeLabel" },
+          { "op": "format", "template": "Okay — I'll remind you to {text} every {d1} and {d2} at {timeLabel}.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

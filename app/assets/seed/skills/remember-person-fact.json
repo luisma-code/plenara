@@ -1,0 +1,149 @@
+{
+  "skillId": "remember-person-fact",
+  "displayName": "Remember a fact about a person (with optional relationship)",
+  "reads": [
+    "contact"
+  ],
+  "writes": [
+    "contact",
+    "contact_fact",
+    "contact_relationship"
+  ],
+  "inputs": [
+    {
+      "name": "personName",
+      "required": true
+    },
+    {
+      "name": "fact",
+      "required": true
+    },
+    {
+      "name": "relationTo",
+      "required": false
+    },
+    {
+      "name": "relationType",
+      "required": false
+    }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": {
+          "displayName": {
+            "var": "personName"
+          }
+        },
+        "resolve": true,
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": {
+          "isNull": "person"
+        },
+        "then": [
+          {
+            "op": "write_record",
+            "typeId": "contact",
+            "fields": {
+              "displayName": {
+                "var": "personName"
+              }
+            },
+            "into": "person"
+          }
+        ]
+      },
+      {
+        "op": "branch",
+        "cond": {
+          "notNull": "relationTo"
+        },
+        "then": [
+          {
+            "op": "read_one",
+            "typeId": "contact",
+            "match": {
+              "displayName": {
+                "var": "relationTo"
+              }
+            },
+            "resolve": true,
+            "into": "relative"
+          },
+          {
+            "op": "branch",
+            "cond": {
+              "isNull": "relative"
+            },
+            "then": [
+              {
+                "op": "write_record",
+                "typeId": "contact",
+                "fields": {
+                  "displayName": {
+                    "var": "relationTo"
+                  }
+                },
+                "into": "relative"
+              }
+            ]
+          },
+          {
+            "_comment": "De-collide BEFORE writing the fact: if personName and relationTo fuzzy-resolved to the SAME record, rebind person to a fresh contact so the fact attaches to the right person and the relationship isn't a self-loop (reviewer b #3).",
+            "op": "branch",
+            "cond": { "eq": [ { "field": [ "person", "id" ] }, { "field": [ "relative", "id" ] } ] },
+            "then": [
+              { "op": "write_record", "typeId": "contact", "fields": { "displayName": { "var": "personName" } }, "into": "person" }
+            ]
+          },
+          {
+            "_comment": "Only record a relationship when we actually captured its TYPE — a notNull relationTo alone would write a relationship with a null relationType (reviewer b #5).",
+            "op": "branch",
+            "cond": { "notNull": "relationType" },
+            "then": [
+              {
+                "op": "write_record",
+                "typeId": "contact_relationship",
+                "fields": {
+                  "from": {
+                    "ref": "relative"
+                  },
+                  "to": {
+                    "ref": "person"
+                  },
+                  "relationType": {
+                    "var": "relationType"
+                  }
+                },
+                "into": "newRel"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op": "write_record",
+        "typeId": "contact_fact",
+        "fields": {
+          "subject": {
+            "ref": "person"
+          },
+          "fact": {
+            "var": "fact"
+          }
+        },
+        "into": "newFact"
+      },
+      {
+        "op": "format",
+        "template": "Noted that {personName} {fact}.",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

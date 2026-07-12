@@ -1,0 +1,11 @@
+{
+  "typeId": "workout",
+  "displayName": "Workout",
+  "attributes": [
+    { "name": "activity", "valueType": "text", "required": true },
+    { "name": "route", "valueType": "text", "required": false },
+    { "name": "distance", "valueType": "decimal", "required": false },
+    { "name": "duration", "valueType": "decimal", "required": false },
+    { "name": "date", "valueType": "date", "required": true }
+  ]
+}

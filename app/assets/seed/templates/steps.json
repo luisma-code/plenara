@@ -1,0 +1,383 @@
+{
+  "templateId": "steps",
+  "displayName": "step tracking",
+  "keywords": [
+    "steps",
+    "my steps",
+    "step count",
+    "daily steps",
+    "walking steps"
+  ],
+  "example": "log 8000 steps",
+  "types": [
+    {
+      "typeId": "step_log",
+      "displayName": "Steps",
+      "attributes": [
+        {
+          "name": "count",
+          "valueType": "number",
+          "required": false
+        },
+        {
+          "name": "loggedAt",
+          "valueType": "date",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "skillId": "log-steps",
+      "displayName": "Log steps",
+      "reads": [],
+      "writes": [
+        "step_log"
+      ],
+      "inputs": [
+        {
+          "name": "count",
+          "required": false
+        }
+      ],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "today",
+            "into": "today"
+          },
+          {
+            "op": "write_record",
+            "typeId": "step_log",
+            "fields": {
+              "count": {
+                "var": "count"
+              },
+              "loggedAt": {
+                "var": "today"
+              }
+            },
+            "into": "s"
+          },
+          {
+            "op": "branch",
+            "cond": {
+              "notNull": "count"
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "Logged {count} steps today.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "Logged your steps today.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "skillId": "steps-this-week",
+      "displayName": "Total steps this week",
+      "reads": [
+        "step_log"
+      ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "start_of_week",
+            "args": [
+              {
+                "fn": "today"
+              }
+            ],
+            "into": "weekStart"
+          },
+          {
+            "op": "read_many",
+            "typeId": "step_log",
+            "into": "logs"
+          },
+          {
+            "op": "set",
+            "var": "total",
+            "value": 0
+          },
+          {
+            "op": "foreach",
+            "list": {
+              "var": "logs"
+            },
+            "as": "e",
+            "body": [
+              {
+                "op": "branch",
+                "cond": {
+                  "gte": [
+                    {
+                      "field": [
+                        "e",
+                        "loggedAt"
+                      ]
+                    },
+                    {
+                      "var": "weekStart"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "add",
+                    "args": [
+                      {
+                        "var": "total"
+                      },
+                      {
+                        "field": [
+                          "e",
+                          "count"
+                        ]
+                      }
+                    ],
+                    "into": "total"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "format",
+            "template": "You've logged {total} steps so far this week.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    },
+    {
+      "skillId": "steps-today",
+      "displayName": "Steps today",
+      "reads": [
+        "step_log"
+      ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "today",
+            "into": "today"
+          },
+          {
+            "op": "read_many",
+            "typeId": "step_log",
+            "into": "logs"
+          },
+          {
+            "op": "set",
+            "var": "total",
+            "value": 0
+          },
+          {
+            "op": "foreach",
+            "list": {
+              "var": "logs"
+            },
+            "as": "e",
+            "body": [
+              {
+                "op": "branch",
+                "cond": {
+                  "gte": [
+                    {
+                      "field": [
+                        "e",
+                        "loggedAt"
+                      ]
+                    },
+                    {
+                      "var": "today"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "op": "compute",
+                    "fn": "add",
+                    "args": [
+                      {
+                        "var": "total"
+                      },
+                      {
+                        "field": [
+                          "e",
+                          "count"
+                        ]
+                      }
+                    ],
+                    "into": "total"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "format",
+            "template": "You've logged {total} steps today.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    }
+  ],
+  "corpus": [
+    {
+      "skillId": "log-steps",
+      "template": "log {count:quantity} steps"
+    },
+    {
+      "skillId": "log-steps",
+      "template": "i walked {count:quantity} steps"
+    },
+    {
+      "skillId": "log-steps",
+      "template": "i did {count:quantity} steps today"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "how many steps this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "how many steps have i done this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "how many steps did i do this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "what's my step count this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "steps this week"
+    },
+    {
+      "skillId": "log-steps",
+      "template": "walked {count:quantity} steps"
+    },
+    {
+      "skillId": "log-steps",
+      "template": "i walked {count:quantity} steps today"
+    },
+    {
+      "skillId": "log-steps",
+      "template": "i got {count:quantity} steps today"
+    },
+    {
+      "skillId": "log-steps",
+      "template": "hit {count:quantity} steps today"
+    },
+    {
+      "skillId": "log-steps",
+      "template": "i hit {count:quantity} steps"
+    },
+    {
+      "skillId": "log-steps",
+      "template": "did {count:quantity} steps"
+    },
+    {
+      "skillId": "log-steps",
+      "template": "{count:quantity} steps today"
+    },
+    {
+      "skillId": "log-steps",
+      "template": "log my steps"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "total steps this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "my steps this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "how many steps so far this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "step count for the week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "how many steps have i taken this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "how many steps did i take this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "how many steps have i walked this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "steps so far this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "what's my step total this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "weekly step count"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "show me my steps this week"
+    },
+    {
+      "skillId": "steps-this-week",
+      "template": "what are my steps for this week"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "how many steps today"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "how many steps have i taken today"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "steps today"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "my step count today"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "how many steps did i take today"
+    },
+    {
+      "skillId": "steps-today",
+      "template": "step count for today"
+    }
+  ]
+}

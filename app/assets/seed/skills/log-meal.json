@@ -1,0 +1,42 @@
+{
+  "skillId": "log-meal",
+  "displayName": "Log a meal (with calorie lookup)",
+  "reads": [],
+  "writes": [ "meal" ],
+  "inputs": [ { "name": "food", "required": true }, { "name": "mealType", "required": false } ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      { "op": "read_reference", "dataset": "nutrition", "key": { "var": "food" }, "into": "ref" },
+      { "op": "set", "var": "kcal", "value": { "field": [ "ref", "kcal" ] } },
+      {
+        "op": "branch",
+        "cond": { "isNull": "kcal" },
+        "then": [
+          {
+            "op": "write_record",
+            "typeId": "meal",
+            "fields": { "food": { "var": "food" }, "mealType": { "var": "mealType" }, "provenance": "user", "loggedAt": { "var": "today" } },
+            "into": "m"
+          },
+          { "op": "format", "template": "Logged {food} — I don't have calorie data for that, so no estimate.", "into": "confirmationText" }
+        ],
+        "else": [
+          {
+            "op": "write_record",
+            "typeId": "meal",
+            "fields": {
+              "food": { "var": "food" },
+              "mealType": { "var": "mealType" },
+              "kcal": { "var": "kcal" },
+              "provenance": { "field": [ "ref", "provenance" ] },
+              "loggedAt": { "var": "today" }
+            },
+            "into": "m"
+          },
+          { "op": "format", "template": "Logged {food} — about {kcal} calories.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

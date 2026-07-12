@@ -1,0 +1,58 @@
+{
+  "skillId": "list-reminders-on",
+  "displayName": "List your reminders for a day",
+  "reads": [
+    "reminder"
+  ],
+  "writes": [],
+  "inputs": [
+    { "name": "day", "required": true, "type": "date" }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "concat", "args": [ { "var": "day" }, "T00:00:00" ], "into": "lo" },
+      { "op": "compute", "fn": "add_days", "args": [ { "var": "day" }, 1 ], "into": "nextDay" },
+      { "op": "compute", "fn": "concat", "args": [ { "var": "nextDay" }, "T00:00:00" ], "into": "hi" },
+      {
+        "op": "read_many",
+        "typeId": "reminder",
+        "filter": [
+          { "field": "done", "op": "eq", "value": false },
+          { "field": "recurrence", "op": "isNull" },
+          { "field": "remindAt", "op": "gte", "value": { "var": "lo" } },
+          { "field": "remindAt", "op": "lt", "value": { "var": "hi" } }
+        ],
+        "orderBy": "remindAt",
+        "orderDir": "asc",
+        "into": "rems"
+      },
+      { "op": "set", "var": "lines", "value": "" },
+      {
+        "op": "foreach",
+        "list": { "var": "rems" },
+        "as": "r",
+        "body": [
+          { "op": "compute", "fn": "format_time", "args": [ { "field": [ "r", "remindAt" ] } ], "into": "tm" },
+          {
+            "op": "compute",
+            "fn": "concat",
+            "args": [ { "var": "lines" }, "\n  • ", { "field": [ "r", "text" ] }, " at ", { "var": "tm" } ],
+            "into": "lines"
+          }
+        ]
+      },
+      { "op": "compute", "fn": "count", "args": [ { "var": "rems" } ], "into": "n" },
+      { "op": "compute", "fn": "format_date", "args": [ { "var": "day" }, "EEEE" ], "into": "dayLabel" },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "You have {n} reminder(s) for {dayLabel}:{lines}", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "You have no reminders for {dayLabel}.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

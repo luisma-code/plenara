@@ -1,0 +1,10 @@
+{
+  "typeId": "contact_date",
+  "displayName": "Contact Date",
+  "parentType": "contact",
+  "attributes": [
+    { "name": "subject", "valueType": "entityRef", "refType": "contact", "required": true },
+    { "name": "label", "valueType": "text", "required": true },
+    { "name": "date", "valueType": "date", "required": true }
+  ]
+}

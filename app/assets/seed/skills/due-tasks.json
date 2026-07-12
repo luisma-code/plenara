@@ -1,0 +1,80 @@
+{
+  "skillId": "due-tasks",
+  "displayName": "Show tasks due today or overdue",
+  "reads": [
+    "task"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "read_many", "typeId": "task", "into": "tasks" },
+      { "op": "compute", "fn": "today", "into": "today" },
+      { "op": "set", "var": "lines", "value": "" },
+      { "op": "set", "var": "n", "value": 0 },
+      {
+        "op": "foreach",
+        "list": { "var": "tasks" },
+        "as": "t",
+        "body": [
+          { "op": "set", "var": "due", "value": { "field": [ "t", "dueAt" ] } },
+          {
+            "op": "branch",
+            "cond": { "notNull": "due" },
+            "then": [
+              {
+                "op": "branch",
+                "cond": { "gte": [ { "var": "today" }, { "var": "due" } ] },
+                "then": [
+                  {
+                    "op": "branch",
+                    "cond": { "eq": [ { "field": [ "t", "completed" ] }, true ] },
+                    "then": [],
+                    "else": [
+                      {
+                        "op": "branch",
+                        "cond": { "eq": [ { "var": "due" }, { "var": "today" } ] },
+                        "then": [ { "op": "set", "var": "label", "value": "due today" } ],
+                        "else": [
+                          {
+                            "op": "compute",
+                            "fn": "concat",
+                            "args": [ "overdue (was ", { "var": "due" }, ")" ],
+                            "into": "label"
+                          }
+                        ]
+                      },
+                      {
+                        "op": "compute",
+                        "fn": "concat",
+                        "args": [
+                          { "var": "lines" },
+                          "\n  • ",
+                          { "field": [ "t", "description" ] },
+                          " — ",
+                          { "var": "label" }
+                        ],
+                        "into": "lines"
+                      },
+                      { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "{n} task(s) due or overdue:{lines}", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "Nothing due today and nothing overdue — you're clear.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

@@ -15,6 +15,7 @@ import 'data_view.dart';
 import 'glyphs.dart';
 import 'onboarding_view.dart';
 import 'plena.dart';
+import 'seed_assets.dart';
 import 'settings_view.dart';
 import 'sherpa_speech.dart';
 import 'speech.dart';
@@ -22,11 +23,12 @@ import 'speech_out.dart';
 import 'macos_scheduler.dart';
 import 'windows_scheduler.dart';
 
-// Dev-only: where first-run seeding copies the built-in capability defs FROM (a shipped build
-// bundles v0/data as assets instead). Overridable per machine via PLENARA_SEED_DIR — e.g. on
-// macOS: export PLENARA_SEED_DIR="$HOME/code/plenara/v0/data" (see transition.md).
-final sourceDataDir =
-    Platform.environment['PLENARA_SEED_DIR'] ?? r'Z:\code\plenara\v0\data';
+// Dev fallback seed source. A SHIPPED build seeds from its BUNDLED assets instead — main()
+// extracts them on first run and sets _bundledSeedDir (see seed_assets.dart). A dev machine can
+// point PLENARA_SEED_DIR at the repo (e.g. macOS: export PLENARA_SEED_DIR="$HOME/code/plenara/v0/data").
+const sourceDataDir = r'Z:\code\plenara\v0\data';
+// Set by main() when it extracts the bundled seed assets on first run; read by buildSession.
+String? _bundledSeedDir;
 
 /// Build the production Session from user config: the real (synced) data folder,
 /// seeded with the built-in capabilities on first run, the BYOK key, and the real
@@ -45,7 +47,10 @@ NotificationScheduler _platformScheduler() {
 
 Session buildSession({NotificationScheduler? scheduler}) {
   final cfg = loadConfig();
-  ensureSeeded(cfg.dataDir, sourceDataDir);
+  // Seed source priority: explicit dev override > extracted bundled assets (shipped build) > dev
+  // path. ensureSeeded no-ops once the data folder is already seeded, so this is first-run only.
+  final seed = Platform.environment['PLENARA_SEED_DIR'] ?? _bundledSeedDir ?? sourceDataDir;
+  ensureSeeded(cfg.dataDir, seed);
   // Free mode runs offline-only: hand the Session an EXPLICIT offline client (empty key ->
   // every cloud call returns noKey, zero Anthropic spend). Passing null would NOT work — the
   // Session falls back to a default ClaudeClient() that picks the key up from the environment,
@@ -67,8 +72,20 @@ void main() {
   // Print the diagnostics log path so a manual test that goes wrong is one file away.
   stdout.writeln('Plenara diagnostics log: ${log.file.path}');
   log('boot: main() starting');
-  runZonedGuarded(() {
+  runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    // Extract the bundled seed defs before first run (skipped when a dev override is set or the
+    // data folder is already seeded) so a shipped binary seeds itself with no repo present.
+    if (Platform.environment['PLENARA_SEED_DIR'] == null) {
+      try {
+        if (!isSeeded(loadConfig().dataDir)) {
+          _bundledSeedDir = await extractSeedAssets();
+          log('boot: extracted bundled seed assets -> $_bundledSeedDir');
+        }
+      } catch (e, st) {
+        log('boot: seed asset extraction FAILED (falling back to dev path): $e\n$st');
+      }
+    }
     FlutterError.onError = (details) {
       log('FlutterError: ${details.exceptionAsString()}\n${details.stack}');
       FlutterError.presentError(details);

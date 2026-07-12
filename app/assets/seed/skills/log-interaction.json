@@ -1,0 +1,89 @@
+{
+  "skillId": "log-interaction",
+  "displayName": "Log talking to or seeing someone",
+  "reads": [
+    "contact"
+  ],
+  "writes": [
+    "contact",
+    "interaction"
+  ],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "note", "required": false },
+    { "name": "kind", "required": false },
+    { "name": "at", "required": false, "type": "pastday" }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "resolve": true,
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          {
+            "op": "write_record",
+            "typeId": "contact",
+            "fields": { "displayName": { "var": "personName" } },
+            "into": "person"
+          }
+        ]
+      },
+      {
+        "op": "compute",
+        "fn": "today",
+        "into": "todayVal"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "at" },
+        "then": [ { "op": "set", "var": "at", "value": { "var": "todayVal" } } ]
+      },
+      {
+        "op": "write_record",
+        "typeId": "interaction",
+        "fields": {
+          "subject": { "ref": "person" },
+          "note": { "var": "note" },
+          "kind": { "var": "kind" },
+          "at": { "var": "at" }
+        },
+        "into": "newInteraction"
+      },
+      {
+        "op": "branch",
+        "cond": { "notNull": "kind" },
+        "then": [
+          {
+            "op": "branch",
+            "cond": { "notNull": "note" },
+            "then": [
+              { "op": "format", "template": "Logged {kind} with {personName} — {note}.", "into": "confirmationText" }
+            ],
+            "else": [
+              { "op": "format", "template": "Logged {kind} with {personName}.", "into": "confirmationText" }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "op": "branch",
+            "cond": { "notNull": "note" },
+            "then": [
+              { "op": "format", "template": "Logged that you talked to {personName} — {note}.", "into": "confirmationText" }
+            ],
+            "else": [
+              { "op": "format", "template": "Logged that you talked to {personName}.", "into": "confirmationText" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

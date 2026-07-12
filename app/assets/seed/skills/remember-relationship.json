@@ -1,0 +1,80 @@
+{
+  "skillId": "remember-relationship",
+  "displayName": "Remember how two people are related",
+  "reads": [
+    "contact"
+  ],
+  "writes": [
+    "contact",
+    "contact_relationship"
+  ],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "relationTo", "required": true },
+    { "name": "relationType", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "resolve": true,
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          {
+            "op": "write_record",
+            "typeId": "contact",
+            "fields": { "displayName": { "var": "personName" } },
+            "into": "person"
+          }
+        ]
+      },
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "relationTo" } },
+        "resolve": true,
+        "into": "relative"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "relative" },
+        "then": [
+          {
+            "op": "write_record",
+            "typeId": "contact",
+            "fields": { "displayName": { "var": "relationTo" } },
+            "into": "relative"
+          }
+        ]
+      },
+      {
+        "op": "branch",
+        "cond": { "eq": [ { "field": [ "person", "id" ] }, { "field": [ "relative", "id" ] } ] },
+        "then": [
+          { "op": "write_record", "typeId": "contact", "fields": { "displayName": { "var": "personName" } }, "into": "person" }
+        ]
+      },
+      {
+        "op": "write_record",
+        "typeId": "contact_relationship",
+        "fields": {
+          "from": { "ref": "relative" },
+          "to": { "ref": "person" },
+          "relationType": { "var": "relationType" }
+        },
+        "into": "rel"
+      },
+      {
+        "op": "format",
+        "template": "Noted — {personName} is {relationTo}'s {relationType}.",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

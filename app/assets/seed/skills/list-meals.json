@@ -1,0 +1,98 @@
+{
+  "skillId": "list-meals",
+  "displayName": "Meals today",
+  "reads": [
+    "meal"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "compute",
+        "fn": "today",
+        "into": "today"
+      },
+      {
+        "op": "read_many",
+        "typeId": "meal",
+        "into": "meals"
+      },
+      {
+        "op": "set",
+        "var": "out",
+        "value": ""
+      },
+      {
+        "op": "foreach",
+        "list": {
+          "var": "meals"
+        },
+        "as": "m",
+        "body": [
+          {
+            "op": "branch",
+            "cond": {
+              "gte": [
+                {
+                  "field": [
+                    "m",
+                    "loggedAt"
+                  ]
+                },
+                {
+                  "var": "today"
+                }
+              ]
+            },
+            "then": [
+              {
+                "op": "compute",
+                "fn": "concat",
+                "args": [
+                  {
+                    "var": "out"
+                  },
+                  "• ",
+                  {
+                    "field": [
+                      "m",
+                      "food"
+                    ]
+                  },
+                  "\n"
+                ],
+                "into": "out"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op": "branch",
+        "cond": {
+          "eq": [
+            {
+              "var": "out"
+            },
+            ""
+          ]
+        },
+        "then": [
+          {
+            "op": "format",
+            "template": "You haven't logged any meals today.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "format",
+            "template": "Today you've eaten:\n{out}",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}

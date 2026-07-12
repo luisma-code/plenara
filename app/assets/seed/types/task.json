@@ -1,0 +1,10 @@
+{
+  "typeId": "task",
+  "displayName": "Task",
+  "attributes": [
+    { "name": "description", "valueType": "text", "required": true },
+    { "name": "dueAt", "valueType": "date", "required": false },
+    { "name": "completed", "valueType": "boolean", "required": false, "default": false },
+    { "name": "createdAt", "valueType": "date", "required": true }
+  ]
+}

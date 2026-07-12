@@ -1,0 +1,231 @@
+{
+  "templateId": "weight",
+  "displayName": "weight tracking",
+  "keywords": [
+    "weight",
+    "my weight",
+    "body weight",
+    "bodyweight"
+  ],
+  "example": "log my weight as 165",
+  "types": [
+    {
+      "typeId": "weight_log",
+      "displayName": "Weight",
+      "attributes": [
+        {
+          "name": "value",
+          "valueType": "number",
+          "required": false
+        },
+        {
+          "name": "loggedAt",
+          "valueType": "date",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "skillId": "log-weight",
+      "displayName": "Log weight",
+      "reads": [],
+      "writes": [
+        "weight_log"
+      ],
+      "inputs": [
+        {
+          "name": "value",
+          "required": false
+        }
+      ],
+      "steps": {
+        "main": [
+          {
+            "op": "compute",
+            "fn": "today",
+            "into": "today"
+          },
+          {
+            "op": "write_record",
+            "typeId": "weight_log",
+            "fields": {
+              "value": {
+                "var": "value"
+              },
+              "loggedAt": {
+                "var": "today"
+              }
+            },
+            "into": "w"
+          },
+          {
+            "op": "branch",
+            "cond": {
+              "notNull": "value"
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "Logged your weight: {value}.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "Logged your weight today.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "skillId": "latest-weight",
+      "displayName": "Latest weight",
+      "reads": [
+        "weight_log"
+      ],
+      "writes": [],
+      "inputs": [],
+      "steps": {
+        "main": [
+          {
+            "op": "format",
+            "template": "You haven't logged your weight yet.",
+            "into": "confirmationText"
+          },
+          {
+            "op": "read_many",
+            "typeId": "weight_log",
+            "orderBy": "loggedAt",
+            "orderDir": "desc",
+            "limit": 1,
+            "into": "logs"
+          },
+          {
+            "op": "foreach",
+            "list": {
+              "var": "logs"
+            },
+            "as": "w",
+            "body": [
+              {
+                "op": "set",
+                "var": "val",
+                "value": {
+                  "field": [
+                    "w",
+                    "value"
+                  ]
+                }
+              },
+              {
+                "op": "format",
+                "template": "Your most recent weight is {val}.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "corpus": [
+    {
+      "skillId": "log-weight",
+      "template": "log my weight as {value:quantity}"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "i weigh {value:quantity}"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "log my weight {value:quantity}"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "weighed in at {value:quantity}"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "i weighed in at {value:quantity}"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "i'm {value:quantity} lbs today"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "i'm {value:quantity} kg today"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "i weigh {value:quantity} pounds"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "i weigh {value:quantity} lbs"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "i weigh {value:quantity} kg"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "my weight is {value:quantity}"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "my weight today is {value:quantity}"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "the scale says {value:quantity}"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "record my weight as {value:quantity}"
+    },
+    {
+      "skillId": "log-weight",
+      "template": "log weight {value:quantity}"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "what's my weight"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "what is my weight"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "how much do i weigh"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "my current weight"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "what's my current weight"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "what did i weigh"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "my latest weight"
+    },
+    {
+      "skillId": "latest-weight",
+      "template": "how much did i weigh"
+    }
+  ]
+}

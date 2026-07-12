@@ -1,0 +1,8 @@
+{
+  "typeId": "journal_entry",
+  "displayName": "Journal Entry",
+  "attributes": [
+    { "name": "entry", "valueType": "text", "required": true },
+    { "name": "loggedAt", "valueType": "date", "required": true }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "skillId": "recall-journal",
+  "displayName": "Read your journal",
+  "reads": [
+    "journal_entry"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "read_many", "typeId": "journal_entry", "into": "entries" },
+      { "op": "set", "var": "lines", "value": "" },
+      {
+        "op": "foreach",
+        "list": { "var": "entries" },
+        "as": "e",
+        "body": [
+          {
+            "op": "compute",
+            "fn": "concat",
+            "args": [
+              { "var": "lines" },
+              "\n  • ",
+              { "field": [ "e", "loggedAt" ] },
+              ": ",
+              { "field": [ "e", "entry" ] }
+            ],
+            "into": "lines"
+          }
+        ]
+      },
+      { "op": "compute", "fn": "count", "args": [ { "var": "entries" } ], "into": "n" },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "Your journal — {n} entries:{lines}", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "Your journal is empty.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

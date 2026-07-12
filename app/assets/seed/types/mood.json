@@ -1,0 +1,9 @@
+{
+  "typeId": "mood",
+  "displayName": "Mood",
+  "attributes": [
+    { "name": "rating", "valueType": "text", "required": true },
+    { "name": "note", "valueType": "text", "required": false },
+    { "name": "loggedAt", "valueType": "date", "required": true }
+  ]
+}

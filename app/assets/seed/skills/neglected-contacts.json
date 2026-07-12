@@ -1,0 +1,77 @@
+{
+  "skillId": "neglected-contacts",
+  "displayName": "Who you haven't talked to lately",
+  "reads": [ "contact", "interaction" ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "today", "into": "today" },
+      { "op": "compute", "fn": "add_days", "args": [ { "var": "today" }, -30 ], "into": "cutoff" },
+      { "op": "read_many", "typeId": "contact", "into": "contacts" },
+      { "op": "set", "var": "lines", "value": "" },
+      { "op": "set", "var": "n", "value": 0 },
+      {
+        "op": "foreach",
+        "list": { "var": "contacts" },
+        "as": "c",
+        "body": [
+          { "op": "read_related", "typeId": "interaction", "via": "subject", "from": { "ref": "c" }, "into": "ints" },
+          { "op": "set", "var": "latest", "value": "" },
+          {
+            "op": "foreach",
+            "list": { "var": "ints" },
+            "as": "i",
+            "body": [
+              {
+                "op": "branch",
+                "cond": { "eq": [ { "field": [ "i", "planned" ] }, true ] },
+                "then": [],
+                "else": [
+                  {
+                    "op": "branch",
+                    "cond": { "gte": [ { "field": [ "i", "at" ] }, { "var": "latest" } ] },
+                    "then": [ { "op": "set", "var": "latest", "value": { "field": [ "i", "at" ] } } ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "branch",
+            "cond": { "gte": [ { "var": "latest" }, { "var": "cutoff" } ] },
+            "then": [],
+            "else": [
+              {
+                "op": "branch",
+                "cond": { "eq": [ { "var": "latest" }, "" ] },
+                "then": [ { "op": "set", "var": "whenLabel", "value": "no interactions logged" } ],
+                "else": [
+                  { "op": "compute", "fn": "format_date", "args": [ { "var": "latest" } ], "into": "latestLabel" },
+                  { "op": "compute", "fn": "concat", "args": [ "last talked ", { "var": "latestLabel" } ], "into": "whenLabel" }
+                ]
+              },
+              {
+                "op": "compute",
+                "fn": "concat",
+                "args": [ { "var": "lines" }, "\n  • ", { "field": [ "c", "displayName" ] }, " — ", { "var": "whenLabel" } ],
+                "into": "lines"
+              },
+              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+            ]
+          }
+        ]
+      },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "n" }, 1 ] },
+        "then": [
+          { "op": "format", "template": "People you haven't been in touch with lately:{lines}", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "format", "template": "You're in good touch with everyone you've logged recently.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

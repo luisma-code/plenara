@@ -15,6 +15,9 @@ else
   FLUTTER="flutter"
 fi
 
+echo "== [pre] bundled seed assets in sync with v0/data =="
+bash "$ROOT/tool/sync_seed.sh" --check
+
 echo "== [1/8] analyze v0 (lib bin test) =="
 ( cd "$ROOT/v0" && "$DART" analyze lib bin test )
 

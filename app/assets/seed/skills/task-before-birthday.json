@@ -1,0 +1,68 @@
+{
+  "skillId": "task-before-birthday",
+  "displayName": "Add a task due the day before someone's birthday",
+  "reads": [
+    "contact"
+  ],
+  "writes": [
+    "task"
+  ],
+  "inputs": [
+    { "name": "text", "required": true },
+    { "name": "personName", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "partial": true,
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          { "op": "format", "template": "I don't have {personName} as a contact yet — tell me their birthday first.", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "set", "var": "bday", "value": { "field": [ "person", "birthday" ] } },
+          { "op": "compute", "fn": "today", "into": "createdAt" },
+          {
+            "op": "branch",
+            "cond": { "notNull": "bday" },
+            "then": [
+              { "op": "compute", "fn": "next_annual", "args": [ { "var": "bday" } ], "into": "nextB" },
+              { "op": "compute", "fn": "add_days", "args": [ { "var": "nextB" }, -1 ], "into": "due" },
+              {
+                "op": "write_record",
+                "typeId": "task",
+                "fields": {
+                  "description": { "var": "text" },
+                  "dueAt": { "var": "due" },
+                  "createdAt": { "var": "createdAt" }
+                },
+                "into": "t"
+              },
+              { "op": "compute", "fn": "format_date", "args": [ { "var": "due" }, "EEEE" ], "into": "dayLabel" },
+              { "op": "format", "template": "Done — \"{text}\" is on your list for {due} ({dayLabel}), the day before {personName}'s birthday.", "into": "confirmationText" }
+            ],
+            "else": [
+              {
+                "op": "write_record",
+                "typeId": "task",
+                "fields": {
+                  "description": { "var": "text" },
+                  "createdAt": { "var": "createdAt" }
+                },
+                "into": "t"
+              },
+              { "op": "format", "template": "Added \"{text}\" — but I don't know {personName}'s birthday yet, so it has no date. Tell me their birthday and I'll date it.", "into": "confirmationText" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

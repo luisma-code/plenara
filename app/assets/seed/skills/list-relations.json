@@ -1,0 +1,147 @@
+{
+  "skillId": "list-relations",
+  "displayName": "List a person's relationships",
+  "reads": [
+    "contact",
+    "contact_relationship"
+  ],
+  "writes": [],
+  "inputs": [
+    { "name": "personName", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "partial": true,
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          {
+            "op": "format",
+            "template": "I don't have {personName} as a contact yet.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          { "op": "set", "var": "lines", "value": "" },
+          {
+            "op": "read_related",
+            "typeId": "contact_relationship",
+            "via": "from",
+            "from": { "ref": "person" },
+            "into": "rels"
+          },
+          {
+            "op": "foreach",
+            "list": { "var": "rels" },
+            "as": "rel",
+            "body": [
+              {
+                "op": "read_one",
+                "typeId": "contact",
+                "match": { "id": { "field": [ "rel", "to" ] } },
+                "into": "other"
+              },
+              {
+                "op": "set",
+                "var": "otherName",
+                "value": { "field": [ "other", "displayName" ] }
+              },
+              {
+                "op": "compute",
+                "fn": "concat",
+                "args": [
+                  { "var": "lines" },
+                  "\n  • ",
+                  { "field": [ "rel", "relationType" ] },
+                  ": ",
+                  { "var": "otherName" }
+                ],
+                "into": "lines"
+              }
+            ]
+          },
+          {
+            "op": "read_related",
+            "typeId": "contact_relationship",
+            "via": "to",
+            "from": { "ref": "person" },
+            "into": "revRels"
+          },
+          {
+            "op": "foreach",
+            "list": { "var": "revRels" },
+            "as": "rel",
+            "body": [
+              {
+                "op": "read_one",
+                "typeId": "contact",
+                "match": { "id": { "field": [ "rel", "from" ] } },
+                "into": "other"
+              },
+              {
+                "op": "set",
+                "var": "otherName",
+                "value": { "field": [ "other", "displayName" ] }
+              },
+              {
+                "op": "compute",
+                "fn": "concat",
+                "args": [
+                  { "var": "lines" },
+                  "\n  • ",
+                  { "field": [ "rel", "relationType" ] },
+                  " of ",
+                  { "var": "otherName" }
+                ],
+                "into": "lines"
+              }
+            ]
+          },
+          {
+            "op": "compute",
+            "fn": "count",
+            "args": [ { "var": "rels" } ],
+            "into": "nFwd"
+          },
+          {
+            "op": "compute",
+            "fn": "count",
+            "args": [ { "var": "revRels" } ],
+            "into": "nRev"
+          },
+          {
+            "op": "compute",
+            "fn": "add",
+            "args": [ { "var": "nFwd" }, { "var": "nRev" } ],
+            "into": "n"
+          },
+          {
+            "op": "branch",
+            "cond": { "gte": [ { "var": "n" }, 1 ] },
+            "then": [
+              {
+                "op": "format",
+                "template": "{personName}'s relationships:{lines}",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "I don't have any relationships noted for {personName}.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

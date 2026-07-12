@@ -1,0 +1,53 @@
+{
+  "skillId": "set-alias",
+  "displayName": "Give a contact a nickname or alias",
+  "reads": [
+    "contact"
+  ],
+  "writes": [
+    "contact"
+  ],
+  "inputs": [
+    { "name": "personName", "required": true },
+    { "name": "alias", "required": true }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "contact",
+        "match": { "displayName": { "var": "personName" } },
+        "resolve": true,
+        "into": "person"
+      },
+      {
+        "op": "branch",
+        "cond": { "isNull": "person" },
+        "then": [
+          { "op": "format", "template": "I don't have {personName} as a contact yet.", "into": "confirmationText" }
+        ],
+        "else": [
+          { "op": "set", "var": "existing", "value": { "field": [ "person", "aliases" ] } },
+          {
+            "op": "branch",
+            "cond": { "notNull": "existing" },
+            "then": [
+              { "op": "compute", "fn": "concat", "args": [ { "var": "existing" }, ",", { "var": "alias" } ], "into": "merged" }
+            ],
+            "else": [
+              { "op": "set", "var": "merged", "value": { "var": "alias" } }
+            ]
+          },
+          {
+            "op": "write_record",
+            "typeId": "contact",
+            "target": { "ref": "person" },
+            "fields": { "aliases": { "var": "merged" } },
+            "into": "updated"
+          },
+          { "op": "format", "template": "Got it — I'll know {personName} as \"{alias}\" too.", "into": "confirmationText" }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "skillId": "set-reminder-on-day",
+  "displayName": "Set a reminder for a specific day and time",
+  "reads": [],
+  "writes": [
+    "reminder"
+  ],
+  "inputs": [
+    { "name": "text", "required": true },
+    { "name": "day", "required": true, "type": "date" },
+    { "name": "when", "required": true, "type": "datetime", "prompt": "What time? (e.g. \"5pm\")" }
+  ],
+  "steps": {
+    "main": [
+      { "op": "compute", "fn": "now", "into": "createdAt" },
+      { "op": "compute", "fn": "time_part", "args": [ { "var": "when" } ], "into": "tod" },
+      { "op": "compute", "fn": "concat", "args": [ { "var": "day" }, "T", { "var": "tod" } ], "into": "remindAt" },
+      {
+        "op": "write_record",
+        "typeId": "reminder",
+        "fields": {
+          "text": { "var": "text" },
+          "remindAt": { "var": "remindAt" },
+          "createdAt": { "var": "createdAt" }
+        },
+        "into": "newReminder"
+      },
+      { "op": "compute", "fn": "format_date", "args": [ { "var": "day" }, "EEEE" ], "into": "dayLabel" },
+      { "op": "compute", "fn": "format_time", "args": [ { "var": "remindAt" } ], "into": "timeLabel" },
+      { "op": "format", "template": "Okay — I'll remind you to {text} on {dayLabel} at {timeLabel}.", "into": "confirmationText" }
+    ]
+  }
+}

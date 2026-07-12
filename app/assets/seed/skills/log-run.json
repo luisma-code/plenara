@@ -1,0 +1,89 @@
+{
+  "skillId": "log-run",
+  "displayName": "Log a run",
+  "reads": [],
+  "writes": [
+    "workout"
+  ],
+  "inputs": [
+    { "name": "distance", "required": false },
+    { "name": "distanceMiles", "required": false },
+    { "name": "duration", "required": false },
+    { "name": "route", "required": false }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "compute",
+        "fn": "today",
+        "into": "today"
+      },
+      {
+        "op": "branch",
+        "cond": { "notNull": "distanceMiles" },
+        "then": [
+          { "op": "compute", "fn": "mul", "args": [ { "var": "distanceMiles" }, 1.609 ], "into": "distKm" },
+          { "op": "compute", "fn": "round", "args": [ { "var": "distKm" } ], "into": "distance" }
+        ]
+      },
+      {
+        "op": "write_record",
+        "typeId": "workout",
+        "fields": {
+          "activity": "run",
+          "route": {
+            "var": "route"
+          },
+          "distance": {
+            "var": "distance"
+          },
+          "duration": {
+            "var": "duration"
+          },
+          "date": {
+            "var": "today"
+          }
+        },
+        "into": "w"
+      },
+      {
+        "op": "branch",
+        "cond": { "notNull": "route" },
+        "then": [
+          {
+            "op": "branch",
+            "cond": { "notNull": "distance" },
+            "then": [
+              { "op": "format", "template": "Logged a {distance} km run on the {route} today.", "into": "confirmationText" }
+            ],
+            "else": [
+              { "op": "format", "template": "Logged your run on the {route} today.", "into": "confirmationText" }
+            ]
+          }
+        ],
+        "else": [
+          {
+            "op": "branch",
+            "cond": {
+              "notNull": "distance"
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "Logged a {distance} km run today.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "Logged a run today.",
+                "into": "confirmationText"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

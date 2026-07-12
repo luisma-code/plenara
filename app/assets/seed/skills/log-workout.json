@@ -1,0 +1,48 @@
+{
+  "skillId": "log-workout",
+  "displayName": "Log a workout",
+  "reads": [],
+  "writes": [
+    "workout"
+  ],
+  "inputs": [
+    {
+      "name": "activity",
+      "required": true
+    },
+    {
+      "name": "duration",
+      "required": false
+    }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "compute",
+        "fn": "today",
+        "into": "today"
+      },
+      {
+        "op": "write_record",
+        "typeId": "workout",
+        "fields": {
+          "activity": {
+            "var": "activity"
+          },
+          "duration": {
+            "var": "duration"
+          },
+          "date": {
+            "var": "today"
+          }
+        },
+        "into": "w"
+      },
+      {
+        "op": "format",
+        "template": "Logged a {activity} workout today.",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

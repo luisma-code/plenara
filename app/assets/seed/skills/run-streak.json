@@ -1,0 +1,39 @@
+{
+  "skillId": "run-streak",
+  "displayName": "Your running streak",
+  "reads": [
+    "workout"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "workout",
+        "filter": { "field": "activity", "op": "eq", "value": "run" },
+        "into": "runs"
+      },
+      { "op": "compute", "fn": "current_streak", "args": [ { "var": "runs" }, "date" ], "into": "cur" },
+      { "op": "compute", "fn": "longest_streak", "args": [ { "var": "runs" }, "date" ], "into": "best" },
+      {
+        "op": "branch",
+        "cond": { "gte": [ { "var": "best" }, 1 ] },
+        "then": [
+          {
+            "op": "format",
+            "template": "Running streak: {cur} day(s) current, {best} day(s) longest.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "format",
+            "template": "No runs logged yet — log one to start a streak.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}
