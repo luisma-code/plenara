@@ -137,8 +137,12 @@ final Map<String, GlyphDef> kGlyphs = {
     'wave',
     'farewell — goodnight sign-off',
     core: true,
+    // a SMOOTH undulating ribbon (a hand waving), not a sharp zigzag — 2 gentle cycles
     strokes: [
-      _s([_p(-.5, 0), _p(-.17, -.2), _p(.17, .2), _p(.5, 0)], draw: 720),
+      _s([
+        for (var i = 0; i < 46; i++)
+          Offset(-.55 + 1.1 * i / 45, -.24 * math.sin(i / 45 * math.pi * 4)),
+      ], draw: 820),
     ],
   ),
   'spark': GlyphDef(
@@ -206,9 +210,15 @@ final Map<String, GlyphDef> kGlyphs = {
     'candle',
     "a birthday surfaces today",
     core: true,
+    // a candle with real body width + a teardrop flame (was a lollipop: one line + a ring)
     strokes: [
-      _s(_line(_p(0, .4), _p(0, -.2)), draw: 380),
-      _s(_circle(0, -.32, .1, 16), delay: 380, draw: 300),
+      _s(_line(_p(-.13, .42), _p(-.13, -.12)), draw: 300), // left body
+      _s(_line(_p(.13, .42), _p(.13, -.12)), delay: 160, draw: 300), // right body
+      _s(_line(_p(-.13, .42), _p(.13, .42)), delay: 360, draw: 150), // base
+      _s(_line(_p(-.13, -.12), _p(.13, -.12)), delay: 460, draw: 150), // rim
+      _s(_line(_p(0, -.12), _p(0, -.2)), delay: 600, draw: 120), // wick
+      _s([_p(0, -.2), _p(-.07, -.3), _p(0, -.44), _p(.07, -.3), _p(0, -.2)],
+          delay: 720, draw: 360), // teardrop flame
     ],
   ),
   'nod': GlyphDef(
