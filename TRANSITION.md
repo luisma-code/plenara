@@ -2,7 +2,8 @@
 
 _Written 2026-07-12 on the Windows machine, right before moving to Mac. Read this **plus**
 `HANDOFF.md` and `CLAUDE.md`, then continue. This doc is the Mac-specific companion; `HANDOFF.md`
-is the full session history (Windows-oriented) and `CLAUDE.md` is the working-mode + principles._
+is the full session history (Windows-oriented) and `CLAUDE.md` is the working-mode + principles. For
+the multi-OS **release** path (packaging, signing, the ranked must-do list), see `RELEASING.md`._
 
 ---
 

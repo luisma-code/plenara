@@ -6,8 +6,14 @@
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
-DART="$ROOT/.tools/dart-sdk/bin/dart.exe"
-FLUTTER="$ROOT/.tools/flutter/bin/flutter.bat"
+# Prefer the vendored Windows toolchain if present; else fall back to PATH (macOS / Linux / CI).
+if [ -x "$ROOT/.tools/dart-sdk/bin/dart.exe" ]; then
+  DART="$ROOT/.tools/dart-sdk/bin/dart.exe"
+  FLUTTER="$ROOT/.tools/flutter/bin/flutter.bat"
+else
+  DART="dart"
+  FLUTTER="flutter"
+fi
 
 echo "== [1/8] analyze v0 (lib bin test) =="
 ( cd "$ROOT/v0" && "$DART" analyze lib bin test )
@@ -28,8 +34,13 @@ echo "== [4/8] analyze app (lib test) =="
 echo "== [5/8] app widget tests =="
 ( cd "$ROOT/app" && "$FLUTTER" test )
 
-echo "== [6/8] windows build (the 'it still builds' floor) =="
-( cd "$ROOT/app" && "$FLUTTER" build windows --debug )
+echo "== [6/8] host-OS build (the 'it still builds' floor) =="
+case "$(uname -s)" in
+  Darwin) TARGET=macos ;;
+  MINGW*|MSYS*|CYGWIN*|Windows*) TARGET=windows ;;
+  *) TARGET=linux ;;
+esac
+( cd "$ROOT/app" && "$FLUTTER" build "$TARGET" --debug )
 
 echo "== [7/8] secret scan (no BYOK/API keys in tracked files) =="
 if git -C "$ROOT" grep -nE "sk-ant-[A-Za-z0-9]{20}" -- . >/dev/null 2>&1; then
