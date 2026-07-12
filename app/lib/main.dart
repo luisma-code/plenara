@@ -154,6 +154,10 @@ class _ChatState extends State<ChatScreen> {
   DateTime _lastGlyphAt = DateTime.fromMillisecondsSinceEpoch(0);
   PresenceTuning _tuning =
       const PresenceTuning(); // live aesthetic controls (the tune sheet)
+  // Dev harness overrides (the Dev harness sheet): pin the presence state / difficulty so you can
+  // watch Plena in any mood without driving a real turn. Null = follow the live turn signals.
+  PresenceState? _forceState;
+  double? _forceDifficulty;
   void _fireGlyph(GlyphDef? g, {bool force = false}) {
     if (g == null) return;
     final now = DateTime.now();
@@ -167,17 +171,20 @@ class _ChatState extends State<ChatScreen> {
     });
   }
 
-  PresenceState get _presence => _listening
-      ? PresenceState.listening
-      : _busy
-      ? PresenceState.thinking
-      : _speaking
-      ? PresenceState.speaking
-      : PresenceState.idle;
+  PresenceState get _presence =>
+      _forceState ?? // dev harness pin wins over the live signals
+      (_listening
+          ? PresenceState.listening
+          : _busy
+          ? PresenceState.thinking
+          : _speaking
+          ? PresenceState.speaking
+          : PresenceState.idle);
   // D1 while a turn is in flight; D2 once it's clearly working (a long/cloud turn), so Plena
   // visibly "reaches" (Spec 15 §4.2). Speaking a cloud-derived answer keeps the cooler tint.
   double get _difficulty =>
-      _busy ? (_deepThink ? 2 : 1) : (_speaking && _lastCloud ? 2 : 0);
+      _forceDifficulty ??
+      (_busy ? (_deepThink ? 2 : 1) : (_speaking && _lastCloud ? 2 : 0));
 
   @override
   void initState() {
@@ -522,6 +529,127 @@ class _ChatState extends State<ChatScreen> {
     );
   }
 
+  /// The Dev harness — drive the UI directly (states, difficulty, glyphs, display modes, voice)
+  /// without going through the engine, so you can exercise every visual by hand. The barrier is
+  /// transparent and the sheet half-height, so Plena stays lit and visible above it while you poke.
+  void _openHarness() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      barrierColor: Colors.transparent, // keep Plena visible while harnessing
+      backgroundColor: const Color(0xFF17130F).withValues(alpha: .96),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          final tt = Theme.of(ctx).textTheme;
+          void both(VoidCallback fn) {
+            setState(fn);
+            setSheet(() {});
+          }
+
+          Widget label(String s) => Padding(
+            padding: const EdgeInsets.only(top: 14, bottom: 6),
+            child: Text(s.toUpperCase(),
+                style: tt.labelSmall?.copyWith(letterSpacing: 1.4, color: Colors.white54)),
+          );
+          Widget pick(String text, bool on, VoidCallback onTap) => ChoiceChip(
+            label: Text(text),
+            selected: on,
+            onSelected: (_) => onTap(),
+          );
+
+          return SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * .52),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Dev harness', style: tt.titleMedium),
+                    Text('Force the UI directly — no turn required.',
+                        style: tt.bodySmall?.copyWith(color: Colors.white54)),
+
+                    label('Presence state'),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      pick('Live', _forceState == null, () => both(() => _forceState = null)),
+                      for (final s in PresenceState.values)
+                        pick(s.name, _forceState == s, () => both(() => _forceState = s)),
+                    ]),
+
+                    label('Difficulty (0 effortless → 4 can\'t)'),
+                    Row(children: [
+                      pick('Live', _forceDifficulty == null, () => both(() => _forceDifficulty = null)),
+                      Expanded(
+                        child: Slider(
+                          value: (_forceDifficulty ?? 0).clamp(0, 4),
+                          min: 0,
+                          max: 4,
+                          divisions: 4,
+                          label: (_forceDifficulty ?? 0).toStringAsFixed(0),
+                          onChanged: (v) => both(() => _forceDifficulty = v),
+                        ),
+                      ),
+                    ]),
+
+                    label('Display over the void'),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      pick('Clear', _caption == null, () => both(() {
+                            _caption = null;
+                            _displayIsList = false;
+                          })),
+                      pick('Caption', _caption != null && !_displayIsList, () => both(() {
+                            _caption = 'Logged dinner with Katherine — Rina got into UW.';
+                            _displayIsList = false;
+                          })),
+                      pick('List (ease to corner)', _displayIsList, () => both(() {
+                            _caption = 'Interactions with Katherine:\n  • dinner (Sun)\n'
+                                '  • coffee (Fri)\n  • call (Wed)';
+                            _displayIsList = true;
+                          })),
+                    ]),
+
+                    label('Voice'),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      FilledButton.tonal(
+                        onPressed: (_voice?.available ?? false)
+                            ? () => _voice?.speak('This is Plena — testing, one two three.')
+                            : null,
+                        child: const Text('Speak a test line'),
+                      ),
+                      OutlinedButton(
+                        onPressed: () => _voice?.stop(),
+                        child: const Text('Stop'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          _openTuning();
+                        },
+                        child: const Text('Tune Plena…'),
+                      ),
+                    ]),
+
+                    label('Fire a gesture (${kGlyphs.length} glyphs)'),
+                    Wrap(spacing: 6, runSpacing: 6, children: [
+                      for (final e in kGlyphs.entries)
+                        ActionChip(
+                          label: Text(e.key),
+                          tooltip: e.value.occasion,
+                          onPressed: () => _fireGlyph(e.value, force: true),
+                        ),
+                    ]),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xFF0A0908),
@@ -751,9 +879,12 @@ class _ChatState extends State<ChatScreen> {
           ).push(MaterialPageRoute(builder: (_) => const SettingsView()));
         } else if (v == 'tune') {
           _openTuning();
+        } else if (v == 'harness') {
+          _openHarness();
         }
       },
       itemBuilder: (_) => const [
+        PopupMenuItem(value: 'harness', child: Text('Dev harness')),
         PopupMenuItem(value: 'tune', child: Text('Tune Plena')),
         PopupMenuItem(value: 'data', child: Text('Your data')),
         PopupMenuItem(value: 'settings', child: Text('Settings')),
