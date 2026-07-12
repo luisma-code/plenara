@@ -32,9 +32,12 @@ The gaps the review found were **not structural** — they were (a) things the s
 
 ## Must-do before the first macOS *release* (ordered)
 
-1. **[gate] Stand up 2-OS CI** (`windows-latest` + `macos-latest`) running the same `precheck.sh`.
-   The pure-Dart engine suite runs identically on both; the per-OS delta is just `flutter build` +
-   widget tests. Without it, the Windows build stops being verified the day the dev machine is a Mac.
+1. **[gate — AUTHORED, 1 step to activate] 2-OS CI** (`windows-latest` + `macos-latest`) running the
+   same `precheck.sh`. The workflow is written at **`tool/ci-workflow.yml`**; it couldn't be pushed
+   to `.github/workflows/` because the push token lacks GitHub's `workflow` scope. **To activate:**
+   add `workflow` scope to the PAT then `git mv tool/ci-workflow.yml .github/workflows/ci.yml` +
+   commit + push, or paste it via GitHub → Actions → new workflow. The pure-Dart engine suite runs
+   identically on both runners; the per-OS delta is just `flutter build` + widget tests.
 2. **[macOS] Sign + notarize.** `Developer ID Application` cert → set `DEVELOPMENT_TEAM` in
    `Configs/AppInfo.xcconfig` → `codesign --options runtime` (sign nested onnxruntime/sherpa dylibs
    inside-out, **not** `--deep`) → `xcrun notarytool submit` → `stapler staple` → ship a DMG. Without

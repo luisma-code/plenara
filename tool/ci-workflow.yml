@@ -1,0 +1,56 @@
+# ⚠️ ACTIVATION: move this file to .github/workflows/ci.yml to enable CI. It lives under tool/
+# because the push token lacks the `workflow` scope GitHub requires for files under .github/workflows/.
+# To activate: add `workflow` scope to the PAT then `git mv tool/ci-workflow.yml
+# .github/workflows/ci.yml && git commit && git push`, OR paste it via GitHub → Actions → new workflow.
+#
+name: CI
+
+# The quality gate on both target OSes. The pure-Dart engine suite (analyze, 1657 tests, coverage
+# floor, import-lint, conformance ratchet) runs identically on each runner; the per-OS delta is just
+# `flutter build` + widget tests. This is what keeps the Windows build verified after the primary dev
+# machine becomes a Mac (and vice-versa) — see RELEASING.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: precheck (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pin Flutter (and its bundled Dart) to .flutter-version so both runners build the SAME engine.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .flutter-version
+          channel: stable
+          cache: true
+
+      - name: Versions
+        run: flutter --version
+
+      - name: pub get (v0 engine)
+        working-directory: v0
+        run: dart pub get
+
+      - name: pub get (app)
+        working-directory: app
+        run: flutter pub get
+
+      # tool/precheck.sh resolves the toolchain from PATH when .tools/ is absent (CI), and builds the
+      # HOST OS (macos on macos-latest, windows on windows-latest). One gate, both platforms.
+      - name: Quality gate (analyze, tests, coverage, host build, secret scan, conformance)
+        shell: bash
+        run: bash tool/precheck.sh
