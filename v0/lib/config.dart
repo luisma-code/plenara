@@ -29,6 +29,11 @@ String defaultConfigPath() => '${_home()}/.plenara/config.json';
 /// and a synced turnlog re-uploads every turn and conflicts across devices.
 String defaultDeviceDir() => '${_home()}/.plenara';
 
+/// The device-local on-device model directory (`~/.plenara/models`). One owner for this path so the
+/// app doesn't re-derive `~/.plenara/...` inline (which drifts across OSes). Dart's File/Directory
+/// accept `/` on Windows, so this style is canonical.
+String modelsDir() => '${defaultDeviceDir()}/models';
+
 PlenaraConfig loadConfig({String? configPath}) {
   final f = File(configPath ?? defaultConfigPath());
   Map<String, dynamic> cfg = {};
