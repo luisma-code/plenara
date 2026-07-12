@@ -20,19 +20,18 @@ class WindowsToastScheduler implements NotificationScheduler {
   final FlutterLocalNotificationsWindows _plugin = FlutterLocalNotificationsWindows();
   final Map<String, DateTime> _armed = {};
   bool _ready = false;
+  String? _unavailable; // set when init fails -> surfaced via unavailableReason()
 
   // A fixed COM activator GUID for Plenara (identifies our toast activator). Stable
   // across runs so scheduled toasts survive a restart.
   static const _guid = 'b7f6a1e2-9c34-4d55-8a6b-2f1e0c3d4a5b';
 
-  // Deterministic id per ref (not a running counter) so the SAME reminder re-uses the
-  // SAME notification id across restarts — zonedSchedule overwrites, no duplicate.
-  int _idFor(String ref) => ref.hashCode & 0x7fffffff;
-
   Future<bool> _ensureReady() async {
     if (_ready) return true;
     try {
       tzdata.initializeTimeZones(); // tz.local defaults to UTC; only the absolute instant matters
+      // (do NOT use matchDateTimeComponents while tz.local is UTC — components would be read as
+      // UTC wall-clock; today's recurrence is Dart-side re-derivation, so this is safe.)
       final ok = await _plugin.initialize(
         settings: const WindowsInitializationSettings(
           appName: 'Plenara',
@@ -41,9 +40,11 @@ class WindowsToastScheduler implements NotificationScheduler {
         ),
       );
       _ready = ok;
+      _unavailable = ok ? null : 'Notifications are unavailable on this device.';
       AppLog.instance.log('sched: plugin.initialize() -> $ok (aumid=Plenara.App)');
       return ok;
     } catch (e, st) {
+      _unavailable = 'Notifications failed to initialize.';
       AppLog.instance.log('sched: plugin.initialize FAILED: $e\n$st');
       return false;
     }
@@ -51,6 +52,7 @@ class WindowsToastScheduler implements NotificationScheduler {
 
   /// A one-shot IMMEDIATE toast — a launch-time self-test so we can tell display works
   /// without waiting for a scheduled reminder. Returns true if the native call didn't throw.
+  @override
   Future<bool> selfTest() async {
     if (!await _ensureReady()) {
       AppLog.instance.log('sched: selfTest skipped — not ready');
@@ -75,13 +77,13 @@ class WindowsToastScheduler implements NotificationScheduler {
     }
     try {
       await _plugin.zonedSchedule(
-        id: _idFor(ref),
+        id: notificationId(ref),
         title: 'Plenara',
         body: body,
         scheduledDate: tz.TZDateTime.from(when, tz.local),
       );
       _armed[ref] = when;
-      AppLog.instance.log('sched: ARMED "$ref" @ $when (id=${_idFor(ref)}, in ${when.difference(DateTime.now()).inSeconds}s)');
+      AppLog.instance.log('sched: ARMED "$ref" @ $when (id=${notificationId(ref)}, in ${when.difference(DateTime.now()).inSeconds}s)');
     } catch (e, st) {
       AppLog.instance.log('sched: zonedSchedule FAILED for "$ref": $e\n$st');
     }
@@ -93,7 +95,7 @@ class WindowsToastScheduler implements NotificationScheduler {
     try {
       // NOTE: unpackaged (no MSIX identity) -> native cancel is a no-op; a scheduled toast
       // can't be recalled. In-memory state stays correct; MSIX packaging gives real cancel.
-      await _plugin.cancel(id: _idFor(ref));
+      await _plugin.cancel(id: notificationId(ref));
     } catch (e, st) {
       AppLog.instance.log('sched: cancel FAILED for "$ref": $e\n$st');
     }
@@ -102,4 +104,7 @@ class WindowsToastScheduler implements NotificationScheduler {
 
   @override
   Map<String, DateTime> armed() => Map.of(_armed);
+
+  @override
+  String? unavailableReason() => _unavailable;
 }

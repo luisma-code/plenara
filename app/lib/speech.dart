@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:speech_to_text/speech_to_text.dart';
 
 /// Voice input seam (task #18). Tap to START; the ENGINE finalizes the utterance when the speaker
@@ -88,8 +90,11 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
           // stranded result is then delivered ~10-100ms after the NEXT listen() starts. A real
           // utterance needs >1s (speech + the engine's end-of-utterance silence), so anything this
           // early is the previous session's leftovers — drop it.
+          // Windows/SAPI ONLY: the stranded-final arrives right after the next listen() starts.
+          // Apple Speech streams legitimate early partials, so this guard must not run there or it
+          // would drop real words.
           final age = DateTime.now().difference(started);
-          if (age < const Duration(milliseconds: 500)) {
+          if (Platform.isWindows && age < const Duration(milliseconds: 500)) {
             _log("result: DISCARDED stale '${r.recognizedWords}' final=${r.finalResult} "
                 '(${age.inMilliseconds}ms after listen start)');
             return;
@@ -102,10 +107,13 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
           // backend never registers for hypothesis events, so ONLY finals arrive)
           cancelOnError: true,
           listenFor: const Duration(seconds: 45),
-          // NO pauseFor: it's a Dart-side timer reset by results, and Windows delivers no partial
-          // results — so it fires exactly pauseFor after start and kills the session while the
-          // user is mid-sentence, before the engine finalizes. The engine's own end-of-utterance
-          // silence detection delivers the final result in-session instead; listenFor is the cap.
+          // pauseFor is a Dart-side timer reset by each result. Windows/SAPI delivers NO partials,
+          // so a pause timer would fire mid-sentence before the engine finalizes — omit it and let
+          // SAPI's own end-of-utterance silence deliver the final (listenFor is the cap). Apple
+          // Speech is the inverse: it streams partials and does NOT reliably self-finalize on
+          // silence, so it NEEDS pauseFor (reset by partials) to end ~2s after the speaker stops —
+          // without it macOS voice input runs the full 45s before auto-send.
+          pauseFor: Platform.isWindows ? null : const Duration(seconds: 2),
         ),
       );
     } catch (_) {

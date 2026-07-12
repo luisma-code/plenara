@@ -512,6 +512,9 @@ class Session {
   /// schedule a toast in the past) and birthdays coming up within a week. Each line
   /// carries its own icon.
   List<String> pendingNudges() => [
+        // the notification backend can't fire (permission denied / init failed) — surface it so
+        // reminders don't fail silently (directive #7), never blank when healthy.
+        if (_scheduler?.unavailableReason() case final r?) '⚠️ $r',
         for (final r in dueReminders(store, now)) '⏰ Reminder: ${r.body}',
         ...upcomingBirthdayNudges(store, now),
         // read-only automation results (Spec 02 §7.5 "deliver") — shown until drained

@@ -29,15 +29,47 @@ class Reminder {
   const Reminder(this.ref, this.body, this.at);
 }
 
-/// The OS-notification seam. Intentionally tiny: the three members are the entire
-/// surface a platform backend must implement. [armed] mirrors the OS's currently
-/// scheduled set so reconciliation can diff without re-querying the platform.
+/// A stable OS notification id for a reminder ref — the SAME id across restarts (so re-arming a
+/// reminder overwrites rather than duplicating) and across SDK versions (unlike `String.hashCode`,
+/// which Dart does not guarantee stable across releases). FNV-1a over the ref's UTF-16 code units,
+/// masked to a positive 31-bit int. Shared by every backend so ids never diverge.
+int notificationId(String ref) {
+  var h = 0x811c9dc5;
+  for (final c in ref.codeUnits) {
+    h = (h ^ c) * 0x01000193;
+  }
+  return h & 0x7fffffff;
+}
+
+/// The OS-notification seam. Intentionally tiny: [schedule]/[cancel]/[armed] are the whole
+/// scheduling surface a platform backend maps 1:1 onto the OS API; [selfTest]/[unavailableReason]
+/// let the backend report its own health so a toast that can't fire is never a SILENT failure.
 abstract interface class NotificationScheduler {
+  /// Arm a notification. Best-effort: a backend may be unable to display (permission denied) or to
+  /// recall an already-scheduled one (see [cancel]); it reports that via [unavailableReason].
   Future<void> schedule(String ref, DateTime when, String body);
+
+  /// Cancel a previously-armed notification. Best-effort — some backends can't recall an
+  /// already-scheduled notification (e.g. an unpackaged Windows app has no identity to cancel by),
+  /// so product logic must never assume cancel is guaranteed; the reconcile loop is the safety net.
   Future<void> cancel(String ref);
-  /// The currently-armed set as ref -> the time it's armed for. The time lets
-  /// reconcile detect a RESCHEDULE (same reminder, new time) and re-arm it.
+
+  /// The currently-armed set as ref -> the time it's armed for. The time lets reconcile detect a
+  /// RESCHEDULE (same reminder, new time) and re-arm it. NOTE: in-memory today (empty at process
+  /// start), so a cancel-while-the-app-was-closed can miss; hydrating from the OS's pending set is
+  /// a per-backend improvement.
   Map<String, DateTime> armed();
+
+  /// Fire an IMMEDIATE notification to prove display actually works — the "silently doesn't show"
+  /// case (unpackaged Windows AUMID, denied macOS permission) is otherwise invisible. A launch
+  /// smoke; returns true iff the native call succeeded. Callers may ignore it.
+  Future<bool> selfTest();
+
+  /// Null when reminders will actually fire; otherwise a short human-facing reason they WON'T
+  /// (permission denied, backend init failed) so the UI can surface an actionable nudge instead of
+  /// failing silently (directive #7). Meaningful only after the backend has tried to initialize —
+  /// i.e. after the first reconcile.
+  String? unavailableReason();
 }
 
 /// In-memory scheduler — the test double AND a safe production default (a no-op
@@ -47,6 +79,7 @@ class FakeScheduler implements NotificationScheduler {
   final Map<String, Reminder> scheduled = {};
   final List<String> canceled = [];
   int scheduleCalls = 0; // total schedule() invocations (to prove dedupe/idempotence)
+  bool selfTestCalled = false;
 
   @override
   Future<void> schedule(String ref, DateTime when, String body) async {
@@ -61,6 +94,15 @@ class FakeScheduler implements NotificationScheduler {
 
   @override
   Map<String, DateTime> armed() => {for (final e in scheduled.entries) e.key: e.value.at};
+
+  @override
+  Future<bool> selfTest() async {
+    selfTestCalled = true;
+    return true;
+  }
+
+  @override
+  String? unavailableReason() => null; // the fake always "works" (no OS)
 }
 
 typedef _Store = Map<String, Map<String, dynamic>>;

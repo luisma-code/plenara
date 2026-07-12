@@ -32,6 +32,17 @@ final sourceDataDir =
 /// seeded with the built-in capabilities on first run, the BYOK key, and the real
 /// Windows toast scheduler (reminders now fire as OS notifications, not just on-open
 /// nudges). The scheduler self-inits lazily on first schedule/cancel.
+/// Pick the OS notification backend for this platform. The single place `Platform.is*` decides a
+/// scheduler — add a backend here, not at the call site. A platform with no native backend gets the
+/// in-memory FakeScheduler (reminders still reconcile + surface as on-open nudges), logged so a
+/// silent downgrade is diagnosable.
+NotificationScheduler _platformScheduler() {
+  if (Platform.isWindows) return WindowsToastScheduler();
+  if (Platform.isMacOS) return MacToastScheduler();
+  AppLog.instance.log('sched: no native notification backend on this platform — in-app nudges only');
+  return FakeScheduler();
+}
+
 Session buildSession({NotificationScheduler? scheduler}) {
   final cfg = loadConfig();
   ensureSeeded(cfg.dataDir, sourceDataDir);
@@ -132,13 +143,9 @@ class ChatScreen extends StatefulWidget {
 class _ChatState extends State<ChatScreen> {
   // Held so we can run a launch-time toast self-test (production only). `late` so an
   // injected test session never constructs the native plugin.
-  // Real OS toasts per platform (Windows/macOS); anything else reconciles reminders in memory
-  // via FakeScheduler (on-open nudges still work). Constructed lazily, only in the real app.
-  late final NotificationScheduler _scheduler = Platform.isWindows
-      ? WindowsToastScheduler()
-      : Platform.isMacOS
-          ? MacToastScheduler()
-          : FakeScheduler();
+  // Real OS toasts per platform; anything else reconciles reminders in memory via FakeScheduler
+  // (on-open nudges still work). Constructed lazily (only in the real app, never under a test).
+  late final NotificationScheduler _scheduler = _platformScheduler();
   late final Session _session =
       widget.session ?? buildSession(scheduler: _scheduler);
   // Chosen in _init(): on-device sherpa_onnx if its model is present, else the OS SAPI engine,
@@ -223,12 +230,12 @@ class _ChatState extends State<ChatScreen> {
       // Opt-in diagnostic: set PLENARA_SELFTEST=1 to fire an immediate "notifications are
       // on" toast at launch (proven working; off by default so normal launches are quiet).
       // Guard on session==null FIRST so a test (injected session) never touches _scheduler —
-      // constructing the native scheduler under flutter_tester would throw.
+      // constructing the native scheduler under flutter_tester would throw. selfTest() is on the
+      // seam now, so it fires on whichever backend this platform picked (Windows/macOS/Fake).
       if (widget.session == null &&
           Platform.environment['PLENARA_SELFTEST'] == '1') {
-        final sched = _scheduler;
         // ignore: discarded_futures
-        if (sched is WindowsToastScheduler) sched.selfTest();
+        _scheduler.selfTest();
       }
       const greeting =
           'Hi — I\'m Plena. Tap anywhere and talk to me — "add call the plumber to my list", '

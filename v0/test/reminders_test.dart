@@ -47,6 +47,21 @@ Future<Session> _open(String dir, FakeScheduler fake, {DateTime? clock}) async {
   return s;
 }
 
+/// A backend that reports itself unavailable (e.g. macOS permission denied) — to prove the seam's
+/// health signal surfaces to the user instead of failing silently (directive #7).
+class _DegradedScheduler implements NotificationScheduler {
+  @override
+  Future<void> schedule(String ref, DateTime when, String body) async {}
+  @override
+  Future<void> cancel(String ref) async {}
+  @override
+  Map<String, DateTime> armed() => {};
+  @override
+  Future<bool> selfTest() async => false;
+  @override
+  String? unavailableReason() => "Reminders won't fire — enable notifications.";
+}
+
 void main() {
   group('pure derivation + reconcile (no Session)', () {
     Map<String, Map<String, dynamic>> store(List<Map<String, dynamic>> recs) =>
@@ -84,6 +99,29 @@ void main() {
       await reconcileReminders(fake, s, _now);
       expect(fake.armed(), isEmpty);
       expect(fake.canceled, ['reminder-a']);
+    });
+  });
+
+  group('scheduler seam: health + stable ids (cross-platform, directive #7)', () {
+    test('notificationId is stable, positive, and ref-distinct', () {
+      expect(notificationId('reminder-a'), notificationId('reminder-a')); // same ref -> same id
+      expect(notificationId('reminder-a'), isNot(notificationId('reminder-b')));
+      expect(notificationId('reminder-a'), greaterThanOrEqualTo(0)); // 31-bit positive
+    });
+
+    test('an unavailable backend surfaces a ⚠️ nudge; a healthy one does not', () async {
+      final degraded = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud(), scheduler: _DegradedScheduler());
+      await degraded.init(retrieval: false);
+      expect(degraded.pendingNudges().any((n) => n.startsWith('⚠️')), isTrue);
+
+      final healthy = await _open(makeTempDataDir(), FakeScheduler());
+      expect(healthy.pendingNudges().any((n) => n.startsWith('⚠️')), isFalse);
+    });
+
+    test('FakeScheduler.selfTest records the call', () async {
+      final fake = FakeScheduler();
+      expect(await fake.selfTest(), isTrue);
+      expect(fake.selfTestCalled, isTrue);
     });
   });
 
