@@ -169,9 +169,14 @@ final Map<String, GlyphDef> kGlyphs = {
     'question',
     'a clarification asked (accompanies the chips)',
     core: true,
-    dots: [GlyphDot(_p(0, .5), delayMs: 620)],
+    // a real "?" — a hook curving over the top and down into a short stem, dot below. (Was a
+    // shallow arc + dot that read like horns / a "µ".)
+    dots: [GlyphDot(_p(0, .42), delayMs: 700)],
     strokes: [
-      _s(_arc(0, -.18, .3, math.pi, -0.2, 22)..addAll([_p(0, .18)]), draw: 560),
+      _s([
+        _p(-.22, -.1), _p(-.24, -.34), _p(0, -.46), _p(.24, -.32),
+        _p(.18, -.06), _p(0, .06), _p(0, .16),
+      ], draw: 640),
     ],
   ),
   'ellipsis': GlyphDef(
@@ -299,9 +304,10 @@ final Map<String, GlyphDef> kGlyphs = {
   'double-check': GlyphDef(
     'double-check',
     'list cleared — every task of the day done',
+    // two DISTINCT ticks with a clear gap (they used to overlap into a jagged "W")
     strokes: [
-      _s([_p(-.44, .0), _p(-.24, .24), _p(.08, -.28)], draw: 420),
-      _s([_p(-.06, .04), _p(.16, .3), _p(.5, -.3)], delay: 360, draw: 460),
+      _s([_p(-.5, -.02), _p(-.34, .18), _p(-.06, -.26)], draw: 400), // left tick
+      _s([_p(.02, -.02), _p(.18, .18), _p(.46, -.26)], delay: 360, draw: 440), // right tick
     ],
   ),
   'up-arrow': GlyphDef(
@@ -610,18 +616,12 @@ final Map<String, GlyphDef> kGlyphs = {
   'open-book': GlyphDef(
     'open-book',
     'a journal session begins',
+    // a spine with two page panels fanning open — reads as an open book (the outward-bulging arcs
+    // used to splay into a butterfly).
     strokes: [
-      _s(_line(_p(0, -.35), _p(0, .35)), draw: 320),
-      _s(
-        _arc(-.28, 0, .32, -math.pi * .5, math.pi * .5, 16),
-        delay: 300,
-        draw: 380,
-      ),
-      _s(
-        _arc(.28, 0, .32, math.pi * .5, math.pi * 1.5, 16),
-        delay: 300,
-        draw: 380,
-      ),
+      _s(_line(_p(0, -.3), _p(0, .28)), draw: 240), // spine
+      _s([_p(0, -.3), _p(-.44, -.18), _p(-.44, .22), _p(0, .28)], delay: 220, draw: 460), // left page
+      _s([_p(0, -.3), _p(.44, -.18), _p(.44, .22), _p(0, .28)], delay: 220, draw: 460), // right page
     ],
   ),
 };
