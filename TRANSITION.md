@@ -47,10 +47,10 @@ Plena is `app/lib/plena.dart`.
 | Windows thing | On macOS |
 |---|---|
 | **Toolchain in `.tools/`** (`dart-sdk`, `flutter`) — **gitignored**, Windows binaries | Install Flutter for macOS (`flutter.dev` or `brew install --cask flutter`) + **Xcode** (for the macOS runner + codesign). Use `flutter`/`dart` from `PATH`. |
-| **`app/windows/`** runner only — **no `macos/` runner exists yet** | Run `cd app && flutter create --platforms=macos .` once to generate `app/macos/`. |
+| **`app/windows/`** runner only | **`app/macos/` is now pre-generated + customized** (done this session, on Windows): runner, **unsandboxed** entitlements (mic `device.audio-input` + `network.client`), Info.plist usage strings, app name **Plenara**, bundle id `com.plenara.app`. On Mac it's just `flutter pub get` → pods install on first `flutter build macos`. |
 | **TTS = WinRT/SAPI** (the "crummy Windows voice"; needed `nuget.exe`) | `flutter_tts` uses **AVSpeechSynthesizer** automatically — the good Apple voice Luis wanted. No nuget. |
 | **STT = sherpa_onnx Whisper, else SAPI** | sherpa_onnx works on macOS (onnxruntime); `speech_to_text` falls back to Apple Speech. Model still expected at `~/.plenara/models/en-whisper` (or it no-ops). |
-| **`WindowsToastScheduler`** (real OS toasts, needs ATL) | Now platform-guarded: non-Windows uses `FakeScheduler` (reminders reconcile in memory; on-open nudges work; **no OS toast** until a macOS scheduler is wired via `flutter_local_notifications`, which does support macOS). |
+| **`WindowsToastScheduler`** (real OS toasts, needs ATL) | **`MacToastScheduler` is now written + wired** (`app/lib/macos_scheduler.dart` — `flutter_local_notifications` → UNUserNotificationCenter, analyze-clean). `_scheduler` picks Windows / macOS / else-`FakeScheduler` by `Platform`. It requests notification permission on first arm. |
 | **Hardcoded seed path** `Z:\code\plenara\v0\data` | Now `PLENARA_SEED_DIR`-overridable. Set `export PLENARA_SEED_DIR="$HOME/code/plenara/v0/data"` (or wherever you clone), **or** do the real fix: bundle `v0/data` as Flutter assets. |
 | **Root scripts** `build.cmd` / `run.cmd` / `dogfood.cmd` / `prep-machine.ps1` | Windows-only. macOS: `flutter run -d macos` / `flutter build macos`. A Mac prep is just Flutter + Xcode. |
 | **`tool/snap_gestures.sh`** references `../.tools/flutter/bin/flutter.bat` | It already **falls back to `flutter` on `PATH`** if that's absent — works on Mac as-is. |
@@ -67,20 +67,17 @@ Nothing else is OS-bound: `v0/` is pure Dart, and `plena.dart`/`glyphs.dart` are
    install CocoaPods (`sudo gem install cocoapods` or via brew). Confirm `flutter doctor` is green
    for macOS desktop.
 3. **Deps:** `cd v0 && dart pub get` and `cd ../app && flutter pub get`.
-4. **Generate the macOS runner:** `cd app && flutter create --platforms=macos .` (creates
-   `app/macos/`; leaves `lib/` untouched).
-5. **Entitlements + Info.plist** (in `app/macos/Runner/`): add mic + speech usage strings and
-   entitlements, else the app crashes on first mic/speech use:
-   - `Info.plist`: `NSMicrophoneUsageDescription`, `NSSpeechRecognitionUsageDescription`.
-   - `DebugProfile.entitlements` **and** `Release.entitlements`:
-     `com.apple.security.device.audio-input` = true, and
-     `com.apple.security.network.client` = true (BYOK cloud calls).
-6. **Seed data:** `export PLENARA_SEED_DIR="$(pwd)/../v0/data"` before `flutter run`, or bundle it
-   as an asset (better — removes the dev-path dependency entirely).
-7. **BYOK key + config:** `~/.plenara/config.json` with `"apiKey": "sk-ant-…"` and optionally a
-   `"dataDir"`. (`~/.plenara/` is cross-platform — same as Windows.) Offline features work with no
-   key; cloud routing/authoring/generative need one.
-8. **(Optional) STT model:** put the Whisper model at `~/.plenara/models/en-whisper` for
+4. **macOS runner — ALREADY DONE** (committed this session): `app/macos/` exists with entitlements
+   + Info.plist + app name/bundle id set. You do **not** need `flutter create`. On first
+   `flutter build macos`, CocoaPods installs the plugin pods (flutter_local_notifications,
+   sherpa_onnx, record) — that step needs the Mac + Xcode.
+5. **Seed data (the one runtime step):** `export PLENARA_SEED_DIR="$(pwd)/../v0/data"` before
+   `flutter run` — first-run seeding copies the built-in capability defs from there. (Proper fix,
+   still TODO: bundle `v0/data` as a Flutter asset so this env var isn't needed — see §6.)
+6. **BYOK key + config:** `~/.plenara/config.json` with `"apiKey": "sk-ant-…"` and optionally a
+   `"dataDir"`. (`~/.plenara/` is cross-platform — same as Windows; the build is unsandboxed so
+   this is the real home dir.) Offline features work with no key; cloud needs one.
+7. **(Optional) STT model:** put the Whisper model at `~/.plenara/models/en-whisper` for
    sherpa_onnx; without it, STT no-ops to Apple Speech / typing.
 
 ---
@@ -116,15 +113,17 @@ Commit trailers are required (see `CLAUDE.md`): `Co-Authored-By: Claude …` + `
 
 ## 6. Good first tasks on Mac (once it builds & runs)
 
-- **Wire a real macOS notification scheduler** behind the `NotificationScheduler` seam using
-  `flutter_local_notifications` (macOS support exists) — the logic is all CI-tested against
-  `FakeScheduler`; only the thin OS shim is new. Mirror `windows_scheduler.dart`.
-- **Bundle `v0/data` as Flutter assets** so `PLENARA_SEED_DIR` is no longer needed (the proper fix
-  for the dev-path seeding).
+- **Smoke-test the build:** `flutter pub get && flutter build macos` (installs pods), then
+  `flutter run -d macos` with `PLENARA_SEED_DIR` set. Fix any pod/entitlement issues Xcode surfaces.
+- **Confirm the macOS toast fires:** `MacToastScheduler` is written but **never run** (I can't on
+  Windows) — set a near-future reminder and verify the notification appears; approve the permission
+  prompt. Instrumented via `AppLog` (`sched(macos): …`).
 - **Confirm AVSpeechSynthesizer voice** quality and pick a nicer default voice/rate in
-  `speech_out.dart` (this is the upgrade from the Windows SAPI voice).
+  `speech_out.dart` — the upgrade from the Windows SAPI voice.
+- **Bundle `v0/data` as Flutter assets** so `PLENARA_SEED_DIR` is no longer needed (the proper fix
+  for dev-path seeding; the v0 engine is pure Dart so the extract-to-dir must live in the app layer).
 - **Finish the glyph pass if desired:** `nod`, `snooze-arc`, `still-flame` were left as
-  deliberately-minimal marks; the snap loop is ready if you want to iterate them.
+  deliberately-minimal marks; the snap loop (`app/tool/snap_gestures.sh`) is ready.
 
 ---
 

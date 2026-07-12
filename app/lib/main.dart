@@ -19,6 +19,7 @@ import 'settings_view.dart';
 import 'sherpa_speech.dart';
 import 'speech.dart';
 import 'speech_out.dart';
+import 'macos_scheduler.dart';
 import 'windows_scheduler.dart';
 
 // Dev-only: where first-run seeding copies the built-in capability defs FROM (a shipped build
@@ -131,10 +132,13 @@ class ChatScreen extends StatefulWidget {
 class _ChatState extends State<ChatScreen> {
   // Held so we can run a launch-time toast self-test (production only). `late` so an
   // injected test session never constructs the native plugin.
-  // Windows fires real OS toasts; other platforms (macOS incoming) reconcile reminders in memory
-  // via FakeScheduler until a native macOS scheduler is wired (flutter_local_notifications).
-  late final NotificationScheduler _scheduler =
-      Platform.isWindows ? WindowsToastScheduler() : FakeScheduler();
+  // Real OS toasts per platform (Windows/macOS); anything else reconciles reminders in memory
+  // via FakeScheduler (on-open nudges still work). Constructed lazily, only in the real app.
+  late final NotificationScheduler _scheduler = Platform.isWindows
+      ? WindowsToastScheduler()
+      : Platform.isMacOS
+          ? MacToastScheduler()
+          : FakeScheduler();
   late final Session _session =
       widget.session ?? buildSession(scheduler: _scheduler);
   // Chosen in _init(): on-device sherpa_onnx if its model is present, else the OS SAPI engine,
