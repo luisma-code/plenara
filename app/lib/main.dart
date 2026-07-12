@@ -21,8 +21,11 @@ import 'speech.dart';
 import 'speech_out.dart';
 import 'windows_scheduler.dart';
 
-// Where the SHIPPED built-in capability defs are copied FROM on first run.
-const sourceDataDir = r'Z:\code\plenara\v0\data';
+// Dev-only: where first-run seeding copies the built-in capability defs FROM (a shipped build
+// bundles v0/data as assets instead). Overridable per machine via PLENARA_SEED_DIR — e.g. on
+// macOS: export PLENARA_SEED_DIR="$HOME/code/plenara/v0/data" (see transition.md).
+final sourceDataDir =
+    Platform.environment['PLENARA_SEED_DIR'] ?? r'Z:\code\plenara\v0\data';
 
 /// Build the production Session from user config: the real (synced) data folder,
 /// seeded with the built-in capabilities on first run, the BYOK key, and the real
@@ -128,7 +131,10 @@ class ChatScreen extends StatefulWidget {
 class _ChatState extends State<ChatScreen> {
   // Held so we can run a launch-time toast self-test (production only). `late` so an
   // injected test session never constructs the native plugin.
-  late final WindowsToastScheduler _scheduler = WindowsToastScheduler();
+  // Windows fires real OS toasts; other platforms (macOS incoming) reconcile reminders in memory
+  // via FakeScheduler until a native macOS scheduler is wired (flutter_local_notifications).
+  late final NotificationScheduler _scheduler =
+      Platform.isWindows ? WindowsToastScheduler() : FakeScheduler();
   late final Session _session =
       widget.session ?? buildSession(scheduler: _scheduler);
   // Chosen in _init(): on-device sherpa_onnx if its model is present, else the OS SAPI engine,
@@ -212,10 +218,13 @@ class _ChatState extends State<ChatScreen> {
       if (!mounted) return; // torn down during init -> don't setState
       // Opt-in diagnostic: set PLENARA_SELFTEST=1 to fire an immediate "notifications are
       // on" toast at launch (proven working; off by default so normal launches are quiet).
+      // Guard on session==null FIRST so a test (injected session) never touches _scheduler —
+      // constructing the native scheduler under flutter_tester would throw.
       if (widget.session == null &&
           Platform.environment['PLENARA_SELFTEST'] == '1') {
+        final sched = _scheduler;
         // ignore: discarded_futures
-        _scheduler.selfTest();
+        if (sched is WindowsToastScheduler) sched.selfTest();
       }
       const greeting =
           'Hi — I\'m Plena. Tap anywhere and talk to me — "add call the plumber to my list", '

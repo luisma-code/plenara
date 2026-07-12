@@ -1,0 +1,18 @@
+# Normalize line endings in the repo to LF; check out native. Keeps the Windows→macOS move
+# clean (no CRLF churn) and guarantees shell scripts stay LF so they run on macOS.
+* text=auto
+*.sh   text eol=lf
+*.dart text
+*.md   text
+*.json text
+*.yaml text
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binaries — never touch.
+*.png binary
+*.jpg binary
+*.ico binary
+*.zip binary
+*.onnx binary
+*.bundle binary

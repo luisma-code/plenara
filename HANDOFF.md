@@ -2,6 +2,9 @@
 
 _Last updated: 2026-07-11 (late). Written to survive a Claude process relaunch._
 
+> **Moving to macOS?** Read **`TRANSITION.md`** first — it's the Mac-specific companion (setup,
+> what's Windows-only, first tasks). This file is the full (Windows-oriented) session history.
+
 ## LATEST SESSION (2026-07-11, autonomous) — talk-back + the presence-primary UI. HEAD ≈ `48c0267`+, app 49 + v0 1643 green.
 
 Plena is now a two-way, voice-first presence with the redesigned surface:
