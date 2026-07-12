@@ -122,8 +122,8 @@ The input contract is the seam between this spec and the NLU spec (which this sp
 > retire on the next full §3 rewrite). The vocabulary is CLOSED — `validateSkill` rejects any
 > op/fn/cond/filter-op/valueType outside these sets:
 >
-> - **Ops (10, closed):** `read_one, read_many, read_related, write_record, delete_record,
->   compute, set, format, branch, foreach`.
+> - **Ops (11, closed):** `read_one, read_many, read_related, read_reference, write_record,
+>   delete_record, compute, set, format, branch, foreach`.
 > - **`compute`** — `{"op":"compute","fn":<name>,"args":[…],"into":"var"}`, NOT a string
 >   expression. Implemented `fn` set (34): `now, today, format_date, format_time, date_part,
 >   time_part, start_of_week, start_of_month, add, mul, div, round, count, concat,
@@ -156,6 +156,18 @@ The input contract is the seam between this spec and the NLU spec (which this sp
 >   other's ("Katherine" reuses "Katherine Zinger"; "Sam" never matches "Samantha");
 >   `"first":true` tolerates a non-unique match by taking the first (for lookups that are
 >   not a user-facing name choice). Otherwise `>1` match raises an ambiguity clarify.
+> - **`read_reference`** — `{"op":"read_reference","dataset":"nutrition","key":<expr>,"into":"var"}`,
+>   the Spec 13 reference-dataset lookup (opcode 11, appended). A sync, offline Tier-1 lookup
+>   in a shipped read-only dataset keyed by name (the Session injects the stores; the
+>   interpreter's reference map is empty by default so it stays pure/testable). The key is
+>   normalized (lowercase; punctuation → space; articles/quantifiers and bare digit counts
+>   dropped) and matched **exactly** against entry keys and aliases — no fuzziness inside the
+>   op; that lives in the resolver (Spec 13 §3). A hit binds the entry's fields plus
+>   `provenance: "reference"` and the canonical `refKey`; a miss (or an unshipped dataset)
+>   binds **null**, so null propagation and `branch {isNull}` give the honest-miss path with
+>   no special casing (Spec 13 §3.5). Validated on `dataset` (string) + `key` + `into`;
+>   Spec 13 §4.1's `quantity`/`measure` serving-scaling and the namespaced `reads` entry
+>   (`"reference:nutrition"`) are **not yet** implemented in v0.
 > - **`write_record`** with a `target` (`{"ref":"<recordVar>"}`) **updates** (field-merge);
 >   without a target it **creates**. **`delete_record`** (`{"op":"delete_record","id":<expr>}`)
 >   tombstones. (`dangerLevel` gating of destructive ops is not yet enforced — `G` open.)
@@ -218,6 +230,7 @@ The compiled form needs no readability — it is derived deterministically from 
 | 8 | `set` | derived |
 | 9 | `branch` | control |
 | 10 | `foreach` | control |
+| 11 | `read_reference` | read |
 
 The subsections below define each primitive by its symbolic source form (what an author and a reviewer read); the opcode is the compiled tag for the same primitive.
 
@@ -306,6 +319,27 @@ Fetch records reachable from a record you already hold, along one of the two Spe
 | `into` | string | yes | |
 
 Relation mode makes the graph edges Spec 01 promises ("independently queryable", §2.1) actually traversable from a skill — needed by the gift/contact marquee tasks (a `gift_idea` reaching its `forContact`). Ownership mode is unchanged from v0.1.
+
+#### `read_reference`
+Fetch an entry from a shipped, read-only reference dataset (Spec 13) — a lookup against the ReferenceStore, not the StorageRepository. Side-effect-free, so permitted in the resolve phase like all reads (§4.1). Appended to the vocabulary as opcode 11 under the §3.0 append-only discipline.
+
+```json
+{
+  "op": "read_reference",
+  "dataset": "nutrition",
+  "key": "{itemKey}",
+  "into": "nutrition"
+}
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `op` | `"read_reference"` | yes | |
+| `dataset` | string | yes | A shipped `datasetId` (Spec 13 §2), e.g. `nutrition`. Not a `typeId` — reference data is versioned app content, not user records — so it adds nothing to the read capability closure. An unknown dataset behaves as a miss. |
+| `key` | string | yes | The lookup name, usually a resolver-supplied slot (Spec 13 §4.2). May be a literal or a `{variableName}` reference. Normalized (case, punctuation, articles/quantifiers, bare digit counts) and matched **exactly** against entry keys and aliases — no fuzzy matching inside the op; fuzziness lives in the NLU-layer reference resolver (Spec 13 §3). |
+| `into` | string | yes | Bound to the matched entry's fields plus `provenance` (`"reference"`) and the canonical `refKey`. **`null` on a miss** — null propagation (§3.7) and a null branch give the honest-miss path with no special casing (Spec 13 §3.5). |
+
+Spec 13 §4.1 additionally designs `quantity`/`measure` serving-scaling and a namespaced `reads` declaration (`"reference:nutrition"`, its validator rule 7); neither is implemented in the v0 interpreter yet — v0 ships the deterministic key lookup above.
 
 ### 3.2 Write Operations
 
@@ -553,7 +587,7 @@ The resolve phase reads and plans; it produces no side effects.
 1. **Parse and validate** the skill file against the DSL schema. Any structural error halts with an authoring-time error — not a runtime error.
 2. **Hydrate the execution context** with the inputs the NLU layer extracted (slot fills from the user's utterance) and system-provided values (`{now}`, `{today}`, user identity). The system values are **frozen at this moment** and recorded in the journal (§4.4); every re-verify and resume reuses them rather than re-reading the clock.
 3. **Walk the step list** starting from `"main"`. For each step:
-   - For read ops (`read_one`, `read_many`, `read_related`): execute the read against the StorageRepository (served from the in-memory, decrypted object store — Spec 01 §8.2 — so filters over `sensitive` attributes work). The result is bound into the context. **Reads are permitted in the resolve phase** because they have no side effects and their results are needed to evaluate branch conditions.
+   - For read ops (`read_one`, `read_many`, `read_related` — and `read_reference`, which is served from the shipped ReferenceStore rather than the StorageRepository): execute the read against the StorageRepository (served from the in-memory, decrypted object store — Spec 01 §8.2 — so filters over `sensitive` attributes work). The result is bound into the context. **Reads are permitted in the resolve phase** because they have no side effects and their results are needed to evaluate branch conditions.
    - For `branch`: evaluate the condition, record the resolution in the execution journal (§5), and recursively resolve the chosen label's steps.
    - For `foreach`: resolve the iterable from context (its length is known now, because all reads happen in resolve) and **fully unroll it** — resolve the `do` label's steps once per element, up to the iteration `limit`. Every pending write produced inside the loop body is appended to the action plan. Partial unrolling would break the plan-completeness discipline (§4.3): the *complete* set of writes must be resolved and validated before execute — so the after-the-fact description covers all N writes and a gated path (automation review, §7.5) approves all N, not an extrapolation from the first iteration.
    - For write ops (`write_record`, `delete_record`): **do not execute**. Fully resolve every field value to a literal; for a create, **mint the record `id` now** and freeze it into the plan (§4.4). Then **validate the pending write against the target type's schema** — for a create, all required attributes present (Spec 01 §3.1); for an update (merge), only the changed attributes, and no required attribute set to null; in both cases values conform to their `valueType`, `enum` values are members of `enumValues`, and the append-only-`id` rule (§3.2) holds. A validation failure halts resolve *before* the confirmation is shown, so the user never approves a plan that cannot execute. On success, append the validated pending write to the action plan.
@@ -769,7 +803,7 @@ Skills are **data, not code**: the closed vocabulary (§3) is interpreted, never
 | `show-streak` | *(tracker type)* | — | compute current/longest streak (read + `compute`). |
 | `search-records` | *(all)* | — | system embedding search path, not a per-type skill (Spec 05 §12). |
 
-**`instantiate-template` and `search-records` are system meta-operations, not DSL skills.** The closed vocabulary (§3) writes *records of registered types*; it cannot register a type, bind skills, or run an embedding scan — those are `SchemaRegistry` / retrieval operations. Both entries appear in the seed table because they are **routing targets** (indexed in the `CapabilityIndex` and invoked by voice exactly like a skill), but the orchestrator dispatches them to the registry/search subsystem, not to the interpreter. The same holds for automation-config edits ("move my briefing to 6:30", P-19): editing an `automations/` file is a registry meta-operation the orchestrator performs directly (Spec 04 §3.9), never a `write_record`. Keeping this boundary explicit protects the P2.7 story: the interpreter's capability ceiling stays exactly the ten primitives, and everything that mutates the *capability system itself* goes through the reviewed registry code paths with their own confirmation rules.
+**`instantiate-template` and `search-records` are system meta-operations, not DSL skills.** The closed vocabulary (§3) writes *records of registered types*; it cannot register a type, bind skills, or run an embedding scan — those are `SchemaRegistry` / retrieval operations. Both entries appear in the seed table because they are **routing targets** (indexed in the `CapabilityIndex` and invoked by voice exactly like a skill), but the orchestrator dispatches them to the registry/search subsystem, not to the interpreter. The same holds for automation-config edits ("move my briefing to 6:30", P-19): editing an `automations/` file is a registry meta-operation the orchestrator performs directly (Spec 04 §3.9), never a `write_record`. Keeping this boundary explicit protects the P2.7 story: the interpreter's capability ceiling stays exactly the eleven primitives of the closed vocabulary (§3), and everything that mutates the *capability system itself* goes through the reviewed registry code paths with their own confirmation rules.
 
 Two read/query skills in full (they exercise `read_related` + the resolve-or-create person idiom for the query side):
 
