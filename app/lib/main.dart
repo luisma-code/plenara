@@ -103,14 +103,6 @@ class _HomeState extends State<Home> {
       : ChatScreen(session: widget.session, retrieval: widget.retrieval);
 }
 
-class Msg {
-  final String text;
-  final bool user;
-  final bool
-  cloud; // this assistant reply consulted the cloud (spent tokens) -> show a green dot
-  Msg(this.text, this.user, {this.cloud = false});
-}
-
 class ChatScreen extends StatefulWidget {
   /// Tests inject a Session (temp data dir + replay/offline cloud). [retrieval]
   /// defaults OFF — the embed server isn't part of the dogfood setup, and building
@@ -145,9 +137,7 @@ class _ChatState extends State<ChatScreen> {
   SpeechOutput? _voice; // Plena's talk-back (Spec 12 §6); chosen in _init
   bool _voiceMuted =
       false; // mute silences her voice; captions still show (Spec 15 §7)
-  final _msgs = <Msg>[];
   final _ctrl = TextEditingController();
-  final _scroll = ScrollController();
   bool _ready = false, _busy = false, _listening = false;
   // Plena's presence state (Spec 15): derived from the real turn/speech signals. No TTS yet,
   // so "speaking" is a brief flourish while a reply lands; _lastCloud tints it cooler (D2).
@@ -226,10 +216,6 @@ class _ChatState extends State<ChatScreen> {
       final nudges = _session.pendingNudges();
       setState(() {
         _ready = true;
-        _msgs.add(Msg(greeting, false));
-        for (final n in nudges) {
-          _msgs.add(Msg(n, false));
-        }
         _caption = nudges.isEmpty
             ? greeting
             : '$greeting\n\n${nudges.join('\n')}';
@@ -245,16 +231,13 @@ class _ChatState extends State<ChatScreen> {
       );
     } catch (e, st) {
       log('init: FAILED: $e\n$st');
-      // no infinite spinner: surface the failure and let the user see it
+      // no infinite spinner: surface the failure over the void
       setState(() {
         _ready = true;
-        _msgs.add(
-          Msg(
+        _caption =
             "I couldn't start up — there may be a problem reading your data folder.\n\n$e"
-            "\n\nDiagnostics: ${log.file.path}",
-            false,
-          ),
-        );
+            "\n\nDiagnostics: ${log.file.path}";
+        _displayIsList = false;
       });
     }
   }
@@ -296,7 +279,6 @@ class _ChatState extends State<ChatScreen> {
     if (t.isEmpty || _busy) return;
     _ctrl.clear();
     setState(() {
-      _msgs.add(Msg(t, true));
       _busy = true;
       _deepThink = false;
       _caption = null;
@@ -306,7 +288,6 @@ class _ChatState extends State<ChatScreen> {
     _thinkTimer = Timer(const Duration(milliseconds: 700), () {
       if (mounted) setState(() => _deepThink = true);
     });
-    _jump();
     final log = AppLog.instance;
     log('turn: "$t"');
     final reviewsBefore = _session.automations.pendingReview.length;
@@ -336,26 +317,21 @@ class _ChatState extends State<ChatScreen> {
     final newReviews = review.length > reviewsBefore
         ? review.sublist(reviewsBefore)
         : const [];
+    // automation deliveries (✨) + newly-held writes (📋) join the reply over the void
+    final extras = <String>[
+      for (final d in deliveries) '✨ ${d.text}',
+      for (final p in newReviews) '📋 ${p.description} — say "approve it" or "dismiss it".',
+    ];
+    final shown = extras.isEmpty ? resp : '$resp\n\n${extras.join('\n')}';
     setState(() {
-      _msgs.add(Msg(resp, false, cloud: usedCloud));
-      for (final d in deliveries) {
-        _msgs.add(Msg('✨ ${d.text}', false));
-      }
-      for (final p in newReviews) {
-        _msgs.add(
-          Msg('📋 ${p.description} — say "approve it" or "dismiss it".', false),
-        );
-      }
       _busy = false;
       _deepThink = false;
       _speaking = true; // Plena "speaks" the reply — a brief presence flourish
       _lastCloud = usedCloud;
-      _caption =
-          resp; // the words materialise over the void as she speaks (§6.1)
+      _caption = shown; // the words materialise over the void as she speaks (§6.1)
       // list-shaped (bullets / several lines) → Plena eases to a corner and it floats (§6.3)
-      _displayIsList =
-          resp.contains('•') ||
-          resp.split('\n').where((l) => l.trim().isNotEmpty).length > 2;
+      _displayIsList = shown.contains('•') ||
+          shown.split('\n').where((l) => l.trim().isNotEmpty).length > 2;
     });
     _thinkTimer?.cancel();
     _speakTimer?.cancel();
@@ -388,7 +364,6 @@ class _ChatState extends State<ChatScreen> {
     });
     // apt-or-absent: an occasion-appropriate glyph, or nothing (most turns)
     _fireGlyph(glyphForTurn(_session.lastSkill, resp));
-    _jump();
   }
 
   /// Tap the mic to START, speak, then PAUSE — the OS engine's own end-of-utterance detection
@@ -463,7 +438,6 @@ class _ChatState extends State<ChatScreen> {
     _thinkTimer?.cancel();
     _capTimer?.cancel();
     _ctrl.dispose();
-    _scroll.dispose();
     super.dispose();
   }
 
@@ -558,16 +532,6 @@ class _ChatState extends State<ChatScreen> {
       ),
     );
   }
-
-  void _jump() => WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (_scroll.hasClients) {
-      _scroll.animateTo(
-        _scroll.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-      );
-    }
-  });
 
   @override
   Widget build(BuildContext context) => Scaffold(
