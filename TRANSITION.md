@@ -137,3 +137,10 @@ Commit trailers are required (see `CLAUDE.md`): `Co-Authored-By: Claude …` + `
 - **Line endings:** a `.gitattributes` now normalizes to LF in-repo (checks out native), so the
   perennial CRLF warnings stop and `.sh` scripts stay executable on Mac.
 - **`.tools/` won't exist on Mac** and is gitignored — don't look for it; use `PATH` Flutter/Dart.
+- **All native plugins support macOS** (verified from Windows against the resolved versions):
+  `sherpa_onnx`→`sherpa_onnx_macos`, `record`→`record_macos`, `flutter_tts`→AVSpeechSynthesizer,
+  `speech_to_text`→Apple Speech, `flutter_local_notifications`→`MacOSFlutterLocalNotificationsPlugin`.
+  So `flutter build macos` resolves every pod — no missing-platform surprises expected.
+- **Runtime paths are already cross-platform** — `config.dart`/`main.dart` resolve `$HOME` (fall back
+  from `USERPROFILE`), `app_log.dart` uses `Directory.systemTemp`, `settings_view.dart` already
+  branches `open` vs `xdg-open` vs `start`. No Windows-path landmines remain besides the seed dir.
