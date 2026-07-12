@@ -103,6 +103,15 @@ List<Offset> _spiral(double turns, double r, [int n = 48]) => [
     }(),
 ];
 
+// a pointed-leaf blade (vesica): down the left edge, back up the right — a closed figure whose
+// width swells at the middle and pinches to a point top and bottom. Pair with a midrib line.
+List<Offset> _leafBlade([double w = .32, int n = 30]) => [
+  for (var i = 0; i <= n; i++)
+    Offset(-w * math.sin(math.pi * i / n), -.5 + i / n), // left edge, top → bottom
+  for (var i = 0; i <= n; i++)
+    Offset(w * math.sin(math.pi * i / n), .5 - i / n), // right edge, bottom → top
+];
+
 GlyphStroke _s(List<Offset> pts, {double delay = 0, double draw = 640}) =>
     GlyphStroke(pts, delayMs: delay, drawMs: draw);
 
@@ -255,9 +264,16 @@ final Map<String, GlyphDef> kGlyphs = {
     'quill',
     'a journal entry saved',
     core: true,
-    dots: [GlyphDot(_p(.44, -.4), delayMs: 560)],
+    // a feather: a rachis (writing tip at lower-left) with barbs fanning off both sides — was a
+    // bare diagonal slash + a floating dot, which read as a stroke, not a quill.
     strokes: [
-      _s([_p(-.42, .42), _p(.4, -.36)], draw: 520),
+      _s([_p(-.42, .46), _p(.42, -.46)], draw: 520), // rachis
+      _s([_p(-.04, .06), _p(.12, .08)], delay: 420, draw: 110), // right barbs, tip → base
+      _s([_p(.1, -.1), _p(.26, -.08)], delay: 480, draw: 110),
+      _s([_p(.24, -.26), _p(.4, -.24)], delay: 540, draw: 110),
+      _s([_p(-.04, .06), _p(-.12, -.08)], delay: 600, draw: 110), // left barbs
+      _s([_p(.1, -.1), _p(.02, -.24)], delay: 660, draw: 110),
+      _s([_p(.24, -.26), _p(.16, -.4)], delay: 720, draw: 110),
     ],
   ),
 
@@ -342,18 +358,10 @@ final Map<String, GlyphDef> kGlyphs = {
   'leaf': GlyphDef(
     'leaf',
     'a rest day honored',
+    // a closed blade + a midrib (was a bare vein between two open arcs → read as a "ϕ")
     strokes: [
-      _s(_line(_p(0, .45), _p(0, -.45)), draw: 360),
-      _s(
-        _arc(-.02, 0, .3, -math.pi * .5, math.pi * .1, 16),
-        delay: 320,
-        draw: 300,
-      ),
-      _s(
-        _arc(.02, 0, .3, -math.pi + math.pi * .1, -math.pi - math.pi * .5, 16),
-        delay: 560,
-        draw: 300,
-      ),
+      _s(_leafBlade(), draw: 720),
+      _s(_line(_p(0, -.44), _p(0, .44)), delay: 520, draw: 320),
     ],
   ),
   'bell': GlyphDef(
@@ -527,25 +535,17 @@ final Map<String, GlyphDef> kGlyphs = {
   'laurel': GlyphDef(
     'laurel',
     'a major milestone — a year of journaling',
+    // two curved branches meeting at the base, open at the top, each with leaflet ticks — a
+    // wreath. (Was two bare arcs + a few dots, which read as loose parentheses.)
     strokes: [
-      _s(_arc(-.28, 0, .42, -math.pi * .55, math.pi * .1, 18), draw: 520),
-      _s(
-        _arc(
-          .28,
-          0,
-          .42,
-          -math.pi + math.pi * .1,
-          -math.pi - math.pi * .55,
-          18,
-        ),
-        delay: 480,
-        draw: 520,
-      ),
-    ],
-    dots: [
-      GlyphDot(_p(-.18, -.35)),
-      GlyphDot(_p(.18, -.35), delayMs: 120),
-      GlyphDot(_p(0, -.4), delayMs: 240),
+      _s([_p(0, .42), _p(-.16, .24), _p(-.28, 0), _p(-.3, -.24), _p(-.22, -.42)], draw: 520),
+      _s([_p(0, .42), _p(.16, .24), _p(.28, 0), _p(.3, -.24), _p(.22, -.42)], delay: 460, draw: 520),
+      _s([_p(-.16, .24), _p(-.32, .26)], delay: 940, draw: 100), // left leaflets
+      _s([_p(-.28, 0), _p(-.45, -.02)], delay: 1000, draw: 100),
+      _s([_p(-.3, -.24), _p(-.44, -.32)], delay: 1060, draw: 100),
+      _s([_p(.16, .24), _p(.32, .26)], delay: 1120, draw: 100), // right leaflets
+      _s([_p(.28, 0), _p(.45, -.02)], delay: 1180, draw: 100),
+      _s([_p(.3, -.24), _p(.44, -.32)], delay: 1240, draw: 100),
     ],
   ),
   'cake': GlyphDef(
@@ -584,13 +584,11 @@ final Map<String, GlyphDef> kGlyphs = {
   'clasp': GlyphDef(
     'clasp',
     'comfort — a hard journal entry or a grief note',
+    // two hooks interlocking (hands held) — offset so their openings embrace, not two arcs meeting
+    // to a point (which read as an eye / fish).
     strokes: [
-      _s(_arc(-.12, 0, .3, -math.pi * .5, math.pi * .5, 16), draw: 480),
-      _s(
-        _arc(.12, 0, .3, math.pi * .5, math.pi * 1.5, 16),
-        delay: 440,
-        draw: 480,
-      ),
+      _s(_arc(-.06, -.06, .26, math.pi * .35, math.pi * 1.55, 22), draw: 520),
+      _s(_arc(.06, .06, .26, math.pi * 1.35, math.pi * 2.55, 22), delay: 480, draw: 520),
     ],
   ),
   'balloon': GlyphDef(
