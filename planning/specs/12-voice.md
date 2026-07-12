@@ -1,9 +1,9 @@
 # Spec 12 — Voice
 
-**Status:** Draft v0.1 — July 2026 (Fable 5). First full draft of the voice pipeline: capture model, STT/TTS engine selection per platform, the interim/final transcript contract, barge-in and latency targets, the voice-privacy statement, and the error/degrade surfaces.
+**Status:** Draft v0.2 — July 2026 (Fable 5). v0.1 was the first full draft of the voice pipeline: capture model, STT/TTS engine selection per platform, the interim/final transcript contract, barge-in and latency targets, the voice-privacy statement, and the error/degrade surfaces. v0.2 reconciles the TTS half with shipped code: the `SpeechOutput` seam and the Windows on-device talk-back are live in the v0 app — two-way voice is real (§2.1, §6.5, D13).
 **A note on numbering:** Specs 03, 04, and 08 cite a "Spec 06 — Voice" that was never written — the research doc's spec charter (§12) never listed a voice spec, and slot 6 was taken by Data & Sync. This document is that missing spec, chartered as **Spec 12**. It is the referent every "Spec 06 — Voice" citation intends; retargeting those citations (and Spec 10's mis-pointed ownership line) is a suite-sync pass item recorded in §10, not something this spec edits in place.
 **Depends on:** Research doc (§2.1–2.3, §6.1–6.5, §9.1–9.2, §11.2–11.5, §15.1); Spec 03 — NLU / Intent (§1 P2.5, §2.6–2.7, §5.4 normalization, §10 MD10 — final-transcript-only); Spec 04 — Architecture (§2.1–2.3 layer model, §3.6 `DispatchOrchestrator`, §3.8 `SpeechEngine`, §4.2 turn pipeline, §4.3 barge-in policy, §5 error model); Spec 05 — Functional (§3.2 ASR floor, §11 voice journal F8, §13 offline/subtitle F10); Spec 07 — UI (§7 quiet overlay & subtitle contract, §8.4 the orb); Spec 08 — AI Cost & Privacy (§5.2 routing payload, §5.5 master table, §5.6 consent tiers)
-**Blocks:** Spec 09 — Test (the `SpeechInput`/`SpeechOutput` seams marked **[GAP]** in §3.1, and the voice E2E tier of §6.2 O3); the v1.5 voice rung (Spec 07 §10 step 2 — the Stage, orb, and subtitle region arrive with this pipeline); Spec 08 §5.5's STT/TTS row (this spec is its normative source)
+**Blocks:** Spec 09 — Test (the `SpeechInput`/`SpeechOutput` seams marked **[GAP]** in §3.1 — the `SpeechOutput` half has since shipped, §2.1 — and the voice E2E tier of §6.2 O3); the v1.5 voice rung (Spec 07 §10 step 2 — the Stage, orb, and subtitle region arrive with this pipeline); Spec 08 §5.5's STT/TTS row (this spec is its normative source)
 
 ---
 
@@ -17,7 +17,7 @@ This document specifies:
 2. **The capture model** — push-to-talk, the tap-to-toggle variant, the journal's continuous mode, the mic-lifecycle invariant, and the wake-word deferral (§3)
 3. **Interim vs. final transcript semantics** — who consumes each, the exactly-one-final rule, finalization triggers, and the ASR floor (§4)
 4. **STT engine selection** — the on-device mandate, the per-platform engine matrix (iOS/macOS, Windows, Android), and vocabulary biasing (§5)
-5. **TTS** — engine selection, what gets spoken, and screen-reader deference (§6)
+5. **TTS** — engine selection, what gets spoken, screen-reader deference, and the shipped v0 talk-back (§6)
 6. **Barge-in and latency targets** — the voice layer's obligations under Spec 04 §4.3's cancellation policy, with numeric budgets (§7)
 7. **The voice-privacy statement** — exactly what audio and what transcript text exists where, what (if anything) leaves the device, and under which consent — the statement Spec 08 §5.5 presumes (§8)
 8. **Error and degrade behavior** — mis-hear, no-speech, permission revoked, engine unavailable, TTS failure — every one landing on a surface, never a dead end (§9)
@@ -87,25 +87,32 @@ abstract class SpeechInput {
 
 enum CaptureMode { pushToTalk, toggle, journal }   // §3
 
-/// The synthesis seam.
+/// The synthesis seam — SHIPPED (v0, `app/lib/speech_out.dart`); §6.5 owns
+/// the utterance-lifecycle guarantees behind it.
 abstract class SpeechOutput {
-  bool get available;                               // engine + a usable voice
+  /// One-time engine setup at the composition root; failure lands as
+  /// `available: false`, never a throw the caller must handle.
+  Future<void> init();
 
-  /// Speak one utterance. Returns when playback STARTS (not ends) so the
-  /// orchestrator is never blocked on audio duration. At most one speak
-  /// is active; a new call queues behind the current one within a turn
-  /// and supersedes it across turns.
-  Future<void> speak(String text, {required String turnId});
+  bool get available;   // engine initialized + a usable voice
+  bool get speaking;    // an utterance is in flight — the barge-in check (§7.1)
+
+  /// Speak one utterance. Fire-and-forget: the caller never awaits audio
+  /// duration. [onStart] fires at real audio onset; [onDone] fires exactly
+  /// once when THIS utterance ends — natural finish OR stop() — unless a
+  /// newer speak() superseded it first (the newer call then owns the
+  /// callbacks; the stale one goes silent, §6.5). At most one utterance is
+  /// active: a new speak() stops the current one — supersede, never queue.
+  Future<void> speak(String text,
+      {void Function()? onStart, void Function()? onDone});
 
   /// Halt playback now — the barge-in obligation, budget ≤ 150 ms (§7.1).
+  /// Resolves the in-flight speak(): its onDone fires once.
   Future<void> stop();
-
-  /// started / finished / stopped(turnId) — the timing signals the subtitle
-  /// assistant-slot lifecycle consumes (Spec 07 §7.3: appear on start,
-  /// linger 4 s after finish).
-  Stream<SpeakEvent> get events;
 }
 ```
+
+Two deltas from draft v0.1's `SpeechOutput`, both deliberate. (a) The `Stream<SpeakEvent>` became **per-utterance callbacks**: a shared event stream is un-identified, which is exactly the cross-fire hazard §6.5's generation token exists to close — binding `onStart`/`onDone` at the call site gives each utterance its own timing signals with no correlation step, and the subtitle/caption lifecycle Spec 07 §7.3 consumes rides these callbacks instead. (b) `turnId` is gone — turn identity lives with the caller, which already holds the callbacks; and cross-turn queueing was dropped for supersede-always, since turns serialize upstream anyway. `NoopSpeechOutput` is the shipped silent implementation (tests, injected sessions, platforms without a voice): `available: false`, and each `speak` fires `onStart`/`onDone` immediately so lifecycle-dependent code runs identically.
 
 ### 2.2 The `Transcript` object
 
@@ -132,7 +139,7 @@ The Voice layer is driven, never driving (Spec 04 §2.2 — leaves are not inter
 - The user's press/tap on the orb is a **UI event** → the Business Logic façade calls `SpeechInput.startListening` / `stopListening`. The Voice layer has no gesture knowledge.
 - A **final** transcript is handed by the Business Logic layer to `DispatchOrchestrator.dispatch` (Spec 04 §4.2 stage 1). The Voice layer never calls the orchestrator.
 - The orchestrator's `Done(confirmationText)`, clarification prompts, and error surfaces reach `SpeechOutput.speak` via the orchestrator (Spec 04 §3.6/§3.8). *What* is spoken — including the never-speak-sensitive-values-unprompted rule — is decided upstream (Spec 07 §5.4, Spec 05); `SpeechOutput` renders exactly the string it is given.
-- Testing: both seams ship with fakes from day one (`FakeSpeechInput` emits scripted interim/final sequences; `FakeSpeechOutput` records speak calls), per Spec 09 D2 — only the razor-thin platform shims get the one-time human mic smoke.
+- Testing: both seams ship with fakes from day one (`FakeSpeechInput` emits scripted interim/final sequences; on the output side, `NoopSpeechOutput` ships in-tree (§2.1) and the widget tests inject their own recording `SpeechOutput` fake), per Spec 09 D2 — only the razor-thin platform shims get the one-time human mic smoke.
 
 ---
 
@@ -257,21 +264,31 @@ Per research §6.4, adopted without contest — every platform's native synthesi
 |---|---|---|
 | iOS / macOS | `AVSpeechSynthesizer` | High quality; enhanced/Siri-class voices via one-time on-device download |
 | Android | Android `TextToSpeech` | Good (Google TTS engine, on-device voices) |
-| Windows | WinRT `SpeechSynthesizer` | Good; neural voices on Win 11+ |
+| Windows | WinRT `SpeechSynthesizer` | **Shipped** (v0, via `flutter_tts` → WinRT/SAPI — §6.5); the default local voice is honestly mediocre, and that is the accepted cost of the offline mandate |
 
-One voice per install, chosen from the platform's installed voices in Settings (default: the platform's best available local voice for the app locale); consistent across all utterance kinds — the assistant is one presence, not a cast. Speech rate is user-adjustable (§9.5) and the platform's default rate is the default.
+One voice per install, chosen from the platform's installed voices in Settings (default: the platform's best available local voice for the app locale); consistent across all utterance kinds — the assistant is one presence, not a cast. Speech rate is user-adjustable (§9.5) and the platform's default rate is the default. *(The shipped v0 predates the Settings picker: it takes the engine's default voice at a fixed rate — §6.5.)*
 
 ### 6.2 What is spoken
 
-`SpeechOutput.speak` is called by the orchestrator with, and only with: the `Done(confirmationText)` line (Spec 04 §3.6 — "the resolved artifact of the very plan the interpreter applied"), clarification and follow-up questions (Spec 03 §2.4/§6.3), residual offers, error surfaces (Spec 04 §5.2's spoken forms), nudge/briefing deliveries, and generative openers (first sentence spoken, rest on the card — Spec 07 §7.3's length discipline). Content policy is entirely upstream: the sensitive-values rule (never read a `sensitive` value aloud unprompted) is Spec 07 §5.4's and is applied before the string reaches this layer. Every spoken word is simultaneously on screen (subtitle assistant slot, Spec 07 §7.3, driven by this layer's `SpeakEvent`s) — TTS is a channel, never the sole carrier.
+`SpeechOutput.speak` is called by the orchestrator with, and only with: the `Done(confirmationText)` line (Spec 04 §3.6 — "the resolved artifact of the very plan the interpreter applied"), clarification and follow-up questions (Spec 03 §2.4/§6.3), residual offers, error surfaces (Spec 04 §5.2's spoken forms), nudge/briefing deliveries, and generative openers (first sentence spoken, rest on the card — Spec 07 §7.3's length discipline). Content policy is entirely upstream: the sensitive-values rule (never read a `sensitive` value aloud unprompted) is Spec 07 §5.4's and is applied before the string reaches this layer. Every spoken word is simultaneously on screen (subtitle assistant slot, Spec 07 §7.3, driven by this layer's `onStart`/`onDone` lifecycle, §2.1) — TTS is a channel, never the sole carrier.
 
 ### 6.3 Muting and quiet mode
 
-"Quiet mode" mutes TTS (one of Spec 07 §7.1's two persisted booleans). A muted `speak` still emits `SpeakEvent`s so the subtitle lifecycle is identical with audio off — Spec 07 §7.3's "no visual difference" rule falls out of this mechanically. TTS engine *failure* is distinct from muting and is §9.4.
+"Quiet mode" mutes TTS (one of Spec 07 §7.1's two persisted booleans). Muting must not change the visual lifecycle: as shipped, a muted turn never reaches `speak` — the caller runs the *identical* end-of-speaking path on a length-scaled silent timer instead — so the caption lifecycle is the same with audio off, and Spec 07 §7.3's "no visual difference" rule holds mechanically. Muting mid-utterance stops the in-flight speech immediately (§6.5). TTS engine *failure* is distinct from muting and is §9.4.
 
 ### 6.4 Screen-reader deference
 
 When a platform screen reader is active (VoiceOver / TalkBack / Windows Narrator), Plenara's own TTS **defaults to muted** and the app relies on properly-labeled semantics + the always-on subtitles, so two synthesized voices never fight over the same content. The user can re-enable app TTS explicitly (some users prefer the app's voice for content and the reader for chrome). This is a hard requirement, not polish — same class as Spec 07 §8.2's reduced-motion rule.
+
+### 6.5 Shipped: the v0 talk-back (two-way voice is live)
+
+As of v0 (July 2026), the talk-back half of the loop is real: Plena speaks every reply aloud through the shipped `SpeechOutput` seam (`app/lib/speech_out.dart`), wired in `app/lib/main.dart` to her *speaking* presence (Spec 15 §3.1/§4.1). What shipped, and the guarantees an implementer or auditor should hold it to:
+
+- **Engine — offline, on-device, per the §6.1 matrix.** `FlutterTtsSpeechOutput` wraps `flutter_tts`, which lands on WinRT/SAPI on Windows. The explicit call: **focus offline and live with the crummy Windows voice** rather than reach for a cloud voice — §5.1's posture, applied to output. The seam is what makes that reversible: a cloud voice — or Apple's genuinely good `AVSpeechSynthesizer`, the planned engine when the app reaches iOS/macOS — swaps in at the composition root without touching the app. Windows build note: the `flutter_tts` Windows plugin restores its WinRT deps via NuGet, so building needs `nuget.exe` — `build.cmd` fetches it once if absent.
+- **Per-utterance generation token — the exactly-once guarantee.** `init()` sets `awaitSpeakCompletion(true)`, so the engine's speak future resolves *per utterance* — on natural end **or** on `stop()`. Each `speak()` takes an incrementing generation; completion state and `onDone` are driven from that future, gated on the generation still being current — never from the engine's shared, un-identified handlers. A stale event from a superseded utterance can therefore never cross-fire a newer utterance's callbacks, and `onDone` fires exactly once per non-superseded call.
+- **Animation anchoring.** `onStart` — driven by the engine's start handler — anchors Plena's *speaking* state to real audio onset, not to the `speak()` call; `onDone` (natural end or barge-in stop) ends it, and the caption clears a beat (~1.6 s) later, so captions follow actual speech rather than a guessed duration.
+- **Safety timer.** A cap scaled to response length (3 s + 75 ms/char, clamped 4–60 s) guarantees the speaking state and caption always clear even if the engine never reports completion. It is deliberately generous: it exists to catch a dead engine, never to cut speech off mid-sentence.
+- **Barge-in and mute, wired (§7.1's obligations).** Starting to listen (tap/mic) stops in-flight speech *before* the mic opens (§3.6's ordering, exactly); muting stops it immediately (captions still carry, §6.3); and a new turn's send stops any still-playing prior reply.
 
 ---
 
@@ -286,6 +303,8 @@ Spec 04 §4.3 owns the turn-level policy (pre-write-barrier: cancel the live tur
 3. The Business Logic layer signals the orchestrator's `cancel(turnId)` per Spec 04 §4.3; the Voice layer neither knows nor cares whether the turn was cancelled or queued.
 
 A barge-in during *capture* (press while already listening — possible in toggle mode) is `cancelListening()` + fresh `startListening`: new session, new `utteranceId`, no final from the abandoned one.
+
+Steps 1–2 are shipped in v0 exactly as written: the listen handler awaits `SpeechOutput.stop()` before the mic opens, and mute and a new send take the same in-flight-speech kill path (§6.5).
 
 ### 7.2 Latency budgets (normative targets, measured at the seam)
 
@@ -391,10 +410,10 @@ Voice events in the local diagnostic log record *shapes, not content* beyond the
 
 ### 10.1 Staging against the v0 app
 
-The current `app/lib/main.dart` is text-first by design ("Text-first for now; voice later") — the typed path through `Session.handle` is exactly the P2.2 pipeline this spec keeps, so nothing is thrown away. The rungs:
+The v0 `app/lib/main.dart` began text-first ("Text-first for now; voice later") — the typed path through `Session.handle` is exactly the P2.2 pipeline this spec keeps, so nothing is thrown away. The talk-back leg has since landed (§6.5): Plena speaks replies through the shipped `SpeechOutput` seam. The rungs:
 
-1. **Seams first (any time, cheap):** land `SpeechInput`/`SpeechOutput` + `TranscriptEvent` with fakes and the `FakeSpeechInput`-driven E2E tier — this closes Spec 09 §3.1's **[GAP]** and §6.2 O3's blocked path *before* any platform shim exists, and refactors the ChatScreen send path to construct a typed `TranscriptEvent` (behavior-neutral).
-2. **Windows spike (dogfood):** WinRT turn capture + Whisper.cpp journal capture behind the seams; measure WER, time-to-first-interim, and the §7.2 budgets on real hardware; settle Q1. This is the "voice spike" Spec 09 O3 waits on. *(Honesty note: research §11.2's walking skeleton lists "spoken confirmation" in v0; the actual v0 shipped text-first. The skeleton's voice leg lands here, with the spike — recorded, not hidden.)*
+1. **Seams first (any time, cheap):** land `SpeechInput`/`SpeechOutput` + `TranscriptEvent` with fakes and the `FakeSpeechInput`-driven E2E tier *(the `SpeechOutput` half has shipped — §2.1/§6.5)* — this closes Spec 09 §3.1's **[GAP]** and §6.2 O3's blocked path *before* any platform shim exists, and refactors the ChatScreen send path to construct a typed `TranscriptEvent` (behavior-neutral).
+2. **Windows spike (dogfood):** WinRT turn capture + Whisper.cpp journal capture behind the seams; measure WER, time-to-first-interim, and the §7.2 budgets on real hardware; settle Q1. This is the "voice spike" Spec 09 O3 waits on. *(Honesty note, updated: research §11.2's walking skeleton lists "spoken confirmation" in v0; the v0 first shipped text-first, and the spoken-confirmation leg has since landed (§6.5) — the output half of the skeleton's voice leg is closed; the capture half lands with the spike.)*
 3. **v1.5 rung (Spec 07 §10 step 2):** the Stage, orb, subtitle region, and quiet overlay arrive together with this pipeline on the P1 platform (SpeechAnalyzer); latency budgets become CI-tracked numbers.
 4. **Ambient rung (v3):** wake word per §3.4, gated on Q3.
 
@@ -422,11 +441,12 @@ The current `app/lib/main.dart` is text-first by design ("Text-first for now; vo
 - **D5 — Interim/final semantics.** Interims feed the subtitle user-slot only (Spec 07 §7.3) — never dispatched, persisted, or logged; exactly one final per session, the sole dispatch input (reaffirming Spec 03 MD10 / Spec 04 §4.2); an empty final is a quiet no-op, not an error. Ownership line with Spec 07 drawn at §4.3: this spec owns what a transcript is, Spec 07 owns how it renders. *(§4.1–§4.3)*
 - **D6 — Verbatim delivery.** The Voice layer performs no text normalization (Spec 03 §5.4 owns the single normalizer); the only transform is journal stop-word stripping, a capture-delimiter concern. *(§4.4)*
 - **D7 — The voice-privacy statement.** Audio never exists at rest and never leaves the device — no path, no consent tier, no retention setting; interims are ephemeral; a final transcript's only off-device path is the existing tier-(a) residual-routing consent (Spec 08 §5.2/§5.6), identical for spoken and typed input — **voice adds zero new disclosure and zero new consent**. The bias list (contact/capability names) is handed only to on-device engines. *(§8)*
-- **D8 — TTS is platform-native, offline, one consistent voice**; speak and listen are mutually exclusive in v1 (no AEC needed); muted speech still emits `SpeakEvent`s so subtitles behave identically (Spec 07 D8); app TTS defers to an active screen reader by default. *(§6, §3.6)*
+- **D8 — TTS is platform-native, offline, one consistent voice**; speak and listen are mutually exclusive in v1 (no AEC needed); muting leaves the visual lifecycle identical — the muted path runs the same end-of-speaking lifecycle without reaching `speak` (§6.3; Spec 07 D8); app TTS defers to an active screen reader by default. *(§6, §3.6)*
 - **D9 — Latency budgets are normative** (§7.2 table), headlined by release → spoken-`Done` ≤ 1.0 s p50 on a corpus-hit turn and barge-in silence ≤ 150 ms; measured at the seams from the first spike, CI-tracked from the v1.5 rung. *(§7)*
 - **D10 — The failure design center is text mode as the universal safe state.** Sealed `VoiceError` set; every failure auto-lands on text mode and/or an AttentionSurface item with the reason named (mic permission → Spec 05 §13 E2 verbatim; missing pack → repair item; TTS loss → named once, subtitles carry). No-speech is silent; the ASR floor (advisory confidence < 0.30, the *only* use of engine confidence — P2.4) re-asks once and offers text on the second strike; confident mis-hears belong to the downstream describe/correct/undo/corpus loop, never to voice-side second-guessing. *(§4.6–§4.7, §9)*
 - **D11 — Vocabulary biasing** from contact names/aliases, capability display names + template phrases, and corpus literals; rebuilt on registry/entity change; on-device only. The cheapest proper-noun accuracy lever the pipeline has. *(§4.5)*
 - **D12 — Accessibility requirements are hard:** toggle capture everywhere, adjustable endpointing, complete no-audio operation (subtitles + text mode), screen-reader deference, adjustable TTS rate. Plenara never *requires* voice. *(§9.5)*
+- **D13 — Talk-back shipped, offline-first (v0, July 2026).** Two-way voice is real: Plena speaks replies through the shipped `SpeechOutput` seam — `init`/`available`/`speaking`/`speak(text, {onStart, onDone})`/`stop`, with per-utterance callbacks replacing draft v0.1's `SpeakEvent` stream and `turnId` (§2.1's deltas). Engine: `flutter_tts` → WinRT/SAPI on Windows — the explicit choice to stay offline and accept the mediocre local voice, with the seam keeping a cloud voice (or `AVSpeechSynthesizer` on Apple, the planned engine there) a composition-root swap; `build.cmd` fetches the `nuget.exe` the Windows plugin needs. Lifecycle guarantees: a per-utterance generation token over `awaitSpeakCompletion(true)` makes `onDone` exactly-once and immune to stale-event cross-fire; `onStart` anchors the speaking animation to real audio onset; a length-scaled safety cap clears state if the engine goes silent; listen-start, mute, and a new send all stop in-flight speech. *(§2.1, §6.5)*
 
 ### Open
 
@@ -435,9 +455,9 @@ The current `app/lib/main.dart` is text-first by design ("Text-first for now; vo
 - **Q3 — Wake word prerequisites** (ambient rung): Porcupine integration, acoustic echo cancellation once speak/listen can overlap, the always-armed buffer-discard audit against §8.1's "audio never exists at rest," and Spec 07 Q3's "armed without surveillance" orb reading. All four before "Hey Plenara" ships.
 - **Q4 — Whisper.cpp sizing.** Model choice/quantization per platform (binary budget vs. WER vs. the §7.2 journal-finalization budget), and whether one multilingual model or per-locale packs. Interacts with Q5.
 - **Q5 — Locale & multilingual.** v1 is single-locale (device locale); SpeechAnalyzer's automatic language detection and mixed-language utterances are deferred — and must land together with Spec 03's multilingual-embedder swap note (§3.2) or routing quality silently diverges from transcription language.
-- **Q6 — Word-timing events.** Karaoke subtitles (Spec 07 Q4) wait on TTS word-boundary callbacks being reliable cross-platform; this layer would carry them as `SpeakEvent` extensions if/when Spec 07 wants them.
+- **Q6 — Word-timing events.** Karaoke subtitles (Spec 07 Q4) wait on TTS word-boundary callbacks being reliable cross-platform; this layer would carry them as additional per-utterance callbacks on the `speak` contract (§2.1) if/when Spec 07 wants them.
 - **Q7 — Privacy copy for the OS-dictation edge.** The one-sentence onboarding/privacy wording for §8.5's honest note that OS keyboard dictation in text mode is outside Plenara's audio envelope; owned with Spec 08 Q5's Anthropic-terms copy pass.
 
 ---
 
-*End of Spec 12 — Voice v0.1*
+*End of Spec 12 — Voice v0.2*

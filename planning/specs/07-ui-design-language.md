@@ -4,6 +4,7 @@
 **Depends on:** Research doc v0.10 (§2.1–2.3, §4.5, §6.2, §12.7, §15.1); Spec 01 — Meta-Schema & Type System (§3 value types, §4.1–4.3 presentation object, §4.5 owned/append, §12.3 seed types); Spec 02 — Skill DSL (§7.1 `confirmationText` via `format`); Spec 03 — NLU / Intent (§2.4, §2.7, §4.3 thresholds, §6.3); Spec 04 — Architecture (§3.6 TurnEvents, §3.6a ConfirmationView, §3.9 Review Feed, §3.10 GenerativeService, §3.11 undo window, §3.12 AttentionSurface, §4.7 detached operations); Spec 05 — Functional (§2 notation, §3 interaction contract, §13 subtitle overlay, §14 authoring preview, §24 deletion).
 **Blocks:** Spec 09 — Test (widget tests per archetype, Spec 04 §9.3-style UI coverage); the v1.2 "first view archetype" rung (research §11.3).
 **Builds on:** the existing v0 Flutter app (`app/lib/main.dart`) — the chat turn loop, the busy indicator, the log-path greeting, and the on-open nudges are the seed of the Conversation Stream defined in §2.2, not throwaway.
+**Presence sync (2026-07-11 — Spec 15 v0.3):** dated notes in §2.1, §2.2, §7.1–§7.2, §8.4, §10, and D11 reconcile this spec with the shipped presence-primary home: the orb is subsumed by **Plena** (Spec 15), the v0 chat scrollback is retired (history is ephemeral on the home — only the current exchange shows), tap-anywhere is the speak gesture, and the bottom-left mute control raises the text input. Everything else stands as written.
 
 ---
 
@@ -56,14 +57,14 @@ The app is composed of exactly four top-level surfaces plus one overlay. Keeping
 
 The default, ambient surface. Anatomy, top to bottom:
 
-- **The presence** — the listening orb (§8.4), the app's one persistent piece of chrome. Its state (idle / listening / thinking / speaking) is the primary system-status indicator; there is no spinner anywhere else on the Stage. The v0 `LinearProgressIndicator` (`main.dart`) is replaced by the orb's *thinking* state.
+- **The presence** — *(superseded by Spec 15, 2026-07-11:)* **Plena**, the particle-swarm presence (Spec 15 §2.1), not an orb in a layout. As shipped, the Stage *is* Plena full-screen over a warm near-black void, and this anatomy inverts: she is the ground and everything below is a guest on it (Spec 15 §6.3 Y0). The shipped chrome is exactly a small mute control (bottom-left) and a quiet overflow menu; **tap anywhere to speak**. Her state (idle / listening / thinking / speaking) is the primary system-status indicator; there is no spinner anywhere else on the Stage — the v0 `LinearProgressIndicator` (`main.dart`) is gone, replaced by her *thinking* state.
 - **The subtitle region** — the two-slot caption area of §7.3. Always present, mostly empty.
 - **The ambient field** — a curated, context-sensitive selection of at most three cards: the most imminent item (next reminder/task due), the most alive tracker (today's streak state), and — only when non-empty — the AttentionSurface summary chip ("2 things need a look"). Which cards appear is a Business Logic projection, not user configuration, and *empty is a valid and common state*: an empty Stage with a resting orb is the design working, not a bug.
 - **The threshold to the Stream** — the most recent turn's `Done` line lingers at the bottom of the Stage (with its undo chip, §6.2) and can be pulled up to reveal the full Conversation Stream.
 
 ### 2.2 The Conversation Stream
 
-The scrollable history of turns — the direct descendant of the v0 `ChatScreen` message list, kept on purpose: voice-first does not mean history-free, and the v0 dogfooding proved the turn feed is where trust is built (the greeting, the nudges, the visible diagnostics path all live there today). What changes from v0:
+The scrollable history of turns. *(Presence sync, 2026-07-11:)* originally specified as the direct descendant of the v0 `ChatScreen` message list; that list has since been **removed as tech debt** with the presence-primary home (Spec 15 §6.4) — the shipped home shows only the ephemeral current exchange, and history is never a scrollback the home displays. The Stream survives as a *visited* surface (a Y2 yield, Spec 15 §6.3), to be rebuilt from the turn log on the `TurnEvent` contract: voice-first still does not mean history-free, and the v0 dogfooding proved the turn feed is where trust is built (the greeting and nudges now join the current exchange over the void). What changes from the v0 design:
 
 - Turns are not symmetric chat bubbles. **User utterances** render as light, quiet text (a transcript, not a "message I composed"); **Plenara's turns** render as typed cards — a `Done` line, a clarification, a result card, a generative card — per §6. The bubble-vs-bubble chat metaphor is retired with the organic pass (§10).
 - The v0 greeting and on-open nudges (`_session.pendingNudges()`) become AttentionSurface/Review-Feed entries rendered inline at the top of the Stream on open — same behavior, now specified (§6.7).
@@ -274,14 +275,14 @@ The Spec 05 §14 flow's `UI: Authoring preview card`: a live, honest **miniature
 
 There are two independent booleans, not four modes:
 
-- **Input modality** — voice (push-to-talk on the orb, v1 — research §6.5) or text (the overlay's field). Toggled by: the keyboard glyph beside the orb; the "text mode"/"voice mode" system commands (Spec 05 §13); automatically forced to text when STT is unavailable or mic permission is revoked (Spec 05 §13 E2 — with the spoken/shown notice).
+- **Input modality** — voice (push-to-talk on the orb, v1 — research §6.5) or text (the overlay's field). Toggled by: the keyboard glyph beside the orb; the "text mode"/"voice mode" system commands (Spec 05 §13); automatically forced to text when STT is unavailable or mic permission is revoked (Spec 05 §13 E2 — with the spoken/shown notice). *(As shipped with the presence redesign: the speak gesture is **tap-anywhere** on Plena's home — no orb, no keyboard glyph — and the bottom-left mute control toggles the modes: muting switches to text and raises the input field, which also rises automatically when no recognizer is available. One control currently drives both booleans; the independent model here remains the target — Spec 15 §7.)*
 - **Output audio** — TTS on or muted. "Quiet mode" mutes it; subtitles are unaffected because they are always on (next section).
 
 The "quiet overlay" toggles both at once (the meeting/library case, research §2.2); power users can mute TTS alone from settings. Both persist across launches (Spec 05 §13).
 
 ### 7.2 The overlay itself
 
-A single text field with a send affordance sliding up from the bottom edge (`m-settle`, §8.1), sitting *over* the active surface with a soft scrim only behind the field itself. Nothing beneath reflows or resizes (P2 — the design is never compromised for keyboard input). Submitted text enters `dispatch()` exactly as a final transcript — one pipeline (research §6.2). The field stays docked while text mode persists; on desktop (the current dogfood platform) the docked field is the steady state and keyboard focus is retained after each turn (as v0's `autofocus` already does).
+A single text field with a send affordance sliding up from the bottom edge (`m-settle`, §8.1), sitting *over* the active surface with a soft scrim only behind the field itself. Nothing beneath reflows or resizes (P2 — the design is never compromised for keyboard input). Submitted text enters `dispatch()` exactly as a final transcript — one pipeline (research §6.2). The field stays docked while text mode persists; on desktop (the current dogfood platform) the docked field is the steady state and keyboard focus is retained after each turn (as v0's `autofocus` already does). *(As shipped: a two-line field rising from off-screen bottom when muted or STT-less, over the presence home — nothing beneath reflows, as required; Spec 15 §7.)*
 
 ### 7.3 Subtitle behavior
 
@@ -329,6 +330,8 @@ The signature move of the app: the **doorway** — a `Done` line, ambient card, 
 
 ### 8.4 The presence (listening orb)
 
+*(Superseded, 2026-07-11 — Spec 15 §6.3 / suite-sync X1: the orb is subsumed by **Plena**, the particle-swarm presence of Spec 15. The four states, the `m-instant` snap, and the visibly-muted rule carry over into the swarm unchanged; the shipped interaction is **tap-anywhere-to-speak** on the presence-primary home, not press-and-hold on an orb widget. This section stands as the seed it was.)*
+
 An organic, softly irregular form (not a perfect circle — §9.2) with four states: **idle** (`m-breathe`, low amplitude), **listening** (amplitude follows mic level — the user *sees* being heard), **thinking** (a slow internal drift; replaces every spinner in the app), **speaking** (gentle pulse synced to TTS cadence). State changes snap at `m-instant` — responsiveness is the one place quickness beats smoothness. Push-to-talk (v1) is press-and-hold on the orb; the orb is also the mic-permission and STT-availability status surface (a muted orb renders visibly muted, matching Spec 05 §13 E2).
 
 ---
@@ -362,7 +365,7 @@ Generous whitespace as a rule with a number: content columns keep ≥ 24 pt side
 
 The current `app/lib/main.dart` is a Material chat screen over the real Session engine. The path from it to this spec, in rungs matching research §11.3 (aesthetics layered, skeleton first):
 
-1. **v0 → v1.2 (with the first archetype):** keep the ChatScreen skeleton as the Conversation Stream; replace `Msg` with a `TurnEvent`-driven sealed rendering (P5 — this is the load-bearing refactor, and it is behavior-neutral); introduce the first home archetype (`timeline`, for the v1.2 tracker rung) and the doorway from `Done` lines. The greeting/nudge messages become AttentionSurface renderings (§6.7) — same content, now on contract.
+1. **v0 → v1.2 (with the first archetype):** keep the ChatScreen skeleton as the Conversation Stream; replace `Msg` with a `TurnEvent`-driven sealed rendering (P5 — this is the load-bearing refactor, and it is behavior-neutral); introduce the first home archetype (`timeline`, for the v1.2 tracker rung) and the doorway from `Done` lines. The greeting/nudge messages become AttentionSurface renderings (§6.7) — same content, now on contract. *(Overtaken, 2026-07-11: the presence-primary home (Spec 15 §6.3) replaced the ChatScreen outright and the `Msg` scrollback was deleted as tech debt — the Stream now arrives later as a new turn-log-backed surface, not as a refactor of the v0 list; the greeting and nudges meanwhile join the exchange over the void.)*
 2. **v1.5 (quiet overlay + corrections loop):** the Stage with orb and subtitle region arrives with the voice pipeline; the text field becomes the §7.2 overlay; undo chips, routing chips, clarification chips per §6.
 3. **v2:** generative cards, authoring preview, operation center — these ride the detached-operation machinery when it lands.
 4. **v3 (the organic pass, research §11.5):** shape language, serif text face, the accent ramp, continuity transitions, the full motion token sweep. Until then, v1 uses the same tokens at reduced expression (standard Material motion mapped onto the token names), so the organic pass is a re-skin, not a re-architecture.
@@ -395,7 +398,7 @@ The invariant across all rungs: the archetype registry, the mapping pipeline (§
 - **D8 — Subtitles are always on; "quiet mode" is two persisted booleans** (input modality, TTS mute) toggled together by the overlay, identical pipeline for typed and spoken input, no visual difference in output rendering (§7).
 - **D9 — Motion is five tokens + six rules** (§8), with reduced-motion as a hard requirement and the doorway shared-element transition as the app's continuity signature.
 - **D10 — Authored color/icon are constrained, not trusted:** snap-to-ramp and glyph-set fallback at registration (§9.3); accents tint identity elements only; no red-badge attention economy (P8).
-- **D11 — The v0 chat UI is the seed, not scaffolding:** the ChatScreen becomes the Conversation Stream via the TurnEvent refactor; structure lands final at v1.2, the organic skin at v3 (§10).
+- **D11 — The v0 chat UI is the seed, not scaffolding:** the ChatScreen becomes the Conversation Stream via the TurnEvent refactor; structure lands final at v1.2, the organic skin at v3 (§10). *(Amended 2026-07-11: the chat UI was retired when the presence-primary home shipped — the seed claim now holds for the engine seam and the greeting/nudge content, not the widget tree; the Stream will be rebuilt from the turn log, §2.2.)*
 
 ### Open
 

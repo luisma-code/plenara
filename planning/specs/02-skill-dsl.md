@@ -1,6 +1,6 @@
 # Spec 02 — Skill DSL
 
-**Status:** Draft v0.4 — July 2026 (Sonnet skeleton v0.1 → Opus hardening v0.2 → Opus 4.8 review v0.3 → act-then-describe reconciliation v0.4 — see Appendix A)  
+**Status:** Draft v0.5 — July 2026 (Sonnet skeleton v0.1 → Opus hardening v0.2 → Opus 4.8 review v0.3 → act-then-describe reconciliation v0.4 — see Appendix A → v0 interaction-suite/due-date convergence v0.5, §3 dialect refresh + §9.3)  
 **Depends on:** Spec 01 — Meta-Schema & Type System (§2–§5, §8)  
 **Blocks:** NLU spec, Architecture spec, Data & Sync spec, UI spec
 **Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
@@ -125,29 +125,48 @@ The input contract is the seam between this spec and the NLU spec (which this sp
 > - **Ops (10, closed):** `read_one, read_many, read_related, write_record, delete_record,
 >   compute, set, format, branch, foreach`.
 > - **`compute`** — `{"op":"compute","fn":<name>,"args":[…],"into":"var"}`, NOT a string
->   expression. Implemented `fn` set (20): `now, today, format_date, format_time,
->   start_of_week, add, count, concat, next_annual, days_until_annual, current_streak,
->   longest_streak, days_between, add_days, count_where, sum, avg, min, max, if`.
->   (`avg([])` → `null`; decimal exact-base-10 preservation is a follow-on, `G-46`.)
+>   expression. Implemented `fn` set (34): `now, today, format_date, format_time, date_part,
+>   time_part, start_of_week, start_of_month, add, mul, div, round, count, concat,
+>   next_annual, days_until_annual, years_since, current_streak, longest_streak,
+>   days_between, add_days, count_where, sum, avg, min, max, if, ordinal_num,
+>   ordinal_suffix, weekday_nums, split_list, dedup_list, position_index, nth`.
+>   `format_date`'s second arg is a format token: `"EEEE"` → weekday name ("Saturday"),
+>   `"MMMM d"` (the default when omitted) → month-day ("December 25"), anything else →
+>   the ISO date. The near/far due-date phrasing rule built on `days_between` +
+>   `format_date` is §9.3. (`avg([])` → `null`; decimal exact-base-10 preservation is a
+>   follow-on, `G-46`.)
 > - **`branch`** — a **structured condition object** (NOT a string, §3.8) plus **inline**
 >   `then`/`else` step arrays (`else` optional, NOT label refs into `steps`, §3.4/§3.5).
 >   Condition grammar (5 forms): `{"isNull":"var"}`, `{"notNull":"var"}`,
 >   `{"gte":[a,b]}` (numeric when both parse as numbers, else lexical),
 >   `{"eq":[a,b]}`, `{"contains":[hay,needle]}` (case-insensitive substring; empty
 >   needle never matches). This structured cond form is the **only** normative one.
-> - **`read_many`** — `filter` is `{"field","op","value"}` with `op` ∈ {`eq, neq, gt, gte,
->   lt, lte, contains, in, isNull, notNull`} (a bad op fails loudly, even over an empty set),
->   plus optional `orderBy`/`orderDir` (`asc`|`desc`) and `limit` (top-N). §3.6's `_or`/
->   multi-clause AND are **not** implemented.
-> - **`read_one`** — exact match first; with `"partial":true` (people lookups) falls back to
->   case-insensitive substring, then an **alias tier** (a record whose comma-separated
->   `aliases` field holds the match value, `G-24`); `>1` match raises an ambiguity clarify.
+> - **`read_many`** — `filter` is a predicate `{"field","op","value"}` **or a list of
+>   predicates (ANDed)** — the list form is how a skill expresses a date range or a
+>   description-plus-completed duplicate check without a compound op — with `op` ∈ {`eq,
+>   neq, gt, gte, lt, lte, contains, ieq, in, isNull, notNull`} (`ieq` is case-insensitive,
+>   whitespace-trimmed string equality, for duplicate detection; a bad op fails loudly,
+>   even over an empty set), plus optional `orderBy`/`orderDir` (`asc`|`desc`) and `limit`
+>   (top-N). §3.6's `_or` is **not** implemented.
+> - **`read_one`** — exact (case-insensitive) match first; with `"partial":true` (people
+>   lookups) falls back to case-insensitive substring, then an **alias tier** (a record
+>   whose comma-separated `aliases` field holds the match value, `G-24`); with
+>   `"resolve":true` (the find-or-create de-duplication tier, `G-12`) a further
+>   **whole-word-token tier** reuses a record when one name's token set contains the
+>   other's ("Katherine" reuses "Katherine Zinger"; "Sam" never matches "Samantha");
+>   `"first":true` tolerates a non-unique match by taking the first (for lookups that are
+>   not a user-facing name choice). Otherwise `>1` match raises an ambiguity clarify.
 > - **`write_record`** with a `target` (`{"ref":"<recordVar>"}`) **updates** (field-merge);
 >   without a target it **creates**. **`delete_record`** (`{"op":"delete_record","id":<expr>}`)
 >   tombstones. (`dangerLevel` gating of destructive ops is not yet enforced — `G` open.)
-> - **`format`** — bare `{var}` substitution; a null/absent var renders as **empty** (the
+> - **`format`** — bare `{var}` substitution (the stray `{var:name}` slot-syntax spelling
+>   is tolerated and renders identically); a null/absent var renders as **empty** (the
 >   omitIfNull default, no silent `{var}` leak). The `{var, default:…}`/`suffix` modifiers of
 >   §3.11 are **not** implemented.
+> - **Steps are validated on `op` + per-op required fields only** — unknown step keys are
+>   tolerated and ignored, so an authored skill may carry annotation keys (the seed skills
+>   use `"_comment"` for in-file rationale) without failing the gate. The closed sets above
+>   constrain what a step can *do*, not what it may say about itself.
 > - **Value types** — the accepted set now matches Spec 01 §3 (`text, number, decimal, date,
 >   datetime, boolean, duration, enum, entityRef, tag, attachment, json`), with `integer` kept
 >   only as a tolerated legacy alias for `number` (`G-40`).
@@ -729,7 +748,7 @@ Skills are **data, not code**: the closed vocabulary (§3) is interpreted, never
 
 ### 9.1 Idioms (every seed skill follows these)
 - **Confirmation idiom (`G-05`):** `compute` (build labels — `format_date`, `if`/`concat` for optional phrases) → `write_record`(s) → `format` (compose `confirmationText`). `format` never formats a date/number itself.
-- **Resolve-or-create-person idiom (`G-12`):** a person-referencing skill takes **both** an optional `…Id` (`entityRef`, NLU-resolved) *and* a `…Name` (`text`). NLU resolves *existing* people (disambiguates >1 before dispatch; passes the id when unique, the name when new). The skill uses the id if present, else `read_one contact{displayName:{…Name}}` → `branch null` → `write_record contact`. After NLU disambiguation a name-`read_one` sees only 0-or-1. Because both id and name are carried, confirmations always have the display name.
+- **Resolve-or-create-person idiom (`G-12`):** a person-referencing skill takes **both** an optional `…Id` (`entityRef`, NLU-resolved) *and* a `…Name` (`text`). NLU resolves *existing* people (disambiguates >1 before dispatch; passes the id when unique, the name when new). The skill uses the id if present, else `read_one contact{displayName:{…Name}}` → `branch null` → `write_record contact`. After NLU disambiguation a name-`read_one` sees only 0-or-1. Because both id and name are carried, confirmations always have the display name. When one skill resolves *two* people through the fuzzy tier, the idiom adds a de-collision guard before any dependent write (§9.3).
 - **Multi-write idiom (`G-13`):** one utterance → N records is sequential `branch`/`write_record` steps in one plan; ids minted at resolve thread across writes (§4.4); the `format` composes one line over the created records; `undo` reverses all N atomically (Spec 05 §3.5).
 
 ### 9.2 Canonical seed skills
@@ -738,13 +757,13 @@ Skills are **data, not code**: the closed vocabulary (§3) is interpreted, never
 
 | skillId | reads | writes | shape |
 |---|---|---|---|
-| `create-task` | — | `task` | capture a to-do (F-01; full JSON in 05a-traces §1A). |
+| `create-task` | `task` | `task` | capture one or several to-dos (F-01; full JSON in 05a-traces §1A). v0: reads `task` for the open-duplicate check; `dueDate` is future-intent; near/far due-date phrasing — §9.3. |
 | `create-reminder` | `contact` | `task` | dated/record-anchored reminder; date resolved by the resolver (Spec 03 §6, `G-14`), skill receives literal `dueAt` (F-19 §3A). |
 | `create-recurring-reminder` | — | `task` | writes a `recurrence` RRULE (recurrence parsed by the resolver). |
-| `add-contact-fact` | `contact` | `contact`,`contact_fact`,`contact_relationship` | multi-write people fact (F-07; full JSON in 05a-traces §2A). |
+| `add-contact-fact` | `contact` | `contact`,`contact_fact`,`contact_relationship` | multi-write people fact (F-07; full JSON in 05a-traces §2A). v0 id `remember-person-fact`; fixed write order, de-collision, relationship gating — §9.3. |
 | `recall-contact-fact` | `contact`,`contact_fact` | — | read a stored fact (below). |
-| `log-interaction` | `contact` | `contact`,`contact_interaction` | dated note on a person (F-02; resolve-or-create person). |
-| `query-last-interaction` | `contact`,`contact_interaction` | — | "when did I last…" (below). |
+| `log-interaction` | `contact` | `contact`,`contact_interaction` | dated note on a person (F-02; resolve-or-create person). v0: stores the interaction `kind`; `at` is past-intent, defaulting to today — §9.3. |
+| `query-last-interaction` | `contact`,`contact_interaction` | — | "when did I last…" (below). v0 ships the query side as two skills, `last-interaction` + `list-interactions`, both `kind`-aware — §9.3. |
 | `instantiate-template` | — | *(system meta-op)* | register a built-in tracker type + bind its bundled skills locally (Spec 05 §6). **Not interpreter-expressible** — see note below. |
 | `log-<tracker>` | — | *(tracker type)* | template-bundled log skill (e.g. `log-run`, `log-meal`). |
 | `show-streak` | *(tracker type)* | — | compute current/longest streak (read + `compute`). |
@@ -783,3 +802,19 @@ Two read/query skills in full (they exercise `read_related` + the resolve-or-cre
   "dangerLevel":"safe" }
 ```
 *(`recall`/`query` skills take the same `…Id`+`…Name` pair as write skills, `G-12`; a query for an unknown person hits the same disambiguation/absent path. A null `medium` filter entry is dropped and matches all — the "any contact method" case, Spec 05 §10 E4; normative rule in §3.6. The full log/streak/template skills are canonicalized as the corpus is traced.)*
+
+### 9.3 The interaction suite and due-date phrasing — v0 convergence (2026-07)
+
+*The shipped v0 skill files (`v0/data/skills/`) converged the interaction, people-fact, and task seed shapes on the behaviors below. v0 naming diverges from this section's design ids: the interaction type is `interaction` (this spec's `contact_interaction`), the query side of `query-last-interaction` ships as two skills (`last-interaction`, `list-interactions`), and `add-contact-fact` ships as `remember-person-fact`. The behaviors, not the ids, are the normative part; the id reconciliation rides the next seed-table pass.*
+
+**Interactions carry a `kind`.** An interaction records what *sort* of contact it was — `dinner`, `lunch`, `coffee`, `call`, `text`, `visit`, `catch-up`, `hangout`, `video call`, … — as an optional `kind` field alongside the note and date. (The attribute itself is a Spec 01 type-definition fact; what follows is the skill contract over it.) `log-interaction` takes an optional `kind` slot and stores it verbatim. `list-interactions` renders it per line — `• 2026-07-05 (Sunday) — dinner — <note>` — omitting the segment when absent, exactly as it omits an absent note. `last-interaction` names the most recent interaction's kind ("Your last dinner with Mia was on 2026-07-05 (Sunday).") and falls back to the generic "You last talked to Mia on …" when that interaction has no kind. All three degrade by omission, never by leaking an empty placeholder (the §3 `format` null rule).
+
+**`log-interaction.at` is a past-event date.** The `at` input is a **past-intent** day slot (`pastday` — slot-type mechanics live in Spec 03): a bare weekday resolves *backward*, so "I had dinner with Mia on Tuesday" lands on the most recent Tuesday — a past interaction never gets a future date. When the slot is omitted, the skill defaults `at` to `{today}` with an explicit `branch isNull → set`: the default is visible in the skill definition, not resolver magic.
+
+**`remember-person-fact`: resolve and de-collide *before* the fact is written.** Both `personName` and `relationTo` go through the fuzzy resolve-or-create tier (§3 `read_one` `resolve:true`), so the two can land on the *same* record when the names token-overlap. The skill therefore resolves the relative and de-collides — if `person.id == relative.id`, `person` is rebound to a freshly created contact — **before** the `contact_fact` write, so the fact attaches to the correct person and a relationship is never a self-loop. The resulting write order is fixed: person contact, relative contact, relationship, fact. (An earlier ordering that wrote the fact before resolving the relative attached it to the collided record.)
+
+**Relationship writes are gated on a captured `relationType`.** A `contact_relationship` record is written only when the `relationType` slot was actually captured. A bare `relationTo` with no type no longer writes a relationship carrying a null `relationType` — the relative contact is still created, and the typed edge can be added later.
+
+**`create-task` due-date labels: weekday near, calendar date far.** The confirmation's due-date label is chosen by `compute days_between({today}, {dueDate})`: within the coming week (fewer than 7 days out) it reads as a bare weekday (`format_date … "EEEE"` → "due Saturday"); at 7+ days out it reads as a calendar date (`format_date … "MMMM d"` → "due December 25") — a bare weekday months away is ambiguous. The branch computes `dueLabel` once, before the single-/multi-item split, so every confirmation phrasing shares it.
+
+**`create-task.dueDate` is a future date.** The `dueDate` input is a **future-intent** slot (`futuredate`, Spec 03): a bare month-day already past this year rolls forward to next year — a task never gets a due date in the past. As with `pastday`, the resolution mechanics belong to the slot-type layer; the skill receives a literal date.
