@@ -341,9 +341,15 @@ class Session {
   // (Spec 02 §6.5 / G-18): {type, skill, typeId, skillId, displayName, examples}.
   Map<String, dynamic>? _pendingActivation;
   String? _pendingAuthorOffer; // DF-01: a "start tracking X" awaiting a yes before paid authoring
-  // The Tour (guided "what can you do?"): {'chapter': String?, 'visited': Set<String>}. Ephemeral,
-  // never persisted; dropped on app close or when a turn wanders out of the current chapter.
+  // The Tour (guided "what can you do?"): {'chapter': String?, 'visited': Set, 'codaGiven': Set}.
+  // Ephemeral, never persisted; dropped on app close or when a turn dispatches OUT of the current
+  // chapter (the user moved on). A read/undo/clarify keeps it alive (the user is engaging as coached).
   Map<String, dynamic>? _pendingTour;
+  // True iff THIS outer turn was a Tour navigation turn (open/enter/exit/map). Set by the tour
+  // helpers, reset per turn in handle(). Used instead of `_outSource == 'tour'` because the
+  // correction path overwrites _outSource (so a chapter entered via "no, I meant tracking" wasn't
+  // seen as a tour turn and got killed). Fable review #10.
+  bool _tourSpokeThisTurn = false;
   // Whether retrieval (the embed-server index) is active this session. Authoring
   // grows the inventory and must re-index — but only when retrieval is on, so the
   // authoring path stays hermetic under init(retrieval: false), like init() itself.
@@ -518,25 +524,47 @@ class Session {
   /// Open the tour: name the territory in one breath, invite a pick or the full tour. Preserves an
   /// in-progress tour's visited set (a repeat "what can you do" continues rather than restarts).
   String _openTour() {
-    final visited = _pendingTour == null
-        ? <String>{}
-        : (_pendingTour!['visited'] as Set).cast<String>();
-    _pendingTour = {'chapter': null, 'visited': visited};
+    final prior = _pendingTour;
+    final visited = prior == null ? <String>{} : (prior['visited'] as Set).cast<String>();
+    final codaGiven = prior == null ? <String>{} : (prior['codaGiven'] as Set).cast<String>();
     _outSource = 'tour';
-    final remaining = _availableChapters().where((c) => !visited.contains(c.id)).map((c) => c.id);
-    if (remaining.isEmpty) return _helpText(); // seen it all → just show the map
-    return "I remember things so you don't have to — tasks, reminders, the people you care about, "
-        'and anything you want to track. Pick one and I\'ll show you, or say "give me the tour."';
+    _tourSpokeThisTurn = true;
+    final avail = _availableChapters();
+    final remaining = avail.where((c) => !visited.contains(c.id)).toList();
+    if (remaining.isEmpty) {
+      // seen it all → show the map and CLOSE the tour (don't leave it live to mislabel later turns).
+      _pendingTour = null;
+      return _helpText();
+    }
+    _pendingTour = {'chapter': null, 'visited': visited, 'codaGiven': codaGiven};
+    // Only name territories that are actually installed (never advertise a gated-off chapter).
+    const label = {
+      'reminders': 'reminders',
+      'tasks': 'tasks',
+      'people': 'the people you care about',
+      'tracking': 'anything you want to track',
+    };
+    final names = avail.map((c) => label[c.id] ?? c.id).toList();
+    final territory = names.length <= 1
+        ? names.join()
+        : '${names.sublist(0, names.length - 1).join(', ')}, and ${names.last}';
+    return "I remember things so you don't have to — $territory. "
+        'Pick one and I\'ll show you, or say "give me the tour."';
   }
 
   /// Enter a chapter: essence + the single "you could say" example + the invitation. Marks the
   /// chapter visited so "next" advances past it (and a repeat "what can you do" skips it).
   String _enterChapter(_TourChapter ch, Set<String> visited) {
+    final codaGiven = _pendingTour == null
+        ? <String>{}
+        : (_pendingTour!['codaGiven'] as Set).cast<String>();
     _pendingTour = {
       'chapter': ch.id,
       'visited': {...visited, ch.id},
+      'codaGiven': codaGiven,
     };
     _outSource = 'tour';
+    _tourSpokeThisTurn = true;
     return '${ch.essence}\n\n${ch.tryLine}\n\n${ch.followOn}';
   }
 
@@ -688,6 +716,7 @@ class Session {
     u = u.trim();
     _outSource = 'clarify';
     _outSkill = null;
+    _tourSpokeThisTurn = false; // set true by the tour helpers if THIS turn navigates the tour
     _cloudStatus = null;
     _outTemplate = null;
     _outSlots = null;
@@ -714,25 +743,34 @@ class Session {
       _outError = '${e.runtimeType}: $e\n$st'; // full detail to the trace, never to the user
       resp = "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
     }
-    // Tour teach-by-doing: if a tour is live on a chapter and this NON-tour turn dispatched a skill
-    // in that chapter's domain (the user tried the example live), append the coda and keep the tour
-    // going; if it wandered to another domain (or wrote nothing in-domain), the tour is over — the
-    // turn just happened. When every available chapter has been visited, close with the meta-moves.
+    // Tour teach-by-doing (post-turn). A tour is live and THIS turn wasn't tour-navigation:
+    //  - In-domain WRITE (the user tried the example for real) → append the coda ONCE per chapter,
+    //    and close if every chapter is now visited. (Fable review #1: gate on _lastTurnWrote so a
+    //    read-only query — "what are my reminders", "my running streak" — never gets a write-flavored
+    //    coda whose "undo that" would reverse an UNRELATED earlier write. #4: once per chapter.)
+    //  - In-domain READ / undo / clarify / error / a template-or-authoring turn → keep the tour alive;
+    //    the user is engaging as coached (Fable review #3/#7 — don't kill on "undo that"/"yes").
+    //  - A dispatch OUT of the current chapter's domain → the user moved on → end the tour silently.
     final liveTour = _pendingTour;
-    if (liveTour != null && _outSource != 'tour') {
+    if (liveTour != null && !_tourSpokeThisTurn) {
       final chapter = liveTour['chapter'] as String?;
       final ch = chapter == null ? null : _tourChapterOf(chapter);
       final skill = _outSkill;
-      if (ch != null && skill != null && ch.domainKeywords.any(skill.contains)) {
-        (liveTour['visited'] as Set).add(chapter);
-        resp = '$resp ${ch.coda}';
-        if (_availableChapters().every((c) => (liveTour['visited'] as Set).contains(c.id))) {
-          _pendingTour = null;
-          resp = '$resp\n\n${_tourClosing()}';
+      final inDomain = ch != null && skill != null && ch.domainKeywords.any(skill.contains);
+      if (inDomain) {
+        final codaGiven = liveTour['codaGiven'] as Set;
+        if (_lastTurnWrote && _outSource != 'error' && !codaGiven.contains(chapter)) {
+          codaGiven.add(chapter);
+          resp = '$resp ${ch.coda}';
+          if (_availableChapters().every((c) => (liveTour['visited'] as Set).contains(c.id))) {
+            _pendingTour = null;
+            resp = '$resp\n\n${_tourClosing()}';
+          }
         }
-      } else {
-        _pendingTour = null; // graduated / wandered off — end the tour silently
+      } else if (skill != null) {
+        _pendingTour = null; // a skill ran outside this chapter's domain → moved on → end silently
       }
+      // else (no skill dispatched — clarify/undo/error/template) → keep the tour alive.
     }
     // Did this turn actually spend cloud tokens? (drives the per-response cloud dot — accurate
     // even when a cloud/generative call failed to an offline reply, which spends nothing.)
@@ -910,9 +948,14 @@ class Session {
         _outSource = 'help';
         return _helpText();
       }
+      final chapter = tour['chapter'] as String?;
+      final sel = _tourSelect(u);
+      // At the "pick one" state a lone alias ("tasks") is a SELECTION even though it also routes to
+      // a query (list-tasks) — take it before the command guard (Fable review #2). Once IN a chapter,
+      // keep command-first so "remind me to …" is TRIED live, not re-selected.
+      if (sel != null && chapter == null) return _enterChapter(sel, visited);
       final isCommand = router.route(u, clock: now, contacts: _knownContactTokens()) != null;
       if (!isCommand) {
-        final sel = _tourSelect(u);
         if (sel != null) return _enterChapter(sel, visited);
         if (_tourNextRe.hasMatch(u)) {
           final next = _nextChapter(visited);
@@ -1005,7 +1048,13 @@ class Session {
     if (topicMatch != null) {
       final topic = topicMatch.group(1)!;
       final ch = _tourSelect(topic);
-      if (ch != null) return _enterChapter(ch, <String>{});
+      if (ch != null) {
+        // Preserve an in-progress tour's visited set (don't reset "next" progress). Fable review #9.
+        final visited = _pendingTour == null
+            ? <String>{}
+            : (_pendingTour!['visited'] as Set).cast<String>();
+        return _enterChapter(ch, visited);
+      }
       final domainHelp = _helpForTopic(topic);
       if (domainHelp != null) {
         _outSource = 'help';

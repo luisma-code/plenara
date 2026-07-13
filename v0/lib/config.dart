@@ -68,7 +68,7 @@ PlenaraConfig loadConfig({String? configPath}) {
 /// existing `~/.plenara/config.json`, preserving unknown keys. [apiKey] null leaves the key
 /// untouched; an empty string clears it. The key is written in plaintext (the accepted v0/dogfood
 /// posture — Spec 10 A-08 / G-37 tracks the secure-store follow-up); it is never logged.
-void saveConfig({required String dataDir, String? apiKey, bool? freeTier, bool? voiceMuted, String? configPath}) {
+void saveConfig({String? dataDir, String? apiKey, bool? freeTier, bool? voiceMuted, String? configPath}) {
   final f = File(configPath ?? defaultConfigPath());
   Map<String, dynamic> cfg = {};
   if (f.existsSync()) {
@@ -76,7 +76,9 @@ void saveConfig({required String dataDir, String? apiKey, bool? freeTier, bool? 
       cfg = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
     } catch (_) {/* malformed -> start fresh */}
   }
-  cfg['dataDir'] = dataDir;
+  // Only persist dataDir when explicitly given — a caller updating just a pref (e.g. the mute
+  // toggle) must NOT bake a resolved PLENARA_DATA env override in as the permanent dataDir.
+  if (dataDir != null) cfg['dataDir'] = dataDir;
   if (apiKey != null) cfg['apiKey'] = apiKey;
   if (freeTier != null) cfg['freeTier'] = freeTier; // null leaves the mode untouched
   if (voiceMuted != null) cfg['voiceMuted'] = voiceMuted; // null leaves the pref untouched

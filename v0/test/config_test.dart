@@ -88,6 +88,30 @@ void main() {
     expect(loadConfig(configPath: path).freeTier, isTrue);
   });
 
+  test('voiceMuted is three-state (null=unset / true / false) and round-trips', () {
+    final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
+    final path = '${dir.path}/config.json';
+    File(path).writeAsStringSync('{"dataDir": "X:/d", "apiKey": "sk-x"}');
+    // ABSENT must read as null (the first-run "not chosen yet" state), NOT false — this gates the
+    // "no audio blast on cold launch" behavior.
+    expect(loadConfig(configPath: path).voiceMuted, isNull);
+
+    saveConfig(dataDir: 'X:/d', voiceMuted: true, configPath: path);
+    expect(loadConfig(configPath: path).voiceMuted, isTrue);
+
+    saveConfig(dataDir: 'X:/d', voiceMuted: false, configPath: path);
+    expect(loadConfig(configPath: path).voiceMuted, isFalse); // false is distinct from unset
+
+    // a saveConfig that omits voiceMuted leaves the stored pref untouched
+    saveConfig(dataDir: 'X:/d', voiceMuted: true, configPath: path);
+    saveConfig(dataDir: 'X:/d', apiKey: 'sk-z', configPath: path);
+    expect(loadConfig(configPath: path).voiceMuted, isTrue);
+
+    // a non-bool stored value degrades to null rather than throwing
+    File(path).writeAsStringSync('{"dataDir": "X:/d", "voiceMuted": "yes"}');
+    expect(loadConfig(configPath: path).voiceMuted, isNull);
+  });
+
   test('PLENARA_FREE=1 env forces free mode regardless of the file', () {
     final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
     final path = '${dir.path}/config.json';

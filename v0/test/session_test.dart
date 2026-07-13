@@ -1458,6 +1458,84 @@ void main() {
       expect(s.store.values.any((x) => x['typeId'] == 'reminder'), isTrue);
       expect(r.toLowerCase(), contains('water the plants'));
     });
+
+    // ---- Tour lifecycle fixes (Fable review) ----
+    test('Tour: an in-domain READ gets NO write-flavored coda (no dangerous "undo that") — Fable #1', () async {
+      final s = await _session();
+      await s.handle('journal that today was a good day'); // an unrelated earlier write
+      await s.handle('what can you do');
+      await s.handle('reminders');
+      final r = await s.handle('what are my reminders'); // a READ — writes nothing
+      expect(r.toLowerCase(), isNot(contains('undo that')));
+      expect(r.toLowerCase(), isNot(contains('the whole trick')));
+    });
+
+    test('Tour: picking "tasks" enters the tasks chapter, not a task list — Fable #2', () async {
+      final s = await _session();
+      await s.handle('what can you do');
+      final r = await s.handle('tasks'); // a bare alias at "pick one" — a selection though it routes
+      expect(r.toLowerCase(), contains('to-do')); // the tasks chapter essence
+      expect(r.toLowerCase(), contains('you could say'));
+      expect(s.lastSource, 'tour');
+      final n = await s.handle('next'); // tour still alive → advances, not a dead-end
+      expect(s.lastSource, 'tour');
+      expect(n.toLowerCase(), isNot(contains("didn't catch")));
+    });
+
+    test('Tour: "undo that" (the coda\'s own instruction) keeps the tour alive — Fable #3', () async {
+      final s = await _session();
+      await s.handle('what can you do');
+      await s.handle('reminders');
+      final tried = await s.handle('remind me to call mom tomorrow at 5pm');
+      expect(tried.toLowerCase(), contains('undo that')); // the coda
+      final u = await s.handle('undo that'); // follow it
+      expect(u.toLowerCase(), contains('undone'));
+      final n = await s.handle('next'); // tour survived the undo
+      expect(s.lastSource, 'tour');
+      expect(n.toLowerCase(), isNot(contains("didn't catch")));
+    });
+
+    test('Tour: the teach-by-doing coda fires at most once per chapter — Fable #4', () async {
+      final s = await _session();
+      await s.handle('what can you do');
+      await s.handle('reminders');
+      final first = await s.handle('remind me to water plants tomorrow at 8am');
+      expect(first.toLowerCase(), contains('the whole trick')); // coda on the first try
+      final second = await s.handle('remind me to call the dentist tomorrow at 9am');
+      expect(second.toLowerCase(), isNot(contains('the whole trick'))); // no repeat
+    });
+
+    test('Tour: "never mind" (cancel family) closes the tour — M2', () async {
+      final s = await _session();
+      await s.handle('what can you do');
+      await s.handle('reminders');
+      final close = await s.handle('never mind');
+      expect(close.toLowerCase(), contains('undo that')); // closing meta-moves
+      final after = await s.handle('next'); // tour dropped → "next" no longer navigates
+      expect(after.toLowerCase(), isNot(contains('show you')));
+    });
+
+    test('Tour: "next" past the last chapter delivers the closing — M2', () async {
+      final s = await _session();
+      await s.handle('what can you do');
+      await s.handle('give me the tour'); // ch1
+      await s.handle('next'); // ch2
+      await s.handle('next'); // ch3
+      await s.handle('next'); // ch4 (last)
+      final end = await s.handle('next'); // past the last → closing
+      expect(end.toLowerCase(), contains('undo that'));
+    });
+
+    test('Tour: once every chapter is visited, a repeat "what can you do" shows the full map — Fable #11', () async {
+      final s = await _session();
+      await s.handle('what can you do');
+      await s.handle('give me the tour'); // ch1
+      await s.handle('next'); // ch2
+      await s.handle('next'); // ch3
+      await s.handle('next'); // ch4 — all visited, tour still live
+      final reask = await s.handle('what can you do'); // seen everything → the flat map
+      expect(reask, contains("Here's what I can do"));
+    });
     test('undo with nothing to undo', () async {
       final s = await _session();
       expect(await s.handle('undo'), contains('Nothing to undo'));
