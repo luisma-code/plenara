@@ -7,6 +7,35 @@ the multi-OS **release** path (packaging, signing, the ranked must-do list), see
 
 ---
 
+## ✅ macOS bring-up COMPLETE (2026-07-12, on the Mac)
+
+The port is live on macOS — builds, boots, tests green. What the first Mac session did:
+
+- **Toolchain (Homebrew):** `brew install --cask flutter` (**3.44.6** — brew's stable; repo pins
+  3.44.5, a harmless patch diff) + `brew install cocoapods` (1.17.0). Flutter bundles Dart 3.12.2.
+  - **Homebrew ownership gotcha:** this account (`luisma.code`) has **no sudo**; the admin account
+    (`luisma`) installed brew, so `/opt/homebrew` ended up owned by `luisma`. Fixed once, permanently,
+    with `sudo chown -R luisma.code:staff /opt/homebrew` (run as `luisma`). Brew now runs here with no sudo.
+- **Xcode:** full Xcode 26.6 is installed but the system `xcode-select` points at CommandLineTools.
+  Rather than `sudo xcode-select --switch` (needs admin), we set **`DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`**
+  — no sudo, license already accepted by `luisma`, SDK/clang present. Persisted in `~/.zprofile`
+  (alongside `brew shellenv` + `LANG=en_US.UTF-8`). Luis can later run the `sudo xcode-select --switch`
+  for the "proper" system default if he wants; not required.
+- **Tests green on Mac:** v0 engine **1657** (analyze clean), app **51** (analyze clean).
+- **Fixed the last Windows path:** `data_view_test.dart`/`widget_test.dart` copied seed from the dead
+  `Z:\code\plenara\v0\data`; now source from bundled `app/assets/seed` (commit `6c2faa7`).
+- **`flutter build macos --debug` succeeds** → `Plenara.app`. First `pod install` integration committed
+  (`d86173c`). App **launches, boots, self-seeds from bundled assets, no errors** (log in
+  `$TMPDIR/plenara-logs/`). It's currently at the **first-run onboarding** screen (pick a synced data folder).
+
+**Remaining first-hands-on items — all need Luis at the GUI (TRANSITION §6):** complete onboarding
+(choose the synced data folder); **smoke the macOS toast** (`MacToastScheduler` — set a near-future
+reminder, approve the notification-permission prompt, watch it fire — never run before); **judge the
+AVSpeechSynthesizer voice** quality and pick a nicer default in `speech_out.dart`; drop a fresh
+(rotated) BYOK key into `~/.plenara/config.json` to light up cloud features (offline works now).
+
+---
+
 ## 0. First message to the new (Mac) session
 
 > Read `TRANSITION.md`, `HANDOFF.md`, and `CLAUDE.md`, then continue.
