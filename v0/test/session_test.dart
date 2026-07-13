@@ -1370,13 +1370,13 @@ void main() {
       expect(await s.handle('undo that'), contains('Undone'));
       expect(s.store.length, 0);
     });
-    test('"what can you do" gives a grounded capability overview (no cloud, no write)', () async {
+    test('"what can you do" opens the Tour — a conversational invite, not a bullet dump (no write)', () async {
       final s = await _session();
       final r = await s.handle('what can you do');
-      expect(r, contains('Here\'s what I can do'));
-      expect(r, contains('Reminders'));
-      expect(r, contains('Birthdays'));
-      expect(r, contains('undo'));
+      expect(r.toLowerCase(), contains('pick one')); // the opening invitation
+      expect(r.toLowerCase(), contains('tour'));
+      expect(r.contains('•'), isFalse); // NOT the old bullet list
+      expect(s.lastSource, 'tour');
       expect(s.store, isEmpty); // discoverability is read-only
     });
     test('domain-scoped help (queries gap): "what can you do with reminders"', () async {
@@ -1398,6 +1398,65 @@ void main() {
       final r = await s.handle('how do i get to the airport');
       expect(r.contains('start tracking'), isFalse);
       expect(r.contains('With reminders'), isFalse);
+    });
+
+    // ---- The Tour (Fable's guided capability discovery) ----
+    test('Tour: opening → pick a chapter → try it live → coda; wandering ends it', () async {
+      final s = await _session();
+      final open = await s.handle('what can you do');
+      expect(open.toLowerCase(), contains('pick one'));
+      expect(s.lastSource, 'tour');
+
+      final ch = await s.handle('reminders'); // pick a chapter
+      expect(ch.toLowerCase(), contains('remind'));
+      expect(ch.toLowerCase(), contains('you could say'));
+      expect(s.lastSource, 'tour');
+
+      final tried = await s.handle('remind me to call mom tomorrow at 5pm'); // try it LIVE
+      expect(tried.toLowerCase(), contains('call mom'));
+      expect(tried.toLowerCase(), contains('undo that')); // the teach-by-doing coda
+      expect(s.store.values.any((r) => r['typeId'] == 'reminder'), isTrue); // a REAL write
+
+      final wander = await s.handle('add buy milk to my list'); // another domain → tour ends silently
+      expect(wander.toLowerCase(), contains('added'));
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1); // the task really happened
+    });
+
+    test('Tour: "give me the tour" then "next" advances; "done" closes with the meta-moves', () async {
+      final s = await _session();
+      await s.handle('what can you do');
+      final c1 = await s.handle('give me the tour'); // enters the first chapter
+      expect(s.lastSource, 'tour');
+      final c2 = await s.handle('next'); // advances
+      expect(c2, isNot(equals(c1)));
+      expect(s.lastSource, 'tour');
+      final close = await s.handle('done'); // closes
+      expect(close.toLowerCase(), contains('undo that'));
+    });
+
+    test('Tour: "show me everything" gives the full map (the flat list survives)', () async {
+      final s = await _session();
+      await s.handle('what can you do');
+      final map = await s.handle('show me everything');
+      expect(map, contains("Here's what I can do"));
+      expect(map.contains('•'), isTrue);
+    });
+
+    test('Tour: "what can you do with reminders" opens straight into that chapter', () async {
+      final s = await _session();
+      final r = await s.handle('what can you do with reminders');
+      expect(r.toLowerCase(), contains('remind'));
+      expect(r.toLowerCase(), contains('you could say'));
+      expect(s.lastSource, 'tour');
+    });
+
+    test('Tour: a mid-tour real command is TRIED, not swallowed as a chapter pick', () async {
+      final s = await _session();
+      await s.handle('what can you do');
+      await s.handle('reminders');
+      final r = await s.handle('remind me to water the plants tomorrow at 8am');
+      expect(s.store.values.any((x) => x['typeId'] == 'reminder'), isTrue);
+      expect(r.toLowerCase(), contains('water the plants'));
     });
     test('undo with nothing to undo', () async {
       final s = await _session();

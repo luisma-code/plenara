@@ -30,6 +30,78 @@ final _helpRe = RegExp(
 final _helpTopicRe = RegExp(
     r"^(?:what can (?:you|i) do with|what can i do (?:for|about)|how (?:do|can|would) i (?:use|track|log|manage|handle)|how do(?:es)?|help (?:me )?with|what are my options for)\s+(?:my |the )?(.+?)(?:\s+work)?\??$",
     caseSensitive: false);
+// ---- The Tour (Fable's capability-discovery design) — a guided, conversational answer to "what
+// can you do?" instead of a bullet dump. A closed vocabulary + a one-slot state machine; zero LLM.
+// Each chapter is a TERRITORY (not a skill): essence + one example + an invitation to try it live.
+class _TourChapter {
+  final String id;
+  final List<String> gate; // shown only if ALL these skills are registered
+  final String essence; // the one/two-sentence spoken intro
+  final String tryLine; // the single "you could say" example
+  final String followOn; // the invitation (names the next chapter)
+  final String coda; // appended after a live, in-domain try (teach-by-doing)
+  final List<String> domainKeywords; // a dispatched skill id containing one of these = "tried this"
+  final List<String> aliases; // selection words ("tell me about reminders")
+  const _TourChapter(this.id, this.gate, this.essence, this.tryLine, this.followOn, this.coda,
+      this.domainKeywords, this.aliases);
+}
+
+// Curated order: reminders → tasks → people → tracking. Journal/mood/birthdays fold into essences.
+const _tourChapters = <_TourChapter>[
+  _TourChapter(
+    'reminders',
+    ['set-reminder'],
+    "Reminders are one sentence: what, and when — once or repeating. I'll speak up when it's time.",
+    'You could say — "remind me to water the plants tomorrow at eight."',
+    'Go ahead, try one of your own — or say "next" and I\'ll show you tasks.',
+    "And that's the whole trick: say it, it's done. Say \"undo that\" if you were only playing.",
+    ['remind'],
+    ['reminder', 'reminders', 'remind'],
+  ),
+  _TourChapter(
+    'tasks',
+    ['create-task'],
+    'Tasks are your running to-do list — add things, and I keep them until they\'re done.',
+    'You could say — "add call the plumber to my list."',
+    'Try adding one — or say "next" for the people you care about.',
+    "That's it — one sentence and it's on the list. \"Undo that\" takes it back off.",
+    ['task'],
+    ['task', 'tasks', 'todo', 'todos', 'to-do', 'to-dos'],
+  ),
+  _TourChapter(
+    'people',
+    ['remember-person-fact'],
+    'This is the part I care about most. Tell me facts about your people and I\'ll hold them — who\'s related to whom, what you talked about, when birthdays land.',
+    'You could say — "remember that Mia is Sarah\'s daughter."',
+    'Later you\'d just ask "what do I know about Mia." Want to try one, or hear about tracking?',
+    "Now it's yours to ask back anytime. \"Undo that\" forgets it again.",
+    ['person', 'contact', 'interaction', 'relation', 'fact', 'birthday', 'alias'],
+    ['people', 'person', 'contact', 'contacts', 'friend', 'friends', 'relationship', 'relationships'],
+  ),
+  _TourChapter(
+    'tracking',
+    ['log-run'],
+    "I come with runs, moods, meals, and a journal — and if I don't track something yet, say \"start tracking my water intake\" and I'll build it.",
+    'You could say — "log a 3k run."',
+    'That one\'s free to try — I\'ll undo it after if you like. Or say "done" and I\'ll get out of your way.',
+    "Logged — and I'll total it up whenever you ask. \"Undo that\" clears it.",
+    ['run', 'walk', 'mood', 'journal', 'meal', 'goal', 'streak', 'track', 'water', 'step'],
+    ['track', 'tracking', 'run', 'running', 'mood', 'journal', 'habit', 'habits'],
+  ),
+];
+// Advance / start the tour ("next", "give me the tour").
+final _tourNextRe = RegExp(
+    r"^(?:(?:give me |show me |start |take me on )?(?:the )?tour|next|another(?: one)?|more|go on|keep going|what else|surprise me)[.!]?$",
+    caseSensitive: false);
+// Done with the tour (in addition to the shared _cancelRe family).
+final _tourDoneRe = RegExp(
+    r"^(?:done|that'?s (?:enough|it|plenty|great)|i'?m good|got it|thanks|no more|enough)[.!]?$",
+    caseSensitive: false);
+// The user wants the exhaustive list, not the guided tour.
+final _tourMapRe = RegExp(
+    r"^(?:show me everything|everything|the (?:full|whole) (?:list|map|thing)|list (?:it|them|everything)(?: all)?|all of (?:it|them)|the whole list)[.!]?$",
+    caseSensitive: false);
+
 // Correction (§3.3): a natural prefix + "I meant …" reverses the last turn and re-routes.
 // The "I meant" anchor is deliberate — a bare "no, X" is too easily a non-correction, and
 // reversing a good write on a false positive is the worse failure.
@@ -269,6 +341,9 @@ class Session {
   // (Spec 02 §6.5 / G-18): {type, skill, typeId, skillId, displayName, examples}.
   Map<String, dynamic>? _pendingActivation;
   String? _pendingAuthorOffer; // DF-01: a "start tracking X" awaiting a yes before paid authoring
+  // The Tour (guided "what can you do?"): {'chapter': String?, 'visited': Set<String>}. Ephemeral,
+  // never persisted; dropped on app close or when a turn wanders out of the current chapter.
+  Map<String, dynamic>? _pendingTour;
   // Whether retrieval (the embed-server index) is active this session. Authoring
   // grows the inventory and must re-index — but only when retrieval is on, so the
   // authoring path stays hermetic under init(retrieval: false), like init() itself.
@@ -402,6 +477,74 @@ class Session {
       await reconcileReminders(sched, store, now);
     } catch (_) {/* an OS notification hiccup is not worth failing the turn over */}
   }
+
+  // ---- The Tour (Fable's capability discovery) — a stateful, conversational "what can you do?" ----
+
+  /// Chapters whose gating skills are all registered (never advertise what isn't installed).
+  List<_TourChapter> _availableChapters() =>
+      _tourChapters.where((c) => c.gate.every(skills.containsKey)).toList();
+
+  _TourChapter? _tourChapterOf(String id) {
+    for (final c in _tourChapters) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  /// Match an utterance to a chapter ONLY when it's a selection — the alias IS the utterance, after
+  /// stripping a small set of lead-ins ("tell me about reminders" -> "reminders"). Crucially it must
+  /// NOT match an alias merely CONTAINED in a command or correction (e.g. "no, I meant to log a 3k
+  /// run" must reach the correction path, not re-enter the tracking chapter). Gated on availability.
+  _TourChapter? _tourSelect(String u) {
+    var s = u.toLowerCase().trim().replaceAll(RegExp(r'[.!?,]+$'), '').trim();
+    s = s.replaceFirst(
+        RegExp(r"^(?:(?:tell|show) me (?:more )?about |what about |how about |let'?s (?:do|try|hear about) |i'?d like |can we do |about )"),
+        '');
+    s = s.replaceFirst(RegExp(r'^the '), '').trim();
+    for (final c in _availableChapters()) {
+      if (c.aliases.contains(s)) return c;
+    }
+    return null;
+  }
+
+  /// The next available chapter not yet visited, in curated order.
+  _TourChapter? _nextChapter(Set<String> visited) {
+    for (final c in _availableChapters()) {
+      if (!visited.contains(c.id)) return c;
+    }
+    return null;
+  }
+
+  /// Open the tour: name the territory in one breath, invite a pick or the full tour. Preserves an
+  /// in-progress tour's visited set (a repeat "what can you do" continues rather than restarts).
+  String _openTour() {
+    final visited = _pendingTour == null
+        ? <String>{}
+        : (_pendingTour!['visited'] as Set).cast<String>();
+    _pendingTour = {'chapter': null, 'visited': visited};
+    _outSource = 'tour';
+    final remaining = _availableChapters().where((c) => !visited.contains(c.id)).map((c) => c.id);
+    if (remaining.isEmpty) return _helpText(); // seen it all → just show the map
+    return "I remember things so you don't have to — tasks, reminders, the people you care about, "
+        'and anything you want to track. Pick one and I\'ll show you, or say "give me the tour."';
+  }
+
+  /// Enter a chapter: essence + the single "you could say" example + the invitation. Marks the
+  /// chapter visited so "next" advances past it (and a repeat "what can you do" skips it).
+  String _enterChapter(_TourChapter ch, Set<String> visited) {
+    _pendingTour = {
+      'chapter': ch.id,
+      'visited': {...visited, ch.id},
+    };
+    _outSource = 'tour';
+    return '${ch.essence}\n\n${ch.tryLine}\n\n${ch.followOn}';
+  }
+
+  /// The closing — always teaches the two meta-moves that make everything else discoverable.
+  /// (Caller sets _outSource; the post-turn teach-by-doing check appends this without touching it.)
+  String _tourClosing() =>
+      "That's the shape of it. When in doubt, just say the thing — if I don't follow, I'll ask. "
+      'And "undo that" reverses whatever I last did.';
 
   /// A concise, capability-grounded "what can you do" surface. Grouped by area with
   /// real example phrasings (more useful than dumping 19 raw displayNames); each line
@@ -571,6 +714,26 @@ class Session {
       _outError = '${e.runtimeType}: $e\n$st'; // full detail to the trace, never to the user
       resp = "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
     }
+    // Tour teach-by-doing: if a tour is live on a chapter and this NON-tour turn dispatched a skill
+    // in that chapter's domain (the user tried the example live), append the coda and keep the tour
+    // going; if it wandered to another domain (or wrote nothing in-domain), the tour is over — the
+    // turn just happened. When every available chapter has been visited, close with the meta-moves.
+    final liveTour = _pendingTour;
+    if (liveTour != null && _outSource != 'tour') {
+      final chapter = liveTour['chapter'] as String?;
+      final ch = chapter == null ? null : _tourChapterOf(chapter);
+      final skill = _outSkill;
+      if (ch != null && skill != null && ch.domainKeywords.any(skill.contains)) {
+        (liveTour['visited'] as Set).add(chapter);
+        resp = '$resp ${ch.coda}';
+        if (_availableChapters().every((c) => (liveTour['visited'] as Set).contains(c.id))) {
+          _pendingTour = null;
+          resp = '$resp\n\n${_tourClosing()}';
+        }
+      } else {
+        _pendingTour = null; // graduated / wandered off — end the tour silently
+      }
+    }
     // Did this turn actually spend cloud tokens? (drives the per-response cloud dot — accurate
     // even when a cloud/generative call failed to an offline reply, which spends nothing.)
     _lastTurnSpentCloud = c is ClaudeClient && (c.inTokens - inTok0 > 0 || c.outTokens - outTok0 > 0);
@@ -730,6 +893,40 @@ class Session {
       // else: fall through and handle this new input normally
     }
 
+    // The Tour (guided discovery): while live, a closed vocabulary steers it — exit, the full map,
+    // pick a chapter, or advance. Selection/advance only fire when the input ISN'T a real command,
+    // so "remind me to …" during the reminders chapter is TRIED live, not re-selected. Anything else
+    // falls through to normal routing; the teach-by-doing coda (in handle()) then keeps or ends it.
+    final tour = _pendingTour;
+    if (tour != null) {
+      final visited = (tour['visited'] as Set).cast<String>();
+      if (_cancelRe.hasMatch(u) || _tourDoneRe.hasMatch(u)) {
+        _pendingTour = null;
+        _outSource = 'tour';
+        return _tourClosing();
+      }
+      if (_tourMapRe.hasMatch(u)) {
+        _pendingTour = null;
+        _outSource = 'help';
+        return _helpText();
+      }
+      final isCommand = router.route(u, clock: now, contacts: _knownContactTokens()) != null;
+      if (!isCommand) {
+        final sel = _tourSelect(u);
+        if (sel != null) return _enterChapter(sel, visited);
+        if (_tourNextRe.hasMatch(u)) {
+          final next = _nextChapter(visited);
+          if (next == null) {
+            _pendingTour = null;
+            _outSource = 'tour';
+            return _tourClosing();
+          }
+          return _enterChapter(next, visited);
+        }
+      }
+      // not a tour command → fall through; handle()'s post-turn coda check evaluates the outcome.
+    }
+
     // Automation Review Feed (Spec 02 §7.5): a held automation WRITE awaits the user's call —
     // "approve it" applies the deterministically re-resolved plan; "dismiss it" reaps it.
     if (automations.pendingReview.isNotEmpty) {
@@ -797,16 +994,19 @@ class Session {
       return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
     }
 
+    // "what can you do?" opens the Tour — a guided conversation, not a bullet dump.
     if (_helpRe.hasMatch(u)) {
-      _outSource = 'help';
-      return _helpText();
+      return _openTour();
     }
-    // Domain-scoped help (queries gap): "what can you do with reminders", "how do I
-    // track water". Only fires for a RECOGNIZED topic — an unknown topic falls through
-    // to normal routing so it can't hijack a real query.
+    // Domain-scoped help (queries gap): "what can you do with reminders", "how do I track water".
+    // A topic that IS a tour chapter opens directly into it; otherwise fall back to the flat
+    // domain examples (meals, nicknames, …). An unknown topic falls through to normal routing.
     final topicMatch = _helpTopicRe.firstMatch(u);
     if (topicMatch != null) {
-      final domainHelp = _helpForTopic(topicMatch.group(1)!);
+      final topic = topicMatch.group(1)!;
+      final ch = _tourSelect(topic);
+      if (ch != null) return _enterChapter(ch, <String>{});
+      final domainHelp = _helpForTopic(topic);
       if (domainHelp != null) {
         _outSource = 'help';
         return domainHelp;
