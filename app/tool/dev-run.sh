@@ -27,17 +27,20 @@ flutter build macos --debug
 if [ -f "$KEYCHAIN" ]; then
   security unlock-keychain -p plenara "$KEYCHAIN" 2>/dev/null || true
 fi
-# Require a real signing IDENTITY (cert + private key). A bare certificate match would let codesign
-# start and then hard-fail under `set -e`; the identity check is the correct gate (Fable review #13).
-if security find-identity -v -p codesigning 2>/dev/null | grep -q "$IDENTITY"; then
+# Gate on the CERT existing (not `find-identity -v`: a self-signed cert drops out of the
+# validity-checked list once its fresh-trust window lapses, yet `codesign --sign <name>` still works).
+# The sign itself is guarded by `if`, so a cert-without-usable-key falls back to ad-hoc gracefully
+# rather than aborting under `set -e` (covers Fable review #13's concern the other way round).
+if security find-certificate -c "$IDENTITY" "$KEYCHAIN" >/dev/null 2>&1; then
   echo "==> Re-signing with '$IDENTITY' (stable identity → mic/Speech permission persists)…"
-  # --preserve-metadata keeps the app's entitlements (audio-input, network, allow-jit, get-task-allow)
-  # instead of dropping them on re-sign.
-  codesign --force --deep --preserve-metadata=entitlements,requirements --sign "$IDENTITY" "$APP"
-  codesign -dvv "$APP" 2>&1 | grep -i "Authority=$IDENTITY" >/dev/null \
-    && echo "    ok: $(codesign -d -r- "$APP" 2>&1 | grep designated)"
+  # --preserve-metadata keeps the app's entitlements (audio-input, network, allow-jit, get-task-allow).
+  if codesign --force --deep --preserve-metadata=entitlements,requirements --sign "$IDENTITY" "$APP" 2>/dev/null; then
+    echo "    ok: $(codesign -d -r- "$APP" 2>&1 | grep designated)"
+  else
+    echo "    note: re-sign failed (cert without a usable key?) — app stays ad-hoc."
+  fi
 else
-  echo "==> note: '$IDENTITY' identity not found — app stays ad-hoc (mic permission resets on rebuild)."
+  echo "==> note: '$IDENTITY' cert not found — app stays ad-hoc (mic permission resets on rebuild)."
 fi
 
 if [ "${1:-}" != "--no-open" ]; then
