@@ -131,17 +131,20 @@ Future<void> _send(WidgetTester tester, String text) async {
 
 String _base(String p) => p.replaceAll('\\', '/').split('/').last;
 
+// Seed data ships bundled at app/assets/seed (mirrored from v0/data by tool/sync_seed.sh). Resolve
+// it relative to the package root — flutter test's cwd — so the helper is cross-platform (no dev
+// machine path like the Windows `sourceDataDir` fallback).
+String get _seedDir => '${Directory.current.path}/assets/seed';
+
 String _tempData() {
   final tmp = Directory.systemTemp.createTempSync('plenara_ui_');
   for (final sub in const ['types', 'skills']) {
     final dst = Directory('${tmp.path}/$sub')..createSync(recursive: true);
-    for (final f in Directory(
-      '$sourceDataDir/$sub',
-    ).listSync().whereType<File>()) {
+    for (final f in Directory('$_seedDir/$sub').listSync().whereType<File>()) {
       f.copySync('${dst.path}/${_base(f.path)}');
     }
   }
-  File('$sourceDataDir/corpus.json').copySync('${tmp.path}/corpus.json');
+  File('$_seedDir/corpus.json').copySync('${tmp.path}/corpus.json');
   Directory('${tmp.path}/records').createSync();
   return tmp.path;
 }
