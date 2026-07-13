@@ -214,11 +214,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tapAt(const Offset(400, 300));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Added'), findsNothing);
+    expect(find.textContaining('Added'), findsNothing); // nothing sent
     expect(
       find.textContaining("I'm Plena"),
-      findsOneWidget,
-    ); // greeting unchanged
+      findsNothing,
+    ); // the intro clears the moment you tap to interact
   });
 
   testWidgets('a transcribe error is caught and listening clears', (

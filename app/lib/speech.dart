@@ -57,6 +57,15 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
         },
       );
       _log('initialize -> $_ready');
+      if (_ready) {
+        // Diagnostic: distinguish "granted but silent" from "denied". macOS revokes mic/speech
+        // permission when a debug rebuild re-signs the app, which surfaces as error_no_match.
+        try {
+          _log('hasPermission -> ${await _stt.hasPermission}');
+        } catch (e) {
+          _log('hasPermission threw: $e');
+        }
+      }
     } catch (e) {
       _log('initialize threw: $e');
       _ready = false; // no engine / permission denied -> voice just unavailable

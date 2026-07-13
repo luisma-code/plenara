@@ -171,6 +171,10 @@ class _ChatState extends State<ChatScreen> {
   SpeechOutput? _voice; // Plena's talk-back (Spec 12 §6); chosen in _init
   bool _voiceMuted =
       false; // mute silences her voice; captions still show (Spec 15 §7)
+  bool _greetingShowing =
+      false; // the intro is up — cleared the moment the user interacts (tap or mute)
+  int _noMatchStreak =
+      0; // consecutive tap-to-talks that heard nothing → surface a mic-permission hint
   final _ctrl = TextEditingController();
   bool _ready = false, _busy = false, _listening = false;
   // Plena's presence state (Spec 15): derived from the real turn/speech signals. No TTS yet,
@@ -240,6 +244,11 @@ class _ChatState extends State<ChatScreen> {
               ? FlutterTtsSpeechOutput(onLog: (m) => log.debug('tts: $m'))
               : NoopSpeechOutput());
       await _voice!.init();
+      // Remembered mute pref (real app only; tests inject a session and never touch config). No
+      // first-run audio-blast risk: the greeting is never spoken, so muted just defaults to false.
+      if (widget.session == null) {
+        _voiceMuted = loadConfig().voiceMuted ?? false;
+      }
       log(
         'init: ready (stt=${_speech?.available ?? false}, tts=${_voice?.available ?? false})',
       );
@@ -255,9 +264,8 @@ class _ChatState extends State<ChatScreen> {
         _scheduler.selfTest();
       }
       const greeting =
-          'Hi — I\'m Plena. Tap anywhere and talk to me — "add call the plumber to my list", '
-          '"log a 3k run", "remind me to call mom on thursday at 5pm", "what do I know about Mia", '
-          '"list my tasks". Say "undo that" to reverse the last thing. Mute me (bottom-left) to type instead.';
+          'Hi — I\'m Plena. Tap anywhere and just talk to me (or mute me, bottom-left, to type). '
+          'Ask me "what can you do?" and I\'ll show you.';
       // On-open nudges (past-due reminders + upcoming birthdays) join the greeting over the void.
       final nudges = _session.pendingNudges();
       setState(() {
@@ -265,6 +273,7 @@ class _ChatState extends State<ChatScreen> {
         _caption = nudges.isEmpty
             ? greeting
             : '$greeting\n\n${nudges.join('\n')}';
+        _greetingShowing = true; // clears on first interaction (tap/mute)
         _displayIsList =
             false; // the greeting keeps Plena full-screen (list-mode is for data)
       });
@@ -289,8 +298,13 @@ class _ChatState extends State<ChatScreen> {
     }
   }
 
-  /// Pick the best available recognizer: on-device sherpa_onnx (private, modern accuracy) if its
-  /// model is downloaded; else the OS SAPI engine (rough but built-in); else Noop (mic hidden).
+  /// Pick the best available recognizer for the platform.
+  ///
+  /// **Apple (macOS/iOS): the built-in Speech framework, always.** Apple's on-device recognizer is
+  /// the same engine as system dictation — accurate, naturally-cased, private, zero-download — so
+  /// there's no reason to ship a Whisper model here (sherpa/onnxruntime was a *Windows* workaround
+  /// for inaccurate SAPI). **Windows:** on-device sherpa_onnx Whisper if its model is downloaded,
+  /// else the built-in engine. Then Noop (mic hidden) as the floor.
   /// A test-injected recognizer always wins; an injected session means "test" -> Noop.
   Future<SpeechRecognizer> _pickSpeech() async {
     final log = AppLog.instance;
@@ -299,6 +313,19 @@ class _ChatState extends State<ChatScreen> {
       return widget.speech!;
     }
     if (widget.session != null) return NoopSpeechRecognizer();
+    SpeechRecognizer sys() {
+      final s = SystemSpeechRecognizer(onLog: (m) => log.debug('speech: $m'));
+      return s;
+    }
+
+    // Apple platforms: go straight to the built-in recognizer (skip the Whisper probe entirely).
+    if (Platform.isMacOS || Platform.isIOS) {
+      log('speech: using the built-in Apple Speech recognizer');
+      final s = sys();
+      await s.init();
+      return s;
+    }
+    // Windows (and any other): prefer on-device sherpa_onnx Whisper if its model is present.
     final modelDir = '${modelsDir()}/en-whisper'; // config.dart owns the ~/.plenara path layout
     final sherpa = SherpaSpeechRecognizer(
       modelDir,
@@ -309,21 +336,43 @@ class _ChatState extends State<ChatScreen> {
       log('speech: using on-device sherpa_onnx');
       return sherpa;
     }
-    log.debug('speech: sherpa model unavailable -> falling back to OS SAPI');
-    final sys = SystemSpeechRecognizer(onLog: (m) => log.debug('speech: $m'));
-    await sys.init();
-    return sys;
+    log.debug('speech: sherpa model unavailable -> falling back to the built-in OS engine');
+    final s = sys();
+    await s.init();
+    return s;
+  }
+
+  /// App-layer navigation commands ("open settings") — handled by the UI, not the engine, so they
+  /// open the corresponding window instead of being routed (and mis-answered) as a turn. Covers
+  /// both typed and voice input, since voice auto-sends through [_send].
+  bool _maybeNavCommand(String t) {
+    final s = t.toLowerCase().trim().replaceAll(RegExp(r'[.!?]+$'), '');
+    if (RegExp(r'^(?:(?:open|show|go to|take me to|open up)\s+)?(?:the\s+)?settings$')
+        .hasMatch(s)) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const SettingsView()));
+      setState(() => _caption = 'Opened settings.');
+      _capTimer?.cancel();
+      _capTimer = Timer(const Duration(milliseconds: 1600), () {
+        if (mounted) setState(() => _caption = null);
+      });
+      return true;
+    }
+    return false;
   }
 
   Future<void> _send() async {
     final t = _ctrl.text.trim();
     if (t.isEmpty || _busy) return;
     _ctrl.clear();
+    if (_maybeNavCommand(t)) return; // "open settings" et al. open a window, not a turn
     if (_voice?.speaking ?? false) unawaited(_voice!.stop()); // a new turn stops any in-flight reply
     setState(() {
       _busy = true;
       _deepThink = false;
       _caption = null;
+      _greetingShowing = false;
     });
     // after a beat, a still-running turn reads as "reaching" (D2) — long/cloud work
     _thinkTimer?.cancel();
@@ -427,17 +476,43 @@ class _ChatState extends State<ChatScreen> {
     }
     // Set listening BEFORE the barge-in await, so a second tap during it hits the abort branch
     // instead of starting a second recognizer session (reviewer d #2).
-    setState(() => _listening = true);
+    setState(() {
+      _listening = true;
+      if (_greetingShowing) {
+        _caption = null; // the intro clears the moment you interact
+        _greetingShowing = false;
+      }
+    });
+    // Mid-conversation the last reply stays until your first spoken word replaces it (onResult
+    // partials); only the intro greeting is cleared eagerly on tap.
     if (_voice?.speaking ?? false) {
       await _voice!.stop(); // barge-in: cut Plena off the moment you start to speak (Spec 12 §7)
       if (mounted) setState(() => _speaking = false);
+      // HARD BARRIER (macOS): AVSpeechSynthesizer (TTS) and Apple Speech's AVAudioEngine (STT)
+      // contend for the audio device. Starting capture immediately after TTS stops yields silent
+      // input (error_no_match) or a native audio crash. Let the output device fully release first.
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted || !_listening) return; // tapped again to abort during the settle
     }
     log.debug('speech: tap -> start');
+    var heard = false; // did this session get ANY audio it could transcribe?
     try {
       await _speech!.listen(
         onResult: (text, isFinal) {
           final t = text.trim();
-          if (!mounted || t.isEmpty || !isFinal) return; // Windows delivers finals only
+          if (!mounted || t.isEmpty) return;
+          heard = true;
+          _noMatchStreak = 0;
+          if (!isFinal) {
+            // Live transcript: materialise words as they're recognized so you can SEE the mic is
+            // hearing you (and watch it stall if it isn't). Windows delivers finals only, so this
+            // only streams on Apple Speech.
+            setState(() {
+              _caption = t;
+              _displayIsList = false;
+            });
+            return;
+          }
           setState(() => _listening = false);
           _speech!.cancel(); // one utterance per tap
           if (!_busy) {
@@ -447,7 +522,24 @@ class _ChatState extends State<ChatScreen> {
           }
         },
         onDone: () {
-          if (mounted) setState(() => _listening = false);
+          if (!mounted) return;
+          setState(() => _listening = false);
+          // No-silent-failure (principle #7): if tap-to-talk keeps hearing nothing, the mic is
+          // almost certainly blocked (macOS revokes it when a debug rebuild re-signs the app) —
+          // say so, actionably, instead of just doing nothing.
+          if (!heard) {
+            _noMatchStreak++;
+            if (_noMatchStreak >= 2 && !_busy) {
+              setState(() {
+                _greetingShowing = false;
+                _displayIsList = false;
+                _caption =
+                    "I'm not hearing any audio. Check that Microphone and Speech "
+                    'Recognition are ON for Plenara in System Settings → Privacy & '
+                    'Security, then tap and talk again.';
+              });
+            }
+          }
         },
       );
     } catch (e) {
@@ -693,7 +785,6 @@ class _ChatState extends State<ChatScreen> {
   static const _ink = Color(0xFFEAE2D8);
 
   Widget _presenceHome(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     final hasStt = _speech?.available ?? false;
     final showInput =
         _voiceMuted ||
@@ -715,14 +806,11 @@ class _ChatState extends State<ChatScreen> {
             },
           ),
         ),
-        // Plena — full-screen, or eased to a corner when showing a list
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOutCubic,
-          left: listMode ? 12 : 0,
-          top: listMode ? 12 : 0,
-          width: listMode ? 260 : size.width,
-          height: listMode ? 260 : size.height,
+        // Plena — always full-bleed. (She used to shrink to a 260px corner box in list mode, but
+        // resizing the widget reallocated her comet-trail offscreen buffer mid-animation and crashed
+        // the native raster on every list reply. Fable's redesign moves the *entity* to the corner
+        // within a full-bleed canvas via veilYield; until then she just stays full-screen — no crash.)
+        Positioned.fill(
           child: IgnorePointer(
             child: Semantics(
               container: true,
@@ -755,7 +843,10 @@ class _ChatState extends State<ChatScreen> {
               ),
             ),
           ),
-        if (_listening)
+        // "listening…" shows only until your first words appear — then the live transcript takes
+        // over that space (no more overlapping the caption). (The fuller "I heard: X" confirmation
+        // is queued for the render redesign.)
+        if (_listening && !hasContent)
           const Positioned(
             bottom: 150,
             left: 0,
@@ -828,7 +919,9 @@ class _ChatState extends State<ChatScreen> {
   Widget _inputBar(BuildContext context) => Material(
     color: Colors.transparent,
     child: Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      // Left inset clears the mute button (Positioned left:14, ~48px wide) which is drawn on top of
+      // this bar — otherwise it obscures the first characters typed.
+      padding: const EdgeInsets.fromLTRB(70, 12, 16, 16),
       decoration: const BoxDecoration(
         color: Color(0xF0100E0C),
         border: Border(top: BorderSide(color: Color(0x1FFFFFFF))),
@@ -875,7 +968,17 @@ class _ChatState extends State<ChatScreen> {
           ? 'Plena is muted — tap to unmute'
           : "Mute Plena's voice",
       onPressed: () {
-        setState(() => _voiceMuted = !_voiceMuted);
+        setState(() {
+          _voiceMuted = !_voiceMuted;
+          if (_greetingShowing) {
+            _caption = null; // the intro clears the moment you interact
+            _greetingShowing = false;
+          }
+        });
+        // remember the choice between launches (real app only; tests inject a session)
+        if (widget.session == null) {
+          saveConfig(dataDir: loadConfig().dataDir, voiceMuted: _voiceMuted);
+        }
         if (_voiceMuted) {
           if (_voice?.speaking ?? false) {
             _voice!.stop();
