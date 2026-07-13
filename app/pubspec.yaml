@@ -48,6 +48,11 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Real-device (real engine/GPU) tests — the ONLY place the animated presence + comet-trail
+  # offscreen buffer (toImageSync) actually rasterizes. Headless flutter_test can't fault there,
+  # which is how the list-reply raster crash slipped through. See integration_test/.
+  integration_test:
+    sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
