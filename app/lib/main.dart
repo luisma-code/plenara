@@ -150,6 +150,10 @@ class ChatScreen extends StatefulWidget {
   /// OFF so pumpAndSettle terminates); the real-device integration test sets this true to exercise
   /// the real animated raster path. Null = default (animate iff no session injected).
   final bool? forceAnimate;
+
+  /// Redirect the mute-pref read/write to a temp config file. Lets a test exercise mute PERSISTENCE
+  /// (otherwise gated on `session == null` and thus dogfood-only). Null = the real `~/.plenara`.
+  final String? configPath;
   const ChatScreen({
     super.key,
     this.session,
@@ -157,6 +161,7 @@ class ChatScreen extends StatefulWidget {
     this.speech,
     this.voice,
     this.forceAnimate,
+    this.configPath,
   });
   @override
   State<ChatScreen> createState() => _ChatState();
@@ -180,6 +185,8 @@ class _ChatState extends State<ChatScreen> {
       false; // the intro is up — cleared the moment the user interacts (tap or mute)
   int _noMatchStreak =
       0; // consecutive tap-to-talks that heard nothing → surface a mic-permission hint
+  int _micEpoch = 0; // bumped on every tap/abort; a listen-start whose epoch went stale bails (race)
+  bool _aborting = false; // a deliberate tap-to-abort — its cancel's onDone must not count as no-audio
   String? _heard; // the finalized transcript, echoed as "I heard: X" (the listening font), briefly
   Timer? _heardTimer;
   final _ctrl = TextEditingController();
@@ -251,10 +258,10 @@ class _ChatState extends State<ChatScreen> {
               ? FlutterTtsSpeechOutput(onLog: (m) => log.debug('tts: $m'))
               : NoopSpeechOutput());
       await _voice!.init();
-      // Remembered mute pref (real app only; tests inject a session and never touch config). No
-      // first-run audio-blast risk: the greeting is never spoken, so muted just defaults to false.
-      if (widget.session == null) {
-        _voiceMuted = loadConfig().voiceMuted ?? false;
+      // Remembered mute pref (real app, or a test that injects a configPath). No first-run
+      // audio-blast risk: the greeting is never spoken, so muted just defaults to false.
+      if (widget.session == null || widget.configPath != null) {
+        _voiceMuted = loadConfig(configPath: widget.configPath).voiceMuted ?? false;
       }
       log(
         'init: ready (stt=${_speech?.available ?? false}, tts=${_voice?.available ?? false})',
@@ -477,10 +484,16 @@ class _ChatState extends State<ChatScreen> {
     if (!(_speech?.available ?? false) || _busy) return;
     if (_listening) {
       log.debug('speech: tap -> abort');
+      _micEpoch++; // invalidate any in-flight listen-start awaiting the barge-in settle
+      _aborting = true; // this cancel's onDone is a deliberate abort, not a no-audio miss
       if (mounted) setState(() => _listening = false); // clear synchronously (also re-entry guard)
       _speech!.cancel(); // ABORT — do not flush/finalize a partial command
       return;
     }
+    // A fresh listen intent — captured so a rapid tap→abort→tap during the awaits below can't leave
+    // this (now superseded) call starting a second concurrent recognizer session (Fable review #5).
+    final epoch = ++_micEpoch;
+    _aborting = false;
     // Set listening BEFORE the barge-in await, so a second tap during it hits the abort branch
     // instead of starting a second recognizer session (reviewer d #2).
     setState(() {
@@ -501,7 +514,9 @@ class _ChatState extends State<ChatScreen> {
       // contend for the audio device. Starting capture immediately after TTS stops yields silent
       // input (error_no_match) or a native audio crash. Let the output device fully release first.
       await Future.delayed(const Duration(milliseconds: 300));
-      if (!mounted || !_listening) return; // tapped again to abort during the settle
+      // Bail if aborted OR superseded by a newer tap during the settle (stale epoch) — never start a
+      // second concurrent recognizer session.
+      if (!mounted || !_listening || epoch != _micEpoch) return;
     }
     log.debug('speech: tap -> start');
     var heard = false; // did this session get ANY audio it could transcribe?
@@ -540,6 +555,10 @@ class _ChatState extends State<ChatScreen> {
         onDone: () {
           if (!mounted) return;
           setState(() => _listening = false);
+          if (_aborting) {
+            _aborting = false; // a deliberate tap-to-abort ended this session — not a no-audio miss
+            return;
+          }
           // No-silent-failure (principle #7): if tap-to-talk keeps hearing nothing, the mic is
           // almost certainly blocked (macOS revokes it when a debug rebuild re-signs the app) —
           // say so, actionably, instead of just doing nothing.
@@ -978,9 +997,13 @@ class _ChatState extends State<ChatScreen> {
         ],
       );
     }
-    // Parse into a lead-in (non-bullet text before the first item) + items (continuations fold in).
+    // Parse into a lead-in (non-bullet text before the first item), the items, and a footer
+    // (non-bullet text AFTER the items — e.g. help's "And 'undo that' reverses the last thing").
+    // Only INDENTED non-bullet lines fold into the previous item as wrapped continuations; a
+    // flush-left trailing line is a footer, not part of the last bullet (Fable review #8).
     final leadIn = <String>[];
     final items = <String>[];
+    final footer = <String>[];
     var seenItem = false;
     for (final l in lines) {
       final m = _bulletRe.firstMatch(l);
@@ -991,8 +1014,10 @@ class _ChatState extends State<ChatScreen> {
         continue;
       } else if (!seenItem) {
         leadIn.add(l.trim());
-      } else if (items.isNotEmpty) {
-        items[items.length - 1] += ' ${l.trim()}';
+      } else if (RegExp(r'^\s').hasMatch(l) && items.isNotEmpty) {
+        items[items.length - 1] += ' ${l.trim()}'; // an indented continuation of the last bullet
+      } else {
+        footer.add(l.trim()); // a flush-left line after the bullets → a footer paragraph
       }
     }
     final marker = HSLColor.fromAHSL(
@@ -1062,6 +1087,20 @@ class _ChatState extends State<ChatScreen> {
               ],
             ),
           ),
+        if (footer.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Text(
+              footer.join(' '),
+              style: const TextStyle(
+                color: Color(0xC8EAE2D8),
+                fontSize: 15,
+                height: 1.4,
+                fontWeight: FontWeight.w300,
+                shadows: _voidShadows,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -1125,9 +1164,10 @@ class _ChatState extends State<ChatScreen> {
             _greetingShowing = false;
           }
         });
-        // remember the choice between launches (real app only; tests inject a session)
-        if (widget.session == null) {
-          saveConfig(dataDir: loadConfig().dataDir, voiceMuted: _voiceMuted);
+        // remember the choice between launches (real app, or a test with an injected configPath).
+        // Persist ONLY the pref — no dataDir, so a PLENARA_DATA env override isn't baked in.
+        if (widget.session == null || widget.configPath != null) {
+          saveConfig(voiceMuted: _voiceMuted, configPath: widget.configPath);
         }
         if (_voiceMuted) {
           if (_voice?.speaking ?? false) {

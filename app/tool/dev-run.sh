@@ -27,10 +27,13 @@ flutter build macos --debug
 if [ -f "$KEYCHAIN" ]; then
   security unlock-keychain -p plenara "$KEYCHAIN" 2>/dev/null || true
 fi
-if security find-identity -v -p codesigning 2>/dev/null | grep -q "$IDENTITY" \
-   || security find-certificate -c "$IDENTITY" >/dev/null 2>&1; then
+# Require a real signing IDENTITY (cert + private key). A bare certificate match would let codesign
+# start and then hard-fail under `set -e`; the identity check is the correct gate (Fable review #13).
+if security find-identity -v -p codesigning 2>/dev/null | grep -q "$IDENTITY"; then
   echo "==> Re-signing with '$IDENTITY' (stable identity → mic/Speech permission persists)…"
-  codesign --force --deep --sign "$IDENTITY" "$APP"
+  # --preserve-metadata keeps the app's entitlements (audio-input, network, allow-jit, get-task-allow)
+  # instead of dropping them on re-sign.
+  codesign --force --deep --preserve-metadata=entitlements,requirements --sign "$IDENTITY" "$APP"
   codesign -dvv "$APP" 2>&1 | grep -i "Authority=$IDENTITY" >/dev/null \
     && echo "    ok: $(codesign -d -r- "$APP" 2>&1 | grep designated)"
 else

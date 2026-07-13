@@ -7,9 +7,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plenara/claude.dart';
+import 'package:plenara/config.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara_app/main.dart';
 import 'package:plenara_app/plena.dart';
+import 'package:plenara_app/settings_view.dart';
 import 'package:plenara_app/speech.dart';
 import 'package:plenara_app/speech_out.dart';
 
@@ -203,6 +205,108 @@ void main() {
       find.textContaining('Added'),
       findsOneWidget,
     ); // transcribed + auto-sent + replied
+  });
+
+  testWidgets('a list reply\'s trailing footer renders separately, not glued to the last bullet (Fable #8)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
+    await tester.pumpAndSettle();
+    await _send(tester, 'what can you do'); // opens the Tour
+    await _send(tester, 'show me everything'); // → the full map (_helpText: bullets + a footer line)
+    // The footer "And "undo that" reverses the last thing." must be its OWN Text, not folded into
+    // the last bullet — a predicate on exact data catches the glued-in regression.
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Text && w.data == 'And "undo that" reverses the last thing.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('"open settings" opens the Settings window, not a routed turn (H5)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'open settings');
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SettingsView), findsOneWidget);
+  });
+
+  testWidgets('a settings-mentioning task does NOT hijack to Settings (H5 negative)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
+    await tester.pumpAndSettle();
+    await _send(tester, 'add review the settings to my list');
+    expect(find.byType(SettingsView), findsNothing); // it's a task, not a nav command
+    expect(find.textContaining('Added'), findsOneWidget);
+  });
+
+  testWidgets('repeated no-audio taps surface the mic hint — no silent failure (H4)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChatScreen(session: _session(), speech: _FakeSpeech(true, null)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(400, 300)); // tap 1 → hears nothing
+    await tester.pumpAndSettle();
+    expect(find.textContaining('not hearing any audio'), findsNothing); // not after ONE
+    await tester.tapAt(const Offset(400, 300)); // tap 2 → hears nothing
+    await tester.pumpAndSettle();
+    expect(find.textContaining('not hearing any audio'), findsOneWidget); // hint on the 2nd
+  });
+
+  testWidgets('the intro clears on MUTE, not only on tap-to-talk (M7)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChatScreen(session: _session(), speech: _FakeSpeech(true, 'x')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining("I'm Plena"), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.volume_up)); // mute
+    await tester.pumpAndSettle();
+    expect(find.textContaining("I'm Plena"), findsNothing); // intro cleared on mute
+  });
+
+  testWidgets('mute preference persists across launches (H2, via configPath seam)', (
+    tester,
+  ) async {
+    final dir = Directory.systemTemp.createTempSync('plenara_mute_');
+    final cfg = '${dir.path}/config.json';
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChatScreen(
+          session: _session(),
+          speech: _FakeSpeech(true, 'x'),
+          configPath: cfg,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.volume_up)); // mute → should persist to cfg
+    await tester.pumpAndSettle();
+    expect(loadConfig(configPath: cfg).voiceMuted, isTrue);
+    // relaunch pointing at the same config → inits muted (the volume_off icon)
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChatScreen(
+          session: _session(),
+          speech: _FakeSpeech(true, 'x'),
+          configPath: cfg,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.volume_off), findsOneWidget); // launched already muted
   });
 
   testWidgets('voice echoes "I heard: <transcript>" as a confirmation', (
