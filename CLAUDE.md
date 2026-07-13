@@ -8,6 +8,12 @@ Plenara is a voice-driven, AI-augmented personal assistant app. Solo project by 
 
 ## Working mode (IMPORTANT — read first)
 
+**This mode is GATED — it applies only when Luis explicitly requests it** (he'll say "working mode"
+or "agentic mode"). That request signals **he is leaving the machine** and wants uninterrupted work.
+**By default (he's at the keyboard), take SHORT turns** — one meaningful step, then hand back so he
+can redirect without interrupting (see global `~/.claude/CLAUDE.md`). Everything below describes the
+requested autonomous mode:
+
 **Work autonomously and keep going. Never stop for input to proceed.** Top rule, most-repeated correction — honor it above default collaborative caution. Decide, act, commit, continue.
 
 - **"Should I do the next step?" is ALWAYS yes** — never ask it. Finish an increment → commit → immediately start the next → repeat, indefinitely. Make design/tooling/sequencing calls yourself; record the rationale in the commit/handoff and move on. Review happens when the work is *done*.
