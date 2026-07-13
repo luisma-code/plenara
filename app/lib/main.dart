@@ -146,12 +146,17 @@ class ChatScreen extends StatefulWidget {
   speech; // voice input (task #18); Noop by default -> mic hidden
   final SpeechOutput?
   voice; // talk-back; tests inject a fake, injected session -> Noop
+  /// Force the presence animation on/off regardless of [session]. Tests inject a session (→ animate
+  /// OFF so pumpAndSettle terminates); the real-device integration test sets this true to exercise
+  /// the real animated raster path. Null = default (animate iff no session injected).
+  final bool? forceAnimate;
   const ChatScreen({
     super.key,
     this.session,
     this.retrieval = false,
     this.speech,
     this.voice,
+    this.forceAnimate,
   });
   @override
   State<ChatScreen> createState() => _ChatState();
@@ -819,10 +824,13 @@ class _ChatState extends State<ChatScreen> {
               child: PresenceView(
                 state: _presence,
                 difficulty: _difficulty,
-                animate: widget.session == null,
+                animate: widget.forceAnimate ?? (widget.session == null),
                 glyph: _glyph,
                 glyphNonce: _glyphNonce,
                 tuning: _tuning,
+                // A list/prose reply eases her to the upper-right corner (within the full-bleed
+                // canvas) so the text reads beside her; a short caption keeps her centered.
+                yieldTarget: listMode ? 1 : 0,
               ),
             ),
           ),
@@ -879,40 +887,166 @@ class _ChatState extends State<ChatScreen> {
     );
   }
 
+  // Heavy shadow under all void text — insurance against a stray mote drifting beneath the column.
+  static const _voidShadows = [
+    Shadow(blurRadius: 22, color: Colors.black),
+    Shadow(blurRadius: 8, color: Colors.black),
+  ];
+  static const _captionStyle = TextStyle(
+    color: _ink,
+    fontSize: 24,
+    height: 1.5,
+    fontWeight: FontWeight.w300,
+    shadows: _voidShadows,
+  );
+
+  /// The current exchange, in one of three registers (Fable's list redesign):
+  /// - **caption** (short reply): centered in the lower third — already reads well.
+  /// - **list / prose** ([list] true — Plena has eased to the upper-right): a left-hand reading
+  ///   column over the same void. Lists get "mote" marks in Plena's hue + hanging indent; prose is
+  ///   set as paragraphs. No opaque box — the Scaffold is the one ground.
   Widget _voidText(String text, {required bool list, double bottomInset = 0}) {
-    final style = TextStyle(
-      color: _ink,
-      fontSize: list ? 17 : 24,
-      height: 1.5,
-      fontWeight: FontWeight.w300,
-      shadows: const [
-        Shadow(blurRadius: 22, color: Colors.black),
-        Shadow(blurRadius: 8, color: Colors.black),
-      ],
-    );
-    if (list) {
-      // list floats to the right of the cornered Plena, a comfortable reading column
+    if (!list) {
       return Padding(
-        padding: EdgeInsets.fromLTRB(300, 56, 56, 120 + bottomInset),
+        padding: EdgeInsets.only(bottom: bottomInset),
         child: Align(
-          alignment: Alignment.centerLeft,
+          alignment: const Alignment(0, 0.5),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: SingleChildScrollView(child: Text(text, style: style)),
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Text(text, textAlign: TextAlign.center, style: _captionStyle),
           ),
         ),
       );
     }
-    // a caption: a centered, max-width column in the lower third — never clips
     return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
+      padding: EdgeInsets.fromLTRB(64, 104, 64, 120 + bottomInset),
       child: Align(
-        alignment: const Alignment(0, 0.5),
+        alignment: Alignment.topLeft,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
-          child: Text(text, textAlign: TextAlign.center, style: style),
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(child: _replyBody(text)),
         ),
       ),
+    );
+  }
+
+  // Bullet lines: "•", "-", "–", or "1." / "1)" leaders (the engine emits "  • item").
+  static final _bulletRe = RegExp(r'^\s*([•\-–]|\d+[.)])\s+');
+
+  /// Compose the yielded reply body: prose as paragraphs, lists as lead-in + mote-marked items.
+  Widget _replyBody(String text) {
+    final lines = text.split('\n');
+    final hasList = lines.any(_bulletRe.hasMatch);
+    if (!hasList) {
+      final paras = text
+          .split(RegExp(r'\n\s*\n'))
+          .map((p) => p.trim())
+          .where((p) => p.isNotEmpty);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final p in paras)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Text(
+                p,
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 20,
+                  height: 1.55,
+                  fontWeight: FontWeight.w300,
+                  shadows: _voidShadows,
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+    // Parse into a lead-in (non-bullet text before the first item) + items (continuations fold in).
+    final leadIn = <String>[];
+    final items = <String>[];
+    var seenItem = false;
+    for (final l in lines) {
+      final m = _bulletRe.firstMatch(l);
+      if (m != null) {
+        seenItem = true;
+        items.add(l.substring(m.end).trim());
+      } else if (l.trim().isEmpty) {
+        continue;
+      } else if (!seenItem) {
+        leadIn.add(l.trim());
+      } else if (items.isNotEmpty) {
+        items[items.length - 1] += ' ${l.trim()}';
+      }
+    }
+    final marker = HSLColor.fromAHSL(
+      1,
+      _tuning.hue % 360,
+      _tuning.sat.clamp(0.0, 1.0),
+      .56,
+    ).toColor();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (leadIn.isNotEmpty) ...[
+          Text(
+            leadIn.join(' '),
+            style: const TextStyle(
+              color: Color(0x9EEAE2D8),
+              fontSize: 15,
+              letterSpacing: 0.3,
+              fontWeight: FontWeight.w400,
+              shadows: _voidShadows,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 18),
+            child: Container(
+              width: 24,
+              height: 1,
+              color: marker.withValues(alpha: 0.25),
+            ),
+          ),
+        ],
+        for (var i = 0; i < items.length; i++)
+          Padding(
+            padding: EdgeInsets.only(bottom: i == items.length - 1 ? 0 : 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 24,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 9),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        width: 3.5,
+                        height: 3.5,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: marker.withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    items[i],
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 19,
+                      height: 1.38,
+                      fontWeight: FontWeight.w300,
+                      shadows: _voidShadows,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 

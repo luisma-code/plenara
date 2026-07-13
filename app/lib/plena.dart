@@ -66,7 +66,10 @@ class _Frame {
       turbulence = .05,
       luminance = .42,
       spread = .52,
-      lean = 0;
+      lean = 0,
+      // 0 = full-bleed, 1 = eased to the corner (Spec 15 §2.4 veilYield). Driven by the widget,
+      // not the per-state target, so a list/prose reply can read beside her.
+      veilYield = 0;
 }
 
 class _Target {
@@ -104,6 +107,15 @@ class PresenceView extends StatefulWidget {
   final GlyphDef? glyph;
   final int glyphNonce;
   final PresenceTuning tuning;
+
+  /// Ease Plena to a corner (0 = full-bleed, 1 = cornered) so a list/prose reply reads beside her.
+  /// She flies there WITHIN the full-bleed canvas — the entity translates + shrinks, the widget
+  /// never resizes (resizing reallocated her trail buffer and crashed the raster). Spec 15 §6.3.
+  final double yieldTarget;
+
+  /// Where she goes when yielded, in Alignment space (default upper-right, leaving the left margin
+  /// and the reading column to the text).
+  final Alignment yieldAnchor;
   const PresenceView({
     super.key,
     this.state = PresenceState.idle,
@@ -112,6 +124,8 @@ class PresenceView extends StatefulWidget {
     this.glyph,
     this.glyphNonce = 0,
     this.tuning = const PresenceTuning(),
+    this.yieldTarget = 0,
+    this.yieldAnchor = const Alignment(0.62, -0.58),
   });
   @override
   State<PresenceView> createState() => _PresenceViewState();
@@ -228,6 +242,7 @@ class _PresenceViewState extends State<PresenceView>
     _f.luminance = t.luminance;
     _f.spread = t.spread;
     _f.lean = t.lean;
+    _f.veilYield = widget.yieldTarget; // static path: snap straight to the target
     _repaint.value++;
   }
 
@@ -380,6 +395,7 @@ class _PresenceViewState extends State<PresenceView>
     _f.luminance = lp(_f.luminance, t.luminance, k);
     _f.spread = lp(_f.spread, t.spread, k);
     _f.lean = lp(_f.lean, t.lean, .06);
+    _f.veilYield = lp(_f.veilYield, widget.yieldTarget, .055); // ~600ms ease to/from the corner
     if (_reduce) {
       return; // reduced motion: params settle, motes hold still (Spec 15 §8.3)
     }
@@ -541,14 +557,19 @@ class _PlenaPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height, mind = math.min(w, h);
     final tn = s.widget.tuning;
-    // warm near-black ground — Plena is self-luminous on dark (Spec 15 §9, §10.1)
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = const Color(0xFF0A0908),
-    );
     final f = s._f;
-    final scale = mind * 0.58 * tn.breadth; // Breadth
-    final cx = w * .5, cy = h * .5 - f.lean * mind * .28;
+    // The Scaffold owns the one warm-black void (Spec 15 §9/§10.1) — the painter no longer fills a
+    // background, so there's no opaque rectangle to seam against a differently-lit corner.
+    //
+    // veilYield: ease Plena to a corner by translating + shrinking the ENTITY within the full-bleed
+    // canvas. The widget never resizes, so the trail buffer (sized from w,h below) never reallocates
+    // — resizing it mid-animation was the list-reply raster crash.
+    final yt = f.veilYield;
+    final a = s.widget.yieldAnchor;
+    final scale =
+        mind * 0.58 * tn.breadth * ui.lerpDouble(1.0, 0.34, yt)!; // Breadth, shrunk when cornered
+    final cx = ui.lerpDouble(w * .5, w * (.5 + a.x * .5), yt)!;
+    final cy = ui.lerpDouble(h * .5, h * (.5 + a.y * .5), yt)! - f.lean * mind * .28;
     final rgb = s._color;
     final bri = tn.bright;
 

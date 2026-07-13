@@ -310,10 +310,10 @@ void main() {
       await tester.pumpAndSettle();
       await _send(tester, 'add buy milk to my list');
       await _send(tester, 'list my tasks');
-      expect(
-        find.textContaining('• buy milk'),
-        findsOneWidget,
-      ); // list floats over the void
+      // List register: the item renders in the reading column with a mote mark (not an ASCII "•"),
+      // so the item text is just "buy milk" (bullet stripped, drawn as a coloured dot).
+      expect(find.textContaining('buy milk'), findsWidgets);
+      expect(find.textContaining('• buy milk'), findsNothing);
     },
   );
 
