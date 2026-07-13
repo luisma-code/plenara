@@ -1,9 +1,67 @@
 # Plenara — Session Handoff (pick up here)
 
-_Last updated: 2026-07-11 (late). Written to survive a Claude process relaunch._
+_Last updated: 2026-07-13 (overnight autonomous, on the Mac). Written to survive a Claude relaunch._
 
 > **Moving to macOS?** Read **`TRANSITION.md`** first — it's the Mac-specific companion (setup,
 > what's Windows-only, first tasks). This file is the full (Windows-oriented) session history.
+
+## LATEST SESSION (2026-07-12 → 07-13, on macOS — dogfood fixes + overnight agentic run)
+
+First real Mac dogfooding, then an authorized heads-down "working mode" run through a backlog. All
+committed; every item validated by tests (Luis was away — tests stand in for manual validation).
+**HEAD ≈ `0d8a4d8`+** (plus a code-signing commit). v0 **1662** + app **52** tests green, full
+`tool/precheck.sh` gate passes (now incl. a real-GPU integration step).
+
+**Dogfood fixes (committed `1e5dabb`):**
+- **Voice input on Mac = Apple's built-in Speech** (not Whisper/sherpa — that was a Windows-SAPI
+  workaround). `_pickSpeech()` goes straight to it on Apple platforms.
+- **Audio barrier** (`_toggleMic`): 300 ms settle after barge-in before capture — AVSpeechSynthesizer
+  (TTS) vs Apple Speech's AVAudioEngine (STT) contend for the device; starting capture too soon gave
+  silent input / a native crash. Fixed the mute-then-type crash.
+- **Live transcript** (Apple Speech partials → the caption) + **"I heard: <transcript>"** confirmation
+  in the listening font after you speak (`81d104e`).
+- **Intro** tightened to 2 lines, first-run voice card removed (mute button already covers it), intro
+  clears the moment you interact. Mute pref persists (`config.voiceMuted`). Mute button no longer
+  covers the input; **"open settings"** opens Settings. No-silent-failure mic-permission hint.
+- **⚠ Voice needs the right INPUT device.** Root cause of "can't hear me": a **Bluetooth Jabra headset**
+  was the default input — the mic forces low-fi HFP mode (that's the "pop") and delivered silence →
+  `error_no_match`. Fix = System Settings → Sound → Input = a WIRED/USB mic (Jabra fine for OUTPUT).
+
+**List-reply redesign (Fable, `c5bfec3`) — the "black box in the corner" + "ASCII over the UI":**
+- `plena.dart`: painter no longer fills a background (Scaffold owns the one void); **veilYield** eases
+  Plena to the upper-right by translating+shrinking the ENTITY within a full-bleed canvas — the widget
+  never resizes, so the comet-trail offscreen buffer never reallocates (that realloc was the crash).
+- `main.dart`: three-register text (caption / prose / list) with "mote" marks in her hue, hanging
+  indent, reading column. Supersedes the earlier full-bleed stopgap.
+
+**Real-GPU integration test + CI (`cadedfa`) — closes the blind spot that let the crash ship:**
+`app/integration_test/render_test.dart` runs on the actual macOS GPU (animation ON) and drives a real
+"list my tasks" turn → asserts no raster crash. `precheck.sh` step [7/9] runs it on the macos+windows
+runners. (Headless widget tests build the presence with `animate:false`, so they can't see raster crashes.)
+
+**Tour v1 (`0d8a4d8`) — "what can you do?" is now a guided conversation:** chapter data-table
+(reminders→tasks→people→tracking) + a `_pendingTour` state slot in `session.dart` + teach-by-doing
+coda (try the example live, real write, then a coda). "show me everything" → the old flat map. Zero
+LLM, no new skills (cassette unchanged). +6 tests.
+
+**Backlog outcomes:**
+- **Interval RRULE** ("every other/second Tuesday") — ALREADY built+tested (handoff was stale);
+  reminders_test covers biweekly + monthly-ordinal.
+- **Drop sherpa from the macOS build** — DEFERRED (documented): federated plugin, no platform-conditional
+  pub deps; needs build flavors/fork, disproportionate for a benign linker warning.
+- **Stable code-signing** (so mic permission stops resetting on rebuild) — DONE via
+  **`bash app/tool/dev-run.sh`** (build → re-sign with a self-signed "Plenara Dev" identity → launch).
+  The identity gives a constant designated requirement (bundle id + cert leaf), so TCC (mic / Speech
+  Recognition) permission persists across rebuilds. **Use this script to run the app locally**, not a
+  bare `flutter build` (which signs ad-hoc → permission resets). CI-safe: the re-sign is a no-op
+  without the cert. Cert lives in `~/Library/Keychains/plenara-signing.keychain-db` (pw `plenara`),
+  which locks on reboot — the script auto-unlocks it. (An xcconfig/pbxproj approach was tried first
+  but Xcode's build-setting precedence kept forcing ad-hoc; post-build re-sign is the reliable path.)
+- **Authoring refine→activate loop (G-29)** + **safety Layer-2/3 model gate (G-30)** — DEFERRED:
+  cloud/model-gated + substantial; not responsibly validatable hermetically overnight. Lower priority.
+
+**Morning try-list for Luis:** ask "what can you do?" (the Tour); "list my tasks" (Plena flies to the
+corner, mote-marked list, no black box); voice in/out with a WIRED mic; "open settings".
 
 ## LATEST SESSION (2026-07-11, autonomous) — talk-back + the presence-primary UI. HEAD ≈ `48c0267`+, app 49 + v0 1643 green.
 
