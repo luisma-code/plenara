@@ -205,6 +205,27 @@ void main() {
     ); // transcribed + auto-sent + replied
   });
 
+  testWidgets('voice echoes "I heard: <transcript>" as a confirmation', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChatScreen(
+          session: _session(),
+          speech: _FakeSpeech(true, 'add milk to my list'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(400, 300)); // tap the void → talk
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('I heard: add milk to my list'),
+      findsOneWidget,
+    ); // the confirmation, in the listening font
+    expect(find.textContaining('Added'), findsOneWidget); // and it still auto-sent
+  });
+
   testWidgets('tap-to-talk with no transcript sends nothing', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

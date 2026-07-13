@@ -180,6 +180,8 @@ class _ChatState extends State<ChatScreen> {
       false; // the intro is up — cleared the moment the user interacts (tap or mute)
   int _noMatchStreak =
       0; // consecutive tap-to-talks that heard nothing → surface a mic-permission hint
+  String? _heard; // the finalized transcript, echoed as "I heard: X" (the listening font), briefly
+  Timer? _heardTimer;
   final _ctrl = TextEditingController();
   bool _ready = false, _busy = false, _listening = false;
   // Plena's presence state (Spec 15): derived from the real turn/speech signals. No TTS yet,
@@ -483,11 +485,13 @@ class _ChatState extends State<ChatScreen> {
     // instead of starting a second recognizer session (reviewer d #2).
     setState(() {
       _listening = true;
+      _heard = null; // a new utterance supersedes the last "I heard: …"
       if (_greetingShowing) {
         _caption = null; // the intro clears the moment you interact
         _greetingShowing = false;
       }
     });
+    _heardTimer?.cancel();
     // Mid-conversation the last reply stays until your first spoken word replaces it (onResult
     // partials); only the intro greeting is cleared eagerly on tap.
     if (_voice?.speaking ?? false) {
@@ -518,7 +522,14 @@ class _ChatState extends State<ChatScreen> {
             });
             return;
           }
-          setState(() => _listening = false);
+          setState(() {
+            _listening = false;
+            _heard = t; // confirm what was captured, in the listening font, until the reply settles
+          });
+          _heardTimer?.cancel();
+          _heardTimer = Timer(const Duration(seconds: 5), () {
+            if (mounted) setState(() => _heard = null);
+          });
           _speech!.cancel(); // one utterance per tap
           if (!_busy) {
             _ctrl.text = t; // what we send — only written when we can actually send it (no ghost)
@@ -561,6 +572,7 @@ class _ChatState extends State<ChatScreen> {
     _speakTimer?.cancel();
     _thinkTimer?.cancel();
     _capTimer?.cancel();
+    _heardTimer?.cancel();
     _ctrl.dispose();
     super.dispose();
   }
@@ -851,22 +863,26 @@ class _ChatState extends State<ChatScreen> {
               ),
             ),
           ),
-        // "listening…" shows only until your first words appear — then the live transcript takes
-        // over that space (no more overlapping the caption). (The fuller "I heard: X" confirmation
-        // is queued for the render redesign.)
-        if (_listening && !hasContent)
-          const Positioned(
+        // The status line, in the italic "listening" font: "listening…" until your words appear
+        // (then the live caption takes over, no overlap); once input ends, "I heard: <what you
+        // said>" as a confirmation, until the reply settles.
+        if ((_listening && !hasContent) || _heard != null)
+          Positioned(
             bottom: 150,
             left: 0,
             right: 0,
             child: IgnorePointer(
               child: Center(
-                child: Text(
-                  'listening…',
-                  style: TextStyle(
-                    color: Color(0x99EAE2D8),
-                    fontSize: 15,
-                    fontStyle: FontStyle.italic,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 48),
+                  child: Text(
+                    _heard != null ? 'I heard: $_heard' : 'listening…',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0x99EAE2D8),
+                      fontSize: 15,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
               ),
