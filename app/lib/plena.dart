@@ -145,7 +145,7 @@ class _GlyphRun {
 }
 
 class _PresenceViewState extends State<PresenceView>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   static const _n = 2200; // mote budget (Spec 15 §9.2; tune per platform later)
   final _p = Float32List(_n * 4); // x,y,vx,vy in normalized [-1,1] space
   final _mode = Int8List(_n); // 0 free, 1 deposited into a glyph
@@ -168,12 +168,24 @@ class _PresenceViewState extends State<PresenceView>
   Duration _last = Duration.zero;
   double _acc = 0;
   bool _reduce = false;
+  bool _appHidden = false; // app backgrounded/occluded → suspend the director entirely (Spec 15 §9.1)
 
-  bool get _animating => widget.animate && !_reduce;
+  // Suspend when hidden: zero frames when the app isn't visible — saves battery AND stops any
+  // per-frame allocation from accruing off-screen (the presence used to animate forever).
+  bool get _animating => widget.animate && !_reduce && !_appHidden;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final hidden = state != AppLifecycleState.resumed;
+    if (hidden == _appHidden) return;
+    _appHidden = hidden;
+    _sync(); // start/stop the ticker to match visibility
+  }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     for (var i = 0; i < _n; i++) {
       final a = _rng.nextDouble() * math.pi * 2,
           r = math.sqrt(_rng.nextDouble()) * .5;
@@ -532,6 +544,7 @@ class _PresenceViewState extends State<PresenceView>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _ticker.dispose();
     _repaint.dispose();
     _sprite?.dispose();

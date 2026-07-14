@@ -56,6 +56,43 @@ class _ThrowSpeech implements SpeechRecognizer {
   void cancel() {}
 }
 
+/// A recognizer that HOLDS the session open: `listen` captures the callbacks and returns without
+/// firing anything, so a test can drive interim/final results (or an abort) with exact timing.
+/// `cancel`/`stop` end the session by firing `onDone` once (as a real engine does), which lets a
+/// test exercise the deliberate-abort guard in `_toggleMic`'s onDone.
+class _HoldingSpeech implements SpeechRecognizer {
+  void Function(String, bool)? _onResult;
+  void Function()? _onDone;
+  bool _active = false;
+  @override
+  Future<void> init() async {}
+  @override
+  bool get available => true;
+  @override
+  Future<void> listen({
+    required void Function(String, bool) onResult,
+    required void Function() onDone,
+  }) async {
+    _onResult = onResult;
+    _onDone = onDone;
+    _active = true; // holds — no callback fires until the test drives one
+  }
+
+  void emitPartial(String t) => _onResult?.call(t, false); // interim (non-final)
+  void emitFinal(String t) => _onResult?.call(t, true); // final -> auto-send
+
+  void _finish() {
+    if (!_active) return;
+    _active = false;
+    _onDone?.call();
+  }
+
+  @override
+  Future<void> stop() async => _finish();
+  @override
+  void cancel() => _finish();
+}
+
 class _FakeVoice implements SpeechOutput {
   final spoken = <String>[];
   bool _speaking = false;
@@ -511,5 +548,72 @@ void main() {
     final before = voice.spoken.length;
     await _send(tester, 'list my tasks');
     expect(voice.spoken.length, before); // silent while muted
+  });
+
+  testWidgets('M5 — a live partial transcript materialises mid-listen, then the final replies', (
+    tester,
+  ) async {
+    final speech = _HoldingSpeech();
+    await tester.pumpWidget(
+      MaterialApp(home: ChatScreen(session: _session(), speech: speech)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tapAt(const Offset(400, 300)); // tap the void → start listening
+    await tester.pumpAndSettle();
+    // Before any words: the italic status line reads "listening…" (intro cleared on tap).
+    expect(find.text('listening…'), findsOneWidget);
+
+    speech.emitPartial('add buy bread'); // interim words stream in
+    await tester.pump();
+    // The live partial appears as the caption over the void…
+    expect(find.textContaining('add buy bread'), findsWidgets);
+    // …and "listening…" is gone the moment a partial takes over (no overlap).
+    expect(find.text('listening…'), findsNothing);
+
+    speech.emitFinal('add buy bread to my list'); // final → auto-send
+    await tester.pumpAndSettle();
+    expect(find.textContaining('I heard: add buy bread to my list'), findsOneWidget);
+    expect(find.textContaining('Added'), findsOneWidget); // the reply landed
+  });
+
+  testWidgets('M6 — deliberate tap-to-abort never trips the no-audio hint, and clears listening', (
+    tester,
+  ) async {
+    final speech = _HoldingSpeech();
+    await tester.pumpWidget(
+      MaterialApp(home: ChatScreen(session: _session(), speech: speech)),
+    );
+    await tester.pumpAndSettle();
+
+    const void_ = Offset(400, 300);
+    // Two full start→abort cycles. Each abort's cancel fires onDone; the _aborting guard must keep
+    // it from counting as a no-audio miss. Without the guard, two misses would streak to the hint.
+    for (var i = 0; i < 2; i++) {
+      await tester.tapAt(void_); // start
+      await tester.pumpAndSettle();
+      expect(find.text('listening…'), findsOneWidget); // genuinely listening
+      await tester.tapAt(void_); // abort (barge-in cancel)
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.textContaining('not hearing any audio'), findsNothing); // abort ≠ no-audio miss
+    expect(find.text('listening…'), findsNothing); // listener not left stuck
+  });
+
+  testWidgets('Semantics: the presence exposes an accessible label with Plena\'s state and caption', (
+    tester,
+  ) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
+    await tester.pumpAndSettle();
+
+    final handle = tester.ensureSemantics();
+    final presence = tester.widget<PresenceView>(find.byType(PresenceView)).state;
+    final node = tester.getSemantics(find.byType(PresenceView));
+    // The a11y label carries Plena's current state name…
+    expect(node.label, contains('Plena — ${presence.name}'));
+    // …and the current caption (here, the greeting) so screen readers hear what's on the void.
+    expect(node.label, contains("I'm Plena"));
+    handle.dispose();
   });
 }
