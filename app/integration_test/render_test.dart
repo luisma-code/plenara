@@ -123,4 +123,33 @@ void main() {
       expect(find.textContaining('buy milk'), findsWidgets);
     },
   );
+
+  // Resize-crash guard (kept in THIS file, not a separate one: running multiple integration_test
+  // files back-to-back on macOS flakes on app relaunch — one file, one launch, is reliable). The
+  // ORIGINAL shipped crash was the presence widget being RESIZED mid-animation, reallocating the
+  // trail buffer; the veilYield redesign stopped resizing the widget, but this holds the line.
+  testWidgets('resizing the animated presence mid-flight never crashes the raster', (tester) async {
+    Widget sized(double w, double h) => MaterialApp(
+      home: Scaffold(
+        backgroundColor: const Color(0xFF0A0908),
+        body: Center(
+          child: SizedBox(
+            width: w,
+            height: h,
+            child: const PresenceView(state: PresenceState.speaking, animate: true),
+          ),
+        ),
+      ),
+    );
+    const sizes = <List<double>>[
+      [420, 320], [700, 520], [180, 140], [900, 680], [260, 900], [900, 200], [420, 320],
+    ];
+    await tester.pumpWidget(sized(sizes.first[0], sizes.first[1]));
+    await runFrames(tester, 30);
+    for (final s in sizes.skip(1)) {
+      await tester.pumpWidget(sized(s[0], s[1]));
+      await runFrames(tester, 30);
+    }
+    expect(tester.takeException(), isNull);
+  });
 }
