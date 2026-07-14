@@ -144,4 +144,67 @@ void main() {
       expect(createdPictures, greaterThan(atPause), reason: 'resuming should restart the animation');
     },
   );
+
+  testWidgets(
+    'walking away (no input) suspends the presence; any input resumes it — the overnight guard',
+    (tester) async {
+      // THE incident: the app was left FRONTMOST, the Mac idled, the DISPLAY slept — and
+      // AppLifecycleState never changes on display-sleep, so she kept rendering frames that could
+      // never be presented, until system RAM was exhausted. Idleness is the signal lifecycle can't
+      // give us, so no input for a few minutes ⇒ suspend.
+      var createdPictures = 0;
+      void listener(ObjectEvent e) {
+        if (e is ObjectCreated && e.object is ui.Picture) createdPictures++;
+      }
+
+      FlutterMemoryAllocations.instance.addListener(listener);
+      addTearDown(() => FlutterMemoryAllocations.instance.removeListener(listener));
+
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: MediaQuery(
+            data: MediaQueryData(),
+            child: Center(
+              child: SizedBox(
+                width: 400,
+                height: 400,
+                child: PresenceView(state: PresenceState.speaking),
+              ),
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(step);
+      }
+      expect(createdPictures, greaterThan(0), reason: 'an active presence should be churning frames');
+
+      // No pointer/key input for longer than the idle timeout → she suspends.
+      await tester.pump(const Duration(minutes: 4));
+      await tester.pump(step);
+      final atIdle = createdPictures;
+      for (var i = 0; i < 60; i++) {
+        await tester.pump(step);
+      }
+      expect(
+        createdPictures,
+        atIdle,
+        reason:
+            'an idle (walked-away) app rendered ${createdPictures - atIdle} frames — it must render '
+            'ZERO, or it will balloon while the display sleeps',
+      );
+
+      // Any input brings her straight back.
+      await tester.tapAt(const Offset(20, 20));
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(step);
+      }
+      expect(
+        createdPictures,
+        greaterThan(atIdle),
+        reason: 'input should resume the animation immediately',
+      );
+    },
+  );
 }

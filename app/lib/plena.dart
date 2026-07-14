@@ -7,12 +7,14 @@
 // still approximated vs the mockup is TRUE frame persistence — trails here are per-frame velocity
 // echoes, not an accumulating buffer; a faithful version would ping-pong a ui.Image (toImageSync).
 // The director → PresenceFrame → renderer split is final in shape, so that's additive, not a rewrite.
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 
 import 'glyphs.dart';
 
@@ -170,15 +172,44 @@ class _PresenceViewState extends State<PresenceView>
   bool _reduce = false;
   bool _appHidden = false; // app backgrounded/occluded → suspend the director entirely (Spec 15 §9.1)
 
-  // Suspend when hidden: zero frames when the app isn't visible — saves battery AND stops any
-  // per-frame allocation from accruing off-screen (the presence used to animate forever).
-  bool get _animating => widget.animate && !_reduce && !_appHidden;
+  // ---- Idle suspension (the overnight-balloon guard) ----
+  // AppLifecycleState does NOT change when the DISPLAY sleeps: an app left frontmost keeps its
+  // ticker running and renders frames that can never be presented, which accumulated overnight and
+  // exhausted system RAM. Nothing in the lifecycle signals that. So: if the user has produced no
+  // pointer/key input for [_idleAfter], they've walked away — suspend the director. Any input
+  // resumes it instantly. This pre-empts display-sleep AND the screensaver, bounds any slow
+  // accrual to active use, and is a battery win.
+  static const _idleAfter = Duration(minutes: 3);
+  Timer? _idleTimer;
+  bool _userIdle = false;
+
+  bool get _animating =>
+      widget.animate && !_reduce && !_appHidden && !_userIdle;
+
+  void _markActive([_]) {
+    if (_userIdle) {
+      _userIdle = false;
+      _sync(); // resume the moment the user comes back
+    }
+    _idleTimer?.cancel();
+    _idleTimer = Timer(_idleAfter, () {
+      if (!mounted || _userIdle) return;
+      _userIdle = true;
+      _sync(); // walked away → zero frames
+    });
+  }
+
+  bool _onKey(KeyEvent _) {
+    _markActive();
+    return false; // observe only — never swallow the event
+  }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final hidden = state != AppLifecycleState.resumed;
     if (hidden == _appHidden) return;
     _appHidden = hidden;
+    if (!hidden) _markActive(); // coming back to the foreground counts as activity
     _sync(); // start/stop the ticker to match visibility
   }
 
@@ -186,6 +217,11 @@ class _PresenceViewState extends State<PresenceView>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Global input taps (observe-only) so ANY pointer move/press or key anywhere in the app keeps
+    // her alive — no widget-tree plumbing needed.
+    WidgetsBinding.instance.pointerRouter.addGlobalRoute(_markActive);
+    HardwareKeyboard.instance.addHandler(_onKey);
+    _markActive(); // arm the idle countdown
     for (var i = 0; i < _n; i++) {
       final a = _rng.nextDouble() * math.pi * 2,
           r = math.sqrt(_rng.nextDouble()) * .5;
@@ -545,6 +581,9 @@ class _PresenceViewState extends State<PresenceView>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance.pointerRouter.removeGlobalRoute(_markActive);
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    _idleTimer?.cancel();
     _ticker.dispose();
     _repaint.dispose();
     _sprite?.dispose();
