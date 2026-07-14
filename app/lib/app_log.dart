@@ -23,7 +23,14 @@ class AppLog {
   static AppLog get instance => _instance ??= _create();
 
   static AppLog _create() {
-    final dir = Directory('${Directory.systemTemp.path}${Platform.pathSeparator}plenara-logs');
+    // On iOS the diag log must be RETRIEVABLE without a cable (TestFlight) — write it into the app's
+    // Documents dir, which the Files app exposes (Info.plist UIFileSharingEnabled +
+    // LSSupportsOpeningDocumentsInPlace). systemTemp there is the sandbox tmp/ — hidden and reaped.
+    // Elsewhere (macOS/Windows) systemTemp is fine and keeps logs out of the user's folders.
+    final base = Platform.isIOS
+        ? '${Platform.environment['HOME'] ?? Directory.systemTemp.path}/Documents'
+        : Directory.systemTemp.path;
+    final dir = Directory('$base${Platform.pathSeparator}plenara-logs');
     try {
       dir.createSync(recursive: true);
     } catch (_) {}

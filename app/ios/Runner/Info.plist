@@ -4,6 +4,12 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Expose the app's Documents folder (where diag logs are written on iOS) in the Files app, so
+	     logs can be retrieved without a cable — including on TestFlight builds. -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<!-- Voice-first: the app accesses the mic + on-device speech recognition. iOS crashes without
 	     these usage strings the moment the mic is touched. -->
 	<key>NSMicrophoneUsageDescription</key>
