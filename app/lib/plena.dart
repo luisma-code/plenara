@@ -573,20 +573,35 @@ class _PlenaPainter extends CustomPainter {
     final rgb = s._color;
     final bri = tn.bright;
 
-    // ambient hue aura — carries colour even where motes thin out (the mockup's fireball fix)
-    final auraA = ((.05 + .12 * f.luminance) * bri).clamp(0.0, .6);
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..blendMode = BlendMode.plus
-        ..shader = ui.Gradient.radial(Offset(cx, cy), scale * 1.15, [
-          rgb.withValues(alpha: auraA),
-          rgb.withValues(alpha: 0),
-        ]),
-    );
-
     final sprite = s._sprite;
     if (sprite == null) return;
+
+    // ambient hue aura — carries colour even where motes thin out (the mockup's fireball fix).
+    // Drawn as the cached soft mote sprite scaled up to the aura radius and tinted (drawAtlas +
+    // modulate), NOT a ui.Gradient: a per-frame gradient shader leaks GPU memory unboundedly while
+    // visible, and a Shader can't be safely disposed from a CustomPainter (the raster thread may
+    // still hold last frame's). The cached sprite allocates nothing per frame.
+    final auraA = ((.05 + .12 * f.luminance) * bri).clamp(0.0, .6);
+    final auraR = scale * 1.15;
+    canvas.drawAtlas(
+      sprite,
+      [
+        RSTransform.fromComponents(
+          rotation: 0,
+          scale: (auraR * 2) / sprite.width,
+          anchorX: sprite.width / 2,
+          anchorY: sprite.height / 2,
+          translateX: cx,
+          translateY: cy,
+        ),
+      ],
+      [Rect.fromLTWH(0, 0, sprite.width.toDouble(), sprite.height.toDouble())],
+      [rgb.withValues(alpha: auraA)],
+      BlendMode.modulate,
+      null,
+      Paint()..blendMode = BlendMode.plus,
+    );
+
     final src = Rect.fromLTWH(
       0,
       0,
