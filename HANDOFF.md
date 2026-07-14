@@ -5,6 +5,51 @@ _Last updated: 2026-07-13 (overnight autonomous, on the Mac). Written to survive
 > **Moving to macOS?** Read **`TRANSITION.md`** first — it's the Mac-specific companion (setup,
 > what's Windows-only, first tasks). This file is the full (Windows-oriented) session history.
 
+## LATEST SESSION (2026-07-13, overnight agentic) — GPU leak fix + Fable's UI/render test net
+
+Two-reviewer pass (Fable prod review + test-sufficiency audit) → all fixes; then a real GPU **memory
+leak** hunt and Fable's **test-net** build. HEAD ≈ `cd55394`. Full `tool/precheck.sh` ALL GREEN
+(v0 1670, app 64, 3 integration tests, conformance 24/24). Everything pushed.
+
+**The leak (fixed).** `plena.dart` paint() created a `ui.Gradient.radial` (the aura) EVERY frame and
+never disposed it → native/GPU memory grew unboundedly WHILE VISIBLE (Luis saw 8→11GB). A Shader
+can't be safely disposed from a CustomPainter (ping-pong dispose crashed the render test), so the fix
+draws the aura as the already-cached mote sprite scaled up + tinted (`drawAtlas`/modulate) — zero
+per-frame native allocation.
+
+**Fable's test net (built + committed):**
+- **P0 leak audit** (`test/render_resource_test.dart`, headless CI): pumps the REAL animated presence
+  ~480 frames under a `FlutterMemoryAllocations` listener, asserts bounded live ui.Picture/ui.Image.
+  **MUTATION-VALIDATED** — removing `pic.dispose()` turns it red. This is the App-Verifier-style leak
+  gate, deterministic, both OSes.
+- **[4b] shader lint** (`precheck.sh`): static guard forbidding a per-frame shader in plena.dart
+  paint() (the exact class that shipped). Comments + the one-time `_makeSprite` gradient excluded.
+- **§9.1 suspend-when-hidden** (`plena.dart`): the presence now stops the ticker when the app is
+  backgrounded (WidgetsBindingObserver) — was animating forever (battery + off-screen leak accrual).
+  Test asserts a hidden app produces ZERO frames.
+- **P1 numeric render invariants** (`test/render_invariants_test.dart`): renders each state, reads
+  back pixels, asserts the Spec-15 relative gates as NUMBERS (speaking brighter+broader than
+  thinking; states distinguishable) — robust vs flaky goldens on a 2200-mote additive swarm.
+- **Resize-crash guard** + M5/M6 (live transcript, abort≠no-audio) + **Semantics** coverage.
+
+**Honest limits (don't redo these — they were tried and rejected for good reasons):**
+- An in-test FFI `phys_footprint` soak is INVALID: `IntegrationTestWidgetsFlutterBinding` adds ~1MB
+  per `tester.pump()`, so a plain spinner "leaks" >1GB — harness noise swamps any app signal.
+- `app/tool/leak-check.sh` (real-app footprint soak) is a **diagnostic, NOT a gate**: mutation didn't
+  reproduce (the visible-GPU leak only accrues under INTERACTIVE compositing, which `osascript
+  activate` doesn't fake). Use **Xcode Instruments (Allocations)** to pinpoint a suspected native leak.
+- **Goldens deliberately skipped** — flaky across Skia-software/Impeller + the 2-OS matrix; the
+  numeric invariants are the robust substitute. **Deferred (low value):** frame-time ratchet, an
+  in-app "Share diagnostics" button (iOS logs are already retrievable via Files app — see below).
+
+**iOS (P1 target) — runner generated, builds, NOT yet deployed.** `app/ios/` created + configured
+(mic/speech usage strings, app name). `flutter build ios --no-codesign` succeeds (all plugins link).
+Diag logs on iOS go to the app's **Documents** dir + `UIFileSharingEnabled` → retrievable via
+**Files app → On My iPhone → Plenara → plenara-logs** (works on TestFlight too). **Blocked on:** the
+Apple Developer account (enrolling — for TestFlight/remote push) and the Xcode Team/signing step
+(add Apple ID → Signing & Capabilities → Team). iPhone "Aluminum Monster" is in Developer Mode +
+connected; the moment DEVELOPMENT_TEAM is set, `flutter run -d <iphone>` deploys.
+
 ## LATEST SESSION (2026-07-12 → 07-13, on macOS — dogfood fixes + overnight agentic run)
 
 First real Mac dogfooding, then an authorized heads-down "working mode" run through a backlog. All
