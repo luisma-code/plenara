@@ -34,6 +34,21 @@ echo "== [3/8] v0 tests + coverage gate (incl. the 05a conformance suite) =="
 echo "== [4/9] analyze app (lib test integration_test) =="
 ( cd "$ROOT/app" && "$FLUTTER" analyze lib test integration_test )
 
+# Render leak guard: the presence paint() runs ~60fps forever, so a per-frame native SHADER there
+# (a ui.Gradient created every frame, never disposed) leaks GPU memory unboundedly while visible —
+# the exact class that shipped once. dart:ui Shaders aren't leak-tracker-visible and can't be safely
+# disposed from a CustomPainter, so the rule is: NO shader creation in paint() (cache it, or draw
+# without one — the aura uses the cached sprite). This static check enforces it (comments excluded;
+# the one-time sprite gradient in _makeSprite is outside paint() and correctly ignored). The Dart
+# Picture/Image leak class is gated dynamically by app/test/render_resource_test.dart.
+echo "== [4b] render guard: no per-frame shader in plena.dart paint() =="
+if awk '/void paint\(Canvas/,/^  }/' "$ROOT/app/lib/plena.dart" | grep -vE '^[[:space:]]*//' \
+     | grep -qE 'ui\.Gradient|ui\.Shader|\.createShader\('; then
+  echo "!! A shader is created inside plena.dart paint() — that's the per-frame GPU-leak class." >&2
+  echo "   Cache it outside the hot path, or draw without a shader (see the aura's sprite approach)." >&2
+  exit 1
+fi
+
 echo "== [5/9] app widget tests =="
 ( cd "$ROOT/app" && "$FLUTTER" test )
 
