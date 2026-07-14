@@ -5,6 +5,30 @@ _Last updated: 2026-07-13 (overnight autonomous, on the Mac). Written to survive
 > **Moving to macOS?** Read **`TRANSITION.md`** first — it's the Mac-specific companion (setup,
 > what's Windows-only, first tasks). This file is the full (Windows-oriented) session history.
 
+## ⚠ INCIDENT (2026-07-14) — overnight RAM balloon → machine hang. FIXED (idle suspension).
+
+Plenara was left running **frontmost** overnight and exhausted system RAM, hanging Luis's Mac.
+
+**Root cause of the exposure:** `AppLifecycleState` does **NOT** change when the **display sleeps**.
+An app left frontmost stays `resumed`, so §9.1 (suspend-when-backgrounded) never fires — she kept the
+60fps ticker running and rendered frames that could never be presented, for ~10 hours.
+
+**Measurements that isolated it** (all with the per-frame-gradient fix already in):
+- 30 min visible, display awake → **FLAT** (245–256MB, no trend). No leak while presenting.
+- 3 min occluded → **FLAT** (§9.1 suspends on focus loss).
+- ⇒ the only untested state was **frontmost + display asleep** = exactly the overnight condition.
+
+**Fix (`plena.dart`):** **idle suspension.** Observe-only global pointer/key routes mark the user
+active; **no input for 3 minutes ⇒ the director suspends (zero frames)**; any input resumes instantly.
+Pre-empts display-sleep AND the screensaver, bounds any slow native accrual to active use, saves
+battery. Tested (`render_resource_test.dart`): an idle app renders ZERO frames; input resumes it.
+
+**Hard-won lessons (do not repeat):**
+- A short soak that plateaus is **NOT** evidence of no leak. The 45s "plateau ⇒ fixed" call was wrong.
+  Validate memory over **long** durations, and in the *actual* condition of concern.
+- **Never leave an app instance running** after autonomous work, and **RAM-watch + kill** anything
+  launched that starts climbing. (Now standing rules in `~/.claude/CLAUDE.md`.)
+
 ## LATEST SESSION (2026-07-13, overnight agentic) — GPU leak fix + Fable's UI/render test net
 
 Two-reviewer pass (Fable prod review + test-sufficiency audit) → all fixes; then a real GPU **memory
