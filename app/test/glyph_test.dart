@@ -6,7 +6,11 @@ import 'package:plenara_app/plena.dart';
 void main() {
   group('glyphForTurn — apt-or-absent (Spec 15 §5A.1)', () {
     test('a meaningful completion → check', () => expect(glyphForTurn('complete-task', "Nice — that's done.")?.id, 'check'));
-    test('a plain task add → nothing', () => expect(glyphForTurn('create-task', 'Added milk to your list.'), isNull));
+    // Everyday writes now get an apt mark (previously most fired nothing — the app felt inert).
+    test('a task add → a "got it" nod', () => expect(glyphForTurn('create-task', 'Added milk to your list.')?.id, 'nod'));
+    test('a reminder set → the bell', () => expect(glyphForTurn('set-reminder', "I'll remind you tomorrow at 8.")?.id, 'bell'));
+    test('a person fact → a spark', () => expect(glyphForTurn('remember-person-fact', "Got it — Mia is Sarah's daughter.")?.id, 'spark'));
+    test('a logged run → a quiet nod', () => expect(glyphForTurn('log-run', 'Logged a 3k run.')?.id, 'nod'));
     test('a logged interaction → a quiet nod', () => expect(glyphForTurn('log-interaction', 'Logged that you talked to Sam.')?.id, 'nod'));
     test('closeness with a partner → the heart', () => expect(glyphForTurn('remember-relationship', 'Noted Vanessa is your wife.')?.id, 'heart'));
     test('a streak in the reply → the star', () => expect(glyphForTurn('goal-progress', 'Seven days running — a streak!')?.id, 'star'));

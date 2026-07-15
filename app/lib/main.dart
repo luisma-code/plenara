@@ -214,6 +214,9 @@ class _ChatState extends State<ChatScreen> {
   // so "speaking" is a brief flourish while a reply lands; _lastCloud tints it cooler (D2).
   bool _speaking = false, _lastCloud = false, _deepThink = false;
   Timer? _speakTimer, _thinkTimer, _capTimer;
+  // The tour's "colours" chapter drives a scripted presence-colour demo (idle → listening → thinking
+  // → the cooler AI shade) while Plena narrates it. Timers held so a new turn / teardown cancels it.
+  final List<Timer> _colorDemoTimers = [];
   String?
   _caption; // the current exchange text, materialised over the void (Spec 15 §6.1 / §7.3)
   bool _displayIsList =
@@ -240,6 +243,46 @@ class _ChatState extends State<ChatScreen> {
       _glyph = g;
       _glyphNonce++;
     });
+  }
+
+  /// The tour's "colours" chapter: pin the presence through its palette while Plena narrates it, so
+  /// the user SEES what each colour means (the deterministic tour never actually reaches the cloud, so
+  /// the cooler AI shade would otherwise never show). Timings roughly track the spoken sentences; the
+  /// pin releases at the end. Any new turn (or teardown) cancels it via [_cancelColorDemo].
+  void _runColorDemo() {
+    _cancelColorDemo();
+    // (delayMs, state, difficulty) — difficulty cools the hue (0 warm amber … ~4 pre-dawn blue).
+    const beats = <(int, PresenceState, double)>[
+      (0, PresenceState.idle, 0), // "warm amber is me at rest"
+      (3800, PresenceState.listening, 0.6), // "I brighten … listening"
+      (7000, PresenceState.thinking, 1.6), // "… working something out"
+      (10500, PresenceState.thinking, 3.6), // "a cooler, bluer shade … the AI"
+    ];
+    for (final (ms, st, diff) in beats) {
+      _colorDemoTimers.add(Timer(Duration(milliseconds: ms), () {
+        if (!mounted) return;
+        setState(() {
+          _forceState = st;
+          _forceDifficulty = diff;
+        });
+      }));
+    }
+    _colorDemoTimers.add(Timer(const Duration(milliseconds: 14500), _cancelColorDemo));
+  }
+
+  /// Stop the colour demo and release the forced presence back to the live signals.
+  void _cancelColorDemo() {
+    if (_colorDemoTimers.isEmpty && _forceState == null && _forceDifficulty == null) return;
+    for (final t in _colorDemoTimers) {
+      t.cancel();
+    }
+    _colorDemoTimers.clear();
+    if (mounted) {
+      setState(() {
+        _forceState = null;
+        _forceDifficulty = null;
+      });
+    }
   }
 
   PresenceState get _presence =>
@@ -399,6 +442,7 @@ class _ChatState extends State<ChatScreen> {
     final t = _ctrl.text.trim();
     if (t.isEmpty || _busy) return;
     _ctrl.clear();
+    _cancelColorDemo(); // a new turn ends any in-flight colours demo, releasing the pinned presence
     if (_maybeNavCommand(t)) return; // "open settings" et al. open a window, not a turn
     if (_voice?.speaking ?? false) unawaited(_voice!.stop()); // a new turn stops any in-flight reply
     setState(() {
@@ -479,9 +523,10 @@ class _ChatState extends State<ChatScreen> {
 
     if (!_voiceMuted && (_voice?.available ?? false)) {
       // Plena actually speaks; her "speaking" animation brackets the real audio (onDone ends it).
-      // speakify() = track 2: TTS-friendly text (the display keeps the original formatting).
+      // Pass the RAW reply — speak() segments it on blank lines (a silent beat between topics) and
+      // speakifies each segment (track 2); the display keeps the original formatting.
       _voice!.speak(
-        speakify(resp),
+        resp,
         onStart: () {
           if (mounted) setState(() => _speaking = true);
         },
@@ -498,6 +543,20 @@ class _ChatState extends State<ChatScreen> {
     }
     // apt-or-absent: an occasion-appropriate glyph, or nothing (most turns)
     _fireGlyph(glyphForTurn(_session.lastSkill, resp));
+    // Tour: each chapter opens with an apt gesture (force past the debounce), and the "colours"
+    // capstone drives a live palette demo while Plena describes it.
+    final chapter = _session.lastTourChapter;
+    if (chapter != null) {
+      const chapterGlyph = {
+        'reminders': 'bell',
+        'tasks': 'check',
+        'people': 'heart',
+        'tracking': 'flower',
+        'colors': 'sun',
+      };
+      _fireGlyph(kGlyphs[chapterGlyph[chapter] ?? 'spark'], force: true);
+      if (chapter == 'colors') _runColorDemo();
+    }
   }
 
   /// Tap the void to START listening; the engine's end-of-utterance detection delivers the final
@@ -617,6 +676,9 @@ class _ChatState extends State<ChatScreen> {
     _thinkTimer?.cancel();
     _capTimer?.cancel();
     _heardTimer?.cancel();
+    for (final t in _colorDemoTimers) {
+      t.cancel();
+    }
     _ctrl.dispose();
     super.dispose();
   }

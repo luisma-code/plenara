@@ -112,6 +112,36 @@ List<Offset> _leafBlade([double w = .32, int n = 30]) => [
     Offset(w * math.sin(math.pi * i / n), .5 - i / n), // right edge, bottom → top
 ];
 
+// One petal as an elongated loop: an ellipse whose long axis (len) points along [ang] from the
+// flower centre (cx,cy), half-length out, narrow width [w]. Traced closed → a single one-line petal.
+// Lay several around a centre for a loose, playful flower (see the 'flower' glyph).
+List<Offset> _petal(double ang, double len, double w,
+    {double cx = 0, double cy = 0, int n = 24}) {
+  final ca = math.cos(ang), sa = math.sin(ang);
+  final ox = (len / 2) * ca, oy = (len / 2) * sa; // ellipse centre, half-way out along the axis
+  return [
+    for (var i = 0; i <= n; i++)
+      () {
+        final t = i / n * math.pi * 2;
+        final u = (len / 2) * math.cos(t); // along the petal axis
+        final v = w * math.sin(t); // across it
+        return Offset(cx + ox + u * ca - v * sa, cy + oy + u * sa + v * ca);
+      }(),
+  ];
+}
+
+// One sun ray: a slim spike triangle from the disc edge ([rIn]) out to a point ([rOut]) at angle
+// [ang], base half-width [halfW]. Open 3-point path (base → tip → base) reads as a pointed ray.
+List<Offset> _ray(double ang, double rIn, double rOut, double halfW) {
+  final ca = math.cos(ang), sa = math.sin(ang);
+  final px = -sa * halfW, py = ca * halfW; // perpendicular, for the base width
+  return [
+    Offset(rIn * ca + px, rIn * sa + py),
+    Offset(rOut * ca, rOut * sa),
+    Offset(rIn * ca - px, rIn * sa - py),
+  ];
+}
+
 GlyphStroke _s(List<Offset> pts, {double delay = 0, double draw = 640}) =>
     GlyphStroke(pts, delayMs: delay, drawMs: draw);
 
@@ -374,10 +404,16 @@ final Map<String, GlyphDef> kGlyphs = {
     'bell',
     'a reminder the user asked to be sure about',
     strokes: [
-      _s(_arc(0, .1, .38, math.pi, 0, 22), draw: 460),
-      _s(_line(_p(-.38, .1), _p(.38, .1)), delay: 420, draw: 220),
+      // body: one continuous sweep — up the left flare, over the dome (∩ via pi→2pi, y-down), down right
+      _s([
+        _p(-.42, .28), _p(-.30, .08),
+        ..._arc(0, -.06, .26, math.pi, math.pi * 2, 20),
+        _p(.30, .08), _p(.42, .28),
+      ], draw: 520),
+      _s(_line(_p(-.46, .28), _p(.46, .28)), delay: 460, draw: 200), // rim across the mouth
+      _s(_arc(0, -.32, .08, math.pi, math.pi * 2, 10), delay: 660, draw: 160), // handle nub on the dome
     ],
-    dots: [GlyphDot(_p(0, .26), delayMs: 640)],
+    dots: [GlyphDot(_p(0, .40), delayMs: 780)], // clapper below the rim
   ),
   'seedling': GlyphDef(
     'seedling',
@@ -386,6 +422,30 @@ final Map<String, GlyphDef> kGlyphs = {
       _s(_line(_p(0, .45), _p(0, -.2)), draw: 380),
       _s(_arc(-.16, -.2, .18, 0, -math.pi, 12), delay: 360, draw: 240),
       _s(_arc(.16, -.2, .18, math.pi, 0, 12), delay: 560, draw: 240),
+    ],
+  ),
+  // A loose, one-line five-petal flower (from Luis's reference) — playful + reads instantly. Petals
+  // sweep out in sequence, then a stem. Used for growth: a new habit / something you started tracking.
+  'flower': GlyphDef(
+    'flower',
+    'something is growing — a new habit or tracker taking root',
+    strokes: [
+      for (var k = 0; k < 5; k++)
+        _s(_petal(-math.pi / 2 + k * 2 * math.pi / 5, .42, .15, cy: -.12),
+            delay: 110.0 * k, draw: 280),
+      _s(_line(_p(0, .16), _p(0, .56)), delay: 620, draw: 260), // stem
+    ],
+    dots: [GlyphDot(_p(0, -.12), delayMs: 700)], // flower heart
+  ),
+  // A loose, playful one-line sun (from Luis's reference): a disc + eight pointed rays. Warmth and
+  // light — used for the 'colours' tour capstone (how Plena shows her hue) and small delights.
+  'sun': GlyphDef(
+    'sun',
+    'warmth and light — how Plena shows her colours',
+    strokes: [
+      _s(_circle(0, 0, .22), draw: 440), // the disc
+      for (var k = 0; k < 8; k++)
+        _s(_ray(k * math.pi / 4, .24, .46, .07), delay: 380.0 + 60 * k, draw: 150),
     ],
   ),
   'bridge': GlyphDef(
@@ -660,5 +720,19 @@ GlyphDef? glyphForTurn(String? skill, String reply) {
     return kGlyphs['heart'];
   }
   if (ran('log-interaction')) return kGlyphs['nod']; // "got it — noted"
-  return null; // most turns: nothing
+  // --- Everyday CREATE/LOG writes now get an apt mark too. Previously only completions/undos fired,
+  // so adding a task or setting a reminder showed nothing at all. (Completions + undo handled above,
+  // and return first.) These pairings are aesthetic — tune freely.
+  if (ran('set-reminder')) return kGlyphs['bell']; // "I'll be sure to speak up"
+  if (ran('start-tracking') || ran('create-tracker') || said('now tracking') || said('started tracking')) {
+    return kGlyphs['flower']; // a new thing to track, taking root
+  }
+  if (ran('create-task') || ran('add-task')) return kGlyphs['nod']; // "got it — it's on your list"
+  if (ran('remember-gift') || said('gift idea')) return kGlyphs['gift'];
+  if (ran('remember-person') || ran('remember-fact') || ran('remember-relationship')) {
+    return kGlyphs['spark']; // a detail about one of your people, noticed and kept
+  }
+  if (ran('log-mood')) return kGlyphs['ripple'];
+  if (ran('log-')) return kGlyphs['nod']; // runs, walks, meals… a quiet "noted"
+  return null; // anything else: nothing
 }

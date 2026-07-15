@@ -246,8 +246,20 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
     final gen = ++_gen;
     _onStart = onStart;
     _speaking = true;
+    // Split on blank-line boundaries into TOPIC segments and speak them with a real silent beat
+    // between — so the listener hears one topic close before the next opens (the tour's privacy note
+    // vs. the capabilities intro, an essence vs. its "you could say"). Each segment is speakified
+    // (track 2). A single-paragraph reply is just one segment, spoken with no added pause.
+    final segments = text.split(RegExp(r'\n\s*\n')).map(speakify).where((p) => p.isNotEmpty).toList();
     try {
-      await _tts.speak(text); // resolves when this utterance finishes OR is stopped by a later speak
+      for (var i = 0; i < segments.length; i++) {
+        if (gen != _gen) return; // superseded mid-sequence — the newer speak owns state now
+        await _tts.speak(segments[i]); // resolves when this segment ends OR is stopped by a later speak
+        if (gen != _gen) return;
+        if (i < segments.length - 1) {
+          await Future.delayed(const Duration(milliseconds: 700)); // the between-topics beat
+        }
+      }
     } catch (e) {
       onLog?.call('tts speak failed: $e');
     }

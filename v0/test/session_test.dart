@@ -1518,10 +1518,11 @@ void main() {
     test('Tour: "next" past the last chapter delivers the closing — M2', () async {
       final s = await _session();
       await s.handle('what can you do');
-      await s.handle('give me the tour'); // ch1
-      await s.handle('next'); // ch2
-      await s.handle('next'); // ch3
-      await s.handle('next'); // ch4 (last)
+      await s.handle('give me the tour'); // ch1 reminders
+      await s.handle('next'); // ch2 tasks
+      await s.handle('next'); // ch3 people
+      await s.handle('next'); // ch4 tracking
+      await s.handle('next'); // ch5 colors (the capstone)
       final end = await s.handle('next'); // past the last → closing
       expect(end.toLowerCase(), contains('undo that'));
     });

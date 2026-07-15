@@ -83,10 +83,27 @@ const _tourChapters = <_TourChapter>[
     ['log-run'],
     "I come with runs, moods, meals, and a journal — and if I don't track something yet, say \"start tracking my water intake\" and I'll build it.",
     'You could say — "log a 3k run."',
-    'That one\'s free to try — I\'ll undo it after if you like. Or say "done" and I\'ll get out of your way.',
+    'That one\'s free to try — I\'ll undo it after if you like. Or say "next" for one last thing: how to read me.',
     "Logged — and I'll total it up whenever you ask. \"Undo that\" clears it.",
     ['run', 'walk', 'mood', 'journal', 'meal', 'goal', 'streak', 'track', 'water', 'step'],
     ['track', 'tracking', 'run', 'running', 'mood', 'journal', 'habit', 'habits'],
+  ),
+  // The presence itself — no skill to gate on, no live "try". The UI stages a colour demo while this
+  // is spoken (drives idle→listening→thinking→the cooler AI shade). Kept LAST: a capstone that
+  // explains the colours the user has been watching, and lands the cost/Settings note after they've
+  // seen the features. Excluded from the opener's "pick a territory" menu (it isn't a "remember" one).
+  _TourChapter(
+    'colors',
+    [],
+    'One more thing — my colours. Warm amber is me at rest. I brighten, and cool a little, while I\'m '
+        'listening or working something out. And when I reach out to the AI for the harder things, I '
+        'shift to a cooler, bluer shade — I keep those moments as few as I can to save you money, and '
+        'you can see every one, and what it cost, in Settings.',
+    'Nothing to say here — just watch me for a moment.',
+    'That\'s the whole of me. Say "done" whenever you like, or "next" to loop back.',
+    "", // no coda — there's no in-domain write to teach
+    [], // no domain keywords — this chapter has no live try
+    ['color', 'colors', 'colour', 'colours'],
   ),
 ];
 // Advance / start the tour ("next", "give me the tour").
@@ -324,6 +341,10 @@ class Session {
   /// The skill id (or "a+b" for a compound/multi-action turn) that the last turn dispatched.
   /// Read by the UI to choose an occasion-appropriate presence glyph (Spec 15 §5A.5).
   String? get lastSkill => _outSkill;
+  String? _enteredChapter; // the tour chapter this turn opened (null if none)
+  /// The Tour chapter id ('reminders'|'tasks'|'people'|'tracking'|'colors') that THIS turn opened, or
+  /// null. Read by the UI to stage a chapter-apt glyph + (for 'colors') a live presence-colour demo.
+  String? get lastTourChapter => _enteredChapter;
   String? _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
   // Rich debug-trace fields (dogfood diagnosis: read the turnlog instead of retrying) —
   // reset each turn in handle(), populated as the turn resolves.
@@ -530,26 +551,42 @@ class Session {
     _outSource = 'tour';
     _tourSpokeThisTurn = true;
     final avail = _availableChapters();
-    final remaining = avail.where((c) => !visited.contains(c.id)).toList();
+    // The 'colors' capstone is not a menu territory and doesn't gate "seen it all" — the opener shows
+    // the full map once the real territories are visited (colours stays reachable via "next").
+    final menuable = avail.where((c) => c.id != 'colors').toList();
+    final remaining = menuable.where((c) => !visited.contains(c.id)).toList();
     if (remaining.isEmpty) {
       // seen it all → show the map and CLOSE the tour (don't leave it live to mislabel later turns).
       _pendingTour = null;
       return _helpText();
     }
     _pendingTour = {'chapter': null, 'visited': visited, 'codaGiven': codaGiven};
-    // Only name territories that are actually installed (never advertise a gated-off chapter).
+    // Only name territories that are actually installed (never advertise a gated-off chapter). The
+    // 'colors' capstone isn't a "remember" territory, so it's left off the pick-menu (still reachable
+    // via "next").
     const label = {
       'reminders': 'reminders',
       'tasks': 'tasks',
       'people': 'the people you care about',
       'tracking': 'anything you want to track',
     };
-    final names = avail.map((c) => label[c.id] ?? c.id).toList();
+    final names = menuable.map((c) => label[c.id] ?? c.id).toList();
     final territory = names.length <= 1
         ? names.join()
         : '${names.sublist(0, names.length - 1).join(', ')}, and ${names.last}';
-    return "I remember things so you don't have to — $territory. "
+    // Privacy first — only on a FRESH tour (not on a repeat "what can you do"), and said before the
+    // people/journal chapters ever ask for anything personal. Accurate to the posture: on-device by
+    // default; the only thing that leaves is a smart feature calling the user's OWN AI account.
+    final privacy = visited.isEmpty
+        ? 'First, so you know: everything you tell me stays on your phone — it\'s yours. Nothing goes '
+            'to any server unless a smart feature needs the AI, and even then it goes to your own '
+            'private account, never to me.'
+        : null;
+    final intro = "I remember things so you don't have to — $territory. "
         'Pick one and I\'ll show you, or say "give me the tour."';
+    // Separate paragraphs (blank line) → the voice inserts a real silent beat between the privacy note
+    // and the capabilities intro, so it's clear one topic closed before the next.
+    return privacy == null ? intro : '$privacy\n\n$intro';
   }
 
   /// Enter a chapter: essence + the single "you could say" example + the invitation. Marks the
@@ -565,6 +602,7 @@ class Session {
     };
     _outSource = 'tour';
     _tourSpokeThisTurn = true;
+    _enteredChapter = ch.id; // UI stages a chapter-apt glyph / colour demo
     return '${ch.essence}\n\n${ch.tryLine}\n\n${ch.followOn}';
   }
 
@@ -717,6 +755,7 @@ class Session {
     _outSource = 'clarify';
     _outSkill = null;
     _tourSpokeThisTurn = false; // set true by the tour helpers if THIS turn navigates the tour
+    _enteredChapter = null; // set by _enterChapter when THIS turn opens a tour chapter (UI reads it)
     _cloudStatus = null;
     _outTemplate = null;
     _outSlots = null;

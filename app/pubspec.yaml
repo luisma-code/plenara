@@ -18,7 +18,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 # Version tracks the release scheme (releases/VERSIONS.md): vN -> 0.N.0+N. Bump per release so
 # CFBundleShortVersionString / Windows file version / notarization records aren't all "1.0.0".
-version: 0.7.0+7
+version: 0.8.0+8
 
 environment:
   sdk: ^3.12.2
@@ -83,7 +83,7 @@ msix_config:
   display_name: Plenara
   publisher_display_name: Plenara
   identity_name: com.plenara.app
-  msix_version: 0.7.0.0
+  msix_version: 0.8.0.0
   capabilities: internetClient
   # Validated: `dart run msix:create` produces a signed 22.8 MB plenara_app.msix. For a
   # non-interactive build (CI), add `--install-certificate false` so the tool doesn't prompt to
