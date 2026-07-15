@@ -28,6 +28,13 @@ requested autonomous mode:
 
 - Standing setup: broad allowlist + bypass mode remove per-action approvals.
 
+- **Keep `WORK-CAPSULE.md` current as you work.** It's the living working-memory doc (live facts,
+  deploy commands, hard-won gotchas, decisions + rationale, open threads). Update it **continuously** —
+  whenever a non-obvious fact is discovered, a decision is made, state changes, or a thread opens/closes
+  — not just at session end. Keep it skimmable and prune stale lines. It's the first thing a fresh
+  session reads, so it must always reflect reality. (It supersedes the "current state" role of the
+  older `SESSION-HANDOFF.md` / `HANDOFF.md`.)
+
 - **Keep the Mac awake — every session, always (macOS).** At the **start of every session**, immediately
   run `caffeinate -dimsu` detached in the background (`pgrep -x caffeinate || nohup caffeinate -dimsu >/dev/null 2>&1 &`),
   and **keep it running for the ENTIRE session — do NOT kill it when a task completes.** An idle Mac
