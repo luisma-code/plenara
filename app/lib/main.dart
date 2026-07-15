@@ -447,15 +447,20 @@ class _ChatState extends State<ChatScreen> {
       for (final p in newReviews) '📋 ${p.description} — say "approve it" or "dismiss it".',
     ];
     final shown = extras.isEmpty ? resp : '$resp\n\n${extras.join('\n')}';
+    // Voice-first: when Plena actually SPEAKS the reply, don't also print it — subtitles are for muted
+    // (text) mode only. Extras (automation deliveries ✨ / held reviews 📋) are never spoken, so they
+    // still surface as text even in voice mode.
+    final willSpeak = !_voiceMuted && (_voice?.available ?? false);
+    final display = willSpeak ? (extras.isEmpty ? null : extras.join('\n')) : shown;
     setState(() {
       _busy = false;
       _deepThink = false;
       _speaking = true; // Plena "speaks" the reply — a brief presence flourish
       _lastCloud = usedCloud;
-      _caption = shown; // the words materialise over the void as she speaks (§6.1)
+      _caption = display; // muted → her words over the void (§6.1); voice → nothing, she just speaks
       // list-shaped (bullets / several lines) → Plena eases to a corner and it floats (§6.3)
-      _displayIsList = shown.contains('•') ||
-          shown.split('\n').where((l) => l.trim().isNotEmpty).length > 2;
+      _displayIsList = display != null &&
+          (display.contains('•') || display.split('\n').where((l) => l.trim().isNotEmpty).length > 2);
     });
     _thinkTimer?.cancel();
     _speakTimer?.cancel();
@@ -474,8 +479,9 @@ class _ChatState extends State<ChatScreen> {
 
     if (!_voiceMuted && (_voice?.available ?? false)) {
       // Plena actually speaks; her "speaking" animation brackets the real audio (onDone ends it).
+      // speakify() = track 2: TTS-friendly text (the display keeps the original formatting).
       _voice!.speak(
-        resp,
+        speakify(resp),
         onStart: () {
           if (mounted) setState(() => _speaking = true);
         },
@@ -935,8 +941,11 @@ class _ChatState extends State<ChatScreen> {
           bottom: showInput ? 0 : -180,
           child: _inputBar(context),
         ),
-        Positioned(left: 14, bottom: 14, child: _muteButton()),
-        Positioned(right: 6, top: 6, child: _menuButton(context)),
+        // Offset the corner controls by the safe-area insets: at top:6 the menu button sat UNDER the
+        // status bar / Dynamic Island, where iOS eats the touch (that's why "…" didn't react); the
+        // mute button likewise clears the home indicator.
+        Positioned(left: 14, bottom: 14 + MediaQuery.of(context).padding.bottom, child: _muteButton()),
+        Positioned(right: 6, top: 6 + MediaQuery.of(context).padding.top, child: _menuButton(context)),
       ],
     );
   }

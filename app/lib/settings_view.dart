@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'app_log.dart';
+import 'voice_setup.dart';
 
 /// The settings surface (Spec 07 §2.6): view the data folder + diagnostics log path, and connect
 /// the BYOK Anthropic key in-app. Because Anthropic offers NO third-party OAuth / subscription /
@@ -368,6 +369,10 @@ class _SettingsViewState extends State<SettingsView> {
           const Text('Cloud usage', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           _usageSection(cs),
+          const Divider(height: 32),
+          const Text('Voice', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const VoiceUpgradeCard(), // shows the download nudge, or a "natural voice ✓" confirmation
           const Divider(height: 32),
           const Text('Diagnostics log', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),

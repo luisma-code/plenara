@@ -18,7 +18,13 @@ class PlenaraConfig {
   /// Plena's voice pref. `null` = the user hasn't chosen yet (first run) → the app asks once,
   /// so audio never blasts unbidden on a cold launch. `true`/`false` = the remembered choice.
   final bool? voiceMuted;
-  PlenaraConfig(this.dataDir, this.apiKey, {this.freeTier = false, this.voiceMuted});
+  /// Chosen TTS voice NAME (e.g. "Matilda (Premium)"), as reported by the engine. `null` = let the
+  /// app auto-pick the most natural installed voice. Lets the user override the auto-pick (e.g. a
+  /// preferred accent) from Settings → Voice. Matched by name against the installed voices at launch;
+  /// if it's no longer installed, the app falls back to auto-pick.
+  final String? voiceName;
+  PlenaraConfig(this.dataDir, this.apiKey,
+      {this.freeTier = false, this.voiceMuted, this.voiceName});
 }
 
 /// App-injected home base. Desktop leaves this null — USERPROFILE/HOME are set. iOS and Android
@@ -67,15 +73,24 @@ PlenaraConfig loadConfig({String? configPath}) {
   // env PLENARA_FREE=1 forces offline mode (handy for tests/demos); else the persisted flag.
   final free = Platform.environment['PLENARA_FREE'] == '1' || cfg['freeTier'] == true;
   final vm = cfg['voiceMuted'];
+  final vn = cfg['voiceName'];
   return PlenaraConfig(dataDir, (key != null && key.trim().isNotEmpty) ? key.trim() : null,
-      freeTier: free, voiceMuted: vm is bool ? vm : null);
+      freeTier: free,
+      voiceMuted: vm is bool ? vm : null,
+      voiceName: vn is String && vn.isNotEmpty ? vn : null);
 }
 
 /// Persist config edits from the in-app settings surface (Spec 07 §2.6): merges into the
 /// existing `~/.plenara/config.json`, preserving unknown keys. [apiKey] null leaves the key
 /// untouched; an empty string clears it. The key is written in plaintext (the accepted v0/dogfood
 /// posture — Spec 10 A-08 / G-37 tracks the secure-store follow-up); it is never logged.
-void saveConfig({String? dataDir, String? apiKey, bool? freeTier, bool? voiceMuted, String? configPath}) {
+void saveConfig(
+    {String? dataDir,
+    String? apiKey,
+    bool? freeTier,
+    bool? voiceMuted,
+    String? voiceName,
+    String? configPath}) {
   final f = File(configPath ?? defaultConfigPath());
   Map<String, dynamic> cfg = {};
   if (f.existsSync()) {
@@ -89,6 +104,9 @@ void saveConfig({String? dataDir, String? apiKey, bool? freeTier, bool? voiceMut
   if (apiKey != null) cfg['apiKey'] = apiKey;
   if (freeTier != null) cfg['freeTier'] = freeTier; // null leaves the mode untouched
   if (voiceMuted != null) cfg['voiceMuted'] = voiceMuted; // null leaves the pref untouched
+  // Empty string clears the override (back to auto-pick); a non-empty name pins that voice; null
+  // leaves it untouched.
+  if (voiceName != null) cfg['voiceName'] = voiceName.isEmpty ? null : voiceName;
   f.parent.createSync(recursive: true);
   f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(cfg));
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plenara/config.dart';
 
 import 'settings_view.dart';
+import 'voice_setup.dart';
 
 /// Welcome / connect nudge (task #14). Shown whenever no API key is set — i.e. on first run AND on
 /// later launches until the user connects — so the guided Connect flow is one tap away instead of
@@ -78,6 +79,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ]),
                 ),
               ),
+              const SizedBox(height: 16),
+              const VoiceUpgradeCard(hideWhenNatural: true), // self-hides unless a robotic voice is active
               const SizedBox(height: 20),
               if (!connected)
                 FilledButton.icon(

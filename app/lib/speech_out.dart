@@ -5,6 +5,74 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:plenara/config.dart' as cfg;
+
+/// Whether the device has a NATURAL (Enhanced/Premium) English voice installed. iOS ships only the
+/// robotic "compact" voices by default; the Siri-caliber ones are a user download. Onboarding uses
+/// this to recommend the upgrade. Cheap — just enumerates installed voices. Always true off iOS
+/// (desktop engines don't have this split), so the nudge is iOS-only.
+Future<bool> hasNaturalEnglishVoice() async {
+  if (!Platform.isIOS) return true;
+  try {
+    final raw = await FlutterTts().getVoices;
+    for (final v in (raw as List? ?? const [])) {
+      final m = Map<String, dynamic>.from(v as Map);
+      final loc = (m['locale'] ?? m['language'] ?? '').toString().toLowerCase();
+      if (!loc.startsWith('en')) continue;
+      final blob = '${m['quality'] ?? ''} ${m['name'] ?? ''} ${m['identifier'] ?? ''}'.toLowerCase();
+      if (blob.contains('premium') || blob.contains('enhanced')) return true;
+    }
+  } catch (_) {/* treat unknown as "installed" so we never nag on an API hiccup */}
+  return false;
+}
+
+/// Track 2: turn a DISPLAY reply into TTS-friendly text. The engine reads bullets, line breaks, and
+/// symbols literally and woodenly ("bullet… bullet…", choppy line-by-line); this smooths them into
+/// flowing speech — drop mote/bullet glyphs + status emoji, strip markdown syntax, join lines into
+/// sentences with natural pauses, and say a few symbols as words. Pure text, no AI (code-over-AI);
+/// the DISPLAYED text (track 1, shown when muted) is untouched — only what we hand the synthesizer.
+String speakify(String text) {
+  var s = text;
+  s = s.replaceAll(RegExp(r'[✨📋🎂🎉•·–—]'), ' '); // decoration / status glyphs
+  s = s.replaceAll(RegExp(r'[*_`#]'), ''); // markdown emphasis/code/heading markers
+  s = s.replaceAll(RegExp(r'^\s*(?:[-–—•]|\d+[.)])\s+', multiLine: true), ''); // bullet/number leaders
+  s = s
+      .replaceAll('&', ' and ')
+      .replaceAll('→', ' to ')
+      .replaceAll('%', ' percent')
+      .replaceAll(RegExp(r'\be\.g\.', caseSensitive: false), 'for example')
+      .replaceAll(RegExp(r'\bi\.e\.', caseSensitive: false), 'that is');
+  // Line breaks → sentence boundaries so it doesn't read choppily. Blank line = full stop; a single
+  // newline after non-terminal text = a comma pause; otherwise just a space.
+  s = s.replaceAll(RegExp(r'\n{2,}'), '. ');
+  s = s.replaceAllMapped(RegExp(r'([^.!?:;,])\n'), (m) => '${m[1]}, ');
+  s = s.replaceAll('\n', ' ');
+  s = s.replaceAll(RegExp(r'\s+'), ' ').replaceAll(RegExp(r'\s+([.,!?;:])'), r'$1');
+  s = s.replaceAll(RegExp(r'\.{2,}'), '.').replaceAll(RegExp(r',{2,}'), ','); // tidy doubled punctuation
+  return s.trim();
+}
+
+/// The installed NATURAL (Enhanced/Premium) English voices — the choices offered by the in-app voice
+/// picker. Each: (name as the engine reports it, locale like "en-AU", quality label). Empty off iOS.
+Future<List<({String name, String locale, String quality})>> naturalEnglishVoices() async {
+  if (!Platform.isIOS) return const [];
+  final out = <({String name, String locale, String quality})>[];
+  try {
+    final raw = await FlutterTts().getVoices;
+    for (final v in (raw as List? ?? const [])) {
+      final m = Map<String, dynamic>.from(v as Map);
+      final locale = (m['locale'] ?? m['language'] ?? '').toString();
+      if (!locale.toLowerCase().startsWith('en')) continue;
+      final blob = '${m['quality'] ?? ''} ${m['name'] ?? ''} ${m['identifier'] ?? ''}'.toLowerCase();
+      if (blob.contains('premium')) {
+        out.add((name: '${m['name']}', locale: locale, quality: 'Premium'));
+      } else if (blob.contains('enhanced')) {
+        out.add((name: '${m['name']}', locale: locale, quality: 'Enhanced'));
+      }
+    }
+  } catch (_) {/* return what we have */}
+  return out;
+}
 
 abstract class SpeechOutput {
   Future<void> init();
@@ -86,6 +154,19 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
         final loc = (m['locale'] ?? m['language'] ?? '').toString().toLowerCase();
         if (loc.startsWith('en')) en.add(m);
       }
+      // A user's explicit pick (Settings → Voice) wins over the auto-heuristic — as long as that voice
+      // is still installed. This is how "I chose Matilda" beats the default en-US preference.
+      final pref = cfg.loadConfig().voiceName;
+      if (pref != null) {
+        final match = en.where((m) => '${m['name']}' == pref).toList();
+        if (match.isNotEmpty) {
+          final v = match.first;
+          await _tts.setVoice({'name': '${v['name']}', 'locale': '${v['locale'] ?? v['language']}'});
+          onLog?.call('tts voice chosen (user pref): ${v['name']} (${v['locale'] ?? v['language']})');
+          return;
+        }
+        onLog?.call('tts: saved voice "$pref" not installed — auto-picking instead');
+      }
       int score(Map<String, dynamic> m) {
         final blob = '${m['quality'] ?? ''} ${m['name'] ?? ''} ${m['identifier'] ?? ''}'.toLowerCase();
         if (blob.contains('premium')) return 3;
@@ -139,6 +220,16 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
   bool get available => _ready;
   @override
   bool get speaking => _speaking;
+
+  /// Point this synthesizer at a specific installed voice — used by the Settings picker to preview a
+  /// choice in that exact voice. Best-effort; a bad name just leaves the current voice in place.
+  Future<void> setVoiceByName(String name, String locale) async {
+    try {
+      await _tts.setVoice({'name': name, 'locale': locale});
+    } catch (e) {
+      onLog?.call('tts setVoice failed: $e');
+    }
+  }
 
   @override
   Future<void> speak(String text, {void Function()? onStart, void Function()? onDone}) async {
