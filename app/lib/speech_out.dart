@@ -2,6 +2,8 @@
 // (WinRT/SAPI on Windows, AVSpeechSynthesizer on Apple — the latter genuinely good), swappable
 // for a cloud voice later without touching the app. onStart/onDone bracket each utterance so
 // Plena's *speaking* animation anchors to real audio (Spec 15 §3.1 / §4.1).
+import 'dart:io' show Platform;
+
 import 'package:flutter_tts/flutter_tts.dart';
 
 abstract class SpeechOutput {
@@ -51,9 +53,29 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
   int _gen = 0;
   void Function()? _onStart;
 
+  /// iOS ONLY: force the shared audio session to .playback so Plena is audible **in silent mode**
+  /// (like Siri) and through the speaker. AVSpeechSynthesizer otherwise obeys the physical ring/silent
+  /// switch, and — critically — Apple Speech (STT) leaves the session in .record/.playAndRecord after
+  /// listening, which respects the switch. So we re-assert this before EVERY utterance (not just at
+  /// init): the last thing to touch the session before we speak wins. No-op off iOS.
+  Future<void> _iosPlaybackSession() async {
+    if (!Platform.isIOS) return;
+    try {
+      await _tts.setSharedInstance(true);
+      await _tts.setIosAudioCategory(
+        IosTextToSpeechAudioCategory.playback,
+        [IosTextToSpeechAudioCategoryOptions.mixWithOthers],
+        IosTextToSpeechAudioMode.defaultMode,
+      );
+    } catch (e) {
+      onLog?.call('tts ios session failed: $e');
+    }
+  }
+
   @override
   Future<void> init() async {
     try {
+      await _iosPlaybackSession();
       await _tts.awaitSpeakCompletion(true); // speak() resolves when THAT utterance ends/stops
       _tts.setStartHandler(() {
         _speaking = true;
@@ -85,6 +107,10 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
       return;
     }
     await stop(); // one utterance at a time
+    // Re-assert .playback here: if the mic just listened, the shared session is in record mode and
+    // would silence her in silent mode. Doing it right before speak (post-stop) makes us the last
+    // writer, so every reply is audible regardless of what STT left behind.
+    await _iosPlaybackSession();
     final gen = ++_gen;
     _onStart = onStart;
     _speaking = true;
