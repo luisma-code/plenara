@@ -21,7 +21,14 @@ class PlenaraConfig {
   PlenaraConfig(this.dataDir, this.apiKey, {this.freeTier = false, this.voiceMuted});
 }
 
-String _home() => Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'] ?? '.';
+/// App-injected home base. Desktop leaves this null — USERPROFILE/HOME are set. iOS and Android
+/// expose NO such env var, so without an override `_home()` collapses to `'.'` and every `~/…` path
+/// becomes a non-writable `./…` (which is exactly what white-screened the first iOS build:
+/// `loadConfig` tried to create `./.plenara` → "operation not permitted"). The Flutter app resolves
+/// the real per-user directory via path_provider and sets this BEFORE any config/log path is derived.
+String? homeOverride;
+String _home() =>
+    homeOverride ?? Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'] ?? '.';
 
 /// The user config file location (`~/.plenara/config.json`), overridable for tests.
 String defaultConfigPath() => '${_home()}/.plenara/config.json';

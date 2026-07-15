@@ -8,6 +8,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:plenara/config.dart' as cfg;
 
 class AppLog {
   final File file;
@@ -33,10 +34,12 @@ class AppLog {
   static AppLog _create() {
     // On iOS the diag log must be RETRIEVABLE without a cable (TestFlight) — write it into the app's
     // Documents dir, which the Files app exposes (Info.plist UIFileSharingEnabled +
-    // LSSupportsOpeningDocumentsInPlace). systemTemp there is the sandbox tmp/ — hidden and reaped.
-    // Elsewhere (macOS/Windows) systemTemp is fine and keeps logs out of the user's folders.
+    // LSSupportsOpeningDocumentsInPlace). iOS has no HOME env var, so we use the app-injected
+    // [cfg.homeOverride] (the real Documents dir, set by main() via path_provider). Falling back to
+    // systemTemp would land in the sandbox tmp/ — hidden and reaped (that's where early builds' logs
+    // vanished). Elsewhere (macOS/Windows) systemTemp is fine and keeps logs out of the user's folders.
     final base = Platform.isIOS
-        ? '${Platform.environment['HOME'] ?? Directory.systemTemp.path}/Documents'
+        ? (cfg.homeOverride ?? Directory.systemTemp.path)
         : Directory.systemTemp.path;
     final dir = Directory('$base${Platform.pathSeparator}plenara-logs');
     try {

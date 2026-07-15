@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/reminders.dart';
@@ -67,13 +68,23 @@ Session buildSession({NotificationScheduler? scheduler}) {
   );
 }
 
-void main() {
-  final log = AppLog.instance;
-  // Print the diagnostics log path so a manual test that goes wrong is one file away.
-  stdout.writeln('Plenara diagnostics log: ${log.file.path}');
-  log('boot: main() starting');
+Future<void> main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    // iOS/Android expose no HOME env var, so v0's `~/…` paths collapse to a non-writable `./…` — which
+    // white-screened the first iOS build (loadConfig tried to create `./.plenara`). Resolve the app's
+    // real per-user directory and inject it as the home base BEFORE any config OR log path is derived
+    // (so it must precede the first AppLog.instance access too). Documents is chosen so diagnostics
+    // are also Files-app-visible for cable-free retrieval.
+    if (Platform.isIOS || Platform.isAndroid) {
+      try {
+        homeOverride = (await getApplicationDocumentsDirectory()).path;
+      } catch (_) {/* desktop never reaches here; on failure fall back to env/'.' */}
+    }
+    final log = AppLog.instance;
+    // Print the diagnostics log path so a manual test that goes wrong is one file away.
+    stdout.writeln('Plenara diagnostics log: ${log.file.path}');
+    log('boot: main() starting');
     // Extract the bundled seed defs before first run (skipped when a dev override is set or the
     // data folder is already seeded) so a shipped binary seeds itself with no repo present.
     if (Platform.environment['PLENARA_SEED_DIR'] == null) {
@@ -91,7 +102,7 @@ void main() {
       FlutterError.presentError(details);
     };
     runApp(const PlenaraApp());
-  }, (error, stack) => log('UNCAUGHT: $error\n$stack'));
+  }, (error, stack) => AppLog.instance.log('UNCAUGHT: $error\n$stack'));
 }
 
 class PlenaraApp extends StatelessWidget {

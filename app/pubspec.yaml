@@ -46,6 +46,7 @@ dependencies:
   record: ^7.1.1
   flutter_tts: ^4.2.2 # on-device TTS (WinRT/SAPI on Windows, AVSpeechSynthesizer on Apple)
   share_plus: ^10.1.4
+  path_provider: ^2.1.6
 
 # path_provider_foundation 2.6.0 (pulled in by share_plus) migrated to the experimental native-assets
 # build-hook path via package:objective_c. That hook shells out to xcrun and parses its stdout, which
