@@ -16,9 +16,29 @@ _Written 2026-07-14 to hand off to a fresh session after new global defaults wer
 - **The app builds + runs on Mac.** Run it with **`bash app/tool/dev-run.sh`** (NOT bare
   `flutter build`) — it re-signs with the stable "Plenara Dev" identity so mic permission persists.
 
-## THE IMMEDIATE NEXT TASK: deploy to the iPhone
+## ✅ DEPLOY TO IPHONE — DONE (2026-07-14)
 
-Everything is staged; it's blocked only on Luis-gated steps:
+Plenara now installs and runs on the iPhone ("Aluminum Monster"). What it took:
+- **Apple Developer account approved**; Xcode auto-populated `DEVELOPMENT_TEAM = 7V63BZ39HU`.
+- **The real blocker was the work-MDM profile** on the phone — it forced an on-device
+  developer-cert online verification ("internet connection needed to verify") that the corporate
+  network blocked. **Removing the work management profile cleared it.** (If a work phone is used
+  again, TestFlight is the clean path — MDM devices install App Store/TestFlight apps normally.)
+- **Deploy is release-mode standalone:** `bash` →
+  `flutter run --release --dart-define=PLENARA_DEBUG=true -d 00008140-000645442862201C`
+  (prefix with the brew/DEVELOPER_DIR evals). Release has no Dart VM, so it **sidesteps the
+  debug-attach mDNS/Local-Network-permission wall** that made `flutter run` (debug) "exit right
+  after launch." The app installs + launches; the Mac-side console can be killed, the app stays.
+- **Logs off-device:** Settings → Diagnostics → **"Share diagnostics"** bundles every on-device
+  `.log` into one ~1 MB-capped `.txt` and opens the share sheet (email it out — no cable). Verbose
+  traces are ON in this build via the `--dart-define`. (Files-app retrieval still works too.)
+- **Gotcha fixed:** `path_provider_foundation` is pinned to **2.4.1** (dependency_overrides) — its
+  2.6.0 native-assets hook (`package:objective_c`) breaks `flutter build --release` because a stale
+  Xcode keychain-credential warning corrupts its `xcrun` stdout parse. Cleaning that keychain
+  account (`91B206EB…`, "missing Xcode-Username") is a deferred follow-up; the pin avoids it for now.
+
+### Old notes (kept for reference) — the pre-deploy staging
+Everything was staged; it was blocked only on Luis-gated steps:
 1. **Apple Developer Program** — Luis is enrolling ("pending"). $99/yr, Individual account. Unlocks
    **TestFlight** (wireless/remote push — the goal: "work remotely, push to my phone") **and** App
    Store. A free app costs nothing beyond the membership.
