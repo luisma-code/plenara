@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/turnlog.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'app_log.dart';
 
@@ -229,6 +230,55 @@ class _SettingsViewState extends State<SettingsView> {
     ]);
   }
 
+  /// Bundle every diagnostics .log from this device into one .txt and hand it to the platform share
+  /// sheet — so a self-hosting user can email the file to themselves (and to me) with no cable. Caps
+  /// the export to the most recent ~1 MB so it stays email-friendly. [_context] gives iPad/macOS the
+  /// popover anchor the share sheet needs.
+  Future<void> _shareLogs(BuildContext ctx) async {
+    final messenger = ScaffoldMessenger.of(ctx);
+    try {
+      final dir = AppLog.instance.file.parent;
+      final logs = dir.existsSync()
+          ? (dir.listSync().whereType<File>().where((f) => f.path.endsWith('.log')).toList()
+            ..sort((a, b) => a.path.compareTo(b.path)))
+          : <File>[];
+      final buf = StringBuffer()
+        ..writeln('=== Plenara diagnostics export — ${DateTime.now()} ===')
+        ..writeln('App version: ${_cfg.apiKey != null ? "cloud connected" : "offline"}')
+        ..writeln('Platform: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}')
+        ..writeln('Log files on device: ${logs.length}')
+        ..writeln();
+      for (final f in logs) {
+        buf.writeln('----- ${f.uri.pathSegments.last} -----');
+        try {
+          buf.writeln(f.readAsStringSync());
+        } catch (e) {
+          buf.writeln('(could not read: $e)');
+        }
+        buf.writeln();
+      }
+      var text = buf.toString();
+      const cap = 1024 * 1024; // keep the email small: most recent ~1 MB
+      if (text.length > cap) {
+        text = '[earlier logs truncated — showing the most recent ${cap ~/ 1024} KB]\n\n'
+            '${text.substring(text.length - cap)}';
+      }
+      final ts = DateTime.now().toIso8601String().replaceAll(RegExp('[:.]'), '-');
+      final out = File('${Directory.systemTemp.path}${Platform.pathSeparator}plenara-diagnostics-$ts.txt');
+      out.writeAsStringSync(text);
+      final box = ctx.findRenderObject() as RenderBox?;
+      final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+      await Share.shareXFiles(
+        [XFile(out.path, mimeType: 'text/plain')],
+        subject: 'Plenara diagnostics',
+        text: 'Plenara diagnostics log attached.',
+        sharePositionOrigin: origin,
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Could not share logs: $e')));
+    }
+  }
+
   Widget _step(String n, String text) => Padding(
         padding: const EdgeInsets.only(bottom: 4),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -322,7 +372,24 @@ class _SettingsViewState extends State<SettingsView> {
           _usageSection(cs),
           const Divider(height: 32),
           const Text('Diagnostics log', style: TextStyle(fontWeight: FontWeight.bold)),
-          SelectableText(AppLog.instance.file.path),
+          const SizedBox(height: 6),
+          const Text('If something goes wrong, share the log so it can be troubleshot — this bundles '
+              'every log on this device into one text file and opens the share sheet (email it to '
+              'yourself).'),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Builder(
+              builder: (btnCtx) => OutlinedButton.icon(
+                key: const Key('share-logs'),
+                onPressed: () => _shareLogs(btnCtx),
+                icon: const Icon(Icons.ios_share, size: 18),
+                label: const Text('Share diagnostics'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SelectableText(AppLog.instance.file.path, style: TextStyle(fontSize: 12, color: cs.outline)),
         ],
       ),
     );

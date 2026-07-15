@@ -14,10 +14,18 @@ class AppLog {
   AppLog._(this.file);
 
   /// Verbose traces (speech lifecycle, and other chatty per-interaction diagnostics) are ON during
-  /// development + dogfood and OFF in a retail release build — unless the user opts in with
-  /// PLENARA_DEBUG=1. Essential events (boot, init phases, turns, errors) ALWAYS log via [log].
-  /// This is the "rich traces we can turn off in retail" switch: log everything now, quiet later.
-  static bool verbose = !kReleaseMode || Platform.environment['PLENARA_DEBUG'] == '1';
+  /// development + dogfood and OFF in a retail release build — unless the user opts in. Essential
+  /// events (boot, init phases, turns, errors) ALWAYS log via [log]. This is the "rich traces we can
+  /// turn off in retail" switch: log everything now, quiet later.
+  ///
+  /// Opt-in paths, in priority order:
+  ///  - debug/profile builds: always on;
+  ///  - `PLENARA_DEBUG=1` in the process environment (desktop);
+  ///  - `--dart-define=PLENARA_DEBUG=true` at build time (the ONLY way to reach a release build on
+  ///    iOS, where there is no process environment to set) — used for on-device dogfood.
+  static bool verbose = !kReleaseMode ||
+      Platform.environment['PLENARA_DEBUG'] == '1' ||
+      const bool.fromEnvironment('PLENARA_DEBUG');
 
   static AppLog? _instance;
   static AppLog get instance => _instance ??= _create();

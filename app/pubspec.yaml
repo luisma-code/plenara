@@ -45,6 +45,15 @@ dependencies:
   sherpa_onnx: ^1.13.4
   record: ^7.1.1
   flutter_tts: ^4.2.2 # on-device TTS (WinRT/SAPI on Windows, AVSpeechSynthesizer on Apple)
+  share_plus: ^10.1.4
+
+# path_provider_foundation 2.6.0 (pulled in by share_plus) migrated to the experimental native-assets
+# build-hook path via package:objective_c. That hook shells out to xcrun and parses its stdout, which
+# a stale Xcode keychain-credential warning corrupts — breaking `flutter build --release` on iOS. Pin
+# to the last classic-plugin release so NO native-assets phase runs. Revisit once native-assets is
+# stable + the keychain account is cleaned. See app/ios notes.
+dependency_overrides:
+  path_provider_foundation: 2.4.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

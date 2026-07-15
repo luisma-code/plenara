@@ -128,6 +128,22 @@ void main() {
     expect(loadConfig(configPath: path).freeTier, isFalse); // back to paid
   });
 
+  testWidgets('Diagnostics section offers a Share button to export the logs', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final path = newCfg();
+    await tester.pumpWidget(MaterialApp(home: SettingsView(configPath: path)));
+    await tester.pumpAndSettle();
+
+    await tester.dragUntilVisible(
+      find.byKey(const Key('share-logs')),
+      find.byType(Scrollable).first,
+      const Offset(0, -400),
+    );
+    expect(find.byKey(const Key('share-logs')), findsOneWidget);
+    expect(find.text('Share diagnostics'), findsOneWidget);
+  });
+
   testWidgets('Open Anthropic Console invokes the URL opener', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1000, 2200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
