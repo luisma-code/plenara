@@ -26,7 +26,15 @@ requested autonomous mode:
 
 - **Exception — meta/process:** when Luis explicitly opens a decision about *how we work* (e.g. "should we rewrite this instruction?", "which approach do you prefer?"), engaging him IS correct — that's his call, not permission-seeking about the task. This exception does not extend to the work itself.
 
-- Standing setup: broad allowlist + bypass mode remove per-action approvals; at the start of a substantive session launch `scripts/keep-alive.ps1` in the background and kill it only when all work is complete.
+- Standing setup: broad allowlist + bypass mode remove per-action approvals.
+
+- **Keep the Mac awake — every session, always (macOS).** At the **start of every session**, immediately
+  run `caffeinate -dimsu` detached in the background (`pgrep -x caffeinate || nohup caffeinate -dimsu >/dev/null 2>&1 &`),
+  and **keep it running for the ENTIRE session — do NOT kill it when a task completes.** An idle Mac
+  drops into maintenance/idle sleep (even on AC), which suspends the Claude app process and drops the
+  session mid-build (this bit us — repeated "lost connection"). Kill it **only** at true session end.
+  (This overrides the general "kill background helpers when the task is done" rule — caffeinate is a
+  session-long helper, not a per-task one. On Windows the equivalent was `scripts/keep-alive.ps1`.)
 
 ## Planning documents
 
