@@ -72,11 +72,52 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
     }
   }
 
+  /// Pick the most NATURAL English voice the device has. AVSpeechSynthesizer defaults to the robotic
+  /// "compact" voice; iOS also ships far better Enhanced/Premium voices (close to Siri) — but only if
+  /// the user has downloaded one (Settings → Accessibility → Spoken Content → Voices). We score by
+  /// quality (premium > enhanced > compact), prefer en-US, set the winner, and log the full list so a
+  /// still-robotic voice is diagnosable as "no premium voice installed" rather than a code bug.
+  Future<void> _selectBestVoice() async {
+    try {
+      final raw = await _tts.getVoices;
+      final en = <Map<String, dynamic>>[];
+      for (final v in (raw as List? ?? const [])) {
+        final m = Map<String, dynamic>.from(v as Map);
+        final loc = (m['locale'] ?? m['language'] ?? '').toString().toLowerCase();
+        if (loc.startsWith('en')) en.add(m);
+      }
+      int score(Map<String, dynamic> m) {
+        final blob = '${m['quality'] ?? ''} ${m['name'] ?? ''} ${m['identifier'] ?? ''}'.toLowerCase();
+        if (blob.contains('premium')) return 3;
+        if (blob.contains('enhanced')) return 2;
+        return 1;
+      }
+      String loc(Map<String, dynamic> m) => (m['locale'] ?? m['language'] ?? '').toString().toLowerCase();
+      en.sort((a, b) {
+        final s = score(b).compareTo(score(a));
+        if (s != 0) return s;
+        return (loc(b) == 'en-us' ? 1 : 0).compareTo(loc(a) == 'en-us' ? 1 : 0);
+      });
+      onLog?.call('tts voices (en): '
+          '${en.map((m) => "${m['name']}/${loc(m)}/q=${m['quality'] ?? '?'}").join(' | ')}');
+      if (en.isNotEmpty && score(en.first) > 1) {
+        final best = en.first;
+        await _tts.setVoice({'name': '${best['name']}', 'locale': '${best['locale'] ?? best['language']}'});
+        onLog?.call('tts voice chosen: ${best['name']} (${loc(best)}, q=${best['quality'] ?? '?'})');
+      } else {
+        onLog?.call('tts: no enhanced/premium voice installed — using the default (robotic) voice');
+      }
+    } catch (e) {
+      onLog?.call('tts voice select failed: $e');
+    }
+  }
+
   @override
   Future<void> init() async {
     try {
       await _iosPlaybackSession();
       await _tts.awaitSpeakCompletion(true); // speak() resolves when THAT utterance ends/stops
+      if (Platform.isIOS) await _selectBestVoice();
       _tts.setStartHandler(() {
         _speaking = true;
         final s = _onStart;
