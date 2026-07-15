@@ -12,6 +12,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -704,8 +705,18 @@ class _PlenaPainter extends CustomPainter {
     // motes, keep it. She leaves a real trail of herself; the Trail knob is the fade rate. The
     // buffer is CAPPED (~760px longest side) and scaled up on blit, so per-frame toImageSync
     // stays cheap at any window size (a full-res buffer stalls the raster).
-    if (!s._animating || w <= 0 || h <= 0) {
-      // Static / reduced-motion: no persistence — draw straight to the canvas (else repeated
+    //
+    // iOS EXCEPTION (2026-07-14): this per-frame toImageSync feedback loop — a render-to-texture that
+    // reads its OWN prior output, then dstOut-erodes it and drawAtlas-adds motes — natively ABORTS the
+    // app under Impeller, iOS's only renderer (Skia was removed, so Impeller can't be turned off).
+    // Diagnosed on-device: the app exited the instant the animated presence appeared, with NO Dart
+    // exception (a GPU-side abort, invisible to FlutterError). Until an Impeller-safe persistence path
+    // lands, iOS falls to the straight-draw branch below — Plena still animates, just without the
+    // trail. Motes move every frame onto a fresh layer, so the stationary-ghosting caveat doesn't bite.
+    final noPersistence =
+        !s._animating || w <= 0 || h <= 0 || defaultTargetPlatform == TargetPlatform.iOS;
+    if (noPersistence) {
+      // Static / reduced-motion / iOS-Impeller: no persistence — draw straight to the canvas (else repeated
       // repaints of stationary motes accumulate toward white and ghost prior states, §8.3).
       s._trail?.dispose();
       s._trail = null;

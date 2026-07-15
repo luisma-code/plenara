@@ -6,6 +6,7 @@ import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/turnlog.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'app_log.dart';
 
@@ -40,14 +41,11 @@ class _SettingsViewState extends State<SettingsView> {
   }
 
   Future<void> _defaultOpen(String url) async {
+    // url_launcher hands the URL to the OS on every platform — critically including iOS, where the
+    // old Process.run('open'/'xdg-open') path is forbidden in the sandbox (it silently no-op'd, so
+    // the button "did nothing"). externalApplication forces the system browser, not an in-app view.
     try {
-      if (Platform.isWindows) {
-        await Process.run('cmd', ['/c', 'start', '', url]);
-      } else if (Platform.isMacOS) {
-        await Process.run('open', [url]);
-      } else {
-        await Process.run('xdg-open', [url]);
-      }
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (_) {/* the URL is also shown as copyable text as a fallback */}
   }
 

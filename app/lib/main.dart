@@ -48,17 +48,25 @@ NotificationScheduler _platformScheduler() {
 
 Session buildSession({NotificationScheduler? scheduler}) {
   final cfg = loadConfig();
+  // On mobile the synced-folder concept doesn't apply yet (the app is sandboxed) AND a stored
+  // absolute dataDir is a liability: iOS container paths are unstable — the UUID changes on reinstall
+  // and the /private prefix varies — so a path persisted last launch can become one the sandbox
+  // denies, which is exactly what threw PathAccessException creating the data folder. Always
+  // re-derive from the LIVE Documents dir (homeOverride, the same base AppLog writes to and which is
+  // known-writable this launch). Desktop keeps the user's chosen (possibly synced) folder.
+  final base = homeOverride;
+  final dataDir = (base != null && (Platform.isIOS || Platform.isAndroid)) ? '$base/Plenara' : cfg.dataDir;
   // Seed source priority: explicit dev override > extracted bundled assets (shipped build) > dev
   // path. ensureSeeded no-ops once the data folder is already seeded, so this is first-run only.
   final seed = Platform.environment['PLENARA_SEED_DIR'] ?? _bundledSeedDir ?? sourceDataDir;
-  ensureSeeded(cfg.dataDir, seed);
+  ensureSeeded(dataDir, seed);
   // Free mode runs offline-only: hand the Session an EXPLICIT offline client (empty key ->
   // every cloud call returns noKey, zero Anthropic spend). Passing null would NOT work — the
   // Session falls back to a default ClaudeClient() that picks the key up from the environment,
   // so free mode has to inject a deliberately-keyless client. (A real release ships two binaries.)
   final useCloud = cfg.apiKey != null && !cfg.freeTier;
   return Session(
-    cfg.dataDir,
+    dataDir,
     cloud: useCloud
         ? ClaudeClient(apiKeyOverride: cfg.apiKey)
         : ClaudeClient(apiKeyOverride: ''),
