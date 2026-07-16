@@ -376,17 +376,26 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
         // Multi-record decomposition: keep only actions naming a real capability.
         if (parsed['actions'] is List) {
           final actions = <Map<String, dynamic>>[];
+          var skippedGen = 0; // a generative kind wrongly placed inside a batch — dropped but COUNTED
           for (final a in (parsed['actions'] as List)) {
             if (a is! Map) continue;
+            // A generative kind may not live in a batch (Spec 03 §7.3.2); count it so the session's
+            // coda can admit it (P2.8 no silent failure), rather than dropping it silently.
+            if (a['generativeKind'] != null) {
+              skippedGen++;
+              continue;
+            }
             final sid = a['skillId'];
             if (sid == null || sid == 'none' || !skills.containsKey(sid)) continue;
             actions.add({'skillId': sid, 'slots': normSlots(a['slots'])});
           }
           if (actions.isEmpty) return const CloudOk<Map<String, dynamic>?>(null);
           if (actions.length == 1) {
-            return CloudOk<Map<String, dynamic>?>({...actions.first, 'source': 'cloud'});
+            return CloudOk<Map<String, dynamic>?>(
+                {...actions.first, 'source': 'cloud', if (skippedGen > 0) 'skippedGenerative': skippedGen});
           }
-          return CloudOk<Map<String, dynamic>?>({'actions': actions, 'source': 'cloud'});
+          return CloudOk<Map<String, dynamic>?>(
+              {'actions': actions, 'source': 'cloud', if (skippedGen > 0) 'skippedGenerative': skippedGen});
         }
         // Generative recognition (Spec 03 §2.2a / §7.3.2, G-46): a synthesis request routes to a
         // fixed generative kind, not a skill — checked BEFORE the skill-abstain, since a generative

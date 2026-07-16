@@ -23,6 +23,13 @@ class _GenCloud implements CloudClient {
     // frozen regex misses is classified as gift_ideas with the contact param (mirrors the real
     // {generativeKind, params} residual contract). Everything else abstains.
     final lc = u.toLowerCase();
+    // A mixed record + generative utterance the model collapsed to the record, dropping AND counting
+    // the generative half (simulates routeResidual's skippedGenerative path, §7.3.2). Uses a
+    // corpus-missing carrier ("errand") so the turn actually reaches the residual, not the corpus.
+    if (lc.contains('errand') && lc.contains('gift')) {
+      return CloudOk<Map<String, dynamic>?>(
+          {'skillId': 'create-task', 'slots': <String, dynamic>{'description': 'buy milk'}, 'source': 'cloud', 'skippedGenerative': 1});
+    }
     if (lc.contains('gift') && (lc.contains('suggest') || RegExp(r'gift ideas? for').hasMatch(lc))) {
       final m = RegExp(r'\bfor\s+([A-Za-z]+)', caseSensitive: false).firstMatch(u);
       return CloudOk<Map<String, dynamic>?>({
@@ -160,6 +167,17 @@ void main() {
       final r = await s.handle('add buy milk to my list and suggest a gift for Sarah'); // compound
       expect(r, isNotEmpty);
       expect(r.toLowerCase(), isNot(contains("didn't do anything"))); // no false "nothing done" after a write
+    });
+
+    test('a generative half dropped from a batch is admitted, not silently swallowed (§7.3.2, P2.8)', () async {
+      final cloud = _GenCloud();
+      final s = await _s(cloud);
+      // "errand …" misses the corpus, so it reaches the residual, which collapses to the task and
+      // counts the dropped generative half.
+      final r = await s.handle('errand buy milk and suggest a gift for Sarah');
+      expect(r.toLowerCase(), contains('milk')); // the record half ran
+      expect(r.toLowerCase(), contains('gift')); // and the dropped generative half is ADMITTED, not silent
+      expect(cloud.lastKind, isNull); // no generation was spent on the dropped half
     });
 
     test('a generative request with no contact asks (§6.3 follow-up), then the answer runs it (G-46)', () async {

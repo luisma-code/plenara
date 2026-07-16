@@ -210,9 +210,9 @@ final _fabricationRe = RegExp(
     r"(interaction|call|meeting|conversation|entry|record|note|log|visit|chat))\b",
     caseSensitive: false);
 // Generative-request intents (Spec 04 §3.10) — paid, grounded synthesis.
-// FROZEN (Spec 03 §2.2a `G-44`): the offline / free-tier recognition floor for the common gift
-// phrasings — no longer grown per-miss. A phrasing this misses ("suggest a gift for X") is now
-// recognized by the cloud residual (§7.3.2, `G-46`) and learned, not hand-patched into this regex.
+// ALL FROZEN (Spec 03 §2.2a `G-44`/`G-46`): these regexes are the zero-cost offline / free-tier
+// recognition floor for the common phrasings — no longer grown per-miss. Anything they miss is now
+// recognized by the cloud residual (§7.3.2) and learned into the corpus, not hand-patched here.
 final _giftRe = RegExp(
     r"^(?:(?:gift|present)\s+ideas?\s+for\s+|what\s+(?:should|can|could)\s+i\s+(?:get|buy|give)\s+|"
     r"what\s+to\s+(?:get|buy|give)\s+)(.+?)(?:\s+for\s+(?:his|her|their)\s+(?:birthday|present|gift))?\??$",
@@ -1341,7 +1341,7 @@ class Session {
     if (routed['actions'] is List) {
       final replies = <String>[];
       final done = <String>[];
-      var skipped = 0;
+      var skipped = (routed['skippedGenerative'] as int?) ?? 0; // generative half(s) dropped from a batch (G-46)
       final journalBefore = _journal.length;
       final seen = <String>{}; // dedup: a cloud split can emit the same record twice (reviewer a #8)
       for (final a in (routed['actions'] as List).cast<Map>()) {
@@ -1422,8 +1422,14 @@ class Session {
     // A cloud route may carry a SUGGESTED template (surface-abstracted) to learn — distinct
     // from a matched corpus `template`. The router validates it by round-trip before adopting.
     final learnTemplate = routed['source'] == 'cloud' ? routed['template'] as String? : null;
-    return _dispatch(skillId, slots, routed['source'] as String, now,
+    final reply = await _dispatch(skillId, slots, routed['source'] as String, now,
         template: template, learnTemplate: learnTemplate, utterance: u);
+    // A batch collapsed to one skill because its generative half was dropped (§7.3.2) — admit it, so
+    // "log a run and suggest a gift for Sarah" doesn't silently swallow the gift request (P2.8).
+    final droppedGen = (routed['skippedGenerative'] as int?) ?? 0;
+    return droppedGen > 0
+        ? "$reply (I can't do a gift suggestion as part of a bigger request — ask me that on its own.)"
+        : reply;
   }
 
   /// Dispatch a residual-recognized generative request (Spec 03 §2.2a / §7.3.2, G-46) to the
