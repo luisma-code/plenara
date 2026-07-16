@@ -893,16 +893,25 @@ class Session {
     _lastTurnTemplate = null;
     _lastDispatch = null;
 
-    // A generative request paused for its contact (§6.3, G-46): this input names the person.
+    // A generative request paused for its contact (§6.3, G-46): this input names the person — UNLESS
+    // it's a backout, a system command, or a fresh command, which must not be swallowed as a name
+    // (mirrors the _pendingFill guards below; without this "undo"/"remind me…" became the "contact").
     final pendingGen = _pendingGen;
     if (pendingGen != null) {
       _pendingGen = null;
-      if (!_cancelRe.hasMatch(u)) {
-        return _dispatchGenerative(pendingGen['kind'] as String,
-            {'contact': u.trim()}, pendingGen['template'] as String?, u, now);
+      if (_cancelRe.hasMatch(u)) {
+        _outSource = 'clarify';
+        return 'Okay — never mind.';
       }
-      _outSource = 'clarify';
-      return 'Okay — never mind.';
+      final genIsSystemCmd =
+          _undoRe.hasMatch(u) || _helpRe.hasMatch(u) || _corrRe.hasMatch(u) || _fabricationRe.hasMatch(u);
+      final genLooksLikeCommand = router.route(u, clock: now, contacts: _knownContactTokens()) != null ||
+          _searchNoteRe.hasMatch(u) || _searchForRe.hasMatch(u);
+      if (!genIsSystemCmd && !genLooksLikeCommand) {
+        return _dispatchGenerative(pendingGen['kind'] as String, {'contact': u.trim()},
+            pendingGen['template'] as String?, 'cloud', u, now);
+      }
+      // else: a command, not a name — abandon the pause and handle this input normally (fall through).
     }
 
     // ProvideSlot (§6.3): a paused turn is waiting for one missing slot. Treat this
@@ -1298,7 +1307,8 @@ class Session {
     // request (gift ideas, briefing, …) — dispatch it to the GenerativeService, not the interpreter.
     if (routed != null && routed['generativeKind'] is String) {
       return _dispatchGenerative(routed['generativeKind'] as String,
-          (routed['params'] as Map?)?.cast<String, dynamic>() ?? const {}, routed['template'] as String?, u, now);
+          (routed['params'] as Map?)?.cast<String, dynamic>() ?? const {},
+          routed['template'] as String?, routed['source'] as String? ?? 'cloud', u, now);
     }
     if (routed == null) {
       // A miss is corpus + (abstain | cloud error | no cloud). If the cloud FAILED,
@@ -1420,12 +1430,16 @@ class Session {
   /// GenerativeService — the "suggest a gift for Elena" class, recognized by the cloud instead of a
   /// hand-written regex. A contact-param kind with no contact pauses for a missing-param follow-up
   /// (§6.3); [_pendingGen] resumes it next turn. (Recognition-learning is layered on in a follow-up.)
-  Future<String> _dispatchGenerative(
-      String kind, Map<String, dynamic> params, String? template, String u, DateTime now) async {
+  Future<String> _dispatchGenerative(String kind, Map<String, dynamic> params, String? template,
+      String source, String u, DateTime now) async {
     const contactKinds = {'gift_ideas', 'reconnect', 'draft_message'};
     _outSource = 'generative';
     _outSkill = kind;
-    final contact = (params['contact'] as String?)?.trim();
+    _outTemplate = template; // so a bad generative-template match is diagnosable in the turnlog
+    // Coerce a non-string contact (the model can return a list/number) to null rather than throwing —
+    // parity with routeResidual's "coerce, never throw" contract; it then takes the follow-up.
+    final raw = params['contact'];
+    final contact = raw is String ? raw.trim() : null;
     if (contactKinds.contains(kind) && (contact == null || contact.isEmpty)) {
       _pendingGen = {'kind': kind, if (template != null) 'template': template};
       _outSource = 'clarify';
@@ -1435,6 +1449,10 @@ class Session {
         _ => 'Gift ideas for whom?',
       };
     }
+    // Track a matched LEARNED template so a next-turn "correct" can forget it (§5.2 negative half) —
+    // even on a corpus-matched turn that re-learns nothing. Without this, a mislearned generative
+    // template is uncorrectable (both Fable reviewers, HIGH). Mirrors _dispatch.
+    if (template != null && router.isLearned(template)) _lastTurnTemplate = template;
     _generative.lastDelivered = false; // reset; set true only by a real cloud synthesis
     final reply = await (switch (kind) {
       'gift_ideas' => _generative.giftIdeas(contact!, store, now),
@@ -1445,11 +1463,11 @@ class Session {
       'pattern_insight' => _generative.patternInsight(store, now),
       _ => Future<String>.value("I didn't catch that."),
     });
-    // Learn the RECOGNITION (not the generation) on a DELIVERED synthesis (Spec 03 §2.7, G-46): a
-    // degrade / unknown-person / offline turn leaves lastDelivered false and learns nothing. Only
-    // contact-param kinds abstract to a {contact:entity} template; no-contact kinds have no
-    // placeholder to learn. Tracked as _lastTurnTemplate so a next-turn "correct" forgets it (§5.2).
-    if (_generative.lastDelivered && contactKinds.contains(kind)) {
+    // Learn the RECOGNITION (not the generation) ONLY on a CLOUD-recognized, DELIVERED synthesis
+    // (Spec 03 §2.7, G-46). Skip it when the route was already a corpus match (source == 'corpus') —
+    // it's learned; re-learning appends case/punctuation near-duplicates forever (parity with
+    // _dispatch, which learns only on 'cloud'). A degrade / unknown-person leaves lastDelivered false.
+    if (source == 'cloud' && _generative.lastDelivered && contactKinds.contains(kind)) {
       final learned = router.learnGenerative(u, kind, contact, contacts: _knownContactTokens());
       if (learned != null) {
         repo.appendCorpusLearned({'generativeKind': kind, 'template': learned});
@@ -1555,6 +1573,11 @@ class Session {
       if (lr == null) continue;
       final rr = router.route(right, clock: now, contacts: _knownContactTokens());
       if (rr == null) continue;
+      // A generative half (learned {generativeKind} route) has no skillId/slots — it can't be a
+      // batched skill dispatch (Spec 03 §7.3.2: no generative inside a compound). Skip the seam so a
+      // generative-shaped half never reaches the skill dispatch code (which would throw after the
+      // other half already wrote, then falsely claim nothing was done).
+      if (lr['generativeKind'] != null || rr['generativeKind'] != null) continue;
       if (_missingRequired(skills[lr['skillId']], (lr['slots'] as Map).cast<String, dynamic>()).isNotEmpty ||
           _missingRequired(skills[rr['skillId']], (rr['slots'] as Map).cast<String, dynamic>()).isNotEmpty) {
         continue;

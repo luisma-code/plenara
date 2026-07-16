@@ -109,16 +109,32 @@ class Router {
   /// Recognition-only — the generation itself is never cached (§2.2a). No-contact kinds never learn
   /// (no placeholder → a zero-slot template the guards reject).
   String? learnGenerative(String utterance, String generativeKind, String? contact,
-      {Set<String> contacts = const {}}) {
+      {DateTime? clock, Set<String> contacts = const {}}) {
     final vs = contact?.trim() ?? '';
     if (vs.isEmpty) return null;
-    var t = utterance.trim();
-    final idx = t.toLowerCase().indexOf(vs.toLowerCase());
-    if (idx < 0) return null; // param not verbatim in the surface — a lossy template; don't learn
-    t = '${t.substring(0, idx)}{contact:entity}${t.substring(idx + vs.length)}';
+    final asOf = clock ?? now;
+    final t0 = utterance.trim();
+    // Find the contact as a WHOLE word/phrase, never a mid-word substring — "Ann" must not hit inside
+    // "anniversary" (which would corrupt the template AND persist the name verbatim, violating "store
+    // shapes not values"). The name is model-supplied, so a non-token match is realistic.
+    final boundary = RegExp('\\b${RegExp.escape(vs)}\\b', caseSensitive: false);
+    final m = boundary.firstMatch(t0);
+    if (m == null) return null;
+    final t = '${t0.substring(0, m.start)}{contact:entity}${t0.substring(m.end)}';
+    if (boundary.hasMatch(t)) return null; // a second occurrence would leak the name verbatim
     if (!_hasStrongLiteral(t)) return null;
     if (corpus.any((c) => c.template == t)) return null;
-    corpus.insert(0, _compile({'generativeKind': generativeKind, 'template': t}));
+    // Round-trip like learnSuggested: compile, match THIS utterance, and re-extract the contact to the
+    // same span — rejecting a template that doesn't cleanly reproduce the recognition.
+    final CorpusEntry e;
+    try {
+      e = _compile({'generativeKind': generativeKind, 'template': t});
+    } catch (_) {
+      return null;
+    }
+    final got = _extract(e, t0, asOf, contacts);
+    if (got == null || got['contact']?.toString().toLowerCase() != vs.toLowerCase()) return null;
+    corpus.insert(0, e);
     _learnedTemplates.add(t);
     return t;
   }
@@ -433,6 +449,10 @@ class Router {
       if (s['displayName'] != null) set.add(s['displayName'] as String);
     }
     for (final e in corpus) {
+      // A generative entry (G-46) has an empty skillId — never anchor it here, or retrievalSuggest
+      // could return {skillId: ''} and the miss path's skills['']! null-asserts (crash → error turn).
+      // Generative candidates join retrieval under their kind only at the §3.2 end-state migration.
+      if (e.generativeKind != null || e.skillId.isEmpty) continue;
       final phrase = e.template
           .replaceAllMapped(RegExp(r'\{(\w+):\w+\}'), (m) => m.group(1) == '_' ? '' : m.group(1)!)
           .replaceAll(RegExp(r'\s+'), ' ')

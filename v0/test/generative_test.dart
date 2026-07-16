@@ -124,6 +124,44 @@ void main() {
       expect(cloud.residualCalls, greaterThan(callsBefore), reason: 'forgotten → re-consults the residual');
     });
 
+    test('a learned template is forgotten on correction even after it CORPUS-matched a later turn', () async {
+      // Fable-review fix: _lastTurnTemplate must be set on a corpus-matched generative turn (not only
+      // the fresh-learn turn), or a mislearned template is uncorrectable.
+      final cloud = _GenCloud();
+      final s = await _s(cloud);
+      await s.handle('remember that Sarah loves hiking');
+      await s.handle('can you suggest a gift for Sarah'); // turn 1: learns
+      await s.handle('can you suggest a gift for Sarah'); // turn 2: corpus-matches, no re-learn
+      await s.handle('no, I meant remember that Sarah is my sister'); // turn 3: correction → forget
+      final before = cloud.residualCalls;
+      await s.handle('can you suggest a gift for Sarah'); // turn 4: template gone → residual again
+      expect(cloud.residualCalls, greaterThan(before), reason: 'forgotten after a corpus-matched turn');
+    });
+
+    test('a system command during the generative follow-up is not swallowed as the contact', () async {
+      // Fable-review fix: the _pendingGen resume must let undo/help/new-command through, not treat
+      // them as the person's name.
+      final cloud = _GenCloud();
+      final s = await _s(cloud);
+      await s.handle('add buy milk to my list'); // something to undo
+      await s.handle('can you suggest a gift'); // no contact → "for whom?"
+      final r = await s.handle('undo'); // must undo the task, NOT become a contact name
+      expect(r.toLowerCase(), isNot(contains('as a contact')));
+      expect(cloud.lastKind, isNull); // no gift generation ran
+    });
+
+    test('a learned generative template does not crash a compound utterance', () async {
+      // Fable-review fix: a generative half in _splitCompound has no skillId/slots — must be skipped,
+      // not dispatched as a skill (which threw AFTER the other half wrote).
+      final cloud = _GenCloud();
+      final s = await _s(cloud);
+      await s.handle('remember that Sarah loves hiking');
+      await s.handle('can you suggest a gift for Sarah'); // learns the template
+      final r = await s.handle('add buy milk to my list and suggest a gift for Sarah'); // compound
+      expect(r, isNotEmpty);
+      expect(r.toLowerCase(), isNot(contains("didn't do anything"))); // no false "nothing done" after a write
+    });
+
     test('a generative request with no contact asks (§6.3 follow-up), then the answer runs it (G-46)', () async {
       final cloud = _GenCloud();
       final s = await _s(cloud);
