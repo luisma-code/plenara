@@ -16,7 +16,11 @@ _Last updated: 2026-07-15 — after shipping v8 (iOS-first voice tour + glyph vo
 - **G-46 (generative recognition) DONE on `main`, NOT yet on the phone.** Spec 03 → v0.7 (Fable-reviewed
   SOLID); Phase 1 (cloud residual recognizes generative intents + dispatch + §6.3 follow-up) + Phase 2
   (learn recognition templates → 2nd phrasing routes offline; degrade→no-learn; correct→forget), both
-  tested. iOS build **validated (compiles)**; on-device install is the pending Luis-gated step —
+  tested. **Then a 2-lens Fable code review found 8 real bugs — all fixed** (forget-on-correct on
+  corpus-match, _splitCompound crash on a generative half, learnGenerative substring-corruption →
+  word-boundary + round-trip, _pendingGen swallowing commands, retrieval-index skillId '' crash,
+  near-dup accumulation, non-string contact, silent multi-action drop) + 3 regression tests. iOS build
+  **validated (compiles)**; on-device install is the pending Luis-gated step —
   **unlock the phone + reconnect the Anthropic key**, deploy, then test "can you suggest a gift for
   Elena" live (recognized by the cloud, no regex).
 - Developing on **macOS**; **iPhone is P1**. Apple Developer Program **approved** (TestFlight not set up yet).
