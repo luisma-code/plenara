@@ -53,6 +53,12 @@ _Last updated: 2026-07-15 — after shipping v8 (iOS-first voice tour + glyph vo
   credential** (`91B206EB…`, "missing Xcode-Username") corrupts the hook's `xcrun` stdout parse.
 
 ## Open threads / deferred (with reasons)
+- **Generative intents have no cloud-router fallback** (dogfood finding 2026-07-15): gift-ideas,
+  briefing, reconnect, draft are matched ONLY by fast-path regexes in `session.dart`; the cloud router
+  maps *skills*, not these, so a phrasing the regex misses → clarify ("I didn't catch that"). Hit live:
+  "can you suggest a gift for Elena" clarify-failed (fixed by extending `_giftRe`; capability + data were
+  fine). The general robustness gap remains — consider routing generative intents through the cloud
+  residual too, so novel phrasings don't dead-end.
 - **flutter_tts shares one static method-channel handler** (deferred from the 5-lens Fable review):
   every extra `FlutterTts()` (voice enumeration on each Settings/onboarding open + resume, and the
   preview instance) re-registers the handler, so the main voice's `setStartHandler`/`setErrorHandler`

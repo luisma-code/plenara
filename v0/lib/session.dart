@@ -211,8 +211,14 @@ final _fabricationRe = RegExp(
     caseSensitive: false);
 // Generative-request intents (Spec 04 §3.10) — paid, grounded synthesis.
 final _giftRe = RegExp(
-    r"^(?:(?:gift|present)\s+ideas?\s+for\s+|what\s+(?:should|can|could)\s+i\s+(?:get|buy|give)\s+|"
-    r"what\s+to\s+(?:get|buy|give)\s+)(.+?)(?:\s+for\s+(?:his|her|their)\s+(?:birthday|present|gift))?\??$",
+    // optional polite lead-in ("can you", "please", "any")
+    r"^(?:(?:can|could|would)\s+(?:you|u)\s+|please\s+|any\s+)?"
+    r"(?:(?:gift|present)\s+ideas?\s+for\s+"
+    // "suggest [me] [a|some|any] gift[s]/present[s] [ideas] for X" — the phrasing that was clarify-failing
+    r"|suggest\s+(?:me\s+)?(?:a\s+|some\s+|any\s+)?(?:gift|present)s?\s+(?:ideas?\s+)?for\s+"
+    r"|what\s+(?:should|can|could)\s+i\s+(?:get|buy|give)\s+"
+    r"|what\s+to\s+(?:get|buy|give)\s+)"
+    r"(.+?)(?:\s+for\s+(?:his|her|their)\s+(?:birthday|present|gift))?\??$",
     caseSensitive: false);
 final _briefingRe = RegExp(
     r"^(?:(?:give me |what'?s )?my (?:daily )?briefing|brief me|"

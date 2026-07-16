@@ -58,6 +58,22 @@ void main() {
       expect(cloud.lastContext, contains('hiking'));
     });
 
+    test('"(can you) suggest a/some gift(s) for X" phrasing routes generative (dogfood gap 2026-07-15)', () async {
+      for (final phrase in [
+        'can you suggest a gift for Sarah',
+        'can you suggest some gifts for Sarah',
+        'suggest a gift for Sarah',
+        'any gift ideas for Sarah',
+      ]) {
+        final cloud = _GenCloud();
+        final s = await _s(cloud);
+        await s.handle('remember that Sarah loves hiking');
+        await s.handle(phrase);
+        expect(cloud.lastKind, 'gift_ideas', reason: phrase);
+        expect(cloud.lastContext, contains('hiking'), reason: phrase);
+      }
+    });
+
     test('unknown person -> asks to learn about them first, no cloud call', () async {
       final cloud = _GenCloud();
       final s = await _s(cloud);
