@@ -51,13 +51,14 @@
                   { "op": "compute", "fn": "concat", "args": [ "last talked ", { "var": "latestLabel" } ], "into": "whenLabel" }
                 ]
               },
+              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" },
               {
                 "op": "compute",
                 "fn": "concat",
-                "args": [ { "var": "lines" }, "\n  • ", { "field": [ "c", "displayName" ] }, " — ", { "var": "whenLabel" } ],
+                "args": [ { "var": "lines" }, "\n  ", { "var": "n" }, ". ", { "field": [ "c", "displayName" ] }, " — ", { "var": "whenLabel" } ],
                 "into": "lines"
               },
-              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+              { "op": "ref_mark", "typeId": "contact", "id": { "field": [ "c", "id" ] }, "field": "displayName" }
             ]
           }
         ]

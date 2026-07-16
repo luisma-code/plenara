@@ -23,18 +23,21 @@
         "into": "tasks"
       },
       { "op": "set", "var": "lines", "value": "" },
+      { "op": "set", "var": "k", "value": 0 },
       {
         "op": "foreach",
         "list": { "var": "tasks" },
         "as": "t",
         "body": [
+          { "op": "compute", "fn": "add", "args": [ { "var": "k" }, 1 ], "into": "k" },
           { "op": "compute", "fn": "format_date", "args": [ { "field": [ "t", "dueAt" ] }, "EEEE" ], "into": "d" },
           {
             "op": "compute",
             "fn": "concat",
-            "args": [ { "var": "lines" }, "\n  • ", { "field": [ "t", "description" ] }, " — ", { "var": "d" } ],
+            "args": [ { "var": "lines" }, "\n  ", { "var": "k" }, ". ", { "field": [ "t", "description" ] }, " — ", { "var": "d" } ],
             "into": "lines"
-          }
+          },
+          { "op": "ref_mark", "typeId": "task", "id": { "field": [ "t", "id" ] }, "field": "description" }
         ]
       },
       { "op": "compute", "fn": "count", "args": [ { "var": "tasks" } ], "into": "n" },

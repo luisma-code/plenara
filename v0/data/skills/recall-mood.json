@@ -10,23 +10,28 @@
     "main": [
       { "op": "read_many", "typeId": "mood", "into": "moods" },
       { "op": "set", "var": "lines", "value": "" },
+      { "op": "set", "var": "k", "value": 0 },
       {
         "op": "foreach",
         "list": { "var": "moods" },
         "as": "m",
         "body": [
+          { "op": "compute", "fn": "add", "args": [ { "var": "k" }, 1 ], "into": "k" },
           {
             "op": "compute",
             "fn": "concat",
             "args": [
               { "var": "lines" },
-              "\n  • ",
+              "\n  ",
+              { "var": "k" },
+              ". ",
               { "field": [ "m", "loggedAt" ] },
               ": ",
               { "field": [ "m", "rating" ] }
             ],
             "into": "lines"
-          }
+          },
+          { "op": "ref_mark", "typeId": "mood", "id": { "field": [ "m", "id" ] }, "field": "rating" }
         ]
       },
       { "op": "compute", "fn": "count", "args": [ { "var": "moods" } ], "into": "n" },

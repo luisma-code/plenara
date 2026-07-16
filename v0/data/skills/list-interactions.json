@@ -37,11 +37,13 @@
             "into": "ints"
           },
           { "op": "set", "var": "lines", "value": "" },
+          { "op": "set", "var": "k", "value": 0 },
           {
             "op": "foreach",
             "list": { "var": "ints" },
             "as": "i",
             "body": [
+              { "op": "compute", "fn": "add", "args": [ { "var": "k" }, 1 ], "into": "k" },
               {
                 "op": "compute",
                 "fn": "format_date",
@@ -49,12 +51,13 @@
                 "into": "d"
               },
               {
-                "_comment": "Build the line incrementally: date, then the kind (dinner/coffee/call…) if the interaction has one, then the note if present (reviewer b #8).",
+                "_comment": "Build the line incrementally: number, date, then the kind (dinner/coffee/call…) if the interaction has one, then the note if present (reviewer b #8).",
                 "op": "compute",
                 "fn": "concat",
-                "args": [ { "var": "lines" }, "\n  • ", { "field": [ "i", "at" ] }, " (", { "var": "d" }, ")" ],
+                "args": [ { "var": "lines" }, "\n  ", { "var": "k" }, ". ", { "field": [ "i", "at" ] }, " (", { "var": "d" }, ")" ],
                 "into": "lines"
               },
+              { "op": "ref_mark", "typeId": "interaction", "id": { "field": [ "i", "id" ] }, "field": "note" },
               {
                 "op": "set",
                 "var": "kindText",

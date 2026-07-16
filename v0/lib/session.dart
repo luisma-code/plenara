@@ -18,6 +18,57 @@ import 'storage_repository.dart';
 final _undoRe = RegExp(
     r"^(?:(?:no,?|never ?mind,?|wait,?|actually,?)\s+)?(?:(?:can|could|will) you\s+)?(?:please\s+)?(?:undo|revert|take (?:that|it) back|scratch that|roll (?:that|it) back)(?:\s+(?:that|it|this|please|(?:the|my|that) last (?:one|thing|entry|log)))?[.!]?$",
     caseSensitive: false);
+
+// ---- Numbered-list corrections (reference-by-number over the last spoken readback) ----------
+// The ordered list Plena last read back, captured from the interpreter's `enumerate` channel.
+// "delete 2" / "complete 1" / "correct 3" resolve N against THIS — by recordId, never by re-derived
+// order or fuzzy text — so a misheard item ("Zpack my clothes") is still trivially re-targetable.
+class _EnumCtx {
+  final String typeId;
+  final String labelField; // the identity field: what confirmations quote + what "correct" replaces
+  final List<String> ids; // ordered exactly as spoken (1-based to the user)
+  final List<String> spokenLabels; // fallback labels if a record vanishes before a reference
+  final String skillId; // diagnostics only
+  _EnumCtx({required this.typeId, required this.labelField, required this.ids,
+      required this.spokenLabels, required this.skillId});
+}
+
+// A number/ordinal atom — STT hands us words ("one", "the second", "last"), not just digits.
+const _refNum = r'(?:number\s+|no\.?\s*|#\s*|item\s+|the\s+)?'
+    r'(\d{1,3}|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|'
+    r'one|two|three|four|five|six|seven|eight|nine|ten|last(?:\s+one)?)';
+final _refCompleteRe = RegExp(
+    r'^(?:complete|finish|mark(?:\s+off)?|check(?:\s+off)?|tick(?:\s+off)?|cross\s+off|'
+    r"i(?:'ve)?\s+(?:finished|did|completed|done)|done\s+with)\s+"
+    r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' + _refNum +
+    r'(?:\s+(?:as\s+)?(?:done|complete|completed|off))?[.!]?$', caseSensitive: false);
+final _refDeleteRe = RegExp(
+    r'^(?:delete|remove|drop|scratch|erase|get\s+rid\s+of|take\s+(?:off|out))\s+'
+    r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' + _refNum +
+    r'(?:\s+(?:from|off)\s+(?:my|the)\s+list)?[.!]?$', caseSensitive: false);
+final _refCorrectRe = RegExp( // two-turn: "correct 1" -> re-speak next turn
+    r'^(?:correct|fix|change|edit|replace|reword|rephrase|redo)\s+'
+    r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' + _refNum + r'[.!]?$',
+    caseSensitive: false);
+final _refCorrectInlineRe = RegExp( // one-turn: "change 2 to buy oat milk"
+    r'^(?:correct|fix|change|edit|replace|reword|rephrase|update|make)\s+'
+    r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' + _refNum +
+    r'\s+(?:to|into|read|say)\s+(?:say\s+)?(.+?)[.!]?$', caseSensitive: false);
+
+/// Resolve a captured number/ordinal word to a 1-based position, or -1 for "last".
+/// Returns 0 on an unrecognized token (never matched by the regexes, but defensive).
+int _refPos(String tok) {
+  final t = tok.toLowerCase().trim();
+  if (t.startsWith('last')) return -1;
+  final d = int.tryParse(t);
+  if (d != null) return d;
+  const words = {
+    'first': 1, 'one': 1, 'second': 2, 'two': 2, 'third': 3, 'three': 3, 'fourth': 4, 'four': 4,
+    'fifth': 5, 'five': 5, 'sixth': 6, 'six': 6, 'seventh': 7, 'seven': 7, 'eighth': 8, 'eight': 8,
+    'ninth': 9, 'nine': 9, 'tenth': 10, 'ten': 10,
+  };
+  return words[t] ?? 0;
+}
 // Discoverability (Spec 03 §6.3): a clarify dead-ends without "here's what I can do".
 // A DSL skill can't introspect the skill registry, so this is a Session-level surface.
 final _helpRe = RegExp(
@@ -364,6 +415,14 @@ class Session {
   // A generative request paused for its missing contact param (Spec 03 §6.3, G-46): {kind,
   // template}. The next turn supplies the person and the synthesis runs.
   Map<String, dynamic>? _pendingGen;
+  // The ordered list from the LAST numbered readback, so "delete 2" / "correct 1" resolve against
+  // exactly what was spoken (Feature: numbered-list corrections). Survives intervening non-list
+  // turns; replaced by the next readback, cleared by an empty one, never persisted.
+  _EnumCtx? _enumCtx;
+  // A correction paused for the user to re-speak an item's text ("correct 1" → "what should it
+  // say?" → the answer). {id, typeId, labelField, oldLabel, n}. The safety net is the same journal
+  // as every write, so "undo that" reverses an applied correction.
+  Map<String, dynamic>? _pendingCorrection;
   // A validated-but-UNREGISTERED authored capability awaiting the user's "activate"
   // (Spec 02 §6.5 / G-18): {type, skill, typeId, skillId, displayName, examples}.
   Map<String, dynamic>? _pendingActivation;
@@ -752,6 +811,129 @@ class Session {
     });
   }
 
+  // ---- Reference-by-number handlers (resolve N against the last numbered readback) -----------
+  // All three journal a before-image and set _lastTurnWrote, so a following "undo that" reverses
+  // them exactly like a spoken write. They label with the LIVE record value, so a corrected/undone
+  // item self-heals. Diagnostics: source 'enumref', skill 'ref-{delete,complete,correct}'.
+
+  /// Resolve a 1-based position (or -1 = "last") against the live enumeration context.
+  ({Map<String, dynamic>? rec, String label, int pos, String? fail}) _refResolve(int n) {
+    final ctx = _enumCtx!;
+    final count = ctx.ids.length;
+    final idx = n < 0 ? count - 1 : n - 1;
+    if (idx < 0 || idx >= count) {
+      final asked = n < 0 ? count : n;
+      return (rec: null, label: '', pos: asked,
+          fail: 'That list only had $count item${count == 1 ? '' : 's'} — there\'s no number $asked.');
+    }
+    final id = ctx.ids[idx];
+    final rec = store[id];
+    if (rec == null) {
+      return (rec: null, label: ctx.spokenLabels[idx], pos: idx + 1,
+          fail: 'Number ${idx + 1} — "${ctx.spokenLabels[idx]}" — isn\'t there any more; '
+              'it may have been deleted since I read the list.');
+    }
+    return (rec: rec, label: '${rec[ctx.labelField] ?? ctx.spokenLabels[idx]}', pos: idx + 1, fail: null);
+  }
+
+  void _journalPush(String id, Map<String, dynamic> before, String desc) {
+    _journal.add(_JournalEntry({id: Map<String, dynamic>.from(before)}, desc));
+    if (_journal.length > _journalMax) _journal.removeAt(0);
+    _lastTurnWrote = true;
+  }
+
+  String _refDelete(int n) {
+    _outSource = 'enumref';
+    final r = _refResolve(n);
+    if (r.fail != null) return r.fail!;
+    final id = r.rec!['id'] as String;
+    _journalPush(id, r.rec!, 'deleted "${r.label}"');
+    store.remove(id);
+    repo.remove(id);
+    _outSkill = 'ref-delete';
+    return 'Deleted number ${r.pos} — "${r.label}". (Say "undo that" to restore it.)';
+  }
+
+  String _refComplete(int n, DateTime now) {
+    _outSource = 'enumref';
+    final r = _refResolve(n);
+    if (r.fail != null) return r.fail!;
+    final ctx = _enumCtx!;
+    final td = types[ctx.typeId];
+    final doneField = _doneFieldOf(td);
+    if (doneField == null) {
+      return 'A ${_typeDisplayName(ctx.typeId)} isn\'t something I mark done — '
+          'I can delete number ${r.pos}, or correct it.';
+    }
+    if (r.rec![doneField] == true) return 'Number ${r.pos} — "${r.label}" — was already done.';
+    final id = r.rec!['id'] as String;
+    _journalPush(id, r.rec!, 'completed "${r.label}"');
+    final updated = Map<String, dynamic>.from(r.rec!)..[doneField] = true;
+    final stampField = _attrNamed(td, 'completedAt', 'datetime');
+    if (stampField != null) updated[stampField] = now.toIso8601String();
+    store[id] = updated;
+    repo.persist(updated);
+    _outSkill = 'ref-complete';
+    return 'Marked number ${r.pos} done — "${r.label}".';
+  }
+
+  /// "correct N" — start the two-turn re-speak flow (pause for the new wording).
+  String _refCorrectStart(int n) {
+    _outSource = 'enumref';
+    final r = _refResolve(n);
+    if (r.fail != null) return r.fail!;
+    final ctx = _enumCtx!;
+    _pendingCorrection = {
+      'id': r.rec!['id'], 'typeId': ctx.typeId, 'labelField': ctx.labelField,
+      'oldLabel': r.label, 'n': r.pos,
+    };
+    _outSkill = 'ref-correct';
+    return 'Number ${r.pos} says "${r.label}" — what should it say instead?';
+  }
+
+  /// "change N to X" — the one-turn form (no round-trip when the user already dictated).
+  String _refCorrectInline(int n, String newText, DateTime now) {
+    _outSource = 'enumref';
+    final r = _refResolve(n);
+    if (r.fail != null) return r.fail!;
+    return _applyCorrection(r.rec!['id'] as String, _enumCtx!.labelField, r.label, newText, r.pos, now);
+  }
+
+  String _applyCorrection(String id, String labelField, String oldLabel, String newText, dynamic n, DateTime now) {
+    _outSource = 'enumref';
+    final rec = store[id];
+    if (rec == null) {
+      return 'That item — "$oldLabel" — isn\'t there any more; it may have been deleted since I read the list.';
+    }
+    _journalPush(id, rec, 'changed "$oldLabel" to "$newText"');
+    final updated = Map<String, dynamic>.from(rec)..[labelField] = newText;
+    store[id] = updated;
+    repo.persist(updated);
+    _outSkill = 'ref-correct';
+    return 'Changed number $n to "$newText".';
+  }
+
+  /// The first boolean attribute named `completed`/`done` on a type, or null (no done concept).
+  String? _doneFieldOf(Map<String, dynamic>? td) {
+    for (final a in ((td?['attributes'] as List?) ?? const []).whereType<Map>()) {
+      if (a['valueType'] == 'boolean' && (a['name'] == 'completed' || a['name'] == 'done')) {
+        return a['name'] as String;
+      }
+    }
+    return null;
+  }
+
+  /// A named attribute of a given valueType, or null.
+  String? _attrNamed(Map<String, dynamic>? td, String name, String valueType) {
+    for (final a in ((td?['attributes'] as List?) ?? const []).whereType<Map>()) {
+      if (a['name'] == name && a['valueType'] == valueType) return name;
+    }
+    return null;
+  }
+
+  String _typeDisplayName(String typeId) =>
+      (types[typeId]?['displayName'] as String?)?.toLowerCase() ?? typeId;
+
   /// Public entry: a catch-all boundary so NO exception (ResolveError or a raw
   /// TypeError/RangeError from model-shaped input) ever escapes into the UI or
   /// console. A crash becomes a visible, non-destructive message (no silent
@@ -892,6 +1074,35 @@ class Session {
     _lastTurnWrote = false;
     _lastTurnTemplate = null;
     _lastDispatch = null;
+
+    // A correction paused for the re-spoken text ("correct 1" -> "what should it say?"). This input
+    // IS the replacement, dictated — so, unlike ProvideSlot, we deliberately do NOT bail on a
+    // command-shaped answer ("call mom" is a legitimate task text). Only an explicit cancel or a
+    // system command (undo/help) abandons the pause; the echo + undo cover a misheard replacement.
+    final pendingCorr = _pendingCorrection;
+    if (pendingCorr != null) {
+      _pendingCorrection = null;
+      final oldLabel = pendingCorr['oldLabel'] as String;
+      final n = pendingCorr['n'];
+      if (_cancelRe.hasMatch(u) || _undoRe.hasMatch(u)) {
+        _outSource = 'clarify';
+        return 'Okay — number $n stays "$oldLabel".';
+      }
+      if (_helpRe.hasMatch(u)) {/* let help win; fall through with the pause abandoned */}
+      else {
+        // strip a light dictation lead-in ("it should say…", "make it…", "change it to…")
+        final newText = u
+            .replaceFirst(RegExp(r"^(?:it should (?:say|be)|make it|change it to|call it|say|it'?s)\s+", caseSensitive: false), '')
+            .trim();
+        if (newText.isEmpty) {
+          _pendingCorrection = pendingCorr; // nothing usable — re-ask once
+          _outSource = 'clarify';
+          return 'I didn\'t catch the new wording — what should number $n say?';
+        }
+        return _applyCorrection(pendingCorr['id'] as String, pendingCorr['labelField'] as String,
+            oldLabel, newText, n, now);
+      }
+    }
 
     // A generative request paused for its contact (§6.3, G-46): this input names the person — UNLESS
     // it's a backout, a system command, or a fresh command, which must not be swallowed as a name
@@ -1103,6 +1314,20 @@ class Session {
       return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
     }
 
+    // Reference-by-number over the last numbered readback ("delete 2", "complete 1", "correct 3").
+    // Only when a list is in front of us — otherwise these fall through so "delete the first task"
+    // still reaches delete-task-at. Resolve by recordId, never a re-derived order (P: no drift).
+    if (_enumCtx != null) {
+      final del = _refDeleteRe.firstMatch(u);
+      if (del != null) return _refDelete(_refPos(del.group(1)!));
+      final comp = _refCompleteRe.firstMatch(u);
+      if (comp != null) return _refComplete(_refPos(comp.group(1)!), now);
+      final inl = _refCorrectInlineRe.firstMatch(u); // "change 2 to X" — check before the bare form
+      if (inl != null) return _refCorrectInline(_refPos(inl.group(1)!), inl.group(2)!.trim(), now);
+      final corrRef = _refCorrectRe.firstMatch(u);
+      if (corrRef != null) return _refCorrectStart(_refPos(corrRef.group(1)!));
+    }
+
     // "what can you do?" opens the Tour — a guided conversation, not a bullet dump.
     if (_helpRe.hasMatch(u)) {
       return _openTour();
@@ -1311,6 +1536,14 @@ class Session {
           routed['template'] as String?, routed['source'] as String? ?? 'cloud', u, now);
     }
     if (routed == null) {
+      // A reference-by-number command with NO list in front of us (the ref handlers above only fire
+      // when _enumCtx is live). Point the user at the readback instead of a blank "didn't catch that".
+      if (_refDeleteRe.hasMatch(u) || _refCompleteRe.hasMatch(u) ||
+          _refCorrectRe.hasMatch(u) || _refCorrectInlineRe.hasMatch(u)) {
+        _outSource = 'clarify';
+        return 'There\'s no numbered list in front of us — say "list my tasks" (or people, or '
+            'reminders) first, then "delete 2" or "correct 2".';
+      }
       // A miss is corpus + (abstain | cloud error | no cloud). If the cloud FAILED,
       // say so honestly instead of only blaming the phrasing (no silent degradation).
       final sg = await router.retrievalSuggest(u);
@@ -1501,6 +1734,22 @@ class Session {
       for (final id in plan.deletes) {
         repo.remove(id);
         _outWrites.add({'op': 'delete', 'id': id}); // debug trace
+      }
+      // Capture a numbered readback's ordered id/label list so a later "delete 2" / "correct 1"
+      // resolves against EXACTLY what was spoken (Feature: numbered-list corrections). A skill that
+      // didn't enumerate leaves the context alone; an empty readback clears it (no stale referent).
+      final en = plan.enumeration;
+      if (en != null) {
+        final items = (en['items'] as List).cast<Map>();
+        _enumCtx = items.isEmpty
+            ? null
+            : _EnumCtx(
+                typeId: en['typeId'] as String? ?? '',
+                labelField: en['labelField'] as String,
+                ids: [for (final it in items) '${it['id']}'],
+                spokenLabels: [for (final it in items) '${it['label']}'],
+                skillId: skillId,
+              );
       }
       // record the previous-turn state for a correction (every routed turn, write or read)
       _lastTurnWrote = plan.writes.isNotEmpty || plan.deletes.isNotEmpty;

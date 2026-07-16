@@ -30,6 +30,7 @@
         ],
         "else": [
           { "op": "set", "var": "lines", "value": "" },
+          { "op": "set", "var": "k", "value": 0 },
           {
             "op": "read_related",
             "typeId": "contact_relationship",
@@ -53,18 +54,22 @@
                 "var": "otherName",
                 "value": { "field": [ "other", "displayName" ] }
               },
+              { "op": "compute", "fn": "add", "args": [ { "var": "k" }, 1 ], "into": "k" },
               {
                 "op": "compute",
                 "fn": "concat",
                 "args": [
                   { "var": "lines" },
-                  "\n  • ",
+                  "\n  ",
+                  { "var": "k" },
+                  ". ",
                   { "field": [ "rel", "relationType" ] },
                   ": ",
                   { "var": "otherName" }
                 ],
                 "into": "lines"
-              }
+              },
+              { "op": "ref_mark", "typeId": "contact_relationship", "id": { "field": [ "rel", "id" ] }, "field": "relationType" }
             ]
           },
           {
@@ -90,18 +95,22 @@
                 "var": "otherName",
                 "value": { "field": [ "other", "displayName" ] }
               },
+              { "op": "compute", "fn": "add", "args": [ { "var": "k" }, 1 ], "into": "k" },
               {
                 "op": "compute",
                 "fn": "concat",
                 "args": [
                   { "var": "lines" },
-                  "\n  • ",
+                  "\n  ",
+                  { "var": "k" },
+                  ". ",
                   { "field": [ "rel", "relationType" ] },
                   " of ",
                   { "var": "otherName" }
                 ],
                 "into": "lines"
-              }
+              },
+              { "op": "ref_mark", "typeId": "contact_relationship", "id": { "field": [ "rel", "id" ] }, "field": "relationType" }
             ]
           },
           {

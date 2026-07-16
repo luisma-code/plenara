@@ -122,8 +122,21 @@ The input contract is the seam between this spec and the NLU spec (which this sp
 > retire on the next full §3 rewrite). The vocabulary is CLOSED — `validateSkill` rejects any
 > op/fn/cond/filter-op/valueType outside these sets:
 >
-> - **Ops (11, closed):** `read_one, read_many, read_related, read_reference, write_record,
->   delete_record, compute, set, format, branch, foreach`.
+> - **Ops (13, closed):** `read_one, read_many, read_related, read_reference, write_record,
+>   delete_record, compute, set, format, branch, foreach, enumerate, ref_mark`.
+> - **`enumerate`** (`G-47`, numbered-list corrections) — `{"op":"enumerate","list":{"var":"x"},
+>   "label":"<field>","into":"var"[,"line":"{f} — {g}"]}`. Renders a NUMBERED readback string
+>   (`\n  1. …\n  2. …`) into `into` AND, from the same single pass, exports the ordered
+>   `{id,label}` list to the plan's `enumeration` channel — so a later spoken "delete 2" / "correct
+>   1" resolves against EXACTLY what was read back (by recordId, never a re-derived order). `label`
+>   is the identity field (what confirmations quote + what "correct" replaces); optional `line`
+>   composes a richer per-row string over record fields (omit-if-null). For flat lists.
+> - **`ref_mark`** (`G-47`) — `{"op":"ref_mark","typeId":"<t>","id":<idExpr>,"field":"<labelField>"
+>   [,"label":<expr>]}`. Captures ONE item's ref into the `enumeration` channel from inside a
+>   `foreach`, so a skill that builds rich/conditional/joined readback lines (and owns its own
+>   numbering via a counter) still exports numbered references. First mark fixes typeId+labelField.
+>   The Session resolves the channel to a conversational context and runs deterministic
+>   reference-by-number handlers (complete/delete/correct, journaled for undo) — see Spec 03.
 > - **`compute`** — `{"op":"compute","fn":<name>,"args":[…],"into":"var"}`, NOT a string
 >   expression. Implemented `fn` set (34): `now, today, format_date, format_time, date_part,
 >   time_part, start_of_week, start_of_month, add, mul, div, round, count, concat,

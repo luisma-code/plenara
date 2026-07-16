@@ -31,6 +31,12 @@ class Plan {
   /// without re-reading records or re-running the turn.
   final List<Map<String, dynamic>> reads = [];
   String? confirmation;
+  /// The ordered list a numbered readback (the `enumerate` op) rendered, so the Session can
+  /// resolve a later "delete 2" / "correct 1" against EXACTLY what was spoken — never a
+  /// re-derived order (Feature: numbered-list corrections). Shape:
+  /// `{typeId, labelField, items: [{id, label}, ...]}`. null = this turn enumerated nothing;
+  /// an empty `items` list = an enumeration that rendered zero rows (clears any stale referent).
+  Map<String, dynamic>? enumeration;
 }
 
 /// Mutable accumulator threaded through static validation.
@@ -414,7 +420,7 @@ class Interpreter {
   }
 
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
-  static const _ops = {'read_one', 'read_many', 'read_related', 'read_reference', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach'};
+  static const _ops = {'read_one', 'read_many', 'read_related', 'read_reference', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach', 'enumerate', 'ref_mark'};
   static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
     'next_annual', 'days_until_annual', 'years_since', 'current_streak', 'longest_streak',
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num', 'ordinal_suffix',
@@ -655,6 +661,22 @@ class Interpreter {
           _validate((step['body'] as List?) ?? const [], scoped, Map<String, String?>.from(listVars), c);
         case 'set':
           break;
+        case 'enumerate':
+          // Renders a numbered readback AND exports the ordered id/label list it rendered.
+          // `label` is the identity field (what confirmations quote + what "correct N" replaces);
+          // optional `line` composes a richer per-row string over record fields (omit-if-null).
+          if (step['list'] is! Map) throw ResolveError("${c.sid}: enumerate needs a 'list' expression");
+          if (step['label'] is! String) throw ResolveError("${c.sid}: enumerate needs a 'label' field name");
+          if (step['into'] is! String) throw ResolveError("${c.sid}: enumerate needs an 'into' var");
+          // `label`/`line` name RECORD attributes, not env vars — so they're exempt from var-closure.
+        case 'ref_mark':
+          // Captures ONE item's {id,label} into the reference channel from inside a foreach — so
+          // a skill that composes rich/conditional readback lines still exports numbered refs.
+          if (!types.containsKey(step['typeId'])) {
+            throw ResolveError("${c.sid}: ref_mark unknown type '${step['typeId']}'");
+          }
+          if (step['id'] == null) throw ResolveError("${c.sid}: ref_mark needs an 'id'");
+          if (step['field'] is! String) throw ResolveError("${c.sid}: ref_mark needs a 'field' (the label attribute)");
       }
     }
   }
@@ -669,8 +691,26 @@ class Interpreter {
     final env = Map<String, dynamic>.from(slots);
     final plan = Plan();
     lastPlan = plan;
+    // If this skill enumerates at all (enumerate/ref_mark anywhere), pre-arm an EMPTY channel so a
+    // readback that renders zero rows still clears any stale reference context (never a wrong "delete
+    // 1"). enumerate overwrites it; ref_mark appends and fills typeId/labelField on the first mark.
+    if (_declaresEnumeration(skill['steps']['main'] as List)) {
+      plan.enumeration = {'typeId': null, 'labelField': null, 'items': <Map<String, dynamic>>[]};
+    }
     _run(skill['steps']['main'] as List, env, store, plan);
     return plan;
+  }
+
+  /// Does any step (recursively, through branch/foreach bodies) enumerate for reference-by-number?
+  static bool _declaresEnumeration(List steps) {
+    for (final s in steps) {
+      if (s is! Map) continue;
+      if (s['op'] == 'enumerate' || s['op'] == 'ref_mark') return true;
+      for (final k in const ['then', 'else', 'body']) {
+        if (s[k] is List && _declaresEnumeration(s[k] as List)) return true;
+      }
+    }
+    return false;
   }
 
   void _run(List steps, Map<String, dynamic> env, Map<String, Record> store, Plan plan) {
@@ -812,6 +852,44 @@ class Interpreter {
         for (final item in (val(step['list'], env) as List? ?? [])) {
           env[step['as']] = item;
           _run(step['body'] as List, env, store, plan);
+        }
+      case 'enumerate':
+        // One pass: build the numbered readback string AND the ordered {id,label} channel,
+        // so numbering and reference-resolution can never drift (they come from one iteration).
+        final list = (val(step['list'], env) as List? ?? const []);
+        final labelField = step['label'] as String;
+        final lineTpl = step['line']; // optional composite; omit-if-null placeholders
+        final sb = StringBuffer();
+        final items = <Map<String, dynamic>>[];
+        String? typeId;
+        var n = 0;
+        for (final r in list) {
+          if (r is! Map) continue;
+          n++;
+          typeId ??= r['typeId'] as String?;
+          final label = '${r[labelField] ?? ''}';
+          final rendered = lineTpl is String
+              ? lineTpl.replaceAllMapped(RegExp(r'\{(?:var:)?(\w+)\}'), (m) => '${r[m.group(1)] ?? ''}').trim()
+              : label;
+          sb.write('\n  $n. $rendered');
+          items.add({'id': r['id'], 'label': label});
+        }
+        env[step['into'] as String] = sb.toString();
+        plan.enumeration = {'typeId': typeId, 'labelField': labelField, 'items': items};
+      case 'ref_mark':
+        // Append this item's ref to the channel; the skill owns the numbering (its own counter)
+        // and the line text. First mark fixes typeId + labelField for the whole readback.
+        final id = val(step['id'], env);
+        if (id is String) {
+          final field = step['field'] as String;
+          final en = plan.enumeration ??= {
+            'typeId': step['typeId'], 'labelField': field, 'items': <Map<String, dynamic>>[]
+          };
+          en['typeId'] ??= step['typeId']; // fill the pre-armed empty marker on the first mark
+          en['labelField'] ??= field;
+          // Prefer an explicit label expr; else read the label field off the live record.
+          final label = step['label'] != null ? '${val(step['label'], env) ?? ''}' : '${store[id]?[field] ?? ''}';
+          (en['items'] as List).add({'id': id, 'label': label});
         }
       default:
         throw ResolveError("unknown op '${step['op']}'");

@@ -16,66 +16,31 @@
       {
         "op": "read_many",
         "typeId": "meal",
+        "filter": { "field": "loggedAt", "op": "gte", "value": { "var": "today" } },
+        "orderBy": "loggedAt",
+        "orderDir": "asc",
         "into": "meals"
       },
       {
-        "op": "set",
-        "var": "out",
-        "value": ""
+        "op": "enumerate",
+        "list": { "var": "meals" },
+        "label": "food",
+        "into": "out"
       },
       {
-        "op": "foreach",
-        "list": {
-          "var": "meals"
-        },
-        "as": "m",
-        "body": [
-          {
-            "op": "branch",
-            "cond": {
-              "gte": [
-                {
-                  "field": [
-                    "m",
-                    "loggedAt"
-                  ]
-                },
-                {
-                  "var": "today"
-                }
-              ]
-            },
-            "then": [
-              {
-                "op": "compute",
-                "fn": "concat",
-                "args": [
-                  {
-                    "var": "out"
-                  },
-                  "• ",
-                  {
-                    "field": [
-                      "m",
-                      "food"
-                    ]
-                  },
-                  "\n"
-                ],
-                "into": "out"
-              }
-            ]
-          }
-        ]
+        "op": "compute",
+        "fn": "count",
+        "args": [ { "var": "meals" } ],
+        "into": "n"
       },
       {
         "op": "branch",
         "cond": {
           "eq": [
             {
-              "var": "out"
+              "var": "n"
             },
-            ""
+            0
           ]
         },
         "then": [
@@ -88,7 +53,7 @@
         "else": [
           {
             "op": "format",
-            "template": "Today you've eaten:\n{out}",
+            "template": "Today you've eaten:{out}",
             "into": "confirmationText"
           }
         ]
