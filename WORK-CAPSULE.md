@@ -5,7 +5,7 @@ snapshots), this file is kept **current as work happens** — the latest state, 
 at my fingertips, hard-won gotchas, decisions + rationale, and open threads. If you're a fresh
 session, read this first; it should already be up to date. Keep it skimmable, prune stale lines.
 
-_Last updated: 2026-07-15 — after shipping v8 (iOS-first voice tour + glyph vocabulary)._
+_Last updated: 2026-07-15 — G-46 code-review arc closed (8/8 Fable findings fixed + tested)._
 
 ---
 
@@ -13,13 +13,14 @@ _Last updated: 2026-07-15 — after shipping v8 (iOS-first voice tour + glyph vo
 - **v8 shipped** (`releases/VERSIONS.md`; release point `6ceeeb2`). App **runs on the iPhone**, on the
   **Matilda (Premium, en-AU)** voice. Repo `origin/main` fully pushed, tree clean, tests green
   (**1676 v0 + 74 app**).
-- **G-46 (generative recognition) DONE on `main`, NOT yet on the phone.** Spec 03 → v0.7 (Fable-reviewed
-  SOLID); Phase 1 (cloud residual recognizes generative intents + dispatch + §6.3 follow-up) + Phase 2
-  (learn recognition templates → 2nd phrasing routes offline; degrade→no-learn; correct→forget), both
-  tested. **Then a 2-lens Fable code review found 8 real bugs — all fixed** (forget-on-correct on
-  corpus-match, _splitCompound crash on a generative half, learnGenerative substring-corruption →
-  word-boundary + round-trip, _pendingGen swallowing commands, retrieval-index skillId '' crash,
-  near-dup accumulation, non-string contact, silent multi-action drop) + 3 regression tests. iOS build
+- **G-46 (generative recognition) DONE on `main` + code-review-clean, NOT yet on the phone.** Spec 03 →
+  v0.7 (Fable-reviewed SOLID); Phase 1 (cloud residual recognizes generative intents + dispatch + §6.3
+  follow-up) + Phase 2 (learn recognition templates → 2nd phrasing routes offline; degrade→no-learn;
+  correct→forget), both tested. **A 2-lens Fable code review found 8 real bugs — ALL 8 fixed + tested**
+  (forget-on-correct on corpus-match, _splitCompound crash on a generative half, learnGenerative
+  substring-corruption → word-boundary + round-trip, _pendingGen swallowing commands, retrieval-index
+  skillId '' crash, near-dup accumulation, non-string contact, **#8 silent multi-action drop → now
+  skipped-and-counted + admitted, P2.8** `f4e018b`). v0 **1680 green**, app analyze clean. iOS build
   **validated (compiles)**; on-device install is the pending Luis-gated step —
   **unlock the phone + reconnect the Anthropic key**, deploy, then test "can you suggest a gift for
   Elena" live (recognized by the cloud, no regex).
@@ -76,6 +77,9 @@ _Last updated: 2026-07-15 — after shipping v8 (iOS-first voice tour + glyph vo
   call), and a next-turn "correct" forgets it (§5.2 negative half). Tested end-to-end (learn→offline,
   degrade→no-learn, correct→forget). So the loop is closed: Claude recognizes a novel phrasing once,
   the DSL absorbs it — no regex edits. (End-state retrieval migration still deferred, `G-44`.)
+  **Code-review arc CLOSED** — all 8 findings fixed + regression-tested; the last (#8, a generative
+  half silently dropped from a mixed batch) now surfaces a "ask me that on its own" coda instead of
+  vanishing. Nothing left on-repo; only the Luis-gated device deploy remains.
 - **flutter_tts shares one static method-channel handler** (deferred from the 5-lens Fable review):
   every extra `FlutterTts()` (voice enumeration on each Settings/onboarding open + resume, and the
   preview instance) re-registers the handler, so the main voice's `setStartHandler`/`setErrorHandler`
