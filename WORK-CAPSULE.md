@@ -12,7 +12,13 @@ _Last updated: 2026-07-15 — after shipping v8 (iOS-first voice tour + glyph vo
 ## Current state
 - **v8 shipped** (`releases/VERSIONS.md`; release point `6ceeeb2`). App **runs on the iPhone**, on the
   **Matilda (Premium, en-AU)** voice. Repo `origin/main` fully pushed, tree clean, tests green
-  (1670 v0 + 73 app).
+  (**1676 v0 + 74 app**).
+- **G-46 (generative recognition) DONE on `main`, NOT yet on the phone.** Spec 03 → v0.7 (Fable-reviewed
+  SOLID); Phase 1 (cloud residual recognizes generative intents + dispatch + §6.3 follow-up) + Phase 2
+  (learn recognition templates → 2nd phrasing routes offline; degrade→no-learn; correct→forget), both
+  tested. iOS build **validated (compiles)**; on-device install is the pending Luis-gated step —
+  **unlock the phone + reconnect the Anthropic key**, deploy, then test "can you suggest a gift for
+  Elena" live (recognized by the cloud, no regex).
 - Developing on **macOS**; **iPhone is P1**. Apple Developer Program **approved** (TestFlight not set up yet).
 
 ## Live facts / commands (grab these)
