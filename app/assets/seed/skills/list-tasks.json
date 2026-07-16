@@ -12,38 +12,15 @@
         "op": "read_many",
         "typeId": "task",
         "filter": { "field": "completed", "op": "neq", "value": true },
+        "orderBy": "createdAt",
+        "orderDir": "asc",
         "into": "tasks"
       },
       {
-        "op": "set",
-        "var": "lines",
-        "value": ""
-      },
-      {
-        "op": "foreach",
-        "list": {
-          "var": "tasks"
-        },
-        "as": "t",
-        "body": [
-          {
-            "op": "compute",
-            "fn": "concat",
-            "args": [
-              {
-                "var": "lines"
-              },
-              "\n  \u2022 ",
-              {
-                "field": [
-                  "t",
-                  "description"
-                ]
-              }
-            ],
-            "into": "lines"
-          }
-        ]
+        "op": "enumerate",
+        "list": { "var": "tasks" },
+        "label": "description",
+        "into": "lines"
       },
       {
         "op": "compute",

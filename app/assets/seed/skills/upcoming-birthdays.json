@@ -47,10 +47,18 @@
                   },
                   {
                     "op": "compute",
+                    "fn": "add",
+                    "args": [ { "var": "count" }, 1 ],
+                    "into": "count"
+                  },
+                  {
+                    "op": "compute",
                     "fn": "concat",
                     "args": [
                       { "var": "lines" },
-                      "\n  • ",
+                      "\n  ",
+                      { "var": "count" },
+                      ". ",
                       { "field": [ "c", "displayName" ] },
                       " — ",
                       { "var": "next" },
@@ -60,12 +68,7 @@
                     ],
                     "into": "lines"
                   },
-                  {
-                    "op": "compute",
-                    "fn": "add",
-                    "args": [ { "var": "count" }, 1 ],
-                    "into": "count"
-                  }
+                  { "op": "ref_mark", "typeId": "contact", "id": { "field": [ "c", "id" ] }, "field": "displayName" }
                 ]
               }
             ]

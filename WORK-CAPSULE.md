@@ -5,7 +5,7 @@ snapshots), this file is kept **current as work happens** — the latest state, 
 at my fingertips, hard-won gotchas, decisions + rationale, and open threads. If you're a fresh
 session, read this first; it should already be up to date. Keep it skimmable, prune stale lines.
 
-_Last updated: 2026-07-15 — G-46 code-review arc closed (8/8 Fable findings fixed + tested)._
+_Last updated: 2026-07-16 — G-47 shipped: numbered-list corrections + editable "Your data" view._
 
 ---
 
@@ -24,6 +24,24 @@ _Last updated: 2026-07-15 — G-46 code-review arc closed (8/8 Fable findings fi
   **validated (compiles)**; on-device install is the pending Luis-gated step —
   **unlock the phone + reconnect the Anthropic key**, deploy, then test "can you suggest a gift for
   Elena" live (recognized by the cloud, no regex).
+- **G-47 (two features) DONE on `main`, NOT yet on the phone** — Fable-designed, both accepted:
+  1. **Numbered-list corrections.** Every list Plena reads back is now numbered ("1. …, 2. …"), and
+     you reference an item by the number spoken — "delete 2", "complete 1", "correct 3" (two-turn
+     re-speak) or "change 2 to X" (one-turn). Fixes the misheard-item problem ("Zpack my clothes" was
+     un-retargetable). Two new closed-vocab DSL ops — `enumerate` (flat lists) + `ref_mark` (captures
+     a ref from inside a foreach for rich/conditional/joined readbacks); ~18 list skills converted
+     across every domain. Session `_enumCtx` (survives intervening turns, cleared on empty readback)
+     + `_pendingCorrection`; offline regex recognition; all three actions journaled so "undo that"
+     reverses them. 15 corrections tests.
+  2. **Editable "Your data" view.** The existing read-only archetype view (`app/lib/data_view.dart`,
+     behind the "…" menu) is now editable: Spec 07 §5.5 per-value tap-to-edit (NO forms — D5),
+     delete-with-undo-snackbar, and a "Learned phrases" card showing what Plena learned to recognize
+     from how Luis talks (humanized templates) with a per-phrase forget (+ undo). Six new Session
+     facade methods (`editField`, `deleteRecord`, `undoLast`, `learnedFlows`, `forgetLearnedFlow`,
+     `restoreLearnedFlow`) + `Router.restore`; ALL edits ride the ONE journal, so voice "undo that"
+     reverses a manual edit. `ManualWrite`/`LearnedFlow` value types (no exceptions across the UI
+     seam). 9 facade + 4 widget tests. **Ran `tool/sync_seed.sh`** — app carries the numbered skills.
+  Tests: **v0 1704 + app 78, all green.** On-device is the pending Luis-gated step.
 - Developing on **macOS**; **iPhone is P1**. Apple Developer Program **approved** (TestFlight not set up yet).
 
 ## Live facts / commands (grab these)

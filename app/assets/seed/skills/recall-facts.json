@@ -24,8 +24,9 @@
             "list": { "var": "facts" },
             "as": "f",
             "body": [
-              { "op": "compute", "fn": "concat", "args": [ { "var": "lines" }, "\n  • ", { "field": [ "f", "fact" ] } ], "into": "lines" },
-              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" },
+              { "op": "compute", "fn": "concat", "args": [ { "var": "lines" }, "\n  ", { "var": "n" }, ". ", { "field": [ "f", "fact" ] } ], "into": "lines" },
+              { "op": "ref_mark", "typeId": "contact_fact", "id": { "field": [ "f", "id" ] }, "field": "fact" }
             ]
           },
           { "op": "read_related", "typeId": "contact_relationship", "via": "from", "from": { "ref": "person" }, "into": "relsFrom" },
@@ -35,8 +36,9 @@
             "as": "rel",
             "body": [
               { "op": "read_one", "typeId": "contact", "match": { "id": { "field": [ "rel", "to" ] } }, "into": "other" },
-              { "op": "compute", "fn": "concat", "args": [ { "var": "lines" }, "\n  • ", { "field": [ "rel", "relationType" ] }, ": ", { "field": [ "other", "displayName" ] } ], "into": "lines" },
-              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" },
+              { "op": "compute", "fn": "concat", "args": [ { "var": "lines" }, "\n  ", { "var": "n" }, ". ", { "field": [ "rel", "relationType" ] }, ": ", { "field": [ "other", "displayName" ] } ], "into": "lines" },
+              { "op": "ref_mark", "typeId": "contact_relationship", "id": { "field": [ "rel", "id" ] }, "field": "relationType" }
             ]
           },
           { "op": "read_related", "typeId": "contact_relationship", "via": "to", "from": { "ref": "person" }, "into": "relsTo" },
@@ -46,8 +48,9 @@
             "as": "rel",
             "body": [
               { "op": "read_one", "typeId": "contact", "match": { "id": { "field": [ "rel", "from" ] } }, "into": "other" },
-              { "op": "compute", "fn": "concat", "args": [ { "var": "lines" }, "\n  • ", { "field": [ "rel", "relationType" ] }, " of ", { "field": [ "other", "displayName" ] } ], "into": "lines" },
-              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" },
+              { "op": "compute", "fn": "concat", "args": [ { "var": "lines" }, "\n  ", { "var": "n" }, ". ", { "field": [ "rel", "relationType" ] }, " of ", { "field": [ "other", "displayName" ] } ], "into": "lines" },
+              { "op": "ref_mark", "typeId": "contact_relationship", "id": { "field": [ "rel", "id" ] }, "field": "relationType" }
             ]
           },
           {

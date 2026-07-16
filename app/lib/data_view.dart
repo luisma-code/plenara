@@ -85,6 +85,37 @@ class _DataViewState extends State<DataView> {
     if (mounted) setState(() => _busy = false);
   }
 
+  /// Edit one field (Spec 07 §5.5 tap-to-edit) — validates in the engine; a failure surfaces as a
+  /// SnackBar (no silent failure). Refreshes the whole view from the (now-updated) store.
+  Future<ManualWrite> _edit(String id, String field, Object? value) async {
+    final r = await session.editField(id, field, value);
+    if (mounted) {
+      if (!r.ok) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(r.message)));
+      setState(() {});
+    }
+    return r;
+  }
+
+  /// Delete a record with an UNDO snackbar — the voice-undo ethos (act-then-describe), doubly
+  /// reversible (journal + storage tombstone), so no pre-delete confirm dialog.
+  Future<void> _delete(String id) async {
+    final r = await session.deleteRecord(id);
+    if (!mounted) return;
+    setState(() {});
+    if (r.ok) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(r.message),
+        action: SnackBarAction(
+          label: 'UNDO',
+          onPressed: () async {
+            await session.undoLast();
+            if (mounted) setState(() {});
+          },
+        ),
+      ));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -109,11 +140,15 @@ class _DataViewState extends State<DataView> {
           else
             for (final typeId in typeIds)
               _TypeSection(
+                session: session,
                 typeId: typeId,
                 typeDef: (session.types[typeId] ?? const {}).cast<String, dynamic>(),
                 records: byType[typeId]!,
                 onComplete: _complete,
+                onEdit: _edit,
+                onDelete: _delete,
               ),
+          _LearnedPhrasesCard(session: session),
         ],
       ),
     );
@@ -170,11 +205,22 @@ class _AutomationsCard extends StatelessWidget {
 }
 
 class _TypeSection extends StatelessWidget {
+  final Session session;
   final String typeId;
   final Map<String, dynamic> typeDef;
   final List<Map<String, dynamic>> records;
   final Future<void> Function(String description)? onComplete;
-  const _TypeSection({required this.typeId, required this.typeDef, required this.records, this.onComplete});
+  final Future<ManualWrite> Function(String id, String field, Object? value) onEdit;
+  final Future<void> Function(String id) onDelete;
+  const _TypeSection({
+    required this.session,
+    required this.typeId,
+    required this.typeDef,
+    required this.records,
+    required this.onEdit,
+    required this.onDelete,
+    this.onComplete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -304,27 +350,18 @@ class _TypeSection extends StatelessWidget {
     return parts.isEmpty ? '(empty)' : parts.join('  ·  ');
   }
 
-  /// Drill into one record — a bottom sheet of ALL its fields, each rendered by value type.
+  /// Drill into one record — an editable bottom sheet (Spec 07 §5.5 tap-to-edit + delete).
   void _showRecord(BuildContext context, Map<String, dynamic> r) {
-    final vt = _valueTypes;
     showModalBottomSheet<void>(
       context: context,
-      builder: (_) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text((typeDef['displayName'] as String?) ?? typeId,
-                  key: const Key('record-detail'), style: Theme.of(context).textTheme.titleLarge),
-              const Divider(),
-              for (final e in r.entries)
-                if (!const {'id', 'typeId', 'schemaVersion', '_schemaVersion', '_meta'}.contains(e.key) && e.value != null)
-                  ListTile(dense: true, title: Text(e.key), trailing: Text(renderValue(e.value, vt[e.key]))),
-            ],
-          ),
-        ),
+      isScrollControlled: true,
+      builder: (_) => _RecordDetailSheet(
+        session: session,
+        typeId: typeId,
+        typeDef: typeDef,
+        recordId: r['id'] as String,
+        onEdit: onEdit,
+        onDelete: onDelete,
       ),
     );
   }
@@ -337,4 +374,277 @@ class _TypeSection extends StatelessWidget {
   }
 
   String _trim(num n) => n == n.roundToDouble() ? n.toInt().toString() : n.toString();
+}
+
+const _plumbingFields = {'id', 'typeId', 'schemaVersion', '_schemaVersion', '_meta'};
+
+/// An editable record detail sheet (Spec 07 §5.5 tap-to-edit — a reading page, NOT a form: each
+/// value edits in place and commits on its own, one journal entry per field). Reads the live record
+/// from the store each build, so an edit (or its undo) reflects immediately. Type-agnostic: rows
+/// and editors are driven off `typeDef.attributes`, never per-type code.
+class _RecordDetailSheet extends StatefulWidget {
+  final Session session;
+  final String typeId;
+  final Map<String, dynamic> typeDef;
+  final String recordId;
+  final Future<ManualWrite> Function(String id, String field, Object? value) onEdit;
+  final Future<void> Function(String id) onDelete;
+  const _RecordDetailSheet({
+    required this.session,
+    required this.typeId,
+    required this.typeDef,
+    required this.recordId,
+    required this.onEdit,
+    required this.onDelete,
+  });
+  @override
+  State<_RecordDetailSheet> createState() => _RecordDetailSheetState();
+}
+
+class _RecordDetailSheetState extends State<_RecordDetailSheet> {
+  String? _editing; // the attribute name currently in edit mode (text/number only)
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _attrs => ((widget.typeDef['attributes'] as List?) ?? const [])
+      .whereType<Map>()
+      .map((a) => a.cast<String, dynamic>())
+      .toList();
+
+  Future<void> _commit(String field, Object? value) async {
+    final r = await widget.onEdit(widget.recordId, field, value);
+    if (r.ok && mounted) setState(() => _editing = null);
+    // a failure keeps edit mode open; the parent already surfaced the reason as a SnackBar
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rec = widget.session.store[widget.recordId];
+    final cs = Theme.of(context).colorScheme;
+    if (rec == null) {
+      // deleted out from under the sheet (e.g. via undo of a create) — close it cleanly.
+      return const SafeArea(child: Padding(padding: EdgeInsets.all(24), child: Text('This record is gone.')));
+    }
+    final schemaNames = _attrs.map((a) => a['name'] as String).toSet();
+    final extraKeys = rec.keys.where((k) => !_plumbingFields.contains(k) && !schemaNames.contains(k)).toList();
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16, right: 16, top: 16, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text((widget.typeDef['displayName'] as String?) ?? widget.typeId,
+                  key: const Key('record-detail'), style: Theme.of(context).textTheme.titleLarge),
+              const Divider(),
+              for (final a in _attrs) _attrRow(context, rec, a),
+              if (extraKeys.isNotEmpty) ...[
+                const Divider(),
+                for (final k in extraKeys)
+                  if (rec[k] != null)
+                    ListTile(dense: true, title: Text(k), trailing: Text(renderValue(rec[k], null))),
+              ],
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const Key('record-delete'),
+                  icon: Icon(Icons.delete_outline, color: cs.error, size: 20),
+                  label: Text('Delete', style: TextStyle(color: cs.error)),
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    await widget.onDelete(widget.recordId);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _attrRow(BuildContext context, Map<String, dynamic> rec, Map<String, dynamic> attr) {
+    final name = attr['name'] as String;
+    final vt = attr['valueType'] as String? ?? 'text';
+    final value = rec[name];
+
+    // boolean — the row IS the toggle; each tap commits a flip.
+    if (vt == 'boolean') {
+      return SwitchListTile(
+        dense: true,
+        title: Text(name),
+        value: value == true,
+        onChanged: (v) => _commit(name, v),
+      );
+    }
+
+    // date / datetime — tap opens a picker; picker output is the only source, so no bad input.
+    if (vt == 'date' || vt == 'datetime') {
+      return ListTile(
+        dense: true,
+        title: Text(name),
+        trailing: Text(renderValue(value, vt)),
+        onTap: () => _pickDate(name, vt, value),
+      );
+    }
+
+    // text / entity / number / decimal / tag / list — inline tap-to-edit text field.
+    if (_editing == name) {
+      final isNum = vt == 'number' || vt == 'decimal';
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _ctrl,
+                autofocus: true,
+                keyboardType: isNum ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+                decoration: InputDecoration(labelText: name, isDense: true),
+                onSubmitted: (t) => _commit(name, t),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.check),
+              tooltip: 'Save',
+              onPressed: () => _commit(name, _ctrl.text),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: 'Cancel',
+              onPressed: () => setState(() => _editing = null),
+            ),
+          ],
+        ),
+      );
+    }
+    return ListTile(
+      dense: true,
+      title: Text(name),
+      trailing: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 200),
+        child: Text(renderValue(value, vt),
+            textAlign: TextAlign.end, overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+      ),
+      onTap: () {
+        _ctrl.text = value is List ? value.join(', ') : (value?.toString() ?? '');
+        setState(() => _editing = name);
+      },
+    );
+  }
+
+  Future<void> _pickDate(String name, String vt, Object? current) async {
+    final now = DateTime.now();
+    final seed = DateTime.tryParse('$current') ?? now;
+    final d = await showDatePicker(
+      context: context,
+      initialDate: seed,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (d == null || !mounted) return;
+    if (vt == 'date') {
+      await _commit(name, '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}');
+      return;
+    }
+    final t = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(seed));
+    if (!mounted) return;
+    final dt = DateTime(d.year, d.month, d.day, t?.hour ?? seed.hour, t?.minute ?? seed.minute);
+    await _commit(name, dt.toIso8601String());
+  }
+}
+
+/// Turn a raw corpus template into a friendly line: literal words stay (they're the user's own
+/// phrasing); `{name:type}` placeholders become a plain-language noun. Presentation only.
+String humanizeTemplate(String template) {
+  return template.replaceAllMapped(RegExp(r'\{(\w+):(\w+)\}'), (m) {
+    switch (m.group(2)) {
+      case 'entity':
+        return 'someone';
+      case 'date':
+      case 'datetime':
+        return 'a date';
+      case 'number':
+      case 'quantity':
+      case 'decimal':
+        return 'an amount';
+      default:
+        return 'something';
+    }
+  });
+}
+
+/// The "Learned phrases" showcase — ways of saying things Plena picked up from how Luis talks.
+/// Each can be forgotten (symmetrical with the voice-side forget-on-correction); forgetting is
+/// low-stakes (the phrasing just falls back to cloud routing) so it uses an UNDO snackbar.
+class _LearnedPhrasesCard extends StatefulWidget {
+  final Session session;
+  const _LearnedPhrasesCard({required this.session});
+  @override
+  State<_LearnedPhrasesCard> createState() => _LearnedPhrasesCardState();
+}
+
+class _LearnedPhrasesCardState extends State<_LearnedPhrasesCard> {
+  void _forget(LearnedFlow f) {
+    final raw = widget.session.forgetLearnedFlow(f.template);
+    setState(() {});
+    if (raw != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text("Forgotten — Plena won't recognize that phrasing."),
+        action: SnackBarAction(
+          label: 'UNDO',
+          onPressed: () {
+            widget.session.restoreLearnedFlow(raw);
+            if (mounted) setState(() {});
+          },
+        ),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final flows = widget.session.learnedFlows;
+    final tt = Theme.of(context).textTheme;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Learned phrases', key: const Key('learned-phrases-card'), style: tt.titleMedium),
+            Text('Ways of saying things Plena has picked up from you.', style: tt.bodySmall),
+            const Divider(),
+            if (flows.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('Nothing yet — Plena learns your phrasings as you talk (and when you correct her).'),
+              )
+            else
+              for (final f in flows)
+                ListTile(
+                  dense: true,
+                  title: Text('“${humanizeTemplate(f.template)}”'),
+                  subtitle: Text('→ ${f.targetLabel}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    tooltip: 'Forget this phrasing',
+                    onPressed: () => _forget(f),
+                  ),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
 }

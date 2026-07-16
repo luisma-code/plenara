@@ -347,6 +347,26 @@ class _JournalEntry {
   _JournalEntry(this.before, this.desc);
 }
 
+/// Outcome of a manual (data-view) write — a VALUE, never an exception across the UI seam
+/// (the engine's no-exceptions-outward posture). `message` is the act-then-describe line on
+/// success or the actionable reason on failure; always shown (P2.8, no silent failure).
+class ManualWrite {
+  final bool ok;
+  final String message;
+  const ManualWrite.ok(this.message) : ok = true;
+  const ManualWrite.fail(this.message) : ok = false;
+}
+
+/// One learned NLU corpus entry, shaped for the "Learned phrases" showcase (the UI never sees
+/// the internal CorpusEntry). `template` is the raw surface (keyed for forget); `targetLabel` is
+/// the human target (a skill's displayName, or a humanized generativeKind like "Gift ideas").
+class LearnedFlow {
+  final String template;
+  final String targetLabel;
+  final bool isGenerative;
+  const LearnedFlow(this.template, this.targetLabel, this.isGenerative);
+}
+
 class Session {
   final String dataDir;
   final DateTime? _fixedClock;
@@ -934,6 +954,150 @@ class Session {
   String _typeDisplayName(String typeId) =>
       (types[typeId]?['displayName'] as String?)?.toLowerCase() ?? typeId;
 
+  String _undoLastInternal() {
+    if (_journal.isEmpty) return 'Nothing to undo.';
+    final entry = _journal.removeLast(); // walk back the ring, most-recent first
+    _reverse(entry.before);
+    // say WHAT was reversed — a silent "Undone." can't be trusted as the safety net
+    return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
+  }
+
+  // ---- Manual data-view facade (Spec 07 §5.5 — the editable "Your data" view, G-47) -----------
+  // Edits/deletes ride the SAME journal ring as spoken writes, so a following "undo that" reverses
+  // a manual edit, and the view's snackbar UNDO is just a button on that ring (one undo system).
+
+  String? _oneLineSummary(Map<String, dynamic> rec) {
+    final td = types[rec['typeId']];
+    for (final a in ((td?['attributes'] as List?) ?? const []).whereType<Map>()) {
+      if (a['valueType'] == 'text' && rec[a['name']] is String) return rec[a['name']] as String;
+    }
+    return (rec['displayName'] ?? rec['description'] ?? rec['id'])?.toString();
+  }
+
+  /// Validate + coerce [value] against an attribute's Spec 01 §3 valueType. Returns the coerced
+  /// value, or a ManualWrite.fail describing the problem (never silently drops bad input).
+  Object? _coerceForType(String valueType, Object? value) {
+    switch (valueType) {
+      case 'number':
+      case 'decimal':
+        if (value is num) return value;
+        final n = num.tryParse('$value'.trim());
+        return n; // null → caller surfaces "enter a number"
+      case 'boolean':
+        if (value is bool) return value;
+        final s = '$value'.toLowerCase().trim();
+        return s == 'true' || s == 'yes' || s == '1';
+      case 'tag':
+      case 'list':
+        if (value is List) return value.map((e) => '$e').toList();
+        return '$value'.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      default: // text, entity, date, datetime — stored as strings (pickers hand us ISO)
+        return '$value';
+    }
+  }
+
+  /// Edit one schema-attribute value of a record in place (Spec 07 §5.5 tap-to-edit). Validates
+  /// against the attribute's valueType, journals a before-image (undoable), persists, and keeps
+  /// the reminder toast set + automations in sync — mirroring the F-15 correction path.
+  Future<ManualWrite> editField(String id, String field, Object? value) async {
+    final rec = store[id];
+    if (rec == null) return const ManualWrite.fail('That record no longer exists.');
+    final typeId = rec['typeId'] as String;
+    final attr = ((types[typeId]?['attributes'] as List?) ?? const [])
+        .whereType<Map>()
+        .cast<Map<String, dynamic>>()
+        .where((a) => a['name'] == field)
+        .firstOrNull;
+    if (attr == null) return ManualWrite.fail('"$field" isn\'t an editable field of a ${_typeDisplayName(typeId)}.');
+    final valueType = attr['valueType'] as String? ?? 'text';
+    final required = attr['required'] == true;
+    final coerced = _coerceForType(valueType, value);
+    final isEmpty = coerced == null ||
+        (coerced is String && coerced.trim().isEmpty) ||
+        (coerced is List && coerced.isEmpty);
+    if (coerced == null && (valueType == 'number' || valueType == 'decimal')) {
+      return const ManualWrite.fail('Enter a number.');
+    }
+    if (required && isEmpty) {
+      return ManualWrite.fail('"$field" is required for a ${_typeDisplayName(typeId)}.');
+    }
+    _journal.add(_JournalEntry({id: Map<String, dynamic>.from(rec)}, 'edited ${_typeDisplayName(typeId)} — $field'));
+    if (_journal.length > _journalMax) _journal.removeAt(0);
+    if (isEmpty && !required) {
+      rec.remove(field);
+    } else {
+      rec[field] = coerced;
+    }
+    repo.persist(rec);
+    await _reconcileReminders(); // idempotent — re-arms/disarms an OS toast if a reminder time moved
+    try {
+      automations.notifyWrites([rec]); // a manual edit is a user-origin write, same as a spoken one
+    } catch (_) {/* contained — an automation must never break an edit */}
+    repo.logTurn({'source': 'manual-edit', 'op': 'edit', 'typeId': typeId, 'field': field});
+    return ManualWrite.ok('Updated — $field.');
+  }
+
+  /// Delete a record from the data view — journaled + a storage tombstone, so it's doubly
+  /// reversible (the snackbar UNDO, or a later spoken "undo that").
+  Future<ManualWrite> deleteRecord(String id) async {
+    final rec = store[id];
+    if (rec == null) return const ManualWrite.fail('That record no longer exists.');
+    final summary = _oneLineSummary(rec) ?? 'that record';
+    _journal.add(_JournalEntry({id: Map<String, dynamic>.from(rec)}, 'deleted "$summary"'));
+    if (_journal.length > _journalMax) _journal.removeAt(0);
+    store.remove(id);
+    repo.remove(id);
+    await _reconcileReminders();
+    repo.logTurn({'source': 'manual-edit', 'op': 'delete', 'typeId': rec['typeId']});
+    return ManualWrite.ok('Deleted — $summary.');
+  }
+
+  /// Reverse the most recent journaled write (powers the data-view snackbar UNDO). Shares the ONE
+  /// journal ring with the spoken "undo that", so the two are never out of step.
+  Future<String> undoLast() async {
+    final msg = _undoLastInternal();
+    await _reconcileReminders();
+    return msg;
+  }
+
+  /// The learned NLU flows, shaped for the "Learned phrases" showcase (most-recent first — learn()
+  /// inserts at 0). Seed corpus entries are excluded (product vocabulary, not learned-from-you).
+  List<LearnedFlow> get learnedFlows => [
+        for (final e in router.corpus)
+          if (router.isLearned(e.template))
+            LearnedFlow(
+              e.template,
+              e.generativeKind != null
+                  ? _humanizeKind(e.generativeKind!)
+                  : (skills[e.skillId]?['displayName'] as String? ?? e.skillId),
+              e.generativeKind != null,
+            ),
+      ];
+
+  static String _humanizeKind(String kind) {
+    final words = kind.replaceAll('_', ' ');
+    return words.isEmpty ? words : '${words[0].toUpperCase()}${words.substring(1)}';
+  }
+
+  /// Forget a learned flow (data-view "×"). Returns the raw persisted map as an undo token, or
+  /// null if it wasn't a learned entry (seed entries can't be forgotten).
+  Map<String, dynamic>? forgetLearnedFlow(String template) {
+    final raw = repo.loadCorpusLearned()
+        .whereType<Map>()
+        .cast<Map<String, dynamic>>()
+        .where((m) => m['template'] == template)
+        .firstOrNull;
+    if (!router.forget(template)) return null;
+    repo.removeCorpusLearned(template);
+    return raw;
+  }
+
+  /// Re-learn a forgotten flow (snackbar UNDO of forget).
+  void restoreLearnedFlow(Map<String, dynamic> raw) {
+    router.restore(raw);
+    repo.appendCorpusLearned(raw);
+  }
+
   /// Public entry: a catch-all boundary so NO exception (ResolveError or a raw
   /// TypeError/RangeError from model-shaped input) ever escapes into the UI or
   /// console. A crash becomes a visible, non-destructive message (no silent
@@ -1307,11 +1471,7 @@ class Session {
       _outSource = 'undo';
       _lastTurnTemplate = null;
       _lastTurnWrote = false; // an undo is not itself a correctable route
-      if (_journal.isEmpty) return 'Nothing to undo.';
-      final entry = _journal.removeLast(); // walk back the ring, most-recent first
-      _reverse(entry.before);
-      // say WHAT was reversed — a silent "Undone." can't be trusted as the safety net
-      return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
+      return _undoLastInternal();
     }
 
     // Reference-by-number over the last numbered readback ("delete 2", "complete 1", "correct 3").

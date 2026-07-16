@@ -311,4 +311,69 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Nothing logged yet'), findsOneWidget);
   });
+
+  Future<Session> openDataViewWithTask(WidgetTester tester) async {
+    final session = _session();
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'add buy milk to my list');
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Your data'));
+    await tester.pumpAndSettle();
+    return session;
+  }
+
+  testWidgets('tap-to-edit a field commits through the engine (Spec 07 §5.5)', (tester) async {
+    final session = await openDataViewWithTask(tester);
+    await tester.tap(find.widgetWithText(ListTile, 'buy milk'));
+    await tester.pumpAndSettle();
+    // tap the description value to enter edit mode, change it, and save
+    await tester.tap(find.widgetWithText(ListTile, 'description'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'buy oat milk');
+    await tester.tap(find.byIcon(Icons.check));
+    await tester.pumpAndSettle();
+    final task = session.store.values.firstWhere((r) => r['typeId'] == 'task');
+    expect(task['description'], 'buy oat milk'); // persisted through session.editField
+  });
+
+  testWidgets('delete from the detail sheet removes the record with an UNDO snackbar', (tester) async {
+    final session = await openDataViewWithTask(tester);
+    await tester.tap(find.widgetWithText(ListTile, 'buy milk'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('record-delete')));
+    await tester.pumpAndSettle();
+    expect(session.store.values.where((r) => r['typeId'] == 'task'), isEmpty); // gone
+    expect(find.text('UNDO'), findsOneWidget); // the safety-net snackbar
+    await tester.tap(find.text('UNDO'));
+    await tester.pumpAndSettle();
+    expect(session.store.values.where((r) => r['typeId'] == 'task'), isNotEmpty); // restored
+  });
+
+  testWidgets('the Learned phrases card lists a learned flow and can forget it', (tester) async {
+    final session = _session();
+    await session.init(retrieval: false);
+    session.router.addLearned('list-tasks', 'show my todo list');
+    session.repo.appendCorpusLearned({'skillId': 'list-tasks', 'template': 'show my todo list'});
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Your data'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('learned-phrases-card')), findsOneWidget);
+    expect(find.textContaining('show my todo list'), findsOneWidget);
+    expect(find.textContaining('List your tasks'), findsOneWidget); // human target, not skillId
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+    expect(session.learnedFlows.any((f) => f.template == 'show my todo list'), isFalse);
+  });
+
+  test('humanizeTemplate turns slot placeholders into plain nouns', () {
+    expect(humanizeTemplate('suggest a gift for {contact:entity}'), 'suggest a gift for someone');
+    expect(humanizeTemplate('remind me on {when:date}'), 'remind me on a date');
+  });
 }

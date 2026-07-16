@@ -44,19 +44,22 @@
                           }
                         ]
                       },
+                      { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" },
                       {
                         "op": "compute",
                         "fn": "concat",
                         "args": [
                           { "var": "lines" },
-                          "\n  • ",
+                          "\n  ",
+                          { "var": "n" },
+                          ". ",
                           { "field": [ "t", "description" ] },
                           " — ",
                           { "var": "label" }
                         ],
                         "into": "lines"
                       },
-                      { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+                      { "op": "ref_mark", "typeId": "task", "id": { "field": [ "t", "id" ] }, "field": "description" }
                     ]
                   }
                 ]

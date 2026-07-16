@@ -12,6 +12,8 @@
         "op": "read_many",
         "typeId": "reminder",
         "filter": { "field": "done", "op": "eq", "value": false },
+        "orderBy": "remindAt",
+        "orderDir": "asc",
         "into": "rems"
       },
       {
@@ -20,10 +22,21 @@
         "value": ""
       },
       {
+        "op": "set",
+        "var": "n",
+        "value": 0
+      },
+      {
         "op": "foreach",
         "list": { "var": "rems" },
         "as": "r",
         "body": [
+          {
+            "op": "compute",
+            "fn": "add",
+            "args": [ { "var": "n" }, 1 ],
+            "into": "n"
+          },
           {
             "op": "compute",
             "fn": "format_date",
@@ -41,7 +54,9 @@
             "fn": "concat",
             "args": [
               { "var": "lines" },
-              "\n  • ",
+              "\n  ",
+              { "var": "n" },
+              ". ",
               { "field": [ "r", "text" ] },
               " — ",
               { "var": "d" },
@@ -49,14 +64,14 @@
               { "var": "tm" }
             ],
             "into": "lines"
+          },
+          {
+            "op": "ref_mark",
+            "typeId": "reminder",
+            "id": { "field": [ "r", "id" ] },
+            "field": "text"
           }
         ]
-      },
-      {
-        "op": "compute",
-        "fn": "count",
-        "args": [ { "var": "rems" } ],
-        "into": "n"
       },
       {
         "op": "format",

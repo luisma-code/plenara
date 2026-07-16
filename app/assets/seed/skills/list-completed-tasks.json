@@ -19,45 +19,25 @@
         "into": "done"
       },
       {
-        "op": "set",
-        "var": "out",
-        "value": ""
+        "op": "enumerate",
+        "list": { "var": "done" },
+        "label": "description",
+        "into": "out"
       },
       {
-        "op": "foreach",
-        "list": {
-          "var": "done"
-        },
-        "as": "t",
-        "body": [
-          {
-            "op": "compute",
-            "fn": "concat",
-            "args": [
-              {
-                "var": "out"
-              },
-              "• ",
-              {
-                "field": [
-                  "t",
-                  "description"
-                ]
-              },
-              "\n"
-            ],
-            "into": "out"
-          }
-        ]
+        "op": "compute",
+        "fn": "count",
+        "args": [ { "var": "done" } ],
+        "into": "n"
       },
       {
         "op": "branch",
         "cond": {
           "eq": [
             {
-              "var": "out"
+              "var": "n"
             },
-            ""
+            0
           ]
         },
         "then": [
@@ -70,7 +50,7 @@
         "else": [
           {
             "op": "format",
-            "template": "Completed:\n{out}",
+            "template": "Completed:{out}",
             "into": "confirmationText"
           }
         ]

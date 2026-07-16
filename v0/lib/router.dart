@@ -148,6 +148,16 @@ class Router {
     _learnedTemplates.add(template);
   }
 
+  /// Re-insert a previously-forgotten learned entry (data-view forget→undo, G-47). Rebuilds from
+  /// the raw persisted map so it works for BOTH a skillId and a generativeKind entry — unlike
+  /// addLearned, which only knows skillId.
+  void restore(Map<String, dynamic> raw) {
+    final t = raw['template'] as String?;
+    if (t == null || corpus.any((c) => c.template == t)) return;
+    corpus.insert(0, _compile(raw));
+    _learnedTemplates.add(t);
+  }
+
   // A name/entity capture ({personName:entity}) must look like a name, not an article/pronoun —
   // otherwise "remember {who:entity} {fact}" swallows "remember the alamo" (who="the") and
   // "note that {who:entity} {fact}" swallows "note that the meeting is at five". Reject when the

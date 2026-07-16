@@ -34,13 +34,14 @@
             "op": "branch",
             "cond": { "notNull": "who" },
             "then": [
+              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" },
               {
                 "op": "compute",
                 "fn": "concat",
-                "args": [ { "var": "lines" }, "\n  • ", { "field": [ "who", "displayName" ] }, " — ", { "field": [ "f", "fact" ] } ],
+                "args": [ { "var": "lines" }, "\n  ", { "var": "n" }, ". ", { "field": [ "who", "displayName" ] }, " — ", { "field": [ "f", "fact" ] } ],
                 "into": "lines"
               },
-              { "op": "compute", "fn": "add", "args": [ { "var": "n" }, 1 ], "into": "n" }
+              { "op": "ref_mark", "typeId": "contact_fact", "id": { "field": [ "f", "id" ] }, "field": "fact" }
             ]
           }
         ]
