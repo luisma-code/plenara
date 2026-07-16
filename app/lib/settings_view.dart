@@ -243,7 +243,7 @@ class _SettingsViewState extends State<SettingsView> {
           : <File>[];
       final buf = StringBuffer()
         ..writeln('=== Plenara diagnostics export — ${DateTime.now()} ===')
-        ..writeln('App version: ${_cfg.apiKey != null ? "cloud connected" : "offline"}')
+        ..writeln('Connection: ${_cfg.apiKey != null ? "cloud connected" : "offline"}')
         ..writeln('Platform: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}')
         ..writeln('Log files on device: ${logs.length}')
         ..writeln();
@@ -372,7 +372,7 @@ class _SettingsViewState extends State<SettingsView> {
           const Divider(height: 32),
           const Text('Voice', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const VoiceUpgradeCard(), // shows the download nudge, or a "natural voice ✓" confirmation
+          const VoiceUpgradeCard(), // iOS: the download nudge, or the voice picker; nothing off iOS
           const Divider(height: 32),
           const Text('Diagnostics log', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),

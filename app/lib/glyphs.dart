@@ -724,7 +724,8 @@ GlyphDef? glyphForTurn(String? skill, String reply) {
   // so adding a task or setting a reminder showed nothing at all. (Completions + undo handled above,
   // and return first.) These pairings are aesthetic — tune freely.
   if (ran('set-reminder')) return kGlyphs['bell']; // "I'll be sure to speak up"
-  if (ran('start-tracking') || ran('create-tracker') || said('now tracking') || said('started tracking')) {
+  // A new tracker was set up — the template/authored path replies "Set up X — it's ready."
+  if (said("it's ready") || said('now tracking') || said('started tracking')) {
     return kGlyphs['flower']; // a new thing to track, taking root
   }
   if (ran('create-task') || ran('add-task')) return kGlyphs['nod']; // "got it — it's on your list"

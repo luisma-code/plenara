@@ -31,5 +31,13 @@ void main() {
     test('leaves plain prose essentially unchanged', () {
       expect(speakify('I logged dinner with Katherine.'), 'I logged dinner with Katherine.');
     });
+
+    test('a stripped glyph before punctuation leaves no space — and never a literal " \$1"', () {
+      // Regression: replaceAll does not interpret \$1, so the space-before-punct cleanup MUST use
+      // replaceAllMapped. A trailing "✨." (emoji stripped → space before the period) is the trigger.
+      final out = speakify('Saved ✨.');
+      expect(out, 'Saved.');
+      expect(out.contains(r'$1'), isFalse);
+    });
   });
 }

@@ -7,25 +7,6 @@ import 'dart:io' show Platform;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:plenara/config.dart' as cfg;
 
-/// Whether the device has a NATURAL (Enhanced/Premium) English voice installed. iOS ships only the
-/// robotic "compact" voices by default; the Siri-caliber ones are a user download. Onboarding uses
-/// this to recommend the upgrade. Cheap — just enumerates installed voices. Always true off iOS
-/// (desktop engines don't have this split), so the nudge is iOS-only.
-Future<bool> hasNaturalEnglishVoice() async {
-  if (!Platform.isIOS) return true;
-  try {
-    final raw = await FlutterTts().getVoices;
-    for (final v in (raw as List? ?? const [])) {
-      final m = Map<String, dynamic>.from(v as Map);
-      final loc = (m['locale'] ?? m['language'] ?? '').toString().toLowerCase();
-      if (!loc.startsWith('en')) continue;
-      final blob = '${m['quality'] ?? ''} ${m['name'] ?? ''} ${m['identifier'] ?? ''}'.toLowerCase();
-      if (blob.contains('premium') || blob.contains('enhanced')) return true;
-    }
-  } catch (_) {/* treat unknown as "installed" so we never nag on an API hiccup */}
-  return false;
-}
-
 /// Track 2: turn a DISPLAY reply into TTS-friendly text. The engine reads bullets, line breaks, and
 /// symbols literally and woodenly ("bullet… bullet…", choppy line-by-line); this smooths them into
 /// flowing speech — drop mote/bullet glyphs + status emoji, strip markdown syntax, join lines into
@@ -47,7 +28,10 @@ String speakify(String text) {
   s = s.replaceAll(RegExp(r'\n{2,}'), '. ');
   s = s.replaceAllMapped(RegExp(r'([^.!?:;,])\n'), (m) => '${m[1]}, ');
   s = s.replaceAll('\n', ' ');
-  s = s.replaceAll(RegExp(r'\s+'), ' ').replaceAll(RegExp(r'\s+([.,!?;:])'), r'$1');
+  s = s.replaceAll(RegExp(r'\s+'), ' ');
+  // Drop a space left before punctuation (the glyph/emoji stripping creates these). NB: replaceAll
+  // does NOT interpret `$1`, so this must be replaceAllMapped — else the literal "$1" gets spoken.
+  s = s.replaceAllMapped(RegExp(r'\s+([.,!?;:])'), (m) => m[1]!);
   s = s.replaceAll(RegExp(r'\.{2,}'), '.').replaceAll(RegExp(r',{2,}'), ','); // tidy doubled punctuation
   return s.trim();
 }
@@ -120,6 +104,7 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
   // _gen) can never cross-fire a newer utterance's callbacks (reviewer d #4/#5).
   int _gen = 0;
   void Function()? _onStart;
+  void Function()? _onDone; // the active call's onDone, so stop() can fire it exactly once
 
   /// iOS ONLY: force the shared audio session to .playback so Plena is audible **in silent mode**
   /// (like Siri) and through the speaker. AVSpeechSynthesizer otherwise obeys the physical ring/silent
@@ -238,14 +223,22 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
       onDone?.call();
       return;
     }
-    await stop(); // one utterance at a time
-    // Re-assert .playback here: if the mic just listened, the shared session is in record mode and
-    // would silence her in silent mode. Doing it right before speak (post-stop) makes us the last
-    // writer, so every reply is audible regardless of what STT left behind.
-    await _iosPlaybackSession();
+    // Claim this generation FIRST — before any await — so a prior sequence's gen-checks bail (its
+    // onDone is dropped: the newer speak owns state) and a stop()/speak() arriving during our own
+    // awaits below cleanly supersedes us. onDone is retained so stop() can fire it exactly once.
     final gen = ++_gen;
     _onStart = onStart;
+    _onDone = onDone;
     _speaking = true;
+    if (_ready) {
+      try {
+        await _tts.stop(); // silence any prior native utterance
+      } catch (_) {/* best-effort */}
+    }
+    // Re-assert .playback here: if the mic just listened, the shared session is in record mode and
+    // would silence her in silent mode. Making us the last writer keeps every reply audible.
+    await _iosPlaybackSession();
+    if (gen != _gen) return; // a newer speak()/stop() arrived during the awaits — it owns state
     // Split on blank-line boundaries into TOPIC segments and speak them with a real silent beat
     // between — so the listener hears one topic close before the next opens (the tour's privacy note
     // vs. the capabilities intro, an essence vs. its "you could say"). Each segment is speakified
@@ -253,8 +246,9 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
     final segments = text.split(RegExp(r'\n\s*\n')).map(speakify).where((p) => p.isNotEmpty).toList();
     try {
       for (var i = 0; i < segments.length; i++) {
-        if (gen != _gen) return; // superseded mid-sequence — the newer speak owns state now
-        await _tts.speak(segments[i]); // resolves when this segment ends OR is stopped by a later speak
+        if (gen != _gen) return; // superseded mid-sequence (a stop or newer speak bumped _gen)
+        await _tts.speak(segments[i]); // note: on Apple this future does NOT resolve on stop — a
+        // stop()/speak() supersede is what ends the loop (via the gen check), and stop() fires onDone.
         if (gen != _gen) return;
         if (i < segments.length - 1) {
           await Future.delayed(const Duration(milliseconds: 700)); // the between-topics beat
@@ -263,18 +257,29 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
     } catch (e) {
       onLog?.call('tts speak failed: $e');
     }
-    if (gen != _gen) return; // superseded by a newer speak — it owns state now, don't touch anything
+    if (gen != _gen) return; // superseded — the newer owner will fire the right onDone
     _speaking = false;
-    onDone?.call(); // fires exactly once per non-superseded call (natural end or barge-in stop)
+    final done = _onDone;
+    _onDone = null;
+    done?.call(); // natural end: fires exactly once
   }
 
   @override
   Future<void> stop() async {
+    // Supersede any in-flight sequence: bump the generation so its loop bails at the next gen-check
+    // (crucial now that speak() is a multi-SEGMENT loop with 700ms beats — without this, a mute or
+    // barge-in during a beat lets the remaining segments play, e.g. over the just-opened mic).
+    _gen++;
     _onStart = null;
     _speaking = false;
-    if (!_ready) return;
-    try {
-      await _tts.stop(); // resolves the in-flight speak()'s future → its onDone fires once
-    } catch (_) {/* best-effort */}
+    final done = _onDone;
+    _onDone = null;
+    if (_ready) {
+      try {
+        await _tts.stop();
+      } catch (_) {/* best-effort */}
+    }
+    done?.call(); // the stopped call's onDone fires exactly once (contract), even on Apple where the
+    // underlying speak future never resolves after a stop.
   }
 }

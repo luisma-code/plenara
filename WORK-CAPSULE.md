@@ -53,6 +53,13 @@ _Last updated: 2026-07-15 — after shipping v8 (iOS-first voice tour + glyph vo
   credential** (`91B206EB…`, "missing Xcode-Username") corrupts the hook's `xcrun` stdout parse.
 
 ## Open threads / deferred (with reasons)
+- **flutter_tts shares one static method-channel handler** (deferred from the 5-lens Fable review):
+  every extra `FlutterTts()` (voice enumeration on each Settings/onboarding open + resume, and the
+  preview instance) re-registers the handler, so the main voice's `setStartHandler`/`setErrorHandler`
+  go dead on iOS after the Voice card is shown (onStart audio-anchor + tts error logs degrade; speech
+  still works), and a **preview shares the one native synthesizer** so it can stop a live reply. Fix
+  needs a single shared `FlutterTts`/`FlutterTtsSpeechOutput` (inject the app's into the card). Soft
+  impact today, so deferred.
 - **Impeller-safe comet trail on iOS** — restore the persistence trail without the toImageSync crash.
 - **Clean the stale Xcode keychain credential** `91B206EB-734B-447D-B085-D12AAC3EC664` (then un-pin
   path_provider_foundation).

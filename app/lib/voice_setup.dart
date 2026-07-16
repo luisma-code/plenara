@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:plenara/config.dart';
 
@@ -101,13 +103,12 @@ class _VoiceUpgradeCardState extends State<VoiceUpgradeCard> with WidgetsBinding
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    if (!_loaded) return const SizedBox.shrink(); // don't flash a card in then out
-    if (_voices.isEmpty) {
-      return widget.hideWhenNatural ? const SizedBox.shrink() : _downloadCard(cs);
-    }
-    // Onboarding collapses once a natural voice exists; Settings shows the picker.
-    if (widget.hideWhenNatural) return const SizedBox.shrink();
-    return _pickerCard(cs);
+    // Off iOS (desktop engines don't have the compact/premium split) there's nothing to nudge or pick
+    // — render nothing rather than iOS-only download instructions. Also don't flash a card in then out.
+    if (!_loaded || !Platform.isIOS) return const SizedBox.shrink();
+    if (_voices.isEmpty) return _downloadCard(cs); // no natural voice yet → nudge (onboarding + Settings)
+    if (widget.hideWhenNatural) return const SizedBox.shrink(); // has one → onboarding collapses
+    return _pickerCard(cs); // has one → Settings shows the picker
   }
 
   Widget _pickerCard(ColorScheme cs) {

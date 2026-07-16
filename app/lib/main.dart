@@ -48,14 +48,10 @@ NotificationScheduler _platformScheduler() {
 
 Session buildSession({NotificationScheduler? scheduler}) {
   final cfg = loadConfig();
-  // On mobile the synced-folder concept doesn't apply yet (the app is sandboxed) AND a stored
-  // absolute dataDir is a liability: iOS container paths are unstable — the UUID changes on reinstall
-  // and the /private prefix varies — so a path persisted last launch can become one the sandbox
-  // denies, which is exactly what threw PathAccessException creating the data folder. Always
-  // re-derive from the LIVE Documents dir (homeOverride, the same base AppLog writes to and which is
-  // known-writable this launch). Desktop keeps the user's chosen (possibly synced) folder.
-  final base = homeOverride;
-  final dataDir = (base != null && (Platform.isIOS || Platform.isAndroid)) ? '$base/Plenara' : cfg.dataDir;
+  // loadConfig already derives the correct dataDir per platform (live Documents dir on mobile, where
+  // the container path is unstable; the user's folder on desktop) — one source of truth, so this and
+  // main()'s first-run seed check agree (previously they diverged, re-extracting seeds every launch).
+  final dataDir = cfg.dataDir;
   // Seed source priority: explicit dev override > extracted bundled assets (shipped build) > dev
   // path. ensureSeeded no-ops once the data folder is already seeded, so this is first-run only.
   final seed = Platform.environment['PLENARA_SEED_DIR'] ?? _bundledSeedDir ?? sourceDataDir;
@@ -217,6 +213,7 @@ class _ChatState extends State<ChatScreen> {
   // The tour's "colours" chapter drives a scripted presence-colour demo (idle → listening → thinking
   // → the cooler AI shade) while Plena narrates it. Timers held so a new turn / teardown cancels it.
   final List<Timer> _colorDemoTimers = [];
+  bool _colorDemoActive = false; // true while the demo owns the _forceState/_forceDifficulty pins
   String?
   _caption; // the current exchange text, materialised over the void (Spec 15 §6.1 / §7.3)
   bool _displayIsList =
@@ -251,6 +248,7 @@ class _ChatState extends State<ChatScreen> {
   /// pin releases at the end. Any new turn (or teardown) cancels it via [_cancelColorDemo].
   void _runColorDemo() {
     _cancelColorDemo();
+    _colorDemoActive = true; // we now own the _forceState/_forceDifficulty pins
     // (delayMs, state, difficulty) — difficulty cools the hue (0 warm amber … ~4 pre-dawn blue).
     const beats = <(int, PresenceState, double)>[
       (0, PresenceState.idle, 0), // "warm amber is me at rest"
@@ -270,14 +268,18 @@ class _ChatState extends State<ChatScreen> {
     _colorDemoTimers.add(Timer(const Duration(milliseconds: 14500), _cancelColorDemo));
   }
 
-  /// Stop the colour demo and release the forced presence back to the live signals.
+  /// Stop the colour demo and release the presence back to the live signals — but ONLY the pins the
+  /// demo itself set. Guarding on [_colorDemoActive] means a plain turn no longer clobbers a Dev-harness
+  /// pin the user set by hand (both use _forceState/_forceDifficulty).
   void _cancelColorDemo() {
-    if (_colorDemoTimers.isEmpty && _forceState == null && _forceDifficulty == null) return;
+    final wasActive = _colorDemoActive;
+    _colorDemoActive = false;
+    if (_colorDemoTimers.isEmpty && !wasActive) return;
     for (final t in _colorDemoTimers) {
       t.cancel();
     }
     _colorDemoTimers.clear();
-    if (mounted) {
+    if (wasActive && mounted) {
       setState(() {
         _forceState = null;
         _forceDifficulty = null;
@@ -521,7 +523,7 @@ class _ChatState extends State<ChatScreen> {
       });
     }
 
-    if (!_voiceMuted && (_voice?.available ?? false)) {
+    if (willSpeak) {
       // Plena actually speaks; her "speaking" animation brackets the real audio (onDone ends it).
       // Pass the RAW reply — speak() segments it on blank lines (a silent beat between topics) and
       // speakifies each segment (track 2); the display keeps the original formatting.

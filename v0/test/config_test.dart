@@ -112,6 +112,27 @@ void main() {
     expect(loadConfig(configPath: path).voiceMuted, isNull);
   });
 
+  test('voiceName round-trips: null=auto-pick, a name pins, empty clears, omit preserves', () {
+    final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
+    final path = '${dir.path}/config.json';
+    File(path).writeAsStringSync('{"dataDir": "X:/d", "apiKey": "sk-x"}');
+    expect(loadConfig(configPath: path).voiceName, isNull); // absent → auto-pick
+
+    saveConfig(dataDir: 'X:/d', voiceName: 'Matilda (Premium)', configPath: path);
+    expect(loadConfig(configPath: path).voiceName, 'Matilda (Premium)');
+
+    // omitting voiceName leaves the stored pick untouched
+    saveConfig(dataDir: 'X:/d', apiKey: 'sk-z', configPath: path);
+    expect(loadConfig(configPath: path).voiceName, 'Matilda (Premium)');
+
+    saveConfig(dataDir: 'X:/d', voiceName: '', configPath: path); // empty string clears → back to auto
+    expect(loadConfig(configPath: path).voiceName, isNull);
+
+    // a non-string / empty stored value degrades to null
+    File(path).writeAsStringSync('{"dataDir": "X:/d", "voiceName": ""}');
+    expect(loadConfig(configPath: path).voiceName, isNull);
+  });
+
   test('PLENARA_FREE=1 env forces free mode regardless of the file', () {
     final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
     final path = '${dir.path}/config.json';

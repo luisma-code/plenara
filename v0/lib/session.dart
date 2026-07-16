@@ -100,7 +100,7 @@ const _tourChapters = <_TourChapter>[
         'shift to a cooler, bluer shade — I keep those moments as few as I can to save you money, and '
         'you can see every one, and what it cost, in Settings.',
     'Nothing to say here — just watch me for a moment.',
-    'That\'s the whole of me. Say "done" whenever you like, or "next" to loop back.',
+    'That\'s the whole of me. Say "done" whenever you like, or "next" to wrap up.',
     "", // no coda — there's no in-domain write to teach
     [], // no domain keywords — this chapter has no live try
     ['color', 'colors', 'colour', 'colours'],
@@ -577,7 +577,7 @@ class Session {
     // Privacy first — only on a FRESH tour (not on a repeat "what can you do"), and said before the
     // people/journal chapters ever ask for anything personal. Accurate to the posture: on-device by
     // default; the only thing that leaves is a smart feature calling the user's OWN AI account.
-    final privacy = visited.isEmpty
+    final privacy = prior == null // only on a brand-new tour, never on a repeat while one is live
         ? 'First, so you know: everything you tell me stays on your phone — it\'s yours. Nothing goes '
             'to any server unless a smart feature needs the AI, and even then it goes to your own '
             'private account, never to me.'

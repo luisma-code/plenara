@@ -68,7 +68,13 @@ PlenaraConfig loadConfig({String? configPath}) {
     f.parent.createSync(recursive: true);
     f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(cfg));
   }
-  final dataDir = Platform.environment['PLENARA_DATA'] ?? (cfg['dataDir'] as String?) ?? '${_home()}/Plenara';
+  // On mobile the container path is unstable (the iOS UUID rotates on reinstall), so NEVER trust a
+  // persisted absolute dataDir — it goes dead and points at an inaccessible container. Always derive
+  // from the live injected home. Desktop keeps the user's chosen (possibly synced) folder. One source
+  // of truth, so buildSession, the first-run seed check, and Settings all agree.
+  final mobile = (Platform.isIOS || Platform.isAndroid) && homeOverride != null;
+  final dataDir = Platform.environment['PLENARA_DATA'] ??
+      (mobile ? '${_home()}/Plenara' : ((cfg['dataDir'] as String?) ?? '${_home()}/Plenara'));
   final key = Platform.environment['ANTHROPIC_API_KEY'] ?? (cfg['apiKey'] as String?);
   // env PLENARA_FREE=1 forces offline mode (handy for tests/demos); else the persisted flag.
   final free = Platform.environment['PLENARA_FREE'] == '1' || cfg['freeTier'] == true;
