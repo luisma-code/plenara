@@ -6,3 +6,7 @@
 
 # Coverage output (Spec 09 gate)
 v0/coverage/
+
+# TestFlight API-key env (secrets — never commit)
+tool/.testflight.env
+.appstoreconnect/

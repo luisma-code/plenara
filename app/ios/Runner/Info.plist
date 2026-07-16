@@ -4,18 +4,6 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-	<!-- Expose the app's Documents folder (where diag logs are written on iOS) in the Files app, so
-	     logs can be retrieved without a cable — including on TestFlight builds. -->
-	<key>UIFileSharingEnabled</key>
-	<true/>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<true/>
-	<!-- Voice-first: the app accesses the mic + on-device speech recognition. iOS crashes without
-	     these usage strings the moment the mic is touched. -->
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Plena listens when you tap anywhere to talk.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Plena turns your speech into text to understand what you say.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -36,8 +24,16 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Plena listens when you tap anywhere to talk.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Plena turns your speech into text to understand what you say.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -60,6 +56,8 @@
 		</dict>
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
