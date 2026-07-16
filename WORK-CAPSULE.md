@@ -53,12 +53,16 @@ _Last updated: 2026-07-15 — after shipping v8 (iOS-first voice tour + glyph vo
   credential** (`91B206EB…`, "missing Xcode-Username") corrupts the hook's `xcrun` stdout parse.
 
 ## Open threads / deferred (with reasons)
-- **Generative intents have no cloud-router fallback** (dogfood finding 2026-07-15): gift-ideas,
-  briefing, reconnect, draft are matched ONLY by fast-path regexes in `session.dart`; the cloud router
-  maps *skills*, not these, so a phrasing the regex misses → clarify ("I didn't catch that"). Hit live:
-  "can you suggest a gift for Elena" clarify-failed (fixed by extending `_giftRe`; capability + data were
-  fine). The general robustness gap remains — consider routing generative intents through the cloud
-  residual too, so novel phrasings don't dead-end.
+- **Generative recognition via the cloud residual (G-46) — Phase 2 (learning) still to do.** The
+  dogfood miss ("suggest a gift for Elena" → clarify) was root-caused to generative intents being
+  regex-only + the residual being skill-scoped. Spec 03 → v0.7/G-46 (co-designed + reviewed with Fable,
+  SOLID). **Phase 1 SHIPPED:** `routeResidual` carries the fixed generative-kind inventory and returns
+  `{generativeKind, params}`; `session._dispatchGenerative` runs it (missing contact → §6.3 follow-up);
+  the `_giftRe` band-aid is reverted + the regexes frozen. So novel phrasings no longer dead-end.
+  **Phase 2 TODO — the "evolve local handling" half:** learn a *recognition* template (surface →
+  generativeKind) on delivered-and-uncorrected (excluding degraded/errored/upgrade-prompt turns), per
+  spec §5.2/§2.7 — needs router.dart to store+match a `generativeKind`-target entry. Until then, every
+  generative phrasing re-hits the cloud (correct, just not yet learned-to-offline).
 - **flutter_tts shares one static method-channel handler** (deferred from the 5-lens Fable review):
   every extra `FlutterTts()` (voice enumeration on each Settings/onboarding open + resume, and the
   preview instance) re-registers the handler, so the main voice's `setStartHandler`/`setErrorHandler`

@@ -210,15 +210,12 @@ final _fabricationRe = RegExp(
     r"(interaction|call|meeting|conversation|entry|record|note|log|visit|chat))\b",
     caseSensitive: false);
 // Generative-request intents (Spec 04 §3.10) — paid, grounded synthesis.
+// FROZEN (Spec 03 §2.2a `G-44`): the offline / free-tier recognition floor for the common gift
+// phrasings — no longer grown per-miss. A phrasing this misses ("suggest a gift for X") is now
+// recognized by the cloud residual (§7.3.2, `G-46`) and learned, not hand-patched into this regex.
 final _giftRe = RegExp(
-    // optional polite lead-in ("can you", "please", "any")
-    r"^(?:(?:can|could|would)\s+(?:you|u)\s+|please\s+|any\s+)?"
-    r"(?:(?:gift|present)\s+ideas?\s+for\s+"
-    // "suggest [me] [a|some|any] gift[s]/present[s] [ideas] for X" — the phrasing that was clarify-failing
-    r"|suggest\s+(?:me\s+)?(?:a\s+|some\s+|any\s+)?(?:gift|present)s?\s+(?:ideas?\s+)?for\s+"
-    r"|what\s+(?:should|can|could)\s+i\s+(?:get|buy|give)\s+"
-    r"|what\s+to\s+(?:get|buy|give)\s+)"
-    r"(.+?)(?:\s+for\s+(?:his|her|their)\s+(?:birthday|present|gift))?\??$",
+    r"^(?:(?:gift|present)\s+ideas?\s+for\s+|what\s+(?:should|can|could)\s+i\s+(?:get|buy|give)\s+|"
+    r"what\s+to\s+(?:get|buy|give)\s+)(.+?)(?:\s+for\s+(?:his|her|their)\s+(?:birthday|present|gift))?\??$",
     caseSensitive: false);
 final _briefingRe = RegExp(
     r"^(?:(?:give me |what'?s )?my (?:daily )?briefing|brief me|"
@@ -364,6 +361,9 @@ class Session {
   // §6.3 ProvideSlot): {skillId, slots (partial), missing (remaining required names)}.
   // The next turn's input fills it and the completed skill dispatches.
   Map<String, dynamic>? _pendingFill;
+  // A generative request paused for its missing contact param (Spec 03 §6.3, G-46): {kind,
+  // template}. The next turn supplies the person and the synthesis runs.
+  Map<String, dynamic>? _pendingGen;
   // A validated-but-UNREGISTERED authored capability awaiting the user's "activate"
   // (Spec 02 §6.5 / G-18): {type, skill, typeId, skillId, displayName, examples}.
   Map<String, dynamic>? _pendingActivation;
@@ -893,6 +893,18 @@ class Session {
     _lastTurnTemplate = null;
     _lastDispatch = null;
 
+    // A generative request paused for its contact (§6.3, G-46): this input names the person.
+    final pendingGen = _pendingGen;
+    if (pendingGen != null) {
+      _pendingGen = null;
+      if (!_cancelRe.hasMatch(u)) {
+        return _dispatchGenerative(pendingGen['kind'] as String,
+            {'contact': u.trim()}, pendingGen['template'] as String?, u, now);
+      }
+      _outSource = 'clarify';
+      return 'Okay — never mind.';
+    }
+
     // ProvideSlot (§6.3): a paused turn is waiting for one missing slot. Treat this
     // input as the answer — unless the user backs out — then re-ask or dispatch.
     final pending = _pendingFill;
@@ -1282,6 +1294,12 @@ class Session {
           cloudErr = kind;
       }
     }
+    // Generative recognition (Spec 03 §2.2a / §7.3.2, G-46): the residual classified a SYNTHESIS
+    // request (gift ideas, briefing, …) — dispatch it to the GenerativeService, not the interpreter.
+    if (routed != null && routed['generativeKind'] is String) {
+      return _dispatchGenerative(routed['generativeKind'] as String,
+          (routed['params'] as Map?)?.cast<String, dynamic>() ?? const {}, routed['template'] as String?, u, now);
+    }
     if (routed == null) {
       // A miss is corpus + (abstain | cloud error | no cloud). If the cloud FAILED,
       // say so honestly instead of only blaming the phrasing (no silent degradation).
@@ -1396,6 +1414,36 @@ class Session {
     final learnTemplate = routed['source'] == 'cloud' ? routed['template'] as String? : null;
     return _dispatch(skillId, slots, routed['source'] as String, now,
         template: template, learnTemplate: learnTemplate, utterance: u);
+  }
+
+  /// Dispatch a residual-recognized generative request (Spec 03 §2.2a / §7.3.2, G-46) to the
+  /// GenerativeService — the "suggest a gift for Elena" class, recognized by the cloud instead of a
+  /// hand-written regex. A contact-param kind with no contact pauses for a missing-param follow-up
+  /// (§6.3); [_pendingGen] resumes it next turn. (Recognition-learning is layered on in a follow-up.)
+  Future<String> _dispatchGenerative(
+      String kind, Map<String, dynamic> params, String? template, String u, DateTime now) async {
+    const contactKinds = {'gift_ideas', 'reconnect', 'draft_message'};
+    _outSource = 'generative';
+    _outSkill = kind;
+    final contact = (params['contact'] as String?)?.trim();
+    if (contactKinds.contains(kind) && (contact == null || contact.isEmpty)) {
+      _pendingGen = {'kind': kind, if (template != null) 'template': template};
+      _outSource = 'clarify';
+      return switch (kind) {
+        'reconnect' => 'Reconnect with whom?',
+        'draft_message' => 'Draft a message to whom?',
+        _ => 'Gift ideas for whom?',
+      };
+    }
+    return await (switch (kind) {
+      'gift_ideas' => _generative.giftIdeas(contact!, store, now),
+      'reconnect' => _generative.reconnect(contact!, store, now),
+      'draft_message' => _generative.draftMessage(contact!, store, now),
+      'briefing' => _generative.briefing(store, now),
+      'weekly_review' => _generative.weeklyReview(store, now),
+      'pattern_insight' => _generative.patternInsight(store, now),
+      _ => Future<String>.value("I didn't catch that."),
+    });
   }
 
   /// Resolve → execute → persist → journal → learn for a fully-slotted skill. Shared by

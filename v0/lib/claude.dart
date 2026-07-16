@@ -125,6 +125,19 @@ class ClaudeClient implements CloudClient {
       'paraphrase; use JSON null (not the string "none") for a slot with no value. '
       'Use skillId "none" if it is not one of these capabilities or is a '
       'general/world question. '
+      'GENERATIVE: some utterances ask the app to SYNTHESIZE something over the user\'s OWN data '
+      'rather than record or look up a single fact — gift ideas for a person, a daily briefing, '
+      'reconnect advice, a message draft in the user\'s voice, a weekly review, a cross-tracker '
+      'pattern insight. For these, instead of a skillId, return {"generativeKind": "<one of: '
+      'gift_ideas|reconnect|draft_message|briefing|weekly_review|pattern_insight>", "params": '
+      '{"contact": "<the person\'s name, or null>"}, "template": "<see below>"}. '
+      'gift_ideas/reconnect/draft_message take a contact (use the contact\'s EXACT name if it matches '
+      'an existing contact); briefing/weekly_review/pattern_insight take no contact. Only use a '
+      'generativeKind when the user is clearly asking to GENERATE / suggest / draft / summarize, not '
+      'to record or query a fact. For a generative route the "template" is the utterance with the '
+      'contact replaced by {contact:entity} and every other word literal + lowercased (e.g. "can you '
+      'suggest a gift for Elena" -> "can you suggest a gift for {contact:entity}"); omit it for a '
+      'no-contact kind or a one-off phrasing. '
       'MULTIPLE RECORDS: usually return one {skillId, slots}. But if the utterance describes '
       'SEVERAL separate things to record, return {"actions": [{"skillId":..., "slots":{...}}, ...]} '
       'with ONE entry per record. Two rules that force this: (1) an interaction/plan WITH several '
@@ -308,6 +321,11 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
           context, maxTokens: 400);
 
   static const _sentinels = {'none', 'null', ''};
+  // The fixed, binary-shipped generative-kind set (Spec 03 §2.2a / §7.3.2, G-46). A kind outside
+  // this set is treated as abstain (parallel to the invented-skillId rule) — never dispatched.
+  static const _generativeKinds = {
+    'gift_ideas', 'reconnect', 'draft_message', 'briefing', 'weekly_review', 'pattern_insight'
+  };
 
   /// Full-inventory residual routing. Ok({skillId, slots}) on a route, Ok(null) when
   /// the model abstains (or names an id we don't have), or a typed CloudError.
@@ -367,6 +385,19 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
             return CloudOk<Map<String, dynamic>?>({...actions.first, 'source': 'cloud'});
           }
           return CloudOk<Map<String, dynamic>?>({'actions': actions, 'source': 'cloud'});
+        }
+        // Generative recognition (Spec 03 §2.2a / §7.3.2, G-46): a synthesis request routes to a
+        // fixed generative kind, not a skill — checked BEFORE the skill-abstain, since a generative
+        // route legitimately carries skillId null. Closed-set validated: an unknown kind = abstain.
+        final gk = parsed['generativeKind'];
+        if (gk is String && _generativeKinds.contains(gk)) {
+          final tmpl = parsed['template'];
+          return CloudOk<Map<String, dynamic>?>({
+            'generativeKind': gk,
+            'params': normSlots(parsed['params']),
+            'source': 'cloud',
+            if (tmpl is String && tmpl.trim().isNotEmpty) 'template': tmpl.trim(),
+          });
         }
         if (parsed['skillId'] == null || parsed['skillId'] == 'none' || !skills.containsKey(parsed['skillId'])) {
           return const CloudOk<Map<String, dynamic>?>(null); // the model abstained

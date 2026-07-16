@@ -16,8 +16,21 @@ class _GenCloud implements CloudClient {
   String? lastKind, lastContext;
   _GenCloud({this.err});
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
-      const CloudOk(null); // abstain — these flows are corpus/generative, never residual
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async {
+    // Stand in for Haiku's G-46 generative recognition: a "suggest/gift … for <name>" phrasing the
+    // frozen regex misses is classified as gift_ideas with the contact param (mirrors the real
+    // {generativeKind, params} residual contract). Everything else abstains.
+    final lc = u.toLowerCase();
+    if (lc.contains('gift') && (lc.contains('suggest') || RegExp(r'gift ideas? for').hasMatch(lc))) {
+      final m = RegExp(r'\bfor\s+([A-Za-z]+)', caseSensitive: false).firstMatch(u);
+      return CloudOk<Map<String, dynamic>?>({
+        'generativeKind': 'gift_ideas',
+        'params': {'contact': m?.group(1)}, // null contact when no "for <name>" — exercises the follow-up
+        'source': 'cloud',
+      });
+    }
+    return const CloudOk(null); // abstain
+  }
   @override
   Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
       const CloudOk(null);
@@ -58,12 +71,13 @@ void main() {
       expect(cloud.lastContext, contains('hiking'));
     });
 
-    test('"(can you) suggest a/some gift(s) for X" phrasing routes generative (dogfood gap 2026-07-15)', () async {
+    test('"suggest a gift for X" the regex misses is recognized by the residual (G-46; dogfood 2026-07-15)', () async {
+      // The frozen _giftRe does NOT match these; recognition comes from the cloud residual, and the
+      // session dispatches the {generativeKind, params} route to giftIdeas.
       for (final phrase in [
         'can you suggest a gift for Sarah',
         'can you suggest some gifts for Sarah',
         'suggest a gift for Sarah',
-        'any gift ideas for Sarah',
       ]) {
         final cloud = _GenCloud();
         final s = await _s(cloud);
@@ -72,6 +86,19 @@ void main() {
         expect(cloud.lastKind, 'gift_ideas', reason: phrase);
         expect(cloud.lastContext, contains('hiking'), reason: phrase);
       }
+    });
+
+    test('a generative request with no contact asks (§6.3 follow-up), then the answer runs it (G-46)', () async {
+      final cloud = _GenCloud();
+      final s = await _s(cloud);
+      await s.handle('remember that Sarah loves hiking');
+      final ask = await s.handle('can you suggest a gift'); // no contact
+      expect(ask.toLowerCase(), contains('whom'));
+      expect(cloud.lastKind, isNull); // nothing generated yet
+      final r = await s.handle('Sarah'); // the answer
+      expect(cloud.lastKind, 'gift_ideas');
+      expect(cloud.lastContext, contains('hiking'));
+      expect(r, contains('hiking'));
     });
 
     test('unknown person -> asks to learn about them first, no cloud call', () async {
