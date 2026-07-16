@@ -14,9 +14,11 @@ final _now = DateTime.parse('2026-07-06T09:00:00');
 class _GenCloud implements CloudClient {
   final CloudErrorKind? err;
   String? lastKind, lastContext;
+  int residualCalls = 0; // how many times the cloud residual was consulted (0 after a learned hit)
   _GenCloud({this.err});
   @override
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async {
+    residualCalls++;
     // Stand in for Haiku's G-46 generative recognition: a "suggest/gift … for <name>" phrasing the
     // frozen regex misses is classified as gift_ideas with the contact param (mirrors the real
     // {generativeKind, params} residual contract). Everything else abstains.
@@ -86,6 +88,40 @@ void main() {
         expect(cloud.lastKind, 'gift_ideas', reason: phrase);
         expect(cloud.lastContext, contains('hiking'), reason: phrase);
       }
+    });
+
+    test('a DELIVERED recognition is learned — the 2nd identical phrasing routes OFFLINE (G-46)', () async {
+      final cloud = _GenCloud();
+      final s = await _s(cloud);
+      await s.handle('remember that Sarah loves hiking');
+      await s.handle('can you suggest a gift for Sarah'); // residual recognizes, delivers, LEARNS
+      final callsAfterFirst = cloud.residualCalls;
+      expect(callsAfterFirst, greaterThan(0));
+      cloud.lastKind = null;
+      await s.handle('can you suggest a gift for Sarah'); // 2nd: the learned corpus template catches it
+      expect(cloud.residualCalls, callsAfterFirst, reason: 'no NEW residual call — recognized offline');
+      expect(cloud.lastKind, 'gift_ideas'); // still dispatched the synthesis
+    });
+
+    test('a DEGRADED generation is NOT learned — the 2nd phrasing still hits the residual (G-46)', () async {
+      final cloud = _GenCloud(err: CloudErrorKind.offline); // the generate() call fails
+      final s = await _s(cloud);
+      await s.handle('remember that Sarah loves hiking');
+      await s.handle('can you suggest a gift for Sarah'); // recognized, but generation degrades → no learn
+      final callsAfterFirst = cloud.residualCalls;
+      await s.handle('can you suggest a gift for Sarah');
+      expect(cloud.residualCalls, greaterThan(callsAfterFirst), reason: 'not learned → re-consults the residual');
+    });
+
+    test('a learned recognition is FORGOTTEN on a next-turn correction (§5.2 negative half, G-46)', () async {
+      final cloud = _GenCloud();
+      final s = await _s(cloud);
+      await s.handle('remember that Sarah loves hiking');
+      await s.handle('can you suggest a gift for Sarah'); // learns
+      await s.handle('no, I meant remember that Sarah is my sister'); // correct → forget the learned template
+      final callsBefore = cloud.residualCalls;
+      await s.handle('can you suggest a gift for Sarah'); // template gone → back to the residual
+      expect(cloud.residualCalls, greaterThan(callsBefore), reason: 'forgotten → re-consults the residual');
     });
 
     test('a generative request with no contact asks (§6.3 follow-up), then the answer runs it (G-46)', () async {

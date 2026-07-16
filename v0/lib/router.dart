@@ -22,8 +22,12 @@ class CorpusEntry {
   // generic "talked to". Merged into the extracted slots at match time (never overwrites a
   // regex-captured slot). Empty for the vast majority of entries.
   final Map<String, dynamic> fixedSlots;
+  // A generative-recognition target (Spec 03 §2.2a, `G-46`): when set, this entry routes to a
+  // generative kind (gift_ideas, …) rather than a skill — mutually exclusive with a real [skillId]
+  // (which is '' for a generative entry). Its one slot is the {contact:entity} param.
+  final String? generativeKind;
   CorpusEntry(this.skillId, this.template, this.regex, this.slotTypes,
-      {this.fixedSlots = const {}});
+      {this.fixedSlots = const {}, this.generativeKind});
 }
 
 class Router {
@@ -93,6 +97,28 @@ class Router {
     if (!_hasStrongLiteral(t)) return null;
     if (corpus.any((c) => c.template == t)) return null; // dedupe: nothing new to persist
     corpus.insert(0, _compile({'skillId': skillId, 'template': t}));
+    _learnedTemplates.add(t);
+    return t;
+  }
+
+  /// Learn a GENERATIVE-recognition template (§5.2 write path, `G-46`): the target is a
+  /// [generativeKind] and the one param [contact] is abstracted to `{contact:entity}`, so the next
+  /// similar phrasing recognizes the request OFFLINE (no residual classification). Same safety guards
+  /// as [learn]: the contact must be a literal substring (else a resolved/renamed name — don't learn),
+  /// ≥1 strong literal word must survive, and no duplicate. Returns the template to persist, or null.
+  /// Recognition-only — the generation itself is never cached (§2.2a). No-contact kinds never learn
+  /// (no placeholder → a zero-slot template the guards reject).
+  String? learnGenerative(String utterance, String generativeKind, String? contact,
+      {Set<String> contacts = const {}}) {
+    final vs = contact?.trim() ?? '';
+    if (vs.isEmpty) return null;
+    var t = utterance.trim();
+    final idx = t.toLowerCase().indexOf(vs.toLowerCase());
+    if (idx < 0) return null; // param not verbatim in the surface — a lossy template; don't learn
+    t = '${t.substring(0, idx)}{contact:entity}${t.substring(idx + vs.length)}';
+    if (!_hasStrongLiteral(t)) return null;
+    if (corpus.any((c) => c.template == t)) return null;
+    corpus.insert(0, _compile({'generativeKind': generativeKind, 'template': t}));
     _learnedTemplates.add(t);
     return t;
   }
@@ -205,9 +231,9 @@ class Router {
     sb.write(_lit(tmpl.substring(i)));
     sb.write(r'[.?!]?$'); // strip a trailing . ? or ! so "what's Mia allergic to?" doesn't leak "?" into the slot
     final fixed = (e['slots'] as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
-    return CorpusEntry(e['skillId'] as String, tmpl,
+    return CorpusEntry(e['skillId'] as String? ?? '', tmpl,
         RegExp(sb.toString(), caseSensitive: false), slotTypes,
-        fixedSlots: fixed);
+        fixedSlots: fixed, generativeKind: e['generativeKind'] as String?);
   }
 
   /// Turn literal template text into a regex fragment, preserving whitespace
@@ -272,6 +298,12 @@ class Router {
         if (_learnedTemplates.contains(e.template) != wantLearned) continue;
         final slots = _extract(e, u, asOf, contacts);
         if (slots != null) {
+          // A learned generative-recognition entry (`G-46`) routes offline to its kind — the {contact}
+          // slot becomes the param. The session dispatches it to the GenerativeService, same as a
+          // residual-recognized one, with no cloud classification call.
+          if (e.generativeKind != null) {
+            return {'generativeKind': e.generativeKind, 'params': slots, 'source': 'corpus', 'template': e.template};
+          }
           return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};
         }
       }

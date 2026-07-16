@@ -17,6 +17,11 @@ class GenerativeService {
   final CloudClient cloud;
   GenerativeService(this.cloud);
 
+  /// True iff the LAST call produced a real cloud synthesis (not a degrade / unknown-person / local
+  /// fallback). The caller resets it before a call and reads it after, to decide whether the
+  /// recognition template is safe to learn (Spec 03 §2.7 "delivered", `G-46`).
+  bool lastDelivered = false;
+
   /// Gift ideas for [personName], grounded in what we actually know about them.
   Future<String> giftIdeas(String personName, Map<String, _Record> store, DateTime now) async {
     final person = _resolveContact(personName, store);
@@ -43,6 +48,7 @@ class GenerativeService {
 
     switch (await cloud.generate('gift_ideas', ctx.toString())) {
       case CloudOk(:final value):
+        lastDelivered = true;
         return value;
       case CloudError(:final kind):
         return _degrade('gift ideas', kind);
@@ -84,6 +90,7 @@ class GenerativeService {
 
     switch (await cloud.generate('reconnect', ctx.toString())) {
       case CloudOk(:final value):
+        lastDelivered = true;
         return value;
       case CloudError(:final kind):
         return _degrade('reconnect ideas', kind);
@@ -103,6 +110,7 @@ class GenerativeService {
 
     switch (await cloud.generate('briefing', ctx.toString())) {
       case CloudOk(:final value):
+        lastDelivered = true;
         return value;
       case CloudError(:final kind):
         return _degrade('a briefing', kind);
@@ -166,6 +174,7 @@ class GenerativeService {
 
     switch (await cloud.generate('weekly_review', ctx.toString())) {
       case CloudOk(:final value):
+        lastDelivered = true;
         return value;
       case CloudError(:final kind):
         return _degrade('a weekly review', kind);
@@ -219,6 +228,7 @@ class GenerativeService {
 
     switch (await cloud.generate('pattern_insight', ctx.toString())) {
       case CloudOk(:final value):
+        lastDelivered = true;
         return value;
       case CloudError(:final kind):
         return _degrade('a pattern insight', kind);
@@ -268,6 +278,7 @@ class GenerativeService {
 
     switch (await cloud.generate('draft_message', ctx.toString())) {
       case CloudOk(:final value):
+        lastDelivered = true;
         return value;
       case CloudError(:final kind):
         return _degrade('a draft', kind);

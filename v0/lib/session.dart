@@ -1435,7 +1435,8 @@ class Session {
         _ => 'Gift ideas for whom?',
       };
     }
-    return await (switch (kind) {
+    _generative.lastDelivered = false; // reset; set true only by a real cloud synthesis
+    final reply = await (switch (kind) {
       'gift_ideas' => _generative.giftIdeas(contact!, store, now),
       'reconnect' => _generative.reconnect(contact!, store, now),
       'draft_message' => _generative.draftMessage(contact!, store, now),
@@ -1444,6 +1445,18 @@ class Session {
       'pattern_insight' => _generative.patternInsight(store, now),
       _ => Future<String>.value("I didn't catch that."),
     });
+    // Learn the RECOGNITION (not the generation) on a DELIVERED synthesis (Spec 03 §2.7, G-46): a
+    // degrade / unknown-person / offline turn leaves lastDelivered false and learns nothing. Only
+    // contact-param kinds abstract to a {contact:entity} template; no-contact kinds have no
+    // placeholder to learn. Tracked as _lastTurnTemplate so a next-turn "correct" forgets it (§5.2).
+    if (_generative.lastDelivered && contactKinds.contains(kind)) {
+      final learned = router.learnGenerative(u, kind, contact, contacts: _knownContactTokens());
+      if (learned != null) {
+        repo.appendCorpusLearned({'generativeKind': kind, 'template': learned});
+        _lastTurnTemplate = learned;
+      }
+    }
+    return reply;
   }
 
   /// Resolve → execute → persist → journal → learn for a fully-slotted skill. Shared by

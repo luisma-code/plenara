@@ -59,10 +59,13 @@ _Last updated: 2026-07-15 — after shipping v8 (iOS-first voice tour + glyph vo
   SOLID). **Phase 1 SHIPPED:** `routeResidual` carries the fixed generative-kind inventory and returns
   `{generativeKind, params}`; `session._dispatchGenerative` runs it (missing contact → §6.3 follow-up);
   the `_giftRe` band-aid is reverted + the regexes frozen. So novel phrasings no longer dead-end.
-  **Phase 2 TODO — the "evolve local handling" half:** learn a *recognition* template (surface →
-  generativeKind) on delivered-and-uncorrected (excluding degraded/errored/upgrade-prompt turns), per
-  spec §5.2/§2.7 — needs router.dart to store+match a `generativeKind`-target entry. Until then, every
-  generative phrasing re-hits the cloud (correct, just not yet learned-to-offline).
+  **Phase 2 SHIPPED — the "evolve local handling" half:** `router.dart` now stores + matches a
+  `generativeKind`-target corpus entry; `learnGenerative` abstracts the contact to `{contact:entity}`
+  and learns on a DELIVERED synthesis (`GenerativeService.lastDelivered` flag — degrade/unknown-person/
+  offline turns don't learn); a learned template routes the 2nd identical phrasing OFFLINE (no residual
+  call), and a next-turn "correct" forgets it (§5.2 negative half). Tested end-to-end (learn→offline,
+  degrade→no-learn, correct→forget). So the loop is closed: Claude recognizes a novel phrasing once,
+  the DSL absorbs it — no regex edits. (End-state retrieval migration still deferred, `G-44`.)
 - **flutter_tts shares one static method-channel handler** (deferred from the 5-lens Fable review):
   every extra `FlutterTts()` (voice enumeration on each Settings/onboarding open + resume, and the
   preview instance) re-registers the handler, so the main voice's `setStartHandler`/`setErrorHandler`
