@@ -5,7 +5,7 @@ snapshots), this file is kept **current as work happens** — the latest state, 
 at my fingertips, hard-won gotchas, decisions + rationale, and open threads. If you're a fresh
 session, read this first; it should already be up to date. Keep it skimmable, prune stale lines.
 
-_Last updated: 2026-07-16 — G-47 shipped: numbered-list corrections + editable "Your data" view._
+_Last updated: 2026-07-16 — G-49 shipped + 4-lens Fable-reviewed (numbered corrections + editable data view). TestFlight plumbing ready, gated on Luis's Apple-account batch._
 
 ---
 
@@ -13,7 +13,28 @@ _Last updated: 2026-07-16 — G-47 shipped: numbered-list corrections + editable
 - **v8 shipped** (`releases/VERSIONS.md`; release point `6ceeeb2`). App **runs on the iPhone**, on the
   **Matilda (Premium, en-AU)** voice. Repo `origin/main` fully pushed, tree clean, tests green
   (**1676 v0 + 74 app**).
-- **G-46 (generative recognition) DONE on `main` + code-review-clean, NOT yet on the phone.** Spec 03 →
+- **G-49 (numbered corrections + editable data view) — renamed from G-47 (that number was taken by
+  the gap register). 4-lens Fable review done; ALL confirmed defects fixed + regression-tested.** The
+  two majors were data-corruption paths: (1) a mixed-type readback (recall-facts numbers facts AND
+  relationships) wrote a junk field on the wrong type on "change N to X" → fixed with a PER-ITEM
+  `{id,typeId,labelField}` reference channel; (2) a manual data-view edit between a spoken write and a
+  voice "no, I meant…" made the correction reverse the wrong journal entry → manual writes now clear
+  the spoken-correction context + the data-view snackbar uses a TARGETED `undoById(token)`. Plus: a
+  date-picker crash on any date >5y old (birthdays) → clamped; edit-failure was invisible behind the
+  modal sheet → now inline `errorText`; ref-by-number commands could be swallowed mid ProvideSlot →
+  guarded; ref actions killed a live Tour → kept alive; `ref_mark` id/label now var-closure-checked;
+  execute() before-image uses putIfAbsent; +orderBy on the numbered read_many skills; learned-flow
+  forget/restore hardened (token synthesis + dedupe). Specs 02/03/07 synced (§3 ops, §2.3a
+  reference-by-number, §5.5 posture), gap register row added. **v0 1718 + app 80 green.**
+- **TestFlight — Mac-side plumbing done, GATED on Luis.** Release archive builds clean;
+  `tool/testflight-upload.sh` exports+uploads a signed IPA via an App Store Connect **API key** (no
+  Xcode login needed — `xcodebuild -allowProvisioningUpdates` auto-creates the distribution cert).
+  Blocker: the machine has no distribution cert / no Apple account in Xcode → Luis must (1) create the
+  App Store Connect app record for `com.plenara.plenaraApp`, (2) generate an **Admin** API key (.p8 +
+  Key ID + Issuer ID) → drop in gitignored `tool/.testflight.env`, (3) add himself as an internal
+  tester. Then Claude runs one command. Full steps in `TESTFLIGHT.md`. Remote deploy across networks
+  is impossible today (device shows `unavailable` off the Mac's LAN — that's what TestFlight fixes).
+- **G-46 (generative recognition) DONE on `main` + code-review-clean, verified LIVE, NOT yet on the phone.** Spec 03 →
   v0.7 (Fable-reviewed SOLID); Phase 1 (cloud residual recognizes generative intents + dispatch + §6.3
   follow-up) + Phase 2 (learn recognition templates → 2nd phrasing routes offline; degrade→no-learn;
   correct→forget), both tested. **A 2-lens Fable code review found 8 real bugs — ALL 8 fixed + tested**

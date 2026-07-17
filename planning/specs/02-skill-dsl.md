@@ -124,14 +124,14 @@ The input contract is the seam between this spec and the NLU spec (which this sp
 >
 > - **Ops (13, closed):** `read_one, read_many, read_related, read_reference, write_record,
 >   delete_record, compute, set, format, branch, foreach, enumerate, ref_mark`.
-> - **`enumerate`** (`G-47`, numbered-list corrections) — `{"op":"enumerate","list":{"var":"x"},
+> - **`enumerate`** (`G-49`, numbered-list corrections) — `{"op":"enumerate","list":{"var":"x"},
 >   "label":"<field>","into":"var"[,"line":"{f} — {g}"]}`. Renders a NUMBERED readback string
 >   (`\n  1. …\n  2. …`) into `into` AND, from the same single pass, exports the ordered
 >   `{id,label}` list to the plan's `enumeration` channel — so a later spoken "delete 2" / "correct
 >   1" resolves against EXACTLY what was read back (by recordId, never a re-derived order). `label`
 >   is the identity field (what confirmations quote + what "correct" replaces); optional `line`
 >   composes a richer per-row string over record fields (omit-if-null). For flat lists.
-> - **`ref_mark`** (`G-47`) — `{"op":"ref_mark","typeId":"<t>","id":<idExpr>,"field":"<labelField>"
+> - **`ref_mark`** (`G-49`) — `{"op":"ref_mark","typeId":"<t>","id":<idExpr>,"field":"<labelField>"
 >   [,"label":<expr>]}`. Captures ONE item's ref into the `enumeration` channel from inside a
 >   `foreach`, so a skill that builds rich/conditional/joined readback lines (and owns its own
 >   numbering via a counter) still exports numbered references. First mark fixes typeId+labelField.

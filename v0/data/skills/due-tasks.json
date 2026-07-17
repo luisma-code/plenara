@@ -8,7 +8,7 @@
   "inputs": [],
   "steps": {
     "main": [
-      { "op": "read_many", "typeId": "task", "into": "tasks" },
+      { "op": "read_many", "typeId": "task", "orderBy": "createdAt", "orderDir": "asc", "into": "tasks" },
       { "op": "compute", "fn": "today", "into": "today" },
       { "op": "set", "var": "lines", "value": "" },
       { "op": "set", "var": "n", "value": 0 },

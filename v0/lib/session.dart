@@ -23,14 +23,18 @@ final _undoRe = RegExp(
 // The ordered list Plena last read back, captured from the interpreter's `enumerate` channel.
 // "delete 2" / "complete 1" / "correct 3" resolve N against THIS — by recordId, never by re-derived
 // order or fuzzy text — so a misheard item ("Zpack my clothes") is still trivially re-targetable.
+class _EnumItem {
+  final String id;
+  final String typeId; // per-item: one readback can enumerate several types (facts + relationships)
+  final String labelField; // the field "correct" replaces on THIS item's type
+  final String spokenLabel; // fallback if the record vanishes before a reference
+  _EnumItem(this.id, this.typeId, this.labelField, this.spokenLabel);
+}
+
 class _EnumCtx {
-  final String typeId;
-  final String labelField; // the identity field: what confirmations quote + what "correct" replaces
-  final List<String> ids; // ordered exactly as spoken (1-based to the user)
-  final List<String> spokenLabels; // fallback labels if a record vanishes before a reference
+  final List<_EnumItem> items; // ordered exactly as spoken (1-based to the user)
   final String skillId; // diagnostics only
-  _EnumCtx({required this.typeId, required this.labelField, required this.ids,
-      required this.spokenLabels, required this.skillId});
+  _EnumCtx(this.items, this.skillId);
 }
 
 // A number/ordinal atom — STT hands us words ("one", "the second", "last"), not just digits.
@@ -344,7 +348,8 @@ final _idRe = RegExp(r'^[a-z0-9_-]{1,64}$');
 class _JournalEntry {
   final Map<String, Map<String, dynamic>?> before;
   final String? desc;
-  _JournalEntry(this.before, this.desc);
+  final int id; // stable handle so a data-view snackbar can undo THIS entry, not the ring's tail
+  _JournalEntry(this.before, this.desc, {this.id = 0});
 }
 
 /// Outcome of a manual (data-view) write — a VALUE, never an exception across the UI seam
@@ -353,8 +358,9 @@ class _JournalEntry {
 class ManualWrite {
   final bool ok;
   final String message;
-  const ManualWrite.ok(this.message) : ok = true;
-  const ManualWrite.fail(this.message) : ok = false;
+  final int? undoId; // on success: the journal handle to pass to undoById for a TARGETED undo
+  const ManualWrite.ok(this.message, {this.undoId}) : ok = true;
+  const ManualWrite.fail(this.message) : ok = false, undoId = null;
 }
 
 /// One learned NLU corpus entry, shaped for the "Learned phrases" showcase (the UI never sees
@@ -396,6 +402,7 @@ class Session {
   final NotificationScheduler? _scheduler;
   static const _journalMax = 25; // ring depth
   final List<_JournalEntry> _journal = []; // execution journal of REVERSIBLE (write) turns
+  int _journalSeq = 0; // monotonic id source for targeted (data-view snackbar) undo
   // the immediately-previous routed turn (write OR read), so a correction targets
   // the right thing: forget its template, and reverse it ONLY if it actually wrote.
   String? _lastTurnTemplate;
@@ -836,24 +843,31 @@ class Session {
   // them exactly like a spoken write. They label with the LIVE record value, so a corrected/undone
   // item self-heals. Diagnostics: source 'enumref', skill 'ref-{delete,complete,correct}'.
 
+  /// True if [u] is a reference-by-number command against the live list — used by the pending-fill /
+  /// pending-gen guards so "delete 2" mid-follow-up isn't swallowed as a slot value or a contact name.
+  bool _looksLikeRefCommand(String u) =>
+      _enumCtx != null &&
+      (_refDeleteRe.hasMatch(u) || _refCompleteRe.hasMatch(u) ||
+          _refCorrectRe.hasMatch(u) || _refCorrectInlineRe.hasMatch(u));
+
   /// Resolve a 1-based position (or -1 = "last") against the live enumeration context.
-  ({Map<String, dynamic>? rec, String label, int pos, String? fail}) _refResolve(int n) {
+  ({Map<String, dynamic>? rec, _EnumItem? item, String label, int pos, String? fail}) _refResolve(int n) {
     final ctx = _enumCtx!;
-    final count = ctx.ids.length;
+    final count = ctx.items.length;
     final idx = n < 0 ? count - 1 : n - 1;
     if (idx < 0 || idx >= count) {
       final asked = n < 0 ? count : n;
-      return (rec: null, label: '', pos: asked,
+      return (rec: null, item: null, label: '', pos: asked,
           fail: 'That list only had $count item${count == 1 ? '' : 's'} — there\'s no number $asked.');
     }
-    final id = ctx.ids[idx];
-    final rec = store[id];
+    final it = ctx.items[idx];
+    final rec = store[it.id];
     if (rec == null) {
-      return (rec: null, label: ctx.spokenLabels[idx], pos: idx + 1,
-          fail: 'Number ${idx + 1} — "${ctx.spokenLabels[idx]}" — isn\'t there any more; '
+      return (rec: null, item: it, label: it.spokenLabel, pos: idx + 1,
+          fail: 'Number ${idx + 1} — "${it.spokenLabel}" — isn\'t there any more; '
               'it may have been deleted since I read the list.');
     }
-    return (rec: rec, label: '${rec[ctx.labelField] ?? ctx.spokenLabels[idx]}', pos: idx + 1, fail: null);
+    return (rec: rec, item: it, label: '${rec[it.labelField] ?? it.spokenLabel}', pos: idx + 1, fail: null);
   }
 
   void _journalPush(String id, Map<String, dynamic> before, String desc) {
@@ -878,11 +892,11 @@ class Session {
     _outSource = 'enumref';
     final r = _refResolve(n);
     if (r.fail != null) return r.fail!;
-    final ctx = _enumCtx!;
-    final td = types[ctx.typeId];
+    final typeId = r.item!.typeId; // this item's own type (a readback may mix types)
+    final td = types[typeId];
     final doneField = _doneFieldOf(td);
     if (doneField == null) {
-      return 'A ${_typeDisplayName(ctx.typeId)} isn\'t something I mark done — '
+      return 'A ${_typeDisplayName(typeId)} isn\'t something I mark done — '
           'I can delete number ${r.pos}, or correct it.';
     }
     if (r.rec![doneField] == true) return 'Number ${r.pos} — "${r.label}" — was already done.';
@@ -902,9 +916,8 @@ class Session {
     _outSource = 'enumref';
     final r = _refResolve(n);
     if (r.fail != null) return r.fail!;
-    final ctx = _enumCtx!;
     _pendingCorrection = {
-      'id': r.rec!['id'], 'typeId': ctx.typeId, 'labelField': ctx.labelField,
+      'id': r.item!.id, 'typeId': r.item!.typeId, 'labelField': r.item!.labelField,
       'oldLabel': r.label, 'n': r.pos,
     };
     _outSkill = 'ref-correct';
@@ -916,21 +929,33 @@ class Session {
     _outSource = 'enumref';
     final r = _refResolve(n);
     if (r.fail != null) return r.fail!;
-    return _applyCorrection(r.rec!['id'] as String, _enumCtx!.labelField, r.label, newText, r.pos, now);
+    return _applyCorrection(r.item!.id, r.item!.typeId, r.item!.labelField, r.label, newText, r.pos, now);
   }
 
-  String _applyCorrection(String id, String labelField, String oldLabel, String newText, dynamic n, DateTime now) {
+  String _applyCorrection(String id, String typeId, String labelField, String oldLabel, String newText, dynamic n, DateTime now) {
     _outSource = 'enumref';
     final rec = store[id];
     if (rec == null) {
       return 'That item — "$oldLabel" — isn\'t there any more; it may have been deleted since I read the list.';
     }
+    // Coerce to the label field's declared type so "change 2 to 8" on a numeric field stores a
+    // number, not a string (schema drift). Text fields (the common case) pass through unchanged.
+    final vt = _valueTypeOf(typeId, labelField);
+    final coerced = _coerceForType(vt, newText);
     _journalPush(id, rec, 'changed "$oldLabel" to "$newText"');
-    final updated = Map<String, dynamic>.from(rec)..[labelField] = newText;
+    final updated = Map<String, dynamic>.from(rec)..[labelField] = coerced;
     store[id] = updated;
     repo.persist(updated);
     _outSkill = 'ref-correct';
     return 'Changed number $n to "$newText".';
+  }
+
+  /// The declared valueType of a type's attribute (defaults to 'text').
+  String _valueTypeOf(String typeId, String field) {
+    for (final a in ((types[typeId]?['attributes'] as List?) ?? const []).whereType<Map>()) {
+      if (a['name'] == field) return a['valueType'] as String? ?? 'text';
+    }
+    return 'text';
   }
 
   /// The first boolean attribute named `completed`/`done` on a type, or null (no done concept).
@@ -962,7 +987,7 @@ class Session {
     return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
   }
 
-  // ---- Manual data-view facade (Spec 07 §5.5 — the editable "Your data" view, G-47) -----------
+  // ---- Manual data-view facade (Spec 07 §5.5 — the editable "Your data" view, G-49) -----------
   // Edits/deletes ride the SAME journal ring as spoken writes, so a following "undo that" reverses
   // a manual edit, and the view's snackbar UNDO is just a button on that ring (one undo system).
 
@@ -1011,6 +1036,13 @@ class Session {
     if (attr == null) return ManualWrite.fail('"$field" isn\'t an editable field of a ${_typeDisplayName(typeId)}.');
     final valueType = attr['valueType'] as String? ?? 'text';
     final required = attr['required'] == true;
+    // enum: only a declared value is allowed (no free-typing an out-of-set value).
+    if (valueType == 'enum') {
+      final allowed = ((attr['enumValues'] as List?) ?? const []).map((e) => '$e').toList();
+      if (!allowed.contains('$value')) {
+        return ManualWrite.fail('"$field" must be one of: ${allowed.join(', ')}.');
+      }
+    }
     final coerced = _coerceForType(valueType, value);
     final isEmpty = coerced == null ||
         (coerced is String && coerced.trim().isEmpty) ||
@@ -1021,8 +1053,7 @@ class Session {
     if (required && isEmpty) {
       return ManualWrite.fail('"$field" is required for a ${_typeDisplayName(typeId)}.');
     }
-    _journal.add(_JournalEntry({id: Map<String, dynamic>.from(rec)}, 'edited ${_typeDisplayName(typeId)} — $field'));
-    if (_journal.length > _journalMax) _journal.removeAt(0);
+    final undoId = _pushManualJournal({id: Map<String, dynamic>.from(rec)}, 'edited ${_typeDisplayName(typeId)} — $field');
     if (isEmpty && !required) {
       rec.remove(field);
     } else {
@@ -1034,7 +1065,7 @@ class Session {
       automations.notifyWrites([rec]); // a manual edit is a user-origin write, same as a spoken one
     } catch (_) {/* contained — an automation must never break an edit */}
     repo.logTurn({'source': 'manual-edit', 'op': 'edit', 'typeId': typeId, 'field': field});
-    return ManualWrite.ok('Updated — $field.');
+    return ManualWrite.ok('Updated — $field.', undoId: undoId);
   }
 
   /// Delete a record from the data view — journaled + a storage tombstone, so it's doubly
@@ -1043,21 +1074,44 @@ class Session {
     final rec = store[id];
     if (rec == null) return const ManualWrite.fail('That record no longer exists.');
     final summary = _oneLineSummary(rec) ?? 'that record';
-    _journal.add(_JournalEntry({id: Map<String, dynamic>.from(rec)}, 'deleted "$summary"'));
-    if (_journal.length > _journalMax) _journal.removeAt(0);
+    final undoId = _pushManualJournal({id: Map<String, dynamic>.from(rec)}, 'deleted "$summary"');
     store.remove(id);
     repo.remove(id);
     await _reconcileReminders();
     repo.logTurn({'source': 'manual-edit', 'op': 'delete', 'typeId': rec['typeId']});
-    return ManualWrite.ok('Deleted — $summary.');
+    return ManualWrite.ok('Deleted — $summary.', undoId: undoId);
   }
 
-  /// Reverse the most recent journaled write (powers the data-view snackbar UNDO). Shares the ONE
-  /// journal ring with the spoken "undo that", so the two are never out of step.
+  /// Push a journal entry for a manual (data-view) write. Returns a stable id for a targeted undo,
+  /// AND clears the spoken-correction context: a manual edit supersedes "the previous turn", so a
+  /// following voice "no, I meant…" / "undo that" must NOT reverse an unrelated earlier spoken write.
+  int _pushManualJournal(Map<String, Map<String, dynamic>?> before, String desc) {
+    final jid = ++_journalSeq;
+    _journal.add(_JournalEntry(before, desc, id: jid));
+    if (_journal.length > _journalMax) _journal.removeAt(0);
+    _lastTurnWrote = false;
+    _lastDispatch = null;
+    _lastTurnTemplate = null;
+    return jid;
+  }
+
+  /// Reverse the most recent journaled write (powers a spoken "undo that" from outside a turn).
   Future<String> undoLast() async {
     final msg = _undoLastInternal();
     await _reconcileReminders();
     return msg;
+  }
+
+  /// Reverse a SPECIFIC journaled write by its id (the data-view snackbar UNDO). Targets that exact
+  /// entry wherever it sits in the ring — so a later unrelated write doesn't make UNDO hit the wrong
+  /// thing. No-op (with an honest message) if it already rolled off or was undone.
+  Future<String> undoById(int undoId) async {
+    final i = _journal.indexWhere((e) => e.id == undoId);
+    if (i < 0) return 'That change is no longer undoable here.';
+    final entry = _journal.removeAt(i);
+    _reverse(entry.before);
+    await _reconcileReminders();
+    return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
   }
 
   /// The learned NLU flows, shaped for the "Learned phrases" showcase (most-recent first — learn()
@@ -1079,21 +1133,33 @@ class Session {
     return words.isEmpty ? words : '${words[0].toUpperCase()}${words.substring(1)}';
   }
 
-  /// Forget a learned flow (data-view "×"). Returns the raw persisted map as an undo token, or
-  /// null if it wasn't a learned entry (seed entries can't be forgotten).
+  /// Forget a learned flow (data-view "×"). Returns the raw map as an undo token, or null if it
+  /// wasn't a learned entry (seed entries can't be forgotten). If the entry is learned in-memory but
+  /// missing from the persisted file (a persist race), synthesize a minimal token from the router
+  /// entry so the user still gets a working undo (never forget without an undo path).
   Map<String, dynamic>? forgetLearnedFlow(String template) {
-    final raw = repo.loadCorpusLearned()
+    var raw = repo.loadCorpusLearned()
         .whereType<Map>()
         .cast<Map<String, dynamic>>()
         .where((m) => m['template'] == template)
         .firstOrNull;
-    if (!router.forget(template)) return null;
+    final entry = router.corpus.where((c) => c.template == template).firstOrNull;
+    if (!router.forget(template)) return null; // wasn't learned (a seed / unknown) — nothing to undo
     repo.removeCorpusLearned(template);
+    raw ??= entry == null
+        ? {'template': template}
+        : {
+            'template': template,
+            if (entry.generativeKind != null) 'generativeKind': entry.generativeKind else 'skillId': entry.skillId,
+          };
     return raw;
   }
 
-  /// Re-learn a forgotten flow (snackbar UNDO of forget).
+  /// Re-learn a forgotten flow (snackbar UNDO of forget). Guards against a double-restore appending
+  /// a duplicate persisted line (which would show the flow twice after the next launch).
   void restoreLearnedFlow(Map<String, dynamic> raw) {
+    final t = raw['template'];
+    if (router.corpus.any((c) => c.template == t)) return; // already back — don't duplicate-persist
     router.restore(raw);
     repo.appendCorpusLearned(raw);
   }
@@ -1158,10 +1224,11 @@ class Session {
             resp = '$resp\n\n${_tourClosing()}';
           }
         }
-      } else if (skill != null) {
+      } else if (skill != null && !skill.startsWith('ref-')) {
         _pendingTour = null; // a skill ran outside this chapter's domain → moved on → end silently
       }
-      // else (no skill dispatched — clarify/undo/error/template) → keep the tour alive.
+      // else (no skill dispatched — clarify/undo/error/template — OR a reference-by-number action,
+      // which is engagement with the list just read, like undo) → keep the tour alive.
     }
     // Did this turn actually spend cloud tokens? (drives the per-response cloud dot — accurate
     // even when a cloud/generative call failed to an offline reply, which spends nothing.)
@@ -1263,8 +1330,8 @@ class Session {
           _outSource = 'clarify';
           return 'I didn\'t catch the new wording — what should number $n say?';
         }
-        return _applyCorrection(pendingCorr['id'] as String, pendingCorr['labelField'] as String,
-            oldLabel, newText, n, now);
+        return _applyCorrection(pendingCorr['id'] as String, pendingCorr['typeId'] as String,
+            pendingCorr['labelField'] as String, oldLabel, newText, n, now);
       }
     }
 
@@ -1281,7 +1348,7 @@ class Session {
       final genIsSystemCmd =
           _undoRe.hasMatch(u) || _helpRe.hasMatch(u) || _corrRe.hasMatch(u) || _fabricationRe.hasMatch(u);
       final genLooksLikeCommand = router.route(u, clock: now, contacts: _knownContactTokens()) != null ||
-          _searchNoteRe.hasMatch(u) || _searchForRe.hasMatch(u);
+          _searchNoteRe.hasMatch(u) || _searchForRe.hasMatch(u) || _looksLikeRefCommand(u);
       if (!genIsSystemCmd && !genLooksLikeCommand) {
         return _dispatchGenerative(pendingGen['kind'] as String, {'contact': u.trim()},
             pendingGen['template'] as String?, 'cloud', u, now);
@@ -1313,7 +1380,8 @@ class Session {
         // abandon-and-fall-through path below runs. (Fable review, major.)
         final looksLikeNewCommand = router.route(u, clock: now, contacts: _knownContactTokens()) != null ||
             _searchNoteRe.hasMatch(u) ||
-            _searchForRe.hasMatch(u);
+            _searchForRe.hasMatch(u) ||
+            _looksLikeRefCommand(u); // "delete 2" mid-fill is a reference command, not the slot value
         final coerced = looksLikeNewCommand ? null : _coerceSlot(skill, missing.first, u, now);
         if (coerced != null) {
           _pendingFill = null; // got the answer
@@ -1903,13 +1971,10 @@ class Session {
         final items = (en['items'] as List).cast<Map>();
         _enumCtx = items.isEmpty
             ? null
-            : _EnumCtx(
-                typeId: en['typeId'] as String? ?? '',
-                labelField: en['labelField'] as String,
-                ids: [for (final it in items) '${it['id']}'],
-                spokenLabels: [for (final it in items) '${it['label']}'],
-                skillId: skillId,
-              );
+            : _EnumCtx([
+                for (final it in items)
+                  _EnumItem('${it['id']}', '${it['typeId']}', '${it['field']}', '${it['label']}'),
+              ], skillId);
       }
       // record the previous-turn state for a correction (every routed turn, write or read)
       _lastTurnWrote = plan.writes.isNotEmpty || plan.deletes.isNotEmpty;

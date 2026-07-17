@@ -85,30 +85,30 @@ class _DataViewState extends State<DataView> {
     if (mounted) setState(() => _busy = false);
   }
 
-  /// Edit one field (Spec 07 §5.5 tap-to-edit) — validates in the engine; a failure surfaces as a
-  /// SnackBar (no silent failure). Refreshes the whole view from the (now-updated) store.
+  /// Edit one field (Spec 07 §5.5 tap-to-edit) — validates in the engine. The FAILURE message is
+  /// surfaced by the detail sheet inline (a SnackBar would render behind the modal sheet, invisible),
+  /// so this just persists + refreshes the view and hands the result back to the sheet.
   Future<ManualWrite> _edit(String id, String field, Object? value) async {
     final r = await session.editField(id, field, value);
-    if (mounted) {
-      if (!r.ok) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(r.message)));
-      setState(() {});
-    }
+    if (mounted) setState(() {});
     return r;
   }
 
   /// Delete a record with an UNDO snackbar — the voice-undo ethos (act-then-describe), doubly
-  /// reversible (journal + storage tombstone), so no pre-delete confirm dialog.
+  /// reversible (journal + storage tombstone), so no pre-delete confirm dialog. The UNDO is TARGETED
+  /// to this delete's journal entry, so a later write can't make it reverse the wrong thing.
   Future<void> _delete(String id) async {
     final r = await session.deleteRecord(id);
     if (!mounted) return;
     setState(() {});
     if (r.ok) {
+      final token = r.undoId;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(r.message),
         action: SnackBarAction(
           label: 'UNDO',
           onPressed: () async {
-            await session.undoLast();
+            if (token != null) await session.undoById(token);
             if (mounted) setState(() {});
           },
         ),
@@ -403,6 +403,8 @@ class _RecordDetailSheet extends StatefulWidget {
 
 class _RecordDetailSheetState extends State<_RecordDetailSheet> {
   String? _editing; // the attribute name currently in edit mode (text/number only)
+  String? _error; // inline validation failure for the editing row (shown IN the sheet, not behind it)
+  bool _committing = false; // in-flight guard so a double-tap doesn't write twice (two journal entries)
   final _ctrl = TextEditingController();
 
   @override
@@ -417,9 +419,24 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
       .toList();
 
   Future<void> _commit(String field, Object? value) async {
-    final r = await widget.onEdit(widget.recordId, field, value);
-    if (r.ok && mounted) setState(() => _editing = null);
-    // a failure keeps edit mode open; the parent already surfaced the reason as a SnackBar
+    if (_committing) return;
+    _committing = true;
+    try {
+      final r = await widget.onEdit(widget.recordId, field, value);
+      if (!mounted) return;
+      // Surface the outcome INSIDE the sheet: a SnackBar would render behind the modal sheet and be
+      // invisible (no silent failure — the failure keeps edit mode open with the reason shown).
+      setState(() {
+        if (r.ok) {
+          _editing = null;
+          _error = null;
+        } else {
+          _error = r.message;
+        }
+      });
+    } finally {
+      _committing = false;
+    }
   }
 
   @override
@@ -476,6 +493,12 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
     final vt = attr['valueType'] as String? ?? 'text';
     final value = rec[name];
 
+    // json — a structured value; NOT hand-editable in a text field (Spec 07 §5 "voice/skill only").
+    // Show it read-only rather than let a raw TextField stringify a Map into garbage.
+    if (vt == 'json') {
+      return ListTile(dense: true, title: Text(name), trailing: Text(renderValue(value, vt)));
+    }
+
     // boolean — the row IS the toggle; each tap commits a flip.
     if (vt == 'boolean') {
       return SwitchListTile(
@@ -508,7 +531,7 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
                 controller: _ctrl,
                 autofocus: true,
                 keyboardType: isNum ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
-                decoration: InputDecoration(labelText: name, isDense: true),
+                decoration: InputDecoration(labelText: name, isDense: true, errorText: _error),
                 onSubmitted: (t) => _commit(name, t),
               ),
             ),
@@ -520,7 +543,10 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
             IconButton(
               icon: const Icon(Icons.close),
               tooltip: 'Cancel',
-              onPressed: () => setState(() => _editing = null),
+              onPressed: () => setState(() {
+                _editing = null;
+                _error = null;
+              }),
             ),
           ],
         ),
@@ -537,19 +563,27 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
       ),
       onTap: () {
         _ctrl.text = value is List ? value.join(', ') : (value?.toString() ?? '');
-        setState(() => _editing = name);
+        setState(() {
+          _editing = name;
+          _error = null;
+        });
       },
     );
   }
 
   Future<void> _pickDate(String name, String vt, Object? current) async {
     final now = DateTime.now();
-    final seed = DateTime.tryParse('$current') ?? now;
+    // Window wide enough for birthdays (past) and far-future reminders; clamp initialDate INTO it,
+    // or showDatePicker asserts (initialDate must be within first/lastDate) and crashes.
+    final lo = DateTime(now.year - 120);
+    final hi = DateTime(now.year + 50);
+    final parsed = DateTime.tryParse('$current') ?? now;
+    final seed = parsed.isBefore(lo) ? lo : (parsed.isAfter(hi) ? hi : parsed);
     final d = await showDatePicker(
       context: context,
       initialDate: seed,
-      firstDate: DateTime(now.year - 5),
-      lastDate: DateTime(now.year + 5),
+      firstDate: lo,
+      lastDate: hi,
     );
     if (d == null || !mounted) return;
     if (vt == 'date') {
@@ -569,9 +603,13 @@ String humanizeTemplate(String template) {
   return template.replaceAllMapped(RegExp(r'\{(\w+):(\w+)\}'), (m) {
     switch (m.group(2)) {
       case 'entity':
+      case 'contact': // the mainline case: learn() abstracts a known person to {name:contact}
         return 'someone';
       case 'date':
       case 'datetime':
+      case 'dayword': // corpus date slot-types (tracker bundles)
+      case 'pastday':
+      case 'futuredate':
         return 'a date';
       case 'number':
       case 'quantity':

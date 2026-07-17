@@ -180,6 +180,82 @@ void main() {
       expect(await s.handle('what do you know about Sarah'), contains('loves hiking'));
     });
 
+    test('MIXED-TYPE readback: correcting a relationship item edits the relationship, not a fact (review #1)', () async {
+      final s = await _s();
+      await s.handle('remember that Sarah loves hiking'); // a contact_fact
+      await s.handle("remember that Mia is Sarah's daughter"); // a contact_relationship
+      final facts = await s.handle('what do you know about Sarah');
+      // both a fact and a relationship are numbered in one readback
+      expect(facts.toLowerCase(), contains('hiking'));
+      expect(facts.toLowerCase(), contains('daughter'));
+      // find which number is the relationship line and correct it
+      final relNum = facts.split('\n').firstWhere((l) => l.toLowerCase().contains('daughter')).trim()[0];
+      final fixed = await s.handle('change $relNum to sister');
+      expect(fixed.toLowerCase(), contains('sister'));
+      final after = await s.handle('what do you know about Sarah');
+      expect(after.toLowerCase(), contains('sister')); // the relationType changed
+      expect(after.toLowerCase(), isNot(contains('daughter')));
+      expect(after.toLowerCase(), contains('hiking')); // the fact is untouched, no junk field written
+    });
+
+    test('a ref command mid-list is NOT a task text: "delete 2" during a readback resolves (review #6-adjacent)', () async {
+      final s = await _s();
+      await s.handle('add first to my list');
+      await s.handle('add second to my list');
+      await s.handle('list my tasks');
+      final out = await s.handle('delete 2');
+      expect(out.toLowerCase(), contains('second'));
+      expect(await s.handle('list my tasks'), isNot(contains('second')));
+    });
+
+    test('re-referencing a vanished item is admitted, not a wrong-item delete (B2)', () async {
+      final s = await _s();
+      await s.handle('add only one to my list');
+      await s.handle('list my tasks');
+      await s.handle('delete 1'); // gone
+      final again = await s.handle('delete 1'); // same number, now stale
+      expect(again.toLowerCase(), anyOf(contains("isn't there any more"), contains('only had')));
+    });
+
+    test('delete 1 -> undo -> delete 1 works (context survives undo) (B2)', () async {
+      final s = await _s();
+      await s.handle('add resilient task to my list');
+      await s.handle('list my tasks');
+      await s.handle('delete 1');
+      await s.handle('undo that'); // task restored
+      final again = await s.handle('list my tasks');
+      expect(again, contains('resilient task'));
+      final del = await s.handle('delete 1');
+      expect(del.toLowerCase(), contains('resilient task'));
+    });
+
+    test('a 3-item readback: deleting the MIDDLE one hits the right record (B3)', () async {
+      final s = await _s();
+      await s.handle('add alpha to my list');
+      await s.handle('add bravo to my list');
+      await s.handle('add charlie to my list');
+      await s.handle('list my tasks');
+      final del = await s.handle('delete 2');
+      expect(del.toLowerCase(), contains('bravo'));
+      final after = await s.handle('list my tasks');
+      expect(after, contains('alpha'));
+      expect(after, isNot(contains('bravo')));
+      expect(after, contains('charlie'));
+    });
+
+    test('undo reverses a ref-complete and an inline correct (B7)', () async {
+      final s = await _s();
+      await s.handle('add finish me to my list');
+      await s.handle('list my tasks');
+      await s.handle('complete 1');
+      expect(await s.handle('list my tasks'), isNot(contains('finish me'))); // dropped off open list
+      await s.handle('undo that');
+      expect(await s.handle('list my tasks'), contains('finish me')); // un-completed
+      await s.handle('change 1 to renamed');
+      await s.handle('undo that');
+      expect(await s.handle('list my tasks'), contains('finish me')); // correction reversed
+    });
+
     test('an empty readback clears a stale reference context', () async {
       final s = await _s();
       await s.handle('add buy milk to my list');

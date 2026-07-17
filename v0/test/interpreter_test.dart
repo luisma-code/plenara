@@ -577,7 +577,26 @@ void main() {
     });
     test('delete_record without an id is rejected; with an id is accepted', () {
       expect(() => _i().validateSkill(skill([{'op': 'delete_record'}, ok])), throwsA(isA<ResolveError>()));
-      expect(() => _i().validateSkill(skill([{'op': 'delete_record', 'id': {'var': 'x'}}, ok])), returnsNormally);
+      // the id var must be BOUND — delete_record's id is now var-closure-checked (G-49) so a typo
+      // can't silently no-op; bind x with a set step first.
+      expect(() => _i().validateSkill(skill([{'op': 'set', 'var': 'x', 'value': 'some-id'}, {'op': 'delete_record', 'id': {'var': 'x'}}, ok])), returnsNormally);
+    });
+    test('enumerate/ref_mark validation gate (G-49): malformed ops are rejected at authoring', () {
+      // enumerate needs list + label + into
+      expect(() => _i().validateSkill(skill([{'op': 'enumerate', 'label': 'description', 'into': 'lines'}, ok])), throwsA(isA<ResolveError>()));
+      expect(() => _i().validateSkill(skill([{'op': 'enumerate', 'list': {'var': 'xs'}, 'into': 'lines'}, ok])), throwsA(isA<ResolveError>()));
+      expect(() => _i().validateSkill(skill([{'op': 'enumerate', 'list': {'var': 'xs'}, 'label': 'description'}, ok])), throwsA(isA<ResolveError>()));
+      // a well-formed enumerate over a bound list is accepted
+      expect(() => _i().validateSkill(skill([
+        {'op': 'read_many', 'typeId': 'task', 'into': 'xs'},
+        {'op': 'enumerate', 'list': {'var': 'xs'}, 'label': 'description', 'into': 'lines'}, ok
+      ])), returnsNormally);
+      // ref_mark needs a known typeId + id + field
+      expect(() => _i().validateSkill(skill([{'op': 'ref_mark', 'id': {'var': 'x'}, 'field': 'description'}, ok])), throwsA(isA<ResolveError>()));
+      expect(() => _i().validateSkill(skill([{'op': 'ref_mark', 'typeId': 'nope', 'id': 'a', 'field': 'f'}, ok])), throwsA(isA<ResolveError>()));
+      expect(() => _i().validateSkill(skill([{'op': 'ref_mark', 'typeId': 'task', 'field': 'description'}, ok])), throwsA(isA<ResolveError>()));
+      // ref_mark's id expr is var-closure-checked (G-49): an unbound var is rejected, not a silent no-op
+      expect(() => _i().validateSkill(skill([{'op': 'ref_mark', 'typeId': 'task', 'id': {'var': 'ghost'}, 'field': 'description'}, ok])), throwsA(isA<ResolveError>()));
     });
     test('unknown compute fn (e.g. median, unimplemented) rejected', () {
       expect(() => _i().validateSkill(skill([{'op': 'compute', 'fn': 'median', 'args': [], 'into': 'x'}, ok])), throwsA(isA<ResolveError>()));

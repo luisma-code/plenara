@@ -148,7 +148,7 @@ class Router {
     _learnedTemplates.add(template);
   }
 
-  /// Re-insert a previously-forgotten learned entry (data-view forget→undo, G-47). Rebuilds from
+  /// Re-insert a previously-forgotten learned entry (data-view forget→undo, G-49). Rebuilds from
   /// the raw persisted map so it works for BOTH a skillId and a generativeKind entry — unlike
   /// addLearned, which only knows skillId.
   void restore(Map<String, dynamic> raw) {

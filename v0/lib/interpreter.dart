@@ -542,8 +542,8 @@ class Interpreter {
           }
           refsIn(cond);
         }
-        for (final key in const ['value', 'args', 'fields', 'filter', 'list', 'from', 'match']) {
-          refsIn(s[key]);
+        for (final key in const ['value', 'args', 'fields', 'filter', 'list', 'from', 'match', 'id', 'label']) {
+          refsIn(s[key]); // 'id'/'label' close ref_mark + delete_record exprs (else a typo'd {var} no-ops silently)
         }
         scanRefs(s['then']);
         scanRefs(s['else']);
@@ -872,7 +872,10 @@ class Interpreter {
               ? lineTpl.replaceAllMapped(RegExp(r'\{(?:var:)?(\w+)\}'), (m) => '${r[m.group(1)] ?? ''}').trim()
               : label;
           sb.write('\n  $n. $rendered');
-          items.add({'id': r['id'], 'label': label});
+          // Per-item typeId + field: a single readback can enumerate MORE THAN ONE type (e.g.
+          // recall-facts numbers facts AND relationships), so a later "correct N" must edit the
+          // right type's right field — a channel-level pair would corrupt the odd one out.
+          items.add({'id': r['id'], 'label': label, 'typeId': r['typeId'], 'field': labelField});
         }
         env[step['into'] as String] = sb.toString();
         plan.enumeration = {'typeId': typeId, 'labelField': labelField, 'items': items};
@@ -889,7 +892,8 @@ class Interpreter {
           en['labelField'] ??= field;
           // Prefer an explicit label expr; else read the label field off the live record.
           final label = step['label'] != null ? '${val(step['label'], env) ?? ''}' : '${store[id]?[field] ?? ''}';
-          (en['items'] as List).add({'id': id, 'label': label});
+          // Per-item typeId + field (each mark may be a different type in one readback).
+          (en['items'] as List).add({'id': id, 'label': label, 'typeId': step['typeId'], 'field': field});
         }
       default:
         throw ResolveError("unknown op '${step['op']}'");
@@ -930,13 +934,16 @@ class Interpreter {
   /// `undo` deterministic and reliable — the safety net act-then-describe rests on.
   Map<String, Map<String, dynamic>?> execute(Plan plan, Map<String, Record> store) {
     final before = <String, Map<String, dynamic>?>{};
+    // putIfAbsent, not assign: a plan that touches the same id twice (or writes-then-deletes it)
+    // must record the ORIGINAL pre-plan state as the before-image, never an intermediate one, or
+    // undo restores a mid-plan value instead of the true prior state.
     for (final rec in plan.writes) {
       final id = rec['id'] as String;
-      before[id] = store.containsKey(id) ? Map<String, dynamic>.from(store[id]!) : null;
+      before.putIfAbsent(id, () => store.containsKey(id) ? Map<String, dynamic>.from(store[id]!) : null);
       store[id] = Map<String, dynamic>.from(rec);
     }
     for (final id in plan.deletes) {
-      before[id] = store.containsKey(id) ? Map<String, dynamic>.from(store[id]!) : null;
+      before.putIfAbsent(id, () => store.containsKey(id) ? Map<String, dynamic>.from(store[id]!) : null);
       store.remove(id); // the before-image (the deleted record) lets undo restore it
     }
     return before;

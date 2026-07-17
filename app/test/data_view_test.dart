@@ -375,5 +375,39 @@ void main() {
   test('humanizeTemplate turns slot placeholders into plain nouns', () {
     expect(humanizeTemplate('suggest a gift for {contact:entity}'), 'suggest a gift for someone');
     expect(humanizeTemplate('remind me on {when:date}'), 'remind me on a date');
+    expect(humanizeTemplate('log lunch with {name:contact}'), 'log lunch with someone'); // contact, not "something"
+    expect(humanizeTemplate('due {day:futuredate}'), 'due a date');
+  });
+
+  testWidgets('tapping a date field with a decades-old value opens the picker without crashing (review critical)', (tester) async {
+    final session = _session();
+    await session.init(retrieval: false);
+    await session.handle('add renew passport to my list');
+    final t = session.store.values.firstWhere((r) => r['typeId'] == 'task');
+    await session.editField(t['id'] as String, 'dueAt', '1985-04-12'); // decades before a ±5y window
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Your data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'renew passport'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'dueAt'));
+    await tester.pumpAndSettle(); // pre-fix: showDatePicker asserts here and crashes
+    expect(find.byType(CalendarDatePicker), findsOneWidget); // the picker opened, no assertion
+  });
+
+  testWidgets('a failed edit shows the reason INSIDE the sheet (review #3, no silent failure)', (tester) async {
+    final session = await openDataViewWithTask(tester);
+    await tester.tap(find.widgetWithText(ListTile, 'buy milk'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'description')); // enter edit mode
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '   '); // empty a REQUIRED field
+    await tester.tap(find.byIcon(Icons.check));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('required'), findsOneWidget); // the failure is visible in the sheet
+    expect(session.store.values.firstWhere((r) => r['typeId'] == 'task')['description'], 'buy milk'); // unchanged
   });
 }

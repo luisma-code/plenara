@@ -8,7 +8,7 @@
   "inputs": [],
   "steps": {
     "main": [
-      { "op": "read_many", "typeId": "journal_entry", "into": "entries" },
+      { "op": "read_many", "typeId": "journal_entry", "orderBy": "loggedAt", "orderDir": "asc", "into": "entries" },
       { "op": "set", "var": "lines", "value": "" },
       { "op": "set", "var": "k", "value": 0 },
       {

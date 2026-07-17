@@ -8,7 +8,7 @@
   "inputs": [],
   "steps": {
     "main": [
-      { "op": "read_many", "typeId": "mood", "into": "moods" },
+      { "op": "read_many", "typeId": "mood", "orderBy": "loggedAt", "orderDir": "asc", "into": "moods" },
       { "op": "set", "var": "lines", "value": "" },
       { "op": "set", "var": "k", "value": 0 },
       {

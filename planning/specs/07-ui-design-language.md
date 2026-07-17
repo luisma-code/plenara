@@ -222,6 +222,10 @@ Each of the twelve value types of Spec 01 §3 has exactly one canonical display 
 
 **§5.5 Tap-to-edit:** any rendered value in a detail view accepts a tap → its edit treatment appears in place → commit renders as a normal act-then-describe turn in the Stream ("Updated — allergy: tree nuts"), so touch edits share the voice path's undo, journal, and corpus semantics (Spec 04 §3.6 — the edit is dispatched as a turn, not written by the widget; P5).
 
+> **v0 interim posture (`G-49`) — the shipped "Your data" surface.** The editable data view exists in v0 behind the "…" overflow menu (alongside Settings, §2.6 / CS-11) — so the closed surface list above is joined by **"Your data"** (the archetype browser, now editable) and a **"Learned phrases"** showcase of the learned NLU corpus (each humanized and forgettable, symmetric with §5.2's forget-on-correction). Two deviations, accepted for v0 and recorded here so the spec is not silently stale:
+> 1. **Facade write, not a Stream turn.** A tap-to-edit commit calls a `Session` facade (`editField`/`deleteRecord`) directly rather than dispatching an English turn through the orchestrator (v0 has no structured-turn entry, and synthesizing English for `handle()` would be fragile). The *substance* of §5.5 is preserved — the write shares the **one** journal ring (a spoken "undo that" reverses a manual edit), reminders reconcile, automations fire, telemetry logs — and the confirmation surfaces in-sheet rather than in the Stream (a modal-sheet SnackBar would render behind the sheet; failures show inline as `errorText`, never silently). **End-state:** when a structured-turn entry exists, `editField` becomes its adapter with no UI change.
+> 2. **Edit treatments = what v0's value types need.** Per-value tap-to-edit (not a form, §4.4) is honored; `json` is read-only (voice/skill only) and `enum` membership is validated in the facade, matching the §5 table. Delete is act-then-describe with a **targeted** UNDO snackbar (journal + storage tombstone = doubly reversible), not a pre-delete confirm.
+
 ---
 
 ## 6. The Turn UX — Rendering the Interaction Contract
