@@ -143,6 +143,12 @@ The input contract is the seam between this spec and the NLU spec (which this sp
 >   next_annual, days_until_annual, years_since, current_streak, longest_streak,
 >   days_between, add_days, count_where, sum, avg, min, max, if, ordinal_num,
 >   ordinal_suffix, weekday_nums, split_list, dedup_list, position_index, nth`.
+>   **Arithmetic is numeric-only (`G-50`).** `add`/`mul`/`div`/`round` return `null` on a
+>   non-numeric operand rather than coercing — `add` previously used a bare `+`, which on two
+>   numeric-looking strings silently *concatenated* (`"5" + "1"` → `"51"`, then written into a
+>   number field) and threw on a string+num mix. `concat` is the op for joining text. Note the
+>   one deliberate departure from §3.7's "null propagates" prose: `add` treats a **null operand
+>   as 0**, because the counter idiom (`add({var n}, 1)` where `n` starts unbound) depends on it.
 >   `format_date`'s second arg is a format token: `"EEEE"` → weekday name ("Saturday"),
 >   `"MMMM d"` (the default when omitted) → month-day ("December 25"), anything else →
 >   the ISO date. The near/far due-date phrasing rule built on `days_between` +
@@ -184,6 +190,15 @@ The input contract is the seam between this spec and the NLU spec (which this sp
 > - **`write_record`** with a `target` (`{"ref":"<recordVar>"}`) **updates** (field-merge);
 >   without a target it **creates**. **`delete_record`** (`{"op":"delete_record","id":<expr>}`)
 >   tombstones. (`dangerLevel` gating of destructive ops is not yet enforced — `G` open.)
+>   **Schema coercion at write time (`G-50`).** Every written field value is coerced to its
+>   attribute's declared `valueType` before it reaches the plan: a `number`/`decimal` attribute
+>   accepts a num or a numeric string (parsed), a `boolean` accepts a bool or
+>   `true/false/yes/no`; anything uncoercible raises a `ResolveError` rather than writing junk.
+>   This exists because NLU slots arrive as **text** — a skill binding a slot straight to a
+>   numeric attribute otherwise stores `"500"`, where arithmetic degrades to null and ordering
+>   is lexical (`"100" < "9"`). Skills are authored by Claude at runtime, so "AI authors, code
+>   executes" (principle 5) only holds if the executor enforces the schema instead of trusting
+>   the author. All other value types pass through unchanged.
 > - **`format`** — bare `{var}` substitution (the stray `{var:name}` slot-syntax spelling
 >   is tolerated and renders identically); a null/absent var renders as **empty** (the
 >   omitIfNull default, no silent `{var}` leak). The `{var, default:…}`/`suffix` modifiers of
