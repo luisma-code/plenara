@@ -163,7 +163,13 @@ class Interpreter {
         final d = _asDate(a[0]);
         return d == null ? null : _dateOnly(DateTime(d.year, d.month, 1));
       case 'add':
-        return (a[0] ?? 0) + (a[1] ?? 0);
+        // Numeric-only, like mul/div. Unguarded `+` on two numeric-looking STRINGS silently
+        // concatenates ("5" + "1" -> "51") and would write that into a number field; on a
+        // string + a num it throws. `concat` is the op for joining text.
+        final x = a.isEmpty ? null : a[0], y = a.length > 1 ? a[1] : null;
+        if (x != null && x is! num) return null;
+        if (y != null && y is! num) return null;
+        return ((x as num?) ?? 0) + ((y as num?) ?? 0);
       case 'mul':
         return (a[0] is num && a[1] is num) ? (a[0] as num) * (a[1] as num) : null;
       case 'div':
@@ -900,11 +906,50 @@ class Interpreter {
     }
   }
 
+  /// Coerce a written value to its attribute's declared valueType (Spec 01 §3).
+  ///
+  /// NLU slots arrive as TEXT, so a skill that binds a slot straight to a `number` attribute
+  /// would otherwise store the string "500" in a numeric field. Nothing downstream expects
+  /// that: arithmetic ops return null or throw on it, and comparisons order it as text
+  /// ("100" < "9"). The shipped skills all convert by hand today, but skills are AUTHORED BY
+  /// CLAUDE at runtime — "AI authors, code executes" only holds if the executor enforces the
+  /// schema rather than trusting the author. A value that cannot be coerced is a ResolveError
+  /// (surfaced, P2.8), never a silent junk write.
+  Object? _coerceToSchema(String typeId, Map td, String field, Object? v) {
+    if (v == null) return null;
+    String? valueType;
+    for (final a in ((td['attributes'] as List?) ?? const []).whereType<Map>()) {
+      if (a['name'] == field) {
+        valueType = a['valueType'] as String?;
+        break;
+      }
+    }
+    switch (valueType) {
+      case 'number':
+      case 'decimal':
+        if (v is num) return v;
+        final n = num.tryParse('$v'.trim());
+        if (n == null) {
+          throw ResolveError("write $typeId: '$field' expects a number, got \"$v\"");
+        }
+        return valueType == 'number' && n is double && n == n.roundToDouble() ? n.toInt() : n;
+      case 'boolean':
+        if (v is bool) return v;
+        final s = '$v'.toLowerCase().trim();
+        if (s == 'true' || s == 'yes') return true;
+        if (s == 'false' || s == 'no') return false;
+        throw ResolveError("write $typeId: '$field' expects true/false, got \"$v\"");
+      default:
+        return v; // text/entity/date/datetime/tag/list/json — unchanged
+    }
+  }
+
   Record _resolveWrite(Map step, Map<String, dynamic> env, Map<String, Record> store, Plan plan) {
     final typeId = step['typeId'] as String;
     final td = types[typeId]!;
     final fields = <String, dynamic>{
-      for (final e in (step['fields'] as Map).entries) e.key: val(e.value, env)
+      for (final e in (step['fields'] as Map).entries)
+        e.key: _coerceToSchema(typeId, td, '${e.key}', val(e.value, env))
     };
     Record rec;
     final target = step['target']; // {ref: recVar} / an id expr -> UPDATE the existing record

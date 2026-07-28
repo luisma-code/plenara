@@ -36,6 +36,51 @@ const _weekday = {
 };
 
 void main() {
+  group('schema enforcement at write time (AI authors, code executes)', () {
+    test('a numeric-looking text slot is coerced to a number, not stored as a string', () {
+      // Slots arrive from NLU as TEXT. A skill that binds one straight to a number attribute
+      // would otherwise put "3" in the field, where arithmetic silently degrades and sorting
+      // orders it as text.
+      final i = _i();
+      final skill = {
+        'skillId': 'x',
+        'steps': {'main': [
+          {'op': 'write_record', 'typeId': 'workout',
+           'into': 'w',
+           'fields': {'activity': {'var': 'a'}, 'distance': {'var': 'd'}, 'date': '2026-07-06'}}
+        ]},
+      };
+      final store = _store();
+      final p = i.resolve(skill, {'a': 'run', 'd': '5'}, store);
+      expect(p.writes.single['distance'], 5);
+      expect(p.writes.single['distance'], isA<num>(), reason: 'stored as a number, not "5"');
+    });
+
+    test('a value that cannot be a number is a clean ResolveError, never a junk write', () {
+      final i = _i();
+      final skill = {
+        'skillId': 'x',
+        'steps': {'main': [
+          {'op': 'write_record', 'typeId': 'workout',
+           'into': 'w',
+           'fields': {'activity': 'run', 'distance': {'var': 'd'}, 'date': '2026-07-06'}}
+        ]},
+      };
+      expect(() => i.resolve(skill, {'d': 'quite far'}, _store()),
+          throwsA(isA<ResolveError>()), reason: 'surfaced (P2.8), not silently written');
+    });
+  });
+
+  group('compute — arithmetic is numeric-only', () {
+    test('add on numeric-looking STRINGS does not concatenate', () {
+      // '5' + '1' == '51' would be written into a number field as text.
+      expect(_i().compute('add', ['5', '1'], {}), isNull);
+      expect(_i().compute('add', [5, 1], {}), 6);
+      expect(_i().compute('add', [null, 1], {}), 1, reason: 'null still counts as 0');
+      expect(_i().compute('add', [2, null], {}), 2);
+    });
+  });
+
   group('compute (closed fn vocabulary)', () {
     test('now -> ISO datetime', () => expect(_i().compute('now', [], {}), '2026-07-06T09:00:00.000'));
     test('today -> ISO date', () => expect(_i().compute('today', [], {}), '2026-07-06'));
