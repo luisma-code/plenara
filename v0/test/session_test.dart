@@ -186,6 +186,22 @@ void main() {
       expect((await s.handle('approve it')).toLowerCase(), contains('applied'));
       expect(hasStretch(s), isTrue);
     });
+    test('an APPROVED automation write is undoable, and undo does not hit an unrelated write', () async {
+      // CLAUDE.md, Things NOT to do: "Don't let automations lower a skill's undoability."
+      // Approving executed + persisted with no journal entry, so "undo that" either found
+      // nothing or reversed the PREVIOUS unrelated write instead.
+      final s = await withStretch();
+      await s.handle('add buy milk to my list'); // an earlier, unrelated journaled write
+      await s.handle('log a run'); // fires the writing automation -> held
+      expect((await s.handle('approve it')).toLowerCase(), contains('applied'));
+      expect(hasStretch(s), isTrue);
+      final undo = await s.handle('undo that');
+      expect(undo.toLowerCase(), contains('undone'));
+      expect(hasStretch(s), isFalse, reason: 'undo must reverse the approved automation write');
+      expect(s.store.values.any((x) => x['description'] == 'buy milk'), isTrue,
+          reason: 'and must NOT have reached back to the unrelated earlier write');
+    });
+
     test('"dismiss it" reaps the held write, nothing applied', () async {
       final s = await withStretch();
       await s.handle('log a run');

@@ -102,7 +102,11 @@ class ReviewItem {
 class ReviewResolution {
   final String kind; // 'applied' | 'planChanged' | 'refused' | 'notFound'
   final String? message;
-  const ReviewResolution(this.kind, [this.message]);
+  /// On `applied`: the before-images of everything the approved plan touched, so the caller can
+  /// journal them. An approved automation write must be exactly as undoable as the same skill
+  /// spoken by hand — "don't let automations lower a skill's undoability".
+  final Map<String, Map<String, dynamic>?>? before;
+  const ReviewResolution(this.kind, [this.message, this.before]);
 }
 
 class _Registered {
@@ -373,7 +377,7 @@ class AutomationRunner {
       return const ReviewResolution('planChanged',
           'the data changed since this was held — review the updated plan and approve again');
     }
-    Interpreter(types, item.firedAt).execute(fresh, store);
+    final before = Interpreter(types, item.firedAt).execute(fresh, store);
     for (final w in fresh.writes) {
       persist?.call(w);
     }
@@ -381,7 +385,7 @@ class AutomationRunner {
     // An approved automation write is itself a write: cascade at depth+1,
     // bounded — and every writing hop lands back in the review feed anyway.
     notifyWrites(fresh.writes, depth: item.depth + 1);
-    return ReviewResolution('applied', fresh.confirmation);
+    return ReviewResolution('applied', fresh.confirmation, before);
   }
 
   /// Decline a held review item: reaped, nothing written.

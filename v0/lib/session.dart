@@ -1517,6 +1517,14 @@ class Session {
         final res = automations.approve(item.id);
         _outSource = 'automation-review';
         _outSkill = item.skillId;
+        // Journal the approved write so "undo that" reverses THIS, not some unrelated earlier
+        // write ("don't let automations lower a skill's undoability" — CLAUDE.md).
+        final before = res.before;
+        if (res.kind == 'applied' && before != null && before.isNotEmpty) {
+          _journal.add(_JournalEntry(before, 'applied "${item.description}"'));
+          if (_journal.length > _journalMax) _journal.removeAt(0);
+          _lastTurnWrote = true;
+        }
         return switch (res.kind) {
           'applied' => 'Done — applied "${item.description}".',
           'planChanged' => "That automation's data changed since it queued — ${res.message ?? 'have a look and re-approve'}.",
