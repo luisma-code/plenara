@@ -5,34 +5,31 @@ snapshots), this file is kept **current as work happens** — the latest state, 
 at my fingertips, hard-won gotchas, decisions + rationale, and open threads. If you're a fresh
 session, read this first; it should already be up to date. Keep it skimmable, prune stale lines.
 
-_Last updated: 2026-07-28 — TestFlight is LIVE (deploy-from-anywhere works, first release shipped). Correctness + data-integrity review pass: 12 defects found, reproduced, fixed, regression-tested._
+_Last updated: 2026-07-28 — TestFlight LIVE; 14-defect correctness review; tap-to-stop voice capture; **Routines (Spec 16) shipped end to end**._
 
 ---
 
 ## Current state
-- **TestFlight works end to end — the deploy-from-anywhere blocker is GONE.** Luis did the
-  Apple-account batch; `0.8.0+8` uploaded, processed, and distributed on 2026-07-28. App record
-  `6795650460`; internal group **Internal** (`23726f32-08a5-4c99-9470-5eecd52760ea`); Luis is
-  ACCOUNT_HOLDER/ADMIN and an internal tester. **Claude owns the whole release loop now** — no
-  browser step. See "Live facts" for the commands.
-- **Correctness + data-integrity review pass (2026-07-28) — 12 defects, all reproduced before fixing
-  and pinned with regression tests.** v0 **1731** + app **80** green, analyze clean. The severe ones:
-  - **A torn `corpus-learned.json` permanently bricked launch.** Whole-file rewrite was
-    non-atomic and `Router.load` jsonDecoded it inside `init()` — a crash mid-write meant the app
-    never opened again until the file was hand-deleted. Every learn/forget hit that path. Now
-    atomic + tolerant. Same class found and fixed for the **seed corpus** and **`config.json`**
-    (a torn config silently lost `dataDir` + API key → app opens on an empty folder, reads as
-    total data loss).
-  - **Undo was lost exactly when it mattered.** The journal entry was pushed AFTER the persist
-    loop, so a disk failure left the change live in memory, unjournalled, un-undoable — while
-    `handle()` told the user "I didn't do anything". Now journal-then-persist.
-  - **An approved automation write wasn't undoable** (violates the CLAUDE.md rule) and worse,
-    "undo that" then reversed an unrelated earlier write.
-  - **CRDT stamping was wrong for list/map fields** (`==` is identity in Dart → re-stamped every
-    write) and **a cleared field left no tombstone** (peer's old value resurrects on sync).
-  - `write_record` did no schema coercion; `add()` silently concatenated numeric strings.
-- **Still outstanding: the app ships Flutter's PLACEHOLDER app icon + launch image.** That's what's
-  on the home screen now. Cosmetic for TestFlight, an automatic rejection at App Review.
+- **ROUTINES (Spec 16) shipped** — "create a stretch routine for my low back" → records; "let's do
+  low back" → a hands-free guided run. Verified end-to-end against the live API.
+  - **The model SELECTS from a shipped catalogue; it does not draw.** A spike proved generated SVG
+    stick figures can be safe (19/19 passed a strict render-only subset) and tweenable (18/19
+    corresponding keyframes) — but **supine poses are unreadable**, and neither explicit 3/4
+    projection geometry nor a render-and-critique vision loop fixed them (the loop made them
+    WORSE). Catalogue: wger/Everkinetic, CC BY-SA 4.0, 640 exercises / 200 illustrated / 11 MB.
+  - ~1/3 illustrated is fine by design: a pictureless step renders text-only, and every step must
+    stand alone for the ear anyway (screen-off runs).
+  - The player is a Session MODE (Tour's sibling), **not** a skill — no new DSL opcode. It is
+    STICKY: an unrelated command mid-run works and the run survives.
+  - Safety: Layer-1 injury-framing redirect BEFORE any spend (condition stripped, never sent); the
+    disclaimer is fixed in code (a test proves the model can't reword it); spoken once per routine.
+- **Voice capture is now user-delimited** — tap to start, tap to stop-and-send. The VAD survives as
+  segmenter + watchdog only. PTT was dropped with Luis's approval (amends research §15.1).
+- **TestFlight works end to end**; Claude owns the whole release loop (no browser step).
+- **14 correctness/data-integrity defects fixed** across two review passes — see G-50/G-51.
+- **Still outstanding: the app ships Flutter's PLACEHOLDER icon.** Cosmetic for TestFlight, an
+  automatic rejection at App Review.
+
 - **v8 shipped** (`releases/VERSIONS.md`; release point `6ceeeb2`). App **runs on the iPhone**, on the
   **Matilda (Premium, en-AU)** voice. Repo `origin/main` fully pushed, tree clean, tests green
   (**1676 v0 + 74 app**).
@@ -49,14 +46,6 @@ _Last updated: 2026-07-28 — TestFlight is LIVE (deploy-from-anywhere works, fi
   execute() before-image uses putIfAbsent; +orderBy on the numbered read_many skills; learned-flow
   forget/restore hardened (token synthesis + dedupe). Specs 02/03/07 synced (§3 ops, §2.3a
   reference-by-number, §5.5 posture), gap register row added. **v0 1718 + app 80 green.**
-- **TestFlight — Mac-side plumbing done, GATED on Luis.** Release archive builds clean;
-  `tool/testflight-upload.sh` exports+uploads a signed IPA via an App Store Connect **API key** (no
-  Xcode login needed — `xcodebuild -allowProvisioningUpdates` auto-creates the distribution cert).
-  Blocker: the machine has no distribution cert / no Apple account in Xcode → Luis must (1) create the
-  App Store Connect app record for `com.plenara.plenaraApp`, (2) generate an **Admin** API key (.p8 +
-  Key ID + Issuer ID) → drop in gitignored `tool/.testflight.env`, (3) add himself as an internal
-  tester. Then Claude runs one command. Full steps in `TESTFLIGHT.md`. Remote deploy across networks
-  is impossible today (device shows `unavailable` off the Mac's LAN — that's what TestFlight fixes).
 - **G-46 (generative recognition) DONE on `main` + code-review-clean, verified LIVE, NOT yet on the phone.** Spec 03 →
   v0.7 (Fable-reviewed SOLID); Phase 1 (cloud residual recognizes generative intents + dispatch + §6.3
   follow-up) + Phase 2 (learn recognition templates → 2nd phrasing routes offline; degrade→no-learn;

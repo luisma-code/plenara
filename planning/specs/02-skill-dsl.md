@@ -203,6 +203,15 @@ The input contract is the seam between this spec and the NLU spec (which this sp
 >   is tolerated and renders identically); a null/absent var renders as **empty** (the
 >   omitIfNull default, no silent `{var}` leak). The `{var, default:…}`/`suffix` modifiers of
 >   §3.11 are **not** implemented.
+> - **Branch conditions are validated (`G-51`).** The cond grammar is a SMALLER closed set
+>   than `read_many`'s filter ops — `lte`/`lt`/`gt` are filter ops ONLY. `validateSkill` used
+>   to accept any cond key and fail at RUN time with "unknown cond"; it now rejects a
+>   non-condition at authoring time, which is the whole point of the gate for a skill Claude
+>   wrote. Order a comparison the other way round (`a <= b` is `{"gte": [b, a]}`).
+> - **`read_related` honours `orderBy`/`orderDir`/`limit` (`G-51`)**, same semantics as
+>   `read_many`. Without it a join-based readback returned store-iteration order, so
+>   "when did I last do X" could answer with the OLDEST record and a numbered readback could
+>   shuffle between restarts.
 > - **Steps are validated on `op` + per-op required fields only** — unknown step keys are
 >   tolerated and ignored, so an authored skill may carry annotation keys (the seed skills
 >   use `"_comment"` for in-file rationale) without failing the gate. The closed sets above
