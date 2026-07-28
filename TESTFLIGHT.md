@@ -11,9 +11,8 @@ The goal: build + upload from the Mac, install/update on the iPhone **over cellu
   the App Store Connect **API key** (`xcodebuild -allowProvisioningUpdates` auto-creates the iOS
   Distribution cert + App Store profile on first run; `altool` uploads). No interactive Xcode login.
 
-## What only Luis can do (one-time, in his Apple account) — the batch
-> Machine state today: only an *Apple Development* cert + **no Apple account in Xcode**, so the export
-> can't sign yet. The API key below fixes ALL of that without you signing into Xcode.
+## What only Luis can do (one-time, in his Apple account) — the batch ✅ COMPLETED 2026-07-28
+> Kept for the record / for setting this up on a new machine. All four steps are done.
 
 1. **Create the app record:** App Store Connect → Apps → **+** → New App →
    - Platform: **iOS**, Bundle ID: **com.plenara.plenaraApp** (pick it from the list — if it's not
@@ -34,12 +33,22 @@ The goal: build + upload from the Mac, install/update on the iPhone **over cellu
    Internal Testing → add your Apple ID. Install the **TestFlight app** on the iPhone and sign in.
    (You can do this while the first build processes.)
 
+## Status: DONE — first release shipped 2026-07-28 (0.8.0 build 8)
+The one-time setup is complete. App record `6795650460`, API key in `tool/.testflight.env`,
+internal beta group **Internal** (`23726f32-…`) with Luis as tester.
+
 ## Then, per release (Claude runs)
 ```
+# bump version: in app/pubspec.yaml first — +BUILD must strictly increase
 cd app && flutter build ipa --release   # builds the archive (its own export step may warn on signing — fine)
 ../tool/testflight-upload.sh            # exports a signed IPA + uploads via the API key
+../tool/asc.py status                   # wait for processingState=VALID (~2–15 min)
+../tool/asc.py release                  # distribute the newest build to internal testers
 ```
-Apple processes the build (~5–15 min); it then appears in TestFlight on the phone to install/update.
+No browser step. `tool/asc.py` drives App Store Connect with the same API key — see its
+`--help` for `status` / `groups` / `add-tester` / `invite` / `release` / `raw`.
+It needs the venv at `~/.plenara-asc/venv` (pyjwt + requests); recreate with:
+`python3 -m venv ~/.plenara-asc/venv && ~/.plenara-asc/venv/bin/pip install 'pyjwt[crypto]' requests`
 
 ## Notes
 - **Export compliance** is pre-answered by the Info.plist key — no per-upload prompt.
