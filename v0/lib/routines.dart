@@ -361,7 +361,7 @@ class RoutineRun {
     final c = current;
     if (c == null) return '';
     final n = '${c['name']}';
-    final instr = '${c['instruction'] ?? ''}';
+    final instr = spokenInstruction('${c['instruction'] ?? ''}');
     final side = '${c['side'] ?? 'both'}';
     final sideNote = side == 'left' || side == 'right' ? ' On your $side side.' : '';
     final secs = currentSeconds, reps = currentReps;
@@ -377,4 +377,27 @@ String _spokenDuration(int seconds) {
   final m = seconds ~/ 60, s = seconds % 60;
   if (s == 0) return m == 1 ? 'a minute' : '$m minutes';
   return '$m minute${m == 1 ? '' : 's'} $s seconds';
+}
+
+/// Trim a catalogue instruction down to something you'd actually want SAID to you mid-stretch.
+///
+/// The catalogue's wording is written to be read on a page: multi-sentence, often with
+/// "Starting position:" / "Steps:" / "Tips:" scaffolding, and sometimes a paragraph about leaving
+/// the pose. Spoken in full, that is a wall of text while you're on the floor waiting to move. The
+/// full text stays on the record (the card shows all of it) — only the SPOKEN line is trimmed.
+String spokenInstruction(String raw, {int maxChars = 220}) {
+  var t = raw.trim();
+  if (t.isEmpty) return t;
+  // Drop the trailing "Tips: …" tail — useful to read, noise to hear.
+  final tip = RegExp(r'\b(?:Tips?|Note|Variation|Caution)\s*:', caseSensitive: false).firstMatch(t);
+  if (tip != null && tip.start > 40) t = t.substring(0, tip.start).trim();
+  // Drop section labels that only make sense in print.
+  t = t.replaceAll(RegExp(r'\b(?:Starting position|Steps|Execution|Preparation)\s*:\s*',
+      caseSensitive: false), '');
+  t = t.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (t.length <= maxChars) return t;
+  // Cut at the last sentence end inside the budget, so we never stop mid-instruction.
+  final cut = t.substring(0, maxChars);
+  final lastStop = cut.lastIndexOf(RegExp(r'[.!?]'));
+  return (lastStop > 60 ? cut.substring(0, lastStop + 1) : '${cut.trimRight()}…').trim();
 }

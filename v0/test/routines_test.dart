@@ -144,6 +144,7 @@ void main() {
   });
 
   _routinesPart2();
+  _spokenTrimTests();
 
   group('logging a completed run', () {
     test('log-routine-session writes a session and is undoable like any other write', () async {
@@ -434,6 +435,47 @@ void _routinesPart2() {
       expect(second, isNot(contains('not medical advice')),
           reason: 'warning fatigue is itself a safety failure');
       expect(second, contains('Step 1 of 3'));
+    });
+  });
+}
+
+void _spokenTrimTests() {
+  group('a step is trimmed for the EAR, not the page', () {
+    test('the "Tips:" tail is dropped — useful to read, noise to hear mid-stretch', () {
+      const raw = "Start on all fours with your hands under your shoulders. On an exhale, "
+          "sit back onto your heels and let your forehead rest down. "
+          "Tips: To leave the pose, walk your arms back under your shoulders.";
+      final out = spokenInstruction(raw);
+      expect(out, contains('sit back onto your heels'));
+      expect(out.toLowerCase(), isNot(contains('to leave the pose')));
+    });
+
+    test('print-only section labels are stripped', () {
+      final out = spokenInstruction('Starting position: Kneel on all fours. Steps: Round your back.');
+      expect(out, isNot(contains('Starting position:')));
+      expect(out, isNot(contains('Steps:')));
+      expect(out, contains('Kneel on all fours'));
+    });
+
+    test('a long instruction is cut at a SENTENCE end, never mid-move', () {
+      final raw = '${'Lower under control until your chest is near the floor. ' * 8}';
+      final out = spokenInstruction(raw);
+      expect(out.length, lessThanOrEqualTo(221));
+      expect(out.endsWith('.'), isTrue, reason: 'never stop the speaker mid-instruction');
+    });
+
+    test('a short instruction is passed through untouched', () {
+      const raw = 'Hold a straight line from head to heels.';
+      expect(spokenInstruction(raw), raw);
+    });
+
+    test('the full text stays on the RECORD — only speech is trimmed', () async {
+      final s = await _authoring((c, _) => _goodRoutine(c));
+      await s.handle('create a stretch routine for my low back');
+      final step = s.store.values.firstWhere((r) => r['typeId'] == 'routine_step' && r['order'] == 1);
+      final key = step['exerciseKey'] as String;
+      expect(step['instruction'], s.exercises.byKey[key]!.instructions,
+          reason: 'the card shows everything; only the spoken line is shortened');
     });
   });
 }

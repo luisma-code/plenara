@@ -16,6 +16,7 @@ import 'data_view.dart';
 import 'glyphs.dart';
 import 'onboarding_view.dart';
 import 'plena.dart';
+import 'routine_view.dart';
 import 'seed_assets.dart';
 import 'settings_view.dart';
 import 'sherpa_speech.dart';
@@ -740,6 +741,7 @@ class _ChatState extends State<ChatScreen> {
     _speakTimer?.cancel();
     _thinkTimer?.cancel();
     _capTimer?.cancel();
+    _stepTimer?.cancel(); // never leave a routine cadence ticking after teardown
     _heardTimer?.cancel();
     for (final t in _colorDemoTimers) {
       t.cancel();
@@ -966,8 +968,95 @@ class _ChatState extends State<ChatScreen> {
     backgroundColor: const Color(0xFF0A0908),
     body: !_ready
         ? const Center(child: CircularProgressIndicator())
-        : _presenceHome(context),
+        // A live routine run takes the screen (a Y1 guest surface, Spec 16): Plena stays alive in
+        // her corner within _presenceHome, and the step hovers over the void.
+        : _routineStep() != null
+            ? Stack(children: [_presenceHome(context), _routineOverlay(context)])
+            : _presenceHome(context),
   );
+
+  // ---- the routine player (Spec 16) -----------------------------------------------------------
+  // The cadence is DEVICE-LOCAL and deterministic — no model, no cloud, so a run works with the
+  // screen off and in airplane mode. It lives outside the turn pipeline (the app speaks without a
+  // user turn, which the one-active-turn model doesn't cover) and pauses while a turn is in flight.
+  Timer? _stepTimer;
+  DateTime? _stepStartedAt;
+  int? _stepSeconds;
+
+  RoutineStepView? _routineStep() {
+    final run = _session.activeRun;
+    final step = run?.current;
+    if (run == null || step == null) return null;
+    final key = step['exerciseKey'] as String?;
+    final img = key == null ? null : _session.exercises.byKey[key]?.image;
+    return RoutineStepView(
+      routineTitle: run.title,
+      name: '${step['name']}',
+      instruction: '${step['instruction'] ?? ''}',
+      position: run.position,
+      total: run.total,
+      side: '${step['side'] ?? 'both'}',
+      durationSeconds: (step['durationSeconds'] as num?)?.toInt(),
+      reps: (step['reps'] as num?)?.toInt(),
+      imageAsset: img == null ? null : 'assets/exercises/$img',
+    );
+  }
+
+  Widget _routineOverlay(BuildContext context) {
+    final step = _routineStep()!;
+    final started = _stepStartedAt;
+    final secs = _stepSeconds;
+    final progress = (started == null || secs == null || secs <= 0)
+        ? null
+        : DateTime.now().difference(started).inMilliseconds / (secs * 1000);
+    return RoutineStepCard(
+      step: step,
+      progress: progress,
+      onNext: () => _sendRoutine('next'),
+      onStop: () => _sendRoutine('stop'),
+    );
+  }
+
+  /// Drive the player through the ordinary turn path, so voice and touch stay one code path.
+  Future<void> _sendRoutine(String word) async {
+    _cancelStepTimer();
+    _ctrl.text = word;
+    await _send();
+    _armStepTimer();
+  }
+
+  void _cancelStepTimer() {
+    _stepTimer?.cancel();
+    _stepTimer = null;
+    _stepStartedAt = null;
+    _stepSeconds = null;
+  }
+
+  /// Arm the auto-advance for a TIMED step. A rep-based step never auto-advances — it waits for
+  /// "next", because only the user knows when the reps are done.
+  void _armStepTimer() {
+    _cancelStepTimer();
+    final run = _session.activeRun;
+    if (run == null || run.paused) return;
+    final secs = run.currentSeconds;
+    if (secs == null || secs <= 0) return;
+    _stepStartedAt = DateTime.now();
+    _stepSeconds = secs;
+    // A 1s tick drives the progress bar; the advance fires once at the end.
+    _stepTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted || _session.activeRun == null) {
+        _cancelStepTimer();
+        return;
+      }
+      final elapsed = DateTime.now().difference(_stepStartedAt!).inSeconds;
+      if (elapsed >= secs) {
+        _cancelStepTimer();
+        _sendRoutine('next');
+      } else {
+        setState(() {}); // repaint the ring
+      }
+    });
+  }
 
   // ---- the presence-primary home (Spec 15): only Plena + the current exchange over the void ----
   static const _ink = Color(0xFFEAE2D8);
