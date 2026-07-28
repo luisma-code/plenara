@@ -1,0 +1,15 @@
+{
+  "typeId": "routine",
+  "displayName": "Routine",
+  "schemaVersion": 1,
+  "attributes": [
+    { "name": "title", "valueType": "text", "required": true },
+    { "name": "focusArea", "valueType": "text", "required": false },
+    { "name": "kind", "valueType": "enum", "enumValues": ["stretch", "strength", "mobility"], "required": true },
+    { "name": "intent", "valueType": "text", "required": false },
+    { "name": "estMinutes", "valueType": "decimal", "required": false },
+    { "name": "safetyNote", "valueType": "text", "required": false },
+    { "name": "status", "valueType": "enum", "enumValues": ["active", "archived"], "required": false, "default": "active" },
+    { "name": "createdAt", "valueType": "date", "required": true }
+  ]
+}

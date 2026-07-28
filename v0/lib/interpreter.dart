@@ -432,6 +432,11 @@ class Interpreter {
     'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num', 'ordinal_suffix',
     'weekday_nums', 'date_part', 'time_part', 'split_list', 'dedup_list', 'position_index', 'nth', 'mul', 'div', 'round'};
   static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'ieq', 'in', 'isNull', 'notNull'};
+
+  /// Branch CONDITION forms (Spec 02 §3) — a SMALLER set than [_filterOps], and a common
+  /// authoring trap: `lte`/`lt`/`gt` are filter ops only. Order a comparison the other way round
+  /// (`a <= b` is `{"gte": [b, a]}`) rather than reaching for one that doesn't exist here.
+  static const _condForms = {'isNull', 'notNull', 'gte', 'eq', 'contains'};
   // The Spec 01 §3 canonical value-type set (fixed; a new one needs a kernel bump). `integer`
   // is retained only as a tolerated legacy alias for `number` (older authored types).
   static const _valueTypes = {
@@ -651,6 +656,20 @@ class Interpreter {
         case 'format':
           if (step['into'] == 'confirmationText') c.setsConfirmation = true;
         case 'branch':
+          // The branch CONDITION grammar is closed (Spec 02 §3): isNull, notNull, gte, eq,
+          // contains. It was unvalidated, so an authored `{"lte": [...]}` — a read_many FILTER op,
+          // which is a different closed set — passed the gate and then failed at RUN time with
+          // "unknown cond". The whole point of the static gate is that an AI-authored skill cannot
+          // reach the user broken; a cond outside the set must be rejected here.
+          final cnd = step['cond'];
+          if (cnd is! Map || cnd.isEmpty) {
+            throw ResolveError("${c.sid}: branch needs a 'cond' object");
+          }
+          final unknown = cnd.keys.where((k) => !_condForms.contains(k)).toList();
+          if (unknown.isNotEmpty) {
+            throw ResolveError("${c.sid}: branch cond '${unknown.first}' is not a condition "
+                '(${_condForms.join('/')})');
+          }
           final tRec = Map<String, String?>.from(recVars), eRec = Map<String, String?>.from(recVars);
           final tList = Map<String, String?>.from(listVars), eList = Map<String, String?>.from(listVars);
           _validate((step['then'] as List?) ?? const [], tRec, tList, c);
@@ -844,9 +863,21 @@ class Interpreter {
         // records of typeId whose `via` entity attr points at the `from` record's id
         final fromId = val(step['from'], env);
         final via = step['via'] as String;
-        env[step['into']] = store.values
+        var rel = store.values
             .where((r) => r['typeId'] == step['typeId'] && r[via] == fromId)
             .toList();
+        // orderBy/orderDir/limit, same semantics as read_many. Without ordering this returned
+        // records in store-iteration order — so "when did I last do X" could answer with the
+        // OLDEST session, and a numbered join-based readback could shuffle between restarts
+        // (making "delete 2" mean a different row than the one just read out).
+        final relOrder = step['orderBy'];
+        if (relOrder is String) {
+          final dir = step['orderDir'] == 'desc' ? -1 : 1;
+          rel.sort((x, y) => dir * _cmp(x[relOrder], y[relOrder]));
+        }
+        final relLimit = step['limit'];
+        if (relLimit is int && relLimit >= 0 && rel.length > relLimit) rel = rel.sublist(0, relLimit);
+        env[step['into']] = rel;
       case 'write_record':
         env[step['into']] = _resolveWrite(step, env, store, plan);
       case 'delete_record':

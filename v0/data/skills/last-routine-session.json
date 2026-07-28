@@ -1,0 +1,155 @@
+{
+  "skillId": "last-routine-session",
+  "displayName": "When you last did a routine",
+  "_comment": "\"when did I last do chest day\". Sessions are read via read_related on the routine, newest first, so the answer is grounded in real records rather than a guess.",
+  "reads": [
+    "routine",
+    "routine_session"
+  ],
+  "writes": [],
+  "inputs": [
+    {
+      "name": "routineName",
+      "required": true
+    }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "routine",
+        "match": {
+          "title": {
+            "var": "routineName"
+          }
+        },
+        "partial": true,
+        "into": "r"
+      },
+      {
+        "op": "branch",
+        "cond": {
+          "isNull": "r"
+        },
+        "then": [
+          {
+            "op": "format",
+            "template": "I don't have a routine called {routineName}.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "set",
+            "var": "rtitle",
+            "value": {
+              "field": [
+                "r",
+                "title"
+              ]
+            }
+          },
+          {
+            "op": "read_related",
+            "typeId": "routine_session",
+            "via": "routine",
+            "from": {
+              "ref": "r"
+            },
+            "orderBy": "date",
+            "orderDir": "desc",
+            "limit": 1,
+            "into": "sessions"
+          },
+          {
+            "op": "compute",
+            "fn": "nth",
+            "args": [
+              {
+                "var": "sessions"
+              },
+              1
+            ],
+            "into": "last"
+          },
+          {
+            "op": "branch",
+            "cond": {
+              "isNull": "last"
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "You haven't done {rtitle} yet.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "compute",
+                "fn": "today",
+                "args": [],
+                "into": "today"
+              },
+              {
+                "op": "compute",
+                "fn": "days_between",
+                "args": [
+                  {
+                    "field": [
+                      "last",
+                      "date"
+                    ]
+                  },
+                  {
+                    "var": "today"
+                  }
+                ],
+                "into": "days"
+              },
+              {
+                "op": "branch",
+                "cond": {
+                  "gte": [
+                    0,
+                    {
+                      "var": "days"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "op": "format",
+                    "template": "You did {rtitle} today.",
+                    "into": "confirmationText"
+                  }
+                ],
+                "else": [
+                  {
+                    "op": "compute",
+                    "fn": "format_date",
+                    "args": [
+                      {
+                        "field": [
+                          "last",
+                          "date"
+                        ]
+                      },
+                      "MMMM d"
+                    ],
+                    "into": "when"
+                  },
+                  {
+                    "op": "format",
+                    "template": "You last did {rtitle} {days} day(s) ago, on {when}.",
+                    "into": "confirmationText"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

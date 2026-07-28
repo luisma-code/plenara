@@ -1125,6 +1125,24 @@ class Session {
     return jid;
   }
 
+  /// Run a skill directly by id with already-resolved slots — the seam the routine player uses to
+  /// log a finished run (Spec 16). It goes through the SAME `_dispatch` path as a spoken turn on
+  /// purpose: completing a routine is an ordinary act-then-describe write, so it must be journaled
+  /// (hence undoable), visible to automations, and present in the turn log — not a side channel
+  /// that quietly bypasses the safety net. Returns the confirmation line.
+  Future<String> dispatchSkill(String skillId, Map<String, dynamic> slots,
+      {String source = 'player'}) async {
+    if (!skills.containsKey(skillId)) return "I don't know how to do that yet.";
+    _outWrites.clear();
+    final msg = await _dispatch(skillId, slots, source, now);
+    await _reconcileReminders();
+    repo.logTurn({
+      'source': source, 'skill': skillId, 'at': now.toIso8601String(),
+      if (_outWrites.isNotEmpty) 'writes': List<Map<String, dynamic>>.from(_outWrites),
+    });
+    return msg;
+  }
+
   /// Reverse the most recent journaled write (powers a spoken "undo that" from outside a turn).
   Future<String> undoLast() async {
     final msg = _undoLastInternal();

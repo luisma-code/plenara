@@ -1,0 +1,113 @@
+{
+  "skillId": "log-routine-session",
+  "displayName": "Log a completed routine",
+  "_comment": "Dispatched by the routine player when a run ends, so finishing a routine is an ordinary act-then-describe write: journaled, undoable, and visible to automations — not a special side-channel.",
+  "reads": [
+    "routine"
+  ],
+  "writes": [
+    "routine_session"
+  ],
+  "inputs": [
+    {
+      "name": "routineName",
+      "required": true
+    },
+    {
+      "name": "stepsCompleted",
+      "required": false
+    },
+    {
+      "name": "stepsTotal",
+      "required": false
+    }
+  ],
+  "steps": {
+    "main": [
+      {
+        "op": "read_one",
+        "typeId": "routine",
+        "match": {
+          "title": {
+            "var": "routineName"
+          }
+        },
+        "partial": true,
+        "into": "r"
+      },
+      {
+        "op": "branch",
+        "cond": {
+          "isNull": "r"
+        },
+        "then": [
+          {
+            "op": "format",
+            "template": "I don't have a routine called {routineName}.",
+            "into": "confirmationText"
+          }
+        ],
+        "else": [
+          {
+            "op": "set",
+            "var": "rtitle",
+            "value": {
+              "field": [
+                "r",
+                "title"
+              ]
+            }
+          },
+          {
+            "op": "compute",
+            "fn": "today",
+            "args": [],
+            "into": "today"
+          },
+          {
+            "op": "compute",
+            "fn": "now",
+            "args": [],
+            "into": "nowTs"
+          },
+          {
+            "op": "write_record",
+            "typeId": "routine_session",
+            "into": "s",
+            "fields": {
+              "routine": {
+                "field": [
+                  "r",
+                  "id"
+                ]
+              },
+              "routineTitle": {
+                "field": [
+                  "r",
+                  "title"
+                ]
+              },
+              "date": {
+                "var": "today"
+              },
+              "completedAt": {
+                "var": "nowTs"
+              },
+              "stepsCompleted": {
+                "var": "stepsCompleted"
+              },
+              "stepsTotal": {
+                "var": "stepsTotal"
+              }
+            }
+          },
+          {
+            "op": "format",
+            "template": "Logged — {rtitle} done.",
+            "into": "confirmationText"
+          }
+        ]
+      }
+    ]
+  }
+}

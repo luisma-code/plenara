@@ -1,0 +1,16 @@
+{
+  "typeId": "routine_session",
+  "displayName": "Routine Session",
+  "parentType": "routine",
+  "schemaVersion": 1,
+  "attributes": [
+    { "name": "routine", "valueType": "entityRef", "refType": "routine", "required": true },
+    { "name": "routineTitle", "valueType": "text", "required": false },
+    { "name": "date", "valueType": "date", "required": true },
+    { "name": "startedAt", "valueType": "datetime", "required": false },
+    { "name": "completedAt", "valueType": "datetime", "required": false },
+    { "name": "stepsCompleted", "valueType": "decimal", "required": false },
+    { "name": "stepsTotal", "valueType": "decimal", "required": false },
+    { "name": "feel", "valueType": "enum", "enumValues": ["great", "fine", "rough"], "required": false }
+  ]
+}

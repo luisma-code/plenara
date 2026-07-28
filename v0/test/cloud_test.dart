@@ -112,9 +112,14 @@ void main() {
     test('a correction forgets the learned template that routed the corrected turn', () async {
       final s = Session(makeTempDataDir(), clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
-      const t = 'jot down that I need to {description:text}';
-      await s.handle('jot down that I need to buy milk'); // cloud routes + learns t
-      expect(s.router.isLearned(t), isTrue);
+      await s.handle('jot down that I need to buy milk'); // cloud routes + learns a template
+      // Capture WHATEVER was learned rather than hardcoding the surface: the template comes from
+      // the cloud's own suggestion, so its exact casing/wording moves when fixtures are re-recorded.
+      // The behaviour under test is learn-then-forget, not the string.
+      final learned = s.router.corpus.map((c) => c.template).where(s.router.isLearned).toList();
+      expect(learned, hasLength(1), reason: 'the cloud-routed turn should learn exactly one template');
+      final t = learned.single;
+      expect(t, contains('{description:text}')); // a SHAPE was abstracted, not a stored value
       await s.handle('jot down that I need to sweep'); // corpus routes via the learned t
       await s.handle('no, I meant to log a 3k run'); // correction -> forgets t
       expect(s.router.isLearned(t), isFalse);

@@ -1,0 +1,40 @@
+{
+  "skillId": "list-routines",
+  "displayName": "List your routines",
+  "_comment": "Numbered so 'do number 2' resolves by recordId against exactly what was read back (G-49 enumeration channel). Archived routines are excluded — the list exists to pick from.",
+  "reads": [
+    "routine"
+  ],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {
+        "op": "read_many",
+        "typeId": "routine",
+        "filter": { "field": "status", "op": "neq", "value": "archived" },
+        "orderBy": "createdAt",
+        "orderDir": "asc",
+        "into": "routines"
+      },
+      {
+        "op": "enumerate",
+        "list": { "var": "routines" },
+        "label": "title",
+        "line": "{title} — {estMinutes} min",
+        "into": "lines"
+      },
+      {
+        "op": "compute",
+        "fn": "count",
+        "args": [ { "var": "routines" } ],
+        "into": "n"
+      },
+      {
+        "op": "format",
+        "template": "You have {n} routine(s):{lines}",
+        "into": "confirmationText"
+      }
+    ]
+  }
+}

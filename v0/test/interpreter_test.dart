@@ -71,6 +71,66 @@ void main() {
     });
   });
 
+  group('read_related honours orderBy/orderDir/limit', () {
+    test('newest-first + limit 1 returns the LATEST related record, not store order', () {
+      // Without ordering this returned whatever the store iterated first, so "when did I last do
+      // X" could answer with the OLDEST session, and a numbered join-based readback could shuffle
+      // between restarts (making "delete 2" hit a different row than the one just read out).
+      final store = <String, Map<String, dynamic>>{
+        'r1': {'id': 'r1', 'typeId': 'routine', 'title': 'Low back'},
+        's-old': {'id': 's-old', 'typeId': 'routine_session', 'routine': 'r1', 'date': '2026-07-02'},
+        's-new': {'id': 's-new', 'typeId': 'routine_session', 'routine': 'r1', 'date': '2026-07-04'},
+        's-mid': {'id': 's-mid', 'typeId': 'routine_session', 'routine': 'r1', 'date': '2026-07-03'},
+      };
+      final skill = {
+        'skillId': 'x',
+        'steps': {'main': [
+          {'op': 'read_one', 'typeId': 'routine', 'match': {'title': 'Low back'}, 'into': 'r'},
+          {'op': 'read_related', 'typeId': 'routine_session', 'via': 'routine',
+           'from': {'ref': 'r'}, 'orderBy': 'date', 'orderDir': 'desc', 'limit': 1, 'into': 'ss'},
+          {'op': 'compute', 'fn': 'count', 'args': [{'var': 'ss'}], 'into': 'n'},
+          {'op': 'compute', 'fn': 'nth', 'args': [{'var': 'ss'}, 1], 'into': 'last'},
+          {'op': 'set', 'var': 'd', 'value': {'field': ['last', 'date']}},
+          {'op': 'format', 'template': '{n}:{d}', 'into': 'confirmationText'},
+        ]},
+      };
+      final p = _i().resolve(skill, {}, store);
+      expect(p.confirmation, '1:2026-07-04', reason: 'newest first, then limit 1');
+    });
+  });
+
+  group('the static gate closes the branch-condition vocabulary', () {
+    test("a filter op used as a branch cond ('lte') is rejected at AUTHORING time", () {
+      // Branch conds are a SMALLER closed set than filter ops. This used to pass the gate and then
+      // fail at run time with "unknown cond" — exactly what the gate exists to prevent for a
+      // skill authored by Claude.
+      final skill = {
+        'skillId': 'x',
+        'steps': {'main': [
+          {'op': 'branch', 'cond': {'lte': [{'var': 'n'}, 0]}, 'then': [], 'else': []}
+        ]},
+      };
+      expect(() => _i().validateSkill(skill), throwsA(isA<ResolveError>()));
+    });
+
+    test('the five real cond forms still pass', () {
+      for (final c in [
+        {'isNull': 'x'}, {'notNull': 'x'},
+        {'gte': [1, 0]}, {'eq': [1, 1]}, {'contains': ['abc', 'b']},
+      ]) {
+        final skill = {
+          'skillId': 'x',
+          'steps': {'main': [
+            {'op': 'set', 'var': 'x', 'value': 1}, // the var-closure check is separate and real
+            {'op': 'branch', 'cond': c, 'then': [], 'else': []},
+            {'op': 'format', 'template': 'ok', 'into': 'confirmationText'},
+          ]},
+        };
+        expect(() => _i().validateSkill(skill), returnsNormally, reason: '$c must be accepted');
+      }
+    });
+  });
+
   group('compute — arithmetic is numeric-only', () {
     test('add on numeric-looking STRINGS does not concatenate', () {
       // '5' + '1' == '51' would be written into a number field as text.
