@@ -1,116 +1,118 @@
-# Plenara — Session Handoff (read this first)
+# Session Handoff — Plenara
 
-_Written 2026-07-14 to hand off to a fresh session after new global defaults were configured._
+_Written 2026-07-16 for the next session. Point-in-time snapshot; the continuously-updated
+working memory is [`WORK-CAPSULE.md`](WORK-CAPSULE.md) — read that too._
 
-> **First thing:** read this file, then `CLAUDE.md` (working mode + principles), then `HANDOFF.md`
-> (full history — the top has the newest session blocks + the overnight-incident post-mortem), then
-> `TRANSITION.md` (macOS specifics). The Claude auto-memory carries the macOS env setup; everything
-> else you need is in these docs.
+---
 
-## Where we are
+## TL;DR — where things stand
 
-- **Platform:** developing on **macOS** (moved from Windows). iPhone is the **P1** target.
-- **Repo:** `origin/main` == local, **fully pushed** (HEAD ≈ `ed2f9ec`). Working tree clean.
-- **Green:** full `tool/precheck.sh` passes — v0 **1670** tests, app **65** widget tests, 3 real-GPU
-  integration tests, coverage floor, conformance 24/60 (baseline 24), 2-OS CI workflow.
-- **The app builds + runs on Mac.** Run it with **`bash app/tool/dev-run.sh`** (NOT bare
-  `flutter build`) — it re-signs with the stable "Plenara Dev" identity so mic permission persists.
+- **Everything is committed + pushed to `origin/main`.** Tree clean. Tests green: **v0 1718, app 80**,
+  both `analyze` clean, seed assets in sync.
+- Two features shipped this session (**G-49**) and put through a **4-lens Fable code review** — all
+  confirmed defects fixed + regression-tested.
+- **One thing is blocked on you (Luis):** the TestFlight one-time Apple-account setup (see below).
+  Nothing else is blocked.
+- Latest commits (newest first): `c774c94` (G-49 review fixes) · `3b82691` (TestFlight plumbing) ·
+  `193a932` (Feature 2) · `10d0aaf` (Feature 1).
 
-## ✅ DEPLOY TO IPHONE — DONE (2026-07-14)
+---
 
-Plenara now installs and runs on the iPhone ("Aluminum Monster"). What it took:
-- **Apple Developer account approved**; Xcode auto-populated `DEVELOPMENT_TEAM = 7V63BZ39HU`.
-- **The real blocker was the work-MDM profile** on the phone — it forced an on-device
-  developer-cert online verification ("internet connection needed to verify") that the corporate
-  network blocked. **Removing the work management profile cleared it.** (If a work phone is used
-  again, TestFlight is the clean path — MDM devices install App Store/TestFlight apps normally.)
-- **Deploy is release-mode standalone:** `bash` →
-  `flutter run --release --dart-define=PLENARA_DEBUG=true -d 00008140-000645442862201C`
-  (prefix with the brew/DEVELOPER_DIR evals). Release has no Dart VM, so it **sidesteps the
-  debug-attach mDNS/Local-Network-permission wall** that made `flutter run` (debug) "exit right
-  after launch." The app installs + launches; the Mac-side console can be killed, the app stays.
-- **Logs off-device:** Settings → Diagnostics → **"Share diagnostics"** bundles every on-device
-  `.log` into one ~1 MB-capped `.txt` and opens the share sheet (email it out — no cable). Verbose
-  traces are ON in this build via the `--dart-define`. (Files-app retrieval still works too.)
-- **Gotcha fixed:** `path_provider_foundation` is pinned to **2.4.1** (dependency_overrides) — its
-  2.6.0 native-assets hook (`package:objective_c`) breaks `flutter build --release` because a stale
-  Xcode keychain-credential warning corrupts its `xcrun` stdout parse. Cleaning that keychain
-  account (`91B206EB…`, "missing Xcode-Username") is a deferred follow-up; the pin avoids it for now.
+## What shipped this session (G-49)
 
-### Old notes (kept for reference) — the pre-deploy staging
-Everything was staged; it was blocked only on Luis-gated steps:
-1. **Apple Developer Program** — Luis is enrolling ("pending"). $99/yr, Individual account. Unlocks
-   **TestFlight** (wireless/remote push — the goal: "work remotely, push to my phone") **and** App
-   Store. A free app costs nothing beyond the membership.
-2. **Xcode signing** — Luis must add his Apple ID (Xcode → Settings → Accounts) and set the **Team**
-   (Runner target → Signing & Capabilities → Automatically manage signing → Team). Currently
-   **`DEVELOPMENT_TEAM` is unset** — that's the gate. If the bundle id `com.plenara.plenaraApp`
-   conflicts on a free/personal team, change it to something unique.
-3. Then: iPhone **"Aluminum Monster"** (`00008140-000645442862201C`) is in Developer Mode + trusted;
-   `flutter run -d <iphone-id>` deploys. (The iOS runner `app/ios/` is generated, configured with
-   mic/speech usage strings, and `flutter build ios --no-codesign` succeeds — all plugins link.)
-- **iOS diag logs** are already retrievable remotely: they write to the app's Documents dir with
-  `UIFileSharingEnabled`, so grab them via **Files app → On My iPhone → Plenara → plenara-logs**
-  (works on TestFlight too). No cable needed.
-- **Known iOS gaps (fine for testing, real follow-ups):** sandboxed storage (no synced folder yet —
-  enter the BYOK key via the in-app **Settings** screen); reminders use the in-memory FakeScheduler
-  (on-open nudges, not real iOS notifications — `_platformScheduler` only wires macOS/Windows).
+Both features were designed with Fable first, then implemented, then Fable-reviewed and fixed.
 
-## New global defaults now in effect (`~/.claude/CLAUDE.md`)
+### 1. Numbered-list corrections (engine, `v0/`)
+The problem: a misheard item ("Zpack my clothes") was nearly impossible to re-target by text.
+Now **every list Plena reads back is numbered** ("1. …, 2. …") and you reference an item by the
+number spoken:
+- **"delete 2"**, **"complete 1"**, **"correct 3"** (two-turn re-speak) / **"change 2 to X"** (one-turn).
+- Resolves by recordId against exactly what was read back (no drift, no fuzzy match). All journaled,
+  so **"undo that"** reverses them.
+- Works across **every domain** — tasks, reminders, knowledge/facts, relations, interactions, meals,
+  journal, mood (~18 list skills converted).
+- Two new closed-vocab DSL ops: **`enumerate`** (flat lists) + **`ref_mark`** (captures a ref from
+  inside a `foreach` for rich/conditional/joined readbacks). Session `_enumCtx` context +
+  reference-by-number handlers. Recognition is offline regex (free, deterministic).
 
-These were just configured — honor them:
-- **Default = SHORT turns** (Luis at the keyboard). One meaningful step, then hand back so he can
-  redirect. Only go heads-down when he explicitly says **"working mode" / "agentic mode"** (= he's
-  leaving the machine).
-- **Minimize manual reruns:** do ALL known work first, then trigger the one manual rerun.
-- **Always push after committing** — in the same turn. (Auth is set up; `git push` works.)
-- **RAM watch + cleanup (hard rule, from an incident):** whenever you launch the app in work mode,
-  **sample its RSS and kill it if it's climbing**; **never leave an app instance running** when work
-  is done. A short soak that plateaus is **NOT** proof of no leak.
+### 2. Editable "Your data" view (app, `app/lib/data_view.dart`)
+The read-only archetype browser behind the "…" menu is now an editable fallback:
+- **Per-value tap-to-edit** (Spec 07 §5.5 — not a form): text/number inline, boolean toggle,
+  date/datetime pickers. **Delete-with-undo-snackbar** (targeted undo). A **"Learned phrases"** card
+  showing what Plena learned to recognize from how you talk (humanized templates), each **forgettable**.
+- Six Session facade methods (`editField`, `deleteRecord`, `undoLast`, `undoById`, `learnedFlows`,
+  `forgetLearnedFlow`, `restoreLearnedFlow`) + `Router.restore`. Edits ride the **one** journal, so a
+  spoken "undo that" reverses a manual edit.
 
-## Recently shipped (newest first) — so you don't relitigate
+### The Fable review (4 lenses) — all confirmed defects fixed
+Two were data-corruption paths (executed repros): (1) a **mixed-type readback** wrote a junk field on
+the wrong type → fixed with a **per-item** `{id, typeId, labelField}` reference channel; (2) a
+**manual edit between a spoken write and a voice "no, I meant…"** reversed the wrong journal entry →
+manual writes clear the spoken-correction context + the snackbar uses a **targeted `undoById`**. Plus:
+a date-picker **crash** on dates >5y old (birthdays) → clamped; edit-failure was invisible behind the
+modal sheet → inline `errorText`; ref-commands guarded mid-slot-fill; Tour kept alive; var-closure
+scans `id`/`label`; learned-flow forget/restore hardened. Specs 02/03/07 synced + gap-register row.
+(Feature was renamed G-47 → **G-49**; G-47 was already taken by the gap register.)
 
-- **Overnight RAM-balloon incident → FIXED.** The app left frontmost overnight exhausted RAM
-  (AppLifecycleState doesn't change on display-sleep, so it rendered forever). Fix: **idle
-  suspension** in `plena.dart` — no pointer/key input for 3 min ⇒ the presence suspends (zero
-  frames); any input resumes. See the `HANDOFF.md` incident block. (Also fixed a real per-frame
-  `ui.Gradient` GPU leak earlier — the aura now draws the cached sprite.)
-- **Fable's UI/render test net:** P0 headless Picture/Image leak audit (MUTATION-validated), a
-  precheck `[4b]` static shader lint, §9.1 suspend-when-hidden, P1 numeric render-and-measure
-  invariants, resize-crash guard, M5/M6/semantics. Honest limits documented in `HANDOFF.md`
-  (in-test memory soak is invalid; `leak-check.sh` is a diagnostic not a gate; goldens skipped).
-- **Two-reviewer pass** (Fable prod review + test-sufficiency audit) — all fixes landed.
-- **Tour v1** — "what can you do?" is a guided conversation (chapter state machine in `session.dart`).
-- **List-reply redesign** — Plena flies to the corner over one unified void; three-register text.
-- **macOS voice** — Apple Speech (built-in), audio barrier, live transcript, "I heard: X".
+### Verified live with the real cloud
+Using the test key, confirmed end-to-end: the numbered-corrections flow, **and G-46's gift
+suggestion** ("suggest a gift for Elena" → recognized by the cloud, grounded in her real facts) — the
+dogfood miss that started G-46, never before tested with a real key.
 
-## Environment / how to run (macOS)
+---
 
-- Toolchain via Homebrew (owned by `luisma.code`). Prefix build cmds:
+## NEXT STEPS
+
+### 🔴 Blocked on Luis — TestFlight (deploy-from-anywhere)
+Remote deploy across networks is impossible today (the phone shows `unavailable` to the Mac when off
+its LAN — that's exactly what TestFlight fixes). All Mac-side plumbing is done and needs no Apple
+login. **Your one-time batch (≈5 min, any browser — full steps in [`TESTFLIGHT.md`](TESTFLIGHT.md)):**
+1. Create the App Store Connect **app record** for bundle id `com.plenara.plenaraApp` (name "Plenara").
+2. Generate an App Store Connect **API key** with **Admin** access → download the `.p8` once, note the
+   **Key ID** + **Issuer ID**. Drop all three into gitignored `tool/.testflight.env`.
+3. Add yourself as an internal tester + install the TestFlight app on the phone.
+
+Then the next session runs `cd app && flutter build ipa --release && ../tool/testflight-upload.sh` —
+one command — and the build (G-46 + G-49) lands in TestFlight over cellular. The script auto-creates
+the distribution cert via the API key (`xcodebuild -allowProvisioningUpdates`).
+
+### 🟢 Unblocked / candidate work (next session's pick)
+- **On-device dogfood of G-49** once TestFlight (or same-WiFi) lands — numbered corrections + editable
+  data view on the real phone.
+- **Deferred, device-test-gated** (don't do blind — they touch the one subsystem that works only on
+  device): `flutter_tts` shared-handler refactor; Impeller-safe comet trail. See capsule "Open threads".
+- **Lower-value cleanups** Fable flagged but didn't block: `read_related` has no ordering (numbering in
+  join-based lists can shuffle across restarts); the tag/list comma-editor can't hold commas-in-values;
+  a successful tap-edit updates in place but doesn't emit a Stream "act-then-describe" line (accepted
+  v0 posture, noted in Spec 07 §5.5).
+
+---
+
+## Key facts & commands (grab these)
+
+- **Build env evals (prefix Bash build cmds):**
   `eval "$(/opt/homebrew/bin/brew shellenv)"; export LANG=en_US.UTF-8; export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`
-- Engine: `cd v0 && dart test && dart analyze lib bin test`
-- App: `cd app && flutter analyze lib test integration_test && flutter test`
-- Integration (real GPU): `cd app && flutter test integration_test -d macos`
-- Full gate: `bash tool/precheck.sh`
-- **Run the app:** `bash app/tool/dev-run.sh` (stable signing). **Use a WIRED/USB mic**, not the
-  Jabra Bluetooth headset (its mic forces low-fi HFP mode + delivers silence → voice fails).
-- No-sudo Mac: admin account is `luisma`; `~/.zprofile` has brew + `DEVELOPER_DIR` + `LANG`.
+- **Run v0 tests:** from `v0/` → `dart test` (1718 green). **App tests:** from `app/` → `flutter test` (80).
+- **iPhone:** "Aluminum Monster", id `00008140-000645442862201C`, iOS 26.5.2, bundle
+  `com.plenara.plenaraApp`, team `7V63BZ39HU`, deployment target 26.0.
+- **Wireless deploy (only on the SAME WiFi as the Mac + phone unlocked):** from `app/` →
+  `flutter run --release --dart-define=PLENARA_DEBUG=true -d 00008140-000645442862201C`.
+- **After changing `v0/data/` skills/types:** run `bash tool/sync_seed.sh` (the app bundles a copy);
+  `--check` gates drift.
+- **API key for live testing:** Luis provided one this session (passed via `ANTHROPIC_API_KEY` env; not
+  committed). Ask him again if needed — don't persist it.
+- **Keep the Mac awake all session:** `pgrep -x caffeinate || nohup caffeinate -dimsu >/dev/null 2>&1 &`
+  (standing rule — kill only at true session end).
 
-## Open / deferred (with reasons — don't reflexively pick these)
+## Working mode reminder
+Default = **short interactive turns** (Luis at the keyboard). **Agentic/uninterrupted mode only when
+he explicitly says so** ("working mode" / "agentic mode" = he's left the machine). This session's
+review-and-fix work was done agentically at his direction.
 
-- **iOS notifications** (real, not FakeScheduler) + **iOS synced-folder storage** — follow-ups once
-  dogfooding on-device starts.
-- **Leak certainty:** a proper **Xcode Instruments (Allocations)** profile of the render path is the
-  honest next step if we want to fully rule out a slow native leak (footprint sampling was
-  insufficient — that's what caused the incident).
-- **Deferred, cloud/model-gated:** authoring preview→refine→activate loop (G-29), safety Layer-2/3
-  model gate (G-30) — can't validate hermetically without a live BYOK key + model.
-- **Low value / skipped (documented):** golden tests (flaky on the additive swarm; numeric
-  invariants substitute), frame-time ratchet, an in-app "Share diagnostics" button (Files-app access
-  already covers log retrieval).
-
-## Suggested first move for the new session
-
-Ask Luis whether the Apple Developer account is approved. If yes → walk the Xcode Team/signing step
-and `flutter run -d` to the iPhone. If not yet → offer the free Wi-Fi/tethered on-device path today,
-or pick up any other item he wants. Default to SHORT turns unless he says otherwise.
+## Doc map
+- [`WORK-CAPSULE.md`](WORK-CAPSULE.md) — living working memory (read first).
+- [`TESTFLIGHT.md`](TESTFLIGHT.md) — the TestFlight setup + per-release commands.
+- [`CLAUDE.md`](CLAUDE.md) — project context + working rules.
+- `planning/specs/` — design specs (02 DSL, 03 NLU §2.3a, 07 UI §5.5 updated this session);
+  `planning/specs/05b-gap-register.md` — the G-49 row.
+- `HANDOFF.md` — older full history (deep background, if needed).
