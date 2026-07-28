@@ -1,6 +1,7 @@
 /// The manual "Your data" facade (Spec 07 §5.5 tap-to-edit + the Learned phrases showcase, G-49).
 /// Edits/deletes ride the same journal as spoken writes, so voice "undo that" reverses them; the
 /// learned-flow forget/restore is symmetrical with the voice-side forget-on-correct. Real storage.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:plenara/claude.dart';
@@ -58,6 +59,28 @@ String _taskId(Session s, String desc) =>
     s.store.values.firstWhere((r) => r['typeId'] == 'task' && r['description'] == desc)['id'] as String;
 
 void main() {
+  group('a torn learned-corpus file must not brick startup', () {
+    test('half-written corpus-learned.json degrades to "nothing learned", app still opens', () async {
+      final dir = makeTempDataDir();
+      // A crash/power-loss mid-rewrite of the whole-file learned corpus. This used to throw inside
+      // Session.init() — the app never opened, and stayed that way until the file was hand-deleted.
+      File('$dir/corpus-learned.json').writeAsStringSync('[{"skillId":"create-task","templa');
+      final s = Session(dir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false);
+      expect(s.learnedFlows, isEmpty);
+      expect(await s.handle('add buy milk to my list'), contains('buy milk')); // still works
+    });
+
+    test('learned-corpus writes are atomic (no .tmp left, file always parses)', () async {
+      final dir = makeTempDataDir();
+      final s = Session(dir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false);
+      s.repo.appendCorpusLearned({'skillId': 'create-task', 'template': 'chuck {description:text} on the list'});
+      expect(File('$dir/corpus-learned.json.tmp').existsSync(), isFalse);
+      expect(jsonDecode(File('$dir/corpus-learned.json').readAsStringSync()), isA<List>());
+    });
+  });
+
   group('editable data view — write failures stay values, never exceptions', () {
     test('a null value CLEARS an optional field instead of writing the string "null"', () async {
       final s = await _s();

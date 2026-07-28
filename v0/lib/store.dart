@@ -50,7 +50,7 @@ Map<String, Map<String, dynamic>> loadDefs(String dir, String key, {CorruptSink?
 /// Write [json] via a temp file + atomic rename so a crash mid-write can't leave a
 /// half-written definition (a torn type file is the worst torn file — every record of
 /// that type reads against it). Public wrapper over the record store's atomic write.
-void writeJsonAtomic(File file, Map<String, dynamic> json) => _atomicWrite(file, json);
+void writeJsonAtomic(File file, Object? json) => _atomicWrite(file, json);
 
 /// Per-record files `{id,typeId,fields,_meta}` -> flat in-memory records.
 /// Tombstoned records are skipped (a delete stays present-but-invisible), and a
@@ -197,7 +197,7 @@ void tombstone(String id, String dir, HlcDevice dev) {
 
 /// Write via a temp file + rename so a crash mid-write can't leave a half-written
 /// (corrupt) file — at worst the temp file is orphaned.
-void _atomicWrite(File file, Map<String, dynamic> json) {
+void _atomicWrite(File file, Object? json) {
   final tmp = File('${file.path}.tmp');
   tmp.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(json));
   try {

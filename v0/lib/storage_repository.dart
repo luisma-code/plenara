@@ -94,24 +94,34 @@ class FileStorageRepository implements StorageRepository {
   @override
   void remove(String id) => fs.tombstone(id, '$dataDir/records', dev);
 
+  /// The learned corpus is a whole-file rewrite on every learn/forget. A torn write here used to
+  /// be fatal at NEXT LAUNCH — Router.load jsonDecodes it during init, so truncated JSON threw
+  /// before the app could open, and stayed fatal until the file was deleted by hand. Reads now
+  /// degrade to "nothing learned yet" (surfaced via [corruptFiles]) and writes are atomic.
   @override
   List<dynamic> loadCorpusLearned() {
     final f = File('$dataDir/corpus-learned.json');
-    return f.existsSync() ? (jsonDecode(f.readAsStringSync()) as List) : <dynamic>[];
+    if (!f.existsSync()) return <dynamic>[];
+    try {
+      return jsonDecode(f.readAsStringSync()) as List;
+    } catch (e) {
+      _sink(f.path, e); // P2.8 — surfaced for repair, never a silent drop and never fatal
+      return <dynamic>[];
+    }
   }
 
   @override
   void appendCorpusLearned(Map<String, dynamic> entry) {
     final list = loadCorpusLearned()..add(entry);
-    File('$dataDir/corpus-learned.json')
-        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(list));
+    fs.writeJsonAtomic(File('$dataDir/corpus-learned.json'), list);
   }
 
   @override
   void removeCorpusLearned(String template) {
-    final list = loadCorpusLearned().where((e) => (e as Map)['template'] != template).toList();
-    File('$dataDir/corpus-learned.json')
-        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(list));
+    final list = loadCorpusLearned()
+        .where((e) => e is! Map || e['template'] != template)
+        .toList();
+    fs.writeJsonAtomic(File('$dataDir/corpus-learned.json'), list);
   }
 
   @override

@@ -43,11 +43,19 @@ class Router {
     }
     final learned = <String>{};
     if (learnedPath != null && File(learnedPath).existsSync()) {
-      for (final e in jsonDecode(File(learnedPath).readAsStringSync()) as List) {
-        final m = e as Map<String, dynamic>;
-        entries.insert(0, _compile(m)); // learned tried first
-        learned.add(m['template'] as String);
-      }
+      // The learned corpus is device-written and rewritten whole on every learn/forget. A torn or
+      // half-synced file must degrade to "nothing learned yet" — throwing here happens inside
+      // init(), i.e. the app simply never opens, and stays that way until the file is deleted by
+      // hand. Losing learned phrasings is recoverable; a bricked launch is not.
+      try {
+        for (final e in jsonDecode(File(learnedPath).readAsStringSync()) as List) {
+          if (e is! Map<String, dynamic>) continue;
+          final t = e['template'];
+          if (t is! String) continue; // a malformed entry is skipped, not fatal
+          entries.insert(0, _compile(e)); // learned tried first
+          learned.add(t);
+        }
+      } catch (_) {/* unreadable -> seed corpus only */}
     }
     return Router(entries, now).._learnedTemplates.addAll(learned);
   }

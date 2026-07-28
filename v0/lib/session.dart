@@ -519,21 +519,30 @@ class Session {
     // Migrate-on-read (Spec 01 §7.4 / Spec 06 D12): bring records written under an older schema
     // forward to their type's current version, re-persisting only what changed. A future-versioned
     // record (a newer app wrote it) is left intact and surfaced, never mangled.
-    var migrated = 0, tooNew = 0;
+    var migrated = 0, tooNew = 0, unwritable = 0;
     for (final e in store.entries.toList()) {
       final td = types[e.value['typeId']];
       if (td == null) continue;
       final m = migrateRecord(e.value, td);
       if (m.changed) {
-        store[e.key] = m.record;
-        repo.persist(m.record);
-        migrated++;
+        store[e.key] = m.record; // the in-memory migration is correct either way
+        // A single unwritable record must NOT brick startup — the loader already skips corrupt
+        // files rather than throwing, and a read-only/full folder here would otherwise make the
+        // app refuse to open at all. Migrate in memory, count it, surface it (P2.8).
+        try {
+          repo.persist(m.record);
+          migrated++;
+        } catch (_) {
+          unwritable++;
+        }
       } else if (isFutureVersioned(e.value, td)) {
         tooNew++;
       }
     }
-    if (migrated > 0 || tooNew > 0) {
-      phase('migrated $migrated record(s) to current schema${tooNew > 0 ? '; $tooNew from a newer app left as-is' : ''}');
+    if (migrated > 0 || tooNew > 0 || unwritable > 0) {
+      phase('migrated $migrated record(s) to current schema'
+          '${tooNew > 0 ? '; $tooNew from a newer app left as-is' : ''}'
+          '${unwritable > 0 ? '; WARNING: $unwritable could not be written back (migrated in memory only)' : ''}');
     }
     // Reference knowledge bases (Spec 13): shipped, read-only datasets (nutrition calories) —
     // load once; a missing file yields an empty store (the feature just goes quiet).
