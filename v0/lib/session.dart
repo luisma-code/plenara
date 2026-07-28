@@ -575,6 +575,12 @@ class Session {
           '${automations.pendingReview.length} held, ${automations.refusals.length} refused');
     }
     router = Router.load('$dataDir/corpus.json', now, learnedPath: '$dataDir/corpus-learned.json');
+    if (router.corruptFiles.isNotEmpty) {
+      // Routing is gutted without the seed corpus — say so loudly rather than let every utterance
+      // clarify-fail for no visible reason (P2.8).
+      phase('WARNING: the seed corpus could not be read (${router.corruptFiles.join(', ')}) — '
+          'routing is degraded; reinstall or restore that file to repair.');
+    }
     claude = _injectedCloud ?? ClaudeClient();
     _generative = GenerativeService(claude);
     for (final s in skills.values) {

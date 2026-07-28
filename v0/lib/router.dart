@@ -34,12 +34,23 @@ class Router {
   final List<CorpusEntry> corpus;
   final DateTime now;
   final Set<String> _learnedTemplates = {}; // templates added by learn() / loaded as learned
+  /// Corpus files that failed to parse (torn / half-synced), for the caller to surface (P2.8).
+  final List<String> corruptFiles = [];
   Router(this.corpus, this.now);
 
   static Router load(String path, DateTime now, {String? learnedPath}) {
+    final corrupt = <String>[];
     final entries = <CorpusEntry>[];
-    for (final e in jsonDecode(File(path).readAsStringSync()) as List) {
-      entries.add(_compile(e as Map<String, dynamic>));
+    // The seed corpus is copied into the user's SYNCED folder at first run, so a sync provider can
+    // leave it half-written. Throwing here happens inside init() — the app never opens. An empty
+    // corpus is a badly degraded app (everything clarify-fails), but it opens, says so, and can be
+    // repaired; a launch crash cannot.
+    try {
+      for (final e in jsonDecode(File(path).readAsStringSync()) as List) {
+        if (e is Map<String, dynamic>) entries.add(_compile(e));
+      }
+    } catch (_) {
+      corrupt.add(path);
     }
     final learned = <String>{};
     if (learnedPath != null && File(learnedPath).existsSync()) {
@@ -57,7 +68,9 @@ class Router {
         }
       } catch (_) {/* unreadable -> seed corpus only */}
     }
-    return Router(entries, now).._learnedTemplates.addAll(learned);
+    return Router(entries, now)
+      .._learnedTemplates.addAll(learned)
+      ..corruptFiles.addAll(corrupt);
   }
 
   bool isLearned(String template) => _learnedTemplates.contains(template);

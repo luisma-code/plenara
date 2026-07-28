@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:plenara/claude.dart';
+import 'package:plenara/config.dart';
 import 'package:plenara/storage_repository.dart';
 import 'package:plenara/session.dart';
 import 'package:test/test.dart';
@@ -69,6 +70,22 @@ void main() {
       await s.init(retrieval: false);
       expect(s.learnedFlows, isEmpty);
       expect(await s.handle('add buy milk to my list'), contains('buy milk')); // still works
+    });
+
+    test('a torn SEED corpus degrades routing but still opens, and says so', () async {
+      final dir = makeTempDataDir();
+      File('$dir/corpus.json').writeAsStringSync('[{"skillId":"create-task","temp');
+      final s = Session(dir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false); // must not throw — a launch crash is unrecoverable on a phone
+      expect(s.router.corruptFiles, isNotEmpty, reason: 'surfaced for repair, not silent');
+      expect(s.router.corpus, isEmpty);
+    });
+
+    test('saveConfig writes atomically (a torn config would lose dataDir + the API key)', () async {
+      final dir = Directory.systemTemp.createTempSync('cfg').path;
+      saveConfig(configPath: '$dir/config.json', dataDir: '/somewhere', apiKey: 'sk-test');
+      expect(File('$dir/config.json.tmp').existsSync(), isFalse);
+      expect(loadConfig(configPath: '$dir/config.json').apiKey, 'sk-test');
     });
 
     test('learned-corpus writes are atomic (no .tmp left, file always parses)', () async {

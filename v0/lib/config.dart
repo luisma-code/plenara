@@ -7,6 +7,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'store.dart' show writeJsonAtomic;
+
 class PlenaraConfig {
   final String dataDir;
   final String? apiKey;
@@ -114,7 +116,11 @@ void saveConfig(
   // leaves it untouched.
   if (voiceName != null) cfg['voiceName'] = voiceName.isEmpty ? null : voiceName;
   f.parent.createSync(recursive: true);
-  f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(cfg));
+  // ATOMIC. loadConfig degrades a malformed config to defaults, which is the right call for a
+  // hand-edited file — but it means a torn write silently loses dataDir and the API key, and the
+  // app then opens against a fresh empty folder. To the user that is indistinguishable from
+  // losing all their data.
+  writeJsonAtomic(f, cfg);
 }
 
 /// First-run seeding: copy the shipped built-in capability defs (types, skills,
