@@ -90,7 +90,20 @@ abstract interface class CloudClient {
   Future<CloudResult<String>> generate(String kind, String context);
 }
 
-class ClaudeClient implements CloudClient {
+/// Routine authoring (Spec 16). A SEPARATE capability interface rather than a fourth method on
+/// [CloudClient]: the core seam is implemented by ~20 test doubles, and widening it would force
+/// every one of them to care about a feature they don't exercise. The Session type-tests for this
+/// and declines honestly when the client can't author — which is also exactly the right behaviour
+/// on the free tier and offline.
+abstract interface class RoutineAuthor {
+  /// Compose a routine for [request] by SELECTING from [catalogue] (a pre-filtered shortlist the
+  /// app computed deterministically). The model never invents an exercise; the validator rejects
+  /// any key not in the catalogue. [priorError] feeds the one gated re-author attempt.
+  Future<CloudResult<Map<String, dynamic>>> authorRoutine(
+      String request, String catalogue, {String? kind, String? priorError});
+}
+
+class ClaudeClient implements CloudClient, RoutineAuthor {
   final String? key;
   final String _url;
   ClaudeClient({String? apiKeyOverride, String? url})
@@ -212,13 +225,61 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
 
   /// The single HTTP path. NEVER throws (Spec 04 §3.5): every failure maps to a
   /// typed [CloudError]. On 200 with a usable JSON object, [CloudOk] of that object.
+  /// Routine authoring (Spec 16). Composition-class work over a constrained catalogue, so it uses
+  /// a stronger model than the Haiku router — this call is RARE by design (once per routine, then
+  /// replayed free forever), which is what makes that affordable.
+  static const _routineSys = '''
+You compose a movement routine for a personal-assistant app, by SELECTING exercises from the
+catalogue the app gives you. You are not a doctor and you never diagnose or treat.
+
+Respond with ONLY a JSON object:
+{"title":"...","focusArea":"...","kind":"stretch|strength|mobility","estMinutes":<number>,
+ "steps":[{"exerciseKey":"<key from the catalogue>","name":"...","durationSeconds":<n>,
+           "reps":<n>,"side":"both|left|right|alternating"}]}
+
+HARD RULES:
+- Every exerciseKey MUST be copied EXACTLY from the catalogue below. Never invent one. A step
+  whose key is not in the catalogue is rejected and the whole routine is thrown away.
+- Do NOT write instructions — the app uses the catalogue's own wording. Just pick and sequence.
+- 4 to 10 steps. Each step needs EITHER durationSeconds (5-600) OR reps (1-100), not neither.
+- Sequence it like a sensible session: gentle work first, hardest in the middle, easing at the
+  end. Do not put two exercises for the same muscle back to back. Balance left and right.
+- "name" is a short spoken label for the step (usually the catalogue name).
+- title is short and human ("Low-back loosener", "Chest day"). Never include a medical claim.
+- Prefer exercises that need no equipment unless the user asked for equipment.''';
+
+  @override
+  Future<CloudResult<Map<String, dynamic>>> authorRoutine(String request, String catalogue,
+      {String? kind, String? priorError}) async {
+    final fix = priorError == null
+        ? ''
+        : '\n\nYour previous attempt FAILED validation with: "$priorError". '
+            'Return corrected JSON that fixes exactly that.';
+    final user = 'Request: "$request"\n'
+        '${kind == null ? '' : 'Kind: $kind\n'}'
+        '\nCATALOGUE (key | name | category | muscles | equipment):\n$catalogue$fix';
+    // A stronger model than the router: this is structured composition, and the G-29 finding was
+    // that authoring-class work needs it. Capped tokens because the model returns keys, not prose.
+    final res = await _message(_routineSys, user, maxTokens: 2000, model: 'claude-sonnet-4-5');
+    switch (res) {
+      case CloudError(:final kind, :final detail):
+        return CloudError(kind, detail);
+      case CloudOk(:final value):
+        if (value['steps'] is! List) {
+          return const CloudError(CloudErrorKind.malformed, 'response had no steps array');
+        }
+        return CloudOk(value);
+    }
+  }
+
   /// The raw text-returning HTTP path. NEVER throws (Spec 04 §3.5): every failure maps
   /// to a typed [CloudError]. On 200 with a usable text block, [CloudOk] of that text.
   /// [_message] (JSON) and [generate] (free text) both build on this.
-  Future<CloudResult<String>> _rawText(String sys, String user, {int maxTokens = 200}) async {
+  Future<CloudResult<String>> _rawText(String sys, String user,
+      {int maxTokens = 200, String model = 'claude-haiku-4-5'}) async {
     if (key == null || key!.isEmpty) return const CloudError(CloudErrorKind.noKey);
     final body = jsonEncode({
-      'model': 'claude-haiku-4-5',
+      'model': model,
       'max_tokens': maxTokens,
       'system': sys,
       'messages': [{'role': 'user', 'content': user}],
@@ -266,8 +327,9 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
   }
 
   /// JSON path (routing/authoring): extracts the first JSON object from the model text.
-  Future<CloudResult<Map<String, dynamic>>> _message(String sys, String user, {int maxTokens = 200}) async {
-    switch (await _rawText(sys, user, maxTokens: maxTokens)) {
+  Future<CloudResult<Map<String, dynamic>>> _message(String sys, String user,
+      {int maxTokens = 200, String model = 'claude-haiku-4-5'}) async {
+    switch (await _rawText(sys, user, maxTokens: maxTokens, model: model)) {
       case CloudError(:final kind, :final detail):
         return CloudError(kind, detail);
       case CloudOk(:final value):

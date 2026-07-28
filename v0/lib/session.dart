@@ -3,6 +3,8 @@
 /// returns the response text instead of printing, so any front-end can present it.
 library;
 
+import 'dart:async';
+
 import 'automations.dart';
 import 'claude.dart';
 import 'content_search.dart';
@@ -12,6 +14,7 @@ import 'interpreter.dart';
 import 'migration.dart';
 import 'people.dart';
 import 'reminders.dart';
+import 'routines.dart';
 import 'router.dart';
 import 'storage_repository.dart';
 
@@ -339,6 +342,35 @@ final _harmfulRe = RegExp(
     r"|purge (?:after|my|food|meal)|hide (?:my )?(?:eating|calories)|restrict (?:my )?calories"
     r"|cut down harder|so i can cut|eat less so",
     caseSensitive: false);
+// ---- Routine creation / entry (Spec 16) -------------------------------------------------------
+// "create a stretch routine for my low back" / "make me a chest day workout".
+// The routine NOUN is REQUIRED, not optional. With it optional this swallowed "create a tracker
+// to hide my eating" and "build me a way to spy on my coworker" — routing them to routine
+// authoring and skipping the safety floors entirely. (The floors now also run first, so this is
+// belt and braces; both matter.)
+final _routineCreateRe = RegExp(
+    r"^(?:can you |could you |please )?(?:create|make|build|put together|design|generate)\s+"
+    r"(?:me\s+)?(?:a|an|my)?\s*(stretch|strength|mobility|exercise)?\s*"
+    r"(routine|workout|stretches|warm[- ]?up)\s*"
+    r"(?:for|to help with|targeting|around|to loosen|to open)\s+(?:my\s+)?(.+?)[.!?]?$",
+    caseSensitive: false);
+// "let's do my low back routine" / "start chest day" / "run the shoulder routine"
+final _routineDoRe = RegExp(
+    r"^(?:(?:let'?s|lets)\s+)?(?:do|start|run|begin|play)\s+"
+    r"(?:my|the|a)?\s*(.+?)\s*(?:routine|workout|session)?[.!?]?$",
+    caseSensitive: false);
+
+// ---- Routine player control words (Spec 16). Offline regex: free, deterministic, and available
+// mid-workout with no cloud round-trip. Deliberately narrow so an ordinary command mid-run
+// ("remind me to buy milk") falls through and routes normally instead of being swallowed.
+final _routineNextRe = RegExp(r"^(?:next|done|got it|finished|ok(?:ay)?(?: done)?|ready)[.!]?$", caseSensitive: false);
+final _routineSkipRe = RegExp(r"^(?:skip(?: (?:this|it|that))?|pass|no(?:pe)?, ?skip)[.!]?$", caseSensitive: false);
+final _routineBackRe = RegExp(r"^(?:back|go back|previous|last one|repeat that one)[.!]?$", caseSensitive: false);
+final _routineRepeatRe = RegExp(r"^(?:repeat|again|say (?:that )?again|what(?:'| i)?s this one|how do i do (?:this|that)|what was that)\??[.!]?$", caseSensitive: false);
+final _routinePauseRe = RegExp(r"^(?:pause|wait|hold on|hang on|one (?:sec|second|moment))[.!]?$", caseSensitive: false);
+final _routineResumeRe = RegExp(r"^(?:go on|carry on|continue|resume|i'?m back|ready)[.!]?$", caseSensitive: false);
+final _routineStopRe = RegExp(r"^(?:stop|quit|that'?s enough|i'?m done|end (?:it|the routine)|finish(?: up)?)[.!]?$", caseSensitive: false);
+
 // authored ids are model output; keep them out of file paths and odd charsets
 final _idRe = RegExp(r'^[a-z0-9_-]{1,64}$');
 
@@ -391,6 +423,11 @@ class Session {
   /// [AutomationRunner.pendingReview] for the user's approval (Spec 02 §7.5).
   late AutomationRunner automations;
   late Router router;
+  /// The shipped exercise catalogue that grounds routine authoring (Spec 16).
+  late ExerciseCatalogue exercises;
+  /// A live routine run, or null. Ephemeral like the Tour — losing it on app kill is acceptable.
+  RoutineRun? _run;
+  RoutineRun? get activeRun => _run;
   late CloudClient claude;
   late GenerativeService _generative;
   late StorageRepository repo;
@@ -547,6 +584,9 @@ class Session {
     // Reference knowledge bases (Spec 13): shipped, read-only datasets (nutrition calories) —
     // load once; a missing file yields an empty store (the feature just goes quiet).
     _references = {'nutrition': ReferenceStore.load(dataDir, 'nutrition')};
+    // The shipped exercise catalogue (Spec 16). A missing/corrupt file yields an EMPTY catalogue:
+    // routine authoring then declines honestly and nothing else in the app is affected.
+    exercises = ExerciseCatalogue.load(dataDir);
     interp = Interpreter(types, now, references: _references);
     // Automations registry (Spec 01 §4.4 / Spec 04 §3.9): loaded like types/skills;
     // an absent automations/ folder is simply an empty registry (zero behavior change).
@@ -1125,6 +1165,222 @@ class Session {
     return jid;
   }
 
+  // ---- Routines (Spec 16) ---------------------------------------------------------------------
+
+  /// Find a routine by (partial, case-insensitive) title — how "do my low back routine" resolves.
+  Map<String, dynamic>? _findRoutine(String name) {
+    final n = name.toLowerCase().trim();
+    if (n.isEmpty) return null;
+    final routines = store.values.where((r) => r['typeId'] == 'routine').toList();
+    for (final r in routines) {
+      if ('${r['title']}'.toLowerCase() == n) return r;
+    }
+    final partial = routines.where((r) {
+      final t = '${r['title']}'.toLowerCase();
+      return t.contains(n) || n.contains(t);
+    }).toList();
+    return partial.length == 1 ? partial.first : null;
+  }
+
+  /// Author a routine: Layer-1 safety gate → deterministic catalogue shortlist → one cloud call →
+  /// deterministic validation → records. Act-then-describe: it writes and says what it did, and
+  /// "undo that" reverses the whole routine in one go (all records ride one journal entry).
+  Future<String> _createRoutine(String utterance, String focus, String? kindWord, DateTime now) async {
+    _outSource = 'routine-author';
+    _outSkill = 'author-routine';
+    // LAYER 1, before spending anything: an injury/medical framing does not get a treatment plan.
+    // The redirect still offers something useful, and the condition is STRIPPED from what we send —
+    // the medical detail never leaves the device (Spec 08 §5.1).
+    if (looksLikeInjuryRequest(utterance)) {
+      _outSource = 'refused';
+      return "I can't build something for an injury — that's physio territory, and I'd be guessing. "
+          'I can put together a gentle, general mobility routine you could run past them first — '
+          'say "create a gentle mobility routine" if you\'d like that.';
+    }
+    if (exercises.isEmpty) {
+      return "I can't build routines right now — my exercise catalogue didn't load.";
+    }
+    if (claude is! RoutineAuthor) {
+      return 'Building a routine needs the cloud, and I don\'t have a key set up for that yet.';
+    }
+    final author = claude as RoutineAuthor;
+    final kind = switch (kindWord?.toLowerCase()) {
+      'strength' || 'workout' => 'strength',
+      'mobility' => 'mobility',
+      _ => 'stretch',
+    };
+    final shortlist = exercises.candidates(focus, kind: kind);
+    final cat = ExerciseCatalogue.promptCatalogue(shortlist);
+
+    AuthoredRoutine? routine;
+    String? lastError;
+    // ONE gated retry, fed the deterministic validation error — the same posture as capability
+    // authoring. A second failure registers nothing: a half-routine is worse than none.
+    for (var attempt = 0; attempt < 2 && routine == null; attempt++) {
+      final res = await author.authorRoutine(utterance, cat, kind: kind, priorError: lastError);
+      switch (res) {
+        case CloudError(:final kind):
+          return "I couldn't build that routine — ${cloudReason(kind)}";
+        case CloudOk(:final value):
+          try {
+            routine = validateRoutine(value, exercises);
+          } on RoutineInvalid catch (e) {
+            lastError = e.message;
+          }
+      }
+    }
+    if (routine == null) {
+      return "I couldn't put that together cleanly — try describing it a different way.";
+    }
+    return _writeRoutine(routine, utterance, now);
+  }
+
+  /// Write a validated routine + its steps as ONE journaled turn, so "undo that" removes the whole
+  /// thing rather than leaving orphan steps behind.
+  String _writeRoutine(AuthoredRoutine r, String utterance, DateTime now) {
+    final rid = 'routine-${now.microsecondsSinceEpoch}';
+    final before = <String, Map<String, dynamic>?>{};
+    final written = <Map<String, dynamic>>[];
+    final routineRec = <String, dynamic>{
+      'id': rid, 'typeId': 'routine', 'title': r.title, 'focusArea': r.focusArea,
+      'kind': r.kind, 'intent': utterance, 'estMinutes': r.estMinutes,
+      'safetyNote': r.safetyNote, 'status': 'active',
+      'createdAt': now.toIso8601String().split('T').first,
+    };
+    before[rid] = null;
+    store[rid] = routineRec;
+    written.add(routineRec);
+    for (final s in r.steps) {
+      final sid = '$rid-step-${s.order}';
+      final rec = <String, dynamic>{
+        'id': sid, 'typeId': 'routine_step', 'routine': rid, 'order': s.order,
+        'name': s.name, 'instruction': s.instruction, 'side': s.side,
+        if (s.exerciseKey != null) 'exerciseKey': s.exerciseKey,
+        if (s.durationSeconds != null) 'durationSeconds': s.durationSeconds,
+        if (s.reps != null) 'reps': s.reps,
+      };
+      before[sid] = null;
+      store[sid] = rec;
+      written.add(rec);
+    }
+    // Journal BEFORE persisting, for the same reason every other write does (a disk failure must
+    // not leave an un-undoable change) — see the note in _dispatch.
+    _journal.add(_JournalEntry(before, 'created the "${r.title}" routine'));
+    if (_journal.length > _journalMax) _journal.removeAt(0);
+    _lastTurnWrote = true;
+    try {
+      for (final w in written) {
+        repo.persist(w);
+      }
+    } catch (e) {
+      return 'I built "${r.title}", but couldn\'t save it ($e). Say "undo that" to drop it.';
+    }
+    final illustrated = r.steps.where((s) => s.exerciseKey != null &&
+        exercises.byKey[s.exerciseKey]?.image != null).length;
+    _outSkill = 'author-routine';
+    return 'Made "${r.title}" — ${r.steps.length} steps, about ${r.estMinutes} minutes'
+        '${illustrated < r.steps.length ? ' ($illustrated with pictures)' : ''}. '
+        'Say "let\'s do ${r.title}" when you\'re ready.';
+  }
+
+  /// Control words recognised while a run is live. Returns the reply, or null to let the utterance
+  /// fall through to normal routing (the run stays live — see the sticky note at the call site).
+  String? _routineControl(String u, DateTime now) {
+    final run = _run!;
+    final priorSource = _outSource, priorSkill = _outSkill;
+    _outSource = 'routine';
+    _outSkill = 'routine-player';
+    if (_routineNextRe.hasMatch(u)) {
+      run.markDone();
+      return _advance(now);
+    }
+    if (_routineSkipRe.hasMatch(u)) {
+      run.markSkipped();
+      return _advance(now);
+    }
+    if (_routineBackRe.hasMatch(u)) {
+      if (!run.back()) return 'We\'re at the first step. ${run.announce()}';
+      return run.announce();
+    }
+    if (_routineRepeatRe.hasMatch(u)) {
+      // Answered from the STORED instruction — never a model call mid-run (offline, instant, and
+      // it cannot drift from what was authored).
+      return run.announce();
+    }
+    if (_routinePauseRe.hasMatch(u)) {
+      run.paused = true;
+      return 'Paused — say "go on" when you\'re ready.';
+    }
+    if (_routineResumeRe.hasMatch(u)) {
+      if (!run.paused) return null; // not a pause context — let it route normally
+      run.paused = false;
+      return 'Back to it. ${run.announce()}';
+    }
+    if (_routineStopRe.hasMatch(u)) return _endRun(now, quit: true);
+    // Not a control word: restore the telemetry fields we speculatively set, and let the utterance
+    // route normally. The run stays live.
+    _outSource = priorSource;
+    _outSkill = priorSkill;
+    return null;
+  }
+
+  /// Move to the next step, or finish. The spoken line IS the step announcement, so a run works
+  /// with the screen off — the figure is never the sole carrier of the movement.
+  String _advance(DateTime now) {
+    final run = _run!;
+    if (run.isDone) return _endRun(now);
+    return run.announce();
+  }
+
+  /// Finish a run. A completed (or partly completed) run writes a routine_session through the
+  /// ordinary skill dispatch, so it is journaled, undoable and visible to automations. An abandoned
+  /// run writes NOTHING — a fabricated session would corrupt the record (DP-05).
+  String _endRun(DateTime now, {bool quit = false}) {
+    final run = _run!;
+    _run = null;
+    final done = run.completed.length;
+    if (done == 0) {
+      return quit ? 'Stopped — nothing logged.' : 'Stopped.';
+    }
+    // fire-and-forget the write; the confirmation is composed here so the reply is immediate
+    unawaited(dispatchSkill('log-routine-session', {
+      'routineName': run.title,
+      'stepsCompleted': done,
+      'stepsTotal': run.total,
+    }, source: 'routine'));
+    final mins = now.difference(run.startedAt).inMinutes;
+    return quit
+        ? 'Stopped there — logged ${run.title}, $done of ${run.total}.'
+        : 'Nice — ${run.title} done, $done of ${run.total}'
+            '${mins > 0 ? ', $mins minute${mins == 1 ? '' : 's'}' : ''}.';
+  }
+
+  /// Start a run for a routine record. Returns the opening line (safety note first time, then the
+  /// first step), or an honest reason it can't start.
+  String startRoutineRun(String routineId, DateTime now) {
+    final r = store[routineId];
+    if (r == null) return "I can't find that routine any more.";
+    final steps = store.values
+        .where((s) => s['typeId'] == 'routine_step' && s['routine'] == routineId)
+        .toList()
+      ..sort((a, b) => ((a['order'] as num?) ?? 0).compareTo((b['order'] as num?) ?? 0));
+    if (steps.isEmpty) return '"${r['title']}" has no steps yet.';
+    _run = RoutineRun(
+      routineId: routineId,
+      title: '${r['title']}',
+      steps: steps.cast<Map<String, dynamic>>(),
+      startedAt: now,
+    );
+    _outSource = 'routine';
+    _outSkill = 'routine-player';
+    // The safety line is spoken ONCE per routine, on its first run — repeated warnings are
+    // themselves a safety failure (they stop being heard).
+    final firstRun = !store.values.any((s) =>
+        s['typeId'] == 'routine_session' && s['routine'] == routineId);
+    final note = firstRun ? '${r['safetyNote'] ?? standingSafetyNote} ' : '';
+    return '$note${_run!.announce()}';
+  }
+
   /// Run a skill directly by id with already-resolved slots — the seam the routine player uses to
   /// log a finished run (Spec 16). It goes through the SAME `_dispatch` path as a spoken turn on
   /// purpose: completing a routine is an ordinary act-then-describe write, so it must be journaled
@@ -1354,6 +1610,15 @@ class Session {
     _lastTurnTemplate = null;
     _lastDispatch = null;
 
+    // A LIVE ROUTINE RUN intercepts its own control words first (Spec 16). Unlike the Tour, the run
+    // is STICKY: an unrelated command mid-workout ("remind me to buy milk") executes normally and
+    // the run stays live — there is sunk physical effort here, and silently dropping it because the
+    // user asked one side question would be worse than any tidiness gained.
+    if (_run != null) {
+      final handled = _routineControl(u, now);
+      if (handled != null) return handled;
+    }
+
     // A correction paused for the re-spoken text ("correct 1" -> "what should it say?"). This input
     // IS the replacement, dictated — so, unlike ProvideSlot, we deliberately do NOT bail on a
     // command-shaped answer ("call mom" is a legitimate task text). Only an explicit cancel or a
@@ -1571,6 +1836,20 @@ class Session {
       return "I can't do that directly — I'm your personal memory assistant, not connected to "
           "messaging, calendars, or payments. I can set a reminder or make a note about it, though.";
     }
+
+    // ---- Routines (Spec 16) -------------------------------------------------------------------
+    // "let's do my low back routine" — start the player. Checked BEFORE creation so "do X" never
+    // spends a cloud call on a routine that already exists.
+    final doRoutine = _routineDoRe.firstMatch(u);
+    if (doRoutine != null && _run == null) {
+      final name = doRoutine.group(1)!.trim();
+      final match = _findRoutine(name);
+      if (match != null) return startRoutineRun(match['id'] as String, now);
+      // fall through: an unknown name may be a CREATE request phrased as "do a X routine"
+    }
+    // "create a stretch routine for my low back"
+    final make = _routineCreateRe.firstMatch(u);
+    if (make != null) return await _createRoutine(u, make.group(3)!.trim(), make.group(1) ?? make.group(2), now);
 
     // medical guardrail (DP-06): show logs, never diagnose.
     if (_medicalRe.hasMatch(u)) {
