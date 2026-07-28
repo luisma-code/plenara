@@ -1,21 +1,46 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:speech_to_text/speech_to_text.dart';
 
-/// Voice input seam (task #18). Tap to START; the ENGINE finalizes the utterance when the speaker
-/// pauses (its own end-of-utterance detection) and delivers the final transcript in-session; tap
-/// again to ABORT. [listen] streams the transcript to [onResult] (finals only on Windows) and
-/// calls [onDone] when it ends (user stop, error, or a long timeout). The typed field is always
-/// the fallback; if no engine is available the mic hides.
+/// Voice input seam (task #18). **The USER delimits the utterance, not the engine** (Spec 12 §3.1,
+/// amended): tap to START, tap again to STOP — [stop] finalizes whatever was said and delivers it
+/// as one final transcript, which the app auto-sends. Automatic end-of-speech detection was removed
+/// because it guesses wrong: a thinking pause mid-command truncated the utterance and sent half of
+/// it. Engines now only SEGMENT long speech; they never decide the speaker is finished.
+///
+/// [cancel] discards (the ✕ / mute paths). [onDone] fires when listening ends for any reason. The
+/// typed field is always the fallback; if no engine is available the mic hides.
 abstract class SpeechRecognizer {
   Future<void> init();
   bool get available;
-  /// [onResult] fires with the running transcript; [isFinal] marks the engine's final result for
-  /// an utterance (which some engines — e.g. Windows — deliver with noticeable latency, even after
-  /// listening has stopped). [onDone] fires when listening ends.
-  Future<void> listen({required void Function(String text, bool isFinal) onResult, required void Function() onDone});
+
+  /// [onResult] fires with the running transcript; [isFinal] marks the one final transcript for the
+  /// session, emitted on [stop] (or a watchdog auto-stop). [onDone] fires when listening ends.
+  /// [onNotice] reports out-of-band capture events the UI must surface (P2.8, no silent failure).
+  Future<void> listen({
+    required void Function(String text, bool isFinal) onResult,
+    required void Function() onDone,
+    void Function(SpeechNotice notice)? onNotice,
+  });
   Future<void> stop();
   void cancel();
+}
+
+/// Out-of-band things a capture session can report. The mic is user-controlled now, so anything
+/// that ends or alters a session WITHOUT a tap has to be visible — an unexplained stop is exactly
+/// the silent failure principle #7 forbids.
+enum SpeechNotice {
+  /// A long pause after speech, while still recording. The old system would have auto-sent here, so
+  /// a habituated user is waiting for a send that will never come — re-show the "tap when done" hint.
+  longPause,
+
+  /// Watchdog: nothing was ever said. Session cancelled, nothing sent.
+  autoCancelledNoSpeech,
+
+  /// Watchdog: a very long trailing silence, or the hard session cap. The session was STOPPED AND
+  /// SENT — never discarded, because a truncated command is recoverable and lost speech is not.
+  autoStopped,
 }
 
 /// The default when no engine is wired: voice unavailable — mic hidden, typing still works.
@@ -25,12 +50,39 @@ class NoopSpeechRecognizer implements SpeechRecognizer {
   @override
   bool get available => false;
   @override
-  Future<void> listen({required void Function(String, bool) onResult, required void Function() onDone}) async =>
+  Future<void> listen({
+    required void Function(String, bool) onResult,
+    required void Function() onDone,
+    void Function(SpeechNotice)? onNotice,
+  }) async =>
       onDone();
   @override
   Future<void> stop() async {}
   @override
   void cancel() {}
+}
+
+/// Capture watchdog timings, shared by both engines. The mic no longer closes on its own when you
+/// pause, so a forgotten-open mic is a real battery AND privacy problem — these bound it. They are
+/// deliberately NOT user-settable: the tunable end-of-speech knob is exactly what this change
+/// deleted, and these values are generous enough that no one meets them mid-thought. 30s is 75x the
+/// old 0.4s VAD silence, so the watchdog cannot recreate the cut-off complaint.
+class CaptureLimits {
+  /// Nothing said at all -> cancel quietly (nothing to send).
+  static const noSpeech = Duration(seconds: 15);
+
+  /// Trailing silence after real speech -> stop AND SEND.
+  static const trailingSilence = Duration(seconds: 30);
+
+  /// A pause this long re-shows the "tap when you're done" hint (recording continues).
+  static const longPauseHint = Duration(seconds: 4);
+
+  /// Hard cap on one capture session -> stop AND SEND.
+  static const session = Duration(seconds: 120);
+
+  /// Apple's SFSpeechRecognizer is unreliable on very long single requests through the plugin, so
+  /// its cap is lower than [session] until measured on-device.
+  static const appleSession = Duration(seconds: 60);
 }
 
 /// On-device via the OS speech engine (`speech_to_text` -> Windows built-in recognition; the OS
@@ -81,13 +133,58 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
   @override
   bool get available => _ready;
 
+  /// Watchdog timers (see [CaptureLimits]). Dart-side here: the engine no longer self-endpoints.
+  Timer? _noSpeechTimer, _silenceTimer, _hintTimer, _capTimer;
+  bool _sawSpeech = false;
+  void Function(SpeechNotice)? _onNotice;
+
+  void _clearTimers() {
+    _noSpeechTimer?.cancel();
+    _silenceTimer?.cancel();
+    _hintTimer?.cancel();
+    _capTimer?.cancel();
+    _noSpeechTimer = _silenceTimer = _hintTimer = _capTimer = null;
+  }
+
+  /// Any recognition activity (partial or final) means the speaker is still going — push the
+  /// trailing-silence watchdog and the re-hint back out.
+  void _bumpActivity() {
+    _sawSpeech = true;
+    _noSpeechTimer?.cancel();
+    _silenceTimer?.cancel();
+    _hintTimer?.cancel();
+    _hintTimer = Timer(CaptureLimits.longPauseHint, () => _onNotice?.call(SpeechNotice.longPause));
+    _silenceTimer = Timer(CaptureLimits.trailingSilence, () {
+      _onNotice?.call(SpeechNotice.autoStopped);
+      // ignore: discarded_futures
+      stop(); // stop AND SEND — never discard real speech
+    });
+  }
+
   @override
-  Future<void> listen({required void Function(String, bool) onResult, required void Function() onDone}) async {
+  Future<void> listen({
+    required void Function(String, bool) onResult,
+    required void Function() onDone,
+    void Function(SpeechNotice)? onNotice,
+  }) async {
     if (!_ready) {
       onDone();
       return;
     }
     _onDone = onDone;
+    _onNotice = onNotice;
+    _sawSpeech = false;
+    _clearTimers();
+    _noSpeechTimer = Timer(CaptureLimits.noSpeech, () {
+      if (_sawSpeech) return;
+      _onNotice?.call(SpeechNotice.autoCancelledNoSpeech);
+      cancel(); // nothing was said — nothing to send
+    });
+    _capTimer = Timer(Platform.isIOS || Platform.isMacOS ? CaptureLimits.appleSession : CaptureLimits.session, () {
+      _onNotice?.call(SpeechNotice.autoStopped);
+      // ignore: discarded_futures
+      stop();
+    });
     _log('listen: start');
     final started = DateTime.now();
     try {
@@ -109,20 +206,19 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
             return;
           }
           _log("result: '${r.recognizedWords}' final=${r.finalResult}");
+          if (r.recognizedWords.trim().isNotEmpty) _bumpActivity();
           onResult(r.recognizedWords, r.finalResult);
         },
         listenOptions: SpeechListenOptions(
           partialResults: true, // stream words as they're recognized (no-op on Windows: the SAPI
           // backend never registers for hypothesis events, so ONLY finals arrive)
           cancelOnError: true,
-          listenFor: const Duration(seconds: 45),
-          // pauseFor is a Dart-side timer reset by each result. Windows/SAPI delivers NO partials,
-          // so a pause timer would fire mid-sentence before the engine finalizes — omit it and let
-          // SAPI's own end-of-utterance silence deliver the final (listenFor is the cap). Apple
-          // Speech is the inverse: it streams partials and does NOT reliably self-finalize on
-          // silence, so it NEEDS pauseFor (reset by partials) to end ~2s after the speaker stops —
-          // without it macOS voice input runs the full 45s before auto-send.
-          pauseFor: Platform.isWindows ? null : const Duration(seconds: 2),
+          // The session cap, not an endpoint. Apple gets the shorter cap (see CaptureLimits).
+          listenFor: Platform.isIOS || Platform.isMacOS ? CaptureLimits.appleSession : CaptureLimits.session,
+          // pauseFor is DELETED, deliberately. It was Apple's auto-endpoint — a Dart timer that
+          // ended the session ~2s after the speaker paused — and it is precisely the behavior being
+          // removed: it cut off mid-thought and sent half a command. The user now ends the session
+          // by tapping; _silenceTimer is a 30s safety net, not an endpoint.
         ),
       );
     } catch (_) {
@@ -133,8 +229,9 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
   @override
   Future<void> stop() async {
     _log('stop() requested (isListening=${_stt.isListening})');
+    _clearTimers();
     try {
-      await _stt.stop();
+      await _stt.stop(); // finalize: the engine delivers its final result, which the app sends
     } catch (e) {
       _log('stop threw: $e');
     }
@@ -142,6 +239,7 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
 
   @override
   void cancel() {
+    _clearTimers();
     try {
       _stt.cancel();
     } catch (_) {}

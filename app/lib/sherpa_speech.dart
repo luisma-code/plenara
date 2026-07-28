@@ -8,12 +8,22 @@ import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 import 'speech.dart';
 
 /// On-device speech recognition via sherpa_onnx (ONNX Runtime): a Whisper offline model for
-/// modern, accurate, naturally-cased transcription, gated by a Silero VAD for hands-free
-/// endpointing. Fully offline and private. Audio is captured with `record` at 16 kHz PCM16 and
-/// fed to the VAD; when it detects an utterance (speech followed by a short pause), that segment is
-/// transcribed by Whisper and delivered as the final result -> auto-send. A manual stop flushes and
-/// transcribes whatever was buffered. If the model files are absent or init fails, [available] is
-/// false and the app falls back (SAPI, then typing).
+/// modern, accurate, naturally-cased transcription. Fully offline and private. Audio is captured
+/// with `record` at 16 kHz PCM16 and fed to a Silero VAD.
+///
+/// **The VAD no longer decides when you are finished** (Spec 12 §3.1, amended). It used to emit the
+/// first completed segment as the final result, so a thinking pause mid-command truncated the
+/// utterance and auto-sent half of it. Its three remaining jobs:
+///  1. **Segmenter** — Whisper transcribes ~30s windows, so a long utterance MUST be chunked;
+///     completed VAD segments are exactly the right boundaries. Each is transcribed as it closes
+///     and its text is ACCUMULATED (bounded memory: text, not PCM) rather than emitted, so stop
+///     latency is one trailing segment and the 30s VAD buffer can never overflow.
+///  2. **Hint trigger** — a long pause while recording re-shows "tap when you're done".
+///  3. **Watchdog** — bounds a forgotten-open mic (see [CaptureLimits]).
+///
+/// [stop] joins the accumulated text with the flushed trailing segment and emits ONE final.
+/// If the model files are absent or init fails, [available] is false and the app falls back
+/// (SAPI, then typing).
 class SherpaSpeechRecognizer implements SpeechRecognizer {
   final String modelDir;
   final void Function(String msg)? onLog;
@@ -28,8 +38,13 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
   StreamSubscription<Uint8List>? _audioSub;
   void Function(String, bool)? _onResult;
   void Function()? _onDone;
+  void Function(SpeechNotice)? _onNotice;
   bool _listening = false;
   bool _emitted = false;
+  /// Transcribed text of every VAD segment closed so far this session, in order.
+  final List<String> _segments = [];
+  Timer? _noSpeechTimer, _silenceTimer, _hintTimer, _capTimer;
+  bool _sawSpeech = false;
 
   @override
   Future<void> init() async {
@@ -90,7 +105,11 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
   bool get available => _recognizer != null && _vad != null;
 
   @override
-  Future<void> listen({required void Function(String, bool) onResult, required void Function() onDone}) async {
+  Future<void> listen({
+    required void Function(String, bool) onResult,
+    required void Function() onDone,
+    void Function(SpeechNotice)? onNotice,
+  }) async {
     final vad = _vad;
     if (_recognizer == null || vad == null) {
       onDone();
@@ -103,9 +122,13 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     }
     _onResult = onResult;
     _onDone = onDone;
+    _onNotice = onNotice;
     _emitted = false;
+    _sawSpeech = false;
+    _segments.clear();
     vad.clear(); // drop any state from a prior session
     _listening = true;
+    _armWatchdogs();
     _log('listen: start');
     try {
       final audio = await _recorder.startStream(
@@ -120,20 +143,61 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     }
   }
 
+  void _armWatchdogs() {
+    _clearTimers();
+    _noSpeechTimer = Timer(CaptureLimits.noSpeech, () {
+      if (_sawSpeech || !_listening) return;
+      _onNotice?.call(SpeechNotice.autoCancelledNoSpeech);
+      cancel(); // nothing said — nothing to send
+      final done = _onDone;
+      _onDone = null;
+      done?.call();
+    });
+    _capTimer = Timer(CaptureLimits.session, () {
+      if (!_listening) return;
+      _onNotice?.call(SpeechNotice.autoStopped);
+      _finalize(flush: true); // stop AND SEND at the hard cap
+    });
+  }
+
+  /// A segment closed with real speech: push the trailing-silence watchdog and the re-hint out.
+  void _bumpActivity() {
+    _sawSpeech = true;
+    _noSpeechTimer?.cancel();
+    _silenceTimer?.cancel();
+    _hintTimer?.cancel();
+    _hintTimer = Timer(CaptureLimits.longPauseHint, () {
+      if (_listening) _onNotice?.call(SpeechNotice.longPause);
+    });
+    _silenceTimer = Timer(CaptureLimits.trailingSilence, () {
+      if (!_listening) return;
+      _onNotice?.call(SpeechNotice.autoStopped);
+      _finalize(flush: true); // stop AND SEND — never discard real speech
+    });
+  }
+
+  void _clearTimers() {
+    _noSpeechTimer?.cancel();
+    _silenceTimer?.cancel();
+    _hintTimer?.cancel();
+    _capTimer?.cancel();
+    _noSpeechTimer = _silenceTimer = _hintTimer = _capTimer = null;
+  }
+
   void _onAudio(Uint8List bytes) {
     final vad = _vad;
     if (!_listening || vad == null) return;
     vad.acceptWaveform(_toFloat32(bytes));
-    // A completed utterance (speech + a short pause) is queued as a segment -> transcribe it.
+    // A completed segment is a CHUNK BOUNDARY, not the end of the utterance: transcribe it now
+    // (bounded memory, and stop latency stays at one trailing segment) and keep listening until
+    // the user taps stop.
     while (!vad.isEmpty()) {
       final seg = vad.front();
       vad.pop();
       final text = _transcribe(seg.samples).trim();
-      if (text.isNotEmpty && !_emitted) {
-        _emitted = true;
-        _onResult?.call(text, true); // one utterance per tap
-        _finalize();
-        return;
+      if (text.isNotEmpty) {
+        _segments.add(text);
+        _bumpActivity();
       }
     }
   }
@@ -148,26 +212,31 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     return text;
   }
 
-  /// Stop capture, clean up, fire onDone. Idempotent. When [flush] (a manual stop), force any
-  /// buffered speech through the VAD and transcribe it so a cut-off utterance isn't lost.
+  /// Stop capture, clean up, fire onDone. Idempotent. When [flush] (the user's stop tap, or a
+  /// watchdog), push the trailing buffered speech through the VAD, transcribe it, and emit the
+  /// WHOLE session — every accumulated segment joined with that tail — as one final result.
   void _finalize({bool flush = false}) {
     if (!_listening) return;
     _listening = false;
+    _clearTimers();
     _audioSub?.cancel();
     _audioSub = null;
     // ignore: discarded_futures
     _recorder.stop();
-    if (flush && !_emitted && _vad != null) {
-      _vad!.flush();
-      while (!_vad!.isEmpty()) {
-        final seg = _vad!.front();
-        _vad!.pop();
-        final text = _transcribe(seg.samples).trim();
-        if (text.isNotEmpty) {
-          _emitted = true;
-          _onResult?.call(text, true);
-          break;
+    if (flush && !_emitted) {
+      if (_vad != null) {
+        _vad!.flush(); // whatever is mid-segment when the user taps stop is still real speech
+        while (!_vad!.isEmpty()) {
+          final seg = _vad!.front();
+          _vad!.pop();
+          final text = _transcribe(seg.samples).trim();
+          if (text.isNotEmpty) _segments.add(text);
         }
+      }
+      final full = _segments.join(' ').trim();
+      if (full.isNotEmpty) {
+        _emitted = true;
+        _onResult?.call(full, true); // ONE final for the session
       }
     }
     final done = _onDone;
@@ -175,17 +244,20 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     done?.call();
   }
 
+  /// The user's stop tap: finalize and deliver everything said this session.
   @override
-  Future<void> stop() async => _finalize(flush: true); // manual finish -> transcribe buffered speech
+  Future<void> stop() async => _finalize(flush: true);
 
   @override
   void cancel() {
     _listening = false;
+    _clearTimers();
     _audioSub?.cancel();
     _audioSub = null;
     // ignore: discarded_futures
     _recorder.stop();
     _vad?.clear();
+    _segments.clear(); // discard — a cancel must never leak into the next session's transcript
     _onDone = null;
   }
 

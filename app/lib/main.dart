@@ -201,9 +201,16 @@ class _ChatState extends State<ChatScreen> {
   int _noMatchStreak =
       0; // consecutive tap-to-talks that heard nothing → surface a mic-permission hint
   int _micEpoch = 0; // bumped on every tap/abort; a listen-start whose epoch went stale bails (race)
-  bool _aborting = false; // a deliberate tap-to-abort — its cancel's onDone must not count as no-audio
+  bool _aborting = false; // a deliberate ✕/mute abort — its cancel's onDone must not count as no-audio
   String? _heard; // the finalized transcript, echoed as "I heard: X" (the listening font), briefly
   Timer? _heardTimer;
+  // Capture is user-delimited now (tap to start, tap to stop). These support that:
+  bool _transcribing = false; // stop tapped, final not back yet → presence shows thinking, not idle
+  bool _autoStopped = false; // a watchdog ended the session, not a tap → say so on the "I heard" line
+  String? _micPrompt; // the "tap when you're done" affordance line (decays; see _micHintSessions)
+  Timer? _hintTimer;
+  static const _micHintSessions = 5; // teach the gesture, then go quiet (Spec 07 P8)
+  int _micHintsShown = 0; // persisted, so the hint decays across launches rather than per-run
   final _ctrl = TextEditingController();
   bool _ready = false, _busy = false, _listening = false;
   // Plena's presence state (Spec 15): derived from the real turn/speech signals. No TTS yet,
@@ -291,7 +298,9 @@ class _ChatState extends State<ChatScreen> {
       _forceState ?? // dev harness pin wins over the live signals
       (_listening
           ? PresenceState.listening
-          : _busy
+          // Between the stop tap and the final transcript there is real work (flush + transcribe
+          // the trailing segment). Showing idle there would make the stop tap look like a dead beat.
+          : _busy || _transcribing
           ? PresenceState.thinking
           : _speaking
           ? PresenceState.speaking
@@ -325,7 +334,9 @@ class _ChatState extends State<ChatScreen> {
       // Remembered mute pref (real app, or a test that injects a configPath). No first-run
       // audio-blast risk: the greeting is never spoken, so muted just defaults to false.
       if (widget.session == null || widget.configPath != null) {
-        _voiceMuted = loadConfig(configPath: widget.configPath).voiceMuted ?? false;
+        final cfg = loadConfig(configPath: widget.configPath);
+        _voiceMuted = cfg.voiceMuted ?? false;
+        _micHintsShown = cfg.micHintsShown; // the stop-gesture hint decays ACROSS launches
       }
       log(
         'init: ready (stt=${_speech?.available ?? false}, tts=${_voice?.available ?? false})',
@@ -569,11 +580,19 @@ class _ChatState extends State<ChatScreen> {
     final log = AppLog.instance;
     if (!(_speech?.available ?? false) || _busy) return;
     if (_listening) {
-      log.debug('speech: tap -> abort');
-      _micEpoch++; // invalidate any in-flight listen-start awaiting the barge-in settle
-      _aborting = true; // this cancel's onDone is a deliberate abort, not a no-audio miss
-      if (mounted) setState(() => _listening = false); // clear synchronously (also re-entry guard)
-      _speech!.cancel(); // ABORT — do not flush/finalize a partial command
+      // THE STOP TAP. The user — not the engine — decides the utterance is over: finalize and send
+      // whatever was said. (This used to cancel; abort now lives on the ✕ control, because with
+      // no auto-endpointing the common second tap is "I'm done", not "forget it".)
+      log.debug('speech: tap -> stop and send');
+      _hintTimer?.cancel();
+      if (mounted) {
+        setState(() {
+          _listening = false;
+          _transcribing = true; // the presence goes to thinking; the stop tap is never a dead beat
+          _micPrompt = null;
+        });
+      }
+      await _speech!.stop();
       return;
     }
     // A fresh listen intent — captured so a rapid tap→abort→tap during the awaits below can't leave
@@ -605,9 +624,44 @@ class _ChatState extends State<ChatScreen> {
       if (!mounted || !_listening || epoch != _micEpoch) return;
     }
     log.debug('speech: tap -> start');
+    // The learnable-affordance half of removing auto-endpointing: for the first few sessions the
+    // status line says HOW to finish. After that it decays to plain "listening…" (quiet by default).
+    if (mounted) {
+      setState(() => _micPrompt =
+          _micHintsShown < _micHintSessions ? "tap anywhere when you're done" : null);
+    }
+    if (_micHintsShown < _micHintSessions) {
+      _micHintsShown++;
+      // Same guard the mute pref uses: only touch the real config for the real app (or a test that
+      // injected a configPath). An injected session must never write the user's ~/.plenara.
+      if (widget.session == null || widget.configPath != null) {
+        saveConfig(micHintsShown: _micHintsShown, configPath: widget.configPath);
+      }
+    }
     var heard = false; // did this session get ANY audio it could transcribe?
     try {
       await _speech!.listen(
+        onNotice: (notice) {
+          if (!mounted) return;
+          switch (notice) {
+            case SpeechNotice.longPause:
+              // Exactly the moment the old system would have auto-sent — a habituated user is
+              // waiting for a send that will never come. Re-show the hint, keep recording.
+              setState(() => _micPrompt = "tap when you're done");
+            case SpeechNotice.autoCancelledNoSpeech:
+              setState(() {
+                _listening = false;
+                _micPrompt = null;
+                _caption = "I stopped listening — I didn't hear anything.";
+                _displayIsList = false;
+              });
+            case SpeechNotice.autoStopped:
+              // Stopped on its own after a very long pause, but SENT (never discard real speech).
+              // Say so, or an unexplained send is a silent failure.
+              _autoStopped = true;
+              setState(() => _micPrompt = null);
+          }
+        },
         onResult: (text, isFinal) {
           final t = text.trim();
           if (!mounted || t.isEmpty) return;
@@ -625,7 +679,12 @@ class _ChatState extends State<ChatScreen> {
           }
           setState(() {
             _listening = false;
-            _heard = t; // confirm what was captured, in the listening font, until the reply settles
+            _transcribing = false;
+            _micPrompt = null;
+            // Confirm what was captured, in the listening font, until the reply settles. When a
+            // watchdog ended the session rather than a tap, say that too (P2.8).
+            _heard = _autoStopped ? '(stopped on my own after a long pause) $t' : t;
+            _autoStopped = false;
           });
           _heardTimer?.cancel();
           _heardTimer = Timer(const Duration(seconds: 5), () {
@@ -640,7 +699,11 @@ class _ChatState extends State<ChatScreen> {
         },
         onDone: () {
           if (!mounted) return;
-          setState(() => _listening = false);
+          setState(() {
+            _listening = false;
+            _transcribing = false;
+            _micPrompt = null;
+          });
           if (_aborting) {
             _aborting = false; // a deliberate tap-to-abort ended this session — not a no-audio miss
             return;
@@ -984,7 +1047,12 @@ class _ChatState extends State<ChatScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 48),
                   child: Text(
-                    _heard != null ? 'I heard: $_heard' : 'listening…',
+                    // While listening: "listening…", or the decaying/just-in-time affordance line
+                    // that teaches the stop gesture. The presence already says THAT it's listening;
+                    // only "how do I finish?" needs words.
+                    _heard != null
+                        ? 'I heard: $_heard'
+                        : (_micPrompt == null ? 'listening…' : 'listening — $_micPrompt'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Color(0x99EAE2D8),
@@ -995,6 +1063,15 @@ class _ChatState extends State<ChatScreen> {
                 ),
               ),
             ),
+          ),
+        // ABORT, only while listening. The second tap now means "done, send it", so discarding needs
+        // its own control — the mirror of the mute button, and deliberately a small corner target:
+        // with numbered corrections and "undo that", a wrong SEND is cheap, so abort is the rare path.
+        if (_listening)
+          Positioned(
+            right: 14,
+            bottom: 14 + MediaQuery.of(context).padding.bottom,
+            child: _cancelListenButton(),
           ),
         // Muted / no-mic → the two-line input box rises from the bottom
         AnimatedPositioned(
@@ -1238,6 +1315,34 @@ class _ChatState extends State<ChatScreen> {
     ),
   );
 
+  /// Discard the live capture without sending (the abort path the second tap used to be).
+  Widget _cancelListenButton() => Material(
+        color: Colors.transparent,
+        child: IconButton(
+          key: const Key('cancel-listen'),
+          icon: const Icon(Icons.close, color: Color(0x88FFFFFF)),
+          tooltip: 'Cancel without sending',
+          onPressed: _cancelListening,
+        ),
+      );
+
+  /// Stop capturing and throw the audio away. Used by the ✕, by mute, and by backgrounding.
+  void _cancelListening() {
+    if (!_listening) return;
+    AppLog.instance.debug('speech: cancel (discard)');
+    _micEpoch++; // invalidate any in-flight listen-start awaiting the barge-in settle
+    _aborting = true; // this cancel's onDone is deliberate, not a no-audio miss
+    _hintTimer?.cancel();
+    if (mounted) {
+      setState(() {
+        _listening = false;
+        _transcribing = false;
+        _micPrompt = null;
+      });
+    }
+    _speech?.cancel();
+  }
+
   Widget _muteButton() => Material(
     color: Colors.transparent,
     child: IconButton(
@@ -1268,10 +1373,7 @@ class _ChatState extends State<ChatScreen> {
           }
           // muting = switch to text mode — don't leave a hot mic with no way to stop it, and no
           // stray transcript to overwrite/auto-send what the user is about to type (reviewer d #1)
-          if (_listening) {
-            _speech?.cancel();
-            setState(() => _listening = false);
-          }
+          _cancelListening();
         }
       },
     ),

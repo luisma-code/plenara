@@ -25,8 +25,12 @@ class PlenaraConfig {
   /// preferred accent) from Settings → Voice. Matched by name against the installed voices at launch;
   /// if it's no longer installed, the app falls back to auto-pick.
   final String? voiceName;
+  /// How many capture sessions have shown the "tap when you're done" affordance line. Capture is
+  /// user-delimited (tap to start, tap to stop), so the gesture has to be taught — but only for the
+  /// first few sessions, and the count must survive relaunch or the hint never stops appearing.
+  final int micHintsShown;
   PlenaraConfig(this.dataDir, this.apiKey,
-      {this.freeTier = false, this.voiceMuted, this.voiceName});
+      {this.freeTier = false, this.voiceMuted, this.voiceName, this.micHintsShown = 0});
 }
 
 /// App-injected home base. Desktop leaves this null — USERPROFILE/HOME are set. iOS and Android
@@ -82,10 +86,12 @@ PlenaraConfig loadConfig({String? configPath}) {
   final free = Platform.environment['PLENARA_FREE'] == '1' || cfg['freeTier'] == true;
   final vm = cfg['voiceMuted'];
   final vn = cfg['voiceName'];
+  final mh = cfg['micHintsShown'];
   return PlenaraConfig(dataDir, (key != null && key.trim().isNotEmpty) ? key.trim() : null,
       freeTier: free,
       voiceMuted: vm is bool ? vm : null,
-      voiceName: vn is String && vn.isNotEmpty ? vn : null);
+      voiceName: vn is String && vn.isNotEmpty ? vn : null,
+      micHintsShown: mh is int ? mh : 0);
 }
 
 /// Persist config edits from the in-app settings surface (Spec 07 §2.6): merges into the
@@ -98,6 +104,7 @@ void saveConfig(
     bool? freeTier,
     bool? voiceMuted,
     String? voiceName,
+    int? micHintsShown,
     String? configPath}) {
   final f = File(configPath ?? defaultConfigPath());
   Map<String, dynamic> cfg = {};
@@ -115,6 +122,7 @@ void saveConfig(
   // Empty string clears the override (back to auto-pick); a non-empty name pins that voice; null
   // leaves it untouched.
   if (voiceName != null) cfg['voiceName'] = voiceName.isEmpty ? null : voiceName;
+  if (micHintsShown != null) cfg['micHintsShown'] = micHintsShown;
   f.parent.createSync(recursive: true);
   // ATOMIC. loadConfig degrades a malformed config to defaults, which is the right call for a
   // hand-edited file — but it means a torn write silently loses dataDir and the API key, and the

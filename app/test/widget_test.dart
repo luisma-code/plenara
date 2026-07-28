@@ -27,6 +27,7 @@ class _FakeSpeech implements SpeechRecognizer {
   Future<void> listen({
     required void Function(String, bool) onResult,
     required void Function() onDone,
+    void Function(SpeechNotice)? onNotice,
   }) async {
     if (result != null) {
       onResult(result!, true); // deliver as a FINAL result -> auto-send
@@ -49,6 +50,7 @@ class _ThrowSpeech implements SpeechRecognizer {
   Future<void> listen({
     required void Function(String, bool) onResult,
     required void Function() onDone,
+    void Function(SpeechNotice)? onNotice,
   }) async => throw StateError('engine boom');
   @override
   Future<void> stop() async {}
@@ -72,6 +74,7 @@ class _HoldingSpeech implements SpeechRecognizer {
   Future<void> listen({
     required void Function(String, bool) onResult,
     required void Function() onDone,
+    void Function(SpeechNotice)? onNotice,
   }) async {
     _onResult = onResult;
     _onDone = onDone;
@@ -87,10 +90,21 @@ class _HoldingSpeech implements SpeechRecognizer {
     _onDone?.call();
   }
 
+  /// What a real engine would deliver when the user taps STOP: everything said this session, as
+  /// one final transcript. `stop()` emits it, `cancel()` throws it away — that asymmetry is the
+  /// whole contract of user-delimited capture, so the fake has to honour it.
+  String? pendingFinal;
+
   @override
-  Future<void> stop() async => _finish();
+  Future<void> stop() async {
+    if (!_active) return;
+    final t = pendingFinal;
+    if (t != null && t.isNotEmpty) _onResult?.call(t, true);
+    _finish();
+  }
+
   @override
-  void cancel() => _finish();
+  void cancel() => _finish(); // discards pendingFinal — nothing is ever sent
 }
 
 class _FakeVoice implements SpeechOutput {
@@ -561,15 +575,15 @@ void main() {
 
     await tester.tapAt(const Offset(400, 300)); // tap the void → start listening
     await tester.pumpAndSettle();
-    // Before any words: the italic status line reads "listening…" (intro cleared on tap).
-    expect(find.text('listening…'), findsOneWidget);
+    // Before any words: the status line teaches the stop gesture (first sessions only).
+    expect(find.textContaining("tap anywhere when you're done"), findsOneWidget);
 
     speech.emitPartial('add buy bread'); // interim words stream in
     await tester.pump();
     // The live partial appears as the caption over the void…
     expect(find.textContaining('add buy bread'), findsWidgets);
-    // …and "listening…" is gone the moment a partial takes over (no overlap).
-    expect(find.text('listening…'), findsNothing);
+    // …and the status line is gone the moment a partial takes over (no overlap).
+    expect(find.textContaining("tap anywhere when you're done"), findsNothing);
 
     speech.emitFinal('add buy bread to my list'); // final → auto-send
     await tester.pumpAndSettle();
@@ -577,7 +591,7 @@ void main() {
     expect(find.textContaining('Added'), findsOneWidget); // the reply landed
   });
 
-  testWidgets('M6 — deliberate tap-to-abort never trips the no-audio hint, and clears listening', (
+  testWidgets('M6 — deliberate ✕-abort never trips the no-audio hint, and clears listening', (
     tester,
   ) async {
     final speech = _HoldingSpeech();
@@ -592,13 +606,51 @@ void main() {
     for (var i = 0; i < 2; i++) {
       await tester.tapAt(void_); // start
       await tester.pumpAndSettle();
-      expect(find.text('listening…'), findsOneWidget); // genuinely listening
-      await tester.tapAt(void_); // abort (barge-in cancel)
+      expect(find.textContaining('listening'), findsOneWidget); // genuinely listening
+      await tester.tap(find.byKey(const Key('cancel-listen'))); // abort via ✕ (NOT a second tap)
       await tester.pumpAndSettle();
     }
 
     expect(find.textContaining('not hearing any audio'), findsNothing); // abort ≠ no-audio miss
-    expect(find.text('listening…'), findsNothing); // listener not left stuck
+    expect(find.textContaining('listening'), findsNothing); // listener not left stuck
+  });
+
+  testWidgets('the SECOND tap stops and sends — it does not discard (user-delimited capture)', (
+    tester,
+  ) async {
+    final speech = _HoldingSpeech()..pendingFinal = 'add buy bread to my list';
+    await tester.pumpWidget(
+      MaterialApp(home: ChatScreen(session: _session(), speech: speech)),
+    );
+    await tester.pumpAndSettle();
+
+    const void_ = Offset(400, 300);
+    await tester.tapAt(void_); // start
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('cancel-listen')), findsOneWidget); // ✕ only exists while listening
+
+    await tester.tapAt(void_); // STOP — the engine finalizes and the app sends
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('I heard: add buy bread to my list'), findsOneWidget);
+    expect(find.textContaining('Added'), findsOneWidget); // it really was sent, not discarded
+    expect(find.byKey(const Key('cancel-listen')), findsNothing); // and the ✕ is gone again
+  });
+
+  testWidgets('✕ discards what was said — nothing is sent', (tester) async {
+    final speech = _HoldingSpeech()..pendingFinal = 'add buy bread to my list';
+    await tester.pumpWidget(
+      MaterialApp(home: ChatScreen(session: _session(), speech: speech)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('cancel-listen')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('I heard:'), findsNothing);
+    expect(find.textContaining('Added'), findsNothing); // the pending transcript never reached the turn
   });
 
   testWidgets('Semantics: the presence exposes an accessible label with Plena\'s state and caption', (
