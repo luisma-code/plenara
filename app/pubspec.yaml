@@ -111,6 +111,11 @@ flutter:
     - assets/seed/templates/
     - assets/seed/automations/
     - assets/seed/reference/
+    # Exercise illustrations for routines (Spec 16). Shipped UNMODIFIED under CC BY-SA 4.0 —
+    # the app recolours them for the dark void with a render-time filter, never by writing
+    # altered files, so we display the work rather than distribute an adaptation.
+    # Rebuild with: tool/fetch_exercises.py --images
+    - assets/exercises/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
