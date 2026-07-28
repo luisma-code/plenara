@@ -5,11 +5,34 @@ snapshots), this file is kept **current as work happens** — the latest state, 
 at my fingertips, hard-won gotchas, decisions + rationale, and open threads. If you're a fresh
 session, read this first; it should already be up to date. Keep it skimmable, prune stale lines.
 
-_Last updated: 2026-07-16 — G-49 shipped + 4-lens Fable-reviewed (numbered corrections + editable data view). TestFlight plumbing ready, gated on Luis's Apple-account batch._
+_Last updated: 2026-07-28 — TestFlight is LIVE (deploy-from-anywhere works, first release shipped). Correctness + data-integrity review pass: 12 defects found, reproduced, fixed, regression-tested._
 
 ---
 
 ## Current state
+- **TestFlight works end to end — the deploy-from-anywhere blocker is GONE.** Luis did the
+  Apple-account batch; `0.8.0+8` uploaded, processed, and distributed on 2026-07-28. App record
+  `6795650460`; internal group **Internal** (`23726f32-08a5-4c99-9470-5eecd52760ea`); Luis is
+  ACCOUNT_HOLDER/ADMIN and an internal tester. **Claude owns the whole release loop now** — no
+  browser step. See "Live facts" for the commands.
+- **Correctness + data-integrity review pass (2026-07-28) — 12 defects, all reproduced before fixing
+  and pinned with regression tests.** v0 **1731** + app **80** green, analyze clean. The severe ones:
+  - **A torn `corpus-learned.json` permanently bricked launch.** Whole-file rewrite was
+    non-atomic and `Router.load` jsonDecoded it inside `init()` — a crash mid-write meant the app
+    never opened again until the file was hand-deleted. Every learn/forget hit that path. Now
+    atomic + tolerant. Same class found and fixed for the **seed corpus** and **`config.json`**
+    (a torn config silently lost `dataDir` + API key → app opens on an empty folder, reads as
+    total data loss).
+  - **Undo was lost exactly when it mattered.** The journal entry was pushed AFTER the persist
+    loop, so a disk failure left the change live in memory, unjournalled, un-undoable — while
+    `handle()` told the user "I didn't do anything". Now journal-then-persist.
+  - **An approved automation write wasn't undoable** (violates the CLAUDE.md rule) and worse,
+    "undo that" then reversed an unrelated earlier write.
+  - **CRDT stamping was wrong for list/map fields** (`==` is identity in Dart → re-stamped every
+    write) and **a cleared field left no tombstone** (peer's old value resurrects on sync).
+  - `write_record` did no schema coercion; `add()` silently concatenated numeric strings.
+- **Still outstanding: the app ships Flutter's PLACEHOLDER app icon + launch image.** That's what's
+  on the home screen now. Cosmetic for TestFlight, an automatic rejection at App Review.
 - **v8 shipped** (`releases/VERSIONS.md`; release point `6ceeeb2`). App **runs on the iPhone**, on the
   **Matilda (Premium, en-AU)** voice. Repo `origin/main` fully pushed, tree clean, tests green
   (**1676 v0 + 74 app**).
@@ -66,6 +89,22 @@ _Last updated: 2026-07-16 — G-49 shipped + 4-lens Fable-reviewed (numbered cor
 - Developing on **macOS**; **iPhone is P1**. Apple Developer Program **approved** (TestFlight not set up yet).
 
 ## Live facts / commands (grab these)
+- **SHIP A RELEASE (TestFlight — works from anywhere, no browser, no Xcode login).** Bump
+  `version:` in `app/pubspec.yaml` first — the `+BUILD` must strictly increase or Apple rejects the
+  binary as a duplicate. Then, after the env evals:
+  ```
+  cd app && flutter build ipa --release      # its OWN export step fails on signing — EXPECTED, ignore
+  ../tool/testflight-upload.sh               # re-exports signed + validates + uploads (this is the real one)
+  ../tool/asc.py status                      # wait for processingState=VALID (~2-15 min)
+  ../tool/asc.py release                     # distribute newest build to the Internal group
+  ```
+  `tool/asc.py` = App Store Connect API client (status/groups/add-tester/invite/release/raw). Needs
+  the venv at `~/.plenara-asc/venv`; recreate with
+  `python3 -m venv ~/.plenara-asc/venv && ~/.plenara-asc/venv/bin/pip install 'pyjwt[crypto]' requests`.
+- **TestFlight identifiers:** app record `6795650460`; internal group `Internal`
+  `23726f32-08a5-4c99-9470-5eecd52760ea`; key `AQMT4FFHKW`, issuer `12ee92f1-bd97-4747-bc50-87c476d9eb9b`;
+  `.p8` at `~/.plenara-asc/AuthKey_AQMT4FFHKW.p8` (mode 600) — **Apple allows the download only once,
+  do not delete both copies**. Config in gitignored `tool/.testflight.env`.
 - **iPhone:** "Aluminum Monster", id **`00008140-000645442862201C`**, iOS 26.5.2. Bundle
   `com.plenara.plenaraApp`, team **`7V63BZ39HU`**, `IPHONEOS_DEPLOYMENT_TARGET = 26.0` (intentional —
   we want newest APIs).
@@ -81,6 +120,19 @@ _Last updated: 2026-07-16 — G-49 shipped + 4-lens Fable-reviewed (numbered cor
 - **Glyph preview loop:** `flutter test test/glyph_render.dart` → PNG sheet in system temp; then read it.
 
 ## Hard-won gotchas (the gold — don't rediscover these)
+- **`flutter build ipa` ALWAYS prints `exportArchive No Accounts` / `No signing certificate "iOS
+  Distribution" found` — that is EXPECTED and not a failure.** It builds the `.xcarchive` fine; only
+  its own export step can't sign (no Apple account in Xcode, by design). `tool/testflight-upload.sh`
+  re-exports that same archive with the API key. Don't chase these errors, and don't grep build logs
+  for `error:` to decide whether a release worked — grep for `UPLOAD SUCCEEDED`.
+- **TestFlight is NOT preinstalled on iOS** — it's a separate free Apple app from the App Store, and
+  it must be signed into the SAME Apple ID that owns the developer account.
+- **An internal tester's API `state` stays `NOT_INVITED` even after a successful invite (201).** For
+  internal groups that field is effectively cosmetic — access comes from the TestFlight app itself.
+  The real proof a build reached a tester is `GET /v1/builds?filter[betaGroups]=<groupId>`. Note the
+  `builds->betaGroups` relationship allows only CREATE/DELETE, never GET_RELATED.
+- **Make the beta group INTERNAL, never external.** An external group drags every single release
+  through Apple's Beta App Review (days of latency). Internal is instant, capped at 100 testers.
 - **Work-MDM blocked the dev-cert verification** ("internet connection needed to verify") — the
   corporate network blocked Apple's check. **Removing the work management profile cleared it.** If a
   work phone is used again → **TestFlight** (MDM devices install App Store/TestFlight apps fine).
