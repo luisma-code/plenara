@@ -17,6 +17,7 @@ final _now = DateTime.parse('2026-07-06T09:00:00');
 /// An in-memory StorageRepository — proves the seam is real (nothing about
 /// Session depends on the filesystem backend).
 class _MemStorage implements StorageRepository {
+  // subclassed by _FailingPersistStorage to simulate disk failure
   final Map<String, Map<String, dynamic>> types, skills;
   final Map<String, Map<String, dynamic>> records = {};
   final List<dynamic> learned = [];
@@ -42,6 +43,18 @@ class _MemStorage implements StorageRepository {
       (subdir == 'types' ? types : skills)[def[idKey] as String] = def;
   @override
   void logTurn(Map<String, dynamic> entry) => turns.add(entry);
+}
+
+/// A repository whose persist() can be made to fail on demand — models a full disk or a
+/// revoked folder permission, the states where the undo safety net matters most.
+class _FailingPersistStorage extends _MemStorage {
+  bool failPersist = false;
+  _FailingPersistStorage(super.types, super.skills);
+  @override
+  void persist(Map<String, dynamic> record) {
+    if (failPersist) throw const FileSystemException('No space left on device');
+    super.persist(record);
+  }
 }
 
 class _NoCloud implements CloudClient {
@@ -1710,6 +1723,26 @@ void main() {
       // undo goes through the repo too
       await s.handle('undo that');
       expect(mem.records.values.where((r) => r['typeId'] == 'task'), isEmpty);
+    });
+
+    test('a persist FAILURE still leaves the write undoable (the safety net must survive disk errors)', () async {
+      // A full disk / revoked folder permission makes repo.persist throw. execute() has already
+      // mutated the in-memory store by then, so if the journal entry is pushed after persisting,
+      // the user is left with a change they were told didn't happen AND cannot undo.
+      final file = FileStorageRepository('data');
+      final mem = _FailingPersistStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
+      await s.init(retrieval: false);
+      mem.failPersist = true;
+      final resp = await s.handle('add buy milk to my list');
+      expect(resp, contains("couldn't save")); // the failure is surfaced honestly, not swallowed (P2.8)
+      // the in-memory store DID change despite the error...
+      expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
+      // ...so "undo that" must be able to reverse it.
+      mem.failPersist = false;
+      await s.handle('undo that');
+      expect(s.store.values.where((r) => r['typeId'] == 'task'), isEmpty,
+          reason: 'a write that failed to persist must still be undoable');
     });
 
     test('turn log records the source + skill of each turn (dogfood telemetry)', () async {

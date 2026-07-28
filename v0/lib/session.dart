@@ -1002,6 +1002,10 @@ class Session {
   /// Validate + coerce [value] against an attribute's Spec 01 §3 valueType. Returns the coerced
   /// value, or a ManualWrite.fail describing the problem (never silently drops bad input).
   Object? _coerceForType(String valueType, Object? value) {
+    // A null means "clear this field" and must stay null. Interpolating it ('$value') yields the
+    // literal string "null", which is non-empty — so it would sail past the isEmpty check and be
+    // written into the record as junk data.
+    if (value == null) return valueType == 'tag' || valueType == 'list' ? const <String>[] : null;
     switch (valueType) {
       case 'number':
       case 'decimal':
@@ -1059,7 +1063,13 @@ class Session {
     } else {
       rec[field] = coerced;
     }
-    repo.persist(rec);
+    // ManualWrite is a VALUE across the UI seam — a disk failure here must not throw into Flutter.
+    // The journal entry is already pushed, so the in-memory change stays undoable either way.
+    try {
+      repo.persist(rec);
+    } catch (e) {
+      return ManualWrite.fail("Changed, but couldn't save it to your data folder ($e).");
+    }
     await _reconcileReminders(); // idempotent — re-arms/disarms an OS toast if a reminder time moved
     try {
       automations.notifyWrites([rec]); // a manual edit is a user-origin write, same as a spoken one
@@ -1075,10 +1085,15 @@ class Session {
     if (rec == null) return const ManualWrite.fail('That record no longer exists.');
     final summary = _oneLineSummary(rec) ?? 'that record';
     final undoId = _pushManualJournal({id: Map<String, dynamic>.from(rec)}, 'deleted "$summary"');
+    final typeId = rec['typeId']; // read before the store entry goes
     store.remove(id);
-    repo.remove(id);
+    try {
+      repo.remove(id); // tombstone
+    } catch (e) {
+      return ManualWrite.fail("Deleted here, but couldn't write that to your data folder ($e).");
+    }
     await _reconcileReminders();
-    repo.logTurn({'source': 'manual-edit', 'op': 'delete', 'typeId': rec['typeId']});
+    repo.logTurn({'source': 'manual-edit', 'op': 'delete', 'typeId': typeId});
     return ManualWrite.ok('Deleted — $summary.', undoId: undoId);
   }
 
@@ -1955,13 +1970,34 @@ class Session {
     try {
       final plan = turnInterp.resolve(skills[skillId]!, slots, store);
       final before = turnInterp.execute(plan, store);
-      for (final w in plan.writes) {
-        repo.persist(w);
-        _outWrites.add({'op': 'write', 'id': w['id'], 'typeId': w['typeId']}); // debug trace
+      // JOURNAL BEFORE PERSISTING. execute() has already mutated the in-memory store, so the
+      // change is live from this line on. If a persist throws (full disk, revoked folder
+      // permission, sandbox denial) and the journal push sits after it, the user is left with a
+      // change they were told didn't happen and CANNOT undo — the safety net that act-then-describe
+      // rests on, missing exactly when it's needed most. Pushing first costs nothing on the happy
+      // path and keeps undo total.
+      final wrote = plan.writes.isNotEmpty || plan.deletes.isNotEmpty;
+      if (wrote) {
+        _journal.add(_JournalEntry(before, plan.confirmation));
+        if (_journal.length > _journalMax) _journal.removeAt(0);
       }
-      for (final id in plan.deletes) {
-        repo.remove(id);
-        _outWrites.add({'op': 'delete', 'id': id}); // debug trace
+      try {
+        for (final w in plan.writes) {
+          repo.persist(w);
+          _outWrites.add({'op': 'write', 'id': w['id'], 'typeId': w['typeId']}); // debug trace
+        }
+        for (final id in plan.deletes) {
+          repo.remove(id);
+          _outWrites.add({'op': 'delete', 'id': id}); // debug trace
+        }
+      } catch (e) {
+        // Tell the truth (P2.8): the change IS applied in memory and IS undoable, it just didn't
+        // reach the folder. Claiming "nothing happened" here would be a lie the store contradicts.
+        _outSource = 'error';
+        _outError = 'persist failed: $e';
+        _lastTurnWrote = wrote;
+        return "I did that, but couldn't save it to your data folder ($e). "
+            'It\'ll be lost when the app restarts — say "undo that" to take it back.';
       }
       // Capture a numbered readback's ordered id/label list so a later "delete 2" / "correct 1"
       // resolves against EXACTLY what was spoken (Feature: numbered-list corrections). A skill that
@@ -1976,8 +2012,9 @@ class Session {
                   _EnumItem('${it['id']}', '${it['typeId']}', '${it['field']}', '${it['label']}'),
               ], skillId);
       }
-      // record the previous-turn state for a correction (every routed turn, write or read)
-      _lastTurnWrote = plan.writes.isNotEmpty || plan.deletes.isNotEmpty;
+      // record the previous-turn state for a correction (every routed turn, write or read).
+      // The journal push for this turn already happened above, before persisting.
+      _lastTurnWrote = wrote;
       _lastTurnTemplate = (template != null && router.isLearned(template)) ? template : null;
       if (_lastTurnWrote) {
         // for re-classify (F-14) + same-record slot correction (F-15)
@@ -1985,10 +2022,6 @@ class Session {
           'skillId': skillId, 'slots': slots,
           if (plan.writes.isNotEmpty) 'writtenId': plan.writes.first['id'],
         };
-      }
-      if (_lastTurnWrote) {
-        _journal.add(_JournalEntry(before, plan.confirmation));
-        if (_journal.length > _journalMax) _journal.removeAt(0);
       }
       // onWrite automations (Spec 04 §4.8): the hook lives at the completion of
       // this turn's writes. Read-only results are delivered out-of-band; writing

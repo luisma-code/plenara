@@ -95,13 +95,44 @@ void undoTurn(Map<String, Map<String, dynamic>?> before, String dir, HlcDevice d
   });
 }
 
+/// Structural (deep) equality for decoded-JSON values. `==` on List/Map is IDENTITY
+/// in Dart, so a `tag`/`list`/`json` field would compare unequal to its own reloaded
+/// self and get re-stamped on every write — collapsing those fields back to
+/// whole-record LWW, which is exactly what per-field stamps exist to avoid.
+bool _sameJson(Object? a, Object? b) {
+  if (identical(a, b)) return true;
+  if (a is List) {
+    if (b is! List || a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!_sameJson(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  if (a is Map) {
+    if (b is! Map || a.length != b.length) return false;
+    for (final k in a.keys) {
+      if (!b.containsKey(k) || !_sameJson(a[k], b[k])) return false;
+    }
+    return true;
+  }
+  return a == b;
+}
+
 /// Flat record -> per-record file. Stamps ONLY fields whose value changed
 /// (carrying prior stamps + conflicts forward), so the per-field `_meta` is
 /// meaningful at merge time rather than collapsing to whole-record LWW.
+///
+/// A field that DISAPPEARS from [flat] (the user cleared an optional value) is
+/// recorded in `_meta.fieldTombstones` with the stamp of its removal. Dropping it
+/// silently — value and stamp both gone — leaves the merge nothing to compare, so
+/// a peer's older value for that field resurrects on the next sync: a cleared
+/// field un-clears itself. The tombstone is stamped ONCE, at the moment of
+/// removal, and carried forward unchanged after that (re-stamping every write
+/// would resurrect the same bug in mirror image).
 void persist(Map<String, dynamic> flat, String dir, HlcDevice dev) {
   Directory(dir).createSync(recursive: true);
   final file = File('$dir/${flat['id']}.json');
-  Map<String, dynamic> priorFields = const {}, priorStamps = const {};
+  Map<String, dynamic> priorFields = const {}, priorStamps = const {}, priorTombs = const {};
   List<dynamic> priorConflicts = const [];
   if (file.existsSync()) {
     try {
@@ -111,6 +142,7 @@ void persist(Map<String, dynamic> flat, String dir, HlcDevice dev) {
       if (m is Map) {
         priorStamps = (m['stamps'] as Map?)?.cast<String, dynamic>() ?? const {};
         priorConflicts = (m['conflicts'] as List?) ?? const [];
+        priorTombs = (m['fieldTombstones'] as Map?)?.cast<String, dynamic>() ?? const {};
       }
     } catch (_) {/* prior unreadable -> treat all fields as changed */}
   }
@@ -119,14 +151,25 @@ void persist(Map<String, dynamic> flat, String dir, HlcDevice dev) {
   flat.forEach((k, v) {
     if (k == 'id' || k == 'typeId') return;
     fields[k] = v;
-    final unchanged = priorStamps[k] != null && priorFields.containsKey(k) && priorFields[k] == v;
+    final unchanged =
+        priorStamps[k] != null && priorFields.containsKey(k) && _sameJson(priorFields[k], v);
     stamps[k] = unchanged ? priorStamps[k] : dev.stamp();
   });
+  // Fields that were present (or already tombstoned) and are absent now.
+  final tombstones = <String, dynamic>{};
+  for (final k in {...priorFields.keys, ...priorTombs.keys}) {
+    if (fields.containsKey(k)) continue; // came back -> live again, no tombstone
+    tombstones[k] = priorTombs[k] ?? dev.stamp(); // stamp once, at removal
+  }
   _atomicWrite(file, {
     'id': flat['id'],
     'typeId': flat['typeId'],
     'fields': fields,
-    '_meta': {'stamps': stamps, 'conflicts': priorConflicts},
+    '_meta': {
+      'stamps': stamps,
+      'conflicts': priorConflicts,
+      if (tombstones.isNotEmpty) 'fieldTombstones': tombstones,
+    },
   });
 }
 

@@ -158,6 +158,47 @@ void main() {
       expect(s2['description'], s1['description'], reason: 'unchanged field keeps its stamp');
       expect(s2['completed'], isNot(s1['completed']), reason: 'changed field gets a fresh stamp');
     });
+    test('stamp-on-change holds for LIST/MAP fields too (deep, not identity, equality)', () {
+      // Regression: `==` on List/Map is identity in Dart, so a tag/list/json field
+      // compared unequal to its own reloaded self and was re-stamped on EVERY write —
+      // collapsing those fields to whole-record LWW at merge time.
+      final dir = _tmp();
+      final dev = HlcDevice('d');
+      persist({'id': 't', 'typeId': 'task', 'tags': ['a', 'b'], 'meta': {'k': 1}, 'description': 'x'}, dir, dev);
+      final s1 = (jsonDecode(File('$dir/t.json').readAsStringSync()) as Map)['_meta']['stamps'] as Map;
+      // same VALUES, fresh instances (what a reload-then-save actually produces)
+      persist({'id': 't', 'typeId': 'task', 'tags': ['a', 'b'], 'meta': {'k': 1}, 'description': 'y'}, dir, dev);
+      final s2 = (jsonDecode(File('$dir/t.json').readAsStringSync()) as Map)['_meta']['stamps'] as Map;
+      expect(s2['tags'], s1['tags'], reason: 'unchanged list keeps its stamp');
+      expect(s2['meta'], s1['meta'], reason: 'unchanged map keeps its stamp');
+      expect(s2['description'], isNot(s1['description']), reason: 'the changed field re-stamps');
+      // a genuinely changed list still re-stamps
+      persist({'id': 't', 'typeId': 'task', 'tags': ['a', 'c'], 'meta': {'k': 1}, 'description': 'y'}, dir, dev);
+      final s3 = (jsonDecode(File('$dir/t.json').readAsStringSync()) as Map)['_meta']['stamps'] as Map;
+      expect(s3['tags'], isNot(s2['tags']), reason: 'a changed list must re-stamp');
+    });
+
+    test('a cleared field leaves a stamped tombstone (it must not resurrect on merge)', () {
+      final dir = _tmp();
+      final dev = HlcDevice('d');
+      persist({'id': 't', 'typeId': 'task', 'description': 'x', 'note': 'temp'}, dir, dev);
+      persist({'id': 't', 'typeId': 'task', 'description': 'x'}, dir, dev); // note cleared
+      final j = jsonDecode(File('$dir/t.json').readAsStringSync()) as Map;
+      expect((j['fields'] as Map).containsKey('note'), isFalse);
+      final tombs = j['_meta']['fieldTombstones'] as Map;
+      expect(tombs.containsKey('note'), isTrue, reason: 'removal must be recorded, not silent');
+      expect(tombs['note']['deviceId'], 'd');
+      // stamped ONCE: a later unrelated write must not re-stamp the tombstone
+      persist({'id': 't', 'typeId': 'task', 'description': 'z'}, dir, dev);
+      final t2 = (jsonDecode(File('$dir/t.json').readAsStringSync()) as Map)['_meta']['fieldTombstones'] as Map;
+      expect(t2['note'], tombs['note'], reason: 'tombstone is stamped at removal, then carried forward');
+      // and if the field comes back it is live again, with no lingering tombstone
+      persist({'id': 't', 'typeId': 'task', 'description': 'z', 'note': 'back'}, dir, dev);
+      final j3 = jsonDecode(File('$dir/t.json').readAsStringSync()) as Map;
+      expect((j3['fields'] as Map)['note'], 'back');
+      expect((j3['_meta'] as Map).containsKey('fieldTombstones'), isFalse);
+    });
+
     test('a corrupt/half-synced file is skipped, not fatal', () {
       final dir = _tmp();
       persist({'id': 'good', 'typeId': 'task', 'description': 'x'}, dir, HlcDevice('d'));

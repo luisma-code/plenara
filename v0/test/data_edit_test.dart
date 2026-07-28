@@ -1,7 +1,10 @@
 /// The manual "Your data" facade (Spec 07 §5.5 tap-to-edit + the Learned phrases showcase, G-49).
 /// Edits/deletes ride the same journal as spoken writes, so voice "undo that" reverses them; the
 /// learned-flow forget/restore is symmetrical with the voice-side forget-on-correct. Real storage.
+import 'dart:io';
+
 import 'package:plenara/claude.dart';
+import 'package:plenara/storage_repository.dart';
 import 'package:plenara/session.dart';
 import 'package:test/test.dart';
 
@@ -21,6 +24,30 @@ class _NoCloud implements CloudClient {
   Future<CloudResult<String>> generate(String k, String c) async => const CloudError(CloudErrorKind.noKey);
 }
 
+/// Wraps a real repository and fails every record write — a full disk / revoked folder permission.
+class _FailingRepo implements StorageRepository {
+  final StorageRepository inner;
+  _FailingRepo(this.inner);
+  @override
+  void persist(Map<String, dynamic> record) => throw const FileSystemException('No space left on device');
+  @override
+  void remove(String id) => throw const FileSystemException('No space left on device');
+  @override
+  Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) => inner.loadDefs(subdir, key);
+  @override
+  Map<String, Map<String, dynamic>> loadRecords() => inner.loadRecords();
+  @override
+  List<dynamic> loadCorpusLearned() => inner.loadCorpusLearned();
+  @override
+  void appendCorpusLearned(Map<String, dynamic> entry) => inner.appendCorpusLearned(entry);
+  @override
+  void removeCorpusLearned(String template) => inner.removeCorpusLearned(template);
+  @override
+  void writeDef(String subdir, String idKey, Map<String, dynamic> def) => inner.writeDef(subdir, idKey, def);
+  @override
+  void logTurn(Map<String, dynamic> entry) => inner.logTurn(entry);
+}
+
 Future<Session> _s() async {
   final s = Session(makeTempDataDir(), clock: _now, cloud: _NoCloud());
   await s.init(retrieval: false);
@@ -31,6 +58,32 @@ String _taskId(Session s, String desc) =>
     s.store.values.firstWhere((r) => r['typeId'] == 'task' && r['description'] == desc)['id'] as String;
 
 void main() {
+  group('editable data view — write failures stay values, never exceptions', () {
+    test('a null value CLEARS an optional field instead of writing the string "null"', () async {
+      final s = await _s();
+      await s.handle('add buy milk to my list');
+      final id = _taskId(s, 'buy milk');
+      final r = await s.editField(id, 'dueAt', null);
+      expect(r.ok, isTrue);
+      expect(s.store[id]!['dueAt'], isNot('null'), reason: 'interpolating null must not become junk data');
+      expect(s.store[id]!.containsKey('dueAt') && s.store[id]!['dueAt'] != null, isFalse);
+    });
+
+    test('a failing repository returns ManualWrite.fail rather than throwing across the UI seam', () async {
+      final s = await _s();
+      await s.handle('add buy milk to my list');
+      final id = _taskId(s, 'buy milk');
+      s.repo = _FailingRepo(s.repo);
+      // The documented contract is that ManualWrite is a VALUE — Flutter must never see a throw.
+      final r = await s.editField(id, 'description', 'buy oat milk');
+      expect(r.ok, isFalse);
+      expect(r.message, contains("couldn't save"));
+      final d = await s.deleteRecord(id);
+      expect(d.ok, isFalse);
+      expect(d.message, contains("couldn't write"));
+    });
+  });
+
   group('editable data view — facade', () {
     test('editField updates a value, validated, and voice undo reverses it', () async {
       final s = await _s();
