@@ -71,6 +71,7 @@ Future<Session> _withRoutine() async {
 }
 
 void main() {
+  _review2();
   group('safety floors run BEFORE routine authoring', () {
     test('a disordered-eating or self-harm framing is refused and spends NOTHING', () async {
       // These reached the routine path entirely ungated: the harm floor only ran on the
@@ -226,6 +227,7 @@ void main() {
           {'name': n, 'frameA': goodA, 'frameB': goodB},
       ];
       await s.handle('create a stretch routine for my low back');
+      await s.pendingFigureFill;
       final steps = s.store.values.where((r) => r['typeId'] == 'routine_step').toList();
       // only steps WITHOUT a catalogue image should have been drawn
       for (final st in steps) {
@@ -325,6 +327,99 @@ void main() {
     test('an unknown name says so instead of "No  sessions logged yet"', () async {
       final s = await _authoring((c, _) => _routine(c));
       expect(await s.handle('my pilates streak'), contains("don't have a routine"));
+    });
+  });
+}
+
+/// Second Fable review (2026-07-28, post-dogfood commits). Each pins a defect that shipped.
+void _review2() {
+  const goodA = '<svg viewBox="0 0 100 100"><circle cx="50" cy="20" r="8"/></svg>';
+
+  group('a pending question must not swallow a real command', () {
+    test('"let\'s do X" while the focus question is open is a COMMAND, not a focus', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      await s.handle('create a stretching routine for my low back'); // a routine exists
+      final before = (s.claude as _FakeAuthor).calls;
+      await s.handle('create a stretching routine'); // -> asks for a focus
+      final out = await s.handle("let's do low-back loosener");
+      expect(out, contains('Step 1 of 3'), reason: 'the run must start');
+      expect((s.claude as _FakeAuthor).calls, before,
+          reason: 'and it must NOT have spent a paid call building "routine for let\'s do..."');
+    });
+
+    test('an ordinary command while the focus question is open still executes', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      await s.handle('create a stretching routine');
+      final out = await s.handle('add buy milk to my list');
+      expect(out, contains('buy milk'));
+      expect((s.claude as _FakeAuthor).calls, 0, reason: 'no paid build for a task command');
+    });
+
+    test('"help" is not a body part', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      await s.handle('create a stretching routine');
+      final out = await s.handle('what can you do');
+      expect(out.toLowerCase(), anyOf(contains('remember'), contains('what i can do')));
+      expect((s.claude as _FakeAuthor).calls, 0);
+    });
+  });
+
+  group('the phrases the app itself suggests must work', () {
+    test('the injury redirect\'s own recovery phrase reaches routine authoring', () async {
+      // The gate tells the user to say "create a gentle mobility routine". That phrase used to miss
+      // the routine pattern (no slot for an adjective) and fall through to PAID TRACKER authoring.
+      final s = await _authoring((c, _) => _routine(c));
+      final out = await s.handle('create a gentle mobility routine');
+      expect(out.toLowerCase(), contains('what should it focus on'),
+          reason: 'it must land on the routine path, not tracker authoring');
+    });
+
+    test('adjectives and durations do not break the pattern', () async {
+      for (final u in [
+        'create a quick stretching routine for my hips',
+        'create a 10 minute stretch routine for my back',
+        'make me a morning mobility routine for my shoulders',
+      ]) {
+        final s = await _authoring((c, _) => _routine(c));
+        final out = await s.handle(u);
+        expect(out, contains('Low-back loosener'), reason: u);
+      }
+    });
+
+    test('a trailing "and track it" coda is still a ROUTINE ask', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      final out = await s.handle('create a stretching routine for my back and track my flexibility');
+      expect(out, contains('Low-back loosener'));
+    });
+
+    test('but "create a workout log" is still a TRACKER ask', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      await s.handle('create a workout log');
+      expect(s.store.values.where((r) => r['typeId'] == 'routine'), isEmpty);
+    });
+  });
+
+  group('figures are scoped to the routine just made', () {
+    test('a new routine gets its own figures even when older steps are unillustrated', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      (s.claude as _FakeAuthor).figures = null; // routine A: figures fail -> text only
+      await s.handle('create a stretching routine for my low back');
+      await s.pendingFigureFill;
+      final aSteps = s.store.values.where((r) => r['typeId'] == 'routine_step').length;
+      expect(aSteps, 3);
+      // routine B: figures available. A's unillustrated steps must not eat B's batch.
+      (s.claude as _FakeAuthor).figures = [
+        for (final n in ['Step one', 'Step two', 'Step three'])
+          {'name': n, 'frameA': goodA},
+      ];
+      await s.handle('create a stretching routine for my shoulders');
+      await s.pendingFigureFill;
+      final routines = s.store.values.where((r) => r['typeId'] == 'routine').toList();
+      expect(routines.length, 2);
+      final newest = routines.last['id'];
+      final drawn = s.store.values.where((r) =>
+          r['typeId'] == 'routine_step' && r['routine'] == newest && r['figureA'] != null);
+      expect(drawn, isNotEmpty, reason: 'the NEW routine must get figures');
     });
   });
 }

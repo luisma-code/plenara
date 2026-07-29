@@ -379,6 +379,12 @@ final _harmfulRe = RegExp(
 final _routineCreateRe = RegExp(
     r"^(?:can you |could you |please )?(?:create|make|build|put together|design|generate)\s+"
     r"(?:me\s+)?(?:a|an|my|some)?\s*"
+    // Adjectives and durations between the article and the kind word. Without this, the phrase
+    // the INJURY REDIRECT ITSELF tells the user to say — "create a gentle mobility routine" —
+    // missed and fell through to paid TRACKER authoring. Same for "a quick stretching routine"
+    // and "a 10 minute stretch routine".
+    r"(?:(?:\d+[- ]?(?:minute|min)|gentle|quick|short|easy|light|simple|basic|daily|morning|"
+    r"evening|full[- ]?body|beginner|advanced|deep|slow)\s+)*"
     r"(stretch(?:ing)?|strength(?:ening)?|mobility|flexibility|exercise|yoga)?\s*"
     r"(routine|workout|stretches|warm[- ]?up|session)"
     r"(?:\s+(?:for|to help with|targeting|around|to loosen|to open|to work|on)\s+(?:my\s+)?(.+?))?"
@@ -387,7 +393,10 @@ final _routineCreateRe = RegExp(
 
 // A "tracker"/"log"/"journal" ask is capability authoring, not a routine — "create a workout log"
 // must keep going to the tracker path even though it contains "workout".
-final _trackerWordRe = RegExp(r"\b(tracker|log|logger|journal|diary|track)\b", caseSensitive: false);
+// "tracker"/"log"/"journal" words, and the routine nouns, as separate patterns. Which one comes
+// FIRST decides the intent — see [_isTrackerAsk].
+final _trackerWordRe = RegExp(r"\b(tracker|logger|log|journal|diary|track)\b", caseSensitive: false);
+final _routineNounRe = RegExp(r"\b(routine|workout|stretches|warm[- ]?up|session)\b", caseSensitive: false);
 // "let's do my low back routine" / "start chest day" / "run the shoulder routine"
 final _routineDoRe = RegExp(
     r"^(?:(?:let'?s|lets)\s+)?(?:do|start|run|begin|play)\s+"
@@ -459,6 +468,10 @@ class Session {
   late Router router;
   /// The shipped exercise catalogue that grounds routine authoring (Spec 16).
   late ExerciseCatalogue exercises;
+  /// The in-flight figure fill, if any — awaited by tests, ignored by the app (figures are
+  /// presentation and arrive after the routine is already usable).
+  Future<void>? pendingFigureFill;
+  String? _lastRoutineId;
   /// A live routine run, or null. Ephemeral like the Tour — losing it on app kill is acceptable.
   RoutineRun? _run;
   RoutineRun? get activeRun => _run;
@@ -1220,6 +1233,41 @@ class Session {
 
   // ---- Routines (Spec 16) ---------------------------------------------------------------------
 
+  /// Is this a TRACKER ask rather than a routine ask? Decided by which word comes first: "create a
+  /// workout LOG" asks for a tracker, while "create a stretching ROUTINE and track my flexibility"
+  /// asks for a routine with a coda. A flat "contains a tracker word" veto flipped the second into
+  /// paid tracker authoring — and, with the confirm now off by default, silently.
+  static bool _isTrackerAsk(String u) {
+    final t = _trackerWordRe.firstMatch(u);
+    if (t == null) return false;
+    final r = _routineNounRe.firstMatch(u);
+    if (r == null) return true; // "create a stretch tracker" — no routine noun at all
+    if (t.start < r.start) return true; // "create a log of my workouts"
+    // The tracker word comes AFTER the routine noun. Adjacent, it is a compound noun and names the
+    // thing wanted ("a workout log"). Separated by a conjunction, it is a coda on a routine request
+    // ("a stretching routine AND track my flexibility") — which a flat contains-check flipped into
+    // paid tracker authoring.
+    final between = u.substring(r.end, t.start);
+    return !RegExp(r'\b(and|then|also|plus)\b|,').hasMatch(between);
+  }
+
+  /// True when an utterance is a real command / system word rather than a plain answer to a
+  /// pending question. Pending states use this so a question can never swallow a command.
+  bool _isFreshCommand(String u) =>
+      router.route(u, clock: now, contacts: _knownContactTokens()) != null ||
+      _helpRe.hasMatch(u) ||
+      _undoRe.hasMatch(u) ||
+      _corrRe.hasMatch(u) ||
+      _cancelRe.hasMatch(u) ||
+      _tourNextRe.hasMatch(u) ||
+      _tourDoneRe.hasMatch(u) ||
+      _routineDoRe.hasMatch(u) ||
+      _routineCreateRe.hasMatch(u) ||
+      _routineNextRe.hasMatch(u) ||
+      _routineSkipRe.hasMatch(u) ||
+      _routineStopRe.hasMatch(u) ||
+      _looksLikeRefCommand(u);
+
   /// Find a routine by (partial, case-insensitive) title — how "do my low back routine" resolves.
   Map<String, dynamic>? _findRoutine(String name) {
     final n = name.toLowerCase().trim();
@@ -1303,10 +1351,12 @@ class Session {
       return "I couldn't put that together cleanly — try describing it a different way.";
     }
     final line = _writeRoutine(routine, utterance, now);
-    // Figures LAST, and separately. ~2/3 of catalogue exercises have no illustration, and a drawn
-    // figure beats nothing — but it must never be able to cost the user their routine, so this runs
-    // after the records are written and every failure path just leaves those steps text-only.
-    await _fillMissingFigures(author, now);
+    // Figures LAST, separately, and NOT on the critical path. ~2/3 of catalogue exercises have no
+    // illustration and a drawn figure beats nothing — but drawing six of them takes tens of
+    // seconds, and making the user stare at nothing until it finishes is indistinguishable from a
+    // hang. The routine is already written and usable; figures arrive when they arrive.
+    pendingFigureFill = _fillMissingFigures(author, _lastRoutineId!);
+    unawaited(pendingFigureFill!.catchError((_) {/* presentation only — never surfaces */}));
     return line;
   }
 
@@ -1349,6 +1399,7 @@ class Session {
     _journal.add(_JournalEntry(before, 'created the "${r.title}" routine'));
     if (_journal.length > _journalMax) _journal.removeAt(0);
     _lastTurnWrote = true;
+    _lastRoutineId = rid;
     try {
       for (final w in written) {
         repo.persist(w);
@@ -1368,10 +1419,16 @@ class Session {
   /// Best-effort by construction: a cloud failure, a malformed frame, or a figure that fails the
   /// render-only subset simply leaves that step as it already was — text-only, which is a
   /// first-class rendering because every instruction has to stand alone for the ear anyway.
-  Future<void> _fillMissingFigures(RoutineAuthor author, DateTime now) async {
+  Future<void> _fillMissingFigures(RoutineAuthor author, String routineId) async {
+    // Scoped to the routine JUST created. Scanning the whole store meant an older routine whose
+    // figures had failed would fill the (capped) batch every time, so a new routine could be
+    // starved of figures forever — while re-spending tokens redrawing the same rejected steps. It
+    // also wrote figure fields onto OLD routines' steps inside this turn, outside its journal
+    // entry, making those writes un-undoable.
     final needy = store.values
         .where((r) =>
             r['typeId'] == 'routine_step' &&
+            r['routine'] == routineId &&
             r['figureA'] == null &&
             (r['exerciseKey'] == null || exercises.byKey['${r['exerciseKey']}']?.image == null))
         .toList();
@@ -1633,6 +1690,12 @@ class Session {
     final c = claude;
     final inTok0 = c is ClaudeClient ? c.inTokens : 0;
     final outTok0 = c is ClaudeClient ? c.outTokens : 0;
+    // Sonnet tokens are counted separately (different price). Snapshot them too, or the most
+    // EXPENSIVE turns in the app — routine authoring and figure drawing, which never touch Haiku —
+    // log no cost at all, don't light the cloud indicator, and make the turnlog's running total a
+    // lie exactly where it matters most.
+    final sIn0 = c is ClaudeClient ? c.sonnetInTokens : 0;
+    final sOut0 = c is ClaudeClient ? c.sonnetOutTokens : 0;
     String resp;
     try {
       resp = await _handle(u);
@@ -1673,7 +1736,11 @@ class Session {
     }
     // Did this turn actually spend cloud tokens? (drives the per-response cloud dot — accurate
     // even when a cloud/generative call failed to an offline reply, which spends nothing.)
-    _lastTurnSpentCloud = c is ClaudeClient && (c.inTokens - inTok0 > 0 || c.outTokens - outTok0 > 0);
+    _lastTurnSpentCloud = c is ClaudeClient &&
+        (c.inTokens - inTok0 > 0 ||
+            c.outTokens - outTok0 > 0 ||
+            c.sonnetInTokens - sIn0 > 0 ||
+            c.sonnetOutTokens - sOut0 > 0);
     // Post-turn housekeeping (reminder reconcile + the diagnostics trace) must NEVER lose the
     // already-computed response — a turnlog I/O error or a reconcile hiccup is non-fatal to the
     // turn (Fable review: these sat outside the try). Wrap so they can't escape to the UI.
@@ -1693,11 +1760,17 @@ class Session {
       if (_outTemplate != null) 'template': _outTemplate,
       if (_outSlots != null && _outSlots!.isNotEmpty) 'slots': _outSlots,
       if (_cloudStatus != null) 'cloud': _cloudStatus,
-      if (c is ClaudeClient && (c.inTokens - inTok0 > 0 || c.outTokens - outTok0 > 0))
+      if (c is ClaudeClient &&
+          (c.inTokens - inTok0 > 0 ||
+              c.outTokens - outTok0 > 0 ||
+              c.sonnetInTokens - sIn0 > 0 ||
+              c.sonnetOutTokens - sOut0 > 0))
         'cost': {
-          'in': c.inTokens - inTok0,
-          'out': c.outTokens - outTok0,
-          'usd': ClaudeClient.costUsd(c.inTokens - inTok0, c.outTokens - outTok0),
+          'in': (c.inTokens - inTok0) + (c.sonnetInTokens - sIn0),
+          'out': (c.outTokens - outTok0) + (c.sonnetOutTokens - sOut0),
+          // priced per MODEL — a Sonnet turn costs several times a Haiku one
+          'usd': ClaudeClient.costUsd(c.inTokens - inTok0, c.outTokens - outTok0) +
+              ClaudeClient.sonnetCostUsd(c.sonnetInTokens - sIn0, c.sonnetOutTokens - sOut0),
         },
       if (_outReads.isNotEmpty) 'reads': _outReads,
       if (_outWrites.isNotEmpty) 'writes': _outWrites,
@@ -1752,7 +1825,10 @@ class Session {
     final check = _pendingCapabilityCheck;
     if (check != null) {
       _pendingCapabilityCheck = null;
-      if (_noRe.hasMatch(u)) {
+      // "undo that" / "never mind" are the natural ways to say no here. Left unhandled they fell
+      // through to the JOURNAL and reversed an unrelated earlier data write, while the unwanted
+      // capability survived — the worst of both.
+      if (_noRe.hasMatch(u) || _cancelRe.hasMatch(u) || _undoRe.hasMatch(u)) {
         _outSource = 'authored';
         return _forgetCapability(check);
       }
@@ -1772,11 +1848,16 @@ class Session {
         _outSource = 'clarify';
         return 'No problem — no routine made.';
       }
+      // A pending question must NOT swallow a real command. Without this guard "let's do low back",
+      // "remind me to buy milk", "help", "next" and "skip" all became the FOCUS of a paid build —
+      // money spent on a junk routine, and the command the user actually gave, lost. This is the
+      // same guard _pendingFill and _pendingGen already carry, for the same reason.
       final focus = u.replaceFirst(RegExp(r'^(?:my|the|for|on)\s+', caseSensitive: false), '').trim();
-      if (focus.isNotEmpty && focus.length < 60) {
+      if (focus.isNotEmpty && focus.length < 60 && !_isFreshCommand(u)) {
         return await _createRoutine('$pendingKind routine for $focus', focus, pendingKind, now);
       }
-      // Unusable answer: fall through and route it normally rather than building something random.
+      // Not a usable focus: fall through and route it normally rather than building something
+      // random. The question is simply dropped — asking again would trap the user in a loop.
     }
 
     // A LIVE ROUTINE RUN intercepts its own control words first (Spec 16). Unlike the Tour, the run
@@ -2025,7 +2106,7 @@ class Session {
     }
     // "create a stretching routine [for my low back]"
     final make = _routineCreateRe.firstMatch(u);
-    if (make != null && !_trackerWordRe.hasMatch(u)) {
+    if (make != null && !_isTrackerAsk(u)) {
       final focus = (make.group(3) ?? '').trim();
       final kindWord = make.group(1) ?? make.group(2);
       if (focus.isEmpty) {
@@ -2307,10 +2388,14 @@ class Session {
         if (sg != null) 'score': sg['s1'],
         if (sg != null) 'confident': sg['confident'],
       };
-      final base = sg == null
+      // A retrieval suggestion can name a skill that no longer exists (a capability the user
+      // forgot, or a corpus synced from a device with different capabilities). Null-asserting here
+      // turned an honest miss into "something went wrong".
+      final sgSkill = sg == null ? null : skills[sg['skillId']];
+      final base = sg == null || sgSkill == null
           ? "I didn't catch that."
           : (() {
-              final name = skills[sg['skillId']]!['displayName'];
+              final name = sgSkill['displayName'];
               final s1 = (sg['s1'] as double).toStringAsFixed(2);
               return sg['confident'] == true
                   ? 'I don\'t have that phrasing learned — did you mean to "$name"? Say it a known way and I\'ll learn it.'
@@ -2475,8 +2560,24 @@ class Session {
     _outSlots = slots;
     _outTemplate = template;
     final turnInterp = Interpreter(types, now, references: _references); // per-turn clock (Spec 03 §4)
+    // A route can outlive its skill: a learned corpus template whose capability was removed here,
+    // or a corpus file synced from a device that has a capability this one doesn't. `skills[id]!`
+    // turned that into a null-check crash and a "something went wrong". Fail honestly instead, and
+    // drop the dead template so the same phrase doesn't keep failing.
+    final def = skills[skillId];
+    if (def == null) {
+      if (template != null) {
+        router.forget(template);
+        try {
+          repo.removeCorpusLearned(template);
+        } catch (_) {/* inert either way — routing already dropped it */}
+      }
+      _outSource = 'error';
+      _outError = 'route pointed at missing skill "$skillId"';
+      return "I used to know how to do that, but I don't any more — tell me again and I'll relearn it.";
+    }
     try {
-      final plan = turnInterp.resolve(skills[skillId]!, slots, store);
+      final plan = turnInterp.resolve(def, slots, store);
       final before = turnInterp.execute(plan, store);
       // JOURNAL BEFORE PERSISTING. execute() has already mutated the in-memory store, so the
       // change is live from this line on. If a persist throws (full disk, revoked folder
@@ -2838,7 +2939,21 @@ class Session {
           '${fields.isEmpty ? '' : ', keeping: $fields'}. '
           'Is that what you wanted? (say no and I\'ll forget it)';
     } catch (e) {
-      types.remove(typeId); // rollback — never leave a half-registered capability
+      // Rollback must undo EVERYTHING this method did. Removing only the type left a routable
+      // skill whose type was gone — erroring on every dispatch until restart — while telling the
+      // user nothing had been added. The learn loop below the assignment widened that window.
+      types.remove(typeId);
+      skills.remove(skillId);
+      for (final t in router.corpus.where((c) => c.skillId == skillId).map((c) => c.template).toList()) {
+        router.forget(t);
+        try {
+          repo.removeCorpusLearned(t);
+        } catch (_) {/* inert */}
+      }
+      try {
+        repo.removeDef('skills', skillId);
+        repo.removeDef('types', typeId);
+      } catch (_) {/* best effort */}
       return "I couldn't add that after all: ${e is ResolveError ? e.message : e}";
     }
   }
@@ -2849,10 +2964,24 @@ class Session {
     final typeId = check['typeId'] as String, skillId = check['skillId'] as String;
     types.remove(typeId);
     skills.remove(skillId);
+    // UNTEACH THE ROUTING TOO. Activation taught this skill's example phrases to the corpus, so
+    // removing only the definition left templates pointing at a skill that no longer exists — the
+    // phrase still routed, and _dispatch's `skills[skillId]!` blew up on null. Every capability
+    // removal has to take its routing with it.
+    for (final t in router.corpus.where((c) => c.skillId == skillId).map((c) => c.template).toList()) {
+      router.forget(t);
+      try {
+        repo.removeCorpusLearned(t);
+      } catch (_) {/* the in-memory forget is what routing uses; a stale line is inert */}
+    }
     try {
       repo.removeDef('skills', skillId);
       repo.removeDef('types', typeId);
     } catch (_) {/* the in-memory removal is what the user sees; a stale file is harmless */}
+    // The RETRIEVAL index still embeds the forgotten skill — activation built it. buildRetrievalIndex
+    // only assigns, so a stale key survives until restart and retrievalSuggest can still return it.
+    // Rebuild from the CURRENT skills so nothing points at a capability that no longer exists.
+    if (_retrievalEnabled) unawaited(router.buildRetrievalIndex(skills));
     return 'Forgotten — "${check['displayName']}" is gone. '
         'Tell me again in your own words and I\'ll try for a closer fit.';
   }

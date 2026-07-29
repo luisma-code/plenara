@@ -150,6 +150,17 @@ void main() {
       expect(s.skills.containsKey('log-stretch'), isTrue);
     });
 
+    test('a forgotten capability leaves no ROUTING behind either', () async {
+      // Activation teaches the example phrases to the corpus. If forgetting doesn't unteach them,
+      // the phrase still routes — to a skill that no longer exists.
+      final s = await activated();
+      await s.handle('no');
+      final out = await s.handle('log a stretch');
+      expect(out.toLowerCase(), isNot(contains('went wrong')), reason: 'must not crash the turn');
+      expect(s.router.route('log a stretch'), isNull,
+          reason: 'the learned template must be unlearned with the capability');
+    });
+
     test('a forgotten capability leaves no definition files behind', () async {
       final s = await activated();
       await s.handle('no');

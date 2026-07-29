@@ -127,9 +127,9 @@ class ClaudeClient implements CloudClient, RoutineAuthor {
   static const sonnetInPerMTok = 3.0, sonnetOutPerMTok = 15.0;
   int sonnetInTokens = 0, sonnetOutTokens = 0;
   static double costUsd(int inTok, int outTok) => (inTok * inPricePerMTok + outTok * outPricePerMTok) / 1e6;
-  double get spentUsd =>
-      costUsd(inTokens, outTokens) +
-      (sonnetInTokens * sonnetInPerMTok + sonnetOutTokens * sonnetOutPerMTok) / 1e6;
+  static double sonnetCostUsd(int inTok, int outTok) =>
+      (inTok * sonnetInPerMTok + outTok * sonnetOutPerMTok) / 1e6;
+  double get spentUsd => costUsd(inTokens, outTokens) + sonnetCostUsd(sonnetInTokens, sonnetOutTokens);
 
   /// A cheap liveness probe for onboarding's "Test connection": one ~1-token call mapped to a
   /// typed result, so the UI can say exactly what's wrong — a working key, a rejected key, or a
