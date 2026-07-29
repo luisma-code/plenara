@@ -1026,6 +1026,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       durationSeconds: (step['durationSeconds'] as num?)?.toInt(),
       reps: (step['reps'] as num?)?.toInt(),
       imageAsset: img == null ? null : 'assets/exercises/$img',
+      // Fallback tier: only consulted when the catalogue had no illustration for this movement.
+      figureSvg: img == null ? step['figureA'] as String? : null,
     );
   }
 

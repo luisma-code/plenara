@@ -4,13 +4,68 @@
   "parentType": "routine",
   "schemaVersion": 1,
   "attributes": [
-    { "name": "routine", "valueType": "entityRef", "refType": "routine", "required": true },
-    { "name": "order", "valueType": "decimal", "required": true },
-    { "name": "name", "valueType": "text", "required": true },
-    { "name": "instruction", "valueType": "text", "required": true },
-    { "name": "exerciseKey", "valueType": "text", "required": false },
-    { "name": "durationSeconds", "valueType": "decimal", "required": false },
-    { "name": "reps", "valueType": "decimal", "required": false },
-    { "name": "side", "valueType": "enum", "enumValues": ["both", "left", "right", "alternating"], "required": false, "default": "both" }
+    {
+      "name": "routine",
+      "valueType": "entityRef",
+      "refType": "routine",
+      "required": true
+    },
+    {
+      "name": "order",
+      "valueType": "decimal",
+      "required": true
+    },
+    {
+      "name": "name",
+      "valueType": "text",
+      "required": true
+    },
+    {
+      "name": "instruction",
+      "valueType": "text",
+      "required": true
+    },
+    {
+      "name": "exerciseKey",
+      "valueType": "text",
+      "required": false
+    },
+    {
+      "name": "durationSeconds",
+      "valueType": "decimal",
+      "required": false
+    },
+    {
+      "name": "reps",
+      "valueType": "decimal",
+      "required": false
+    },
+    {
+      "name": "side",
+      "valueType": "enum",
+      "enumValues": [
+        "both",
+        "left",
+        "right",
+        "alternating"
+      ],
+      "required": false,
+      "default": "both"
+    },
+    {
+      "name": "figureA",
+      "valueType": "json",
+      "required": false
+    },
+    {
+      "name": "figureB",
+      "valueType": "json",
+      "required": false
+    },
+    {
+      "name": "figureTween",
+      "valueType": "boolean",
+      "required": false
+    }
   ]
 }

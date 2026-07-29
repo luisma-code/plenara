@@ -190,6 +190,16 @@ class _FakeAuthor implements CloudClient, RoutineAuthor {
     lastCatalogue = catalogue;
     return CloudOk(build(catalogue, calls++));
   }
+  /// Figures are optional presentation: the default fake declines, which exercises the
+  /// degrade-to-text path that ~2/3 of real steps take.
+  List<Map<String, dynamic>>? figures;
+  int figureCalls = 0;
+  @override
+  Future<CloudResult<Map<String, dynamic>>> authorFigures(List<String> movements) async {
+    figureCalls++;
+    if (figures == null) return const CloudError(CloudErrorKind.malformed, 'no figures');
+    return CloudOk({'figures': figures});
+  }
   @override
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s,
           {Set<String> knownContacts = const {}}) async => const CloudOk(null);

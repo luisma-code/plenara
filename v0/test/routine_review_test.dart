@@ -20,6 +20,14 @@ class _FakeAuthor implements CloudClient, RoutineAuthor {
   Future<CloudResult<Map<String, dynamic>>> authorRoutine(String request, String catalogue,
           {String? kind, String? priorError}) async =>
       CloudOk(build(catalogue, calls++));
+  List<Map<String, dynamic>>? figures;
+  int figureCalls = 0;
+  @override
+  Future<CloudResult<Map<String, dynamic>>> authorFigures(List<String> movements) async {
+    figureCalls++;
+    if (figures == null) return const CloudError(CloudErrorKind.malformed, 'no figures');
+    return CloudOk({'figures': figures});
+  }
   @override
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s,
           {Set<String> knownContacts = const {}}) async =>
@@ -204,6 +212,65 @@ void main() {
       });
       final out = await s.handle('create a stretch routine for my low back');
       expect(out.toLowerCase(), contains("couldn't"));
+    });
+  });
+
+  group('generated figures are a FALLBACK tier, never a gate on the routine', () {
+    const goodA = '<svg viewBox="0 0 100 100"><circle cx="50" cy="20" r="8"/><path d="M50 28 L50 60"/></svg>';
+    const goodB = '<svg viewBox="0 0 100 100"><circle cx="50" cy="30" r="8"/><path d="M50 38 L50 70"/></svg>';
+
+    test('steps the catalogue cannot illustrate get a drawn figure', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      (s.claude as _FakeAuthor).figures = [
+        for (final n in ['Step one', 'Step two', 'Step three'])
+          {'name': n, 'frameA': goodA, 'frameB': goodB},
+      ];
+      await s.handle('create a stretch routine for my low back');
+      final steps = s.store.values.where((r) => r['typeId'] == 'routine_step').toList();
+      // only steps WITHOUT a catalogue image should have been drawn
+      for (final st in steps) {
+        final key = st['exerciseKey'] as String?;
+        final hasCatalogueImage = key != null && s.exercises.byKey[key]?.image != null;
+        if (hasCatalogueImage) {
+          expect(st['figureA'], isNull, reason: 'never redraw what the catalogue already has');
+        } else {
+          expect(st['figureA'], goodA);
+          expect(st['figureTween'], isTrue);
+        }
+      }
+    });
+
+    test('a figure-call FAILURE leaves the routine intact and the steps text-only', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      (s.claude as _FakeAuthor).figures = null; // the seam returns an error
+      final out = await s.handle('create a stretch routine for my low back');
+      expect(out, contains('Low-back loosener'), reason: 'the routine still lands');
+      expect(s.store.values.where((r) => r['typeId'] == 'routine_step').length, 3);
+      expect(s.store.values.where((r) => r['typeId'] == 'routine_step' && r['figureA'] != null),
+          isEmpty);
+    });
+
+    test('a HOSTILE figure is dropped; the step keeps working', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      (s.claude as _FakeAuthor).figures = [
+        {'name': 'Step one', 'frameA': '<svg viewBox="0 0 1 1"><script>x()</script></svg>'},
+        {'name': 'Step two', 'frameA': goodA, 'frameB': goodB},
+      ];
+      await s.handle('create a stretch routine for my low back');
+      final one = s.store.values.firstWhere((r) => r['typeId'] == 'routine_step' && r['name'] == 'Step one');
+      expect(one['figureA'], isNull, reason: 'the script figure must never be stored');
+      expect(one['instruction'], isNotEmpty, reason: 'the step itself is unaffected');
+    });
+
+    test('figures are drawn ONCE per movement name, not once per step', () async {
+      final s = await _authoring((c, _) {
+        final r = _routine(c);
+        (r['steps'] as List)[2]['name'] = 'Step one'; // a routine that bookends
+        return r;
+      });
+      (s.claude as _FakeAuthor).figures = [{'name': 'Step one', 'frameA': goodA}];
+      await s.handle('create a stretch routine for my low back');
+      expect((s.claude as _FakeAuthor).figureCalls, 1);
     });
   });
 

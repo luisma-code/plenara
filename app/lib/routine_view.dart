@@ -12,6 +12,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// Everything the card needs, lifted out of the engine's records so this widget stays dumb.
 class RoutineStepView {
@@ -19,9 +20,13 @@ class RoutineStepView {
   final int position, total;
   final int? durationSeconds, reps;
   final String side;
-  /// Bundled asset path for the illustration, or null — ~2/3 of the catalogue has no picture, and
-  /// a text-only step is a first-class rendering, not a broken one.
+  /// Bundled asset path for the catalogue illustration, or null.
   final String? imageAsset;
+  /// A model-drawn stick figure for a movement the catalogue could not illustrate — the fallback
+  /// tier (catalogue image > drawn figure > text only). Already sanitised against a strict
+  /// render-only allowlist in the engine; stroke colour and width are imposed HERE, never authored,
+  /// so every generated figure looks like one product.
+  final String? figureSvg;
   const RoutineStepView({
     required this.routineTitle,
     required this.name,
@@ -32,6 +37,7 @@ class RoutineStepView {
     this.durationSeconds,
     this.reps,
     this.imageAsset,
+    this.figureSvg,
   });
 }
 
@@ -60,6 +66,7 @@ class RoutineStepCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final img = step.imageAsset;
+    final svg = step.figureSvg;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(26, 88, 26, 26),
@@ -72,7 +79,17 @@ class RoutineStepCard extends StatelessWidget {
                     color: Color(0x996F6F85), fontSize: 11, letterSpacing: 1.2)),
             Expanded(
               child: Center(
-                child: img != null
+                child: img == null && svg != null
+                    // A drawn figure. Rendered by a STATIC rasterizer — flutter_svg executes
+                    // nothing — and only after the engine's allowlist has already accepted it.
+                    ? SvgPicture.string(
+                        svg,
+                        fit: BoxFit.contain,
+                        theme: const SvgTheme(currentColor: Color(0xFFEAE2D8)),
+                        colorFilter: const ColorFilter.mode(Color(0xFFEAE2D8), BlendMode.srcIn),
+                        placeholderBuilder: (_) => const SizedBox.shrink(),
+                      )
+                    : img != null
                     ? ColorFiltered(
                         // invert() turns the catalogue's dark-on-transparent line art into light
                         // strokes that sit directly on the void — no card, no white slab.

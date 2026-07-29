@@ -58,9 +58,32 @@ which single-stroke line art does not have. So the model stopped drawing and sta
 `license_author` so attribution is mechanical. 640 exercises, 200 illustrated. Transparent-background
 line art, so a render-time `invert()` puts light figures straight on the void.
 
-**Coverage is partial by design (~1/3 illustrated).** A step whose exercise has no picture renders
-text-only. That is a first-class path, not a degradation, because §5's ear-sufficiency rule means
-the words already have to carry the movement.
+**Three tiers, not two (amended 2026-07-28 at Luis's suggestion):**
+
+    catalogue illustration  >  generated stick figure  >  text only
+
+Only ~1/3 of the catalogue is illustrated, so the middle tier is where most steps land. The spike's
+verdict is unchanged — generated figures lose to professional line art — but they were being
+compared against the wrong baseline. Against NOTHING, which is what two steps in three actually
+get, they clearly win. They are authored in a SEPARATE call made only AFTER the routine is validated
+and written, so a figure failure can never cost the user their routine; every failure path leaves
+those steps text-only, which §5's ear-sufficiency rule already makes fully usable.
+
+**The sanitiser is this feature's security boundary.** SVG can carry script, external references and
+CSS, so nothing the model draws is trusted: an ALLOWLIST of 7 elements and 16 attributes, plus a
+banned-construct sweep (`script`/`style`/`image`/`use`/`foreignObject`/`animate`, `href`, `on*`,
+`url()`, `data:`, entities), a size cap, and a required `viewBox`. Unknown element or attribute →
+the whole figure is rejected, never partially scrubbed. Stroke colour and width are **imposed by the
+renderer**, never authored, so figures cannot drift in style between generations. Rendered by a
+static rasterizer that executes nothing. 16 attack vectors are pinned by tests.
+
+Frames that are structurally corresponding (same elements, same path commands, differing only in
+coordinates) are TWEENED for real motion; a mismatched pair degrades to a two-frame toggle.
+
+Two things this cost, both found by running it live rather than by tests: the drawing call needs a
+far longer timeout than a router turn (a 30s deadline tuned for one-line routing made figure
+generation look like "the model returned nothing"), and a generous token budget — under-budgeting
+truncated the JSON mid-array, which again surfaced as silence rather than as an error.
 
 **Licensing posture:** images ship **unmodified** and are recoloured at DISPLAY time. Share-alike
 attaches to adaptations; displaying the work with a display transform is a cleaner position than

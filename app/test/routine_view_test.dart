@@ -19,7 +19,25 @@ const _timed = RoutineStepView(
   durationSeconds: 45,
 );
 
+const _drawn = RoutineStepView(
+  routineTitle: 'Low-back loosener',
+  name: "Child's pose",
+  instruction: 'Sink your hips back toward your heels and reach your arms forward.',
+  position: 1, total: 5, side: 'both', durationSeconds: 40,
+  figureSvg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'
+      '<circle cx="30" cy="60" r="7" fill="none"/><path d="M37 62 L75 55" fill="none"/></svg>',
+);
+
 void main() {
+  testWidgets('a step with no catalogue image falls back to the drawn figure', (tester) async {
+    await tester.pumpWidget(_wrap(RoutineStepCard(step: _drawn, onNext: () {}, onStop: () {})));
+    await tester.pumpAndSettle();
+    // the movement is still fully described in words — the figure is never the sole carrier
+    expect(find.text("Child's pose"), findsOneWidget);
+    expect(find.textContaining('Sink your hips back'), findsOneWidget);
+    expect(find.byType(Image), findsNothing, reason: 'no catalogue asset for this one');
+  });
+
   testWidgets('a timed step shows where you are, what to do, and how long', (tester) async {
     await tester.pumpWidget(_wrap(RoutineStepCard(step: _timed, onNext: () {}, onStop: () {})));
     expect(find.text('STEP 2 OF 7 · LOW-BACK LOOSENER'), findsOneWidget);

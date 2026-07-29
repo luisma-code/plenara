@@ -101,6 +101,12 @@ abstract interface class RoutineAuthor {
   /// any key not in the catalogue. [priorError] feeds the one gated re-author attempt.
   Future<CloudResult<Map<String, dynamic>>> authorRoutine(
       String request, String catalogue, {String? kind, String? priorError});
+
+  /// Draw stick-figure keyframes for steps the shipped catalogue has no illustration for
+  /// (Spec 16 §2). A SEPARATE call, made only AFTER the routine is validated and written, so a
+  /// figure failure can never cost the user their routine — figures are presentation, and
+  /// presentation degrades to text rather than rejecting.
+  Future<CloudResult<Map<String, dynamic>>> authorFigures(List<String> movements);
 }
 
 class ClaudeClient implements CloudClient, RoutineAuthor {
@@ -267,7 +273,8 @@ HARD RULES:
         '\nCATALOGUE (key | name | category | muscles | equipment):\n$catalogue$fix';
     // A stronger model than the router: this is structured composition, and the G-29 finding was
     // that authoring-class work needs it. Capped tokens because the model returns keys, not prose.
-    final res = await _message(_routineSys, user, maxTokens: 2000, model: 'claude-sonnet-4-5');
+    final res = await _message(_routineSys, user,
+        maxTokens: 2000, model: 'claude-sonnet-4-5', timeout: const Duration(seconds: 120));
     switch (res) {
       case CloudError(:final kind, :final detail):
         return CloudError(kind, detail);
@@ -279,11 +286,65 @@ HARD RULES:
     }
   }
 
+  static const _figureSys = '''
+You author stick-figure movement diagrams as SVG keyframe PAIRS for a fitness app.
+
+Return STRICT JSON: {"figures":[{"name":"<the movement name given>","frameA":"<svg…>","frameB":"<svg…>"}]}
+
+HARD RULES for every SVG — anything else and the figure is discarded:
+- viewBox="0 0 100 100", no width/height.
+- ONLY these elements: svg, g, path, line, polyline, circle, ellipse.
+- ONLY these attributes: viewBox, xmlns, d, points, x1, y1, x2, y2, cx, cy, r, rx, ry, transform,
+  fill, stroke-linecap.
+- fill is only ever "none". NEVER set stroke or stroke-width — the app imposes colour and weight so
+  every figure looks like one product.
+- ABSOLUTELY FORBIDDEN: <script> <style> <image> <use> <foreignObject> <animate>, href/xlink:href,
+  on* handlers, CSS, url(), data:.
+
+CORRESPONDENCE (this is what makes it move): frameA and frameB must contain the SAME elements in the
+SAME order with the same path command letters — differing ONLY in coordinate numbers. The app tweens
+A to B by interpolating those numbers. frameA is the start of the movement, frameB the end (or the
+deepest point of a held stretch). For a static hold, make B a slightly deeper version of A.
+
+READABILITY: draw a clear human — head circle, spine, two arms, two legs, joints bent correctly.
+
+GROUND YOUR FIGURES. Most of these movements happen ON THE FLOOR (kneeling, lying on the back or
+front, all fours). Draw a floor as a plain <line> and put the body ON it. A movement done lying down
+MUST be drawn lying down — a standing figure for Child's pose, a supine twist, or knee-to-chest is a
+WRONG drawing, not a stylised one. Only draw a standing figure for a movement actually done standing.
+
+For a floor pose, angle the body across the frame rather than flat along the ground line, and offset
+the near-side arm and leg from the far-side pair so the two sides never lie exactly on top of each
+other — that overlap is what makes a lying figure unreadable.''';
+
+  @override
+  Future<CloudResult<Map<String, dynamic>>> authorFigures(List<String> movements) async {
+    // Drawing is the longest generation in the app — several SVGs per call. Give it room, and cap
+    // the batch so one enormous routine can't produce a single request that runs for minutes.
+    // Two frames of dense path data run ~600-800 tokens per movement once the figures are properly
+    // grounded. Budgeting 900 truncated the JSON mid-array, which surfaced as "the model returned
+    // nothing" rather than "the response was cut off" — so the budget is generous and the batch is
+    // small.
+    final batch = movements.take(6).toList();
+    final res = await _message(_figureSys, 'Draw these movements: ${batch.join(", ")}',
+        maxTokens: 1600 * batch.length + 800, model: 'claude-sonnet-4-5',
+        timeout: Duration(seconds: 60 + 30 * batch.length));
+    switch (res) {
+      case CloudError(:final kind, :final detail):
+        return CloudError(kind, detail);
+      case CloudOk(:final value):
+        if (value['figures'] is! List) {
+          return const CloudError(CloudErrorKind.malformed, 'no figures array');
+        }
+        return CloudOk(value);
+    }
+  }
+
   /// The raw text-returning HTTP path. NEVER throws (Spec 04 §3.5): every failure maps
   /// to a typed [CloudError]. On 200 with a usable text block, [CloudOk] of that text.
   /// [_message] (JSON) and [generate] (free text) both build on this.
   Future<CloudResult<String>> _rawText(String sys, String user,
-      {int maxTokens = 200, String model = 'claude-haiku-4-5'}) async {
+      {int maxTokens = 200, String model = 'claude-haiku-4-5', Duration? timeout}) async {
     if (key == null || key!.isEmpty) return const CloudError(CloudErrorKind.noKey);
     final body = jsonEncode({
       'model': model,
@@ -325,7 +386,11 @@ HARD RULES:
             orElse: () => null);
         if (block == null) return const CloudError<String>(CloudErrorKind.malformed, 'no text block (refusal?)');
         return CloudOk<String>((block['text'] as String).trim());
-      }).timeout(const Duration(seconds: 30)); // bounds the whole exchange, not just connect
+        // 30s bounds a router turn, which the user is waiting on. Authoring calls generate far
+        // more tokens (a routine, or a set of drawn figures) and legitimately take longer — a
+        // deadline tuned for a one-line route silently failed them, which is how the figure
+        // fallback appeared to "return nothing" rather than "time out".
+      }).timeout(timeout ?? const Duration(seconds: 30));
     } on TimeoutException catch (_) {
       return const CloudError(CloudErrorKind.timeout);
     } on SocketException catch (e) {
@@ -342,8 +407,8 @@ HARD RULES:
 
   /// JSON path (routing/authoring): extracts the first JSON object from the model text.
   Future<CloudResult<Map<String, dynamic>>> _message(String sys, String user,
-      {int maxTokens = 200, String model = 'claude-haiku-4-5'}) async {
-    switch (await _rawText(sys, user, maxTokens: maxTokens, model: model)) {
+      {int maxTokens = 200, String model = 'claude-haiku-4-5', Duration? timeout}) async {
+    switch (await _rawText(sys, user, maxTokens: maxTokens, model: model, timeout: timeout)) {
       case CloudError(:final kind, :final detail):
         return CloudError(kind, detail);
       case CloudOk(:final value):

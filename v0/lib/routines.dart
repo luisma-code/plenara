@@ -458,3 +458,99 @@ String spokenInstruction(String raw, {int maxChars = 220}) {
   final lastStop = cut.lastIndexOf(RegExp(r'[.!?]'));
   return (lastStop > 60 ? cut.substring(0, lastStop + 1) : '${cut.trimRight()}…').trim();
 }
+
+/// ---------------------------------------------------------------------------------------------
+/// FIGURE FALLBACK (Spec 16 §2, amended). ~2 in 3 catalogue exercises have no illustration. The
+/// 2026-07-28 spike showed a model can author stick figures that are safe (19/19 passed a strict
+/// render-only subset) and tweenable (18/19 keyframe pairs structurally corresponding) — its
+/// weakness was only that supine poses read worse than the catalogue's professional line art.
+/// Against a *drawn* figure they lose; against NOTHING, which is what these steps get today, they
+/// win. So they are a fallback tier, never a replacement:
+///
+///     catalogue illustration  >  generated figure  >  text only
+///
+/// SECURITY POSTURE: SVG is a format that can carry script, external references and CSS. Nothing
+/// here trusts the model. The sanitiser is an ALLOWLIST — unknown element, unknown attribute, or
+/// any banned construct anywhere in the string rejects the whole figure — and stroke colour and
+/// width are imposed by the renderer, never authored, so every figure looks like one product.
+/// A rejected figure degrades to text, exactly like a missing one.
+
+/// Elements a figure may contain. Anything else — including `<style>`, `<image>`, `<use>`,
+/// `<foreignObject>`, `<script>`, `<animate>` — rejects the figure.
+const _svgElements = {'svg', 'g', 'path', 'line', 'polyline', 'circle', 'ellipse'};
+
+/// Attributes a figure may carry. Geometry and nothing else. No `style`, no `class`, no `id`,
+/// no presentation attributes that could pull in a resource.
+const _svgAttrs = {
+  'viewBox', 'xmlns', 'd', 'points', 'x1', 'y1', 'x2', 'y2',
+  'cx', 'cy', 'r', 'rx', 'ry', 'transform', 'fill', 'stroke-linecap',
+};
+
+/// Constructs that reject a figure outright, wherever they appear. Belt to the allowlist's braces:
+/// a parser quirk that hid one of these from element/attribute walking still can't get it through.
+final _svgBanned = RegExp(
+    r'<\s*(?:script|style|image|use|foreignObject|animate|animateTransform|set|handler)\b'
+    r'|xlink:href|\bhref\s*=|\son[a-z]+\s*='
+    r'|url\(|data:|javascript:|expression\(|@import|&#|<!ENTITY|<!DOCTYPE',
+    caseSensitive: false);
+
+const maxFigureBytes = 8000;
+
+/// Returns the figure unchanged if it is safe to render, or null if anything at all is off.
+/// Deliberately all-or-nothing: a partially-scrubbed drawing is not worth the reasoning burden.
+String? sanitizeFigure(String? svg) {
+  final s = (svg ?? '').trim();
+  if (s.isEmpty || s.length > maxFigureBytes) return null;
+  if (!s.startsWith('<svg') || !s.contains('</svg>')) return null;
+  if (_svgBanned.hasMatch(s)) return null;
+  // Element + attribute allowlist, checked by walking the actual markup rather than by regex.
+  for (final m in RegExp(r'<\s*([a-zA-Z][\w:-]*)([^>]*)>').allMatches(s)) {
+    final tag = m.group(1)!;
+    if (!_svgElements.contains(tag)) return null;
+    for (final a in RegExp(r'([a-zA-Z][\w:-]*)\s*=').allMatches(m.group(2) ?? '')) {
+      if (!_svgAttrs.contains(a.group(1))) return null;
+    }
+  }
+  // A viewBox is required: without it the renderer cannot scale the figure predictably.
+  if (!RegExp(r'viewBox\s*=\s*"[-\d.\s]+"').hasMatch(s)) return null;
+  return s;
+}
+
+/// True when [a] and [b] can be TWEENED — same elements in the same order with the same path
+/// command letters and point counts, differing only in coordinates. When this holds the renderer
+/// interpolates and the figure genuinely moves; when it doesn't, it falls back to a two-frame
+/// toggle, which still reads as movement.
+bool figuresCorrespond(String a, String b) {
+  List<String> sig(String s) => [
+        for (final m in RegExp(r'<\s*([a-zA-Z][\w:-]*)([^>]*)>').allMatches(s))
+          if (m.group(1) == 'path')
+            'path:${RegExp(r'[A-Za-z]').allMatches(RegExp(r'd\s*=\s*"([^"]*)"').firstMatch(m.group(2) ?? '')?.group(1) ?? '').map((x) => x.group(0)).join()}'
+          else if (m.group(1) == 'polyline')
+            'polyline:${RegExp(r'[-\d.]+').allMatches(RegExp(r'points\s*=\s*"([^"]*)"').firstMatch(m.group(2) ?? '')?.group(1) ?? '').length}'
+          else
+            m.group(1)!,
+      ];
+  final sa = sig(a), sb = sig(b);
+  if (sa.isEmpty || sa.length != sb.length) return false;
+  for (var i = 0; i < sa.length; i++) {
+    if (sa[i] != sb[i]) return false;
+  }
+  return true;
+}
+
+/// One validated figure for a step: two frames, and whether they can be interpolated.
+class StepFigure {
+  final String frameA, frameB;
+  final bool tweenable;
+  const StepFigure(this.frameA, this.frameB, this.tweenable);
+}
+
+/// Validate a model-authored figure pair. Null when either frame fails the subset — presentation
+/// degrades, it never rejects the step.
+StepFigure? validateFigure(Object? raw) {
+  if (raw is! Map) return null;
+  final a = sanitizeFigure(raw['frameA'] as String?);
+  if (a == null) return null;
+  final b = sanitizeFigure(raw['frameB'] as String?) ?? a; // a single-frame figure is fine
+  return StepFigure(a, b, figuresCorrespond(a, b));
+}

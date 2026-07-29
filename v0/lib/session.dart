@@ -1255,7 +1255,12 @@ class Session {
     if (routine == null) {
       return "I couldn't put that together cleanly — try describing it a different way.";
     }
-    return _writeRoutine(routine, utterance, now);
+    final line = _writeRoutine(routine, utterance, now);
+    // Figures LAST, and separately. ~2/3 of catalogue exercises have no illustration, and a drawn
+    // figure beats nothing — but it must never be able to cost the user their routine, so this runs
+    // after the records are written and every failure path just leaves those steps text-only.
+    await _fillMissingFigures(author, now);
+    return line;
   }
 
   /// Write a validated routine + its steps as ONE journaled turn, so "undo that" removes the whole
@@ -1310,6 +1315,45 @@ class Session {
     return 'Made "${r.title}" — ${r.steps.length} steps, about ${r.estMinutes} minutes'
         '${illustrated < r.steps.length ? ' ($illustrated with pictures)' : ''}. '
         'Say "let\'s do ${r.title}" when you\'re ready.';
+  }
+
+  /// Draw stick figures for the steps the shipped catalogue couldn't illustrate (Spec 16 §2).
+  /// Best-effort by construction: a cloud failure, a malformed frame, or a figure that fails the
+  /// render-only subset simply leaves that step as it already was — text-only, which is a
+  /// first-class rendering because every instruction has to stand alone for the ear anyway.
+  Future<void> _fillMissingFigures(RoutineAuthor author, DateTime now) async {
+    final needy = store.values
+        .where((r) =>
+            r['typeId'] == 'routine_step' &&
+            r['figureA'] == null &&
+            (r['exerciseKey'] == null || exercises.byKey['${r['exerciseKey']}']?.image == null))
+        .toList();
+    if (needy.isEmpty) return;
+    // De-duplicate by movement name: a routine that bookends with the same stretch should cost one
+    // drawing, not two.
+    final names = <String>{for (final r in needy) '${r['name']}'}.toList();
+    final res = await author.authorFigures(names);
+    if (res is! CloudOk<Map<String, dynamic>>) return; // no figures this time; steps stay text-only
+    final byName = <String, StepFigure>{};
+    for (final raw in (res.value['figures'] as List? ?? const [])) {
+      if (raw is! Map) continue;
+      final fig = validateFigure(raw);
+      if (fig != null) byName['${raw['name']}'.toLowerCase().trim()] = fig;
+    }
+    if (byName.isEmpty) return;
+    var filled = 0;
+    for (final r in needy) {
+      final fig = byName['${r['name']}'.toLowerCase().trim()];
+      if (fig == null) continue;
+      r['figureA'] = fig.frameA;
+      r['figureB'] = fig.frameB;
+      r['figureTween'] = fig.tweenable;
+      try {
+        repo.persist(r);
+        filled++;
+      } catch (_) {/* a figure is presentation — never fail the routine over one */}
+    }
+    if (filled > 0) _outWrites.add({'op': 'figures', 'n': filled});
   }
 
   /// Control words recognised while a run is live. Returns the reply, or null to let the utterance
