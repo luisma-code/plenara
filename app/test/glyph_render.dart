@@ -17,8 +17,7 @@ final outPath = const String.fromEnvironment('GLYPH_SHEET_OUT').isNotEmpty
 
 // Which glyphs to render: the tour set + candidate swaps.
 const _names = [
-  'bell', 'flower', 'sun', 'check', 'heart', //
-  'enso', 'rising-bars', 'seedling', 'small-check', 'target', //
+  'reach', 'bell', 'flower', 'check', 'star', //
 ];
 
 void main() {

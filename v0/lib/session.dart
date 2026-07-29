@@ -146,6 +146,17 @@ const _tourChapters = <_TourChapter>[
     ['run', 'walk', 'mood', 'journal', 'meal', 'goal', 'streak', 'track', 'water', 'step'],
     ['track', 'tracking', 'run', 'running', 'mood', 'journal', 'habit', 'habits'],
   ),
+  _TourChapter(
+    'movement',
+    ['list-routines'],
+    "I can put together a stretch or strength routine and then walk you through it, one move at a "
+        "time, out loud — so you're not squinting at a screen on the floor.",
+    'You could say — "create a stretching routine for my low back."',
+    'Making one takes a moment and uses your credits. Or say "next" for one last thing: how to read me.',
+    "It's yours now — say \"let's do\" it whenever, and I'll count you through.",
+    ['routine'],
+    ['routine', 'routines', 'stretch', 'stretching', 'exercise', 'workout', 'movement'],
+  ),
   // The presence itself — no skill to gate on, no live "try". The UI stages a colour demo while this
   // is spoken (drives idle→listening→thinking→the cooler AI shade). Kept LAST: a capstone that
   // explains the colours the user has been watching, and lands the cost/Settings note after they've
@@ -806,6 +817,9 @@ class Session {
         '• Running — "log a 3k run", "how much have I run this week", "how far have I run", "what\'s my running streak"',
       if (has('log-mood')) '• Mood — "I\'m feeling great", "how have I been feeling"',
       if (has('log-journal')) '• Journal — "journal that today was a good day", "read my journal"',
+      if (has('list-routines'))
+        '• Movement — "create a stretching routine for my low back", then "let\'s do low back" '
+            'and I\'ll walk you through it',
       if (has('remember-person-fact'))
         '• People — "remember that Mia is Sarah\'s daughter", "what do I know about Mia", "talked to Sam about the trip", "when did I last talk to Sam"',
       if (has('set-birthday'))
@@ -827,6 +841,13 @@ class Session {
       return 'With reminders you can say things like: "remind me to call mom on thursday at 5pm", '
           '"remind me every weekday at 9am to stretch", "remind me on the 15th of every month to pay rent", '
           '"what reminders do I have tomorrow", "snooze the reminder to X to friday at 9am", "cancel the reminder to X".';
+    }
+    if (m(['routine', 'stretch', 'exercise', 'workout', 'movement']) && has('list-routines')) {
+      return 'For movement you can say: "create a stretching routine for my low back" or '
+          '"make me a strength workout for chest" — I\'ll build it once and keep it. Then '
+          '"let\'s do low back" and I\'ll walk you through it a move at a time; say "next", '
+          '"skip", "back", "repeat", "pause" or "stop" as you go. Ask "list my routines", '
+          '"when did I last do chest day", or "what\'s my routine streak".';
     }
     if (m(['task', 'todo', 'to-do', 'to do']) && has('create-task')) {
       return 'With tasks you can say: "add call the plumber to my list", "add milk, eggs, and bread to my list", '

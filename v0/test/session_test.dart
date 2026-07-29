@@ -1554,7 +1554,8 @@ void main() {
       await s.handle('next'); // ch2 tasks
       await s.handle('next'); // ch3 people
       await s.handle('next'); // ch4 tracking
-      await s.handle('next'); // ch5 colors (the capstone)
+      await s.handle('next'); // ch5 movement
+      await s.handle('next'); // ch6 colors (the capstone)
       final end = await s.handle('next'); // past the last → closing
       expect(end.toLowerCase(), contains('undo that'));
     });
@@ -1565,7 +1566,8 @@ void main() {
       await s.handle('give me the tour'); // ch1
       await s.handle('next'); // ch2
       await s.handle('next'); // ch3
-      await s.handle('next'); // ch4 — all visited, tour still live
+      await s.handle('next'); // ch4
+      await s.handle('next'); // ch5 movement — all visited, tour still live
       final reask = await s.handle('what can you do'); // seen everything → the flat map
       expect(reask, contains("Here's what I can do"));
     });

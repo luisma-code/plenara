@@ -145,6 +145,7 @@ void main() {
 
   _routinesPart2();
   _spokenTrimTests();
+  _tutorialTests();
 
   group('logging a completed run', () {
     test('log-routine-session writes a session and is undoable like any other write', () async {
@@ -487,6 +488,41 @@ void _spokenTrimTests() {
       final key = step['exerciseKey'] as String;
       expect(step['instruction'], s.exercises.byKey[key]!.instructions,
           reason: 'the card shows everything; only the spoken line is shortened');
+    });
+  });
+}
+
+void _tutorialTests() {
+  group('routines are discoverable — the tutorial knows about them', () {
+    test('the exhaustive list names movement with a real example', () async {
+      final s = await _s();
+      await s.handle('what can you do'); // the opener; the tour arms from here
+      await s.handle('give me the tour');
+      final full = await s.handle('show me everything');
+      expect(full, contains('Movement'));
+      expect(full, contains('create a stretching routine'));
+      expect(full, contains("let's do"), reason: 'both halves: making one AND running it');
+    });
+
+    test('the tour has a movement chapter you can pick by name', () async {
+      final s = await _s();
+      await s.handle('what can you do');
+      await s.handle('give me the tour');
+      final ch = await s.handle('movement');
+      expect(ch.toLowerCase(), contains('routine'));
+      expect(ch, contains('create a stretching routine'), reason: 'a concrete phrase to try');
+      // the coda ("say let's do it") lands AFTER a live try, not on entry — that's the tour's
+      // teach-by-doing shape, so entry only promises the walkthrough
+      expect(ch.toLowerCase(), contains('walk you through'));
+    });
+
+    test('"stretching" and "workout" both reach that chapter', () async {
+      for (final alias in ['stretching', 'workout', 'routines']) {
+        final s = await _s();
+        await s.handle('what can you do');
+        await s.handle('give me the tour');
+        expect((await s.handle(alias)).toLowerCase(), contains('routine'), reason: alias);
+      }
     });
   });
 }

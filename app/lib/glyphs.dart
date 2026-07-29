@@ -244,6 +244,25 @@ final Map<String, GlyphDef> kGlyphs = {
       ),
     ],
   ),
+  // A small figure reaching upward and opening out — the movement glyph. Drawn in order so it
+  // reads as a MOVEMENT rather than a diagram: the body settles, then the arms sweep up and open.
+  // Deliberately a whole little person: the routines feature is the one place Plena has a body to
+  // talk about, and an abstract mark (a chevron, an arc) said nothing a bell or a nod didn't.
+  'reach': GlyphDef(
+    'reach',
+    'a movement routine created, or a run of it finished',
+    strokes: [
+      _s(_circle(0, -.56, .15), draw: 320), // head
+      _s(_line(_p(0, -.41), _p(0, .12)), delay: 240, draw: 300), // spine
+      _s(_line(_p(0, .12), _p(-.24, .54)), delay: 460, draw: 300), // left leg, planted
+      _s(_line(_p(0, .12), _p(.24, .54)), delay: 520, draw: 300), // right leg
+      // arms start BELOW the head so they read as a reach, not as lines crossing the face
+      _s(_line(_p(0, -.30), _p(-.42, -.60)), delay: 740, draw: 360),
+      _s(_line(_p(0, -.30), _p(.42, -.60)), delay: 800, draw: 360),
+    ],
+    // two small marks where the hands open — the release at the top of the stretch
+    dots: [GlyphDot(_p(-.52, -.70), delayMs: 1160), GlyphDot(_p(.52, -.70), delayMs: 1220)],
+  ),
   'star': GlyphDef(
     'star',
     'a streak milestone reached (7 / 30 / 100 days)',
@@ -712,6 +731,11 @@ GlyphDef? glyphForTurn(String? skill, String reply) {
   if (ran('complete-task') || ran('complete-reminder')) {
     return kGlyphs['check']; // a meaningful done
   }
+  // Movement routines (Spec 16): the making of one, and the finishing of a run, both earn the
+  // reach. A per-STEP mark would fire every 45 seconds and shred the rarity rules (§5A), so the
+  // player itself stays unmarked — only the two moments that are actually events.
+  if (ran('author-routine') || said('say "let\'s do')) return kGlyphs['reach'];
+  if (ran('routine-player') && (said('done,') || said('logged '))) return kGlyphs['reach'];
   if (ran('set-goal')) return kGlyphs['target']; // the moment of commitment
   if (ran('log-journal')) return kGlyphs['quill']; // the day's writing is in
   // closeness with a partner earns the heart; a plain interaction gets only a quiet nod
