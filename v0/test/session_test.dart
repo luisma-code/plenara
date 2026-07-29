@@ -42,6 +42,8 @@ class _MemStorage implements StorageRepository {
   void writeDef(String subdir, String idKey, Map<String, dynamic> def) =>
       (subdir == 'types' ? types : skills)[def[idKey] as String] = def;
   @override
+  void removeDef(String subdir, String id) => (subdir == 'types' ? types : skills).remove(id);
+  @override
   void logTurn(Map<String, dynamic> entry) => turns.add(entry);
 }
 
@@ -412,6 +414,7 @@ void main() {
   group('template vs customization overlap (live-caught) — a unit/field prefers authoring', () {
     test('"start tracking my water intake in glasses" offers authoring, not the ml template', () async {
       final s = await _session();
+      s.confirmCloudSpend = true; // the assertion is about the OFFER, which is now opt-in
       final r = (await s.handle('start tracking my water intake in glasses')).toLowerCase();
       expect(r, anyOf(contains('want me to go ahead'), contains('build you a custom')));
       expect(r, isNot(contains('ml'))); // the ml-based water template did NOT pre-empt it

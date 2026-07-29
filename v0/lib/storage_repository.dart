@@ -32,6 +32,10 @@ abstract interface class StorageRepository {
   /// Persist an authored type/skill definition file (Spec 02 §6 authoring).
   void writeDef(String subdir, String idKey, Map<String, dynamic> def);
 
+  /// Remove an authored definition file. Needed because activation is now VERIFIED with the user
+  /// ("is that what you wanted?") — a no has to actually undo the capability, not just apologise.
+  void removeDef(String subdir, String id);
+
   /// Append one line to the device-local turn log (dogfood telemetry: the
   /// instrument that measures the make-or-break metrics — clarify rate, cloud
   /// rate, correction rate — in real use).
@@ -129,6 +133,12 @@ class FileStorageRepository implements StorageRepository {
     final f = File('$dataDir/$subdir/${def[idKey]}.json');
     f.parent.createSync(recursive: true);
     fs.writeJsonAtomic(f, def); // atomic: a torn type/skill file is unrecoverable
+  }
+
+  @override
+  void removeDef(String subdir, String id) {
+    final f = File('$dataDir/$subdir/$id.json');
+    if (f.existsSync()) f.deleteSync();
   }
 
   @override

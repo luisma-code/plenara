@@ -51,6 +51,7 @@ void main() {
       test('"start tracking $desc" previews, then "activate" registers it', () async {
         final s = Session(makeTempDataDir(), clock: _now, cloud: _cloud());
         await s.init(retrieval: false);
+        s.confirmCloudSpend = true; // this group is ABOUT the DF-01 paid offer, now opt-in
         final before = s.skills.length;
         expect((await s.handle('start tracking $desc')).toLowerCase(), contains('want me to go ahead'),
             reason: '"$desc" DF-01 offer'); // no cloud spent until yes
@@ -58,7 +59,9 @@ void main() {
         expect(preview.toLowerCase(), contains('activate'), reason: '"$desc": $preview');
         expect(s.skills.length, before, reason: 'nothing registered until activate ($desc)');
         final added = await s.handle('activate');
-        expect(added.toLowerCase(), contains('added'), reason: '"$desc": $added');
+        expect(added.toLowerCase(), contains('learned it'), reason: '"$desc": $added');
+        expect(added.toLowerCase(), contains('is that what you wanted'),
+            reason: 'activation must SAY what changed and check');
         expect(s.skills.length, before + 1);
       });
     }
@@ -71,6 +74,7 @@ void main() {
     test('novel task phrasing: routes via cloud, creates the task, and learns it', () async {
       final s = Session(dir, clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
+      s.confirmCloudSpend = true; // this test is ABOUT the paid-confirm offer, now opt-in
       const u = 'jot down that I need to buy milk';
       expect(s.router.route(u), isNull, reason: 'corpus should miss first');
       final resp = await s.handle(u);
@@ -100,6 +104,7 @@ void main() {
     test('log-run cloud path extracts the distance', () async {
       final s = Session(dir, clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
+      s.confirmCloudSpend = true; // this test is ABOUT the paid-confirm offer, now opt-in
       final resp = await s.handle('I did a 6k jog this morning');
       expect(resp.toLowerCase(), contains('run'));
       final runs = s.store.values.where((r) => r['typeId'] == 'workout').toList();
@@ -112,6 +117,7 @@ void main() {
     test('a correction forgets the learned template that routed the corrected turn', () async {
       final s = Session(makeTempDataDir(), clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
+      s.confirmCloudSpend = true; // this test is ABOUT the paid-confirm offer, now opt-in
       await s.handle('jot down that I need to buy milk'); // cloud routes + learns a template
       // Capture WHATEVER was learned rather than hardcoding the surface: the template comes from
       // the cloud's own suggestion, so its exact casing/wording moves when fixtures are re-recorded.
@@ -132,13 +138,14 @@ void main() {
       final dir = makeTempDataDir();
       final s = Session(dir, clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
+      s.confirmCloudSpend = true; // this test is ABOUT the paid-confirm offer, now opt-in
       final beforeSkills = s.skills.keys.toSet();
       await s.handle('start tracking coffee cups per day'); // no template -> DF-01 offer
       final preview = await s.handle('yes'); // accept -> authors
       expect(preview.toLowerCase(), contains('activate'));
       expect(s.skills.keys.toSet(), beforeSkills, reason: 'nothing registered until activate');
       final added = await s.handle('activate');
-      expect(added.toLowerCase(), contains('added'));
+      expect(added.toLowerCase(), contains('learned it'));
       // the authored id is model-chosen (varies across re-records) — find the new skill and
       // assert its DECLARED write-type was registered + persisted, not a hardcoded name.
       final newSkill = s.skills.keys.toSet().difference(beforeSkills).single;

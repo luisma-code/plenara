@@ -204,6 +204,16 @@ final _distanceCorrectRe = RegExp(
 final _cancelRe = RegExp(
     r"^(?:(?:no,?|nah,?|actually,?|ok(?:ay)?,?|on second thought,?)\s+)?(?:cancel(?: (?:that|it|this))?|never ?mind(?: (?:that|it))?|forget (?:it|that|about it)|nvm|nah|stop|abort|drop it|leave it|skip it|no thanks?|no thank you|don'?t (?:bother|worry about it))[.!]?$",
     caseSensitive: false);
+// Yes / no for the post-activation "is that what you wanted?" check. Kept separate from
+// _activateRe (which is a COMMIT word) and _cancelRe (which backs out of a pending action) —
+// this pair answers a question about something that already happened.
+final _yesRe = RegExp(r"^(?:yes|yep|yeah|yup|correct|that'?s (?:it|right)|perfect|great|exactly)[.!]?$",
+    caseSensitive: false);
+final _noRe = RegExp(
+    r"^(?:no|nope|nah|not (?:really|quite|what i wanted|it)|that'?s not (?:it|right|what i meant)"
+    r"|wrong|forget it)[.!]?$",
+    caseSensitive: false);
+
 // confirms an authored-capability draft (Spec 02 §6.5: nothing registered until "activate")
 final _activateRe = RegExp(r'^(activate|add it|yes,? add it|go ahead|do it|yes,? do it|yes)\.?$', caseSensitive: false);
 // resolves a HELD automation write (Spec 02 §7.5 Review Feed): apply it, or dismiss it.
@@ -447,6 +457,12 @@ class Session {
   late CloudClient claude;
   late GenerativeService _generative;
   late StorageRepository repo;
+  /// A just-activated capability awaiting the user's "is that what you wanted?" answer. A no
+  /// removes it — the whole point is that a wrong build is reversible in one word.
+  Map<String, dynamic>? _pendingCapabilityCheck;
+
+  /// Ask before each paid authoring call? Read from config at init; false by default.
+  bool confirmCloudSpend = false;
   final CloudClient? _injectedCloud;
   final StorageRepository? _injectedStorage;
   // The OS-notification adapter (Spec 04 §3.1). Null -> reminders still persist and
@@ -1710,6 +1726,22 @@ class Session {
     _lastTurnTemplate = null;
     _lastDispatch = null;
 
+    // "Is that what you wanted?" after a capability was learned. Answered here so a "no" actually
+    // removes it rather than leaving the user with a thing they didn't ask for.
+    final check = _pendingCapabilityCheck;
+    if (check != null) {
+      _pendingCapabilityCheck = null;
+      if (_noRe.hasMatch(u)) {
+        _outSource = 'authored';
+        return _forgetCapability(check);
+      }
+      if (_yesRe.hasMatch(u)) {
+        _outSource = 'authored';
+        return 'Good — it\'s yours now.';
+      }
+      // anything else: they've moved on. Keep the capability and handle the input normally.
+    }
+
     // A routine was asked for with no focus and we asked what it should target — THIS utterance is
     // the answer. Checked early, before routing, so "my lower back" isn't read as a fresh command.
     final pendingKind = _pendingRoutineKind;
@@ -2156,12 +2188,19 @@ class Session {
         final instantiated = await _tryInstantiateTemplate(desc, now);
         if (instantiated != null) return instantiated;
       }
-      // DF-01: no built-in tracker, no template -> OFFER a paid custom build; don't spend the
-      // authoring cloud call until the user says yes (Spec 08 per-invocation paid consent).
-      _pendingAuthorOffer = desc;
-      _outSource = 'author-offer';
-      return "I don't have a built-in tracker for that yet. I can build you a custom one — "
-          "that uses your Claude credits (a paid step). Want me to go ahead?";
+      // DF-01: no built-in tracker and no template, so this needs a paid custom build.
+      //
+      // Whether to ASK first is a user preference, not a rule. Asking every time is friction: the
+      // user just said what they wanted, and a second "are you sure?" on every custom capability
+      // makes the app feel like it's haggling. Default is to just build it; Settings → "Ask before
+      // paid builds" restores the per-invocation confirm for anyone who wants the brake.
+      if (confirmCloudSpend) {
+        _pendingAuthorOffer = desc;
+        _outSource = 'author-offer';
+        return "I don't have a built-in tracker for that yet. I can build you a custom one — "
+            "that uses your Claude credits (a paid step). Want me to go ahead?";
+      }
+      return _authorAndPreview(desc, now);
     }
 
     // Content search (F-12): "find that note about the cabin trip" / "search my notes for X".
@@ -2744,11 +2783,57 @@ class Session {
       repo.writeDef('skills', 'skillId', skill);
       if (_retrievalEnabled) await router.buildRetrievalIndex(skills);
       final eg = (draft['examples'] as List).cast<String>();
-      return 'Added "${draft['displayName']}".${eg.isNotEmpty ? ' Try: "${eg.first}".' : ''}';
+      // TEACH THE ROUTER THE NEW PHRASES. Without this an activated capability was only reachable
+      // by asking the CLOUD to route to it — so the user says the very phrase Plena just suggested,
+      // gets "I didn't catch that" (or pays for a residual call), and reasonably concludes nothing
+      // was built. Learning the examples makes the new skill work OFFLINE, immediately.
+      for (final phrase in eg.take(4)) {
+        final t = router.learn(phrase, skillId, const {});
+        if (t != null) repo.appendCorpusLearned({'skillId': skillId, 'template': t});
+      }
+      // SAY WHAT ACTUALLY CHANGED, then CHECK. "Added X. Try: …" was technically true and
+      // practically useless: after two confirmations the user couldn't tell whether anything had
+      // happened, because the thing built (a log) looks like something the app already does. So
+      // name the phrase that now works, name what it records, and ask — a "no" un-builds it.
+      _pendingCapabilityCheck = {
+        'typeId': typeId, 'skillId': skillId, 'displayName': '${draft['displayName']}',
+      };
+      // Humanise the field names — "loggedAt" is an implementation detail; "logged at" is a
+      // sentence. This line is the whole point of the change, so it has to read like speech.
+      String human(String n) => n
+          .replaceAllMapped(RegExp(r'(?<=[a-z])(?=[A-Z])'), (_) => ' ')
+          .replaceAll('_', ' ')
+          .toLowerCase();
+      final fields = ((type['attributes'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((a) => human('${a['name']}'))
+          .where((n) => n != 'id' && n != 'type id')
+          .take(4)
+          .join(', ');
+      final tryLine = eg.isNotEmpty
+          ? ' Say "${eg.first}" and I\'ll record it'
+          : ' You can start logging it now';
+      return 'Learned it — "${draft['displayName']}".$tryLine'
+          '${fields.isEmpty ? '' : ', keeping: $fields'}. '
+          'Is that what you wanted? (say no and I\'ll forget it)';
     } catch (e) {
       types.remove(typeId); // rollback — never leave a half-registered capability
       return "I couldn't add that after all: ${e is ResolveError ? e.message : e}";
     }
+  }
+
+  /// Undo a just-activated capability: unregister it and delete its definition files, so a "no"
+  /// leaves no trace rather than an orphan the user has to hunt down later.
+  String _forgetCapability(Map<String, dynamic> check) {
+    final typeId = check['typeId'] as String, skillId = check['skillId'] as String;
+    types.remove(typeId);
+    skills.remove(skillId);
+    try {
+      repo.removeDef('skills', skillId);
+      repo.removeDef('types', typeId);
+    } catch (_) {/* the in-memory removal is what the user sees; a stale file is harmless */}
+    return 'Forgotten — "${check['displayName']}" is gone. '
+        'Tell me again in your own words and I\'ll try for a closer fit.';
   }
 
   /// The required input slots a routed skill left null (candidates for ProvideSlot).

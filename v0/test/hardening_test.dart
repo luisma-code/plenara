@@ -31,6 +31,7 @@ class _ScriptCloud implements CloudClient {
 Future<Session> _session(CloudClient cloud) async {
   final s = Session(makeTempDataDir(), clock: _now, cloud: cloud);
   await s.init(retrieval: false);
+  s.confirmCloudSpend = true; // these tests drive the DF-01 paid offer, now opt-in
   return s;
 }
 
@@ -65,7 +66,7 @@ void main() {
       expect(preview.toLowerCase(), contains('activate'));
       expect(s.types.containsKey('water_intake'), isFalse, reason: 'nothing registered until activate');
       expect(s.skills.containsKey('log_water'), isFalse);
-      expect((await s.handle('activate')).toLowerCase(), contains('added'));
+      expect((await s.handle('activate')).toLowerCase(), contains('learned it'));
       expect(s.types.containsKey('water_intake'), isTrue);
       expect(s.skills.containsKey('log_water'), isTrue);
     });

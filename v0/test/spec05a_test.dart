@@ -212,6 +212,9 @@ void main() {
 
     test('DF-01 no-template -> offer a paid custom build: "Start tracking which restaurants I visit."', () async {
       final s = await _s();
+      // DF-01's offer is now a PREFERENCE (default off — asking every time was friction). The
+      // free-tier denial it encodes still holds; this asserts the offer wording when it's on.
+      s.confirmCloudSpend = true;
       final r = await s.handle('start tracking which restaurants i visit'); // no builtin, no template
       expect(r.toLowerCase(), contains('want me to go ahead')); // offers authoring, spends no cloud until yes
     });

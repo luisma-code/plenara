@@ -353,6 +353,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         final cfg = loadConfig(configPath: widget.configPath);
         _voiceMuted = cfg.voiceMuted ?? false;
         _micHintsShown = cfg.micHintsShown; // the stop-gesture hint decays ACROSS launches
+        _session.confirmCloudSpend = cfg.confirmCloudSpend;
       }
       log(
         'init: ready (stt=${_speech?.available ?? false}, tts=${_voice?.available ?? false})',

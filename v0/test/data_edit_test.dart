@@ -47,6 +47,8 @@ class _FailingRepo implements StorageRepository {
   @override
   void writeDef(String subdir, String idKey, Map<String, dynamic> def) => inner.writeDef(subdir, idKey, def);
   @override
+  void removeDef(String subdir, String id) => inner.removeDef(subdir, id);
+  @override
   void logTurn(Map<String, dynamic> entry) => inner.logTurn(entry);
 }
 

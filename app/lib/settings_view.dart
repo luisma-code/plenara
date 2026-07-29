@@ -77,6 +77,19 @@ class _SettingsViewState extends State<SettingsView> {
     });
   }
 
+  /// Toggle the per-build paid confirm. Default OFF: asking every time was friction on a request
+  /// the user had already made, and it made the app feel like it was haggling.
+  void _setConfirmSpend(bool value) {
+    saveConfig(dataDir: _cfg.dataDir, confirmCloudSpend: value, configPath: widget.configPath);
+    setState(() {
+      _cfg = loadConfig(configPath: widget.configPath);
+      _statusMsg = value
+          ? "I'll ask before each paid build — restart Plenara to apply."
+          : "I'll just build what you ask for — restart Plenara to apply.";
+      _statusColor = null;
+    });
+  }
+
   /// Toggle free (offline-only) mode. Persisted now; applied on next launch (like the key),
   /// since the Session is built once at startup.
   void _setFreeTier(bool value) {
@@ -364,6 +377,18 @@ class _SettingsViewState extends State<SettingsView> {
                 'people, logging and search all keep working on-device. Restart Plenara to apply.'),
             value: _cfg.freeTier,
             onChanged: (v) => _setFreeTier(v ?? false),
+          ),
+          CheckboxListTile(
+            key: const Key('confirm-spend'),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: const Text('Ask before paid builds'),
+            subtitle: const Text(
+                'When Plenara needs a custom capability it can\'t already do, ask first instead of '
+                'just building it. Off by default — you already said what you wanted. '
+                'Turn it on if you\'d rather approve each one. Applies on next launch.'),
+            value: _cfg.confirmCloudSpend,
+            onChanged: (v) => _setConfirmSpend(v ?? false),
           ),
           const Divider(height: 32),
           const Text('Cloud usage', style: TextStyle(fontWeight: FontWeight.bold)),

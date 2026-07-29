@@ -29,8 +29,13 @@ class PlenaraConfig {
   /// user-delimited (tap to start, tap to stop), so the gesture has to be taught — but only for the
   /// first few sessions, and the count must survive relaunch or the hint never stops appearing.
   final int micHintsShown;
+  /// Ask before spending on a paid cloud build ("that's a custom build — want me to?").
+  /// DEFAULT FALSE: the ask was friction on every single custom capability, and the user already
+  /// said what they wanted. Turn it on in Settings to get a yes/no before each paid authoring call.
+  final bool confirmCloudSpend;
   PlenaraConfig(this.dataDir, this.apiKey,
-      {this.freeTier = false, this.voiceMuted, this.voiceName, this.micHintsShown = 0});
+      {this.freeTier = false, this.voiceMuted, this.voiceName, this.micHintsShown = 0,
+      this.confirmCloudSpend = false});
 }
 
 /// App-injected home base. Desktop leaves this null — USERPROFILE/HOME are set. iOS and Android
@@ -87,11 +92,13 @@ PlenaraConfig loadConfig({String? configPath}) {
   final vm = cfg['voiceMuted'];
   final vn = cfg['voiceName'];
   final mh = cfg['micHintsShown'];
+  final cs = cfg['confirmCloudSpend'];
   return PlenaraConfig(dataDir, (key != null && key.trim().isNotEmpty) ? key.trim() : null,
       freeTier: free,
       voiceMuted: vm is bool ? vm : null,
       voiceName: vn is String && vn.isNotEmpty ? vn : null,
-      micHintsShown: mh is int ? mh : 0);
+      micHintsShown: mh is int ? mh : 0,
+      confirmCloudSpend: cs is bool ? cs : false);
 }
 
 /// Persist config edits from the in-app settings surface (Spec 07 §2.6): merges into the
@@ -105,6 +112,7 @@ void saveConfig(
     bool? voiceMuted,
     String? voiceName,
     int? micHintsShown,
+    bool? confirmCloudSpend,
     String? configPath}) {
   final f = File(configPath ?? defaultConfigPath());
   Map<String, dynamic> cfg = {};
@@ -123,6 +131,7 @@ void saveConfig(
   // leaves it untouched.
   if (voiceName != null) cfg['voiceName'] = voiceName.isEmpty ? null : voiceName;
   if (micHintsShown != null) cfg['micHintsShown'] = micHintsShown;
+  if (confirmCloudSpend != null) cfg['confirmCloudSpend'] = confirmCloudSpend;
   f.parent.createSync(recursive: true);
   // ATOMIC. loadConfig degrades a malformed config to defaults, which is the right call for a
   // hand-edited file — but it means a torn write silently loses dataDir and the API key, and the
