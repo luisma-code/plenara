@@ -1,5 +1,11 @@
 # Spec 14 — Voice Input (STT)
 
+> **⚠ AMENDED 2026-07-28 (`G-52`).** "The ENGINE finalizes the utterance" is no longer true: the
+> USER finalizes, the engine only segments. `stop()` is now THE finalization path (it flushes,
+> joins every accumulated segment, and emits exactly one final); `cancel()` discards. The VAD's
+> `minSilenceDuration` is an internal chunking parameter with no user-visible behaviour. See
+> Spec 12's amendment note for the watchdog constants.
+
 Status: **SHIPPED (v0) — two on-device engines live behind the seam; sherpa_onnx (Whisper) is
 primary when its model is present, the OS engine is the fallback, typing is always the floor.**
 

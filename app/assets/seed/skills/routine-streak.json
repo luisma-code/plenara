@@ -1,7 +1,7 @@
 {
   "skillId": "routine-streak",
   "displayName": "Your routine streak",
-  "_comment": "Reuses the existing current_streak/longest_streak compute fns over routine_session.date — no new vocabulary needed for the tracking half of the feature.",
+  "_comment": "Reuses the existing current_streak/longest_streak fns over routine_session.date. NOTE the shape: the DSL has no early return, so the trailing computation is duplicated INSIDE each branch — a guard that only sets confirmationText would be overwritten by the format step that follows it.",
   "reads": [
     "routine",
     "routine_session"
@@ -32,6 +32,63 @@
             "op": "set",
             "var": "label",
             "value": "movement"
+          },
+          {
+            "op": "compute",
+            "fn": "current_streak",
+            "args": [
+              {
+                "var": "sessions"
+              },
+              "date"
+            ],
+            "into": "cur"
+          },
+          {
+            "op": "compute",
+            "fn": "longest_streak",
+            "args": [
+              {
+                "var": "sessions"
+              },
+              "date"
+            ],
+            "into": "best"
+          },
+          {
+            "op": "compute",
+            "fn": "count",
+            "args": [
+              {
+                "var": "sessions"
+              }
+            ],
+            "into": "n"
+          },
+          {
+            "op": "branch",
+            "cond": {
+              "gte": [
+                0,
+                {
+                  "var": "n"
+                }
+              ]
+            },
+            "then": [
+              {
+                "op": "format",
+                "template": "No {label} sessions logged yet.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "format",
+                "template": "{label}: {cur} day streak, best {best}, {n} session(s) all up.",
+                "into": "confirmationText"
+              }
+            ]
           }
         ],
         "else": [
@@ -47,82 +104,97 @@
             "into": "r"
           },
           {
-            "op": "read_related",
-            "typeId": "routine_session",
-            "via": "routine",
-            "from": {
-              "ref": "r"
+            "op": "branch",
+            "cond": {
+              "isNull": "r"
             },
-            "orderBy": "date",
-            "orderDir": "desc",
-            "into": "sessions"
-          },
-          {
-            "op": "set",
-            "var": "label",
-            "value": {
-              "field": [
-                "r",
-                "title"
-              ]
-            }
-          }
-        ]
-      },
-      {
-        "op": "compute",
-        "fn": "current_streak",
-        "args": [
-          {
-            "var": "sessions"
-          },
-          "date"
-        ],
-        "into": "cur"
-      },
-      {
-        "op": "compute",
-        "fn": "longest_streak",
-        "args": [
-          {
-            "var": "sessions"
-          },
-          "date"
-        ],
-        "into": "best"
-      },
-      {
-        "op": "compute",
-        "fn": "count",
-        "args": [
-          {
-            "var": "sessions"
-          }
-        ],
-        "into": "n"
-      },
-      {
-        "op": "branch",
-        "cond": {
-          "gte": [
-            0,
-            {
-              "var": "n"
-            }
-          ]
-        },
-        "then": [
-          {
-            "op": "format",
-            "template": "No {label} sessions logged yet.",
-            "into": "confirmationText"
-          }
-        ],
-        "else": [
-          {
-            "op": "format",
-            "template": "{label}: {cur} day streak, best {best}, {n} session(s) all up.",
-            "into": "confirmationText"
+            "then": [
+              {
+                "op": "format",
+                "template": "I don't have a routine called {routineName}.",
+                "into": "confirmationText"
+              }
+            ],
+            "else": [
+              {
+                "op": "read_related",
+                "typeId": "routine_session",
+                "via": "routine",
+                "from": {
+                  "ref": "r"
+                },
+                "orderBy": "date",
+                "orderDir": "desc",
+                "into": "sessions"
+              },
+              {
+                "op": "set",
+                "var": "label",
+                "value": {
+                  "field": [
+                    "r",
+                    "title"
+                  ]
+                }
+              },
+              {
+                "op": "compute",
+                "fn": "current_streak",
+                "args": [
+                  {
+                    "var": "sessions"
+                  },
+                  "date"
+                ],
+                "into": "cur"
+              },
+              {
+                "op": "compute",
+                "fn": "longest_streak",
+                "args": [
+                  {
+                    "var": "sessions"
+                  },
+                  "date"
+                ],
+                "into": "best"
+              },
+              {
+                "op": "compute",
+                "fn": "count",
+                "args": [
+                  {
+                    "var": "sessions"
+                  }
+                ],
+                "into": "n"
+              },
+              {
+                "op": "branch",
+                "cond": {
+                  "gte": [
+                    0,
+                    {
+                      "var": "n"
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "op": "format",
+                    "template": "No {label} sessions logged yet.",
+                    "into": "confirmationText"
+                  }
+                ],
+                "else": [
+                  {
+                    "op": "format",
+                    "template": "{label}: {cur} day streak, best {best}, {n} session(s) all up.",
+                    "into": "confirmationText"
+                  }
+                ]
+              }
+            ]
           }
         ]
       }

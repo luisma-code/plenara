@@ -183,7 +183,21 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatState();
 }
 
-class _ChatState extends State<ChatScreen> {
+class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) return;
+    // Backgrounding is an abandonment signal. Never keep a hot mic while hidden (Spec 12 §3.5's
+    // mic-lifecycle invariant), and never let a watchdog stop-and-SEND a turn — with TTS answering
+    // — while the user is in another app.
+    if (_listening) {
+      _cancelListening();
+      setState(() => _caption =
+          'I stopped listening when Plenara went to the background — tap and say it again.');
+    }
+    _cancelStepTimer(); // a routine cadence must not tick (or speak) while hidden
+  }
+
   // Held so we can run a launch-time toast self-test (production only). `late` so an
   // injected test session never constructs the native plugin.
   // Real OS toasts per platform; anything else reconciles reminders in memory via FakeScheduler
@@ -315,6 +329,7 @@ class _ChatState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _init();
   }
 
@@ -523,6 +538,10 @@ class _ChatState extends State<ChatScreen> {
     _thinkTimer?.cancel();
     _speakTimer?.cancel();
     _capTimer?.cancel();
+    // The routine cadence follows the RUN, not the input method. Arming it only from the card's
+    // buttons meant a run started the flagship way — by voice — never auto-advanced at all, and a
+    // spoken "pause"/"next" left a timer ticking against the step it had already left.
+    _syncStepTimer();
     // End of speaking: clear the flourish AND clear the caption a beat later. Called by the real
     // TTS onDone (or the safety cap), so the caption follows actual speech, not a fixed timer.
     void endSpeak() {
@@ -639,6 +658,7 @@ class _ChatState extends State<ChatScreen> {
         saveConfig(micHintsShown: _micHintsShown, configPath: widget.configPath);
       }
     }
+    _autoStopped = false; // never carry a previous session's "(stopped on my own)" label forward
     var heard = false; // did this session get ANY audio it could transcribe?
     try {
       await _speech!.listen(
@@ -735,6 +755,7 @@ class _ChatState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _speech
         ?.cancel(); // never leave the recognizer recording after teardown (privacy)
     _voice?.stop(); // don't keep talking after teardown
@@ -976,12 +997,18 @@ class _ChatState extends State<ChatScreen> {
   );
 
   // ---- the routine player (Spec 16) -----------------------------------------------------------
-  // The cadence is DEVICE-LOCAL and deterministic — no model, no cloud, so a run works with the
-  // screen off and in airplane mode. It lives outside the turn pipeline (the app speaks without a
-  // user turn, which the one-active-turn model doesn't cover) and pauses while a turn is in flight.
+  // The cadence is DEVICE-LOCAL and deterministic — no model, no cloud, so a run needs no network
+  // and you never have to LOOK at the phone. It is NOT, however, background-capable: this is a Dart
+  // timer in the widget tree plus foreground TTS, and the app declares no UIBackgroundModes, so
+  // locking an iPhone suspends it. Face-down-but-awake works; locked does not (Spec 16 §5).
+  // It lives outside the turn pipeline (the app speaks without a user turn, which the
+  // one-active-turn model doesn't cover) and is re-synced to the run after every turn.
   Timer? _stepTimer;
   DateTime? _stepStartedAt;
   int? _stepSeconds;
+  /// Which step the armed timer belongs to, so an unrelated turn mid-hold doesn't restart the
+  /// clock and a stale tick can't advance a step the run has already left.
+  String? _timedStepId;
 
   RoutineStepView? _routineStep() {
     final run = _session.activeRun;
@@ -1017,11 +1044,41 @@ class _ChatState extends State<ChatScreen> {
     );
   }
 
-  /// Drive the player through the ordinary turn path, so voice and touch stay one code path.
+  /// Drive the player from the card's buttons. This deliberately does NOT go through the text
+  /// controller: `_ctrl` holds whatever the user may be typing in muted mode, and `_send` drops the
+  /// call outright while `_busy` — which silently swallowed a Stop tap and left "next" as ghost
+  /// text in the input box.
   Future<void> _sendRoutine(String word) async {
+    if (!mounted || _session.activeRun == null) return;
     _cancelStepTimer();
+    if (_busy) {
+      // A turn is mid-flight. Wait for it rather than dropping a control the user physically
+      // pressed — losing a Stop is worse than a beat of latency.
+      await _turnSettled();
+      if (!mounted || _session.activeRun == null) return;
+    }
     _ctrl.text = word;
     await _send();
+  }
+
+  /// Wait (bounded) for the in-flight turn to finish.
+  Future<void> _turnSettled() async {
+    for (var i = 0; i < 100 && _busy; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
+  /// Arm or cancel the cadence to match the run's current state. Idempotent — safe to call after
+  /// every turn.
+  void _syncStepTimer() {
+    final run = _session.activeRun;
+    if (run == null || run.paused || run.currentSeconds == null) {
+      _cancelStepTimer();
+      return;
+    }
+    // Already counting this same step? Leave it alone, or every unrelated turn mid-hold (the run is
+    // sticky, so those happen) would silently restart the clock.
+    if (_stepTimer != null && _timedStepId == run.current?['id']) return;
     _armStepTimer();
   }
 
@@ -1030,6 +1087,7 @@ class _ChatState extends State<ChatScreen> {
     _stepTimer = null;
     _stepStartedAt = null;
     _stepSeconds = null;
+    _timedStepId = null;
   }
 
   /// Arm the auto-advance for a TIMED step. A rep-based step never auto-advances — it waits for
@@ -1042,9 +1100,13 @@ class _ChatState extends State<ChatScreen> {
     if (secs == null || secs <= 0) return;
     _stepStartedAt = DateTime.now();
     _stepSeconds = secs;
+    _timedStepId = run.current?['id'] as String?;
     // A 1s tick drives the progress bar; the advance fires once at the end.
     _stepTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted || _session.activeRun == null) {
+      final live = _session.activeRun;
+      // Stop counting if the run ended, was paused (by voice — the tick used to ignore that and
+      // complete the paused step), or moved on to a different step.
+      if (!mounted || live == null || live.paused || live.current?['id'] != _timedStepId) {
         _cancelStepTimer();
         return;
       }

@@ -1,5 +1,21 @@
 # Spec 12 — Voice
 
+> **⚠ AMENDED 2026-07-28 (`G-52`) — capture is USER-DELIMITED.** Automatic end-of-speech detection
+> is REMOVED on every engine. Tap to start, tap again to stop-and-send; the ✕ (or mute) discards.
+> This supersedes: §3.1's push-to-talk-as-primary (PTT is dropped for touch platforms — Luis
+> approved amending the `plenara_research.md` §15.1 lock in-session), §3.2's silence endpointing and
+> its user-adjustable `endpointSilence` (0.8–3.0s) setting, and §9.5/D12's "adjustable endpointing"
+> accessibility requirement — which is now satisfied *by construction*, since nothing endpoints and
+> a pause of any length can no longer truncate an utterance.
+>
+> What replaces it: the VAD/engine becomes a SEGMENTER (Whisper needs ~30s chunks) plus a watchdog —
+> 15s with no speech cancels, 30s of trailing silence stops-and-SENDS, 120s is a hard cap (60s on
+> Apple pending an on-device measurement). Watchdogs key off **speech activity**, not off recognizer
+> output, so thinking before you speak cannot be mistaken for silence. An auto-stop always sends and
+> always says so — never a silent discard. On the OS-engine path (Windows/Apple) the engine's own
+> finals are ACCUMULATED and only the stop tap emits the session final; forwarding engine finals
+> would have meant SAPI still endpointed and this change never reached that platform at all.
+
 **Status:** Draft v0.2 — July 2026 (Fable 5). v0.1 was the first full draft of the voice pipeline: capture model, STT/TTS engine selection per platform, the interim/final transcript contract, barge-in and latency targets, the voice-privacy statement, and the error/degrade surfaces. v0.2 reconciles the TTS half with shipped code: the `SpeechOutput` seam and the Windows on-device talk-back are live in the v0 app — two-way voice is real (§2.1, §6.5, D13).
 **A note on numbering:** Specs 03, 04, and 08 cite a "Spec 06 — Voice" that was never written — the research doc's spec charter (§12) never listed a voice spec, and slot 6 was taken by Data & Sync. This document is that missing spec, chartered as **Spec 12**. It is the referent every "Spec 06 — Voice" citation intends; retargeting those citations (and Spec 10's mis-pointed ownership line) is a suite-sync pass item recorded in §10, not something this spec edits in place.
 **Depends on:** Research doc (§2.1–2.3, §6.1–6.5, §9.1–9.2, §11.2–11.5, §15.1); Spec 03 — NLU / Intent (§1 P2.5, §2.6–2.7, §5.4 normalization, §10 MD10 — final-transcript-only); Spec 04 — Architecture (§2.1–2.3 layer model, §3.6 `DispatchOrchestrator`, §3.8 `SpeechEngine`, §4.2 turn pipeline, §4.3 barge-in policy, §5 error model); Spec 05 — Functional (§3.2 ASR floor, §11 voice journal F8, §13 offline/subtitle F10); Spec 07 — UI (§7 quiet overlay & subtitle contract, §8.4 the orb); Spec 08 — AI Cost & Privacy (§5.2 routing payload, §5.5 master table, §5.6 consent tiers)

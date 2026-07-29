@@ -179,6 +179,22 @@ class RoutineInvalid implements Exception {
   String toString() => message;
 }
 
+/// Strip control characters and collapse whitespace. Model output reaches the TTS engine and the
+/// synced record store; a newline or control char in a "title" is at best ugly and at worst a way
+/// to smuggle structure into something rendered or spoken.
+String _clean(String? v) =>
+    (v ?? '').replaceAll(RegExp(r'[\x00-\x1F\x7F]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+
+String _clip(String v, int max) => v.length <= max ? v : v.substring(0, max).trim();
+
+/// Tolerant int coercion. The model returns JSON; a number arriving as a string is sloppy, not
+/// hostile, and should feed the retry as a validation error rather than crash out of it.
+int? _asInt(Object? v) {
+  if (v == null) return null;
+  if (v is num) return v.toInt();
+  return num.tryParse('$v'.trim())?.toInt();
+}
+
 const _kinds = {'stretch', 'strength', 'mobility'};
 const _sides = {'both', 'left', 'right', 'alternating'};
 const _maxSteps = 12;
@@ -192,9 +208,10 @@ AuthoredRoutine validateRoutine(Map<String, dynamic> json, ExerciseCatalogue cat
     return v.trim();
   }
 
-  final title = req('title');
+  final title = _clean(req('title'));
+  if (title.isEmpty) throw RoutineInvalid("missing 'title'");
   if (title.length > 60) throw RoutineInvalid('title is too long');
-  final kind = req('kind');
+  final kind = _clean(req('kind')).toLowerCase();
   if (!_kinds.contains(kind)) throw RoutineInvalid("kind must be one of ${_kinds.join('/')}");
   final rawSteps = json['steps'];
   if (rawSteps is! List || rawSteps.isEmpty) throw RoutineInvalid('no steps');
@@ -205,30 +222,37 @@ AuthoredRoutine validateRoutine(Map<String, dynamic> json, ExerciseCatalogue cat
   for (final raw in rawSteps) {
     if (raw is! Map) throw RoutineInvalid('a step was not an object');
     final s = raw.cast<String, dynamic>();
-    final key = s['exerciseKey'] as String?;
+    final key = s['exerciseKey'] == null ? null : '${s['exerciseKey']}';
     // A step may only name an exercise that EXISTS in the shipped catalogue. This is the rule that
     // makes "the model cannot invent an exercise" true rather than hoped for.
     final ex = (key == null || key.isEmpty) ? null : cat.byKey[key];
     if (key != null && key.isNotEmpty && ex == null) {
       throw RoutineInvalid("exerciseKey '$key' is not in the catalogue");
     }
-    final name = (s['name'] as String?)?.trim();
-    if (name == null || name.isEmpty) throw RoutineInvalid('a step has no name');
+    final name = _clean(s['name'] == null ? null : '${s['name']}');
+    if (name.isEmpty) throw RoutineInvalid('a step has no name');
+    // BOUND every model-supplied free-text field that the app will SPEAK or store forever. The
+    // step name is read aloud verbatim by announce(); an unbounded field there is a channel for
+    // whatever a steered model wants to put in the user's ear.
+    if (name.length > 60) throw RoutineInvalid("step name is too long");
     // Instructions come from the CATALOGUE when an exercise is named, so the model cannot reword
     // safety-relevant guidance; a model-written instruction is only accepted for a step with no
     // catalogue exercise (a plain hold or a breather).
     final instruction = ex != null
-        ? ex.instructions
-        : ((s['instruction'] as String?)?.trim() ?? '');
+        ? ex.instructions // from the CATALOGUE — the model cannot reword a real movement
+        : _clean(s['instruction'] == null ? null : '${s['instruction']}');
+    if (ex == null && instruction.length > 500) {
+      throw RoutineInvalid("step '$name' has an over-long instruction");
+    }
     // Every step must stand alone FOR THE EAR — screen-off runs are first class and the figure is
     // never the sole carrier of the movement (Spec 16). A step we cannot speak is invalid.
     if (instruction.length < 15) {
       throw RoutineInvalid("step '$name' has no usable spoken instruction");
     }
-    final side = (s['side'] as String?) ?? 'both';
+    final side = s['side'] == null ? 'both' : '${s['side']}';
     if (!_sides.contains(side)) throw RoutineInvalid("side must be one of ${_sides.join('/')}");
-    final dur = (s['durationSeconds'] as num?)?.toInt();
-    final reps = (s['reps'] as num?)?.toInt();
+    final dur = _asInt(s['durationSeconds']);
+    final reps = _asInt(s['reps']);
     if (dur == null && reps == null) {
       throw RoutineInvalid("step '$name' needs durationSeconds or reps");
     }
@@ -245,10 +269,16 @@ AuthoredRoutine validateRoutine(Map<String, dynamic> json, ExerciseCatalogue cat
     ));
   }
 
-  final est = (json['estMinutes'] as num?) ?? _estimateMinutes(steps);
+  // A raw cast here threw TypeError on a type-confused field ("10" instead of 10), which escaped
+  // the RoutineInvalid catch and so BYPASSED the gated retry that exists precisely for malformed
+  // model output. Coerce, then range-check: an unbounded value is spoken ("about 1000000000
+  // minutes") and rendered in the routine list.
+  final estRaw = json['estMinutes'];
+  var est = estRaw is num ? estRaw : num.tryParse('${estRaw ?? ''}');
+  if (est == null || est <= 0 || est > 180) est = _estimateMinutes(steps);
   return AuthoredRoutine(
     title: title,
-    focusArea: (json['focusArea'] as String?)?.trim() ?? '',
+    focusArea: _clip(_clean(json['focusArea'] == null ? null : '${json['focusArea']}'), 80),
     kind: kind,
     // The standing disclaimer is OURS, not the model's — a safety line the model could reword is
     // not a safety line. Any note it returns is additive colour, never a replacement.
@@ -274,26 +304,53 @@ num _estimateMinutes(List<AuthoredStep> steps) {
 }
 
 /// LAYER 1 (deterministic, pre-spend): injury / medical framing. Keyed on FRAMING, not topic —
-/// "low back" and "shoulders" are ordinary wellness asks and must pass untouched; "my herniated
-/// disc" is a request for treatment and must not be answered with one.
+/// "low back", "shoulders" and "stability" are ordinary wellness asks and must pass untouched;
+/// "my herniated disc" is a request for treatment and must not be answered with one.
 ///
-/// Returns true when the request is asking for help with an injury or medical condition. The
-/// caller offers a general-wellness routine instead AND strips the condition from the prompt, so
-/// the medical detail never leaves the device (Spec 08 §5.1).
+/// This gate REFUSES; it does not sanitise. When it fires nothing is sent to the cloud at all.
+/// When it MISSES, the utterance goes out verbatim — so the privacy property of this feature is
+/// literally the recall of this pattern. That is why the lexicon is deliberately broad: a false
+/// positive costs one redirect the user can rephrase past, a false negative ships someone's
+/// medical detail to a third party.
+///
+/// PREVENTION IS NOT INJURY. "a warm-up for injury prevention" is the canonical reason people ask
+/// for a warm-up, so the prevention framing is excluded before anything else is considered.
+/// Framings that LOOK medical to the lexicon but are ordinary wellness asks. "wear and tear" is
+/// how people describe getting older, not a torn anything.
+final _benignRe = RegExp(
+    r'\b(?:prevent\w*|avoid\w*|prehab|reduce the risk|stay injury[- ]free|keep from'
+    r'|wear and tear|general maintenance)\b',
+    caseSensitive: false);
+
 final _injuryRe = RegExp(
     r'\b('
-    r'herniat\w*|bulging disc|slipped disc|sciatica|pinched nerve|'
-    r'torn|tear|rupture[ds]?|sprain\w*|strain\w*|fracture[ds]?|broken \w+|'
-    r'surgery|post[- ]?op|operation|physio(?:therapy)?|rehab\w*|'
-    r'arthritis|tendonitis|tendinitis|bursitis|impingement|scoliosis|stenosis|'
-    r'frozen shoulder|plantar fasciitis|acl|mcl|meniscus|rotator cuff|'
-    r'pregnan\w*|concussion|'
+    // named conditions — matched as STEMS, because inflections vary ("hernia"/"herniated",
+    // "arthritis"/"osteoarthritis", "tendonitis"/"tendinopathy").
+    r'herni\w*|bulging disc|slipp?ed (?:a )?disc|sciatica|pinched nerve|nerve pain|'
+    r'\w*arthriti\w*|tendo?[ni]\w*|bursitis|impingement|scoliosis|stenosis|fasciitis|'
+    r'frozen shoulder|tennis elbow|golfer.s elbow|carpal tunnel|shin splints|whiplash|'
+    r'acl|mcl|pcl|meniscus|rotator cuff|labrum|hamstring pull|'
+    // events and states
+    r'torn|tear(?:s|ing)?|rupture[ds]?|sprain\w*|strain\w*|fracture[ds]?|broken \w+|'
+    r'disloca\w*|pulled (?:a |my )?\w+|tweaked (?:a |my )?\w+|'
+    r'surgery|surgical|post[- ]?op|operation|replacement|physio(?:therapy)?|physical therapy|'
+    r'rehab\w*|recovering from|recovery from|accident|'
+    r'pregnan\w*|postpartum|post[- ]?natal|concussion|'
+    // symptom framing — how people actually describe it
+    r'numb\w*|tingl\w*|pins and needles|inflam\w*|swollen|swelling|stiff\w*|'
+    r'sore\w*|ach(?:e|es|ing|y)|dodgy \w+|bad (?:back|knee|shoulder|hip|neck|ankle|wrist)|'
     r'(?:my|this|the)\s+\w*\s*(?:pain|injur\w*|hurts?|aching|agony)|'
-    r'(?:in|with|from)\s+pain|painful|injured|injury'
+    r'(?:in|with|from)\s+pain|painful|injur\w*|it hurts|killing me|'
+    r'flare[- ]?up|chronic'
     r')\b',
     caseSensitive: false);
 
-bool looksLikeInjuryRequest(String utterance) => _injuryRe.hasMatch(utterance);
+/// True when the request is asking for help with an injury or medical condition, rather than
+/// ordinary wellness work. See the note above: this is a refuse-gate, not a sanitiser.
+bool looksLikeInjuryRequest(String utterance) {
+  if (_benignRe.hasMatch(utterance)) return false; // "warm-up for injury prevention" is fine
+  return _injuryRe.hasMatch(utterance);
+}
 
 /// ---------------------------------------------------------------------------------------------
 /// The routine PLAYER's state (Spec 16). Deliberately NOT a skill: the closed DSL vocabulary has

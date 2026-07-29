@@ -117,7 +117,13 @@ Plena's glyph system has hard rarity caps and an apt-or-absent rule, and a funct
 45 seconds would shred them.
 
 **Ear-sufficiency is a validator rule, not a prompt hope:** every step must stand alone for the ear,
-because a screen-off run is first class and the figure is never the sole carrier of the movement.
+and the figure is never the sole carrier of the movement.
+
+**Honest limit — "screen off" is not yet true on iOS.** The cadence is a Dart timer in the widget
+tree plus foreground TTS, and the app declares no `UIBackgroundModes`. Locking the phone suspends
+it: the timer freezes and speech stops after the current utterance. Face-down-but-awake works;
+locked does not. Making it true needs a background-audio session, which is not built. Until then the
+claim is scoped to "you don't have to LOOK at it", not "it runs locked".
 
 **Spoken ≠ printed.** Catalogue wording is written to be read ("Starting position: … Steps: …
 Tips: To leave the pose, walk your arms back…"). Spoken in full that is a wall of text while you're
@@ -131,10 +137,24 @@ done.
 
 Health-adjacent, so three independent layers:
 
+0. **The app's existing refusal floors run FIRST** — fabrication, scope, harm, medical. A first
+   implementation put routine handling *above* the harm and medical floors, so "a workout for my
+   anorexia recovery" and "a workout to help with what's wrong with me" reached authoring
+   completely ungated. Exercise-as-treatment for a disordered-eating or self-harm framing is the
+   worst output this feature could produce; the harm floor now also names those framings
+   explicitly, and `_createRoutine` re-checks it rather than trusting call order alone.
 1. **Layer 1, before any spend.** Injury/medical *framing* ("herniated disc", "sciatica", "after my
-   surgery", "rotator cuff tear") gets a redirect to a physio, not a treatment plan — and the
-   condition is **stripped**, so it never leaves the device (Spec 08 §5.1). Keyed on **framing, not
-   topic**: "low back", "shoulders", "stability", "hamstrings" pass untouched.
+   surgery", "a pulled hamstring", "my sore back") gets a redirect to a physio, not a treatment
+   plan. Keyed on **framing, not topic**: "low back", "shoulders", "stability", and — importantly —
+   "injury *prevention*" pass untouched.
+
+   **This gate REFUSES; it does not sanitise.** An earlier draft of this spec claimed the condition
+   was "stripped from the prompt so it never leaves the device". No such code ever existed, and the
+   claim hid where the risk actually sits: when the gate fires, nothing is sent at all; when it
+   *misses*, the utterance goes to the cloud verbatim and is stored as `intent`. The privacy
+   property of this feature is therefore **the recall of that pattern**, which is why its lexicon is
+   deliberately broad — a false positive costs one redirect the user can rephrase past, a false
+   negative ships someone's medical detail to a third party.
 2. **The standing disclaimer is OURS**, fixed in code. A test asserts a model cannot reword or drop
    it: a disclaimer the model can rewrite is not a disclaimer.
 3. **Spoken once per routine, on first run.** Repeating it every run is itself a safety failure —

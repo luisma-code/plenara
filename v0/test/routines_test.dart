@@ -150,8 +150,9 @@ void main() {
     test('log-routine-session writes a session and is undoable like any other write', () async {
       final s = await _s();
       _routine(s, 'Low back');
+      final rid = s.store.values.firstWhere((r) => r['typeId'] == 'routine')['id'] as String;
       final res = await s.dispatchSkill('log-routine-session', {
-        'routineName': 'Low back', 'stepsCompleted': 7, 'stepsTotal': 7,
+        'routineId': rid, 'stepsCompleted': 7, 'stepsTotal': 7,
       });
       expect(res, contains('Low back'));
       final sessions = s.store.values.where((r) => r['typeId'] == 'routine_session').toList();

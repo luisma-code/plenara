@@ -45,6 +45,9 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
   final List<String> _segments = [];
   Timer? _noSpeechTimer, _silenceTimer, _hintTimer, _capTimer;
   bool _sawSpeech = false;
+  /// When the currently-open speech segment began — used to force a flush before the VAD's 30s
+  /// buffer overflows on one unbroken utterance.
+  DateTime? _segmentOpenedAt;
 
   @override
   Future<void> init() async {
@@ -125,6 +128,7 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     _onNotice = onNotice;
     _emitted = false;
     _sawSpeech = false;
+    _segmentOpenedAt = null;
     _segments.clear();
     vad.clear(); // drop any state from a prior session
     _listening = true;
@@ -148,9 +152,11 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     _noSpeechTimer = Timer(CaptureLimits.noSpeech, () {
       if (_sawSpeech || !_listening) return;
       _onNotice?.call(SpeechNotice.autoCancelledNoSpeech);
-      cancel(); // nothing said — nothing to send
+      // Grab onDone BEFORE cancel(), which nulls it — otherwise this watchdog silently ends the
+      // session without ever telling the caller, and the seam's "onDone fires when listening ends
+      // for any reason" contract is broken.
       final done = _onDone;
-      _onDone = null;
+      cancel(); // nothing said — nothing to send
       done?.call();
     });
     _capTimer = Timer(CaptureLimits.session, () {
@@ -160,9 +166,10 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     });
   }
 
-  /// A segment closed with real speech: push the trailing-silence watchdog and the re-hint out.
+  /// Speech is happening: push the trailing-silence watchdog and the re-hint out.
   void _bumpActivity() {
     _sawSpeech = true;
+    _segmentOpenedAt ??= DateTime.now();
     _noSpeechTimer?.cancel();
     _silenceTimer?.cancel();
     _hintTimer?.cancel();
@@ -188,6 +195,20 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     final vad = _vad;
     if (!_listening || vad == null) return;
     vad.acceptWaveform(_toFloat32(bytes));
+    // Watch SPEECH ACTIVITY, not just closed segments. A segment only closes after a 0.4s pause,
+    // so keying the watchdogs off segment closure meant: (a) someone who thinks for 14s and then
+    // starts talking got cancelled mid-sentence with "I didn't hear anything", and (b) 30s of
+    // unbroken speech looked identical to 30s of silence and was auto-sent mid-word.
+    if (vad.isDetected()) _bumpActivity();
+    // A single unbroken utterance longer than the VAD's 30s buffer can never close on its own and
+    // would silently drop audio. Force a flush a little before the buffer limit so long speech is
+    // chunked rather than lost.
+    if (_sawSpeech &&
+        _segmentOpenedAt != null &&
+        DateTime.now().difference(_segmentOpenedAt!) > const Duration(seconds: 25)) {
+      vad.flush();
+      _segmentOpenedAt = DateTime.now();
+    }
     // A completed segment is a CHUNK BOUNDARY, not the end of the utterance: transcribe it now
     // (bounded memory, and stop latency stays at one trailing segment) and keep listening until
     // the user taps stop.
@@ -195,6 +216,7 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
       final seg = vad.front();
       vad.pop();
       final text = _transcribe(seg.samples).trim();
+      _segmentOpenedAt = null; // this segment closed; the next one starts fresh
       if (text.isNotEmpty) {
         _segments.add(text);
         _bumpActivity();

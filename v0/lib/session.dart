@@ -340,6 +340,12 @@ final _harmfulRe = RegExp(
     // self-harm, weapons, disordered-eating framing (DP-08: "…so I can cut down harder")
     r"|self.?harm|hurt (?:myself|someone|somebody)|make a weapon|build a weapon"
     r"|purge (?:after|my|food|meal)|hide (?:my )?(?:eating|calories)|restrict (?:my )?calories"
+    // Named eating disorders and compensatory framing. These reached the routine path completely
+    // ungated: exercise-as-treatment for anorexia, or "burn off my binge", is the single worst
+    // thing this app could produce, and no layer was catching it.
+    r"|anorexi\w*|bulimi\w*|eating disorder|binge\w*|purging"
+    r"|burn(?:ing)? off (?:my |the )?(?:binge|meal|food|calories|dinner|lunch)"
+    r"|compensate for (?:my |the )?(?:binge|meal|eating)"
     r"|cut down harder|so i can cut|eat less so",
     caseSensitive: false);
 // ---- Routine creation / entry (Spec 16) -------------------------------------------------------
@@ -363,7 +369,7 @@ final _routineDoRe = RegExp(
 // ---- Routine player control words (Spec 16). Offline regex: free, deterministic, and available
 // mid-workout with no cloud round-trip. Deliberately narrow so an ordinary command mid-run
 // ("remind me to buy milk") falls through and routes normally instead of being swallowed.
-final _routineNextRe = RegExp(r"^(?:next|done|got it|finished|ok(?:ay)?(?: done)?|ready)[.!]?$", caseSensitive: false);
+final _routineNextRe = RegExp(r"^(?:next|done|got it|finished|ok(?:ay)?(?: done)?)[.!]?$", caseSensitive: false);
 final _routineSkipRe = RegExp(r"^(?:skip(?: (?:this|it|that))?|pass|no(?:pe)?, ?skip)[.!]?$", caseSensitive: false);
 final _routineBackRe = RegExp(r"^(?:back|go back|previous|last one|repeat that one)[.!]?$", caseSensitive: false);
 final _routineRepeatRe = RegExp(r"^(?:repeat|again|say (?:that )?again|what(?:'| i)?s this one|how do i do (?:this|that)|what was that)\??[.!]?$", caseSensitive: false);
@@ -1188,14 +1194,31 @@ class Session {
   Future<String> _createRoutine(String utterance, String focus, String? kindWord, DateTime now) async {
     _outSource = 'routine-author';
     _outSkill = 'author-routine';
-    // LAYER 1, before spending anything: an injury/medical framing does not get a treatment plan.
-    // The redirect still offers something useful, and the condition is STRIPPED from what we send —
-    // the medical detail never leaves the device (Spec 08 §5.1).
+    // LAYER 1, before spending anything.
+    //
+    // The HARM floor first. Exercise-as-treatment for a self-harm or disordered-eating framing is
+    // the single worst thing this feature could emit, and the generic floor that catches it lives
+    // on the tracker-authoring path only — so it has to be checked here explicitly. (An earlier
+    // version of this method reached neither this nor the medical floor: the routine block sat
+    // ABOVE them. Order of checks is a safety property.)
+    if (_harmfulRe.hasMatch(utterance)) {
+      _outSource = 'refused';
+      return "I won't build that. If you're struggling with how you're eating or with hurting "
+          "yourself, please talk to someone you trust or a professional — I'm not the right help "
+          'for it, and I could make it worse.';
+    }
+    // Then injury/medical framing: no treatment plan, but the redirect still offers something real.
+    //
+    // NOTE ON WHAT LEAVES THE DEVICE: this gate REFUSES — it does not sanitise. When it fires,
+    // nothing at all is sent. When it MISSES, the utterance goes to the cloud verbatim (and is
+    // persisted as `intent`). So the privacy property here is exactly the recall of this regex,
+    // not a stripping step. Earlier comments claimed the condition was "stripped from the prompt";
+    // no such code ever existed, and pretending otherwise hid where the real risk sits.
     if (looksLikeInjuryRequest(utterance)) {
       _outSource = 'refused';
-      return "I can't build something for an injury — that's physio territory, and I'd be guessing. "
-          'I can put together a gentle, general mobility routine you could run past them first — '
-          'say "create a gentle mobility routine" if you\'d like that.';
+      return "I can't build something around an injury or a condition — that's physio territory, "
+          'and I\'d be guessing. I can put together a gentle, general mobility routine you could '
+          'run past them first — say "create a gentle mobility routine" if you\'d like that.';
     }
     if (exercises.isEmpty) {
       return "I can't build routines right now — my exercise catalogue didn't load.";
@@ -1238,7 +1261,13 @@ class Session {
   /// Write a validated routine + its steps as ONE journaled turn, so "undo that" removes the whole
   /// thing rather than leaving orphan steps behind.
   String _writeRoutine(AuthoredRoutine r, String utterance, DateTime now) {
-    final rid = 'routine-${now.microsecondsSinceEpoch}';
+    // A pinned clock (tests, and the demo) makes microsecondsSinceEpoch repeat, which would
+    // overwrite the first routine, graft its orphan steps onto the second, and make undo delete a
+    // record its before-image claims never existed. Take the next free id instead.
+    var rid = 'routine-${now.microsecondsSinceEpoch}';
+    for (var n = 2; store.containsKey(rid); n++) {
+      rid = 'routine-${now.microsecondsSinceEpoch}-$n';
+    }
     final before = <String, Map<String, dynamic>?>{};
     final written = <Map<String, dynamic>>[];
     final routineRec = <String, dynamic>{
@@ -1285,20 +1314,31 @@ class Session {
 
   /// Control words recognised while a run is live. Returns the reply, or null to let the utterance
   /// fall through to normal routing (the run stays live — see the sticky note at the call site).
-  String? _routineControl(String u, DateTime now) {
+  Future<String?> _routineControl(String u, DateTime now) async {
     final run = _run!;
     final priorSource = _outSource, priorSkill = _outSkill;
     _outSource = 'routine';
     _outSkill = 'routine-player';
+    // Resume is checked BEFORE next: "ready" is far more naturally "I'm back" than "I'm finished",
+    // and when it was a next-word a paused user saying it marked the held step COMPLETE (the logged
+    // session then over-counted) and left `paused` set, which killed the cadence for the rest of
+    // the run.
+    if (run.paused && _routineResumeRe.hasMatch(u)) {
+      run.paused = false;
+      return 'Back to it. ${run.announce()}';
+    }
     if (_routineNextRe.hasMatch(u)) {
+      run.paused = false; // moving on always un-pauses
       run.markDone();
-      return _advance(now);
+      return await _advance(now);
     }
     if (_routineSkipRe.hasMatch(u)) {
+      run.paused = false;
       run.markSkipped();
-      return _advance(now);
+      return await _advance(now);
     }
     if (_routineBackRe.hasMatch(u)) {
+      run.paused = false;
       if (!run.back()) return 'We\'re at the first step. ${run.announce()}';
       return run.announce();
     }
@@ -1311,12 +1351,7 @@ class Session {
       run.paused = true;
       return 'Paused — say "go on" when you\'re ready.';
     }
-    if (_routineResumeRe.hasMatch(u)) {
-      if (!run.paused) return null; // not a pause context — let it route normally
-      run.paused = false;
-      return 'Back to it. ${run.announce()}';
-    }
-    if (_routineStopRe.hasMatch(u)) return _endRun(now, quit: true);
+    if (_routineStopRe.hasMatch(u)) return await _endRun(now, quit: true);
     // Not a control word: restore the telemetry fields we speculatively set, and let the utterance
     // route normally. The run stays live.
     _outSource = priorSource;
@@ -1326,29 +1361,40 @@ class Session {
 
   /// Move to the next step, or finish. The spoken line IS the step announcement, so a run works
   /// with the screen off — the figure is never the sole carrier of the movement.
-  String _advance(DateTime now) {
+  Future<String> _advance(DateTime now) async {
     final run = _run!;
-    if (run.isDone) return _endRun(now);
+    if (run.isDone) return await _endRun(now);
     return run.announce();
   }
 
   /// Finish a run. A completed (or partly completed) run writes a routine_session through the
   /// ordinary skill dispatch, so it is journaled, undoable and visible to automations. An abandoned
   /// run writes NOTHING — a fabricated session would corrupt the record (DP-05).
-  String _endRun(DateTime now, {bool quit = false}) {
+  Future<String> _endRun(DateTime now, {bool quit = false}) async {
     final run = _run!;
     _run = null;
     final done = run.completed.length;
     if (done == 0) {
       return quit ? 'Stopped — nothing logged.' : 'Stopped.';
     }
-    // fire-and-forget the write; the confirmation is composed here so the reply is immediate
-    unawaited(dispatchSkill('log-routine-session', {
-      'routineName': run.title,
+    // The write is AWAITED and its outcome checked. Fire-and-forget meant the reply claimed
+    // "logged" while the write could have silently failed (duplicate titles made read_one raise an
+    // ambiguity; a rename or delete mid-run stranded it) — telling the user a session exists when
+    // it doesn't is exactly the silent failure principle #7 forbids, and it quietly corrupts
+    // streaks and "when did I last do X".
+    await dispatchSkill('log-routine-session', {
+      'routineId': run.routineId,
       'stepsCompleted': done,
       'stepsTotal': run.total,
-    }, source: 'routine'));
+    }, source: 'routine');
+    final logged = store.values.any((r) =>
+        r['typeId'] == 'routine_session' && r['routine'] == run.routineId &&
+        r['date'] == now.toIso8601String().split('T').first);
     final mins = now.difference(run.startedAt).inMinutes;
+    if (!logged) {
+      return "You did $done of ${run.total} — but I couldn't save that session. "
+          'Nothing was lost from the routine itself.';
+    }
     return quit
         ? 'Stopped there — logged ${run.title}, $done of ${run.total}.'
         : 'Nice — ${run.title} done, $done of ${run.total}'
@@ -1615,7 +1661,7 @@ class Session {
     // the run stays live — there is sunk physical effort here, and silently dropping it because the
     // user asked one side question would be worse than any tidiness gained.
     if (_run != null) {
-      final handled = _routineControl(u, now);
+      final handled = await _routineControl(u, now);
       if (handled != null) return handled;
     }
 
@@ -1837,6 +1883,13 @@ class Session {
           "messaging, calendars, or payments. I can set a reminder or make a note about it, though.";
     }
 
+    // medical guardrail (DP-06): show logs, never diagnose.
+    if (_medicalRe.hasMatch(u)) {
+      _outSource = 'refused';
+      return "I'm not a medical device — I can show what you've logged and surface patterns, but "
+          "I can't diagnose or give medical advice. Please talk to a doctor about this.";
+    }
+
     // ---- Routines (Spec 16) -------------------------------------------------------------------
     // "let's do my low back routine" — start the player. Checked BEFORE creation so "do X" never
     // spends a cloud call on a routine that already exists.
@@ -1851,12 +1904,6 @@ class Session {
     final make = _routineCreateRe.firstMatch(u);
     if (make != null) return await _createRoutine(u, make.group(3)!.trim(), make.group(1) ?? make.group(2), now);
 
-    // medical guardrail (DP-06): show logs, never diagnose.
-    if (_medicalRe.hasMatch(u)) {
-      _outSource = 'refused';
-      return "I'm not a medical device — I can show what you've logged and surface patterns, but "
-          "I can't diagnose or give medical advice. Please talk to a doctor about this.";
-    }
     // impersonation refusal (DP-09): the user's own voice only.
     if (_impersonateRe.hasMatch(u)) {
       _outSource = 'refused';

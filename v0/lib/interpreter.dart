@@ -618,6 +618,15 @@ class Interpreter {
           final tid = step['typeId'];
           if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_related unknown type '$tid'");
           if (step['via'] is! String) throw ResolveError("${c.sid}: read_related needs a 'via' attribute name");
+          // Same static checks read_many gets: an authored orderDir of "descending" would pass the
+          // gate and silently sort ASCENDING at run time — the exact "'delete 2' means a different
+          // row" class this op's ordering was added to prevent.
+          if (step['orderDir'] != null && step['orderDir'] != 'asc' && step['orderDir'] != 'desc') {
+            throw ResolveError("${c.sid}: read_related orderDir must be 'asc' or 'desc'");
+          }
+          if (step['limit'] != null && step['limit'] is! int) {
+            throw ResolveError("${c.sid}: read_related limit must be an int");
+          }
           if (step['from'] == null) throw ResolveError("${c.sid}: read_related needs a 'from' record reference");
           c.readTypes.add(tid as String);
           if (step['into'] is String) listVars[step['into'] as String] = tid;
@@ -669,6 +678,12 @@ class Interpreter {
           if (unknown.isNotEmpty) {
             throw ResolveError("${c.sid}: branch cond '${unknown.first}' is not a condition "
                 '(${_condForms.join('/')})');
+          }
+          // cond() evaluates the FIRST form it recognises, so a two-key cond silently ignores half
+          // of what the author wrote. Reject it rather than quietly doing something else.
+          if (cnd.length > 1) {
+            throw ResolveError("${c.sid}: branch cond has ${cnd.length} forms "
+                "(${cnd.keys.join(', ')}) — exactly one is evaluated; split it into nested branches");
           }
           final tRec = Map<String, String?>.from(recVars), eRec = Map<String, String?>.from(recVars);
           final tList = Map<String, String?>.from(listVars), eList = Map<String, String?>.from(listVars);

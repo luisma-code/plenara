@@ -137,6 +137,14 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
   Timer? _noSpeechTimer, _silenceTimer, _hintTimer, _capTimer;
   bool _sawSpeech = false;
   void Function(SpeechNotice)? _onNotice;
+  /// Engine finals accumulated across the session. The OS engine still endpoints on ITS OWN
+  /// schedule (SAPI especially self-finalizes at the first end-of-utterance silence and cannot be
+  /// told not to). Forwarding those as the session final would mean this platform never got the
+  /// change at all — a thinking pause would still truncate and auto-send. So engine finals are
+  /// COLLECTED here, and only the user's stop tap emits the session final.
+  final List<String> _finalParts = [];
+  void Function(String, bool)? _emit;
+  bool _emitted = false;
 
   void _clearTimers() {
     _noSpeechTimer?.cancel();
@@ -173,7 +181,10 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
     }
     _onDone = onDone;
     _onNotice = onNotice;
+    _emit = onResult;
     _sawSpeech = false;
+    _emitted = false;
+    _finalParts.clear();
     _clearTimers();
     _noSpeechTimer = Timer(CaptureLimits.noSpeech, () {
       if (_sawSpeech) return;
@@ -206,8 +217,15 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
             return;
           }
           _log("result: '${r.recognizedWords}' final=${r.finalResult}");
-          if (r.recognizedWords.trim().isNotEmpty) _bumpActivity();
-          onResult(r.recognizedWords, r.finalResult);
+          final words = r.recognizedWords.trim();
+          if (words.isNotEmpty) _bumpActivity();
+          if (r.finalResult) {
+            // An ENGINE final is a segment boundary, not the end of the utterance.
+            if (words.isNotEmpty) _finalParts.add(words);
+            onResult(_finalParts.join(' '), false); // shown, never sent — no stop tap yet
+          } else {
+            onResult([..._finalParts, words].where((w) => w.isNotEmpty).join(' '), false);
+          }
         },
         listenOptions: SpeechListenOptions(
           partialResults: true, // stream words as they're recognized (no-op on Windows: the SAPI
@@ -231,15 +249,29 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
     _log('stop() requested (isListening=${_stt.isListening})');
     _clearTimers();
     try {
-      await _stt.stop(); // finalize: the engine delivers its final result, which the app sends
+      await _stt.stop();
     } catch (e) {
       _log('stop threw: $e');
     }
+    // Give the engine a moment to deliver a trailing final it had already decoded, so the last
+    // words before the tap are not lost, then emit the WHOLE session as one final.
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    _emitSessionFinal();
+  }
+
+  void _emitSessionFinal() {
+    if (_emitted) return;
+    _emitted = true;
+    final all = _finalParts.join(' ').trim();
+    if (all.isNotEmpty) _emit?.call(all, true);
+    _finalParts.clear();
   }
 
   @override
   void cancel() {
     _clearTimers();
+    _emitted = true; // a cancel DISCARDS: never emit what was said
+    _finalParts.clear();
     try {
       _stt.cancel();
     } catch (_) {}

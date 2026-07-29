@@ -114,9 +114,16 @@ class ClaudeClient implements CloudClient, RoutineAuthor {
   // Cost telemetry (Haiku 4.5 pricing). Cumulative input/output tokens across this client's
   // lifetime; the Session reads the delta each turn to log per-turn cost and persist a total.
   int inTokens = 0, outTokens = 0;
-  static const inPricePerMTok = 1.0, outPricePerMTok = 5.0; // USD per million tokens
+  static const inPricePerMTok = 1.0, outPricePerMTok = 5.0; // USD per million tokens (Haiku)
+  /// Routine authoring runs on Sonnet, so its tokens cost several times the Haiku rate. Counting
+  /// them at the Haiku price made the turnlog UNDER-report the one paid call in that feature —
+  /// and the whole point of the spend telemetry is that the running total is trustworthy.
+  static const sonnetInPerMTok = 3.0, sonnetOutPerMTok = 15.0;
+  int sonnetInTokens = 0, sonnetOutTokens = 0;
   static double costUsd(int inTok, int outTok) => (inTok * inPricePerMTok + outTok * outPricePerMTok) / 1e6;
-  double get spentUsd => costUsd(inTokens, outTokens);
+  double get spentUsd =>
+      costUsd(inTokens, outTokens) +
+      (sonnetInTokens * sonnetInPerMTok + sonnetOutTokens * sonnetOutPerMTok) / 1e6;
 
   /// A cheap liveness probe for onboarding's "Test connection": one ~1-token call mapped to a
   /// typed result, so the UI can say exactly what's wrong — a working key, a rejected key, or a
@@ -301,8 +308,15 @@ HARD RULES:
         final decoded = jsonDecode(raw);
         final usage = decoded is Map ? decoded['usage'] : null;
         if (usage is Map) {
-          inTokens += (usage['input_tokens'] as num?)?.toInt() ?? 0;
-          outTokens += (usage['output_tokens'] as num?)?.toInt() ?? 0;
+          final i = (usage['input_tokens'] as num?)?.toInt() ?? 0;
+          final o = (usage['output_tokens'] as num?)?.toInt() ?? 0;
+          if (model.contains('sonnet') || model.contains('opus')) {
+            sonnetInTokens += i;
+            sonnetOutTokens += o;
+          } else {
+            inTokens += i;
+            outTokens += o;
+          }
         }
         final content = decoded is Map ? decoded['content'] : null;
         if (content is! List) return const CloudError<String>(CloudErrorKind.malformed, 'no content array');

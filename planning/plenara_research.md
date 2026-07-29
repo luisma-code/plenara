@@ -1735,7 +1735,7 @@ it, followed by what remains genuinely open.
 -   **Platform priority:** P1 iPhone, P2 Windows desktop, P3 Android, P4
     > macOS desktop.
 
--   **Interaction model:** push-to-talk first; wake word is later
+-   **Interaction model:** ~~push-to-talk first~~ → **AMENDED 2026-07-28 (`G-52`, approved by Luis in-session): tap-to-start / tap-to-stop is the primary and only capture gesture on touch platforms; push-to-talk is dropped.** Two delimiters would reintroduce the boundary-guessing this change removes (the PTT design needed a 250ms accidental-press heuristic), hold is hostile to sustained screen contact while moving and to motor accessibility, and Spec 12 §9.5 already forbids depending on press-and-hold. The lock was also somewhat theoretical: PTT was never implemented — the shipped home has always been tap-toggle. Wake word is still later.
     > polish.
 
 -   **Confirmation model:** **act-then-describe** --- an understood

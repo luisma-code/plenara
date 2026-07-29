@@ -1,7 +1,7 @@
 {
   "skillId": "log-routine-session",
   "displayName": "Log a completed routine",
-  "_comment": "Dispatched by the routine player when a run ends, so finishing a routine is an ordinary act-then-describe write: journaled, undoable, and visible to automations — not a special side-channel.",
+  "_comment": "Dispatched by the routine player when a run ends, so finishing a routine is an ordinary act-then-describe write: journaled, undoable, and visible to automations — not a side channel. Resolves the routine by ID, never by title: two routines can share a title (read_one would raise an ambiguity and the session would be silently lost), and a rename or delete mid-run would strand it.",
   "reads": [
     "routine"
   ],
@@ -10,7 +10,7 @@
   ],
   "inputs": [
     {
-      "name": "routineName",
+      "name": "routineId",
       "required": true
     },
     {
@@ -28,11 +28,10 @@
         "op": "read_one",
         "typeId": "routine",
         "match": {
-          "title": {
-            "var": "routineName"
+          "id": {
+            "var": "routineId"
           }
         },
-        "partial": true,
         "into": "r"
       },
       {
@@ -43,7 +42,7 @@
         "then": [
           {
             "op": "format",
-            "template": "I don't have a routine called {routineName}.",
+            "template": "I couldn't find that routine to log it.",
             "into": "confirmationText"
           }
         ],
