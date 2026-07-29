@@ -350,16 +350,23 @@ final _harmfulRe = RegExp(
     caseSensitive: false);
 // ---- Routine creation / entry (Spec 16) -------------------------------------------------------
 // "create a stretch routine for my low back" / "make me a chest day workout".
-// The routine NOUN is REQUIRED, not optional. With it optional this swallowed "create a tracker
-// to hide my eating" and "build me a way to spy on my coworker" — routing them to routine
-// authoring and skipping the safety floors entirely. (The floors now also run first, so this is
-// belt and braces; both matter.)
+// The routine NOUN is REQUIRED (with it optional this swallowed "create a tracker to hide my
+// eating" and skipped the safety floors). The FOCUS clause, by contrast, must be OPTIONAL: "create
+// a stretching routine" with no "for X" is the most natural way to ask, and requiring the clause
+// made it fall through to TRACKER authoring — which offered to build a "Log Stretching" tracker
+// instead. Gerunds matter too: people say "stretching"/"strengthening", not "stretch"/"strength".
 final _routineCreateRe = RegExp(
     r"^(?:can you |could you |please )?(?:create|make|build|put together|design|generate)\s+"
-    r"(?:me\s+)?(?:a|an|my)?\s*(stretch|strength|mobility|exercise)?\s*"
-    r"(routine|workout|stretches|warm[- ]?up)\s*"
-    r"(?:for|to help with|targeting|around|to loosen|to open)\s+(?:my\s+)?(.+?)[.!?]?$",
+    r"(?:me\s+)?(?:a|an|my|some)?\s*"
+    r"(stretch(?:ing)?|strength(?:ening)?|mobility|flexibility|exercise|yoga)?\s*"
+    r"(routine|workout|stretches|warm[- ]?up|session)"
+    r"(?:\s+(?:for|to help with|targeting|around|to loosen|to open|to work|on)\s+(?:my\s+)?(.+?))?"
+    r"[.!?]?$",
     caseSensitive: false);
+
+// A "tracker"/"log"/"journal" ask is capability authoring, not a routine — "create a workout log"
+// must keep going to the tracker path even though it contains "workout".
+final _trackerWordRe = RegExp(r"\b(tracker|log|logger|journal|diary|track)\b", caseSensitive: false);
 // "let's do my low back routine" / "start chest day" / "run the shoulder routine"
 final _routineDoRe = RegExp(
     r"^(?:(?:let'?s|lets)\s+)?(?:do|start|run|begin|play)\s+"
@@ -434,6 +441,9 @@ class Session {
   /// A live routine run, or null. Ephemeral like the Tour — losing it on app kill is acceptable.
   RoutineRun? _run;
   RoutineRun? get activeRun => _run;
+  /// Set when a routine was asked for with no focus area ("create a stretching routine"); the next
+  /// utterance supplies it. Holds the requested kind so "a STRENGTH routine" stays a strength one.
+  String? _pendingRoutineKind;
   late CloudClient claude;
   late GenerativeService _generative;
   late StorageRepository repo;
@@ -1700,6 +1710,22 @@ class Session {
     _lastTurnTemplate = null;
     _lastDispatch = null;
 
+    // A routine was asked for with no focus and we asked what it should target — THIS utterance is
+    // the answer. Checked early, before routing, so "my lower back" isn't read as a fresh command.
+    final pendingKind = _pendingRoutineKind;
+    if (pendingKind != null) {
+      _pendingRoutineKind = null;
+      if (_cancelRe.hasMatch(u) || _undoRe.hasMatch(u)) {
+        _outSource = 'clarify';
+        return 'No problem — no routine made.';
+      }
+      final focus = u.replaceFirst(RegExp(r'^(?:my|the|for|on)\s+', caseSensitive: false), '').trim();
+      if (focus.isNotEmpty && focus.length < 60) {
+        return await _createRoutine('$pendingKind routine for $focus', focus, pendingKind, now);
+      }
+      // Unusable answer: fall through and route it normally rather than building something random.
+    }
+
     // A LIVE ROUTINE RUN intercepts its own control words first (Spec 16). Unlike the Tour, the run
     // is STICKY: an unrelated command mid-workout ("remind me to buy milk") executes normally and
     // the run stays live — there is sunk physical effort here, and silently dropping it because the
@@ -1944,9 +1970,20 @@ class Session {
       if (match != null) return startRoutineRun(match['id'] as String, now);
       // fall through: an unknown name may be a CREATE request phrased as "do a X routine"
     }
-    // "create a stretch routine for my low back"
+    // "create a stretching routine [for my low back]"
     final make = _routineCreateRe.firstMatch(u);
-    if (make != null) return await _createRoutine(u, make.group(3)!.trim(), make.group(1) ?? make.group(2), now);
+    if (make != null && !_trackerWordRe.hasMatch(u)) {
+      final focus = (make.group(3) ?? '').trim();
+      final kindWord = make.group(1) ?? make.group(2);
+      if (focus.isEmpty) {
+        // No focus given. ASK rather than guess: "a stretching routine" for what is the difference
+        // between a useful routine and a generic one, and guessing spends money on the wrong thing.
+        _pendingRoutineKind = kindWord;
+        _outSource = 'clarify';
+        return 'Happy to. What should it focus on — your back, hips, shoulders, something else?';
+      }
+      return await _createRoutine(u, focus, kindWord, now);
+    }
 
     // impersonation refusal (DP-09): the user's own voice only.
     if (_impersonateRe.hasMatch(u)) {

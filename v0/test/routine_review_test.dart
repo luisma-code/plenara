@@ -274,6 +274,53 @@ void main() {
     });
   });
 
+  group('a routine ask must never be mistaken for a TRACKER ask', () {
+    // Luis, on the phone: "create a stretching routine" -> the app offered to build a "Log
+    // Stretching" TRACKER, charged for it, and logged instead of building a routine. Two causes:
+    // the pattern only knew "stretch", not "stretching", and it REQUIRED a "for X" clause.
+    test('gerunds and a missing focus still reach routine authoring', () async {
+      for (final u in [
+        'create a stretching routine',
+        'make me a stretching routine for my shoulders',
+        'create a strengthening workout for chest',
+        'build a mobility routine',
+      ]) {
+        final s = await _authoring((c, _) => _routine(c));
+        final out = await s.handle(u);
+        expect(out.toLowerCase(), isNot(contains('activate')),
+            reason: 'must not offer to build a TRACKER for: $u');
+        expect(out.toLowerCase(), isNot(contains('keep a log')), reason: u);
+      }
+    });
+
+    test('a routine with no focus ASKS instead of guessing or falling through', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      final ask = await s.handle('create a stretching routine');
+      expect(ask.toLowerCase(), contains('what should it focus on'));
+      expect((s.claude as _FakeAuthor).calls, 0, reason: 'asking must not spend');
+      // the NEXT utterance is the focus, not a fresh command
+      final out = await s.handle('my lower back');
+      expect(out, contains('Low-back loosener'));
+      expect((s.claude as _FakeAuthor).calls, 1);
+    });
+
+    test('backing out of the focus question builds nothing', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      await s.handle('create a stretching routine');
+      final out = await s.handle('never mind');
+      expect(out.toLowerCase(), contains('no routine'));
+      expect(s.store.values.where((r) => r['typeId'] == 'routine'), isEmpty);
+      expect((s.claude as _FakeAuthor).calls, 0);
+    });
+
+    test('a TRACKER ask is still a tracker ask', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      await s.handle('create a workout log');
+      expect(s.store.values.where((r) => r['typeId'] == 'routine'), isEmpty,
+          reason: '"log" means capability authoring, not a routine');
+    });
+  });
+
   group('routine-streak answers honestly for an unknown routine', () {
     test('an unknown name says so instead of "No  sessions logged yet"', () async {
       final s = await _authoring((c, _) => _routine(c));
