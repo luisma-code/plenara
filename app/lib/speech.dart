@@ -62,6 +62,43 @@ class NoopSpeechRecognizer implements SpeechRecognizer {
   void cancel() {}
 }
 
+/// One capture session's accumulated transcript. Extracted so the invariant below is testable
+/// without a live speech engine.
+///
+/// THE INVARIANT: real speech is never discarded. Engine finals are collected rather than sent (the
+/// user's stop tap decides when an utterance is over), so whatever ends the session — a stop tap, a
+/// watchdog, an engine error, the OS closing the mic — must FLUSH what was collected. Only an
+/// explicit cancel throws it away. Getting this wrong is silent: the user speaks and nothing at all
+/// happens, which is exactly how it shipped in build 13.
+class SessionTranscript {
+  final List<String> _parts = [];
+  bool _done = false;
+
+  void addFinal(String words) {
+    final w = words.trim();
+    if (w.isNotEmpty) _parts.add(w);
+  }
+
+  /// Everything heard so far, for display while still recording.
+  String get text => _parts.join(' ').trim();
+  bool get isEmpty => _parts.isEmpty;
+
+  /// The session's transcript, exactly once. Null if already taken/discarded or empty.
+  String? take() {
+    if (_done) return null;
+    _done = true;
+    final t = text;
+    _parts.clear();
+    return t.isEmpty ? null : t;
+  }
+
+  /// Throw it away — a cancel must never send what was said.
+  void discard() {
+    _done = true;
+    _parts.clear();
+  }
+}
+
 /// Capture watchdog timings, shared by both engines. The mic no longer closes on its own when you
 /// pause, so a forgotten-open mic is a real battery AND privacy problem — these bound it. They are
 /// deliberately NOT user-settable: the tunable end-of-speech knob is exactly what this change
@@ -125,6 +162,10 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
   }
 
   void _fireDone() {
+    // FLUSH FIRST. The session can end without a stop tap — the engine's own listenFor cap, an
+    // error with cancelOnError, or the OS closing the mic all land here. Dropping the transcript on
+    // those paths meant the user spoke and nothing happened at all.
+    _emitSessionFinal();
     final cb = _onDone;
     _onDone = null;
     cb?.call();
@@ -142,9 +183,8 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
   /// told not to). Forwarding those as the session final would mean this platform never got the
   /// change at all — a thinking pause would still truncate and auto-send. So engine finals are
   /// COLLECTED here, and only the user's stop tap emits the session final.
-  final List<String> _finalParts = [];
+  SessionTranscript _session = SessionTranscript();
   void Function(String, bool)? _emit;
-  bool _emitted = false;
 
   void _clearTimers() {
     _noSpeechTimer?.cancel();
@@ -183,8 +223,7 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
     _onNotice = onNotice;
     _emit = onResult;
     _sawSpeech = false;
-    _emitted = false;
-    _finalParts.clear();
+    _session = SessionTranscript();
     _clearTimers();
     _noSpeechTimer = Timer(CaptureLimits.noSpeech, () {
       if (_sawSpeech) return;
@@ -221,10 +260,10 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
           if (words.isNotEmpty) _bumpActivity();
           if (r.finalResult) {
             // An ENGINE final is a segment boundary, not the end of the utterance.
-            if (words.isNotEmpty) _finalParts.add(words);
-            onResult(_finalParts.join(' '), false); // shown, never sent — no stop tap yet
+            _session.addFinal(words);
+            onResult(_session.text, false); // shown, never sent — no stop tap yet
           } else {
-            onResult([..._finalParts, words].where((w) => w.isNotEmpty).join(' '), false);
+            onResult([_session.text, words].where((w) => w.isNotEmpty).join(' '), false);
           }
         },
         listenOptions: SpeechListenOptions(
@@ -260,18 +299,14 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
   }
 
   void _emitSessionFinal() {
-    if (_emitted) return;
-    _emitted = true;
-    final all = _finalParts.join(' ').trim();
-    if (all.isNotEmpty) _emit?.call(all, true);
-    _finalParts.clear();
+    final all = _session.take();
+    if (all != null) _emit?.call(all, true);
   }
 
   @override
   void cancel() {
     _clearTimers();
-    _emitted = true; // a cancel DISCARDS: never emit what was said
-    _finalParts.clear();
+    _session.discard(); // a cancel DISCARDS: never emit what was said
     try {
       _stt.cancel();
     } catch (_) {}
