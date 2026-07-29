@@ -72,6 +72,7 @@ Future<Session> _withRoutine() async {
 
 void main() {
   _review2();
+  _review2Security();
   group('safety floors run BEFORE routine authoring', () {
     test('a disordered-eating or self-harm framing is refused and spends NOTHING', () async {
       // These reached the routine path entirely ungated: the harm floor only ran on the
@@ -420,6 +421,44 @@ void _review2() {
       final drawn = s.store.values.where((r) =>
           r['typeId'] == 'routine_step' && r['routine'] == newest && r['figureA'] != null);
       expect(drawn, isNotEmpty, reason: 'the NEW routine must get figures');
+    });
+  });
+}
+
+/// Security/UX lens, second Fable pass.
+void _review2Security() {
+  group('the paid-confirm preference covers EVERY paid build', () {
+    test('with the pref ON, a routine build asks first and spends nothing until yes', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      s.confirmCloudSpend = true;
+      final ask = await s.handle('create a stretching routine for my low back');
+      expect(ask.toLowerCase(), contains('want me to go ahead'));
+      expect(ask.toLowerCase(), contains('draw'), reason: 'the drawing call must be disclosed too');
+      expect((s.claude as _FakeAuthor).calls, 0, reason: 'the ask precedes the spend');
+      final out = await s.handle('yes');
+      expect(out, contains('Low-back loosener'));
+      expect((s.claude as _FakeAuthor).calls, 1);
+    });
+
+    test('declining spends nothing and builds nothing', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      s.confirmCloudSpend = true;
+      await s.handle('create a stretching routine for my low back');
+      final out = await s.handle('no');
+      expect(out.toLowerCase(), contains("won't build"));
+      expect((s.claude as _FakeAuthor).calls, 0);
+      expect(s.store.values.where((r) => r['typeId'] == 'routine'), isEmpty);
+    });
+  });
+
+  group('activation cannot steal a shipped phrasing', () {
+    test('an example phrase that already routes is NOT learned', () async {
+      final s = await _authoring((c, _) => _routine(c));
+      // "log my mood as tired" is a shipped phrasing; learning it for a new capability would
+      // permanently reassign it and start misfiling the user's own mood entries.
+      final before = s.router.route('log my mood as tired');
+      expect(before, isNotNull, reason: 'precondition: it routes to the shipped skill');
+      expect(before!['skillId'], 'log-mood');
     });
   });
 }

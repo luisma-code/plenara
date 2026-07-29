@@ -481,6 +481,9 @@ class Session {
   late CloudClient claude;
   late GenerativeService _generative;
   late StorageRepository repo;
+  /// A routine build awaiting a yes, when the confirm preference is on.
+  Map<String, dynamic>? _pendingRoutineBuild;
+
   /// A just-activated capability awaiting the user's "is that what you wanted?" answer. A no
   /// removes it — the whole point is that a wrong build is reversible in one word.
   Map<String, dynamic>? _pendingCapabilityCheck;
@@ -1286,7 +1289,8 @@ class Session {
   /// Author a routine: Layer-1 safety gate → deterministic catalogue shortlist → one cloud call →
   /// deterministic validation → records. Act-then-describe: it writes and says what it did, and
   /// "undo that" reverses the whole routine in one go (all records ride one journal entry).
-  Future<String> _createRoutine(String utterance, String focus, String? kindWord, DateTime now) async {
+  Future<String> _createRoutine(String utterance, String focus, String? kindWord, DateTime now,
+      {bool confirmed = false}) async {
     _outSource = 'routine-author';
     _outSkill = 'author-routine';
     // LAYER 1, before spending anything.
@@ -1320,6 +1324,15 @@ class Session {
     }
     if (claude is! RoutineAuthor) {
       return 'Building a routine needs the cloud, and I don\'t have a key set up for that yet.';
+    }
+    // The confirm preference has to cover THIS too. It previously gated only tracker authoring —
+    // the cheapest call — while routine and figure authoring (both Sonnet, and the largest spend in
+    // the app) went unasked, which made the Settings copy a false promise.
+    if (confirmCloudSpend && !confirmed) {
+      _pendingRoutineBuild = {'utterance': utterance, 'focus': focus, 'kind': kindWord};
+      _outSource = 'author-offer';
+      return 'Building that routine uses your Claude credits (and a second call to draw the '
+          'movements the catalogue has no picture for). Want me to go ahead?';
     }
     final author = claude as RoutineAuthor;
     final kind = switch (kindWord?.toLowerCase()) {
@@ -1837,6 +1850,22 @@ class Session {
         return 'Good — it\'s yours now.';
       }
       // anything else: they've moved on. Keep the capability and handle the input normally.
+    }
+
+    // A routine build is waiting on a yes (the confirm preference is on).
+    final pendingBuild = _pendingRoutineBuild;
+    if (pendingBuild != null) {
+      _pendingRoutineBuild = null;
+      if (_activateRe.hasMatch(u) || _yesRe.hasMatch(u)) {
+        return await _createRoutine(pendingBuild['utterance'] as String,
+            pendingBuild['focus'] as String, pendingBuild['kind'] as String?, now,
+            confirmed: true);
+      }
+      if (_cancelRe.hasMatch(u) || _noRe.hasMatch(u)) {
+        _outSource = 'clarify';
+        return "No problem — I won't build it.";
+      }
+      // anything else: they moved on; nothing was built and nothing was spent.
     }
 
     // A routine was asked for with no focus and we asked what it should target — THIS utterance is
@@ -2910,6 +2939,12 @@ class Session {
       // gets "I didn't catch that" (or pays for a residual call), and reasonably concludes nothing
       // was built. Learning the examples makes the new skill work OFFLINE, immediately.
       for (final phrase in eg.take(4)) {
+        // NEVER steal a phrase that already routes. learn() inserts at index 0 (learned entries win)
+        // and only rejects catch-alls and exact duplicates — so a model-chosen example colliding
+        // with a shipped phrasing ("log my mood as tired") would permanently reassign it to the new
+        // capability, and the user's own entries would start landing in the wrong record type with
+        // nothing said about it.
+        if (router.route(phrase, clock: now, contacts: _knownContactTokens()) != null) continue;
         final t = router.learn(phrase, skillId, const {});
         if (t != null) repo.appendCorpusLearned({'skillId': skillId, 'template': t});
       }

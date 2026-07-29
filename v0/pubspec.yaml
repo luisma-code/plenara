@@ -3,7 +3,15 @@ description: Plenara v0 walking skeleton — text-first console, real Dart codeb
 publish_to: none
 environment:
   sdk: ^3.0.0
+dependencies:
+  # The FIRST external dependency, and a deliberate one. The figure sanitiser (Spec 16 §2) is a
+  # security boundary over model-authored SVG, and a regex tag-walk is not sound for that job: `>`
+  # is legal inside an attribute value, so a regex tokenises differently from the parser that will
+  # RENDER the string, and attributes after such a `>` escaped the allowlist entirely. Parsing with
+  # the same grammar the renderer uses — and re-serialising from the parsed tree — is the only way
+  # "what was inspected is what is rendered" is true. Pure Dart, no platform bindings, so the
+  # engine stays filesystem-pure and Flutter-free.
+  xml: ^6.5.0
+
 dev_dependencies:
   test: ^1.31.2
-# No external deps yet — pure Dart (dart:io, dart:convert). The retrieval
-# embedder + Flutter UI arrive as later layers.

@@ -13,6 +13,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:plenara/routines.dart' show sanitizeFigure;
 
 /// Everything the card needs, lifted out of the engine's records so this widget stays dumb.
 class RoutineStepView {
@@ -39,6 +40,54 @@ class RoutineStepView {
     this.imageAsset,
     this.figureSvg,
   });
+}
+
+/// Renders a model-drawn figure. **This is where stroke colour and width are imposed**, and it has
+/// to be done by wrapping the markup — not with a ColorFilter.
+///
+/// flutter_svg has no CSS. A path with `fill="none"` and no stroke attributes computes a null paint
+/// and is never drawn: it renders as literally nothing. The authoring prompt mandates exactly that
+/// shape (fill none, never author a stroke) and the sanitiser rejects figures that set stroke — so
+/// every compliant figure painted zero pixels. The readability spike missed it because it rendered
+/// in a browser with a stylesheet.
+///
+/// Wrapping in a `<g>` we control keeps the design intent — the model cannot choose colour or
+/// weight, so every figure looks like one product — while actually producing a visible stroke.
+class FigureView extends StatelessWidget {
+  final String svg;
+  final Color color;
+  const FigureView({super.key, required this.svg, this.color = const Color(0xFFEAE2D8)});
+
+  static const _strokeWidth = '2.4';
+
+  /// Inject our own stroke group just inside the root `<svg>`. Purely additive: children never
+  /// set stroke (the sanitiser forbids it), so nothing can override this.
+  /// Exposed so a test can rasterise exactly what gets rendered.
+  String get strokedMarkup {
+    // Re-sanitise on the READ path. Figures are persisted as plaintext JSON in the user's SYNCED
+    // folder, so a second device, the sync provider, or a text editor can change them after the
+    // authoring-time check. Trusting stored data because it was clean when written is the mistake.
+    final safe = sanitizeFigure(svg);
+    if (safe == null) return '';
+    final open = RegExp(r'<svg[^>]*>').firstMatch(safe);
+    if (open == null) return '';
+    final hex = '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
+    final head = safe.substring(0, open.end);
+    final body = safe.substring(open.end, safe.lastIndexOf('</svg>'));
+    return '$head<g fill="none" stroke="$hex" stroke-width="$_strokeWidth" '
+        'stroke-linecap="round" stroke-linejoin="round">$body</g></svg>';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final markup = strokedMarkup;
+    if (markup.isEmpty) return const SizedBox.shrink(); // degrade to text, as a missing figure does
+    return SvgPicture.string(
+        markup,
+        fit: BoxFit.contain,
+        placeholderBuilder: (_) => const SizedBox.shrink(),
+      );
+  }
 }
 
 class RoutineStepCard extends StatelessWidget {
@@ -82,13 +131,7 @@ class RoutineStepCard extends StatelessWidget {
                 child: img == null && svg != null
                     // A drawn figure. Rendered by a STATIC rasterizer — flutter_svg executes
                     // nothing — and only after the engine's allowlist has already accepted it.
-                    ? SvgPicture.string(
-                        svg,
-                        fit: BoxFit.contain,
-                        theme: const SvgTheme(currentColor: Color(0xFFEAE2D8)),
-                        colorFilter: const ColorFilter.mode(Color(0xFFEAE2D8), BlendMode.srcIn),
-                        placeholderBuilder: (_) => const SizedBox.shrink(),
-                      )
+                    ? FigureView(svg: svg)
                     : img != null
                     ? ColorFiltered(
                         // invert() turns the catalogue's dark-on-transparent line art into light

@@ -45,6 +45,47 @@ void main() {
       });
     });
 
+    test('a regex tag-walk was UNSOUND — these all bypassed the allowlist', () {
+      // `>` is legal inside an attribute value, so the old regex saw a tag where the PARSER saw one
+      // attribute: everything after that `>` (style, stroke, stroke-width, id, class) skipped the
+      // allowlist entirely. `style` is expanded by the renderer into presentation attributes, which
+      // also defeated "the app imposes stroke colour and width".
+      for (final svg in [
+        '<svg viewBox="0 0 100 100"><path d="M0 0 L1 1>" style="fill:red" stroke="#f00"/></svg>',
+        '<svg viewBox="0 0 100 100"><path d="a>" id="x" class="y"/></svg>',
+      ]) {
+        expect(sanitizeFigure(svg), isNull, reason: svg);
+      }
+    });
+
+    test('non-well-formed XML is rejected, never repaired', () {
+      for (final svg in [
+        '<svg viewBox="0 0 100 100"><path d="M0 0"</svg>', // unterminated
+        '<svg viewBox="0 0 100 100"><g><circle r="1"/></svg>', // mismatched nesting
+      ]) {
+        expect(sanitizeFigure(svg), isNull, reason: svg);
+      }
+    });
+
+    test('a viewBox must be four numbers with real area', () {
+      expect(sanitizeFigure('<svg viewBox="   "><circle r="1"/></svg>'), isNull);
+      expect(sanitizeFigure('<svg viewBox="0 0 0 0"><circle r="1"/></svg>'), isNull);
+      expect(sanitizeFigure('<svg viewBox="0 0 100"><circle r="1"/></svg>'), isNull);
+    });
+
+    test('comments, CDATA and stray text are channels we do not need', () {
+      expect(sanitizeFigure('<svg viewBox="0 0 100 100"><!-- x --><circle r="1"/></svg>'), isNull);
+      expect(sanitizeFigure('<svg viewBox="0 0 100 100"><![CDATA[x]]><circle r="1"/></svg>'), isNull);
+    });
+
+    test('the output is RE-SERIALISED, so what was inspected is what renders', () {
+      final out = sanitizeFigure(
+          '<svg viewBox="0 0 100 100"><circle cx="1" cy="2" r="3" fill="none"/></svg>');
+      expect(out, isNotNull);
+      expect(out, contains('circle'));
+      expect(sanitizeFigure(out), out, reason: 'sanitising the output again is a fixed point');
+    });
+
     test('malformed or oversized input is rejected, not repaired', () {
       expect(sanitizeFigure(null), isNull);
       expect(sanitizeFigure(''), isNull);

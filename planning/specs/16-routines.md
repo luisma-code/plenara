@@ -77,8 +77,26 @@ the whole figure is rejected, never partially scrubbed. Stroke colour and width 
 renderer**, never authored, so figures cannot drift in style between generations. Rendered by a
 static rasterizer that executes nothing. 16 attack vectors are pinned by tests.
 
-Frames that are structurally corresponding (same elements, same path commands, differing only in
-coordinates) are TWEENED for real motion; a mismatched pair degrades to a two-frame toggle.
+**Motion is NOT shipped.** Two frames are authored and a `figureTween` flag is computed, but the app
+renders `figureA` only — there is no interpolation and no two-frame toggle. An earlier draft of this
+section claimed both; that was untrue, and a spec asserting a feature the code lacks is worse than
+one that names the gap. The data is recorded now because it is cheap at authoring time and expensive
+to backfill.
+
+**The renderer imposes the stroke by WRAPPING the markup, not with a colour filter.** flutter_svg has
+no CSS, and a path with `fill="none"` and no stroke attributes computes a null paint and is never
+drawn — so every figure the prompt mandates painted *zero pixels*. The readability spike missed this
+because it rendered in a browser with a stylesheet, i.e. on a path the app does not have. `FigureView`
+wraps the sanitised body in a `<g>` carrying colour and width, which is also the only place that rule
+is actually enforceable. A test rasterises a figure and counts lit pixels.
+
+**The sanitiser PARSES; it does not pattern-match.** A regex tag-walk is unsound here: `>` is legal
+inside an attribute value, so a regex tokenises differently from the parser that will render the
+string, and attributes after such a `>` (`style`, `stroke`, `stroke-width`, `id`, `class`) bypassed
+the allowlist entirely — `style` in particular is expanded by the renderer into presentation
+attributes. The figure is parsed with the same grammar the renderer uses and **re-serialised from the
+parsed tree**, so what was inspected is what is rendered. Figures are re-sanitised on the READ path
+too: they live as plaintext in a synced folder and can be edited after they were written.
 
 Two things this cost, both found by running it live rather than by tests: the drawing call needs a
 far longer timeout than a router turn (a 30s deadline tuned for one-line routing made figure

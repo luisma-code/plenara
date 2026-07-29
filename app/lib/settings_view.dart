@@ -384,9 +384,10 @@ class _SettingsViewState extends State<SettingsView> {
             controlAffinity: ListTileControlAffinity.leading,
             title: const Text('Ask before paid builds'),
             subtitle: const Text(
-                'When Plenara needs a custom capability it can\'t already do, ask first instead of '
-                'just building it. Off by default — you already said what you wanted. '
-                'Turn it on if you\'d rather approve each one. Applies on next launch.'),
+                'Ask before anything that spends your Claude credits to BUILD something — a custom '
+                'tracker, or a movement routine and its drawings. Off by default: you already said '
+                'what you wanted. Everyday cloud use (understanding an unusual phrasing, gift '
+                'ideas, briefings) is not affected. Applies on next launch.'),
             value: _cfg.confirmCloudSpend,
             onChanged: (v) => _setConfirmSpend(v ?? false),
           ),

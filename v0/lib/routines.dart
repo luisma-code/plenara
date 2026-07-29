@@ -19,6 +19,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:xml/xml.dart';
+
 /// One catalogue exercise. [image] is null for ~2/3 of the catalogue — those steps render
 /// text-only, which is a first-class path, not a failure (Luis's explicit call).
 class Exercise {
@@ -496,39 +498,73 @@ final _svgBanned = RegExp(
 
 const maxFigureBytes = 8000;
 
-/// Returns the figure unchanged if it is safe to render, or null if anything at all is off.
-/// Deliberately all-or-nothing: a partially-scrubbed drawing is not worth the reasoning burden.
+/// Returns a SAFE, RE-SERIALISED figure, or null if anything at all is off.
+///
+/// Parsed with the same grammar the renderer uses, and re-serialised from the parsed tree, so
+/// "what was inspected is what is rendered" is literally true. The previous regex tag-walk was
+/// unsound: `>` is legal inside an attribute value, so it saw a tag where the parser saw one
+/// attribute, and everything after that `>` — `style`, `stroke`, `stroke-width`, `id`, `class` —
+/// bypassed the allowlist completely. `style` in particular is expanded by the renderer into
+/// presentation attributes, which defeats the "the app imposes stroke colour and width" rule.
+///
+/// All-or-nothing on purpose: a partially-scrubbed drawing is not worth the reasoning burden.
 String? sanitizeFigure(String? svg) {
   final s = (svg ?? '').trim();
   if (s.isEmpty || s.length > maxFigureBytes) return null;
-  if (!s.startsWith('<svg') || !s.contains('</svg>')) return null;
+  // Belt: catch dangerous constructs textually before parsing, so a parser quirk can't hide one.
   if (_svgBanned.hasMatch(s)) return null;
-  // Element + attribute allowlist, checked by walking the actual markup rather than by regex.
-  for (final m in RegExp(r'<\s*([a-zA-Z][\w:-]*)([^>]*)>').allMatches(s)) {
-    final tag = m.group(1)!;
-    if (!_svgElements.contains(tag)) return null;
-    for (final a in RegExp(r'([a-zA-Z][\w:-]*)\s*=').allMatches(m.group(2) ?? '')) {
-      if (!_svgAttrs.contains(a.group(1))) return null;
+  final XmlDocument doc;
+  try {
+    doc = XmlDocument.parse(s); // malformed / mismatched / unterminated -> reject, never "repair"
+  } catch (_) {
+    return null;
+  }
+  final root = doc.rootElement;
+  if (root.name.qualified.toLowerCase() != 'svg') return null;
+  for (final el in root.descendants.whereType<XmlElement>().followedBy([root])) {
+    if (!_svgElements.contains(el.name.qualified.toLowerCase())) return null;
+    for (final a in el.attributes) {
+      if (!_svgAttrs.contains(a.name.qualified)) return null;
     }
   }
-  // A viewBox is required: without it the renderer cannot scale the figure predictably.
-  if (!RegExp(r'viewBox\s*=\s*"[-\d.\s]+"').hasMatch(s)) return null;
-  return s;
+  // Anything other than elements and whitespace (comments, CDATA, processing instructions,
+  // stray text) is a channel we have no use for.
+  for (final n in doc.descendants) {
+    if (n is XmlText && n.value.trim().isNotEmpty) return null;
+    if (n is XmlComment || n is XmlCDATA || n is XmlProcessing || n is XmlDoctype) return null;
+  }
+  // A usable viewBox: four numbers with real area. "0 0 0 0" and "   " passed the old charset
+  // check and then rendered as nothing.
+  final vb = root.getAttribute('viewBox');
+  if (vb == null) return null;
+  final nums = vb.trim().split(RegExp(r'[\s,]+')).map(num.tryParse).toList();
+  if (nums.length != 4 || nums.any((n) => n == null)) return null;
+  if (nums[2]! <= 0 || nums[3]! <= 0) return null;
+  final out = doc.toXmlString();
+  // Re-check the SERIALISED form: it, not the input, is what will be rendered.
+  if (out.length > maxFigureBytes || _svgBanned.hasMatch(out)) return null;
+  return out;
 }
 
-/// True when [a] and [b] can be TWEENED — same elements in the same order with the same path
-/// command letters and point counts, differing only in coordinates. When this holds the renderer
-/// interpolates and the figure genuinely moves; when it doesn't, it falls back to a two-frame
-/// toggle, which still reads as movement.
+/// True when [a] and [b] COULD be tweened — same elements in the same order, same path command
+/// letters, same coordinate counts, differing only in the numbers.
+///
+/// NOTE: nothing consumes this yet. The app renders `figureA` only; interpolation and the
+/// two-frame toggle are not built. The flag is recorded now because it is cheap to compute at
+/// authoring time and expensive to backfill, but Spec 16 says plainly that motion is not shipped —
+/// a spec that claims a feature the code doesn't have is worse than one that admits the gap.
 bool figuresCorrespond(String a, String b) {
   List<String> sig(String s) => [
         for (final m in RegExp(r'<\s*([a-zA-Z][\w:-]*)([^>]*)>').allMatches(s))
           if (m.group(1) == 'path')
             'path:${RegExp(r'[A-Za-z]').allMatches(RegExp(r'd\s*=\s*"([^"]*)"').firstMatch(m.group(2) ?? '')?.group(1) ?? '').map((x) => x.group(0)).join()}'
-          else if (m.group(1) == 'polyline')
+          else if (m.group(1) == 'polyline' || m.group(1) == 'points')
             'polyline:${RegExp(r'[-\d.]+').allMatches(RegExp(r'points\s*=\s*"([^"]*)"').firstMatch(m.group(2) ?? '')?.group(1) ?? '').length}'
           else
-            m.group(1)!,
+            // Include the coordinate count, not just the tag: two circles with completely
+            // different cx/cy/r were reported as corresponding, so the flag would have been
+            // wrong even once something consumed it.
+            '${m.group(1)}:${RegExp(r'-?[\d.]+').allMatches(m.group(2) ?? '').length}',
       ];
   final sa = sig(a), sb = sig(b);
   if (sa.isEmpty || sa.length != sb.length) return false;
