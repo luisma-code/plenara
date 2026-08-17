@@ -103,8 +103,14 @@ fi
 
 echo "== revision-bound release manifest =="
 MANIFEST="$ROOT/app/build/release/release-manifest.json"
-dart "$ROOT/tool/generate_release_manifest.dart" \
-  --artifact "$IOS_AOT" --output "$MANIFEST" --channel external \
-  "${ALLOW_DIRTY[@]}"
+MANIFEST_ARGS=(
+  --artifact "$IOS_AOT"
+  --output "$MANIFEST"
+  --channel external
+)
+if [ "${#ALLOW_DIRTY[@]}" -gt 0 ]; then
+  MANIFEST_ARGS+=("${ALLOW_DIRTY[@]}")
+fi
+dart "$ROOT/tool/generate_release_manifest.dart" "${MANIFEST_ARGS[@]}"
 echo "== EXTERNAL RELEASE GATE GREEN =="
 echo "Manifest: $MANIFEST"
