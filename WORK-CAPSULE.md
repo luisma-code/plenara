@@ -152,6 +152,7 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Latest phone deployment
 
+- On 2026-08-17 at 16:49 PDT, the recovery build replaced the earlier install on **Aluminum Monster**: signed internal-channel `0.12.0 (18)`, revision `ecbd0ee`, bundle `com.plenara.plenaraApp`. The locally verified AOT SHA-256 is `3f3491e45c9a1f136714b5f3c5f5c2c4e40feb2f4ab045bc5dda652770ccac8f`; it contains both reset actions and the approved internal-diagnostics canary. Deployment only—no physical-phone launch, test, probe, log collection, or inspection.
 - On 2026-08-17 at 16:25 PDT, after Luis explicitly requested a phone deployment, the signed internal-channel iOS release `0.12.0 (18)` from revision `aca107a78a31c04fdcb3a8b99374fe044b9ae06f` was installed wirelessly on **Aluminum Monster** as `com.plenara.plenaraApp`.
 - The exact installed source bundle passed local code-signature verification and contained both the internal raw-diagnostics canary and embedded revision. Its AOT binary SHA-256 is `4f41cc46c4ba6f3cfefe769f1e6bed753dc989c9ac9eb1eebe936fca48cf1502`.
 - Deployment only: no test, probe, log collection, app inspection, or automated launch ran on the physical phone.
@@ -190,7 +191,7 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Implementation queue
 
-- The eight-increment review plan and the post-deployment data-recovery correction are complete. The current internal build still needs to be rebuilt from the committed recovery revision and installed under Luis's explicit deployment authorization.
+- The eight-increment review plan and the post-deployment data-recovery correction are complete. Recovery revision `ecbd0ee` is installed on the authorized physical phone; no implementation or deployment work remains open.
 
 ## Authoritative documents
 
