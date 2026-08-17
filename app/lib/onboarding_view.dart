@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plenara/config.dart';
 
 import 'credential_store.dart';
+import 'build_channel.dart';
 import 'plena.dart';
 import 'plenara_theme.dart';
 import 'settings_view.dart';
@@ -101,8 +102,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 Expanded(
                                   child: Text(
                                     connected
-                                        ? 'Claude is connected. Your key stays in secure system storage.'
-                                        : 'Your records stay in your data folder. This internal build keeps conversation diagnostics on this device unless you explicitly share them.',
+                                        ? 'Claude is connected. Your key stays in secure system storage; requested cloud features send only the context they disclose.'
+                                        : isExternalBuild
+                                        ? 'Your records stay in your chosen data folder. Offline planning sends nothing to Anthropic, and this build stores no raw diagnostics.'
+                                        : 'Your records stay in your chosen data folder. This internal build keeps conversation diagnostics on this device unless you explicitly share them.',
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: PlenaraTheme.quietInk,

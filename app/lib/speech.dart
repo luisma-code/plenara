@@ -126,6 +126,19 @@ class CaptureLimits {
   static const appleSession = Duration(seconds: 60);
 }
 
+/// The single speech-engine option builder. Apple treats [onDevice] as
+/// `requiresOnDeviceRecognition = true` and fails when the locale/device cannot
+/// satisfy it; there is intentionally no server-recognition fallback.
+SpeechListenOptions plenaraSpeechOptions({required bool applePlatform}) =>
+    SpeechListenOptions(
+      partialResults: true,
+      cancelOnError: true,
+      onDevice: true,
+      listenFor: applePlatform
+          ? CaptureLimits.appleSession
+          : CaptureLimits.session,
+    );
+
 /// On-device via the OS speech engine (`speech_to_text` -> Windows built-in recognition; the OS
 /// owns the language model). Partial results stream live so the input fills as the user talks.
 class SystemSpeechRecognizer implements SpeechRecognizer {
@@ -303,19 +316,10 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
             );
           }
         },
-        listenOptions: SpeechListenOptions(
-          partialResults:
-              true, // stream words as they're recognized (no-op on Windows: the SAPI
-          // backend never registers for hypothesis events, so ONLY finals arrive)
-          cancelOnError: true,
-          // The session cap, not an endpoint. Apple gets the shorter cap (see CaptureLimits).
-          listenFor: Platform.isIOS || Platform.isMacOS
-              ? CaptureLimits.appleSession
-              : CaptureLimits.session,
-          // pauseFor is DELETED, deliberately. It was Apple's auto-endpoint — a Dart timer that
-          // ended the session ~2s after the speaker paused — and it is precisely the behavior being
-          // removed: it cut off mid-thought and sent half a command. The user now ends the session
-          // by tapping; _silenceTimer is a 30s safety net, not an endpoint.
+        // Streams words as recognized (Windows SAPI only delivers finals).
+        // `pauseFor` remains absent: the user, not endpointing, ends the turn.
+        listenOptions: plenaraSpeechOptions(
+          applePlatform: Platform.isIOS || Platform.isMacOS,
         ),
       );
     } catch (_) {

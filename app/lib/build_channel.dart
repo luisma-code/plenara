@@ -1,5 +1,15 @@
 import 'package:flutter/foundation.dart';
 
+const String _declaredBuildChannel = String.fromEnvironment('PLENARA_CHANNEL');
+
+/// Compile-time release boundary. Keep security-sensitive call sites behind this
+/// constant as well as the typed policy: AOT can then remove internal-only code
+/// from an external binary instead of merely hiding its controls at runtime.
+const bool isExternalBuild =
+    _declaredBuildChannel == 'external' ||
+    _declaredBuildChannel == 'release' ||
+    (_declaredBuildChannel == '' && kReleaseMode);
+
 /// One compile-time owner for product reachability. Internal/TestFlight builds deliberately retain
 /// content-bearing diagnostics and visual tuning tools; external builds fail closed.
 enum BuildChannel { development, internal, external }
@@ -24,10 +34,8 @@ BuildChannel parseBuildChannel(String raw, {required bool releaseMode}) {
   }
 }
 
-BuildChannel get activeBuildChannel => parseBuildChannel(
-  const String.fromEnvironment('PLENARA_CHANNEL'),
-  releaseMode: kReleaseMode,
-);
+BuildChannel get activeBuildChannel =>
+    parseBuildChannel(_declaredBuildChannel, releaseMode: kReleaseMode);
 
 extension BuildChannelPolicy on BuildChannel {
   bool get allowsInternalTools => this != BuildChannel.external;

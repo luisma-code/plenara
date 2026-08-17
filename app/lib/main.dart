@@ -1415,7 +1415,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
-            onLongPress: activeBuildChannel.allowsInternalTools
+            onLongPress:
+                !isExternalBuild && activeBuildChannel.allowsInternalTools
                 ? () {
                     final all = kGlyphs.values.toList();
                     _fireGlyph(all[_glyphPreview++ % all.length], force: true);
@@ -1937,24 +1938,29 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           Navigator.of(
             context,
           ).push(MaterialPageRoute(builder: (_) => _settingsView()));
-        } else if (v == 'tune') {
+        } else if (!isExternalBuild && v == 'tune') {
           _openTuning();
-        } else if (v == 'harness') {
+        } else if (!isExternalBuild && v == 'harness') {
           _openHarness();
         }
       },
-      itemBuilder: (_) => [
-        for (final action in menuActionsFor(activeBuildChannel))
-          PopupMenuItem(
-            value: action,
-            child: Text(switch (action) {
-              'harness' => 'Dev harness',
-              'tune' => 'Tune Plena',
-              'data' => 'All data',
-              _ => 'Settings',
-            }),
-          ),
-      ],
+      itemBuilder: (_) => isExternalBuild
+          ? const [
+              PopupMenuItem(value: 'data', child: Text('All data')),
+              PopupMenuItem(value: 'settings', child: Text('Settings')),
+            ]
+          : [
+              for (final action in menuActionsFor(activeBuildChannel))
+                PopupMenuItem(
+                  value: action,
+                  child: Text(switch (action) {
+                    'harness' => 'Dev harness',
+                    'tune' => 'Tune Plena',
+                    'data' => 'All data',
+                    _ => 'Settings',
+                  }),
+                ),
+            ],
     ),
   );
 }

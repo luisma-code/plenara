@@ -40,6 +40,11 @@ void main() {
   };
   _writeSet(master, 'ios/Runner/Assets.xcassets/AppIcon.appiconset', ios);
   _writeSet(master, 'macos/Runner/Assets.xcassets/AppIcon.appiconset', macos);
+  _writeSet(master, 'ios/Runner/Assets.xcassets/LaunchImage.imageset', const {
+    'LaunchImage.png': 128,
+    'LaunchImage@2x.png': 256,
+    'LaunchImage@3x.png': 384,
+  });
 
   final windows = image.copyResize(
     master,

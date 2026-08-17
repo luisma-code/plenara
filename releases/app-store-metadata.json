@@ -1,0 +1,34 @@
+{
+  "productName": "Plenara",
+  "subtitle": "Living relationship planner",
+  "promotionalText": "Plan your days, remember what matters, and show up for the people you love.",
+  "description": "Plenara is a voice-first living planner and relational assistant. Capture tasks naturally, shape a realistic day or week, keep context about the people who matter, and revisit plans from clear Today, Plan, and Library surfaces. Common planning works on-device. Optional Anthropic features use your own API key and disclose the record categories they send. Your records remain readable files in the data folder you choose.",
+  "keywords": [
+    "planner",
+    "relationships",
+    "tasks",
+    "voice",
+    "reminders",
+    "personal assistant"
+  ],
+  "privacyPolicyUrl": "https://github.com/luisma-code/plenara/blob/main/PRIVACY.md",
+  "supportUrl": "https://github.com/luisma-code/plenara/issues",
+  "privacyNutrition": {
+    "tracking": false,
+    "dataLinkedToUser": false,
+    "otherUserContent": {
+      "collected": true,
+      "purpose": "app functionality",
+      "reason": "Optional BYOK Anthropic requests transmit the live request and the disclosed record categories needed for the requested cloud feature."
+    },
+    "audioData": {
+      "collected": false,
+      "reason": "Recognition is forced on-device and raw audio is never retained or transmitted by Plenara."
+    },
+    "diagnostics": {
+      "collected": false,
+      "reason": "External builds have no automatic telemetry or raw diagnostic capture/export."
+    }
+  },
+  "reviewNotes": "No Plenara account or backend. Offline planning is available immediately. Optional cloud features require a user-provided Anthropic API key. Voice recognition is on-device-only. User records are plaintext JSON in a user-selected folder; this is disclosed in onboarding, Settings, and the privacy policy."
+}

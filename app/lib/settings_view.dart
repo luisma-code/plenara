@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'app_log.dart';
+import 'build_channel.dart';
 import 'credential_store.dart';
 import 'data_location.dart';
 import 'presence_shell.dart';
@@ -45,6 +46,7 @@ class SettingsView extends StatefulWidget {
 
 class _SettingsViewState extends State<SettingsView> {
   static const _keysUrl = 'https://console.anthropic.com/settings/keys';
+  static const _internalBinaryCanary = 'PLENARA_INTERNAL_RAW_CONTENT_CANARY';
   final _keyCtrl = TextEditingController();
   late PlenaraConfig _cfg = loadAppConfig(configPath: widget.configPath);
   String? _statusMsg;
@@ -52,6 +54,8 @@ class _SettingsViewState extends State<SettingsView> {
   bool _testing = false;
   DiagnosticPolicy get _diagnostics =>
       widget.diagnosticPolicy ?? activeDiagnosticPolicy;
+  bool get _allowsRawDiagnostics =>
+      !isExternalBuild && _diagnostics.allowsRawExport;
 
   static const _cloudNames = <String, String>{
     'gift_ideas': 'Gift ideas',
@@ -454,7 +458,7 @@ class _SettingsViewState extends State<SettingsView> {
         ? box.localToGlobal(Offset.zero) & box.size
         : null;
     try {
-      if (!_diagnostics.allowsRawExport) {
+      if (!_allowsRawDiagnostics) {
         messenger.showSnackBar(
           const SnackBar(
             content: Text('Raw diagnostics are disabled in this build.'),
@@ -499,6 +503,7 @@ class _SettingsViewState extends State<SettingsView> {
         ..writeln(
           'WARNING: contains conversation text, record values, and exception details.',
         )
+        ..writeln('Boundary marker: $_internalBinaryCanary')
         ..writeln('Build channel: ${_diagnostics.channel.name}')
         ..writeln('Revision: $revision')
         ..writeln('App version: ${package.version}+${package.buildNumber}')
@@ -542,6 +547,34 @@ class _SettingsViewState extends State<SettingsView> {
         '${Directory.systemTemp.path}${Platform.pathSeparator}plenara-diagnostics-$ts.txt',
       );
       out.writeAsStringSync(text);
+      if (!ctx.mounted) return;
+      final approved = await showDialog<bool>(
+        context: ctx,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Share raw diagnostics?'),
+          content: SingleChildScrollView(
+            child: Text(
+              'This exact export contains conversation text, record values, and exception details.\n\n'
+              'Files: ${includedFiles.isEmpty ? "none" : includedFiles}\n'
+              'Payload: ${text.length} characters (maximum 1 MB of log text)\n'
+              'Revision: $revision\n\n'
+              'Nothing is uploaded automatically. Continuing opens the system share sheet.',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              key: const Key('confirm-share-raw-diagnostics'),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Open share sheet'),
+            ),
+          ],
+        ),
+      );
+      if (approved != true) return;
       await Share.shareXFiles(
         [XFile(out.path, mimeType: 'text/plain')],
         subject: 'Plenara diagnostics',
@@ -641,8 +674,9 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Plenara uses your own Anthropic account, so your notes stay private and you pay Anthropic '
-                  'directly — typically a few cents a month. It’s a one-time setup:',
+                  'Plenara uses your own Anthropic account. When a cloud feature runs, it sends the '
+                  'text and record classes disclosed below to Anthropic; offline planning sends nothing. '
+                  'Anthropic bills your account, and cost varies with usage and feature size. Setup is one-time:',
                 ),
                 const SizedBox(height: 10),
                 _step(
@@ -792,7 +826,7 @@ class _SettingsViewState extends State<SettingsView> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
-                if (_diagnostics.allowsRawExport) ...[
+                if (_allowsRawDiagnostics) ...[
                   const Text(
                     'Internal diagnostics contain your conversation text, record values, and '
                     'exception details. Share them only when troubleshooting; the export is never '
@@ -815,7 +849,7 @@ class _SettingsViewState extends State<SettingsView> {
                     'Diagnostics capture and raw export are disabled in this external build.',
                   ),
                 const SizedBox(height: 8),
-                if (_diagnostics.allowsRawExport)
+                if (_allowsRawDiagnostics)
                   SelectableText(
                     AppLog.instance.file.path,
                     style: TextStyle(fontSize: 12, color: cs.outline),

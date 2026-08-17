@@ -7,6 +7,7 @@ import 'package:plenara/config.dart';
 import 'package:plenara_app/app_log.dart';
 import 'package:plenara_app/build_channel.dart';
 import 'package:plenara_app/settings_view.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 void main() {
   String newCfg({String apiKey = ''}) {
@@ -253,6 +254,50 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'raw diagnostic export previews the exact payload before sharing',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1000, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      PackageInfo.setMockInitialValues(
+        appName: 'Plenara',
+        packageName: 'com.plenara.app',
+        version: '0.12.0',
+        buildNumber: '18',
+        buildSignature: '',
+      );
+      final path = newCfg();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SettingsView(
+            configPath: path,
+            diagnosticPolicy: diagnosticPolicyFor(BuildChannel.internal),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.dragUntilVisible(
+        find.byKey(const Key('share-logs')),
+        find.byType(Scrollable).first,
+        const Offset(0, -400),
+      );
+      await tester.tap(find.byKey(const Key('share-logs')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Share raw diagnostics?'), findsOneWidget);
+      expect(find.textContaining('This exact export contains'), findsOneWidget);
+      expect(find.textContaining('Files:'), findsOneWidget);
+      expect(find.textContaining('Payload:'), findsOneWidget);
+      expect(
+        find.byKey(const Key('confirm-share-raw-diagnostics')),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Share raw diagnostics?'), findsNothing);
+    },
+  );
 
   testWidgets('External builds expose neither raw export nor its local path', (
     tester,

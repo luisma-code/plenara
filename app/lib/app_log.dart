@@ -119,6 +119,9 @@ class AppLog {
   }
 
   void log(String msg) {
+    // Compile-time boundary first: in an external AOT build the content-bearing
+    // write path and its call-site strings can be tree-shaken, not merely muted.
+    if (isExternalBuild) return;
     if (!policy.capturesContent) return;
     final line = '${_now().toIso8601String()}  ${_safe(msg)}\n';
     try {
@@ -128,6 +131,7 @@ class AppLog {
 
   /// A verbose trace — written only when [verbose] is on (dev/dogfood), silent in retail.
   void debug(String msg) {
+    if (isExternalBuild) return;
     if (verbose) log(msg);
   }
 

@@ -1,63 +1,53 @@
 # Plenara
 
-A voice-first, offline-first personal assistant that helps you be a better friend, partner, and
-parent — it remembers the people and moments you care about and nudges you at the right time. The
-interface is **Plena**: a living particle-swarm presence you talk to; text materializes only when
-needed. Runs on your own machine against your own data folder, with a bring-your-own-key (BYOK)
-Anthropic model for the few things that need the cloud. Everything core works offline.
+Plenara is a voice-first living planner and relational assistant. It combines
+free-form capture with visible Today, Plan, Library, and History surfaces so a
+person can compare, sequence, revise, and revisit plans without making voice
+carry persistent state alone. Plena—the warm particle presence—moves between a
+full conversational form, a compact planner collaborator, and a detail ember.
 
-## Layout
+Common planning and routing run locally. Optional Anthropic features use the
+user's own API key and disclose the record categories sent for each feature.
+Records are readable JSON files in a user-selected folder; the execution journal
+and other device state remain local. See [the privacy policy](PRIVACY.md).
 
-| Path | What |
+## Repository
+
+| Path | Purpose |
 |---|---|
-| `v0/` | The engine — **pure Dart**, no Flutter. Router, skill interpreter, store, cloud/notification seams. 1657 hermetic tests. |
-| `app/` | The Flutter desktop app (Windows + macOS): the Plena presence UI, voice in/out, reminders. |
-| `planning/specs/` | The design specs (01 meta-schema … 15 presence). |
-| `releases/` | Per-version retrospectives + `VERSIONS.md`. |
-| `tool/` | `precheck.sh` (quality gate), `sync_seed.sh`, `snap_gestures.sh`, `ci-workflow.yml`. |
+| `v0/` | Pure-Dart engine: routing, planning, execution, storage, sync, migrations, and cloud seams. |
+| `app/` | Flutter client for iPhone, macOS, and Windows. |
+| `planning/specs/` | Product and architecture specifications, including the living-planner Spec 17. |
+| `reviews/` | Spec/code, art/animation, and planner UX reviews. |
+| `releases/` | Version history and App Store metadata. |
+| `tool/` | Hermetic precheck, seed synchronization, release inspection, and deployment utilities. |
 
-Orientation docs: **`CLAUDE.md`** (working mode + principles), **`HANDOFF.md`** (full session
-history), **`TRANSITION.md`** (Windows→macOS setup), **`RELEASING.md`** (multi-OS release plan).
+## Build and verify
 
-## Build & run
-
-Requires Flutter (pinned in `.flutter-version` = 3.44.5) + the platform's native build tools.
+Flutter is pinned by `.flutter-version`; native platform toolchains are also
+required.
 
 ```sh
-# engine tests (pure Dart)
 cd v0 && dart pub get && dart test
-
-# the app
-cd app && flutter pub get
-flutter run -d windows      # Windows: needs Visual Studio Build Tools (Desktop C++) + Dev Mode
-flutter run -d macos        # macOS: needs Xcode; see TRANSITION.md for entitlements/first-run
+cd ../app && flutter pub get && flutter test
+cd .. && bash tool/precheck.sh
 ```
 
-The app seeds its built-in capabilities on first run from bundled assets (no repo needed). For
-development against live `v0/data`, `export PLENARA_SEED_DIR="$PWD/v0/data"` before running.
-
-## Configuration (`~/.plenara/config.json`)
-
-Scaffolded on first run. Set your data folder and (optionally) BYOK key:
-
-```json
-{ "dataDir": "/path/to/your/synced/Plenara", "apiKey": "sk-ant-..." }
-```
-
-Offline features (tasks, people, reminders, journaling) work with no key. Cloud routing, authoring,
-and generative features need one. On-device voice input uses a Whisper model at
-`~/.plenara/models/en-whisper` if present, else falls back to the OS recognizer.
-
-## Quality gate
+The external promotion gate builds and inspects macOS and unsigned iOS AOT
+artifacts without installing or launching anything on a physical phone:
 
 ```sh
-bash tool/precheck.sh   # analyze, tests, coverage floor, seed-asset sync, host-OS build, secret scan, conformance
+bash tool/external_release_gate.sh
 ```
 
-CI runs the same on Windows + macOS — see `tool/ci-workflow.yml` (move to `.github/workflows/` to
-activate; needs a `workflow`-scoped token).
+All automated phone, layout, render, motion, and integration verification uses
+a local iPhone simulator. A physical iPhone is deployment-only and may be used
+only when its owner explicitly requests a usable deployment.
 
-## Status
+## Configuration
 
-Engine complete and heavily tested; Windows app is dogfood-ready; macOS is scaffolded and builds.
-Distribution (signing/notarization, model download, installers) is tracked in `RELEASING.md`.
+The app creates its config and data root on first launch. Anthropic credentials
+are entered in Settings and stored through the operating system secure credential
+store; they do not belong in config JSON, source files, or build defines. Offline
+mode works without a key. Settings can move records into a user-selected iCloud
+Drive, OneDrive, Google Drive, or other backed-up folder.

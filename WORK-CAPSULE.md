@@ -134,6 +134,18 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - New real-filesystem tests cover cold/live bootstrap, concurrent/offline branches, deletion versus update, field removal, provider overwrite recovery, conflict copies, corrupt/interrupted input, definition choice, HLC receive, folder copy/adoption/interruption, and UI conflict recovery. The merge, watcher, and folder-copy tests were calibrated against deliberate broken implementations and turned red.
 - An iOS simulator build compiles the security-scoped bookmark bridge. No physical phone was touched.
 
+## Increment 8 state
+
+- Internal content-bearing diagnostics remain enabled exactly as Luis directed. Raw export now previews included filenames, exact payload size, revision, and content classes before opening the share sheet; nothing uploads automatically.
+- External policy is compile-time and fail-closed. Logging, export, menu construction/dispatch, tuning, the developer harness, and long-press glyph preview are AOT-tree-shaken. The binary scanner was calibrated against a known content marker and caught the pre-fix harness/tuning strings before both macOS and unsigned iOS AOT artifacts passed.
+- Speech recognition now sets the plugin's real `onDevice` option on every platform; on Apple this becomes `requiresOnDeviceRecognition = true`, so unsupported recognition degrades to text rather than a server path.
+- iOS/macOS privacy manifests, a public privacy policy, and checked App Store metadata match actual storage, BYOK egress, voice, diagnostics, and tracking behavior. Settings no longer claims all notes “stay private” or predicts a fixed monthly model cost.
+- The stock Flutter launch orb is gone. Deterministic Plena launch assets and app icons are generated and pixel-checked together.
+- The supported-device/large-text matrix covers five phone/tablet geometries plus 2× text cases. The guard-equipped three-minute real-engine soak samples RSS each second and CPU every ten seconds, aborting on a rising trend; the final measured result is recorded in the release-hardening report.
+- Full precheck is green: 1,920 engine tests + 36 skips; 154 Flutter tests + 3 development-channel skips; 94.7% deterministic / 90.1% product / 68.1% transport coverage; macOS build; five real-engine tests; external, secret, and 24/60 gates.
+- External promotion uses `tool/external_release_gate.sh`, which builds and inspects macOS and unsigned iOS AOT artifacts and writes the clean revision's channel, artifact SHA-256, app version, schema versions, and migrations to `app/build/release/release-manifest.json`.
+- No physical phone was touched. No simulator was booted for this increment; all phone geometry used local widget render surfaces, and the unsigned iOS bundle was compiled but never installed or launched.
+
 ## Owner action
 
 - Rotate the Anthropic credential that appeared in a non-hermetic test failure before this increment. The repository/reports do not contain it, but the earlier tool transcript did. Credential rotation requires Luis's account authority.
@@ -143,6 +155,8 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - Keep awake: `pgrep -x caffeinate || nohup caffeinate -dimsu >/dev/null 2>&1 &`
 - Full gate: `bash tool/precheck.sh`
 - External-channel policy gate: `cd app && flutter test --dart-define=PLENARA_CHANNEL=external test/external_channel_test.dart`
+- Compiled external promotion gate: `bash tool/external_release_gate.sh`
+- Explicit three-minute local soak: `cd app && flutter test integration_test/release_soak_test.dart -d macos --dart-define=PLENARA_CHANNEL=external`
 - Generated conformance: `cd v0 && dart run bin/conformance_count.dart`
 - Contact-sheet verifier: `python3 -m unittest app/tool/test_gesture_contact_sheet.py`
 - TestFlight internal builds must use `--dart-define=PLENARA_CHANNEL=internal`; external/release builds use `external` or the release fail-closed default.
@@ -157,12 +171,12 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - iOS Impeller crashes on the old per-frame `toImageSync` trail path; iOS currently omits lingering trail persistence.
 - iOS TTS needs the playback audio session reasserted before every utterance.
 - `path_provider_foundation` remains pinned to 2.4.1 because a stale Xcode keychain warning corrupts the newer native-assets hook output.
+- Flutter does not support iOS release mode for simulators. External phone-shaped behavior stays on simulator/widget renderers; release AOT inspection uses a local unsigned `flutter build ios --release --no-codesign` and never installs or launches it.
 - Any app launched during autonomous verification must have RSS sampled, be killed afterward, and be checked for orphan processes.
 
-## Next implementation order
+## Implementation queue
 
-1. Increment 8: external-release hardening.
-2. After the full external gate, record the final revision and verification evidence in this capsule.
+- The eight-increment review implementation plan is complete. The next product evidence comes from ordinary dogfood use or an explicitly requested deployment, not another unimplemented review item.
 
 ## Authoritative documents
 

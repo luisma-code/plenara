@@ -422,6 +422,8 @@ The storage claim becomes true: data lives in a user-chosen synced location, rec
 
 ## Increment 8 — external-release hardening
 
+**Status: implementation complete 17 August 2026; final clean-revision gate evidence is recorded in the release verification report and generated manifest.** Internal raw diagnostics remain enabled exactly as the owner directed. External AOT artifacts are inspected, not inferred from source policy.
+
 ### Outcome
 
 The internal instrumentation and developer affordances cannot accidentally ship to another tester or the public. This is a gate, not a late reminder.

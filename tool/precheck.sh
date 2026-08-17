@@ -44,8 +44,8 @@ echo "== [app-deps] resolve Flutter packages once (offline cache, then network f
 ( cd "$ROOT/app" && "$FLUTTER" pub get --offline ) || \
   ( cd "$ROOT/app" && "$FLUTTER" pub get )
 
-echo "== [4/12] analyze app (lib test integration_test) =="
-( cd "$ROOT/app" && "$FLUTTER" analyze --no-pub lib test integration_test )
+echo "== [4/12] analyze app (lib test integration_test tool) =="
+( cd "$ROOT/app" && "$FLUTTER" analyze --no-pub lib test integration_test tool )
 
 # Render leak guard: the presence paint() runs ~60fps forever, so a per-frame native SHADER there
 # (a ui.Gradient created every frame, never disposed) leaks GPU memory unboundedly while visible —
@@ -86,7 +86,7 @@ esac
 # them; this runs the actual raster path on the host desktop. (linux has no runner in the matrix.)
 if [ "$TARGET" != "linux" ]; then
   echo "== [10/12] integration test (real engine/GPU render smoke) =="
-  ( cd "$ROOT/app" && "$FLUTTER" test --no-pub integration_test -d "$TARGET" )
+  ( cd "$ROOT/app" && "$FLUTTER" test --no-pub integration_test/render_test.dart -d "$TARGET" )
 else
   echo "== [10/12] integration test SKIPPED (no desktop device on $TARGET) =="
 fi

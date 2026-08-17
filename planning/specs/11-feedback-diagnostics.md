@@ -1,6 +1,6 @@
 # Spec 11 — Feedback & Diagnostics
 
-**Status:** v0.2 — amended 2026-08-17. This is the sole authority for diagnostic collection/export. Development and single-user internal builds deliberately retain content-bearing logs and permit explicit raw export; external builds capture no raw content and expose no raw export. Secrets, raw audio, and interim transcripts are forbidden in every channel. Decisions recorded in §10.
+**Status:** v0.3 — amended 2026-08-17. This is the sole authority for diagnostic collection/export. Development and single-user internal builds deliberately retain content-bearing logs and permit explicit raw export; external builds capture no raw content and expose no raw export. Secrets, raw audio, and interim transcripts are forbidden in every channel. The compiled-artifact gate and exact internal export preview are implemented. Decisions recorded in §10.
 **Depends on:** research §12 item 11 + §14 (the mandate); Spec 03 — NLU/Intent (§2.5 `routingSource`, §2.6/§5 corrections corpus, §7.3 routing amendments); Spec 04 — Architecture (§3.5 `ClaudeClient`/`CloudError`, §3.12 `AttentionSurface`, §5 sealed error taxonomy, §7.1 device-local vs synced stores); Spec 02 — Skill DSL (§6 authoring seam, used by the area-label decision D6)
 **Blocks:** release-candidate hardening (research §11.5 — "the diagnostics and feedback loop runs continuously from v1 and gates the first shared build"); informs Spec 08 (AI Cost & Privacy) and Spec 10 (Security & Privacy threat model) — both now written (suite-sync CS-20)
 
@@ -174,7 +174,7 @@ The English rendering and the JSON are generated from the *same* `GapRecord` str
 
 ### 5.1 Development/internal: explicit raw trace
 
-The current single-user dogfood build exports the retained `.log` files without removing user content. The Settings action is named **Share raw diagnostics** and immediately states that the export contains conversation text, record values, and exception details. The manifest records revision, channel, platform, app/schema versions, and every included filename. Export is manual; no uploader exists.
+The current single-user dogfood build exports the retained `.log` files without removing user content. The Settings action is named **Share raw diagnostics** and immediately states that the export contains conversation text, record values, and exception details. Before the system share sheet opens, a second explicit preview names every included file, the exact payload size, revision, content classes, and maximum retained log text; cancel sends nothing. The manifest records revision, channel, platform, app/schema versions, and every included filename. Export is manual; no uploader exists.
 
 Retention is 30 days or 100 MB, whichever threshold is crossed first, oldest-first. Raw audio and interim transcripts are never written, so they cannot enter the bundle. Class S filtering occurs before serialization, not while composing the export.
 
@@ -214,6 +214,8 @@ The test battery is channel-specific:
 5. **Error-path fuzz.** Throw exceptions whose messages carry canaries from inside the interpreter, storage, and cloud layers; assert an external bundle carries type + kind only.
 6. **Manifest-equals-payload.** Render → parse-back → deep-equal against an external typed struct, so the reviewed text can never diverge from the sent bytes.
 7. **A manual red-team pass per external release** — same spirit as the primitive-vocabulary red-team (research §13.1): task a model with extracting anything personal from generated external payloads.
+
+The release implementation adds a compiled-AOT reachability gate over both macOS and iPhone-simulator external artifacts. It first rejects a known-bad internal marker, then fails if the actual binary retains the raw-content canary, raw-export label, tuning sheet, glyph harness, or internal warning. This is the promotion boundary; the widget policy test alone is not accepted as proof.
 
 ---
 

@@ -1,17 +1,22 @@
-# plenara_app
+# Plenara Flutter app
 
-A new Flutter project.
+The Flutter client for Plenara's living planner. iPhone is the primary target;
+macOS and Windows are supported development/desktop targets.
 
-## Getting Started
+The client provides Today, Plan, Library, History, settings, voice capture and
+speech output, reminders, Plena's animated presence, secure BYOK credential
+storage, and user-selected data-folder access. Product logic remains in the
+pure-Dart package at `../v0`.
 
-This project is a starting point for a Flutter application.
+## Local verification
 
-A few resources to get you started if this is your first Flutter project:
+```sh
+flutter pub get
+flutter analyze lib test integration_test
+flutter test
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Use `../tool/precheck.sh` for the complete repository gate and
+`../tool/external_release_gate.sh` for compiled external-artifact inspection.
+Automated iPhone verification runs only in a local simulator. A physical phone
+is deployment-only and must never be selected by a test or debug harness.

@@ -10,6 +10,11 @@ void main() {
         BuildChannel.development,
       );
       expect(parseBuildChannel('', releaseMode: true), BuildChannel.external);
+      expect(
+        isExternalBuild,
+        isFalse,
+        reason: 'ordinary test build is development',
+      );
     },
   );
 

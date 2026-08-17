@@ -15,6 +15,11 @@ void main() {
           'macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_16.png',
         ).readAsBytesSync(),
       )!;
+      final launch = image.decodePng(
+        File(
+          'ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png',
+        ).readAsBytesSync(),
+      )!;
 
       expect(master.width, 1024);
       expect(master.height, 1024);
@@ -39,6 +44,14 @@ void main() {
       );
       final center = tiny.getPixel(8, 8);
       expect(center.r, greaterThan(center.b * 1.6));
+      expect(launch.width, 384);
+      expect(launch.height, 384);
+      final launchCenter = launch.getPixel(192, 192);
+      expect(
+        launchCenter.r,
+        greaterThan(launchCenter.b * 1.6),
+        reason: 'launch must use Plena, never Flutter placeholder art',
+      );
     },
   );
 }
