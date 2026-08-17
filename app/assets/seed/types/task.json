@@ -1,6 +1,6 @@
 {
   "typeId": "task",
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "displayName": "Task",
   "attributes": [
     { "name": "description", "valueType": "text", "required": true },
@@ -15,7 +15,12 @@
     { "name": "areaRef", "valueType": "entityRef", "refType": "area", "required": false },
     { "name": "contactRefs", "valueType": "entityRef", "refType": "contact", "cardinality": "many", "required": false },
     { "name": "notes", "valueType": "text", "required": false },
-    { "name": "completedAt", "valueType": "datetime", "required": false }
+    { "name": "completedAt", "valueType": "datetime", "required": false },
+    { "name": "dependencyRefs", "valueType": "entityRef", "refType": "task", "cardinality": "many", "required": false },
+    { "name": "blockedReason", "valueType": "text", "required": false },
+    { "name": "energy", "valueType": "enum", "enumValues": ["low", "medium", "high"], "required": false },
+    { "name": "contexts", "valueType": "tag", "required": false },
+    { "name": "recurrence", "valueType": "text", "required": false }
   ],
   "migrations": [
     {
@@ -32,6 +37,10 @@
         "status": "inbox",
         "priority": "none"
       }
+    },
+    {
+      "fromVersion": 3,
+      "toVersion": 4
     }
   ]
 }

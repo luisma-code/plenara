@@ -14,11 +14,22 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'store.dart' show writeJsonAtomic;
+
 /// Why a cloud call could not produce an answer. `noKey`/`badKey`/`insufficientCredits` are
 /// actionable by the user; `offline`/`timeout`/`rateLimited`/`serverError` are transient;
 /// `malformed` means a 200 whose body we couldn't turn into a decision. `insufficientCredits`
 /// is the #1 onboarding gotcha — a VALID key on an account with no billing/credits set up.
-enum CloudErrorKind { noKey, offline, timeout, badKey, insufficientCredits, rateLimited, serverError, malformed }
+enum CloudErrorKind {
+  noKey,
+  offline,
+  timeout,
+  badKey,
+  insufficientCredits,
+  rateLimited,
+  serverError,
+  malformed
+}
 
 /// Maps an HTTP status + response body to a typed error (null = success). Extracted from the
 /// request path so it's unit-testable: a no-credits account returns 400 with a "credit balance
@@ -28,11 +39,14 @@ CloudErrorKind? classifyHttp(int code, String body) {
   if (code == 200) return null;
   if (code == 401 || code == 403) return CloudErrorKind.badKey;
   final low = body.toLowerCase();
-  final looksBilling = low.contains('credit balance') || low.contains('too low') ||
-      low.contains('billing') || low.contains('purchase credits');
+  final looksBilling = low.contains('credit balance') ||
+      low.contains('too low') ||
+      low.contains('billing') ||
+      low.contains('purchase credits');
   // only a 400/429 body counts as billing — a 5xx (or other) that merely mentions "billing"
   // must NOT tell the user to add credits when their account is fine (Fable review).
-  if ((code == 400 || code == 429) && looksBilling) return CloudErrorKind.insufficientCredits;
+  if ((code == 400 || code == 429) && looksBilling)
+    return CloudErrorKind.insufficientCredits;
   if (code == 429) return CloudErrorKind.rateLimited;
   return CloudErrorKind.serverError;
 }
@@ -56,6 +70,116 @@ final class CloudError<T> extends CloudResult<T> {
   const CloudError(this.kind, [this.detail]);
 }
 
+class CloudAdmissionSnapshot {
+  final int dailyUsed;
+  final int dailyLimit;
+  final int burstUsed;
+  final int burstLimit;
+
+  const CloudAdmissionSnapshot({
+    required this.dailyUsed,
+    required this.dailyLimit,
+    required this.burstUsed,
+    required this.burstLimit,
+  });
+}
+
+/// The single admission door in front of every Anthropic request. Reservations
+/// are persisted before HTTP starts, so failures and concurrent feature paths
+/// cannot bypass the cap by racing or repeatedly retrying.
+class CloudAdmissionController {
+  final String? path;
+  final DateTime Function() clock;
+  final int dailyLimit;
+  final int burstLimit;
+  final Duration burstWindow;
+  final List<DateTime> _memory = [];
+
+  CloudAdmissionController({
+    this.path,
+    DateTime Function()? clock,
+    this.dailyLimit = 200,
+    this.burstLimit = 30,
+    this.burstWindow = const Duration(minutes: 10),
+  }) : clock = clock ?? DateTime.now;
+
+  List<DateTime>? _read() {
+    if (path == null) return List<DateTime>.from(_memory);
+    final file = File(path!);
+    if (!file.existsSync()) return [];
+    try {
+      final raw = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+      if (raw['version'] != 1 || raw['admittedAt'] is! List) return null;
+      final encoded = raw['admittedAt'] as List;
+      if (encoded.any((entry) => entry is! String)) return null;
+      final entries = encoded.cast<String>().map(DateTime.tryParse).toList();
+      if (entries.any((entry) => entry == null)) return null;
+      return entries.cast<DateTime>();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool admit() {
+    final current = clock();
+    final start = DateTime(current.year, current.month, current.day);
+    final burstStart = current.subtract(burstWindow);
+    final stored = _read();
+    if (stored == null) return false;
+    final entries = stored
+        .where((entry) => !entry.isBefore(start) && !entry.isAfter(current))
+        .toList();
+    final burst = entries.where((entry) => !entry.isBefore(burstStart)).length;
+    if (entries.length >= dailyLimit || burst >= burstLimit) return false;
+    entries.add(current);
+    if (path == null) {
+      _memory
+        ..clear()
+        ..addAll(entries);
+      return true;
+    }
+    try {
+      final file = File(path!);
+      file.parent.createSync(recursive: true);
+      writeJsonAtomic(file, {
+        'version': 1,
+        'admittedAt': entries.map((entry) => entry.toIso8601String()).toList(),
+      });
+      return true;
+    } catch (_) {
+      // Failing closed prevents a broken persistence path from silently removing
+      // the user's spend guard. The caller surfaces this as a typed rate limit.
+      return false;
+    }
+  }
+
+  CloudAdmissionSnapshot snapshot() {
+    final current = clock();
+    final start = DateTime(current.year, current.month, current.day);
+    final burstStart = current.subtract(burstWindow);
+    final stored = _read();
+    // A corrupt ledger is represented as fully consumed so Settings agrees with
+    // the fail-closed admission door rather than showing a misleading zero.
+    if (stored == null) {
+      return CloudAdmissionSnapshot(
+        dailyUsed: dailyLimit,
+        dailyLimit: dailyLimit,
+        burstUsed: burstLimit,
+        burstLimit: burstLimit,
+      );
+    }
+    final entries = stored
+        .where((entry) => !entry.isBefore(start) && !entry.isAfter(current))
+        .toList();
+    return CloudAdmissionSnapshot(
+      dailyUsed: entries.length,
+      dailyLimit: dailyLimit,
+      burstUsed: entries.where((entry) => !entry.isBefore(burstStart)).length,
+      burstLimit: burstLimit,
+    );
+  }
+}
+
 String? apiKey() {
   final env = Platform.environment['ANTHROPIC_API_KEY'];
   if (env != null && env.isNotEmpty) return env.trim();
@@ -67,9 +191,15 @@ String? apiKey() {
   if (f.existsSync()) {
     for (final line in f.readAsLinesSync()) {
       if (line.startsWith('ANTHROPIC_API_KEY')) {
-        final parts = line.split('='); // skip(1).join('=') tolerates a bare line + '=' in the value
+        final parts = line.split(
+            '='); // skip(1).join('=') tolerates a bare line + '=' in the value
         if (parts.length < 2) continue;
-        return parts.skip(1).join('=').trim().replaceAll('"', '').replaceAll("'", '');
+        return parts
+            .skip(1)
+            .join('=')
+            .trim()
+            .replaceAll('"', '')
+            .replaceAll("'", '');
       }
     }
   }
@@ -82,7 +212,9 @@ abstract interface class CloudClient {
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(
       String utterance, Map<String, Map<String, dynamic>> skills,
       {Set<String> knownContacts = const {}});
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError});
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(
+      String description,
+      {String? priorError});
 
   /// Free-text generation for a grounded generative kind (Spec 04 §3.10) — e.g.
   /// 'gift_ideas', 'briefing'. [context] is the grounded facts assembled by the caller;
@@ -100,41 +232,55 @@ abstract interface class RoutineAuthor {
   /// app computed deterministically). The model never invents an exercise; the validator rejects
   /// any key not in the catalogue. [priorError] feeds the one gated re-author attempt.
   Future<CloudResult<Map<String, dynamic>>> authorRoutine(
-      String request, String catalogue, {String? kind, String? priorError});
+      String request, String catalogue,
+      {String? kind, String? priorError});
 
   /// Draw stick-figure keyframes for steps the shipped catalogue has no illustration for
   /// (Spec 16 §2). A SEPARATE call, made only AFTER the routine is validated and written, so a
   /// figure failure can never cost the user their routine — figures are presentation, and
   /// presentation degrades to text rather than rejecting.
-  Future<CloudResult<Map<String, dynamic>>> authorFigures(List<String> movements);
+  Future<CloudResult<Map<String, dynamic>>> authorFigures(
+      List<String> movements);
 }
 
 class ClaudeClient implements CloudClient, RoutineAuthor {
   final String? key;
   final String _url;
-  ClaudeClient({String? apiKeyOverride, String? url})
-      : key = apiKeyOverride ?? apiKey(),
-        _url = url ?? 'https://api.anthropic.com/v1/messages';
+  final CloudAdmissionController admission;
+  ClaudeClient({
+    String? apiKeyOverride,
+    String? url,
+    String? usagePath,
+    CloudAdmissionController? admission,
+  })  : key = apiKeyOverride ?? apiKey(),
+        _url = url ?? 'https://api.anthropic.com/v1/messages',
+        admission = admission ?? CloudAdmissionController(path: usagePath);
   bool get available => key != null && key!.isNotEmpty;
+  CloudAdmissionSnapshot get admissionSnapshot => admission.snapshot();
 
   // Cost telemetry (Haiku 4.5 pricing). Cumulative input/output tokens across this client's
   // lifetime; the Session reads the delta each turn to log per-turn cost and persist a total.
   int inTokens = 0, outTokens = 0;
-  static const inPricePerMTok = 1.0, outPricePerMTok = 5.0; // USD per million tokens (Haiku)
+  static const inPricePerMTok = 1.0,
+      outPricePerMTok = 5.0; // USD per million tokens (Haiku)
   /// Routine authoring runs on Sonnet, so its tokens cost several times the Haiku rate. Counting
   /// them at the Haiku price made the turnlog UNDER-report the one paid call in that feature —
   /// and the whole point of the spend telemetry is that the running total is trustworthy.
   static const sonnetInPerMTok = 3.0, sonnetOutPerMTok = 15.0;
   int sonnetInTokens = 0, sonnetOutTokens = 0;
-  static double costUsd(int inTok, int outTok) => (inTok * inPricePerMTok + outTok * outPricePerMTok) / 1e6;
+  static double costUsd(int inTok, int outTok) =>
+      (inTok * inPricePerMTok + outTok * outPricePerMTok) / 1e6;
   static double sonnetCostUsd(int inTok, int outTok) =>
       (inTok * sonnetInPerMTok + outTok * sonnetOutPerMTok) / 1e6;
-  double get spentUsd => costUsd(inTokens, outTokens) + sonnetCostUsd(sonnetInTokens, sonnetOutTokens);
+  double get spentUsd =>
+      costUsd(inTokens, outTokens) +
+      sonnetCostUsd(sonnetInTokens, sonnetOutTokens);
 
   /// A cheap liveness probe for onboarding's "Test connection": one ~1-token call mapped to a
   /// typed result, so the UI can say exactly what's wrong — a working key, a rejected key, or a
   /// valid key with no credits (the case a bare paste-field would leave the user guessing about).
-  Future<CloudResult<String>> validateKey() => _rawText('Reply with OK.', 'ping', maxTokens: 1);
+  Future<CloudResult<String>> validateKey() =>
+      _rawText('Reply with OK.', 'ping', maxTokens: 1);
 
   static const _sys =
       'You are the intent router for a personal-assistant app. Given the user\'s '
@@ -218,21 +364,29 @@ as the JSON {"var":"<name>"}; but inside a format TEMPLATE STRING use BARE brace
   /// Author a new type + skill from a described need (Spec 02 §6). Ok({type, skill})
   /// on success, or a typed CloudError. Deterministic validation happens in the caller.
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError}) async {
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(
+      String description,
+      {String? priorError}) async {
     final fix = priorError == null
         ? ''
         : '\nYour previous attempt FAILED deterministic validation with: "$priorError". '
             'Return corrected JSON that fixes exactly that.';
-    final res = await _message(_authorSys, 'Capability to build: "$description"$fix', maxTokens: 900);
+    final res = await _message(
+        _authorSys, 'Capability to build: "$description"$fix',
+        maxTokens: 900);
     switch (res) {
       case CloudError(:final kind, :final detail):
         return CloudError(kind, detail);
       case CloudOk(:final value):
         final type = value['type'], skill = value['skill'];
         if (type is! Map || skill is! Map) {
-          return const CloudError(CloudErrorKind.malformed, 'response was not a {type, skill} capability');
+          return const CloudError(CloudErrorKind.malformed,
+              'response was not a {type, skill} capability');
         }
-        return CloudOk({'type': type.cast<String, dynamic>(), 'skill': skill.cast<String, dynamic>()});
+        return CloudOk({
+          'type': type.cast<String, dynamic>(),
+          'skill': skill.cast<String, dynamic>()
+        });
     }
   }
 
@@ -262,7 +416,8 @@ HARD RULES:
 - Prefer exercises that need no equipment unless the user asked for equipment.''';
 
   @override
-  Future<CloudResult<Map<String, dynamic>>> authorRoutine(String request, String catalogue,
+  Future<CloudResult<Map<String, dynamic>>> authorRoutine(
+      String request, String catalogue,
       {String? kind, String? priorError}) async {
     final fix = priorError == null
         ? ''
@@ -274,13 +429,16 @@ HARD RULES:
     // A stronger model than the router: this is structured composition, and the G-29 finding was
     // that authoring-class work needs it. Capped tokens because the model returns keys, not prose.
     final res = await _message(_routineSys, user,
-        maxTokens: 2000, model: 'claude-sonnet-4-5', timeout: const Duration(seconds: 120));
+        maxTokens: 2000,
+        model: 'claude-sonnet-4-5',
+        timeout: const Duration(seconds: 120));
     switch (res) {
       case CloudError(:final kind, :final detail):
         return CloudError(kind, detail);
       case CloudOk(:final value):
         if (value['steps'] is! List) {
-          return const CloudError(CloudErrorKind.malformed, 'response had no steps array');
+          return const CloudError(
+              CloudErrorKind.malformed, 'response had no steps array');
         }
         return CloudOk(value);
     }
@@ -318,7 +476,8 @@ the near-side arm and leg from the far-side pair so the two sides never lie exac
 other — that overlap is what makes a lying figure unreadable.''';
 
   @override
-  Future<CloudResult<Map<String, dynamic>>> authorFigures(List<String> movements) async {
+  Future<CloudResult<Map<String, dynamic>>> authorFigures(
+      List<String> movements) async {
     // Drawing is the longest generation in the app — several SVGs per call. Give it room, and cap
     // the batch so one enormous routine can't produce a single request that runs for minutes.
     // Two frames of dense path data run ~600-800 tokens per movement once the figures are properly
@@ -326,8 +485,10 @@ other — that overlap is what makes a lying figure unreadable.''';
     // nothing" rather than "the response was cut off" — so the budget is generous and the batch is
     // small.
     final batch = movements.take(6).toList();
-    final res = await _message(_figureSys, 'Draw these movements: ${batch.join(", ")}',
-        maxTokens: 1600 * batch.length + 800, model: 'claude-sonnet-4-5',
+    final res = await _message(
+        _figureSys, 'Draw these movements: ${batch.join(", ")}',
+        maxTokens: 1600 * batch.length + 800,
+        model: 'claude-sonnet-4-5',
         timeout: Duration(seconds: 60 + 30 * batch.length));
     switch (res) {
       case CloudError(:final kind, :final detail):
@@ -344,15 +505,27 @@ other — that overlap is what makes a lying figure unreadable.''';
   /// to a typed [CloudError]. On 200 with a usable text block, [CloudOk] of that text.
   /// [_message] (JSON) and [generate] (free text) both build on this.
   Future<CloudResult<String>> _rawText(String sys, String user,
-      {int maxTokens = 200, String model = 'claude-haiku-4-5', Duration? timeout}) async {
-    if (key == null || key!.isEmpty) return const CloudError(CloudErrorKind.noKey);
+      {int maxTokens = 200,
+      String model = 'claude-haiku-4-5',
+      Duration? timeout}) async {
+    if (key == null || key!.isEmpty)
+      return const CloudError(CloudErrorKind.noKey);
+    if (!admission.admit()) {
+      return const CloudError(
+        CloudErrorKind.rateLimited,
+        'local cloud admission limit reached',
+      );
+    }
     final body = jsonEncode({
       'model': model,
       'max_tokens': maxTokens,
       'system': sys,
-      'messages': [{'role': 'user', 'content': user}],
+      'messages': [
+        {'role': 'user', 'content': user}
+      ],
     });
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 15);
     try {
       return await Future(() async {
         final req = await client.postUrl(Uri.parse(_url));
@@ -380,11 +553,15 @@ other — that overlap is what makes a lying figure unreadable.''';
           }
         }
         final content = decoded is Map ? decoded['content'] : null;
-        if (content is! List) return const CloudError<String>(CloudErrorKind.malformed, 'no content array');
+        if (content is! List)
+          return const CloudError<String>(
+              CloudErrorKind.malformed, 'no content array');
         final block = content.firstWhere(
             (b) => b is Map && b['type'] == 'text' && b['text'] is String,
             orElse: () => null);
-        if (block == null) return const CloudError<String>(CloudErrorKind.malformed, 'no text block (refusal?)');
+        if (block == null)
+          return const CloudError<String>(
+              CloudErrorKind.malformed, 'no text block (refusal?)');
         return CloudOk<String>((block['text'] as String).trim());
         // 30s bounds a router turn, which the user is waiting on. Authoring calls generate far
         // more tokens (a routine, or a set of drawn figures) and legitimately take longer — a
@@ -407,17 +584,24 @@ other — that overlap is what makes a lying figure unreadable.''';
 
   /// JSON path (routing/authoring): extracts the first JSON object from the model text.
   Future<CloudResult<Map<String, dynamic>>> _message(String sys, String user,
-      {int maxTokens = 200, String model = 'claude-haiku-4-5', Duration? timeout}) async {
-    switch (await _rawText(sys, user, maxTokens: maxTokens, model: model, timeout: timeout)) {
+      {int maxTokens = 200,
+      String model = 'claude-haiku-4-5',
+      Duration? timeout}) async {
+    switch (await _rawText(sys, user,
+        maxTokens: maxTokens, model: model, timeout: timeout)) {
       case CloudError(:final kind, :final detail):
         return CloudError(kind, detail);
       case CloudOk(:final value):
         try {
-          final jsonStr = RegExp(r'\{.*\}', dotAll: true).firstMatch(value)?.group(0);
-          if (jsonStr == null) return const CloudError(CloudErrorKind.malformed, 'no JSON object in text');
+          final jsonStr =
+              RegExp(r'\{.*\}', dotAll: true).firstMatch(value)?.group(0);
+          if (jsonStr == null)
+            return const CloudError(
+                CloudErrorKind.malformed, 'no JSON object in text');
           final obj = jsonDecode(jsonStr);
           if (obj is! Map<String, dynamic>) {
-            return const CloudError(CloudErrorKind.malformed, 'JSON was not an object');
+            return const CloudError(
+                CloudErrorKind.malformed, 'JSON was not an object');
           }
           return CloudOk<Map<String, dynamic>>(obj);
         } catch (e) {
@@ -427,47 +611,52 @@ other — that overlap is what makes a lying figure unreadable.''';
   }
 
   static const _genSys = <String, String>{
-    'gift_ideas':
-        'You suggest thoughtful gift ideas for someone the user cares about. Use ONLY the '
+    'gift_ideas': 'You suggest thoughtful gift ideas for someone the user cares about. Use ONLY the '
         'facts provided about them — never invent details. Give 3-4 concrete ideas, each '
         'tied to a specific fact ("because they …"). If the facts are thin, say so honestly '
         'and suggest what to learn. Warm, concise, plain text (no preamble).',
-    'briefing':
-        'You write a short, warm daily briefing from the user\'s own data provided below. '
+    'briefing': 'You write a short, warm daily briefing from the user\'s own data provided below. '
         'Use ONLY what is given — never invent. Lead with what needs attention today '
         '(due/overdue, reminders, birthdays), then a brief encouraging note. Plain text, concise.',
     'reconnect':
         'You help the user reconnect with someone they care about. Using ONLY the facts and '
-        'the time-since-last-contact provided, suggest 2-3 warm, specific ways to reach out '
-        '(reference a real shared detail; if it has been a while, acknowledge that gently). '
-        'Never invent facts. Warm, concrete, plain text.',
+            'the time-since-last-contact provided, suggest 2-3 warm, specific ways to reach out '
+            '(reference a real shared detail; if it has been a while, acknowledge that gently). '
+            'Never invent facts. Warm, concrete, plain text.',
     'weekly_review':
         'You write a short, reflective weekly review from the user\'s own logged data below. '
-        'Use ONLY what is given — never invent. Summarize what actually happened this week '
-        '(interactions, tasks completed, workouts, moods), note one thing that went well and '
-        'one gentle observation. If little was logged, say so warmly. Plain text, concise.',
+            'Use ONLY what is given — never invent. Summarize what actually happened this week '
+            '(interactions, tasks completed, workouts, moods), note one thing that went well and '
+            'one gentle observation. If little was logged, say so warmly. Plain text, concise.',
     'pattern_insight':
         'You surface ONE genuine pattern across the user\'s logged records below (e.g. mood '
-        'against exercise or contact). Use ONLY the data given — if there is not enough to '
-        'support a real pattern, say so plainly and never invent one. State the pattern, the '
-        'evidence for it, and one small, kind suggestion. Plain text, concise.',
+            'against exercise or contact). Use ONLY the data given — if there is not enough to '
+            'support a real pattern, say so plainly and never invent one. State the pattern, the '
+            'evidence for it, and one small, kind suggestion. Plain text, concise.',
     'draft_message':
         'You draft a short message in the USER\'S OWN VOICE to the named contact, grounded in '
-        'the facts and recent interactions provided. It is a DRAFT the user will review and '
-        'send themselves — you never send it, and you never impersonate a third party. Use '
-        'ONLY real shared details; keep it natural and warm. Output just the message text.',
+            'the facts and recent interactions provided. It is a DRAFT the user will review and '
+            'send themselves — you never send it, and you never impersonate a third party. Use '
+            'ONLY real shared details; keep it natural and warm. Output just the message text.',
   };
 
   @override
-  Future<CloudResult<String>> generate(String kind, String context) =>
-      _rawText(_genSys[kind] ?? 'You are a warm, grounded personal assistant. Use ONLY the facts given.',
-          context, maxTokens: 400);
+  Future<CloudResult<String>> generate(String kind, String context) => _rawText(
+      _genSys[kind] ??
+          'You are a warm, grounded personal assistant. Use ONLY the facts given.',
+      context,
+      maxTokens: 400);
 
   static const _sentinels = {'none', 'null', ''};
   // The fixed, binary-shipped generative-kind set (Spec 03 §2.2a / §7.3.2, G-46). A kind outside
   // this set is treated as abstain (parallel to the invented-skillId rule) — never dispatched.
   static const _generativeKinds = {
-    'gift_ideas', 'reconnect', 'draft_message', 'briefing', 'weekly_review', 'pattern_insight'
+    'gift_ideas',
+    'reconnect',
+    'draft_message',
+    'briefing',
+    'weekly_review',
+    'pattern_insight'
   };
 
   /// Full-inventory residual routing. Ok({skillId, slots}) on a route, Ok(null) when
@@ -484,7 +673,8 @@ other — that overlap is what makes a lying figure unreadable.''';
     // ("Katherine" -> "Katherine Zinger") rather than minting a duplicate. Bounded (count +
     // per-name length) so a huge address book — or a contact whose NAME contains prompt-like
     // text — can't balloon or steer the routing prompt; names are quoted for the same reason.
-    final names = knownContacts.where((n) => n.trim().isNotEmpty).take(200).map((n) {
+    final names =
+        knownContacts.where((n) => n.trim().isNotEmpty).take(200).map((n) {
       var v = n.replaceAll('"', '').trim();
       if (v.length > 60) v = v.substring(0, 60);
       return '"$v"';
@@ -496,7 +686,8 @@ other — that overlap is what makes a lying figure unreadable.''';
             'EXACT name as the slot value. Otherwise use the name as spoken.';
     // A multi-record response ({"actions":[...]}) is longer than a single route — give it
     // headroom so the JSON is never truncated into a malformed reply.
-    final res = await _message(_sys, 'Capabilities:\n$inv$contactClause\n\nUtterance: "$utterance"\n\nJSON:',
+    final res = await _message(_sys,
+        'Capabilities:\n$inv$contactClause\n\nUtterance: "$utterance"\n\nJSON:',
         maxTokens: 700);
     switch (res) {
       case CloudError(:final kind, :final detail):
@@ -507,17 +698,22 @@ other — that overlap is what makes a lying figure unreadable.''';
         // for "slots" — coerce anything that isn't a Map to empty rather than throwing a
         // TypeError (the CloudClient contract is that failures are typed, never exceptions).
         Map<String, dynamic> normSlots(Object? raw) {
-          final s = raw is Map ? raw.cast<String, dynamic>() : <String, dynamic>{};
+          final s =
+              raw is Map ? raw.cast<String, dynamic>() : <String, dynamic>{};
           // the model sometimes leaks the 'none' sentinel into a slot value; normalize
           // those to a real null so they can't crash a downstream resolver.
-          s.updateAll((k, v) => (v is String && _sentinels.contains(v.trim().toLowerCase())) ? null : v);
+          s.updateAll((k, v) =>
+              (v is String && _sentinels.contains(v.trim().toLowerCase()))
+                  ? null
+                  : v);
           return s;
         }
 
         // Multi-record decomposition: keep only actions naming a real capability.
         if (parsed['actions'] is List) {
           final actions = <Map<String, dynamic>>[];
-          var skippedGen = 0; // a generative kind wrongly placed inside a batch — dropped but COUNTED
+          var skippedGen =
+              0; // a generative kind wrongly placed inside a batch — dropped but COUNTED
           for (final a in (parsed['actions'] as List)) {
             if (a is! Map) continue;
             // A generative kind may not live in a batch (Spec 03 §7.3.2); count it so the session's
@@ -527,16 +723,24 @@ other — that overlap is what makes a lying figure unreadable.''';
               continue;
             }
             final sid = a['skillId'];
-            if (sid == null || sid == 'none' || !skills.containsKey(sid)) continue;
+            if (sid == null || sid == 'none' || !skills.containsKey(sid))
+              continue;
             actions.add({'skillId': sid, 'slots': normSlots(a['slots'])});
           }
-          if (actions.isEmpty) return const CloudOk<Map<String, dynamic>?>(null);
+          if (actions.isEmpty)
+            return const CloudOk<Map<String, dynamic>?>(null);
           if (actions.length == 1) {
-            return CloudOk<Map<String, dynamic>?>(
-                {...actions.first, 'source': 'cloud', if (skippedGen > 0) 'skippedGenerative': skippedGen});
+            return CloudOk<Map<String, dynamic>?>({
+              ...actions.first,
+              'source': 'cloud',
+              if (skippedGen > 0) 'skippedGenerative': skippedGen
+            });
           }
-          return CloudOk<Map<String, dynamic>?>(
-              {'actions': actions, 'source': 'cloud', if (skippedGen > 0) 'skippedGenerative': skippedGen});
+          return CloudOk<Map<String, dynamic>?>({
+            'actions': actions,
+            'source': 'cloud',
+            if (skippedGen > 0) 'skippedGenerative': skippedGen
+          });
         }
         // Generative recognition (Spec 03 §2.2a / §7.3.2, G-46): a synthesis request routes to a
         // fixed generative kind, not a skill — checked BEFORE the skill-abstain, since a generative
@@ -548,11 +752,15 @@ other — that overlap is what makes a lying figure unreadable.''';
             'generativeKind': gk,
             'params': normSlots(parsed['params']),
             'source': 'cloud',
-            if (tmpl is String && tmpl.trim().isNotEmpty) 'template': tmpl.trim(),
+            if (tmpl is String && tmpl.trim().isNotEmpty)
+              'template': tmpl.trim(),
           });
         }
-        if (parsed['skillId'] == null || parsed['skillId'] == 'none' || !skills.containsKey(parsed['skillId'])) {
-          return const CloudOk<Map<String, dynamic>?>(null); // the model abstained
+        if (parsed['skillId'] == null ||
+            parsed['skillId'] == 'none' ||
+            !skills.containsKey(parsed['skillId'])) {
+          return const CloudOk<Map<String, dynamic>?>(
+              null); // the model abstained
         }
         final tmpl = parsed['template'];
         return CloudOk<Map<String, dynamic>?>({

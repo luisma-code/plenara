@@ -39,6 +39,120 @@ class PlannerChange {
   });
 }
 
+class PlanTaskItem {
+  final String id;
+  final PlannerItemKind kind;
+  final String title;
+  final DateTime? scheduledStartAt;
+  final DateTime? dueAt;
+  final int? estimatedMinutes;
+  final String priority;
+  final String? energy;
+  final List<String> contexts;
+  final String? recurrence;
+  final bool blocked;
+  final String? blockedReason;
+
+  const PlanTaskItem({
+    required this.id,
+    required this.kind,
+    required this.title,
+    required this.scheduledStartAt,
+    required this.dueAt,
+    required this.estimatedMinutes,
+    required this.priority,
+    this.energy,
+    this.contexts = const [],
+    this.recurrence,
+    required this.blocked,
+    this.blockedReason,
+  });
+}
+
+class PlanDaySummary {
+  final DateTime day;
+  final int scheduledMinutes;
+  final int capacityMinutes;
+  final int unknownEstimateCount;
+  final int conflictCount;
+
+  const PlanDaySummary({
+    required this.day,
+    required this.scheduledMinutes,
+    required this.capacityMinutes,
+    required this.unknownEstimateCount,
+    required this.conflictCount,
+  });
+
+  bool get overloaded => scheduledMinutes > capacityMinutes;
+}
+
+class PlanConflict {
+  final DateTime day;
+  final List<String> recordIds;
+  final String message;
+
+  const PlanConflict({
+    required this.day,
+    required this.recordIds,
+    required this.message,
+  });
+}
+
+class PlanProjection {
+  final DateTime selectedDay;
+  final List<PlanDaySummary> days;
+  final List<PlanTaskItem> agenda;
+  final List<PlanTaskItem> deadlines;
+  final List<PlanTaskItem> unscheduled;
+  final List<PlanConflict> conflicts;
+
+  const PlanProjection({
+    required this.selectedDay,
+    required this.days,
+    required this.agenda,
+    required this.deadlines,
+    required this.unscheduled,
+    required this.conflicts,
+  });
+}
+
+class TaskPlanPatch {
+  final String id;
+  final DateTime? scheduledStartAt;
+  final bool clearSchedule;
+  final int? estimatedMinutes;
+  final String? status;
+  final String? description;
+  final bool complete;
+
+  const TaskPlanPatch({
+    required this.id,
+    this.scheduledStartAt,
+    this.clearSchedule = false,
+    this.estimatedMinutes,
+    this.status,
+    this.description,
+    this.complete = false,
+  });
+}
+
+class PlannerContext {
+  final DateTime? visibleStart;
+  final DateTime? visibleEnd;
+  final DateTime? selectedDay;
+  final List<String> selectedRecordIds;
+  final List<String> visibleRecordIds;
+
+  const PlannerContext({
+    this.visibleStart,
+    this.visibleEnd,
+    this.selectedDay,
+    this.selectedRecordIds = const [],
+    this.visibleRecordIds = const [],
+  });
+}
+
 class TodayProjection {
   final DateTime day;
   final List<PlannerItem> now;
@@ -169,6 +283,165 @@ TodayProjection buildTodayProjection(
     inboxCount: inboxCount,
   );
 }
+
+PlanProjection buildPlanProjection(
+  Map<String, Map<String, dynamic>> records,
+  DateTime now, {
+  required DateTime selectedDay,
+  int dailyCapacityMinutes = 8 * 60,
+}) {
+  final selected = _day(selectedDay);
+  final weekStart = selected.subtract(Duration(days: selected.weekday - 1));
+  final activeTasks = records.values
+      .where((record) =>
+          record['typeId'] == 'task' &&
+          record['completed'] != true &&
+          record['status'] != 'done')
+      .toList();
+
+  PlanTaskItem taskItem(Map<String, dynamic> record) {
+    final dependencies = ((record['dependencyRefs'] as List?) ?? const [])
+        .map((value) => '$value')
+        .toList();
+    final unmet = dependencies.where((id) {
+      final dependency = records[id];
+      return dependency == null ||
+          (dependency['completed'] != true && dependency['status'] != 'done');
+    }).toList();
+    final explicitReason = record['blockedReason']?.toString().trim();
+    return PlanTaskItem(
+      id: '${record['id']}',
+      kind: PlannerItemKind.task,
+      title: '${record['description'] ?? 'Untitled task'}',
+      scheduledStartAt: _dateTime(record['scheduledStartAt']),
+      dueAt: _dateTime(record['dueAt']),
+      estimatedMinutes: _positiveMinutes(record['estimatedMinutes']),
+      priority: '${record['priority'] ?? 'none'}',
+      energy: record['energy']?.toString(),
+      contexts: (record['contexts'] as List? ?? const [])
+          .map((value) => '$value')
+          .toList(growable: false),
+      recurrence: record['recurrence']?.toString(),
+      blocked: unmet.isNotEmpty || (explicitReason?.isNotEmpty ?? false),
+      blockedReason: explicitReason?.isNotEmpty == true
+          ? explicitReason
+          : unmet.isEmpty
+              ? null
+              : 'Waiting on ${unmet.length} task${unmet.length == 1 ? '' : 's'}',
+    );
+  }
+
+  final taskItems = activeTasks.map(taskItem).toList();
+  final conflicts = <PlanConflict>[];
+  for (var offset = 0; offset < 7; offset++) {
+    final day = weekStart.add(Duration(days: offset));
+    final scheduled = taskItems
+        .where((item) => _sameDay(item.scheduledStartAt, day))
+        .where((item) => item.estimatedMinutes != null)
+        .toList()
+      ..sort((a, b) => a.scheduledStartAt!.compareTo(b.scheduledStartAt!));
+    for (var i = 0; i < scheduled.length; i++) {
+      final left = scheduled[i];
+      final end = left.scheduledStartAt!.add(
+        Duration(minutes: left.estimatedMinutes!),
+      );
+      for (var j = i + 1; j < scheduled.length; j++) {
+        final right = scheduled[j];
+        if (!right.scheduledStartAt!.isBefore(end)) break;
+        conflicts.add(
+          PlanConflict(
+            day: day,
+            recordIds: [left.id, right.id],
+            message: '${left.title} overlaps ${right.title}',
+          ),
+        );
+      }
+    }
+  }
+
+  final agenda = taskItems
+      .where((item) => _sameDay(item.scheduledStartAt, selected))
+      .toList()
+    ..sort((a, b) => a.scheduledStartAt!.compareTo(b.scheduledStartAt!));
+  for (final record in records.values) {
+    if (record['typeId'] != 'reminder' || record['done'] == true) continue;
+    final at = _dateTime(record['remindAt']);
+    if (!_sameDay(at, selected)) continue;
+    agenda.add(
+      PlanTaskItem(
+        id: '${record['id']}',
+        kind: PlannerItemKind.reminder,
+        title: '${record['text'] ?? 'Reminder'}',
+        scheduledStartAt: at,
+        dueAt: null,
+        estimatedMinutes: null,
+        priority: 'none',
+        blocked: false,
+      ),
+    );
+  }
+  agenda.sort((a, b) => a.scheduledStartAt!.compareTo(b.scheduledStartAt!));
+
+  final deadlines = taskItems
+      .where((item) => _sameDay(item.dueAt, selected))
+      .toList()
+    ..sort(_planRiskOrder);
+  final unscheduled = taskItems
+      .where((item) =>
+          item.scheduledStartAt == null && !_sameDay(item.dueAt, selected))
+      .toList()
+    ..sort(_planRiskOrder);
+
+  final days = <PlanDaySummary>[];
+  for (var offset = 0; offset < 7; offset++) {
+    final day = weekStart.add(Duration(days: offset));
+    final scheduled = taskItems
+        .where((item) => _sameDay(item.scheduledStartAt, day))
+        .toList();
+    days.add(
+      PlanDaySummary(
+        day: day,
+        scheduledMinutes: scheduled.fold(
+          0,
+          (sum, item) => sum + (item.estimatedMinutes ?? 0),
+        ),
+        capacityMinutes: dailyCapacityMinutes,
+        unknownEstimateCount:
+            scheduled.where((item) => item.estimatedMinutes == null).length,
+        conflictCount:
+            conflicts.where((item) => _sameDay(item.day, day)).length,
+      ),
+    );
+  }
+
+  return PlanProjection(
+    selectedDay: selected,
+    days: List.unmodifiable(days),
+    agenda: List.unmodifiable(agenda),
+    deadlines: List.unmodifiable(deadlines),
+    unscheduled: List.unmodifiable(unscheduled),
+    conflicts: List.unmodifiable(
+      conflicts.where((item) => _sameDay(item.day, selected)),
+    ),
+  );
+}
+
+int? _positiveMinutes(Object? value) {
+  final parsed = value is num ? value.round() : num.tryParse('$value')?.round();
+  return parsed == null || parsed <= 0 ? null : parsed;
+}
+
+int _planRiskOrder(PlanTaskItem a, PlanTaskItem b) {
+  const priority = {'high': 0, 'medium': 1, 'low': 2, 'none': 3};
+  final p = (priority[a.priority] ?? 3).compareTo(priority[b.priority] ?? 3);
+  if (p != 0) return p;
+  final dueA = a.dueAt ?? DateTime(9999);
+  final dueB = b.dueAt ?? DateTime(9999);
+  final due = dueA.compareTo(dueB);
+  return due != 0 ? due : a.title.compareTo(b.title);
+}
+
+DateTime _day(DateTime value) => DateTime(value.year, value.month, value.day);
 
 PlannerItem? _relationshipNudge(
   Map<String, Map<String, dynamic>> records,

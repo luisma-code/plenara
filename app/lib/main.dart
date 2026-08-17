@@ -10,13 +10,16 @@ import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/reminders.dart';
 import 'package:plenara/session.dart';
+import 'package:plenara/planner.dart';
 
 import 'app_log.dart';
 import 'build_channel.dart';
 import 'credential_store.dart';
 import 'data_view.dart';
 import 'glyphs.dart';
+import 'library_home.dart';
 import 'onboarding_view.dart';
+import 'plan_view.dart';
 import 'plena.dart';
 import 'plenara_theme.dart';
 import 'routine_view.dart';
@@ -29,15 +32,15 @@ import 'today_view.dart';
 import 'macos_scheduler.dart';
 import 'windows_scheduler.dart';
 
-// Dev fallback seed source. A SHIPPED build seeds from its BUNDLED assets instead — main()
-// extracts them on first run and sets _bundledSeedDir (see seed_assets.dart). A dev machine can
+// Dev fallback seed source. A SHIPPED build installs/upgrades from its BUNDLED assets instead —
+// main() extracts them each launch and sets _bundledSeedDir (see seed_assets.dart). A dev machine can
 // point PLENARA_SEED_DIR at the repo (e.g. macOS: export PLENARA_SEED_DIR="$HOME/code/plenara/v0/data").
 const sourceDataDir = r'Z:\code\plenara\v0\data';
-// Set by main() when it extracts the bundled seed assets on first run; read by buildSession.
+// Set by main() when it extracts the bundled seed assets; read by buildSession.
 String? _bundledSeedDir;
 
 /// Build the production Session from user config: the real (synced) data folder,
-/// seeded with the built-in capabilities on first run, the BYOK key, and the real
+/// installed/upgraded with bundled capabilities, the BYOK key, and the real
 /// Windows toast scheduler (reminders now fire as OS notifications, not just on-open
 /// nudges). The scheduler self-inits lazily on first schedule/cancel.
 /// Pick the OS notification backend for this platform. The single place `Platform.is*` decides a
@@ -58,10 +61,10 @@ Session buildSession({NotificationScheduler? scheduler}) {
   AppLog.instance.registerSecret(cfg.apiKey);
   // loadConfig already derives the correct dataDir per platform (live Documents dir on mobile, where
   // the container path is unstable; the user's folder on desktop) — one source of truth, so this and
-  // main()'s first-run seed check agree (previously they diverged, re-extracting seeds every launch).
+  // main()'s bundled-definition extraction agree.
   final dataDir = cfg.dataDir;
   // Seed source priority: explicit dev override > extracted bundled assets (shipped build) > dev
-  // path. ensureSeeded no-ops once the data folder is already seeded, so this is first-run only.
+  // path. ensureSeeded installs missing built-ins and only advances explicitly newer type schemas.
   final seed =
       Platform.environment['PLENARA_SEED_DIR'] ??
       _bundledSeedDir ??
@@ -75,8 +78,14 @@ Session buildSession({NotificationScheduler? scheduler}) {
   return Session(
     dataDir,
     cloud: useCloud
-        ? ClaudeClient(apiKeyOverride: cfg.apiKey)
-        : ClaudeClient(apiKeyOverride: ''),
+        ? ClaudeClient(
+            apiKeyOverride: cfg.apiKey,
+            usagePath: '${defaultDeviceDir()}/cloud-usage.json',
+          )
+        : ClaudeClient(
+            apiKeyOverride: '',
+            usagePath: '${defaultDeviceDir()}/cloud-usage.json',
+          ),
     scheduler: scheduler,
     deviceDir:
         defaultDeviceDir(), // deviceId + turnlog stay device-local, off the synced folder
@@ -104,14 +113,14 @@ Future<void> main() async {
     // Print the diagnostics log path so a manual test that goes wrong is one file away.
     stdout.writeln('Plenara diagnostics log: ${log.file.path}');
     log('boot: main() starting');
-    // Extract the bundled seed defs before first run (skipped when a dev override is set or the
-    // data folder is already seeded) so a shipped binary seeds itself with no repo present.
+    // Extract the bundled definitions on every launch (unless a dev source is
+    // explicit). ensureSeeded adds missing built-ins and promotes newer type
+    // schemas without clobbering same-version edits; skipping extraction for a
+    // non-empty folder would strand older installs forever.
     if (Platform.environment['PLENARA_SEED_DIR'] == null) {
       try {
-        if (!isSeeded(loadAppConfig().dataDir)) {
-          _bundledSeedDir = await extractSeedAssets();
-          log('boot: extracted bundled seed assets -> $_bundledSeedDir');
-        }
+        _bundledSeedDir = await extractSeedAssets();
+        log('boot: extracted bundled seed assets -> $_bundledSeedDir');
       } catch (e, st) {
         log(
           'boot: seed asset extraction FAILED (falling back to dev path): $e\n$st',
@@ -144,12 +153,7 @@ class Home extends StatefulWidget {
   final Session? session;
   final bool retrieval;
   final String? configPath; // injectable for tests; null = the real user config
-  const Home({
-    super.key,
-    this.session,
-    this.retrieval = false,
-    this.configPath,
-  });
+  const Home({super.key, this.session, this.retrieval = true, this.configPath});
   @override
   State<Home> createState() => _HomeState();
 }
@@ -169,9 +173,8 @@ class _HomeState extends State<Home> {
 
 class ChatScreen extends StatefulWidget {
   /// Tests inject a Session (temp data dir + replay/offline cloud). [retrieval]
-  /// defaults OFF — the embed server isn't part of the dogfood setup, and building
-  /// the index against a DOWN server costs ~2s per anchor (a minute-long startup
-  /// hang). Enable it only alongside a running embed server.
+  /// defaults ON in production through [Home]. The backend is in-process and
+  /// offline; focused widget tests may still disable index construction.
   final Session? session;
   final bool retrieval;
   final SpeechRecognizer?
@@ -265,6 +268,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   _caption; // the current exchange text, materialised over the void (Spec 15 §6.1 / §7.3)
   bool _displayIsList =
       false; // a list-shaped reply eases Plena to a corner (§6.3)
+  int _plannerTab =
+      0; // Today / Plan / Library, the three primary roots (Spec 17)
   // The glyph Plena should trace next, fired by bumping the nonce (Spec 15 §5A). apt-or-absent:
   // most turns fire none. A short debounce keeps them from stacking during rapid dogfooding.
   GlyphDef? _glyph;
@@ -481,6 +486,20 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   /// both typed and voice input, since voice auto-sends through [_send].
   bool _maybeNavCommand(String t) {
     final s = t.toLowerCase().trim().replaceAll(RegExp(r'[.!?]+$'), '');
+    final plannerDestination = switch (s) {
+      'today' || 'open today' || 'show today' || 'go to today' => 0,
+      'plan' || 'open plan' || 'show plan' || 'go to plan' => 1,
+      'library' || 'open library' || 'show library' || 'go to library' => 2,
+      _ => null,
+    };
+    if (plannerDestination != null) {
+      setState(() {
+        _plannerTab = plannerDestination;
+        _caption = null;
+        _displayIsList = false;
+      });
+      return true;
+    }
     if (RegExp(
       r'^(?:(?:open|show|go to|take me to|open up)\s+)?(?:the\s+)?settings$',
     ).hasMatch(s)) {
@@ -1305,12 +1324,69 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         ),
         if (showPlanner)
           Positioned.fill(
-            child: TodayBoard(
-              session: _session,
-              onChanged: () => setState(() {}),
-              onVoice: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
-              onOpenLibrary: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => DataView(session: _session)),
+            child: switch (_plannerTab) {
+              1 => PlanBoard(
+                session: _session,
+                onChanged: () => setState(() {}),
+                onVoice: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
+              ),
+              2 => LibraryHome(
+                session: _session,
+                onVoice: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
+                onOpen: (title, typeIds) => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => DataView(
+                      session: _session,
+                      title: title,
+                      typeIds: typeIds,
+                    ),
+                  ),
+                ),
+              ),
+              _ => TodayBoard(
+                session: _session,
+                onChanged: () => setState(() {}),
+                onVoice: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
+                onOpenLibrary: () => setState(() => _plannerTab = 2),
+              ),
+            },
+          ),
+        if (showPlanner)
+          Positioned(
+            left: 12,
+            right: 12,
+            bottom: 6,
+            child: SafeArea(
+              top: false,
+              child: NavigationBar(
+                key: const Key('planner-navigation'),
+                selectedIndex: _plannerTab,
+                height: 68,
+                backgroundColor: const Color(0xEE15120F),
+                indicatorColor: const Color(0x33E9A58B),
+                onDestinationSelected: (index) => setState(() {
+                  _plannerTab = index;
+                  if (index == 2) {
+                    _session.setPlannerContext(const PlannerContext());
+                  }
+                }),
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.today_outlined),
+                    selectedIcon: Icon(Icons.today_rounded),
+                    label: 'Today',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.calendar_view_week_outlined),
+                    selectedIcon: Icon(Icons.calendar_view_week_rounded),
+                    label: 'Plan',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.grid_view_outlined),
+                    selectedIcon: Icon(Icons.grid_view_rounded),
+                    label: 'Library',
+                  ),
+                ],
               ),
             ),
           ),
@@ -1377,7 +1453,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           curve: Curves.easeOut,
           left: 0,
           right: 0,
-          bottom: showInput ? 0 : -180,
+          bottom: showInput ? (showPlanner ? 78 : 0) : -180,
           child: _inputBar(context),
         ),
         // Offset the corner controls by the safe-area insets: at top:6 the menu button sat UNDER the
@@ -1385,7 +1461,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         // mute button likewise clears the home indicator.
         Positioned(
           left: 14,
-          bottom: 14 + MediaQuery.of(context).padding.bottom,
+          bottom:
+              (showPlanner ? 84 : 14) + MediaQuery.of(context).padding.bottom,
           child: _muteButton(),
         ),
         Positioned(
@@ -1717,7 +1794,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
             child: Text(switch (action) {
               'harness' => 'Dev harness',
               'tune' => 'Tune Plena',
-              'data' => 'Library',
+              'data' => 'All data',
               _ => 'Settings',
             }),
           ),

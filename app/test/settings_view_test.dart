@@ -159,6 +159,26 @@ void main() {
     expect(loadConfig(configPath: path).freeTier, isFalse); // back to paid
   });
 
+  testWidgets('Cloud usage shows persisted admission counters', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final path = newCfg();
+    final usagePath = '${File(path).parent.path}/cloud-usage.json';
+    final admission = CloudAdmissionController(
+      path: usagePath,
+      clock: () => DateTime.now(),
+    );
+    expect(admission.admit(), isTrue);
+
+    await tester.pumpWidget(MaterialApp(home: SettingsView(configPath: path)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cloud admission today'), findsOneWidget);
+    expect(find.text('1 / 200'), findsOneWidget);
+    expect(find.text('Recent burst'), findsOneWidget);
+    expect(find.text('1 / 30'), findsOneWidget);
+  });
+
   testWidgets('Internal diagnostics explicitly say raw and content-bearing', (
     tester,
   ) async {

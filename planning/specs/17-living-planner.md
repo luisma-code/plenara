@@ -1,12 +1,12 @@
 # Spec 17 — Living Planner & Multimodal Product Model
 
-**Status:** v0.2 — 2026-08-17, active implementation authority. Today v1, the durable conversation ledger, task schema v3, and the adaptive full-screen/collaborator presence are wired; Plan, purpose-built Library, proposals, and detail ember remain later increments.
+**Status:** v0.3 — 2026-08-17, active implementation authority. Today, phone/desktop Plan, purpose-built Library, the durable conversation ledger, task schema v4, structured planner context, in-process retrieval, cloud admission, and the adaptive full-screen/collaborator presence are wired; proposals, detached operations, and the detail ember remain later increments.
 **Supersedes:** research §2.2's overlay-only/no-touch rule; Spec 07 P1–P2 and its four-surface model; Spec 15 D1/D14 where they make full-screen presence or ephemeral exchange the steady-state product. Those documents remain design history and point here for current behavior.
 **Depends on:** Specs 01–06 for schema, skills, routing, orchestration, functional behavior, and storage; Spec 07 for visual language and generic archetypes; Spec 12 for voice; Spec 15 for Plena's renderer.
 
 ---
 
-## Current realization — Increment 2
+## Current realization — Increment 3
 
 - Opening the app renders the deterministic Today projection rather than an ephemeral greeting. It includes bounded Now/Next/Later sections, one relationship date, the latest durable execution with targeted undo, Inbox count, operational notices, and repair state.
 - Voice and typed capture continue through `Session.handle`; Today completion calls the typed `Session.completeTask` command directly. Both converge on `ExecutionCoordinator` and its durable device-local journal.
@@ -14,8 +14,14 @@
 - Task schema v3 owns `status`, `scheduledStartAt`, `estimatedMinutes`, `priority`, `projectRef`, `areaRef`, `contactRefs`, `notes`, and `completedAt`; `dueAt` remains deadline-only. Project and area are registered record types.
 - Plena remains full-bleed during conversation and yields within the same canvas when Today is visible. The populated surface has an explicit accessible voice target; tap-anywhere remains active only on non-interactive space.
 - Onboarding uses the same warm presence and palette, pins both decisions outside its scrollable story area, and states the internal-dogfood diagnostic policy. Platform icons are generated from a deterministic Plena particle mark for iOS, macOS, and Windows.
+- Phone Plan now has a week strip, selected-day agenda, deadlines, unscheduled queue, load, conflict state, direct schedule/defer/resize/complete actions, and multi-select. Desktop expands the same semantics into a week/queue workspace with drag-to-day scheduling.
+- Library now exposes purpose-built People, Goals, Routines, Trackers, Journal, Projects & areas, Learned phrases, and Automations summaries while preserving the complete editable data browser.
+- Task schema v4 represents dependencies, blocked reason, energy, contexts, and recurrence. Existing folders receive missing built-ins and newer versioned types without clobbering authored or same-version definitions; exact definition and record backups precede migration.
+- Plan and Today publish structured visible dates, ordered objects, and selection ids. Contextual commands such as “move these to tomorrow at 10am” and “make the first one 45 minutes” resolve against those ids and enter the same durable execution/undo path as touch and pointer actions.
+- Production routing now builds an in-process deterministic feature-hash index and orders common work as corpus → bounded accepted retrieval with deterministic slot extraction → cloud residual → visible clarification. Localhost embeddings remain an explicit development experiment, not a runtime dependency.
+- Every Anthropic request crosses one persisted admission controller before HTTP: 200 calls per local day and 30 per rolling ten minutes. Corrupt or unwritable usage state fails closed, and Settings shows both counters.
 
-This realization is not a claim that the complete Increment 2 evidence gate has passed. Physical-device safe-area/glance testing, dogfood capture timing, and the real-data migration/rollback exercise remain gate evidence rather than inferred code properties.
+Increment 3's automated evidence gate is complete: 1,877 engine tests plus 36 declared skips, 118 Flutter tests plus the intentional internal-build external-channel skip, tier coverage of 94.2% deterministic core / 90.3% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, and the same five tests on a local iPhone 17 Pro simulator all pass. A disposable-copy exercise migrated the real task to v4 with one backup, zero repair issues, and byte-identical source data. Human glance-time, compare/sequence speed, correction rate, and local retrieval quality require ordinary use of an explicitly deployed build; automated harnesses never target Luis's physical phone.
 
 ## 0. Product decision
 

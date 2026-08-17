@@ -27,6 +27,22 @@ final _undoRe = RegExp(
     r"^(?:(?:no,?|never ?mind,?|wait,?|actually,?)\s+)?(?:(?:can|could|will) you\s+)?(?:please\s+)?(?:undo|revert|take (?:that|it) back|scratch that|roll (?:that|it) back)(?:\s+(?:that|it|this|please|(?:the|my|that) last (?:one|thing|entry|log)))?[.!]?$",
     caseSensitive: false);
 
+// Contextual planner commands operate only on records the planner has explicitly
+// published as visible or selected. This keeps pronouns deterministic: "these"
+// never means a guessed set, and "the first one" never re-derives a hidden order.
+final _plannerDeferRe = RegExp(
+    r'^(?:defer|unschedule|move)\s+(.+?)\s+(?:to\s+)?(?:someday|later|the backlog)[.!]?$',
+    caseSensitive: false);
+final _plannerScheduleRe = RegExp(
+    r'^(?:move|schedule|put)\s+(.+?)\s+(?:to|on|at|for)\s+(.+?)[.!]?$',
+    caseSensitive: false);
+final _plannerEstimateRe = RegExp(
+    r'^(?:make|set|estimate)\s+(.+?)\s+(?:(?:to|at|for|as)\s+)?(\d+)\s*(minutes?|mins?|hours?|hrs?)[.!]?$',
+    caseSensitive: false);
+final _plannerCompleteRe = RegExp(
+    r'^(?:complete|finish|mark(?:\s+as)?\s+done|check\s+off)\s+(.+?)[.!]?$',
+    caseSensitive: false);
+
 // ---- Numbered-list corrections (reference-by-number over the last spoken readback) ----------
 // The ordered list Plena last read back, captured from the interpreter's `enumerate` channel.
 // "delete 2" / "complete 1" / "correct 3" resolve N against THIS — by recordId, never by re-derived
@@ -696,12 +712,13 @@ class Session {
   // correction path overwrites _outSource (so a chapter entered via "no, I meant tracking" wasn't
   // seen as a tour turn and got killed). Fable review #10.
   bool _tourSpokeThisTurn = false;
-  // Whether retrieval (the embed-server index) is active this session. Authoring
+  // Whether the in-process retrieval index is active this session. Authoring
   // grows the inventory and must re-index — but only when retrieval is on, so the
   // authoring path stays hermetic under init(retrieval: false), like init() itself.
   bool _retrievalEnabled = true;
   ContentSearchIndex?
       _contentIndex; // semantic content search (F-12); null until retrieval builds it
+  PlannerContext _plannerContext = const PlannerContext();
   Map<String, ReferenceStore> _references =
       const {}; // reference KBs (Spec 13), loaded at init
 
@@ -746,8 +763,8 @@ class Session {
             .map((_) => 'Conversation history needs repair.'),
       ];
 
-  /// [retrieval] builds the embedding index (needs the embed server, ~2s per anchor
-  /// when it's DOWN — so the app defaults it OFF). Tests pass false to stay hermetic.
+  /// [retrieval] builds the deterministic in-process embedding index. Tests may
+  /// pass false when routing itself is not under test, keeping fixtures minimal.
   /// [onPhase] receives a line at the start/end of each init phase — the app writes
   /// these to its diagnostics log, so a startup HANG shows the last phase that began.
   Future<void> init(
@@ -964,7 +981,10 @@ class Session {
           'WARNING: the seed corpus could not be read (${router.corruptFiles.join(', ')}) — '
           'routing is degraded; reinstall or restore that file to repair.');
     }
-    claude = _injectedCloud ?? ClaudeClient();
+    claude = _injectedCloud ??
+        ClaudeClient(
+          usagePath: '${_deviceDir ?? dataDir}/cloud-usage.json',
+        );
     _generative = GenerativeService(claude);
     for (final s in skills.values) {
       interp.validateSkill(s);
@@ -972,8 +992,7 @@ class Session {
     phase('validated skills');
     _retrievalEnabled = retrieval;
     if (retrieval) {
-      phase(
-          'building retrieval index (embed server — may hang if it is down)…');
+      phase('building in-process retrieval index…');
       await router.buildRetrievalIndex(skills);
       _contentIndex = ContentSearchIndex();
       await _contentIndex!.build(
@@ -1295,6 +1314,144 @@ class Session {
     );
   }
 
+  PlanProjection planProjection(
+    DateTime selectedDay, {
+    int dailyCapacityMinutes = 8 * 60,
+  }) =>
+      buildPlanProjection(
+        store,
+        now,
+        selectedDay: selectedDay,
+        dailyCapacityMinutes: dailyCapacityMinutes,
+      );
+
+  void setPlannerContext(PlannerContext context) {
+    _plannerContext = PlannerContext(
+      visibleStart: context.visibleStart,
+      visibleEnd: context.visibleEnd,
+      selectedDay: context.selectedDay,
+      selectedRecordIds: List.unmodifiable(context.selectedRecordIds),
+      visibleRecordIds: List.unmodifiable(context.visibleRecordIds),
+    );
+  }
+
+  List<String>? _plannerTargetIds(String phrase) {
+    final target = phrase
+        .toLowerCase()
+        .replaceAll(RegExp(r'^(?:the|my)\s+'), '')
+        .replaceAll(RegExp(r'\s+(?:tasks?|items?)$'), '')
+        .trim();
+    if (const {
+      'these',
+      'them',
+      'selected',
+      'the selected',
+      'all these',
+      'all of these',
+    }.contains(target)) {
+      return _plannerContext.selectedRecordIds.isEmpty
+          ? null
+          : List<String>.from(_plannerContext.selectedRecordIds);
+    }
+    if (const {'it', 'this', 'this one', 'selected one'}.contains(target)) {
+      return _plannerContext.selectedRecordIds.length == 1
+          ? [_plannerContext.selectedRecordIds.single]
+          : null;
+    }
+    const positions = {
+      'first': 0,
+      'first one': 0,
+      'one': 0,
+      'second': 1,
+      'second one': 1,
+      'two': 1,
+      'third': 2,
+      'third one': 2,
+      'three': 2,
+      'fourth': 3,
+      'fourth one': 3,
+      'four': 3,
+      'fifth': 4,
+      'fifth one': 4,
+      'five': 4,
+    };
+    final position = positions[target];
+    if (position != null &&
+        position < _plannerContext.visibleRecordIds.length) {
+      return [_plannerContext.visibleRecordIds[position]];
+    }
+    return null;
+  }
+
+  Future<String?> _plannerContextCommand(
+      String utterance, DateTime clock) async {
+    Future<String> finish(
+      Future<ManualWrite> operation, {
+      required String skill,
+    }) async {
+      final result = await operation;
+      _outSource = 'planner-context';
+      _outSkill = skill;
+      _lastTurnWrote = result.ok;
+      return result.message;
+    }
+
+    final defer = _plannerDeferRe.firstMatch(utterance);
+    if (defer != null) {
+      final ids = _plannerTargetIds(defer.group(1)!);
+      if (ids != null) {
+        return finish(deferTasks(ids), skill: 'defer-task');
+      }
+    }
+
+    final estimate = _plannerEstimateRe.firstMatch(utterance);
+    if (estimate != null) {
+      final ids = _plannerTargetIds(estimate.group(1)!);
+      if (ids != null) {
+        var minutes = int.parse(estimate.group(2)!);
+        if (estimate.group(3)!.toLowerCase().startsWith('h')) minutes *= 60;
+        return finish(
+          updateTaskPlans([
+            for (final id in ids)
+              TaskPlanPatch(id: id, estimatedMinutes: minutes),
+          ]),
+          skill: 'estimate-task',
+        );
+      }
+    }
+
+    final complete = _plannerCompleteRe.firstMatch(utterance);
+    if (complete != null) {
+      final ids = _plannerTargetIds(complete.group(1)!);
+      if (ids != null) {
+        return finish(completeTasks(ids), skill: 'complete-task');
+      }
+    }
+
+    final schedule = _plannerScheduleRe.firstMatch(utterance);
+    if (schedule != null) {
+      final ids = _plannerTargetIds(schedule.group(1)!);
+      if (ids != null) {
+        final phrase = schedule.group(2)!.trim();
+        final resolved = router.resolveDateTime(phrase, clock);
+        DateTime? start = resolved == null ? null : DateTime.tryParse(resolved);
+        if (start == null) {
+          final date = router.resolveFutureDate(phrase, clock);
+          final day = date == null ? null : DateTime.tryParse(date);
+          if (day != null) {
+            start = DateTime(day.year, day.month, day.day, 9);
+          }
+        }
+        if (start == null) {
+          _outSource = 'clarify';
+          return 'I found the tasks, but not the time. Try “tomorrow at 10am.”';
+        }
+        return finish(scheduleTasks(ids, start), skill: 'schedule-task');
+      }
+    }
+    return null;
+  }
+
   /// Direct planner completion. It shares the exact mutation/undo path used by
   /// voice, without synthesizing an utterance inside UI code.
   Future<ManualWrite> completeTask(String id) async {
@@ -1345,6 +1502,157 @@ class Session {
       undoId: result.record!.id,
     );
   }
+
+  /// Apply one or more structured planner edits as a single durable execution.
+  /// Voice context and direct manipulation call this same method; UI code never
+  /// synthesizes English and a multi-select change produces one targeted undo.
+  Future<ManualWrite> updateTaskPlans(List<TaskPlanPatch> patches) async {
+    if (patches.isEmpty) {
+      return const ManualWrite.fail('No tasks were selected.');
+    }
+    if (patches.map((patch) => patch.id).toSet().length != patches.length) {
+      return const ManualWrite.fail('A task was selected more than once.');
+    }
+    final updated = <Map<String, dynamic>>[];
+    for (final patch in patches) {
+      final record = store[patch.id];
+      if (record == null || record['typeId'] != 'task') {
+        return const ManualWrite.fail(
+          'One of those tasks no longer exists, so nothing changed.',
+        );
+      }
+      if (record['completed'] == true || record['status'] == 'done') {
+        return ManualWrite.fail(
+          '“${record['description']}” is already done, so nothing changed.',
+        );
+      }
+      if (patch.estimatedMinutes != null &&
+          (patch.estimatedMinutes! < 1 || patch.estimatedMinutes! > 24 * 60)) {
+        return const ManualWrite.fail(
+          'An estimate must be between 1 minute and 24 hours.',
+        );
+      }
+      final next = Map<String, dynamic>.from(record);
+      if (patch.clearSchedule) {
+        next.remove('scheduledStartAt');
+        if (next['status'] == 'scheduled' && patch.status == null) {
+          next['status'] = 'inbox';
+        }
+      }
+      if (patch.scheduledStartAt != null) {
+        next['scheduledStartAt'] = patch.scheduledStartAt!.toIso8601String();
+        next['status'] = patch.status ?? 'scheduled';
+      } else if (patch.status != null) {
+        next['status'] = patch.status;
+      }
+      if (patch.estimatedMinutes != null) {
+        next['estimatedMinutes'] = patch.estimatedMinutes;
+      }
+      if (patch.description != null) {
+        final description = patch.description!.trim();
+        if (description.isEmpty) {
+          return const ManualWrite.fail('A task description cannot be empty.');
+        }
+        next['description'] = description;
+      }
+      if (patch.complete) {
+        next['completed'] = true;
+        next['status'] = 'done';
+        next['completedAt'] = now.toIso8601String();
+      }
+      updated.add(next);
+    }
+
+    final prospective = <String, Map<String, dynamic>>{
+      ...store,
+      for (final record in updated) '${record['id']}': record,
+    };
+    final validated = <Map<String, dynamic>>[];
+    try {
+      for (final record in updated) {
+        validated.add(
+          const ValueCodec().validateRecord(
+            types['task']!,
+            record,
+            records: prospective,
+            dataRoot: dataDir,
+          ),
+        );
+      }
+    } on ValueCodecError catch (error) {
+      return ManualWrite.fail(error.message);
+    }
+
+    final count = validated.length;
+    final result = _executeMutation(
+      writes: validated,
+      deletes: const [],
+      origin: 'planner-direct',
+      description: count == 1
+          ? 'updated “${validated.single['description']}” in the plan'
+          : 'updated $count tasks in the plan',
+      frozenInputs: {
+        'recordIds': validated.map((record) => record['id']).toList(),
+      },
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite ||
+        result.record == null) {
+      return const ManualWrite.fail(
+        "Couldn't start that plan change safely, so nothing changed.",
+      );
+    }
+    _clearSpokenCorrectionContext();
+    try {
+      automations.notifyWrites(validated);
+    } catch (_) {
+      // A planner edit remains durable even if an automation is malformed.
+    }
+    try {
+      repo.logTurn({
+        'source': 'planner-direct',
+        'op': 'update-plan',
+        'count': count,
+        'executionId': result.record!.id,
+      });
+    } catch (_) {
+      // Internal diagnostics never determine whether the user action succeeds.
+    }
+    return ManualWrite.ok(
+      result.state == ExecutionResultState.appliedInMemory
+          ? "Updated here, but couldn't finish saving it. I'll recover it next launch."
+          : count == 1
+              ? 'Updated — ${validated.single['description']}.'
+              : 'Updated $count tasks together.',
+      undoId: result.record!.id,
+    );
+  }
+
+  Future<ManualWrite> scheduleTasks(List<String> ids, DateTime firstStart) {
+    var cursor = firstStart;
+    final patches = <TaskPlanPatch>[];
+    for (final id in ids) {
+      patches.add(TaskPlanPatch(id: id, scheduledStartAt: cursor));
+      final estimate =
+          num.tryParse('${store[id]?['estimatedMinutes'] ?? ''}')?.round() ??
+              30;
+      cursor = cursor.add(Duration(minutes: estimate.clamp(1, 24 * 60)));
+    }
+    return updateTaskPlans(patches);
+  }
+
+  Future<ManualWrite> deferTasks(List<String> ids) => updateTaskPlans([
+        for (final id in ids)
+          TaskPlanPatch(id: id, clearSchedule: true, status: 'someday'),
+      ]);
+
+  Future<ManualWrite> resizeTask(String id, int estimatedMinutes) =>
+      updateTaskPlans([
+        TaskPlanPatch(id: id, estimatedMinutes: estimatedMinutes),
+      ]);
+
+  Future<ManualWrite> completeTasks(List<String> ids) => updateTaskPlans([
+        for (final id in ids) TaskPlanPatch(id: id, complete: true),
+      ]);
 
   ExecutionResult _executeMutation({
     required List<Map<String, dynamic>> writes,
@@ -2418,7 +2726,7 @@ class Session {
         CloudErrorKind.offline => "I'm offline right now.",
         CloudErrorKind.timeout => "the cloud didn't respond in time.",
         CloudErrorKind.rateLimited =>
-          "I'm being rate-limited — try again shortly.",
+          "Claude use is rate-limited right now — check the local counters in Settings.",
         CloudErrorKind.serverError => "the cloud had a server error.",
         CloudErrorKind.malformed =>
           "I got an unexpected response from the cloud.",
@@ -2833,6 +3141,12 @@ class Session {
       return _undoLastInternal();
     }
 
+    // A planner surface publishes the exact records and order currently in view.
+    // Resolve pronouns against that snapshot before generic routing; without a
+    // visible context these patterns decline to match and normal voice routing wins.
+    final plannerCommand = await _plannerContextCommand(u, now);
+    if (plannerCommand != null) return plannerCommand;
+
     // Reference-by-number over the last numbered readback ("delete 2", "complete 1", "correct 3").
     // Only when a list is in front of us — otherwise these fall through so "delete the first task"
     // still reaches delete-task-at. Resolve by recordId, never a re-derived order (P: no drift).
@@ -3033,6 +3347,13 @@ class Session {
     if (searchM != null) return _searchContent(searchM.group(1) ?? '');
 
     var routed = router.route(u, clock: now, contacts: _knownContactTokens());
+    // The production cold-start order is corpus → in-process retrieval → cloud.
+    // Retrieval may act only when both its candidate margin and a deterministic
+    // slot extractor succeed; otherwise it has made no decision and cloud keeps
+    // responsibility for the genuine residual.
+    if (routed == null && _retrievalEnabled) {
+      routed = await router.retrievalRoute(u);
+    }
     // Compound utterance (F-13): two independent commands joined by "and" — "log a run
     // and journal that I feel great" — execute BOTH and compose the confirmations.
     // Deliberately conservative, because MANY single commands contain "and" ("remind me

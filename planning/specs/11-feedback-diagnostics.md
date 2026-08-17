@@ -64,7 +64,7 @@ The reporting tool is `v0/bin/turnlog_report.dart`: a summary view (source mix, 
 A timestamped plain-text diagnostic log opened at boot (`app/lib/app_log.dart`), one file per run (newest file = latest run), each line flushed immediately. It captures, per `app/lib/main.dart`:
 
 - **Boot**: `boot: main() starting`, and the log path printed to stdout and repeated in the app greeting — so a failed manual test is one file away (P11.4).
-- **Every `Session.init` phase** with elapsed ms (the `onPhase` callback, `v0/lib/session.dart §init`): defs loaded, skills validated, retrieval index built or skipped, reminders reconciled. A startup *hang* therefore shows the last phase that began (the design reason the retrieval-index phase logs *before* it starts — it can hang on a down embed server).
+- **Every `Session.init` phase** with elapsed ms (the `onPhase` callback, `v0/lib/session.dart §init`): defs loaded, skills validated, in-process retrieval index built or skipped, reminders reconciled. A startup *hang* therefore shows the last phase that began; retrieval no longer depends on a localhost service.
 - **Every turn**: the utterance (`turn: "$t"`) and a 140-char response prefix — both Class C, local only.
 - **Every uncaught error**: `FlutterError.onError` and the `runZonedGuarded` handler write the full exception + stack.
 

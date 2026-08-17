@@ -24,6 +24,25 @@ class TodayBoard extends StatelessWidget {
     final projection = session.todayProjection();
     final notices = session.plannerNotices();
     final day = projection.day;
+    final visibleIds = <String>[];
+    final seen = <String>{};
+    for (final item in [
+      ...projection.now,
+      ...projection.next,
+      ...projection.later,
+    ]) {
+      if (item.kind == PlannerItemKind.task && seen.add(item.id)) {
+        visibleIds.add(item.id);
+      }
+    }
+    session.setPlannerContext(
+      PlannerContext(
+        visibleStart: day,
+        visibleEnd: day.add(const Duration(days: 7)),
+        selectedDay: day,
+        visibleRecordIds: visibleIds,
+      ),
+    );
     return SafeArea(
       child: Align(
         alignment: Alignment.topCenter,

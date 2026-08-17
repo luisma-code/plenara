@@ -18,8 +18,8 @@ Future<HttpServer> _serve(void Function(HttpRequest) handler) async {
   return server;
 }
 
-ClaudeClient _client(HttpServer s) =>
-    ClaudeClient(apiKeyOverride: 'test-key', url: 'http://127.0.0.1:${s.port}/v1/messages');
+ClaudeClient _client(HttpServer s) => ClaudeClient(
+    apiKeyOverride: 'test-key', url: 'http://127.0.0.1:${s.port}/v1/messages');
 
 void _reply(HttpRequest req, int status, String body) {
   req.response.statusCode = status;
@@ -27,16 +27,24 @@ void _reply(HttpRequest req, int status, String body) {
   req.response.close();
 }
 
-String _text(String t) => jsonEncode({'content': [{'type': 'text', 'text': t}]});
+String _text(String t) => jsonEncode({
+      'content': [
+        {'type': 'text', 'text': t}
+      ]
+    });
 
 // unwrap helpers
-Map<String, dynamic>? _ok(CloudResult<Map<String, dynamic>?> r) => (r as CloudOk<Map<String, dynamic>?>).value;
-CloudErrorKind _errKind(CloudResult<Map<String, dynamic>?> r) => (r as CloudError<Map<String, dynamic>?>).kind;
+Map<String, dynamic>? _ok(CloudResult<Map<String, dynamic>?> r) =>
+    (r as CloudOk<Map<String, dynamic>?>).value;
+CloudErrorKind _errKind(CloudResult<Map<String, dynamic>?> r) =>
+    (r as CloudError<Map<String, dynamic>?>).kind;
 
 void main() {
   test('200 good -> Ok(route) with slots', () async {
-    final s = await _serve((r) => _reply(r, 200, _text('{"skillId":"create-task","slots":{"description":"buy milk"}}')));
-    final res = _ok(await _client(s).routeResidual('jot down buy milk', _skills));
+    final s = await _serve((r) => _reply(r, 200,
+        _text('{"skillId":"create-task","slots":{"description":"buy milk"}}')));
+    final res =
+        _ok(await _client(s).routeResidual('jot down buy milk', _skills));
     expect(res?['skillId'], 'create-task');
     expect(res?['slots']['description'], 'buy milk');
     expect(res?['source'], 'cloud');
@@ -44,25 +52,42 @@ void main() {
   });
 
   test('200 empty content (refusal shape) -> CloudError.malformed', () async {
-    final s = await _serve((r) => _reply(r, 200, jsonEncode({'content': [], 'stop_reason': 'refusal'})));
-    expect(_errKind(await _client(s).routeResidual('x', _skills)), CloudErrorKind.malformed);
+    final s = await _serve((r) =>
+        _reply(r, 200, jsonEncode({'content': [], 'stop_reason': 'refusal'})));
+    expect(_errKind(await _client(s).routeResidual('x', _skills)),
+        CloudErrorKind.malformed);
     await s.close(force: true);
   });
 
   test('200 non-text first block -> CloudError.malformed', () async {
-    final s = await _serve((r) => _reply(r, 200, jsonEncode({'content': [{'type': 'thinking', 'text': 'hmm'}]})));
-    expect(_errKind(await _client(s).routeResidual('x', _skills)), CloudErrorKind.malformed);
+    final s = await _serve((r) => _reply(
+        r,
+        200,
+        jsonEncode({
+          'content': [
+            {'type': 'thinking', 'text': 'hmm'}
+          ]
+        })));
+    expect(_errKind(await _client(s).routeResidual('x', _skills)),
+        CloudErrorKind.malformed);
     await s.close(force: true);
   });
 
   test('200 prose-wrapped JSON -> Ok, still extracts', () async {
-    final s = await _serve((r) => _reply(r, 200, _text('Sure! {"skillId":"log-mood","slots":{"rating":"great"}} hope that helps')));
-    expect(_ok(await _client(s).routeResidual('x', _skills))?['skillId'], 'log-mood');
+    final s = await _serve((r) => _reply(
+        r,
+        200,
+        _text(
+            'Sure! {"skillId":"log-mood","slots":{"rating":"great"}} hope that helps')));
+    expect(_ok(await _client(s).routeResidual('x', _skills))?['skillId'],
+        'log-mood');
     await s.close(force: true);
   });
 
-  test('200 unknown skillId -> Ok(null) abstain (validated against inventory)', () async {
-    final s = await _serve((r) => _reply(r, 200, _text('{"skillId":"nonexistent","slots":{}}')));
+  test('200 unknown skillId -> Ok(null) abstain (validated against inventory)',
+      () async {
+    final s = await _serve(
+        (r) => _reply(r, 200, _text('{"skillId":"nonexistent","slots":{}}')));
     expect(_ok(await _client(s).routeResidual('x', _skills)), isNull);
     await s.close(force: true);
   });
@@ -74,70 +99,149 @@ void main() {
   });
 
   test('leaked "none" slot value normalized to null', () async {
-    final s = await _serve((r) => _reply(r, 200, _text('{"skillId":"create-task","slots":{"description":"x","dueDate":"none"}}')));
+    final s = await _serve((r) => _reply(
+        r,
+        200,
+        _text(
+            '{"skillId":"create-task","slots":{"description":"x","dueDate":"none"}}')));
     final res = _ok(await _client(s).routeResidual('x', _skills));
     expect(res?['slots']['dueDate'], isNull);
     await s.close(force: true);
   });
 
   test('401 -> CloudError.badKey (actionable)', () async {
-    final s = await _serve((r) => _reply(r, 401, '{"error":"invalid x-api-key"}'));
-    expect(_errKind(await _client(s).routeResidual('x', _skills)), CloudErrorKind.badKey);
+    final s =
+        await _serve((r) => _reply(r, 401, '{"error":"invalid x-api-key"}'));
+    expect(_errKind(await _client(s).routeResidual('x', _skills)),
+        CloudErrorKind.badKey);
     await s.close(force: true);
   });
 
   test('429 -> CloudError.rateLimited', () async {
     final s = await _serve((r) => _reply(r, 429, 'rate limited'));
-    expect(_errKind(await _client(s).routeResidual('x', _skills)), CloudErrorKind.rateLimited);
+    expect(_errKind(await _client(s).routeResidual('x', _skills)),
+        CloudErrorKind.rateLimited);
     await s.close(force: true);
   });
 
   test('500 -> CloudError.serverError', () async {
     final s = await _serve((r) => _reply(r, 500, 'boom'));
-    expect(_errKind(await _client(s).routeResidual('x', _skills)), CloudErrorKind.serverError);
+    expect(_errKind(await _client(s).routeResidual('x', _skills)),
+        CloudErrorKind.serverError);
     await s.close(force: true);
   });
 
-  test('400 "credit balance too low" -> insufficientCredits (billing, not a bad key)', () async {
+  test(
+      '400 "credit balance too low" -> insufficientCredits (billing, not a bad key)',
+      () async {
     final s = await _serve((r) => _reply(r, 400,
         '{"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Claude API. Please go to Plans & Billing to purchase credits."}}'));
-    expect(_errKind(await _client(s).routeResidual('x', _skills)), CloudErrorKind.insufficientCredits);
+    expect(_errKind(await _client(s).routeResidual('x', _skills)),
+        CloudErrorKind.insufficientCredits);
     await s.close(force: true);
   });
 
   test('validateKey probes the key and returns Ok on a 200', () async {
-    final s = await _serve((r) => _reply(r, 200, '{"content":[{"type":"text","text":"OK"}]}'));
+    final s = await _serve(
+        (r) => _reply(r, 200, '{"content":[{"type":"text","text":"OK"}]}'));
     expect(await _client(s).validateKey(), isA<CloudOk<String>>());
     await s.close(force: true);
+  });
+
+  test('persistent admission controller blocks calls before HTTP', () async {
+    var requests = 0;
+    final server = await _serve((request) {
+      requests++;
+      _reply(request, 200, _text('OK'));
+    });
+    final dir = Directory.systemTemp.createTempSync('plenara_admission_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final usagePath = '${dir.path}/cloud-usage.json';
+    final clock = () => DateTime.parse('2026-08-17T12:00:00');
+    ClaudeClient client() => ClaudeClient(
+          apiKeyOverride: 'test-key',
+          url: 'http://127.0.0.1:${server.port}/v1/messages',
+          admission: CloudAdmissionController(
+            path: usagePath,
+            clock: clock,
+            dailyLimit: 1,
+            burstLimit: 30,
+          ),
+        );
+
+    expect(await client().validateKey(), isA<CloudOk<String>>());
+    final blocked = await client().validateKey();
+
+    expect(blocked, isA<CloudError<String>>());
+    expect((blocked as CloudError<String>).kind, CloudErrorKind.rateLimited);
+    expect(requests, 1, reason: 'the rejected call must never reach HTTP');
+    expect(File(usagePath).existsSync(), isTrue);
+    await server.close(force: true);
+  });
+
+  test('a corrupt admission ledger fails closed before HTTP', () async {
+    var requests = 0;
+    final server = await _serve((request) {
+      requests++;
+      _reply(request, 200, _text('OK'));
+    });
+    final dir =
+        Directory.systemTemp.createTempSync('plenara_admission_corrupt_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final usagePath = '${dir.path}/cloud-usage.json';
+    File(usagePath).writeAsStringSync('{not valid json');
+    final admission = CloudAdmissionController(path: usagePath);
+    final client = ClaudeClient(
+      apiKeyOverride: 'test-key',
+      url: 'http://127.0.0.1:${server.port}/v1/messages',
+      admission: admission,
+    );
+
+    final blocked = await client.validateKey();
+
+    expect(blocked, isA<CloudError<String>>());
+    expect((blocked as CloudError<String>).kind, CloudErrorKind.rateLimited);
+    expect(requests, 0, reason: 'corrupt spend state must fail closed');
+    expect(admission.snapshot().dailyUsed, admission.dailyLimit);
+    await server.close(force: true);
   });
 
   test('classifyHttp maps status+body to typed errors (pure, unit-level)', () {
     expect(classifyHttp(200, '{}'), isNull);
     expect(classifyHttp(401, 'invalid x-api-key'), CloudErrorKind.badKey);
-    expect(classifyHttp(400, 'Your credit balance is too low'), CloudErrorKind.insufficientCredits);
+    expect(classifyHttp(400, 'Your credit balance is too low'),
+        CloudErrorKind.insufficientCredits);
     expect(classifyHttp(429, 'rate limited'), CloudErrorKind.rateLimited);
-    expect(classifyHttp(429, 'please purchase credits'), CloudErrorKind.insufficientCredits);
+    expect(classifyHttp(429, 'please purchase credits'),
+        CloudErrorKind.insufficientCredits);
     expect(classifyHttp(500, 'boom'), CloudErrorKind.serverError);
     // a plain (non-billing) 400 is a serverError, and a 5xx that merely mentions billing is NOT
     // insufficientCredits (would wrongly tell the user to add credits) — Fable review.
-    expect(classifyHttp(400, 'invalid parameter: max_tokens'), CloudErrorKind.serverError);
-    expect(classifyHttp(503, 'billing subsystem unavailable'), CloudErrorKind.serverError);
+    expect(classifyHttp(400, 'invalid parameter: max_tokens'),
+        CloudErrorKind.serverError);
+    expect(classifyHttp(503, 'billing subsystem unavailable'),
+        CloudErrorKind.serverError);
   });
 
-  test('usage tokens accumulate from a 200; costUsd math is correct (Haiku 4.5 pricing)', () async {
-    final s = await _serve((r) => _reply(
-        r, 200, '{"content":[{"type":"text","text":"OK"}],"usage":{"input_tokens":1000,"output_tokens":50}}'));
+  test(
+      'usage tokens accumulate from a 200; costUsd math is correct (Haiku 4.5 pricing)',
+      () async {
+    final s = await _serve((r) => _reply(r, 200,
+        '{"content":[{"type":"text","text":"OK"}],"usage":{"input_tokens":1000,"output_tokens":50}}'));
     final c = _client(s);
     await c.validateKey();
     expect(c.inTokens, 1000);
     expect(c.outTokens, 50);
-    expect(ClaudeClient.costUsd(1000, 50), closeTo((1000 * 1.0 + 50 * 5.0) / 1e6, 1e-12));
+    expect(ClaudeClient.costUsd(1000, 50),
+        closeTo((1000 * 1.0 + 50 * 5.0) / 1e6, 1e-12));
     expect(c.spentUsd, closeTo(ClaudeClient.costUsd(1000, 50), 1e-12));
     await s.close(force: true);
   });
 
-  test('a 200 with NO usage payload does not crash and accumulates nothing', () async {
-    final s = await _serve((r) => _reply(r, 200, '{"content":[{"type":"text","text":"OK"}]}'));
+  test('a 200 with NO usage payload does not crash and accumulates nothing',
+      () async {
+    final s = await _serve(
+        (r) => _reply(r, 200, '{"content":[{"type":"text","text":"OK"}]}'));
     final c = _client(s);
     expect(await c.validateKey(), isA<CloudOk<String>>());
     expect(c.inTokens, 0);
@@ -146,31 +250,39 @@ void main() {
 
   test('malformed JSON body -> CloudError.malformed', () async {
     final s = await _serve((r) => _reply(r, 200, 'definitely not json'));
-    expect(_errKind(await _client(s).routeResidual('x', _skills)), CloudErrorKind.malformed);
+    expect(_errKind(await _client(s).routeResidual('x', _skills)),
+        CloudErrorKind.malformed);
     await s.close(force: true);
   });
 
   test('authorCapability: good -> Ok({type, skill})', () async {
-    final s = await _serve((r) => _reply(r, 200, _text('{"type":{"typeId":"t"},"skill":{"skillId":"s"}}')));
+    final s = await _serve((r) => _reply(
+        r, 200, _text('{"type":{"typeId":"t"},"skill":{"skillId":"s"}}')));
     final a = _ok(await _client(s).authorCapability('thing'));
     expect(a?['type'], isA<Map>());
     expect((a?['skill'] as Map)['skillId'], 's');
     await s.close(force: true);
   });
 
-  test('authorCapability: non-map type/skill -> CloudError.malformed', () async {
-    final s = await _serve((r) => _reply(r, 200, _text('{"type":"x","skill":1}')));
-    expect(_errKind(await _client(s).authorCapability('thing')), CloudErrorKind.malformed);
+  test('authorCapability: non-map type/skill -> CloudError.malformed',
+      () async {
+    final s =
+        await _serve((r) => _reply(r, 200, _text('{"type":"x","skill":1}')));
+    expect(_errKind(await _client(s).authorCapability('thing')),
+        CloudErrorKind.malformed);
     await s.close(force: true);
   });
 
   test('connection refused -> CloudError.offline, no throw', () async {
-    final c = ClaudeClient(apiKeyOverride: 'k', url: 'http://127.0.0.1:1/v1/messages');
-    expect(_errKind(await c.routeResidual('x', _skills)), CloudErrorKind.offline);
+    final c = ClaudeClient(
+        apiKeyOverride: 'k', url: 'http://127.0.0.1:1/v1/messages');
+    expect(
+        _errKind(await c.routeResidual('x', _skills)), CloudErrorKind.offline);
   });
 
   test('empty key -> CloudError.noKey with no network call', () async {
-    final c = ClaudeClient(apiKeyOverride: '', url: 'http://127.0.0.1:1/unused');
+    final c =
+        ClaudeClient(apiKeyOverride: '', url: 'http://127.0.0.1:1/unused');
     expect(c.available, isFalse);
     expect(_errKind(await c.routeResidual('x', _skills)), CloudErrorKind.noKey);
     expect(_errKind(await c.authorCapability('x')), CloudErrorKind.noKey);

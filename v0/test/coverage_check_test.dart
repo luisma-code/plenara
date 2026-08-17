@@ -23,13 +23,24 @@ void main() {
     expect(failures, contains('UNCLASSIFIED COVERAGE: new_logic.dart'));
   });
 
-  test('declared exclusions do not weaken any measured tier', () {
+  test('the remaining operator-only exclusion does not weaken a measured tier',
+      () {
     final failures = coverageFailures({
       'interpreter.dart': [90, 100],
       'session.dart': [90, 100],
       'claude.dart': [90, 100],
-      'embed.dart': [0, 1000],
+      'replay_cloud.dart': [0, 1000],
     });
     expect(failures, isEmpty);
+  });
+
+  test('the in-process embedding backend is counted as product logic', () {
+    final failures = coverageFailures({
+      'interpreter.dart': [90, 100],
+      'session.dart': [100, 100],
+      'claude.dart': [90, 100],
+      'embed.dart': [0, 1000],
+    });
+    expect(failures, contains(contains('productLogic coverage')));
   });
 }

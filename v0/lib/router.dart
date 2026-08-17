@@ -33,7 +33,8 @@ class CorpusEntry {
 class Router {
   final List<CorpusEntry> corpus;
   final DateTime now;
-  final Set<String> _learnedTemplates = {}; // templates added by learn() / loaded as learned
+  final Set<String> _learnedTemplates =
+      {}; // templates added by learn() / loaded as learned
   /// Corpus files that failed to parse (torn / half-synced), for the caller to surface (P2.8).
   final List<String> corruptFiles = [];
   Router(this.corpus, this.now);
@@ -59,7 +60,8 @@ class Router {
       // init(), i.e. the app simply never opens, and stays that way until the file is deleted by
       // hand. Losing learned phrasings is recoverable; a bricked launch is not.
       try {
-        for (final e in jsonDecode(File(learnedPath).readAsStringSync()) as List) {
+        for (final e
+            in jsonDecode(File(learnedPath).readAsStringSync()) as List) {
           if (e is! Map<String, dynamic>) continue;
           final t = e['template'];
           if (t is! String) continue; // a malformed entry is skipped, not fatal
@@ -90,7 +92,8 @@ class Router {
   /// phrasing hits the fast path with no cloud call. Returns the template (for
   /// persistence) or null if nothing could be abstracted. Exact/near-exact
   /// learning; soft generalization (R9b) is deferred (findings §13).
-  String? learn(String utterance, String skillId, Map<String, dynamic> slots, {Set<String> contacts = const {}}) {
+  String? learn(String utterance, String skillId, Map<String, dynamic> slots,
+      {Set<String> contacts = const {}}) {
     var t = utterance.trim();
     final nonNull = slots.entries.where((e) => e.value != null).toList();
     var abstracted = 0;
@@ -101,7 +104,8 @@ class Router {
         // A slot value that IS a known contact abstracts to `:contact`, never `:text` — otherwise
         // a learned "what is {who:text} {q:text}" would defeat the :contact guard and hijack all
         // "what is X …" world-knowledge (Fable review, critical). Preserves the guard across learns.
-        final type = contacts.contains(vs.toLowerCase()) ? 'contact' : _inferType(vs);
+        final type =
+            contacts.contains(vs.toLowerCase()) ? 'contact' : _inferType(vs);
         t = '${t.substring(0, idx)}{${e.key}:$type}${t.substring(idx + vs.length)}';
         abstracted++;
       }
@@ -116,7 +120,8 @@ class Router {
     //     and — inserted first + persisted — permanently hijacks all routing.
     if (abstracted != nonNull.length) return null;
     if (!_hasStrongLiteral(t)) return null;
-    if (corpus.any((c) => c.template == t)) return null; // dedupe: nothing new to persist
+    if (corpus.any((c) => c.template == t))
+      return null; // dedupe: nothing new to persist
     corpus.insert(0, _compile({'skillId': skillId, 'template': t}));
     _learnedTemplates.add(t);
     return t;
@@ -129,7 +134,8 @@ class Router {
   /// ≥1 strong literal word must survive, and no duplicate. Returns the template to persist, or null.
   /// Recognition-only — the generation itself is never cached (§2.2a). No-contact kinds never learn
   /// (no placeholder → a zero-slot template the guards reject).
-  String? learnGenerative(String utterance, String generativeKind, String? contact,
+  String? learnGenerative(
+      String utterance, String generativeKind, String? contact,
       {DateTime? clock, Set<String> contacts = const {}}) {
     final vs = contact?.trim() ?? '';
     if (vs.isEmpty) return null;
@@ -141,8 +147,10 @@ class Router {
     final boundary = RegExp('\\b${RegExp.escape(vs)}\\b', caseSensitive: false);
     final m = boundary.firstMatch(t0);
     if (m == null) return null;
-    final t = '${t0.substring(0, m.start)}{contact:entity}${t0.substring(m.end)}';
-    if (boundary.hasMatch(t)) return null; // a second occurrence would leak the name verbatim
+    final t =
+        '${t0.substring(0, m.start)}{contact:entity}${t0.substring(m.end)}';
+    if (boundary.hasMatch(t))
+      return null; // a second occurrence would leak the name verbatim
     if (!_hasStrongLiteral(t)) return null;
     if (corpus.any((c) => c.template == t)) return null;
     // Round-trip like learnSuggested: compile, match THIS utterance, and re-extract the contact to the
@@ -154,7 +162,9 @@ class Router {
       return null;
     }
     final got = _extract(e, t0, asOf, contacts);
-    if (got == null || got['contact']?.toString().toLowerCase() != vs.toLowerCase()) return null;
+    if (got == null ||
+        got['contact']?.toString().toLowerCase() != vs.toLowerCase())
+      return null;
     corpus.insert(0, e);
     _learnedTemplates.add(t);
     return t;
@@ -184,9 +194,41 @@ class Router {
   // "note that {who:entity} {fact}" swallows "note that the meeting is at five". Reject when the
   // FIRST token is one of these (names never start with them). Keeps capture broad for real names.
   static const _entityStop = {
-    'the', 'a', 'an', 'my', 'your', 'his', 'her', 'their', 'our', 'its', 'this', 'that', 'these',
-    'those', 'i', 'it', 'we', 'they', 'you', 'he', 'she', 'myself', 'yourself', 'himself', 'herself',
-    'itself', 'ourselves', 'themselves', 'some', 'any', 'no', 'every', 'to', 'about', 'for'
+    'the',
+    'a',
+    'an',
+    'my',
+    'your',
+    'his',
+    'her',
+    'their',
+    'our',
+    'its',
+    'this',
+    'that',
+    'these',
+    'those',
+    'i',
+    'it',
+    'we',
+    'they',
+    'you',
+    'he',
+    'she',
+    'myself',
+    'yourself',
+    'himself',
+    'herself',
+    'itself',
+    'ourselves',
+    'themselves',
+    'some',
+    'any',
+    'no',
+    'every',
+    'to',
+    'about',
+    'for'
   };
   static bool _entityOk(String? raw) {
     if (raw == null || raw.isEmpty) return false;
@@ -224,17 +266,20 @@ class Router {
   /// a bare "Sarah is allergic to peanuts" records a fact with the predicate preserved.
   /// Longest alternatives first so "is allergic to" wins over "is". Paired with a
   /// :contact personName so it only annotates KNOWN people (no world-knowledge over-match).
-  static const _predwordPat = r'(?:is allergic to|is married to|is engaged to|is dating|'
+  static const _predwordPat =
+      r'(?:is allergic to|is married to|is engaged to|is dating|'
       r'works at|works for|works as|lives in|grew up in|is from|is into|'
       r'likes|loves|enjoys|hates|dislikes|prefers|plays|studies|studied|teaches|drives|owns)';
 
   /// The bounded regex for a `mealword` slot — the named meals, so "eggs for
   /// {mealType}" captures breakfast/lunch/dinner/etc. without a free-text slot.
-  static const _mealwordPat = r'(?:breakfast|lunch|dinner|supper|brunch|a\s+snack|snack|dessert)';
+  static const _mealwordPat =
+      r'(?:breakfast|lunch|dinner|supper|brunch|a\s+snack|snack|dessert)';
 
   /// The bounded regex for a `moodword` slot — a CLOSED set of feeling adjectives, so a
   /// bare "i'm {mood}" logs a mood without swallowing "i'm going to…" or "i'm 180 lbs".
-  static const _moodwordPat = r'(?:exhausted|tired|sleepy|drained|wiped|beat|spent|fried|'
+  static const _moodwordPat =
+      r'(?:exhausted|tired|sleepy|drained|wiped|beat|spent|fried|'
       r'happy|glad|good|great|amazing|wonderful|fantastic|ecstatic|joyful|cheerful|content|'
       r'sad|down|low|blue|gloomy|miserable|depressed|lonely|upset|hurt|'
       r'anxious|stressed|worried|nervous|overwhelmed|tense|restless|'
@@ -276,8 +321,10 @@ class Router {
       i = m.end;
     }
     sb.write(_lit(tmpl.substring(i)));
-    sb.write(r'[.?!]?$'); // strip a trailing . ? or ! so "what's Mia allergic to?" doesn't leak "?" into the slot
-    final fixed = (e['slots'] as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
+    sb.write(
+        r'[.?!]?$'); // strip a trailing . ? or ! so "what's Mia allergic to?" doesn't leak "?" into the slot
+    final fixed = (e['slots'] as Map?)?.cast<String, dynamic>() ??
+        const <String, dynamic>{};
     return CorpusEntry(e['skillId'] as String? ?? '', tmpl,
         RegExp(sb.toString(), caseSensitive: false), slotTypes,
         fixedSlots: fixed, generativeKind: e['generativeKind'] as String?);
@@ -287,7 +334,8 @@ class Router {
   /// boundaries as `\s+` (trimming would fuse adjacent placeholders).
   static String _lit(String s) {
     if (s.isEmpty) return '';
-    if (s.trim().isEmpty) return r'\s+'; // pure separator between two placeholders
+    if (s.trim().isEmpty)
+      return r'\s+'; // pure separator between two placeholders
     final lead = RegExp(r'^\s').hasMatch(s) ? r'\s+' : '';
     final trail = RegExp(r'\s$').hasMatch(s) ? r'\s+' : '';
     final core = s.trim().split(RegExp(r'\s+')).map(RegExp.escape).join(r'\s+');
@@ -311,7 +359,8 @@ class Router {
   /// path. Guards against decimals, a single trailing mark, and abbreviations/initials anywhere
   /// ("note that Sam works at St. Jude in Memphis" stays ONE command).
   static bool _isCompound(String u) {
-    final cleaned = u.replaceAllMapped(_abbrev, (m) => m.group(0)!.replaceAll('.', ''));
+    final cleaned =
+        u.replaceAllMapped(_abbrev, (m) => m.group(0)!.replaceAll('.', ''));
     var substantial = 0;
     for (final seg in cleaned.split(_sentenceSplit)) {
       if (_wordRe.allMatches(seg).length >= 2) substantial++;
@@ -327,7 +376,8 @@ class Router {
   /// matches one of these, so a broad "what is {who:contact} {q:text}" template is safe — it
   /// can't shadow OOD world-knowledge ("what is the capital…") or template queries ("what's my
   /// reading streak"), because "the"/"my" aren't contacts.
-  Map<String, dynamic>? route(String utterance, {DateTime? clock, Set<String> contacts = const {}}) {
+  Map<String, dynamic>? route(String utterance,
+      {DateTime? clock, Set<String> contacts = const {}}) {
     final u = utterance.trim();
     final asOf = clock ?? now;
     // A COMPOUND utterance — two or more complete sentences — is not a single command.
@@ -349,9 +399,19 @@ class Router {
           // slot becomes the param. The session dispatches it to the GenerativeService, same as a
           // residual-recognized one, with no cloud classification call.
           if (e.generativeKind != null) {
-            return {'generativeKind': e.generativeKind, 'params': slots, 'source': 'corpus', 'template': e.template};
+            return {
+              'generativeKind': e.generativeKind,
+              'params': slots,
+              'source': 'corpus',
+              'template': e.template
+            };
           }
-          return {'skillId': e.skillId, 'slots': slots, 'source': 'corpus', 'template': e.template};
+          return {
+            'skillId': e.skillId,
+            'slots': slots,
+            'source': 'corpus',
+            'template': e.template
+          };
         }
       }
     }
@@ -361,7 +421,8 @@ class Router {
   /// Match [u] against a single compiled entry and extract its resolved slots, or null if
   /// the template doesn't apply. Shared by [route] and [learnSuggested] so a learned
   /// template is validated by the SAME extraction the router uses at dispatch time.
-  Map<String, dynamic>? _extract(CorpusEntry e, String u, DateTime asOf, Set<String> contacts) {
+  Map<String, dynamic>? _extract(
+      CorpusEntry e, String u, DateTime asOf, Set<String> contacts) {
     final m = e.regex.firstMatch(u);
     if (m == null) return null;
     final slots = <String, dynamic>{};
@@ -371,7 +432,9 @@ class Router {
       final v = type == 'contact'
           ? (raw != null && contacts.contains(raw.toLowerCase()) ? raw : null)
           : type == 'entity'
-              ? (_entityOk(raw) ? raw : null) // a NAME slot can't start with the/a/my/I/... (G-12)
+              ? (_entityOk(raw)
+                  ? raw
+                  : null) // a NAME slot can't start with the/a/my/I/... (G-12)
               : _resolveSlot(raw, type, asOf);
       // an unparseable date/datetime — or a :contact/:entity slot that isn't a plausible name —
       // means this template doesn't apply; fall through. (For datetime this is also the task-vs-
@@ -399,16 +462,56 @@ class Router {
   // The slot types a learned template may use — the closed vocabulary [_compile] understands.
   // A cloud-suggested template naming anything else is rejected (never compiled into the corpus).
   static const _knownSlotTypes = {
-    'text', 'date', 'futuredate', 'datetime', 'quantity', 'entity', 'contact',
-    'dayword', 'pastday', 'posword', 'moodword', 'mealword', 'predword'
+    'text',
+    'date',
+    'futuredate',
+    'datetime',
+    'quantity',
+    'entity',
+    'contact',
+    'dayword',
+    'pastday',
+    'posword',
+    'moodword',
+    'mealword',
+    'predword'
   };
 
   // Stop-words that don't make a template specific — a template whose only literal is one of these
   // (or bare punctuation) is a near-catch-all and must never be learned.
   static const _weakLiterals = {
-    'i', 'a', 'an', 'my', 'me', 'the', 'im', "i'm", 'is', 'it', 'to', 'on', 'at', 'of', 'in', 'you',
-    'so', 'no', 'do', 'we', 'that', 'this', 'and', 'or', 'for', 'be', 'am', 'was', 'had', 'have'
+    'i',
+    'a',
+    'an',
+    'my',
+    'me',
+    'the',
+    'im',
+    "i'm",
+    'is',
+    'it',
+    'to',
+    'on',
+    'at',
+    'of',
+    'in',
+    'you',
+    'so',
+    'no',
+    'do',
+    'we',
+    'that',
+    'this',
+    'and',
+    'or',
+    'for',
+    'be',
+    'am',
+    'was',
+    'had',
+    'have'
   };
+
   /// True iff the template keeps at least one literal WORD (≥2 letters) that isn't a stop-word, so a
   /// learned template can't be a catch-all ("{x:text}") or near-catch-all ("i'm {mood:text}").
   static bool _hasStrongLiteral(String template) {
@@ -427,17 +530,21 @@ class Router {
   /// same slots the turn dispatched. Returns the template (to persist) or null if it fails any
   /// guard. Safe by construction: learned templates are tried only AFTER seeds (route's second
   /// pass), so one can never shadow a built-in.
-  String? learnSuggested(String utterance, String skillId, Map<String, dynamic> dispatched,
-      String template, {DateTime? clock, Set<String> contacts = const {}}) {
+  String? learnSuggested(String utterance, String skillId,
+      Map<String, dynamic> dispatched, String template,
+      {DateTime? clock, Set<String> contacts = const {}}) {
     final t = template.trim();
     final asOf = clock ?? now;
     // 1. Only the closed slot-type vocabulary; placeholders well-formed, bounded, and NAMED
     //    (not `_`, which produces no slot so the round-trip can't validate it).
     final phs = RegExp(r'\{(\w+):(\w+)\}').allMatches(t).toList();
-    if (phs.isEmpty) return null; // a template with no slots is just a memorized utterance
-    if (phs.length > 4) return null; // cap: many free-text slots invite catastrophic regex backtracking
+    if (phs.isEmpty)
+      return null; // a template with no slots is just a memorized utterance
+    if (phs.length > 4)
+      return null; // cap: many free-text slots invite catastrophic regex backtracking
     for (final m in phs) {
-      if (m.group(1) == '_' || !_knownSlotTypes.contains(m.group(2))) return null;
+      if (m.group(1) == '_' || !_knownSlotTypes.contains(m.group(2)))
+        return null;
     }
     // 2. A STRONG literal must survive — else "{x:text}" (catch-all) or "i'm {mood:text}"
     //    (near-catch-all) gets learned + persisted + inserted-first, hijacking all routing.
@@ -454,7 +561,8 @@ class Router {
     final got = _extract(e, utterance.trim(), asOf, contacts);
     if (got == null) return null;
     for (final k in {...dispatched.keys, ...got.keys}) {
-      if (dispatched[k]?.toString() != got[k]?.toString()) return null; // resolved mismatch
+      if (dispatched[k]?.toString() != got[k]?.toString())
+        return null; // resolved mismatch
     }
     corpus.insert(0, e);
     _learnedTemplates.add(t);
@@ -466,12 +574,9 @@ class Router {
 
   /// Embed each skill's anchors (humanized id + displayName + its corpus
   /// templates cleaned to phrases). Multi-vector: one vector per anchor (§13).
-  Future<void> buildRetrievalIndex(Map<String, Map<String, dynamic>> skills) async {
-    // Probe the embed server ONCE. If it's down (the common case — it's optional), bail
-    // immediately rather than eating a 5s connection timeout PER anchor (dozens of anchors
-    // = a minute-long startup hang). Retrieval is a nice-to-have suggestion layer; without
-    // the server it's simply unavailable, and routing still works (corpus + cloud + clarify).
-    if (await embed('probe') == null) return;
+  Future<void> buildRetrievalIndex(
+      Map<String, Map<String, dynamic>> skills) async {
+    _skillVecs.clear();
     final anchors = <String, Set<String>>{};
     for (final s in skills.values) {
       final sid = s['skillId'] as String;
@@ -485,7 +590,8 @@ class Router {
       // Generative candidates join retrieval under their kind only at the §3.2 end-state migration.
       if (e.generativeKind != null || e.skillId.isEmpty) continue;
       final phrase = e.template
-          .replaceAllMapped(RegExp(r'\{(\w+):\w+\}'), (m) => m.group(1) == '_' ? '' : m.group(1)!)
+          .replaceAllMapped(RegExp(r'\{(\w+):\w+\}'),
+              (m) => m.group(1) == '_' ? '' : m.group(1)!)
           .replaceAll(RegExp(r'\s+'), ' ')
           .trim();
       anchors.putIfAbsent(e.skillId, () => {}).add(phrase);
@@ -509,8 +615,11 @@ class Router {
     final uv = await embed(utterance);
     if (uv == null) return null;
     final scored = _skillVecs.entries
-        .map((e) => MapEntry(e.key,
-            e.value.isEmpty ? 0.0 : e.value.map((v) => cosine(uv, v)).reduce(max)))
+        .map((e) => MapEntry(
+            e.key,
+            e.value.isEmpty
+                ? 0.0
+                : e.value.map((v) => cosine(uv, v)).reduce(max)))
         .toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final s1 = scored[0].value;
@@ -521,6 +630,33 @@ class Router {
       'margin': s1 - s2,
       'confident': s1 >= theta && (s1 - s2) >= tau,
     };
+  }
+
+  /// Recover a fully typed route only where the selected candidate has a closed,
+  /// deterministic extractor. Retrieval chooses the candidate; code recovers the
+  /// slots. A confident candidate without such an extractor still falls through
+  /// to the cloud/clarify path rather than guessing user data.
+  Future<Map<String, dynamic>?> retrievalRoute(String utterance) async {
+    final suggestion =
+        await retrievalSuggest(utterance, theta: 0.22, tau: 0.025);
+    if (suggestion == null || suggestion['confident'] != true) return null;
+    final skillId = suggestion['skillId'] as String;
+    if (skillId == 'create-task') {
+      final match = RegExp(
+        r'^(?:capture|jot down|note down|put down|record)\s+(?:a\s+)?(?:task|todo)\s*(?:to\s+|that\s+)?(.+?)[.!]?$',
+        caseSensitive: false,
+      ).firstMatch(utterance.trim());
+      final description = match?.group(1)?.trim();
+      if (description != null && description.length >= 2) {
+        return {
+          'skillId': skillId,
+          'slots': {'description': description},
+          'source': 'retrieval',
+          'retrieval': suggestion,
+        };
+      }
+    }
+    return null;
   }
 
   dynamic _resolveSlot(String? raw, String type, DateTime asOf) {
@@ -545,22 +681,33 @@ class Router {
 
   /// Public entry for the cloud path: resolve a past-event date phrase backward (a `pastday`-typed
   /// input, e.g. `log-interaction.at`). Bare "friday" → the PREVIOUS Friday, not the next one.
-  String? resolvePastday(String phrase, DateTime now) => _resolvePastday(phrase, now);
+  String? resolvePastday(String phrase, DateTime now) =>
+      _resolvePastday(phrase, now);
 
   /// Public entry for the cloud path: resolve a FORWARD-intent date (a `futuredate` input, e.g.
   /// `create-task.dueDate`). A bare month-day already past this year → next year (reviewer b #6).
-  String? resolveFutureDate(String phrase, DateTime now) => resolveDate(phrase, now, preferFuture: true);
+  String? resolveFutureDate(String phrase, DateTime now) =>
+      resolveDate(phrase, now, preferFuture: true);
 
   /// Resolve a BACKWARD-looking day expression: a bare weekday ("friday") is the PREVIOUS
   /// occurrence (you logged a past interaction), not the next one; everything else
   /// ("yesterday", "today", "last friday") already resolves correctly via [resolveDate].
   String? _resolvePastday(String phrase, DateTime now) {
     final p = phrase.toLowerCase().trim();
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const days = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday'
+    ];
     final wd = days.indexOf(p);
     if (wd >= 0) {
       var delta = (wd + 1) - now.weekday;
-      if (delta >= 0) delta -= 7; // the PREVIOUS occurrence (strictly before today)
+      if (delta >= 0)
+        delta -= 7; // the PREVIOUS occurrence (strictly before today)
       final d = now.add(Duration(days: delta));
       return '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
     }
@@ -572,18 +719,29 @@ class Router {
   /// already fell earlier this year rolls to next year, since a due date in the past is never
   /// what "add a todo for March 3" means. Birthdays/anchors keep the literal year (preferFuture
   /// off) and roll forward at read time via next_annual instead (reviewer b #6).
-  String? resolveDate(String phrase, DateTime now, {bool preferFuture = false}) {
+  String? resolveDate(String phrase, DateTime now,
+      {bool preferFuture = false}) {
     var p = phrase.toLowerCase().trim();
     // Weekday ABBREVIATIONS ("sat", "on tue", "next thurs") -> full names, so the weekday
     // resolution below (which matches spelled-out days) handles them uniformly. Only a bare
     // abbreviation with an optional on/next/last prefix expands; "saturday", "may", "mar 3"
     // don't match this shape and pass through untouched.
     p = p.replaceFirstMapped(
-        RegExp(r'^(last\s+|next\s+|on\s+)?(mon|tues?|weds?|thu|thur|thurs|fri|sat|sun)$'), (mm) {
+        RegExp(
+            r'^(last\s+|next\s+|on\s+)?(mon|tues?|weds?|thu|thur|thurs|fri|sat|sun)$'),
+        (mm) {
       const map = {
-        'mon': 'monday', 'tue': 'tuesday', 'tues': 'tuesday', 'wed': 'wednesday', 'weds': 'wednesday',
-        'thu': 'thursday', 'thur': 'thursday', 'thurs': 'thursday', 'fri': 'friday',
-        'sat': 'saturday', 'sun': 'sunday'
+        'mon': 'monday',
+        'tue': 'tuesday',
+        'tues': 'tuesday',
+        'wed': 'wednesday',
+        'weds': 'wednesday',
+        'thu': 'thursday',
+        'thur': 'thursday',
+        'thurs': 'thursday',
+        'fri': 'friday',
+        'sat': 'saturday',
+        'sun': 'sunday'
       };
       return '${mm.group(1) ?? ''}${map[mm.group(2)]}';
     });
@@ -592,18 +750,30 @@ class Router {
     if (p == 'today') return iso(now);
     // "tonight" / "this evening|afternoon|morning" all name TODAY's date (the time-of-day
     // is carried separately when there's a clock time).
-    if (p == 'tonight' || p == 'this evening' || p == 'this afternoon' || p == 'this morning') {
+    if (p == 'tonight' ||
+        p == 'this evening' ||
+        p == 'this afternoon' ||
+        p == 'this morning') {
       return iso(now);
     }
     if (p == 'tomorrow') return iso(now.add(const Duration(days: 1)));
     if (p == 'yesterday') return iso(now.subtract(const Duration(days: 1)));
     var m = RegExp(r'in (\d+) days?').firstMatch(p);
     if (m != null) return iso(now.add(Duration(days: int.parse(m.group(1)!))));
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const days = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday'
+    ];
     final lastWd = days.indexWhere((d) => p == 'last $d');
     if (lastWd >= 0) {
       var delta = (lastWd + 1) - now.weekday;
-      if (delta >= 0) delta -= 7; // the PREVIOUS occurrence (strictly before today)
+      if (delta >= 0)
+        delta -= 7; // the PREVIOUS occurrence (strictly before today)
       return iso(now.add(Duration(days: delta)));
     }
     final wd = days.indexWhere((d) => p == d || p == 'on $d' || p == 'next $d');
@@ -617,9 +787,24 @@ class Router {
     // "3 march", "the 3rd of december". Resolved in the current year — callers that
     // care about the next annual occurrence (birthdays) roll it forward themselves.
     int monthOf(String tok) {
-      const abbr = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-      return abbr.indexOf(tok.length >= 3 ? tok.substring(0, 3) : tok) + 1; // 0 = not a month
+      const abbr = [
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'may',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec'
+      ];
+      return abbr.indexOf(tok.length >= 3 ? tok.substring(0, 3) : tok) +
+          1; // 0 = not a month
     }
+
     String? fromMonthDay(int mm, int dd) {
       if (mm <= 0 || dd < 1 || dd > 31) return null;
       var d = DateTime(now.year, mm, dd);
@@ -629,14 +814,19 @@ class Router {
       }
       return iso(d);
     }
+
     // "march 3", "mar 3rd", "on july 12"  (month then day)
-    final m1 = RegExp(r'^(?:on\s+)?([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?$').firstMatch(p);
+    final m1 =
+        RegExp(r'^(?:on\s+)?([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?$')
+            .firstMatch(p);
     if (m1 != null) {
       final r = fromMonthDay(monthOf(m1.group(1)!), int.parse(m1.group(2)!));
       if (r != null) return r;
     }
     // "3 march", "the 3rd of december"  (day then month)
-    final m2 = RegExp(r'^(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]{3,9})$').firstMatch(p);
+    final m2 = RegExp(
+            r'^(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]{3,9})$')
+        .firstMatch(p);
     if (m2 != null) {
       final r = fromMonthDay(monthOf(m2.group(2)!), int.parse(m2.group(1)!));
       if (r != null) return r;
@@ -651,8 +841,18 @@ class Router {
   /// (today/tomorrow/tonight/weekday/in N days/ISO) is resolved via [resolveDate];
   /// absent, it's today, rolled to tomorrow if the time already passed.
   static const _numWords = {
-    'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6,
-    'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10, 'eleven': 11, 'twelve': 12,
+    'one': 1,
+    'two': 2,
+    'three': 3,
+    'four': 4,
+    'five': 5,
+    'six': 6,
+    'seven': 7,
+    'eight': 8,
+    'nine': 9,
+    'ten': 10,
+    'eleven': 11,
+    'twelve': 12,
   };
 
   /// Parse a spoken-word time-of-day in [p] into (hour24, minute), or null. Handles
@@ -674,13 +874,18 @@ class Router {
       hour = (_numWords[m!.group(1)]! + 11) % 12; // hour - 1, wrapping 1 -> 12
       if (hour == 0) hour = 12;
       minute = 45;
-    } else if ((m = RegExp("\\b($ws)\\s+(thirty|fifteen|forty[- ]?five)\\b").firstMatch(p)) != null) {
+    } else if ((m = RegExp("\\b($ws)\\s+(thirty|fifteen|forty[- ]?five)\\b")
+            .firstMatch(p)) !=
+        null) {
       hour = _numWords[m!.group(1)];
-      minute = m.group(2)!.startsWith('thirty') ? 30 : (m.group(2)!.startsWith('fifteen') ? 15 : 45);
+      minute = m.group(2)!.startsWith('thirty')
+          ? 30
+          : (m.group(2)!.startsWith('fifteen') ? 15 : 45);
     } else if ((m = RegExp("\\b($ws)\\s*o'?clock\\b").firstMatch(p)) != null) {
       hour = _numWords[m!.group(1)];
       minute = 0;
-    } else if ((m = RegExp("^(?:at\\s+)?($ws)(?:\\s+(?:[ap]\\.?m\\.?|in the (?:morning|afternoon|evening)|tonight))?\$")
+    } else if ((m = RegExp(
+                "^(?:at\\s+)?($ws)(?:\\s+(?:[ap]\\.?m\\.?|in the (?:morning|afternoon|evening)|tonight))?\$")
             .firstMatch(p.trim())) !=
         null) {
       // a bare word-hour that is the WHOLE phrase ("five", "at five", "five pm", "nine in the
@@ -690,8 +895,10 @@ class Router {
       minute = 0;
     }
     if (hour == null) return null;
-    final hasPm = RegExp(r'\bpm\b').hasMatch(p) || RegExp(r'\b(afternoon|evening|night|tonight)\b').hasMatch(p);
-    final hasAm = RegExp(r'\bam\b').hasMatch(p) || RegExp(r'\bmorning\b').hasMatch(p);
+    final hasPm = RegExp(r'\bpm\b').hasMatch(p) ||
+        RegExp(r'\b(afternoon|evening|night|tonight)\b').hasMatch(p);
+    final hasAm =
+        RegExp(r'\bam\b').hasMatch(p) || RegExp(r'\bmorning\b').hasMatch(p);
     if (hasPm) {
       if (hour < 12) hour += 12;
     } else if (hasAm) {
@@ -706,9 +913,12 @@ class Router {
     final p = phrase.toLowerCase().trim();
     // Relative offset: "in 20 minutes", "in an hour", "in half an hour", "20 mins", "2 hours".
     // Requires a unit word (a bare number is never a relative time), so it can't over-match.
-    final rel = RegExp(r'^(?:in\s+)?(?:(\d+)|(an?)|(half an?|half a))\s+(minute|min|hour|hr)s?$').firstMatch(p);
+    final rel = RegExp(
+            r'^(?:in\s+)?(?:(\d+)|(an?)|(half an?|half a))\s+(minute|min|hour|hr)s?$')
+        .firstMatch(p);
     if (rel != null) {
-      final perUnit = rel.group(4)!.startsWith('h') ? 60 : 1; // minutes per unit
+      final perUnit =
+          rel.group(4)!.startsWith('h') ? 60 : 1; // minutes per unit
       final int amount;
       if (rel.group(1) != null) {
         amount = int.parse(rel.group(1)!) * perUnit;
@@ -729,7 +939,8 @@ class Router {
       mm = 0;
     } else {
       // "5pm", "5:30 pm", "at 5 pm"
-      final ampm = RegExp(r'\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b').firstMatch(p);
+      final ampm =
+          RegExp(r'\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b').firstMatch(p);
       if (ampm != null) {
         hh = int.parse(ampm.group(1)!);
         mm = ampm.group(2) == null ? 0 : int.parse(ampm.group(2)!);
@@ -757,20 +968,24 @@ class Router {
         usedWordTime = true;
       }
     }
-    if (hh == null || mm == null) return null; // no time-of-day -> not a datetime
+    if (hh == null || mm == null)
+      return null; // no time-of-day -> not a datetime
     if (hh > 23 || mm > 59) return null;
     // strip the time + connective words to leave a (possibly empty) date phrase
     var dateWords = p
         .replaceAll(RegExp(r'\b\d{1,2}(?::\d{2})?\s*(am|pm)\b'), ' ')
         .replaceAll(RegExp(r'\b\d{1,2}:\d{2}\b'), ' ')
         .replaceAll(
-            RegExp(r'\b(noon|midnight|at|tonight|this (?:evening|afternoon|morning))\b'), ' ')
+            RegExp(
+                r'\b(noon|midnight|at|tonight|this (?:evening|afternoon|morning))\b'),
+            ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     if (usedWordTime) {
       dateWords = dateWords
           .replaceAll(
-              RegExp(r"\b(half past|quarter past|quarter to|o'?clock|thirty|fifteen|"
+              RegExp(
+                  r"\b(half past|quarter past|quarter to|o'?clock|thirty|fifteen|"
                   r"forty[- ]?five|am|pm|in the (?:morning|afternoon|evening)|at night|"
                   r'one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b'),
               ' ')
@@ -782,7 +997,8 @@ class Router {
     var dt = DateTime(base.year, base.month, base.day, hh, mm);
     // a time-only reminder already past today rolls to tomorrow (the natural read
     // of "remind me at 8am" said in the afternoon); an explicit day is honored as-is.
-    if (resolvedDay == null && !dt.isAfter(now)) dt = dt.add(const Duration(days: 1));
+    if (resolvedDay == null && !dt.isAfter(now))
+      dt = dt.add(const Duration(days: 1));
     String two(int x) => x.toString().padLeft(2, '0');
     return '${dt.year.toString().padLeft(4, '0')}-${two(dt.month)}-${two(dt.day)}'
         'T${two(dt.hour)}:${two(dt.minute)}:00';

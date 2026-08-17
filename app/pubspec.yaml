@@ -107,7 +107,7 @@ flutter:
   uses-material-design: true
 
   # Built-in capability defs, mirrored from v0/data by tool/sync_seed.sh (v0 is pure Dart and can't
-  # declare Flutter assets). Extracted on first run (seed_assets.dart) so a shipped binary seeds
+  # declare Flutter assets). Extracted at launch (seed_assets.dart) so a shipped binary installs
   # itself with no repo present. tool/precheck.sh guards these against drift from v0/data.
   assets:
     - assets/seed/corpus.json

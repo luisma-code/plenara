@@ -1,17 +1,20 @@
-/// Config + first-run seeding (dogfood enablement).
+/// Config + built-in installation/upgrades (dogfood enablement).
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:plenara/config.dart';
 import 'package:test/test.dart';
 
-PlenaraConfig _load(String path, {Map<String, String> environment = const {}}) =>
+PlenaraConfig _load(String path,
+        {Map<String, String> environment = const {}}) =>
     loadConfig(configPath: path, environment: environment);
 
 void main() {
   test('loadConfig reads dataDir + apiKey from a config file', () {
     final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
     final path = '${dir.path}/config.json';
-    File(path).writeAsStringSync('{"dataDir": "X:/mydata", "apiKey": "sk-test-123"}');
+    File(path)
+        .writeAsStringSync('{"dataDir": "X:/mydata", "apiKey": "sk-test-123"}');
     final cfg = _load(path);
     expect(cfg.dataDir, 'X:/mydata');
     expect(cfg.apiKey, 'sk-test-123');
@@ -21,11 +24,13 @@ void main() {
   test('explicit config path is hermetic without printing a key value', () {
     final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
     final path = '${dir.path}/config.json';
-    File(path).writeAsStringSync('{"dataDir": "X:/mydata", "apiKey": "fixture-file-key"}');
+    File(path).writeAsStringSync(
+        '{"dataDir": "X:/mydata", "apiKey": "fixture-file-key"}');
     expect(loadConfig(configPath: path).apiKeySource, ConfigValueSource.file);
   });
 
-  test('loadConfig scaffolds a default config the user can edit on first run', () {
+  test('loadConfig scaffolds a default config the user can edit on first run',
+      () {
     final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
     final path = '${dir.path}/nested/config.json';
     final cfg = _load(path);
@@ -50,28 +55,111 @@ void main() {
     expect(Directory('${dir.path}/records').existsSync(), isTrue);
   });
 
-  test('ensureSeeded fails LOUDLY if the seed source is missing (no silent empty boot)', () {
+  test(
+      'ensureSeeded fails LOUDLY if the seed source is missing (no silent empty boot)',
+      () {
     final dir = Directory.systemTemp.createTempSync('plenara_seed_');
-    expect(() => ensureSeeded(dir.path, '/no-such-seed-source'), throwsA(isA<StateError>()));
+    expect(() => ensureSeeded(dir.path, '/no-such-seed-source'),
+        throwsA(isA<StateError>()));
   });
 
-  test('ensureSeeded is a no-op once the folder has defs (never wipes user data)', () {
+  test('ensureSeeded preserves authored and same-version edited definitions',
+      () {
     final dir = Directory.systemTemp.createTempSync('plenara_seed_');
     ensureSeeded(dir.path, 'data');
-    File('${dir.path}/types/_authored.json').writeAsStringSync('{}'); // simulate an authored type
-    final n = Directory('${dir.path}/types').listSync().length;
-    ensureSeeded(dir.path, 'data'); // second run
-    expect(Directory('${dir.path}/types').listSync().length, n); // unchanged, marker intact
+    File('${dir.path}/types/_authored.json')
+        .writeAsStringSync('{}'); // simulate an authored type
+    final task = File('${dir.path}/types/task.json');
+    final edited = jsonDecode(task.readAsStringSync()) as Map<String, dynamic>;
+    edited['userMarker'] = 'preserve me';
+    task.writeAsStringSync(jsonEncode(edited));
+
+    ensureSeeded(dir.path, 'data');
+
+    expect(File('${dir.path}/types/_authored.json').existsSync(), isTrue);
+    expect(
+      (jsonDecode(task.readAsStringSync())
+          as Map<String, dynamic>)['userMarker'],
+      'preserve me',
+    );
   });
 
-  test('saveConfig writes a config loadConfig reads back; a null key preserves the stored one', () {
+  test('ensureSeeded adds a newly shipped built-in to an existing folder', () {
+    final dir = Directory.systemTemp.createTempSync('plenara_seed_upgrade_');
+    ensureSeeded(dir.path, 'data');
+    final addedLater = File('${dir.path}/types/contact_fact.json')
+      ..deleteSync();
+
+    ensureSeeded(dir.path, 'data');
+
+    expect(addedLater.existsSync(), isTrue);
+  });
+
+  test('ensureSeeded promotes a newer type after an exact definition backup',
+      () {
+    final dir = Directory.systemTemp.createTempSync('plenara_seed_upgrade_');
+    ensureSeeded(dir.path, 'data');
+    final task = File('${dir.path}/types/task.json');
+    final old = jsonDecode(task.readAsStringSync()) as Map<String, dynamic>;
+    old['schemaVersion'] = 3;
+    old['migrations'] = (old['migrations'] as List).take(2).toList();
+    old['attributes'] = (old['attributes'] as List)
+        .where((attribute) => !const {
+              'dependencyRefs',
+              'blockedReason',
+              'energy',
+              'contexts',
+              'recurrence',
+            }.contains((attribute as Map)['name']))
+        .toList();
+    task.writeAsStringSync(jsonEncode(old));
+
+    ensureSeeded(dir.path, 'data');
+
+    final promoted =
+        jsonDecode(task.readAsStringSync()) as Map<String, dynamic>;
+    expect(promoted['schemaVersion'], 4);
+    final backup = File(
+      '${dir.path}/.seed-backups/types/task.json.v3.json',
+    );
+    expect(backup.existsSync(), isTrue);
+    expect(jsonDecode(backup.readAsStringSync()), old);
+  });
+
+  test('ensureSeeded normalizes a legacy v1 definition without replacing it',
+      () {
+    final dir = Directory.systemTemp.createTempSync('plenara_seed_legacy_');
+    ensureSeeded(dir.path, 'data');
+    final fact = File('${dir.path}/types/contact_fact.json');
+    final legacy = jsonDecode(fact.readAsStringSync()) as Map<String, dynamic>
+      ..remove('schemaVersion')
+      ..['legacyMarker'] = 'keep';
+    fact.writeAsStringSync(jsonEncode(legacy));
+
+    ensureSeeded(dir.path, 'data');
+
+    final normalized =
+        jsonDecode(fact.readAsStringSync()) as Map<String, dynamic>;
+    expect(normalized['schemaVersion'], 1);
+    expect(normalized['legacyMarker'], 'keep');
+    final backup = File(
+      '${dir.path}/.seed-backups/types/contact_fact.json.legacy-v1.json',
+    );
+    expect(backup.existsSync(), isTrue);
+    expect(jsonDecode(backup.readAsStringSync()), legacy);
+  });
+
+  test(
+      'saveConfig writes a config loadConfig reads back; a null key preserves the stored one',
+      () {
     final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
     final path = '${dir.path}/config.json';
     saveConfig(dataDir: 'X:/data', apiKey: 'dummy-key-value', configPath: path);
     final c = _load(path);
     expect(c.dataDir, 'X:/data');
     expect(c.apiKey, 'dummy-key-value');
-    saveConfig(dataDir: 'X:/data2', configPath: path); // null apiKey -> leave the key
+    saveConfig(
+        dataDir: 'X:/data2', configPath: path); // null apiKey -> leave the key
     final c2 = _load(path);
     expect(c2.apiKey, 'dummy-key-value');
   });
@@ -95,7 +183,8 @@ void main() {
     expect(_load(path).freeTier, isTrue);
   });
 
-  test('voiceMuted is three-state (null=unset / true / false) and round-trips', () {
+  test('voiceMuted is three-state (null=unset / true / false) and round-trips',
+      () {
     final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
     final path = '${dir.path}/config.json';
     File(path).writeAsStringSync('{"dataDir": "X:/d", "apiKey": "sk-x"}');
@@ -119,20 +208,26 @@ void main() {
     expect(_load(path).voiceMuted, isNull);
   });
 
-  test('voiceName round-trips: null=auto-pick, a name pins, empty clears, omit preserves', () {
+  test(
+      'voiceName round-trips: null=auto-pick, a name pins, empty clears, omit preserves',
+      () {
     final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
     final path = '${dir.path}/config.json';
     File(path).writeAsStringSync('{"dataDir": "X:/d", "apiKey": "sk-x"}');
     expect(_load(path).voiceName, isNull); // absent → auto-pick
 
-    saveConfig(dataDir: 'X:/d', voiceName: 'Matilda (Premium)', configPath: path);
+    saveConfig(
+        dataDir: 'X:/d', voiceName: 'Matilda (Premium)', configPath: path);
     expect(_load(path).voiceName, 'Matilda (Premium)');
 
     // omitting voiceName leaves the stored pick untouched
     saveConfig(dataDir: 'X:/d', apiKey: 'sk-z', configPath: path);
     expect(_load(path).voiceName, 'Matilda (Premium)');
 
-    saveConfig(dataDir: 'X:/d', voiceName: '', configPath: path); // empty string clears → back to auto
+    saveConfig(
+        dataDir: 'X:/d',
+        voiceName: '',
+        configPath: path); // empty string clears → back to auto
     expect(_load(path).voiceName, isNull);
 
     // a non-string / empty stored value degrades to null
@@ -144,13 +239,15 @@ void main() {
     final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
     final path = '${dir.path}/config.json';
     File(path).writeAsStringSync('{"dataDir": "X:/d", "freeTier": false}');
-    expect(_load(path, environment: const {'PLENARA_FREE': '1'}).freeTier, isTrue);
+    expect(
+        _load(path, environment: const {'PLENARA_FREE': '1'}).freeTier, isTrue);
   });
 
   test('injected environment overrides file and reports only the source', () {
     final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
     final path = '${dir.path}/config.json';
-    File(path).writeAsStringSync('{"dataDir": "X:/d", "apiKey": "fixture-file-key"}');
+    File(path)
+        .writeAsStringSync('{"dataDir": "X:/d", "apiKey": "fixture-file-key"}');
     final cfg = _load(path, environment: const {
       'PLENARA_DATA': 'X:/environment-data',
       'ANTHROPIC_API_KEY': 'fixture-environment-key',

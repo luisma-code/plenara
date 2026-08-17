@@ -1,4 +1,4 @@
-// The first-run seed chain: bundled assets -> extracted staging dir -> ensureSeeded -> data folder.
+// The bundled-definition chain: assets -> extracted staging dir -> ensureSeeded -> data folder.
 // Hermetic: rootBundle serves the real pubspec assets under `flutter test`, and ensureSeeded runs
 // against a temp data dir. Proves a SHIPPED binary can seed itself with no repo present.
 import 'dart:io';

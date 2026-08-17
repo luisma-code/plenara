@@ -325,7 +325,7 @@ abstract class ClaudeClient {
 }
 ```
 
-`CloudResult<T>` is `Ok(T) | CloudError(kind, message)` — a *value*, not an exception, precisely so a caller cannot forget to handle the offline case (§5.1). The cost guard (per-session rate limit, Spec 03 §3.5) and the BYOK check live inside the client, so `available` and a `rateLimited` result are the only things callers reason about.
+`CloudResult<T>` is `Ok(T) | CloudError(kind, message)` — a *value*, not an exception, precisely so a caller cannot forget to handle the offline case (§5.1). The persisted daily/burst admission guard (Spec 03 §3.5) and the BYOK check live inside the client's one HTTP door, so `available` and a typed `rateLimited` result are the only things callers reason about.
 
 ### 3.6 Business Logic — `DispatchOrchestrator` (new)
 

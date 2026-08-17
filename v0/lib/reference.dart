@@ -1,6 +1,6 @@
 /// Reference knowledge bases (Spec 13) — shipped, versioned datasets (nutrition first). A food
 /// name resolves through tiers: (1) exact alias match after normalization — sync, offline, the
-/// hot path; (2) embedding nearest-neighbor for near-misses — async, when the embed server is up.
+/// hot path; (2) in-process embedding nearest-neighbor for near-misses.
 /// (Tier 3, a Haiku normalize-once-and-cache, is the documented next layer.) Every result carries
 /// PROVENANCE so a looked-up value is never confused with a user-entered one, and a miss is
 /// honest (null) rather than a guessed number.
@@ -13,21 +13,34 @@ import 'embed.dart';
 
 class ReferenceEntry {
   final String key;
-  final Map<String, dynamic> data; // raw entry: kcal, serving, grams, macros, category
-  final String provenance; // 'reference' (exact/alias) | 'reference~' (fuzzy/embedding)
+  final Map<String, dynamic>
+      data; // raw entry: kcal, serving, grams, macros, category
+  final String
+      provenance; // 'reference' (exact/alias) | 'reference~' (fuzzy/embedding)
   ReferenceEntry(this.key, this.data, this.provenance);
   num? get kcal => data['kcal'] as num?;
 }
 
 class ReferenceStore {
   final String dataset;
-  final Map<String, Map<String, dynamic>> _byKey; // normalized key/alias -> entry
+  final Map<String, Map<String, dynamic>>
+      _byKey; // normalized key/alias -> entry
   final List<String> _keys; // canonical keys (for tier-2)
   final Map<String, List<double>> _keyVecs = {}; // lazy tier-2 cache
-  bool _vecsBuilt = false; // true only once EVERY key embedded (a partial cache must retry)
+  bool _vecsBuilt =
+      false; // true only once EVERY key embedded (a partial cache must retry)
   ReferenceStore._(this.dataset, this._byKey, this._keys);
 
-  static const _articles = {'a', 'an', 'the', 'some', 'my', 'of', 'one', 'this'};
+  static const _articles = {
+    'a',
+    'an',
+    'the',
+    'some',
+    'my',
+    'of',
+    'one',
+    'this'
+  };
 
   /// Lowercase; punctuation -> space (so "stir-fry" -> "stir fry" matches the alias); drop
   /// articles/quantifiers and bare digit counts (so "a Banana!" -> "banana", "2 eggs" -> "eggs").
@@ -35,7 +48,10 @@ class ReferenceStore {
       .toLowerCase()
       .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
       .split(RegExp(r'\s+'))
-      .where((t) => t.isNotEmpty && !_articles.contains(t) && !RegExp(r'^\d+$').hasMatch(t))
+      .where((t) =>
+          t.isNotEmpty &&
+          !_articles.contains(t) &&
+          !RegExp(r'^\d+$').hasMatch(t))
       .join(' ');
 
   /// Load data/reference/<name>.json. A missing/broken file -> an empty store (the feature just
@@ -64,7 +80,8 @@ class ReferenceStore {
   }
 
   /// Build directly from parsed entries (for tests).
-  static ReferenceStore fromEntries(String name, List<Map<String, dynamic>> entries) {
+  static ReferenceStore fromEntries(
+      String name, List<Map<String, dynamic>> entries) {
     final byKey = <String, Map<String, dynamic>>{};
     final keys = <String>[];
     for (final e in entries) {
@@ -86,13 +103,16 @@ class ReferenceStore {
   /// Tier 1 (sync, offline): exact match after normalization. null on a miss.
   ReferenceEntry? lookup(String name) {
     final e = _byKey[normalize(name)];
-    return e == null ? null : ReferenceEntry(e['key'] as String, e, 'reference');
+    return e == null
+        ? null
+        : ReferenceEntry(e['key'] as String, e, 'reference');
   }
 
   /// Tiers 1→2: exact, else embedding nearest-neighbor over the canonical keys (needs the embed
   /// server; keys are embedded once and cached). Returns null if both miss — an honest "unknown",
   /// never a guess. [theta] guards against a confidently-wrong far match.
-  Future<ReferenceEntry?> resolve(String name, {Embedder? embedder, double theta = 0.6}) async {
+  Future<ReferenceEntry?> resolve(String name,
+      {Embedder? embedder, double theta = 0.6}) async {
     final exact = lookup(name);
     if (exact != null) return exact;
     final embed = embedder ?? embedFn;
@@ -106,7 +126,8 @@ class ReferenceStore {
         if (v != null) {
           _keyVecs[k] = v;
         } else {
-          allOk = false; // server died mid-build -> retry the missing keys next call
+          allOk =
+              false; // server died mid-build -> retry the missing keys next call
         }
       }
       _vecsBuilt = allOk;
@@ -121,12 +142,13 @@ class ReferenceStore {
       }
     }
     if (best == null || bestSim < theta) return null;
-    return ReferenceEntry(best, _byKey[normalize(best)]!, 'reference~'); // '~' = fuzzy provenance
+    return ReferenceEntry(
+        best, _byKey[normalize(best)]!, 'reference~'); // '~' = fuzzy provenance
   }
 }
 
 typedef Embedder = Future<List<double>?> Function(String text);
 
-/// The default embedder (the shared embed() over the local server), aliased so [ReferenceStore]
+/// The default embedder (the shared in-process embed()), aliased so [ReferenceStore]
 /// doesn't import a function into a typedef default directly.
 Future<List<double>?> embedFn(String text) => embed(text);

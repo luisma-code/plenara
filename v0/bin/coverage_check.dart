@@ -33,15 +33,15 @@ const fileTiers = <String, CoverageTier>{
   'conversation_ledger.dart': CoverageTier.productLogic,
   'planner.dart': CoverageTier.productLogic,
   'router.dart': CoverageTier.productLogic,
+  'embed.dart': CoverageTier.productLogic,
   'cron.dart': CoverageTier.productLogic,
   'claude.dart': CoverageTier.transport,
 };
 
-/// Operator/temporary integration code, excluded until the retrieval backend is
-/// in-process and replay recording is split from its product replay seam.
+/// Operator/temporary integration code excluded until replay recording is split
+/// from its product replay seam.
 const coverageExclusions = {
   'fixture_inputs.dart',
-  'embed.dart',
   'replay_cloud.dart'
 };
 

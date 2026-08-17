@@ -1,4 +1,4 @@
-/// First-run seed extraction. The built-in capability defs are bundled as Flutter assets under
+/// Built-in definition extraction. The capability defs are bundled as Flutter assets under
 /// `assets/seed/` (mirrored from `v0/data` by `tool/sync_seed.sh`), so a SHIPPED binary can seed
 /// itself with no repo on disk. This writes those assets to a staging dir that mirrors the
 /// `v0/data` layout, which `ensureSeeded()` then copies into the user's data folder unchanged —

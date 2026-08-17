@@ -161,7 +161,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_horiz)); // open the discreet menu
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Library'));
+      await tester.tap(find.text('All data'));
       await tester.pumpAndSettle();
 
       expect(find.text('Library'), findsOneWidget);
@@ -192,7 +192,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Library'));
+    await tester.tap(find.text('All data'));
     await tester.pumpAndSettle();
 
     await tester.tap(
@@ -223,7 +223,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Library'));
+      await tester.tap(find.text('All data'));
       await tester.pumpAndSettle();
 
       expect(
@@ -293,7 +293,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Library'));
+      await tester.tap(find.text('All data'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('automations-card')), findsOneWidget);
       expect(find.text('demo-auto'), findsOneWidget);
@@ -307,7 +307,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Library'));
+    await tester.tap(find.text('All data'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Nothing logged yet'), findsOneWidget);
   });
@@ -323,7 +323,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Library'));
+    await tester.tap(find.text('All data'));
     await tester.pumpAndSettle();
     return session;
   }
@@ -388,7 +388,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Library'));
+      await tester.tap(find.text('All data'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('learned-phrases-card')), findsOneWidget);
       expect(find.textContaining('show my todo list'), findsOneWidget);
@@ -436,7 +436,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Library'));
+      await tester.tap(find.text('All data'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ListTile, 'renew passport'));
       await tester.pumpAndSettle();

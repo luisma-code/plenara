@@ -239,10 +239,42 @@ class _SettingsViewState extends State<SettingsView> {
 
   Widget _usageSection(ColorScheme cs) {
     final turns = _loadTurns();
+    Widget row(String a, String b) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(a, style: const TextStyle(fontSize: 13)),
+          Text(
+            b,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+    final admission = CloudAdmissionController(
+      path: widget.configPath == null
+          ? '${defaultDeviceDir()}/cloud-usage.json'
+          : '${File(widget.configPath!).parent.path}/cloud-usage.json',
+    ).snapshot();
     if (turns.isEmpty) {
-      return Text(
-        'No usage recorded yet — cloud stats appear here after a few turns.',
-        style: TextStyle(fontSize: 12, color: cs.outline),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          row(
+            'Cloud admission today',
+            '${admission.dailyUsed} / ${admission.dailyLimit}',
+          ),
+          row(
+            'Recent burst',
+            '${admission.burstUsed} / ${admission.burstLimit}',
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'No usage recorded yet — cloud stats appear here after a few turns.',
+            style: TextStyle(fontSize: 12, color: cs.outline),
+          ),
+        ],
       );
     }
     final s = summarizeTurns(turns);
@@ -261,24 +293,17 @@ class _SettingsViewState extends State<SettingsView> {
     String pct(int n) =>
         s.total == 0 ? '0%' : '${(100 * n / s.total).round()}%';
     final offline = s.total - s.paidCalls;
-    Widget row(String a, String b) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(a, style: const TextStyle(fontSize: 13)),
-          Text(
-            b,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
     final topCloud = cloudSkills.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        row(
+          'Cloud admission today',
+          '${admission.dailyUsed} / ${admission.dailyLimit}',
+        ),
+        row('Recent burst', '${admission.burstUsed} / ${admission.burstLimit}'),
+        const SizedBox(height: 6),
         row('Turns', '${s.total}'),
         row('Ran offline (free)', '$offline  (${pct(offline)})'),
         row('Reached the cloud', '${s.paidCalls}  (${pct(s.paidCalls)})'),
@@ -364,7 +389,8 @@ class _SettingsViewState extends State<SettingsView> {
       if (types.existsSync()) {
         for (final file in types.listSync().whereType<File>()) {
           try {
-            final type = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+            final type =
+                jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
             schemaVersions.add(
               '${type['typeId'] ?? type['id'] ?? file.uri.pathSegments.last}='
               '${type['schemaVersion'] ?? 1}',
@@ -390,7 +416,9 @@ class _SettingsViewState extends State<SettingsView> {
           'Platform: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}',
         )
         ..writeln('Log files on device: ${logs.length}')
-        ..writeln('Included files: ${includedFiles.isEmpty ? "none" : includedFiles}')
+        ..writeln(
+          'Included files: ${includedFiles.isEmpty ? "none" : includedFiles}',
+        )
         ..writeln(
           'Schema versions: ${schemaVersions.isEmpty ? "none" : schemaVersions.join(", ")}',
         )

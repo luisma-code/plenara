@@ -134,6 +134,62 @@ void main() {
     },
   );
 
+  testWidgets('Today, Plan, and Library render through the real engine', (
+    tester,
+  ) async {
+    final session = await _session();
+    await session.init(retrieval: false);
+    await session.handle('add write the proposal to my list');
+    await session.handle('add call Sam to my list');
+    final taskIds = session.store.values
+        .where((record) => record['typeId'] == 'task')
+        .map((record) => '${record['id']}')
+        .toList();
+    await session.scheduleTasks(
+      [taskIds.first],
+      DateTime.parse('2026-07-06T10:00:00'),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChatScreen(
+          session: session,
+          retrieval: false,
+          forceAnimate: true,
+        ),
+      ),
+    );
+    await runFrames(tester, 35);
+    expect(find.byKey(const Key('today-board')), findsOneWidget);
+
+    await tester.tap(find.text('Plan').last);
+    await runFrames(tester, 35);
+    expect(
+      find.byKey(const Key('phone-plan')).evaluate().isNotEmpty ||
+          find.byKey(const Key('desktop-plan')).evaluate().isNotEmpty,
+      isTrue,
+    );
+    expect(find.text('Agenda'), findsOneWidget);
+    expect(find.text('Unscheduled'), findsWidgets);
+    expect(find.text('write the proposal'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Library').last);
+    await runFrames(tester, 25);
+    expect(find.byKey(const Key('library-home')), findsOneWidget);
+    expect(find.text('People'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('library-projects')),
+      300,
+      scrollable: find.descendant(
+        of: find.byKey(const Key('library-home')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(find.text('Projects & areas'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   // Resize-crash guard (kept in THIS file, not a separate one: running multiple integration_test
   // files back-to-back on macOS flakes on app relaunch — one file, one launch, is reliable). The
   // ORIGINAL shipped crash was the presence widget being RESIZED mid-animation, reallocating the

@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-17  
 **Inputs:** [specification and code review](../reviews/2026-08-17-spec-code-review.md), [art and animation review](../reviews/2026-08-17-art-animation-review.md), and [planner UX review](../reviews/2026-08-17-planner-ux-review.md)  
-**Status:** approved and in implementation. Increments 0–2 are implemented and repository-gated. Increment 2 also passed disposable-copy migration against real dogfood data and the local iPhone 17 Pro simulator real-engine gate. Human five-second-glance and capture-time measurements wait for an ordinary usable deployment, never a test harness on Luis's phone.
+**Status:** approved and in implementation. Increments 0–3 are implemented and repository-gated. Increment 3 also passed a schema-v4 migration against a disposable copy of real dogfood data and the local iPhone 17 Pro simulator real-engine gate. Human glance-time, planning-speed, correction-rate, and retrieval-quality measurements wait for ordinary use of a usable deployment, never a test harness on Luis's phone.
 **Planning rule:** dependencies and evidence gates determine order. There are no calendar deadlines, and a later increment does not begin merely because an earlier one has code—the earlier increment must pass its user-visible and failure-path gates.
 
 ## Executive decision
@@ -323,7 +323,7 @@ The entire product feels authored by the same visual system. Motion explains sta
 
 - Implement the full-screen → compact collaborator → detail ember ladder across Today, Plan, Library, Settings, Data, and person/detail surfaces.
 - Wire clarification and failure expressions, mic-level listening, and TTS cadence where platform signals exist.
-- Tune saturation and thinking-state visibility on physical phones at ordinary brightness; pixel separation alone is not the gate.
+- Tune saturation and thinking-state visibility in simulator render evidence, then incorporate observations from Luis's ordinary use of explicitly deployed builds; automated test harnesses never target his physical phone.
 - Either restore an Impeller-safe iOS comet trail through a supported render path or make trail-free iOS an explicit tier decision backed by side-by-side perceptual testing. Do not reintroduce per-frame `toImageSync`.
 - Add an independent still-presence setting; make reduced motion use static per-state forms with opacity-only transitions.
 - Include muted/text modifier and relevant mode in semantics; never rely on hue alone.
@@ -357,7 +357,7 @@ The entire product feels authored by the same visual system. Motion explains sta
 - Every Y0/Y1/Y2 transition preserves Plena as the same entity without obscuring actionable information.
 - Reduced motion eliminates particle flow, glyph traces, looping routine GIFs, positional text motion, and unverified tweening without losing meaning.
 - Normal text meets 4.5:1; large text and meaningful marks meet 3:1; Dynamic Type exposes every action.
-- Physical-device state recognition and frame budgets pass; short runs are not reported as leak certification.
+- Simulator state-recognition and frame-budget gates pass, supplemented by observations from ordinary use of explicitly deployed builds; short runs are not reported as leak certification.
 
 ## Increment 6 — relationship-centered planning and healthy engagement
 

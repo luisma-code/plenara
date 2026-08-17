@@ -1,7 +1,7 @@
 /// Content search over free-text records (F-12) — "find that note about the cabin trip". A
 /// SEMANTIC layer (embed + cosine nearest-neighbor) when an embedding backend is available, with
-/// an always-on KEYWORD fallback so search still works offline without the embed server. The
-/// embedder is a seam so tests — and a dogfood build with no server — don't require the model.
+/// an always-on KEYWORD fallback for sparse or unavailable indexes. The embedder
+/// remains a seam so failure and ranking behavior can be calibrated in tests.
 library;
 
 import 'embed.dart';
@@ -29,7 +29,7 @@ class ContentSearchIndex {
     return (s == null || s.isEmpty) ? null : s;
   }
 
-  /// Embed every searchable record. Skips records whose embed fails (server down -> the index
+  /// Embed every searchable record. Skips records whose embed fails (backend unavailable -> the index
   /// stays empty -> callers keyword-fall-back). Idempotent per id.
   Future<void> build(Iterable<Map<String, dynamic>> records) async {
     for (final r in records) {
@@ -44,7 +44,8 @@ class ContentSearchIndex {
   /// Semantic ranking of indexed records by cosine similarity to [query]; returns record ids
   /// scoring >= [theta], best first. Returns null when embeddings are unavailable (empty index
   /// OR the query won't embed) — the signal for the caller to keyword-fall-back.
-  Future<List<String>?> search(String query, {double theta = 0.35, int k = 5}) async {
+  Future<List<String>?> search(String query,
+      {double theta = 0.35, int k = 5}) async {
     if (_vecs.isEmpty) return null;
     final qv = await _embed(query);
     if (qv == null) return null;
@@ -57,15 +58,43 @@ class ContentSearchIndex {
   }
 
   static const _stop = {
-    'the', 'and', 'that', 'this', 'for', 'with', 'was', 'were', 'are', 'you', 'your', 'from',
-    'have', 'had', 'his', 'her', 'their', 'its', 'about', 'note', 'notes', 'entry', 'when', 'what'
+    'the',
+    'and',
+    'that',
+    'this',
+    'for',
+    'with',
+    'was',
+    'were',
+    'are',
+    'you',
+    'your',
+    'from',
+    'have',
+    'had',
+    'his',
+    'her',
+    'their',
+    'its',
+    'about',
+    'note',
+    'notes',
+    'entry',
+    'when',
+    'what'
   };
 
   /// Always-available keyword fallback: rank records by how many meaningful query terms (length
   /// > 2, non-stopword) their content contains. Deterministic, offline, no model — so search
   /// never silently fails.
-  static List<String> keywordSearch(String query, Iterable<Map<String, dynamic>> records, {int k = 5}) {
-    final terms = query.toLowerCase().split(RegExp(r'\W+')).where((t) => t.length > 2 && !_stop.contains(t)).toSet();
+  static List<String> keywordSearch(
+      String query, Iterable<Map<String, dynamic>> records,
+      {int k = 5}) {
+    final terms = query
+        .toLowerCase()
+        .split(RegExp(r'\W+'))
+        .where((t) => t.length > 2 && !_stop.contains(t))
+        .toSet();
     if (terms.isEmpty) return const [];
     final scored = <MapEntry<String, int>>[];
     for (final r in records) {

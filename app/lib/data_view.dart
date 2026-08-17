@@ -92,7 +92,14 @@ String fmtValue(dynamic v) => renderValue(v, null);
 
 class DataView extends StatefulWidget {
   final Session session;
-  const DataView({super.key, required this.session});
+  final String title;
+  final Set<String>? typeIds;
+  const DataView({
+    super.key,
+    required this.session,
+    this.title = 'Library',
+    this.typeIds,
+  });
   @override
   State<DataView> createState() => _DataViewState();
 }
@@ -149,13 +156,15 @@ class _DataViewState extends State<DataView> {
     // group records by typeId
     final byType = <String, List<Map<String, dynamic>>>{};
     for (final r in session.store.values) {
-      (byType[r['typeId'] as String? ?? '?'] ??= []).add(r);
+      final typeId = r['typeId'] as String? ?? '?';
+      if (widget.typeIds != null && !widget.typeIds!.contains(typeId)) continue;
+      (byType[typeId] ??= []).add(r);
     }
     final typeIds = byType.keys.toList()..sort();
     final autos = session.automations.statuses;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Library'),
+        title: Text(widget.title),
         backgroundColor: cs.inversePrimary,
       ),
       body: ListView(

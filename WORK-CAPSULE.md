@@ -25,7 +25,7 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - Import lint now fails every unclassified production file; `routines.dart` is classified.
 - The false-green existing-contact cloud-route test now asserts the response and stored mood. Its real typed-map crash is fixed by copying cloud slots into an owned `Map<String, dynamic>`.
 - Conformance counts are generated from test-runner JSON (`24 pass / 36 skip of 60`) and ratcheted at 24.
-- Coverage is enforced by tier, globally, and for unclassified files. Explicit temporary exclusions: `fixture_inputs.dart`, localhost `embed.dart`, and mixed recorder/replay `replay_cloud.dart` pending the retrieval/replay split.
+- Coverage is enforced by tier, globally, and for unclassified files. Explicit temporary exclusions are only fixture inputs and mixed recorder/replay code; the production in-process retrieval backend is counted product logic.
 - The glyph contact-sheet harness now alpha-composites RGBA frames onto the actual `#0A0908` ground; its transparent-pixel test was calibrated against the old false-color conversion.
 - MSIX package version is derived from pubspec instead of a stale duplicate.
 - Verification is green: the complete precheck passed twice (ordinary shell and hostile parent config/credential environment), the native macOS Keychain test passed, and an internal-channel iOS simulator build succeeded. Launched integration apps plateaued during short samples and all app/helper/orphan processes were removed; this is not a long-soak leak claim.
@@ -50,6 +50,19 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - The full gate is green: 1,864 engine tests + 36 skips; 115 Flutter tests + the intentional external-channel skip; tier coverage 94.2% deterministic core / 89.2% product logic / 64.6% transport; macOS build; four macOS real-engine integration tests; external-channel, secret, and 24/60 conformance gates.
 - A disposable copy of the real dogfood folder migrated one existing task to schema v3, made one exact rollback backup, and reported zero repair issues. This caught and fixed the legacy `createdAt` timestamp/schema mismatch; live data was never mutated.
 - The same four real-engine tests pass on the local iPhone 17 Pro simulator. The iOS harness now reads bundled seed assets rather than assuming a repository working directory. The simulator was shut down and no app/test processes remain.
+
+## Increment 3 state
+
+- Task schema v4 represents dependencies, blocked reason, energy, contexts, and recurrence through a contiguous 3→4 migration. A reusable `v0/bin/migration_smoke.dart` operator check installs current built-ins into a disposable copy, runs migration, checks task versions and repairs, proves the configured source folder stayed byte-identical, and removes the copy.
+- Built-in installation now runs upgrade-aware on every launch: missing definitions are added to populated folders; legacy unversioned definitions are backed up and normalized as v1 without replacing their content; newer shipped type versions receive exact definition backups before atomic promotion; authored and same-version edited definitions remain untouched.
+- Phone Plan has a week strip, agenda, deadlines, unscheduled queue, load/conflicts, direct complete/schedule/defer/resize, and multi-select. Desktop adds week/queue composition and drag-to-day scheduling. Every mutation enters `ExecutionCoordinator` and one durable undo history.
+- Today and Plan publish structured planner context. Contextual voice resolves selected and numbered visible ids for “move these…,” “the first one…,” completion, deferral, and resizing rather than scraping UI labels.
+- Library now provides purpose-built People, Goals, Routines, Trackers, Journal, Projects & areas, Learned phrases, Automations, and All data entries; the full editable archetype browser remains directly reachable.
+- Production routing always builds an in-process 384-dimensional deterministic feature-hash index. A bounded retrieval action lane accepts only high-margin create-task candidates with explicit task/todo cues and deterministic slot extraction; corpus and accepted retrieval routes never call cloud.
+- Every Anthropic request crosses one persisted admission controller before HTTP: 200/local-day and 30/rolling-ten-minute defaults. Reservations persist before network use, relaunch cannot reset them, corrupt/unwritable state fails closed, and Settings shows daily/burst counters.
+- The full gate is green: 1,877 engine tests + 36 skips; 118 Flutter tests + the intentional internal-build external-channel skip; tier coverage 94.2% deterministic core / 90.3% product logic / 68.1% transport; macOS build; five macOS real-engine integration tests; external-channel, secret, and 24/60 conformance gates.
+- The same five real-engine tests pass on the explicitly addressed local iPhone 17 Pro simulator. The small-phone run caught and fixed an off-screen Library test path. RSS was sampled during the short run, which completed normally; this is not a long-soak leak claim. The simulator was shut down and no app/test/build process remains.
+- A disposable copy of the real dogfood folder migrated its one real task to schema v4, made one record backup, reported zero repair issues, and proved the live source stayed byte-identical. It also exposed and drove the built-in-upgrade fix above; live data was never mutated.
 
 ## Owner action
 
@@ -78,7 +91,7 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Next implementation order
 
-1. Increment 3: Plan/Library, contextual direct manipulation, in-process retrieval, cloud admission controller.
+1. Increment 4: durable detached operations, structured planning proposals, and collaborative replanning.
 2. Later increments follow `planning/implementation-plan-2026-08-17.md`; dependencies and evidence gates determine order, not calendar dates.
 
 ## Authoritative documents
