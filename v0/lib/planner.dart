@@ -125,6 +125,7 @@ class TaskPlanPatch {
   final String? status;
   final String? description;
   final bool complete;
+  final String? reviewDecision;
 
   const TaskPlanPatch({
     required this.id,
@@ -134,6 +135,7 @@ class TaskPlanPatch {
     this.status,
     this.description,
     this.complete = false,
+    this.reviewDecision,
   });
 }
 

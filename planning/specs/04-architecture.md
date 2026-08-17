@@ -662,8 +662,8 @@ The one genuinely concurrent writer is **the outside world**: the OS's cloud-syn
 
 The only unbounded-cost resource is the cloud. Two limits, both enforced inside `ClaudeClient` (§3.5) so no call site can bypass them:
 
-- **Cloud NLU escalation** is capped per session (default 20 calls/hour, Spec 03 §3.5). Above the cap, `classify` returns `CloudError(rateLimited)`, which the orchestrator surfaces as a clarification request rather than a silent stall (P2.8, §5.2).
-- **Authoring and generative calls** are user-initiated and naturally low-frequency, but they still pass the same BYOK/`available` gate; an offline or keyless call returns a typed result the caller turns into a surface (§6.2), never a hung await.
+- **Every Anthropic call** reserves admission inside `ClaudeClient` before HTTP: default 200 calls per local day and 30 per rolling ten minutes. The reservation ledger is device-local and persisted; corrupt or unwritable state fails closed with `CloudError(rateLimited)`, so no routing, authoring, routine, figure, or generative call site can bypass the bound.
+- **Authoring and generative calls** are user-initiated and naturally low-frequency, but still cross that same admission controller and the BYOK/`available` gate. Offline, keyless, and rate-limited calls return typed results the caller turns into a surface (§6.2), never a hung await.
 
 Local inference has no rate limit but is naturally serialized by the single inference isolate: concurrent `route` requests (rare, since turns are serial) queue on that isolate's port rather than spawning parallel model runs.
 
@@ -673,13 +673,17 @@ The one-active-turn model (§4.3) is correct for the *interactive* pipeline — 
 
 ```dart
 abstract class OperationCenter {
-  Stream<BackgroundOp> watch();          // in-flight + recently-finished detached ops, for a status surface
-  void cancel(String operationId);       // cooperative; a cloud call in flight is abandoned on return (MD-A5)
+  BackgroundOp start(DetachedWork work); // persists queued intent before scheduling it
+  Stream<BackgroundOp> watch();          // queued, in-flight, and terminal events
+  Future<BackgroundOp> wait(String id);  // completion event, never elapsed-time polling
+  bool cancel(String operationId);       // local cancellation; late provider result is discarded
+  List<BackgroundOp> takeDeliveries();   // exactly-once terminal UI delivery
 }
-// BackgroundOp: { operationId, kind ∈ {authoring, generation}, status ∈ {running, done, failed}, result?, error? }
+// BackgroundOp: { operationId, kind, input, status ∈
+//   {queued,running,succeeded,failed,cancelled,interrupted}, result?, error?, deliveredAt? }
 ```
 
-This preserves both invariants at once: the turn queue stays responsive (a new utterance can be spoken while an authoring call runs), and the long operation still reaches a surface — `Detached` tells the UI to watch the operation center, and completion arrives as an `AuthoringOutcome`/`GenerativeOutcome` there (an activated capability, a delivered briefing) or a mapped error surface (§5.2). Authoring's *result* (a new registered skill/type) then flows into the registry and `CapabilityIndex` through the normal registration path, exactly as a synced-in definition would (§4.5). Detachment is why §3.6 lists `define_*` as detached and why `GenerativeService` (§3.10) is always background: neither is ever on the interactive hot path.
+This preserves both invariants at once: the turn queue stays responsive (a new utterance can be spoken while an authoring call runs), and the long operation still reaches a surface — `Detached` tells the UI to watch the operation center, and completion arrives as an `AuthoringOutcome`/`GenerativeOutcome` there or a mapped error surface (§5.2). Queued work is serial and starts only after the prior completion event. Relaunch never guesses whether a provider finished: persisted queued/running work becomes `interrupted` and requires explicit retry, preventing duplicate spend. A validated authoring result is persisted as an inactive device-local draft; only the user's later `activate` command flows it into the registry and `CapabilityIndex` through the normal registration path (§4.5). Detachment is why §3.6 lists `define_*` as detached and why `GenerativeService` (§3.10) is always background: neither is ever on the interactive hot path.
 
 ### 4.8 The `onWrite` Automation Hook and Cascade Bound
 

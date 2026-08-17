@@ -1,6 +1,6 @@
 {
   "typeId": "task",
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "displayName": "Task",
   "attributes": [
     { "name": "description", "valueType": "text", "required": true },
@@ -20,7 +20,8 @@
     { "name": "blockedReason", "valueType": "text", "required": false },
     { "name": "energy", "valueType": "enum", "enumValues": ["low", "medium", "high"], "required": false },
     { "name": "contexts", "valueType": "tag", "required": false },
-    { "name": "recurrence", "valueType": "text", "required": false }
+    { "name": "recurrence", "valueType": "text", "required": false },
+    { "name": "reviewDecision", "valueType": "enum", "enumValues": ["keep", "defer", "drop"], "required": false }
   ],
   "migrations": [
     {
@@ -41,6 +42,10 @@
     {
       "fromVersion": 3,
       "toVersion": 4
+    },
+    {
+      "fromVersion": 4,
+      "toVersion": 5
     }
   ]
 }

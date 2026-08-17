@@ -1,6 +1,6 @@
 # Spec 08 — AI Cost & Privacy
 
-**Status:** Draft v0.1 — July 2026 (first draft against the v0 reference implementation: `v0/lib/claude.dart` / `router.dart` / `generative.dart` / `config.dart`; grounded in the Phase-3 measurements — findings §§10–13 — and current Anthropic pricing as of 2026-07)
+**Status:** v0.2 — amended 2026-08-17. The BYOK seam, persistent admission controller, detached cloud diagnostics, per-kind record-class declarations, explicit-invocation consent markers, Settings disclosure catalog, and journal-exclusion canaries are implemented; monthly reflection and its tier-c journal flow remain future work.
 **Depends on:** research doc (§7, §12.8, §13, §14, §15); Spec 02 — Skill DSL (§5.5, §6, §7.6); Spec 03 — NLU / Intent (§2.2a, §3.5, §5, §7.3); Spec 04 — Architecture (§3.5, §3.7, §3.10, §5.2, §6); Spec 05 — Functional (§3.6, §3.8, §13)
 **Blocks:** Spec 09 — Test (the payload/consent invariants below are testable contracts); Spec 10 — Security & Privacy threat model (this spec draws the data-flow map Spec 10 attacks); Spec 11 — Feedback & Diagnostics (shares the consent ground rules)
 
@@ -238,6 +238,8 @@ Standing summary of the "never leaves" set: records at rest, the journal (absent
 - **Tier (c) — per-session journal consent, never standing.** Journal content is categorically excluded from (a) and (b). The two kinds that can use it ask per session; the mandatory card for `monthly_reflection` cannot be suppressed (DP-07). A "yes" expires with the session.
 
 These tiers are enforceable at the assembler level (a Spec 09 property: no prompt-assembly path can include a record class outside its feature's declared set; no path can include journal text without a live tier-c grant), which is what distinguishes them from a privacy-policy promise.
+
+**Current enforcement.** `generativeDataClasses` is the binary registry for the six implemented assemblers. Every outgoing context starts with its purpose, `Consent: explicit user invocation`, and the sorted declared classes; the assembler then selects only those record types. Settings renders the same registry and explicitly says journal is excluded. The test suite injects a unique journal canary alongside eligible tracker data and proves it is absent from the outgoing prompt. A future tier-c kind cannot be added by expanding this map alone: it first needs the per-session consent state and assembly-time include/exclude tests required above.
 
 ---
 

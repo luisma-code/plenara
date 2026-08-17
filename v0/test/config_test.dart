@@ -118,7 +118,7 @@ void main() {
 
     final promoted =
         jsonDecode(task.readAsStringSync()) as Map<String, dynamic>;
-    expect(promoted['schemaVersion'], 4);
+    expect(promoted['schemaVersion'], 5);
     final backup = File(
       '${dir.path}/.seed-backups/types/task.json.v3.json',
     );

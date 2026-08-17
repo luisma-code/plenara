@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:plenara/conversation_ledger.dart';
+import 'package:plenara/operation_center.dart';
+import 'package:plenara/planning_artifact.dart';
 import 'package:plenara/planner.dart';
 import 'package:plenara/session.dart';
+import 'package:plenara/weekly_review.dart';
 
 import 'plenara_theme.dart';
 
@@ -86,6 +89,15 @@ class TodayBoard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     IconButton(
+                      key: const Key('today-weekly-review'),
+                      tooltip: 'Review this week',
+                      onPressed: () {
+                        session.createWeeklyReview();
+                        onChanged();
+                      },
+                      icon: const Icon(Icons.fact_check_outlined),
+                    ),
+                    IconButton(
                       key: const Key('today-library'),
                       tooltip: 'Open Library',
                       onPressed: onOpenLibrary,
@@ -111,12 +123,95 @@ class TodayBoard extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (session.activeWeeklyReview case final review?
+                    when review.state == WeeklyReviewState.draft ||
+                        review.state == WeeklyReviewState.stale)
+                  _WeeklyReviewCard(
+                    review: review,
+                    onDecision: (item, decision) {
+                      session.setWeeklyReviewDecision(item.recordId, decision);
+                      onChanged();
+                    },
+                    onRefresh: () {
+                      session.createWeeklyReview();
+                      onChanged();
+                    },
+                    onDismiss: () {
+                      session.dismissWeeklyReview();
+                      onChanged();
+                    },
+                    onApply: () async {
+                      final result = await session.applyWeeklyReview();
+                      onChanged();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(result.message),
+                          action: result.undoId == null
+                              ? null
+                              : SnackBarAction(
+                                  label: 'UNDO',
+                                  onPressed: () async {
+                                    await session.undoById(result.undoId!);
+                                    onChanged();
+                                  },
+                                ),
+                        ),
+                      );
+                    },
+                  ),
+                for (final artifact in session.activePlanningArtifacts)
+                  _PlanningArtifactCard(
+                    artifact: artifact,
+                    onAccept: () {
+                      session.resolvePlanningArtifact(
+                        artifact.id,
+                        accepted: true,
+                      );
+                      onChanged();
+                    },
+                    onDismiss: () {
+                      session.resolvePlanningArtifact(
+                        artifact.id,
+                        accepted: false,
+                      );
+                      onChanged();
+                    },
+                  ),
                 if (projection.now.isNotEmpty)
                   _Section(
                     title: 'Now',
                     items: projection.now,
                     session: session,
                     onChanged: onChanged,
+                  ),
+                for (final operation in session.operations.records.where(
+                  (record) =>
+                      record.state == OperationState.queued ||
+                      record.state == OperationState.running,
+                ))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Card(
+                      child: ListTile(
+                        key: Key('operation-${operation.id}'),
+                        leading: const SizedBox.square(
+                          dimension: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        title: Text(operation.title),
+                        subtitle: const Text(
+                          'Working in the background — capture remains available',
+                        ),
+                        trailing: TextButton(
+                          onPressed: () {
+                            session.operations.cancel(operation.id);
+                            onChanged();
+                          },
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                    ),
                   ),
                 _Section(
                   title: 'Next',
@@ -171,6 +266,15 @@ class TodayBoard extends StatelessWidget {
                       onPressed: onOpenLibrary,
                     ),
                     ActionChip(
+                      key: const Key('today-morning-plan'),
+                      avatar: const Icon(Icons.wb_sunny_outlined, size: 18),
+                      label: const Text('Plan morning'),
+                      onPressed: () {
+                        session.createMorningPlan();
+                        onChanged();
+                      },
+                    ),
+                    ActionChip(
                       key: const Key('conversation-history'),
                       avatar: const Icon(Icons.history_rounded, size: 18),
                       label: const Text('History'),
@@ -187,6 +291,170 @@ class TodayBoard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanningArtifactCard extends StatelessWidget {
+  final PlanningArtifact artifact;
+  final VoidCallback onAccept;
+  final VoidCallback onDismiss;
+
+  const _PlanningArtifactCard({
+    required this.artifact,
+    required this.onAccept,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) => Card(
+    key: Key('planning-artifact-${artifact.kind.name}'),
+    margin: const EdgeInsets.only(bottom: 18),
+    color: const Color(0xE6221917),
+    child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                artifact.kind == PlanningArtifactKind.morning
+                    ? Icons.wb_sunny_outlined
+                    : Icons.favorite_outline_rounded,
+                color: PlenaraTheme.amber,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  artifact.title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            artifact.summary,
+            style: const TextStyle(color: PlenaraTheme.quietInk),
+          ),
+          for (final item in artifact.items)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(item.title),
+              subtitle: Text(item.evidence),
+            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
+              const SizedBox(width: 6),
+              FilledButton(
+                key: Key('accept-artifact-${artifact.kind.name}'),
+                onPressed: onAccept,
+                child: const Text('Keep this plan'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _WeeklyReviewCard extends StatelessWidget {
+  final WeeklyReviewArtifact review;
+  final void Function(WeeklyReviewItem item, ReviewDecision decision)
+  onDecision;
+  final VoidCallback onRefresh;
+  final VoidCallback onDismiss;
+  final VoidCallback onApply;
+
+  const _WeeklyReviewCard({
+    required this.review,
+    required this.onDecision,
+    required this.onRefresh,
+    required this.onDismiss,
+    required this.onApply,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final stale = review.state == WeeklyReviewState.stale;
+    return Card(
+      key: const Key('weekly-review-card'),
+      margin: const EdgeInsets.only(bottom: 18),
+      color: const Color(0xE62B211D),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.fact_check_outlined,
+                  color: PlenaraTheme.amber,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    stale ? 'Weekly review needs a refresh' : 'Weekly review',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              stale
+                  ? review.message ?? 'One of these records changed.'
+                  : 'Evidence-backed recommendations. Edit every choice before applying.',
+              style: const TextStyle(color: PlenaraTheme.quietInk),
+            ),
+            if (!stale)
+              for (var index = 0; index < review.items.length; index++)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('${index + 1}. ${review.items[index].title}'),
+                  subtitle: Text(review.items[index].evidence),
+                  trailing: DropdownButton<ReviewDecision>(
+                    key: Key('review-decision-$index'),
+                    value: review.items[index].decision,
+                    onChanged: review.items[index].recordType == 'goal'
+                        ? null
+                        : (decision) {
+                            if (decision != null) {
+                              onDecision(review.items[index], decision);
+                            }
+                          },
+                    items: [
+                      for (final decision in ReviewDecision.values)
+                        DropdownMenuItem(
+                          value: decision,
+                          child: Text(decision.name),
+                        ),
+                    ],
+                  ),
+                ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
+                const SizedBox(width: 6),
+                FilledButton(
+                  key: Key(
+                    stale ? 'refresh-weekly-review' : 'apply-weekly-review',
+                  ),
+                  onPressed: stale ? onRefresh : onApply,
+                  child: Text(stale ? 'Refresh' : 'Apply decisions'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

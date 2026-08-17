@@ -20,6 +20,11 @@ ReplayCloud _cloud() => ReplayCloud.load('test/fixtures/cloud.json');
 Map<String, dynamic>? _ok(CloudResult<Map<String, dynamic>?> r) =>
     (r as CloudOk<Map<String, dynamic>?>).value;
 
+Future<String> _finishAuthoring(Session session) async {
+  final operation = session.operations.records.first;
+  return (await session.operations.wait(operation.id)).result!;
+}
+
 void main() {
   group('replay — residual routing matches recorded Haiku (in-domain)', () {
     residualBySkill.forEach((skillId, utterances) {
@@ -62,7 +67,8 @@ void main() {
         expect((await s.handle('start tracking $desc')).toLowerCase(),
             contains('want me to go ahead'),
             reason: '"$desc" DF-01 offer'); // no cloud spent until yes
-        final preview = await s.handle('yes');
+        expect((await s.handle('yes')).toLowerCase(), contains('background'));
+        final preview = await _finishAuthoring(s);
         expect(preview.toLowerCase(), contains('activate'),
             reason: '"$desc": $preview');
         expect(s.skills.length, before,
@@ -179,7 +185,8 @@ void main() {
       final beforeSkills = s.skills.keys.toSet();
       await s.handle(
           'start tracking coffee cups per day'); // no template -> DF-01 offer
-      final preview = await s.handle('yes'); // accept -> authors
+      expect((await s.handle('yes')).toLowerCase(), contains('background'));
+      final preview = await _finishAuthoring(s); // accept -> authors
       expect(preview.toLowerCase(), contains('activate'));
       expect(s.skills.keys.toSet(), beforeSkills,
           reason: 'nothing registered until activate');

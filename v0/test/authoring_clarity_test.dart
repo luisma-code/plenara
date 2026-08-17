@@ -22,7 +22,8 @@ final _now = DateTime.parse('2026-07-06T09:00:00');
 class _AuthoringCloud implements CloudClient {
   int authorCalls = 0;
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async {
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d,
+      {String? priorError}) async {
     authorCalls++;
     return const CloudOk({
       'type': {
@@ -44,7 +45,12 @@ class _AuthoringCloud implements CloudClient {
         'examplePhrases': ['log a stretch'],
         'steps': {
           'main': [
-            {'op': 'compute', 'fn': 'today', 'args': <dynamic>[], 'into': 'today'},
+            {
+              'op': 'compute',
+              'fn': 'today',
+              'args': <dynamic>[],
+              'into': 'today'
+            },
             {
               'op': 'write_record',
               'typeId': 'stretch_log',
@@ -54,7 +60,11 @@ class _AuthoringCloud implements CloudClient {
                 'loggedAt': {'var': 'today'},
               },
             },
-            {'op': 'format', 'template': 'Logged it.', 'into': 'confirmationText'},
+            {
+              'op': 'format',
+              'template': 'Logged it.',
+              'into': 'confirmationText'
+            },
           ],
         },
       },
@@ -62,11 +72,13 @@ class _AuthoringCloud implements CloudClient {
   }
 
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s,
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
+          String u, Map<String, Map<String, dynamic>> s,
           {Set<String> knownContacts = const {}}) async =>
       const CloudOk(null);
   @override
-  Future<CloudResult<String>> generate(String k, String c) async => const CloudError(CloudErrorKind.noKey);
+  Future<CloudResult<String>> generate(String k, String c) async =>
+      const CloudError(CloudErrorKind.noKey);
 }
 
 Future<Session> _s({bool confirmSpend = false}) async {
@@ -76,21 +88,34 @@ Future<Session> _s({bool confirmSpend = false}) async {
   return s;
 }
 
+Future<String> _finishAuthoring(Session session) async {
+  final operation = session.operations.records.first;
+  final finished = await session.operations.wait(operation.id);
+  expect(finished.error, isNull);
+  return finished.result!;
+}
+
 void main() {
   group('the paid confirm is a preference, not a rule', () {
-    test('by default it just builds — no "want me to go ahead?" round trip', () async {
+    test('by default it just builds — no "want me to go ahead?" round trip',
+        () async {
       final s = await _s();
       final out = await s.handle('start tracking my stretching');
       expect(out.toLowerCase(), isNot(contains('want me to go ahead')));
+      expect(out.toLowerCase(), contains('background'));
+      await _finishAuthoring(s);
       expect((s.claude as _AuthoringCloud).authorCalls, 1);
     });
 
-    test('with the pref ON it asks first, and spends NOTHING until yes', () async {
+    test('with the pref ON it asks first, and spends NOTHING until yes',
+        () async {
       final s = await _s(confirmSpend: true);
       final ask = await s.handle('start tracking my stretching');
       expect(ask.toLowerCase(), contains('want me to go ahead'));
-      expect((s.claude as _AuthoringCloud).authorCalls, 0, reason: 'the ask must precede the spend');
-      await s.handle('yes');
+      expect((s.claude as _AuthoringCloud).authorCalls, 0,
+          reason: 'the ask must precede the spend');
+      expect((await s.handle('yes')).toLowerCase(), contains('background'));
+      await _finishAuthoring(s);
       expect((s.claude as _AuthoringCloud).authorCalls, 1);
     });
 
@@ -106,28 +131,35 @@ void main() {
   group('activation says what actually changed, then checks', () {
     Future<Session> activated() async {
       final s = await _s();
-      await s.handle('start tracking my stretching'); // -> preview
+      await s.handle('start tracking my stretching');
+      await _finishAuthoring(s); // -> durable preview
       await s.handle('activate'); // -> learned + the check question
       return s;
     }
 
-    test('the confirmation names the phrase that now works and what it records', () async {
+    test('the confirmation names the phrase that now works and what it records',
+        () async {
       final s = await _s();
       await s.handle('start tracking my stretching');
+      await _finishAuthoring(s);
       final out = await s.handle('activate');
-      expect(out, contains('log a stretch'), reason: 'the phrase that now works');
+      expect(out, contains('log a stretch'),
+          reason: 'the phrase that now works');
       expect(out, contains('note'), reason: 'what it will record');
       expect(out.toLowerCase(), contains('is that what you wanted'));
     });
 
-    test('"no" REMOVES the capability — a wrong build is reversible in one word', () async {
+    test(
+        '"no" REMOVES the capability — a wrong build is reversible in one word',
+        () async {
       final s = await activated();
       expect(s.skills.containsKey('log-stretch'), isTrue);
       final out = await s.handle('no');
       expect(out.toLowerCase(), contains('forgotten'));
       expect(s.skills.containsKey('log-stretch'), isFalse);
       expect(s.types.containsKey('stretch_log'), isFalse);
-      expect(out.toLowerCase(), contains('tell me again'), reason: 'invite a better description');
+      expect(out.toLowerCase(), contains('tell me again'),
+          reason: 'invite a better description');
     });
 
     test('"yes" keeps it and the capability really works', () async {
@@ -137,16 +169,20 @@ void main() {
       // The example phrase now routes OFFLINE (activation teaches it to the corpus). It asks for
       // the required slot, which is the normal ProvideSlot flow — not a failure.
       final asked = await s.handle('log a stretch');
-      expect(asked, contains('note'), reason: 'routed, and asking for its required input');
+      expect(asked, contains('note'),
+          reason: 'routed, and asking for its required input');
       final logged = await s.handle('hamstrings, 2 minutes');
       expect(logged, contains('Logged'));
-      expect(s.store.values.where((r) => r['typeId'] == 'stretch_log').length, 1);
+      expect(
+          s.store.values.where((r) => r['typeId'] == 'stretch_log').length, 1);
     });
 
-    test('moving on without answering KEEPS it — silence is not a rejection', () async {
+    test('moving on without answering KEEPS it — silence is not a rejection',
+        () async {
       final s = await activated();
       final out = await s.handle('add buy milk to my list');
-      expect(out, contains('buy milk'), reason: 'the unrelated command still runs');
+      expect(out, contains('buy milk'),
+          reason: 'the unrelated command still runs');
       expect(s.skills.containsKey('log-stretch'), isTrue);
     });
 
@@ -156,7 +192,8 @@ void main() {
       final s = await activated();
       await s.handle('no');
       final out = await s.handle('log a stretch');
-      expect(out.toLowerCase(), isNot(contains('went wrong')), reason: 'must not crash the turn');
+      expect(out.toLowerCase(), isNot(contains('went wrong')),
+          reason: 'must not crash the turn');
       expect(s.router.route('log a stretch'), isNull,
           reason: 'the learned template must be unlearned with the capability');
     });
@@ -169,6 +206,21 @@ void main() {
       await s2.init(retrieval: false);
       expect(s2.skills.containsKey('log-stretch'), isFalse);
       expect(s2.types.containsKey('stretch_log'), isFalse);
+    });
+
+    test('a completed preview survives relaunch before activation', () async {
+      final dir = makeTempDataDir();
+      final first = Session(dir, clock: _now, cloud: _AuthoringCloud());
+      await first.init(retrieval: false);
+      await first.handle('start tracking my stretching');
+      expect(
+          (await _finishAuthoring(first)).toLowerCase(), contains('activate'));
+
+      final reopened = Session(dir, clock: _now, cloud: _AuthoringCloud());
+      await reopened.init(retrieval: false);
+      final activated = await reopened.handle('activate');
+      expect(activated.toLowerCase(), contains('learned it'));
+      expect(reopened.skills.containsKey('log-stretch'), isTrue);
     });
   });
 }

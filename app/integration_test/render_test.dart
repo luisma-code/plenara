@@ -1,11 +1,13 @@
-// Real-device (real engine + GPU) render smoke. This is the ONE place the animated presence
+// Host/simulator (real engine + GPU) render smoke. This is the ONE place the animated presence
 // actually rasterizes: the mote swarm, the comet-trail ping-pong offscreen buffer (toImageSync),
 // the veilYield corner transition, and a glyph flight all run for real here. Headless flutter_test
 // builds PresenceView with animate:false (an ever-moving swarm never lets pumpAndSettle terminate),
 // so it never touches this path — which is exactly how the list-reply raster crash shipped
 // (resizing the widget reallocated the trail buffer mid-animation → native crash).
 //
-// Run: flutter test integration_test/render_test.dart -d macos
+// Run on macOS or an explicitly selected local phone simulator. Never target
+// Luis's physical iPhone; that phone is deployment-only.
+//   flutter test integration_test/render_test.dart -d macos
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -149,6 +151,9 @@ void main() {
       [taskIds.first],
       DateTime.parse('2026-07-06T10:00:00'),
     );
+    session.createMorningPlan();
+    session.createWeeklyReview();
+    session.createWeeklyProposal();
 
     await tester.pumpWidget(
       MaterialApp(
@@ -161,6 +166,8 @@ void main() {
     );
     await runFrames(tester, 35);
     expect(find.byKey(const Key('today-board')), findsOneWidget);
+    expect(find.byKey(const Key('planning-artifact-morning')), findsOneWidget);
+    expect(find.byKey(const Key('weekly-review-card')), findsOneWidget);
 
     await tester.tap(find.text('Plan').last);
     await runFrames(tester, 35);
@@ -172,6 +179,7 @@ void main() {
     expect(find.text('Agenda'), findsOneWidget);
     expect(find.text('Unscheduled'), findsWidgets);
     expect(find.text('write the proposal'), findsOneWidget);
+    expect(find.byKey(const Key('plan-proposal')), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.text('Library').last);

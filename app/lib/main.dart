@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
+import 'package:plenara/operation_center.dart';
 import 'package:plenara/reminders.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara/planner.dart';
@@ -230,6 +231,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   // else Noop. Tests inject their own. Null until _init picks one; the mic hides while null.
   SpeechRecognizer? _speech;
   SpeechOutput? _voice; // Plena's talk-back (Spec 12 §6); chosen in _init
+  StreamSubscription<OperationRecord>? _operationSub;
   bool _voiceMuted =
       false; // mute silences her voice; captions still show (Spec 15 §7)
   int _noMatchStreak =
@@ -373,6 +375,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     try {
       log('init: begin (retrieval=${widget.retrieval})');
       await _session.init(retrieval: widget.retrieval, onPhase: log.log);
+      _operationSub = _session.operations.changes.listen(_operationChanged);
+      final restoredOperations = _session.operations.takeDeliveries();
       _speech =
           await _pickSpeech(); // on-device sherpa if the model's present, else OS SAPI
       // Talk-back: on-device TTS in production; a fake in tests; Noop under an injected session.
@@ -408,8 +412,10 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       final nudges = _session.pendingNudges();
       setState(() {
         _ready = true;
-        _caption = null;
-        _displayIsList = false;
+        _caption = restoredOperations.isEmpty
+            ? null
+            : _operationDeliveryText(restoredOperations);
+        _displayIsList = restoredOperations.isNotEmpty;
       });
       // A birthday today earns the candle; otherwise Plena acknowledges arrival.
       _fireGlyph(
@@ -433,6 +439,58 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       });
     }
   }
+
+  void _operationChanged(OperationRecord operation) {
+    if (!mounted) return;
+    if (!operation.terminal) {
+      setState(() {});
+      return;
+    }
+    final deliveries = _session.operations.takeDeliveries();
+    if (deliveries.isEmpty) return;
+    _presentOperationDeliveries(deliveries);
+  }
+
+  void _presentOperationDeliveries(List<OperationRecord> deliveries) {
+    final text = _operationDeliveryText(deliveries);
+    setState(() {
+      _caption = text;
+      _displayIsList = true;
+      _speaking = true;
+    });
+    _speakTimer?.cancel();
+    _capTimer?.cancel();
+    void finish() {
+      if (!mounted) return;
+      _speakTimer?.cancel();
+      setState(() => _speaking = false);
+      _capTimer = Timer(const Duration(milliseconds: 1600), () {
+        if (mounted) setState(() => _caption = null);
+      });
+    }
+
+    if (!_voiceMuted && (_voice?.available ?? false)) {
+      _voice!.speak(text, onDone: finish);
+      final capMs = (3000 + text.length * 75).clamp(4000, 60000);
+      _speakTimer = Timer(Duration(milliseconds: capMs), finish);
+    } else {
+      final ms = (1400 + text.length * 22).clamp(1600, 4200);
+      _speakTimer = Timer(Duration(milliseconds: ms), finish);
+    }
+  }
+
+  String _operationDeliveryText(List<OperationRecord> deliveries) => deliveries
+      .map(
+        (operation) => switch (operation.state) {
+          OperationState.succeeded =>
+            '✨ ${operation.title} is ready\n${operation.result ?? ''}',
+          OperationState.interrupted =>
+            '⚠️ ${operation.title} was interrupted by the app closing. It was not retried or charged again.',
+          _ =>
+            '⚠️ ${operation.title} did not finish: ${operation.error ?? 'cancelled'}',
+        },
+      )
+      .join('\n\n');
 
   /// Pick the best available recognizer for the platform.
   ///
@@ -819,6 +877,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     _speech
         ?.cancel(); // never leave the recognizer recording after teardown (privacy)
     _voice?.stop(); // don't keep talking after teardown
+    _operationSub?.cancel();
     _speakTimer?.cancel();
     _thinkTimer?.cancel();
     _capTimer?.cancel();

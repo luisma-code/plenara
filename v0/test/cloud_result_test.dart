@@ -19,13 +19,17 @@ class _ErrCloud implements CloudClient {
   final CloudErrorKind kind;
   _ErrCloud(this.kind);
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
+          String u, Map<String, Map<String, dynamic>> s,
+          {Set<String> knownContacts = const {}}) async =>
       CloudError(kind);
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d,
+          {String? priorError}) async =>
       CloudError(kind);
   @override
-  Future<CloudResult<String>> generate(String k, String c) async => CloudError(kind);
+  Future<CloudResult<String>> generate(String k, String c) async =>
+      CloudError(kind);
 }
 
 /// Cloud returning a fixed route (drives cloud-slot normalization).
@@ -33,16 +37,21 @@ class _RouteCloud implements CloudClient {
   final Map<String, dynamic>? route;
   _RouteCloud(this.route);
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
+          String u, Map<String, Map<String, dynamic>> s,
+          {Set<String> knownContacts = const {}}) async =>
       CloudOk(route);
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d,
+          {String? priorError}) async =>
       const CloudOk(null);
   @override
-  Future<CloudResult<String>> generate(String k, String c) async => const CloudError(CloudErrorKind.noKey);
+  Future<CloudResult<String>> generate(String k, String c) async =>
+      const CloudError(CloudErrorKind.noKey);
 }
 
-Future<Session> _session(String dir, CloudClient c, {NotificationScheduler? sched}) async {
+Future<Session> _session(String dir, CloudClient c,
+    {NotificationScheduler? sched}) async {
   final s = Session(dir, clock: _now, cloud: c, scheduler: sched);
   await s.init(retrieval: false);
   return s;
@@ -52,83 +61,116 @@ const _miss = 'zzz nonsense that the corpus cannot possibly match';
 
 void main() {
   group('cloud failure is surfaced honestly (R1 — no silent degradation)', () {
-    test('bad key -> the miss names the cause AND the turnlog records the kind', () async {
+    test('bad key -> the miss names the cause AND the turnlog records the kind',
+        () async {
       final dir = makeTempDataDir();
       final s = await _session(dir, _ErrCloud(CloudErrorKind.badKey));
       final r = await s.handle(_miss);
       expect(r.toLowerCase(), contains('api key was rejected'));
-      final last = jsonDecode(File('$dir/turnlog.jsonl').readAsLinesSync().last) as Map;
-      expect(last['cloud'], 'badKey'); // dogfood telemetry measures cloud health
+      final last =
+          jsonDecode(File('$dir/turnlog.jsonl').readAsLinesSync().last) as Map;
+      expect(
+          last['cloud'], 'badKey'); // dogfood telemetry measures cloud health
     });
 
     test('offline -> the miss says offline', () async {
-      final s = await _session(makeTempDataDir(), _ErrCloud(CloudErrorKind.offline));
+      final s =
+          await _session(makeTempDataDir(), _ErrCloud(CloudErrorKind.offline));
       expect((await s.handle(_miss)).toLowerCase(), contains('offline'));
     });
 
-    test('authoring with no key -> the true reason, not the old "offline or no key" guess', () async {
-      final s = await _session(makeTempDataDir(), _ErrCloud(CloudErrorKind.noKey));
+    test(
+        'authoring with no key -> the true reason, not the old "offline or no key" guess',
+        () async {
+      final s =
+          await _session(makeTempDataDir(), _ErrCloud(CloudErrorKind.noKey));
       await s.handle('start tracking my pushups'); // DF-01 offer (no cloud yet)
-      final r = await s.handle('yes'); // accept -> authoring hits the noKey error
+      await s
+          .handle('yes'); // accept -> detached authoring hits the noKey error
+      final r =
+          (await s.operations.wait(s.operations.records.first.id)).result!;
       expect(r.toLowerCase(), contains('api key'));
       expect(r.contains('offline or no key'), isFalse);
     });
 
-    test('a genuine abstain still reads as a clean clarify (no cloud-error suffix)', () async {
-      final s = await _session(makeTempDataDir(), _RouteCloud(null)); // Ok(null)
+    test(
+        'a genuine abstain still reads as a clean clarify (no cloud-error suffix)',
+        () async {
+      final s =
+          await _session(makeTempDataDir(), _RouteCloud(null)); // Ok(null)
       final r = await s.handle(_miss);
       expect(r.contains("couldn't check with the cloud"), isFalse);
       expect(r.toLowerCase(), contains("didn't catch"));
     });
   });
 
-  group('cloud date/datetime slots are normalized (R2 — no wrong/dropped reminders)', () {
-    test('a date-only cloud "when" -> clarify, never a midnight reminder', () async {
+  group(
+      'cloud date/datetime slots are normalized (R2 — no wrong/dropped reminders)',
+      () {
+    test('a date-only cloud "when" -> clarify, never a midnight reminder',
+        () async {
       final fake = FakeScheduler();
       final s = await _session(
           makeTempDataDir(),
           _RouteCloud({
             'skillId': 'set-reminder',
-            'slots': <String, dynamic>{'text': 'call mom', 'when': '2026-07-08'}, // a date, no time
+            'slots': <String, dynamic>{
+              'text': 'call mom',
+              'when': '2026-07-08'
+            }, // a date, no time
             'source': 'cloud',
           }),
           sched: fake);
-      final r = await s.handle('give me a nudge about calling mom on the 8th'); // misses the corpus -> cloud
-      expect(r.toLowerCase(), contains('when')); // asks for a time instead of arming midnight
+      final r = await s.handle(
+          'give me a nudge about calling mom on the 8th'); // misses the corpus -> cloud
+      expect(r.toLowerCase(),
+          contains('when')); // asks for a time instead of arming midnight
       expect(s.store.values.where((x) => x['typeId'] == 'reminder'), isEmpty);
       expect(fake.armed(), isEmpty);
     });
 
-    test('a natural-language cloud "when" -> a real ISO datetime, armed correctly', () async {
+    test(
+        'a natural-language cloud "when" -> a real ISO datetime, armed correctly',
+        () async {
       final fake = FakeScheduler();
       final s = await _session(
           makeTempDataDir(),
           _RouteCloud({
             'skillId': 'set-reminder',
-            'slots': <String, dynamic>{'text': 'call mom', 'when': 'thursday at 5pm'},
+            'slots': <String, dynamic>{
+              'text': 'call mom',
+              'when': 'thursday at 5pm'
+            },
             'source': 'cloud',
           }),
           sched: fake);
       final r = await s.handle('nudge me to call mom later this week');
       expect(r, contains('call mom'));
       expect(fake.armed().length, 1);
-      expect(fake.scheduled.values.single.at, DateTime.parse('2026-07-09T17:00:00'));
+      expect(fake.scheduled.values.single.at,
+          DateTime.parse('2026-07-09T17:00:00'));
     });
 
-    test('a natural-language cloud dueDate normalizes for create-task', () async {
+    test('a natural-language cloud dueDate normalizes for create-task',
+        () async {
       final s = await _session(
           makeTempDataDir(),
           _RouteCloud({
             'skillId': 'create-task',
-            'slots': <String, dynamic>{'description': 'renew passport', 'dueDate': 'friday'},
+            'slots': <String, dynamic>{
+              'description': 'renew passport',
+              'dueDate': 'friday'
+            },
             'source': 'cloud',
           }));
-      await s.handle('sort out the passport renewal before the weekend'); // misses the corpus -> cloud stub
+      await s.handle(
+          'sort out the passport renewal before the weekend'); // misses the corpus -> cloud stub
       final t = s.store.values.where((x) => x['typeId'] == 'task').single;
       expect(t['dueAt'], '2026-07-10'); // resolved to ISO, not the raw "friday"
     });
 
-    test('a PARTIAL cloud route asks for the missing slot, then a NEW command escapes it (not trapped)',
+    test(
+        'a PARTIAL cloud route asks for the missing slot, then a NEW command escapes it (not trapped)',
         () async {
       // The live-cloud bug: a cloud-routed reminder with no time asked "when?" and then swallowed
       // EVERY later turn as a failed answer. A new command must abandon the ask and be handled.
@@ -136,13 +178,19 @@ void main() {
           makeTempDataDir(),
           _RouteCloud({
             'skillId': 'set-reminder',
-            'slots': <String, dynamic>{'text': 'water the plants'}, // no 'when' -> ProvideSlot
+            'slots': <String, dynamic>{
+              'text': 'water the plants'
+            }, // no 'when' -> ProvideSlot
             'source': 'cloud',
           }));
-      expect((await s.handle('jot down that i should water the plants')).toLowerCase(), contains('when'));
+      expect(
+          (await s.handle('jot down that i should water the plants'))
+              .toLowerCase(),
+          contains('when'));
       // a genuine new command (not a time) -> abandons the paused fill and is handled normally
       expect(await s.handle('add buy milk to my list'), contains('buy milk'));
-      expect(s.store.values.any((x) => x['typeId'] == 'reminder'), isFalse); // no half-filled reminder written
+      expect(s.store.values.any((x) => x['typeId'] == 'reminder'),
+          isFalse); // no half-filled reminder written
     });
   });
 }

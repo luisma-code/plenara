@@ -236,6 +236,39 @@ void main() {
     expect(find.textContaining('buy milk'), findsWidgets);
   });
 
+  testWidgets('detached operation progress and result arrive without polling', (
+    tester,
+  ) async {
+    final session = _session();
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
+    await tester.pumpAndSettle();
+    final began = Completer<void>();
+    final result = Completer<String>();
+
+    final operation = session.operations.start(
+      kind: 'test-analysis',
+      title: 'Test analysis',
+      run: (_) {
+        began.complete();
+        return result.future;
+      },
+    );
+    await began.future;
+    await tester.pump();
+    expect(find.text('Test analysis'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+
+    result.complete('The detached result');
+    await session.operations.wait(operation.id);
+    await tester.pump();
+
+    expect(find.textContaining('Test analysis is ready'), findsOneWidget);
+    expect(find.textContaining('The detached result'), findsOneWidget);
+    expect(session.operations.takeDeliveries(), isEmpty);
+    await tester.pump(const Duration(seconds: 6));
+    expect(find.textContaining('The detached result'), findsNothing);
+  });
+
   testWidgets('tap-to-talk transcribes and auto-sends (hands-free)', (
     tester,
   ) async {

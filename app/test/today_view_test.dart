@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plenara/claude.dart';
+import 'package:plenara/planner.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara_app/plenara_theme.dart';
 import 'package:plenara_app/today_view.dart';
@@ -129,5 +130,57 @@ void main() {
 
     expect(find.byKey(const Key('repair-needed')), findsOneWidget);
     expect(find.text('Some local data needs attention'), findsOneWidget);
+  });
+
+  testWidgets(
+    'weekly review is editable and applies through one undoable action',
+    (tester) async {
+      final session = await _session();
+      await session.handle('add buy milk to my list');
+      await session.handle('add call Dad to my list');
+
+      await tester.pumpWidget(_board(session));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('today-weekly-review')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('weekly-review-card')), findsOneWidget);
+      expect(find.textContaining('Evidence-backed'), findsOneWidget);
+      expect(find.byKey(const Key('review-decision-0')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('apply-weekly-review')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('weekly-review-card')), findsNothing);
+      expect(session.executions.completed.last.origin, 'weekly-review');
+      expect(
+        session.store.values
+            .where((record) => record['typeId'] == 'task')
+            .every((record) => record['status'] == 'someday'),
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets('morning plan remains visible until accepted', (tester) async {
+    final session = await _session();
+    await session.handle('add call Dad to my list');
+    final taskId = '${session.store.values.single['id']}';
+    await session.updateTaskPlans([
+      TaskPlanPatch(id: taskId, scheduledStartAt: session.now),
+    ]);
+    await tester.pumpWidget(_board(session));
+    await tester.pumpAndSettle();
+
+    final trigger = find.byKey(const Key('today-morning-plan'));
+    await tester.ensureVisible(trigger);
+    await tester.tap(trigger);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('planning-artifact-morning')), findsOneWidget);
+    expect(find.text('call Dad'), findsWidgets);
+    await tester.tap(find.byKey(const Key('accept-artifact-morning')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('planning-artifact-morning')), findsNothing);
   });
 }

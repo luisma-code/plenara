@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plenara/plan_proposal.dart';
 import 'package:plenara/planner.dart';
 import 'package:plenara/session.dart';
 
@@ -154,6 +155,21 @@ class _PlanBoardState extends State<PlanBoard> {
 
   Future<void> _complete(String id) => _run(widget.session.completeTask(id));
 
+  void _createProposal() {
+    widget.session.createWeeklyProposal();
+    _refresh();
+  }
+
+  Future<void> _applyProposal() async {
+    await _run(widget.session.applyPlanProposal());
+    _refresh();
+  }
+
+  void _dismissProposal() {
+    widget.session.dismissPlanProposal();
+    _refresh();
+  }
+
   void _toggle(String id) => setState(() {
     _selectedIds.contains(id) ? _selectedIds.remove(id) : _selectedIds.add(id);
   });
@@ -214,6 +230,13 @@ class _PlanBoardState extends State<PlanBoard> {
                           ),
                         ),
                         IconButton.filledTonal(
+                          key: const Key('create-plan-proposal'),
+                          tooltip: 'Draft this week',
+                          onPressed: _busy ? null : _createProposal,
+                          icon: const Icon(Icons.auto_awesome_outlined),
+                        ),
+                        const SizedBox(width: 6),
+                        IconButton.filledTonal(
                           tooltip: 'Talk to Plena',
                           onPressed: widget.onVoice,
                           icon: const Icon(Icons.mic_none_rounded),
@@ -233,6 +256,23 @@ class _PlanBoardState extends State<PlanBoard> {
                       id,
                     ], start: DateTime(day.year, day.month, day.day, 9)),
                   ),
+                  if (widget.session.activePlanProposal case final proposal?
+                      when proposal.state == PlanProposalState.draft ||
+                          proposal.state == PlanProposalState.stale)
+                    _ProposalCard(
+                      proposal: proposal,
+                      busy: _busy,
+                      onSelected: (item, selected) {
+                        widget.session.setProposalItemSelected(
+                          item.taskId,
+                          selected,
+                        );
+                        _refresh();
+                      },
+                      onApply: _applyProposal,
+                      onDismiss: _dismissProposal,
+                      onRefresh: _createProposal,
+                    ),
                   if (_selectedIds.isNotEmpty)
                     _SelectionBar(
                       count: _selectedIds.length,
@@ -276,6 +316,113 @@ class _PlanBoardState extends State<PlanBoard> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _ProposalCard extends StatelessWidget {
+  final PlanProposal proposal;
+  final bool busy;
+  final void Function(PlanProposalItem item, bool selected) onSelected;
+  final VoidCallback onApply;
+  final VoidCallback onDismiss;
+  final VoidCallback onRefresh;
+
+  const _ProposalCard({
+    required this.proposal,
+    required this.busy,
+    required this.onSelected,
+    required this.onApply,
+    required this.onDismiss,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final stale = proposal.state == PlanProposalState.stale;
+    return Card(
+      key: const Key('plan-proposal'),
+      margin: const EdgeInsets.fromLTRB(20, 10, 20, 2),
+      color: const Color(0xE62B211D),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome, color: PlenaraTheme.amber),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    stale ? 'This proposal is stale' : proposal.title,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Text(
+                  '${proposal.scheduledMinutes} min',
+                  style: const TextStyle(color: PlenaraTheme.quietInk),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              stale
+                  ? proposal.message ??
+                        'The plan changed. Refresh before applying.'
+                  : '${proposal.items.length} proposed changes • conflicts ${proposal.conflictsBefore} → ${proposal.conflictsAfter}',
+              style: const TextStyle(color: PlenaraTheme.quietInk),
+            ),
+            if (!stale)
+              for (var index = 0; index < proposal.items.length; index++)
+                CheckboxListTile(
+                  key: Key('proposal-item-$index'),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  value: proposal.items[index].selected,
+                  onChanged: busy
+                      ? null
+                      : (value) =>
+                            onSelected(proposal.items[index], value ?? false),
+                  title: Text('${index + 1}. ${proposal.items[index].title}'),
+                  subtitle: Text(
+                    '${_shortDateTime(proposal.items[index].proposedStartAt)} • ${proposal.items[index].rationale}',
+                  ),
+                ),
+            if (!stale && proposal.omissions.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              const Text(
+                'Left out',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              for (final omission in proposal.omissions)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '• $omission',
+                    style: const TextStyle(color: PlenaraTheme.quietInk),
+                  ),
+                ),
+            ],
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: busy ? null : onDismiss,
+                  child: const Text('Dismiss'),
+                ),
+                const SizedBox(width: 6),
+                FilledButton(
+                  key: Key(stale ? 'refresh-proposal' : 'apply-proposal'),
+                  onPressed: busy ? null : (stale ? onRefresh : onApply),
+                  child: Text(stale ? 'Refresh' : 'Apply selected'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -779,6 +926,7 @@ String _weekday(DateTime day) =>
 String _longDate(DateTime day) =>
     '${const ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][day.month - 1]} ${day.day}';
 String _shortDate(DateTime day) => '${_weekday(day)} ${day.day}';
+String _shortDateTime(DateTime at) => '${_shortDate(at)} at ${_time(at)}';
 String _hours(int minutes) => minutes < 60
     ? '${minutes}m'
     : minutes % 60 == 0

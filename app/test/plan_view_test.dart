@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plenara/claude.dart';
+import 'package:plenara/plan_proposal.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara_app/library_home.dart';
 import 'package:plenara_app/plan_view.dart';
@@ -135,4 +136,44 @@ void main() {
     expect(opened, 'People');
     expect(filter, contains('contact'));
   });
+
+  testWidgets(
+    'Plan proposal previews selections and applies one durable change',
+    (tester) async {
+      final session = await _session();
+      await session.handle('add write proposal to my list');
+      await session.handle('add call Sam to my list');
+
+      await tester.pumpWidget(
+        _app(PlanBoard(session: session, onChanged: () {})),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('create-plan-proposal')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('plan-proposal')), findsOneWidget);
+      expect(find.textContaining('2 proposed changes'), findsOneWidget);
+      expect(
+        session.store.values.every(
+          (record) =>
+              record['typeId'] != 'task' || record['scheduledStartAt'] == null,
+        ),
+        isTrue,
+      );
+
+      await tester.tap(find.byKey(const Key('proposal-item-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('apply-proposal')));
+      await tester.pumpAndSettle();
+
+      expect(session.activePlanProposal!.state, PlanProposalState.applied);
+      final scheduled = session.store.values.where(
+        (record) =>
+            record['typeId'] == 'task' && record['scheduledStartAt'] != null,
+      );
+      expect(scheduled, hasLength(1));
+      expect(session.executions.completed.last.origin, 'planner-proposal');
+      expect(find.byKey(const Key('plan-proposal')), findsNothing);
+    },
+  );
 }

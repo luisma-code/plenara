@@ -6,6 +6,7 @@ library;
 import 'dart:async';
 
 import 'automations.dart';
+import 'capability_draft_store.dart';
 import 'claude.dart';
 import 'content_search.dart';
 import 'conversation_ledger.dart';
@@ -14,7 +15,10 @@ import 'reference.dart';
 import 'generative.dart';
 import 'interpreter.dart';
 import 'migration.dart';
+import 'operation_center.dart';
 import 'people.dart';
+import 'plan_proposal.dart';
+import 'planning_artifact.dart';
 import 'planner.dart';
 import 'reminders.dart';
 import 'routines.dart';
@@ -22,6 +26,7 @@ import 'router.dart';
 import 'schema_registry.dart';
 import 'storage_repository.dart';
 import 'value_codec.dart';
+import 'weekly_review.dart';
 
 final _undoRe = RegExp(
     r"^(?:(?:no,?|never ?mind,?|wait,?|actually,?)\s+)?(?:(?:can|could|will) you\s+)?(?:please\s+)?(?:undo|revert|take (?:that|it) back|scratch that|roll (?:that|it) back)(?:\s+(?:that|it|this|please|(?:the|my|that) last (?:one|thing|entry|log)))?[.!]?$",
@@ -42,6 +47,34 @@ final _plannerEstimateRe = RegExp(
 final _plannerCompleteRe = RegExp(
     r'^(?:complete|finish|mark(?:\s+as)?\s+done|check\s+off)\s+(.+?)[.!]?$',
     caseSensitive: false);
+final _planWeekRe = RegExp(
+  r'^(?:(?:can|could) you\s+|please\s+)?(?:help me\s+)?(?:plan|organize|schedule)\s+(?:my|the|this)\s+week[.!]?$',
+  caseSensitive: false,
+);
+final _applyProposalRe = RegExp(
+  r'^(?:apply|accept|use)(?:\s+all)?(?:\s+(?:of\s+)?(?:the|this|that))?\s+(?:plan|proposal)[.!]?$',
+  caseSensitive: false,
+);
+final _dismissProposalRe = RegExp(
+  r'^(?:dismiss|discard|cancel|forget)(?:\s+(?:the|this|that))?\s+(?:plan|proposal)[.!]?$',
+  caseSensitive: false,
+);
+final _proposalMoveRe = RegExp(
+  r'^move\s+(?:the\s+)?(first|second|third|fourth|fifth)(?:\s+(?:one|item))?\s+(?:in\s+the\s+proposal\s+)?to\s+(.+?)[.!]?$',
+  caseSensitive: false,
+);
+final _proposalExcludeRe = RegExp(
+  r'^(?:drop|remove|leave out)\s+(?:the\s+)?(first|second|third|fourth|fifth)(?:\s+(?:one|item))?(?:\s+from\s+the\s+proposal)?[.!]?$',
+  caseSensitive: false,
+);
+final _morningPlanRe = RegExp(
+  r'^(?:help me\s+)?(?:plan (?:my|the) (?:morning|day)|what should i focus on this morning)[.!]?$',
+  caseSensitive: false,
+);
+final _relationshipPrepRe = RegExp(
+  r'^(?:help me\s+)?prepare(?: me)? for (?:(?:seeing|meeting|talking to|a call with|dinner with|lunch with|coffee with)\s+)?(.+?)[.!]?$',
+  caseSensitive: false,
+);
 
 // ---- Numbered-list corrections (reference-by-number over the last spoken readback) ----------
 // The ordered list Plena last read back, captured from the interpreter's `enumerate` channel.
@@ -590,6 +623,11 @@ class Session {
   final List<MigrationBackup> migrationBackups = [];
   final List<String> executionRepairIssues = [];
   late ConversationLedger conversationLedger;
+  late OperationCenter operations;
+  late CapabilityDraftStore capabilityDrafts;
+  late PlanProposalStore planProposals;
+  late WeeklyReviewStore weeklyReviews;
+  late PlanningArtifactStore planningArtifacts;
   late Map<String, Map<String, dynamic>> skills;
   late Map<String, Map<String, dynamic>>
       templates; // binary-shipped tracker templates (Spec 05 §6)
@@ -761,6 +799,13 @@ class Session {
         ...executionRepairIssues.map((_) => 'A recent change needs repair.'),
         ...conversationLedger.issues
             .map((_) => 'Conversation history needs repair.'),
+        ...operations.issues.map((_) => 'Detached work history needs repair.'),
+        ...capabilityDrafts.issues
+            .map((_) => 'A pending capability draft needs repair.'),
+        ...planProposals.issues.map((_) => 'A planning proposal needs repair.'),
+        ...weeklyReviews.issues.map((_) => 'A weekly review needs repair.'),
+        ...planningArtifacts.issues
+            .map((_) => 'A planning artifact needs repair.'),
       ];
 
   /// [retrieval] builds the deterministic in-process embedding index. Tests may
@@ -800,6 +845,26 @@ class Session {
     conversationLedger = repo is FileStorageRepository
         ? FileConversationLedger((repo as FileStorageRepository).deviceDir)
         : MemoryConversationLedger();
+    final localDir = repo is FileStorageRepository
+        ? (repo as FileStorageRepository).deviceDir
+        : _deviceDir;
+    operations = OperationCenter(
+      path: localDir == null ? null : '$localDir/operations.json',
+      clock: () => now,
+    );
+    capabilityDrafts = CapabilityDraftStore(
+      path: localDir == null ? null : '$localDir/pending-capability.json',
+    );
+    _pendingActivation = capabilityDrafts.active;
+    planProposals = PlanProposalStore(
+      path: localDir == null ? null : '$localDir/plan-proposal.json',
+    );
+    weeklyReviews = WeeklyReviewStore(
+      path: localDir == null ? null : '$localDir/weekly-review.json',
+    );
+    planningArtifacts = PlanningArtifactStore(
+      path: localDir == null ? null : '$localDir/planning-artifacts.json',
+    );
     executionRepairIssues
       ..clear()
       ..addAll(executionJournal.issues);
@@ -1325,6 +1390,441 @@ class Session {
         dailyCapacityMinutes: dailyCapacityMinutes,
       );
 
+  PlanProposal? get activePlanProposal => planProposals.active;
+
+  WeeklyReviewArtifact? get activeWeeklyReview => weeklyReviews.active;
+
+  WeeklyReviewArtifact createWeeklyReview() {
+    final review = buildWeeklyReviewArtifact(store, now);
+    weeklyReviews.save(review);
+    return review;
+  }
+
+  WeeklyReviewArtifact? setWeeklyReviewDecision(
+    String recordId,
+    ReviewDecision decision,
+  ) {
+    final review = weeklyReviews.active;
+    if (review == null || review.state != WeeklyReviewState.draft) return null;
+    final items = [
+      for (final item in review.items)
+        item.recordId == recordId ? item.copyWith(decision: decision) : item,
+    ];
+    final changed =
+        review.copyWith(updatedAt: now, items: List.unmodifiable(items));
+    weeklyReviews.save(changed);
+    return changed;
+  }
+
+  WeeklyReviewArtifact? dismissWeeklyReview() {
+    final review = weeklyReviews.active;
+    if (review == null || review.state != WeeklyReviewState.draft) return null;
+    final dismissed = review.copyWith(
+      state: WeeklyReviewState.dismissed,
+      updatedAt: now,
+      message: 'Dismissed without changing tasks or goals.',
+    );
+    weeklyReviews.save(dismissed);
+    return dismissed;
+  }
+
+  Future<ManualWrite> applyWeeklyReview() async {
+    final review = weeklyReviews.active;
+    if (review == null || review.state != WeeklyReviewState.draft) {
+      return const ManualWrite.fail(
+          'There is no active weekly review to apply.');
+    }
+    for (final item in review.items) {
+      final record = store[item.recordId];
+      if (record == null || reviewFingerprint(record) != item.baseFingerprint) {
+        weeklyReviews.save(review.copyWith(
+          state: WeeklyReviewState.stale,
+          updatedAt: now,
+          message: 'A reviewed item changed. Refresh before applying.',
+        ));
+        return const ManualWrite.fail(
+          'A reviewed item changed after this review was made, so nothing was applied.',
+        );
+      }
+      if (item.recordType == 'goal' && item.decision != ReviewDecision.keep) {
+        return const ManualWrite.fail(
+          'Goals can stay visible in this review; change goal status from its detail view.',
+        );
+      }
+    }
+    final taskItems =
+        review.items.where((item) => item.recordType == 'task').toList();
+    if (taskItems.isEmpty) {
+      weeklyReviews.save(review.copyWith(
+        state: WeeklyReviewState.applied,
+        updatedAt: now,
+        message: 'Reviewed goals; no task changes were needed.',
+      ));
+      return const ManualWrite.ok(
+          'Reviewed the week — no task changes were needed.');
+    }
+    final result = await updateTaskPlans(
+      [
+        for (final item in taskItems)
+          TaskPlanPatch(
+            id: item.recordId,
+            reviewDecision: item.decision.name,
+          ),
+      ],
+      origin: 'weekly-review',
+      description: 'applied ${taskItems.length} weekly review decisions',
+      frozenInputs: {
+        'weeklyReviewId': review.id,
+        'decisions': {
+          for (final item in taskItems) item.recordId: item.decision.name,
+        },
+      },
+    );
+    if (result.ok) {
+      weeklyReviews.save(review.copyWith(
+        state: WeeklyReviewState.applied,
+        updatedAt: now,
+        message: 'Applied as one reversible weekly review.',
+      ));
+    }
+    return result;
+  }
+
+  List<PlanningArtifact> get activePlanningArtifacts =>
+      planningArtifacts.active;
+
+  PlanningArtifact createMorningPlan() {
+    final artifact = buildMorningPlanningArtifact(store, now);
+    planningArtifacts.create(artifact);
+    return artifact;
+  }
+
+  PlanningArtifact? createRelationshipPrep(String personName) {
+    final artifact = buildRelationshipPrepArtifact(personName, store, now);
+    if (artifact != null) planningArtifacts.create(artifact);
+    return artifact;
+  }
+
+  PlanningArtifact? resolvePlanningArtifact(
+    String id, {
+    required bool accepted,
+  }) =>
+      planningArtifacts.resolve(
+        id,
+        accepted
+            ? PlanningArtifactState.accepted
+            : PlanningArtifactState.dismissed,
+        now,
+      );
+
+  PlanProposal createWeeklyProposal() {
+    final proposal = buildWeeklyPlanProposal(store, now);
+    planProposals.save(proposal);
+    return proposal;
+  }
+
+  PlanProposal? setProposalItemSelected(String taskId, bool selected) {
+    final proposal = planProposals.active;
+    if (proposal == null || proposal.state != PlanProposalState.draft) {
+      return null;
+    }
+    final items = [
+      for (final item in proposal.items)
+        item.taskId == taskId ? item.copyWith(selected: selected) : item,
+    ];
+    return _saveRefinedProposal(proposal, items);
+  }
+
+  PlanProposal? moveProposalItem(String taskId, DateTime start) {
+    final proposal = planProposals.active;
+    if (proposal == null || proposal.state != PlanProposalState.draft) {
+      return null;
+    }
+    final items = [
+      for (final item in proposal.items)
+        item.taskId == taskId
+            ? item.copyWith(proposedStartAt: start, selected: true)
+            : item,
+    ];
+    return _saveRefinedProposal(proposal, items);
+  }
+
+  PlanProposal _saveRefinedProposal(
+    PlanProposal proposal,
+    List<PlanProposalItem> items,
+  ) {
+    final selected = items.where((item) => item.selected).toList();
+    final projected = {
+      for (final entry in store.entries)
+        entry.key: Map<String, dynamic>.from(entry.value),
+    };
+    for (final item in selected) {
+      final record = projected[item.taskId];
+      if (record == null) continue;
+      record
+        ..['scheduledStartAt'] = item.proposedStartAt.toIso8601String()
+        ..['estimatedMinutes'] = item.estimatedMinutes
+        ..['status'] = 'scheduled';
+    }
+    final conflicts = buildPlanProjection(
+      projected,
+      now,
+      selectedDay: now,
+    ).conflicts.length;
+    final refined = proposal.copyWith(
+      updatedAt: now,
+      items: List.unmodifiable(items),
+      scheduledMinutes: selected.fold<int>(
+        0,
+        (sum, item) => sum + item.estimatedMinutes,
+      ),
+      conflictsAfter: conflicts,
+    );
+    planProposals.save(refined);
+    return refined;
+  }
+
+  PlanProposal? dismissPlanProposal() {
+    final proposal = planProposals.active;
+    if (proposal == null || proposal.state != PlanProposalState.draft) {
+      return null;
+    }
+    final dismissed = proposal.copyWith(
+      state: PlanProposalState.dismissed,
+      updatedAt: now,
+      message: 'Dismissed without changing the plan.',
+    );
+    planProposals.save(dismissed);
+    return dismissed;
+  }
+
+  Future<ManualWrite> applyPlanProposal() async {
+    final proposal = planProposals.active;
+    if (proposal == null || proposal.state != PlanProposalState.draft) {
+      return const ManualWrite.fail(
+          'There is no active plan proposal to apply.');
+    }
+    final selected = proposal.items.where((item) => item.selected).toList();
+    if (selected.isEmpty) {
+      return const ManualWrite.fail(
+          'Select at least one proposed change first.');
+    }
+    for (final item in selected) {
+      final record = store[item.taskId];
+      if (record == null ||
+          taskPlanFingerprint(record) != item.baseFingerprint) {
+        final stale = proposal.copyWith(
+          state: PlanProposalState.stale,
+          updatedAt: now,
+          message: 'The plan changed after this proposal was made. Refresh it.',
+        );
+        planProposals.save(stale);
+        return const ManualWrite.fail(
+          'The plan changed after this proposal was made, so nothing was applied. Refresh the proposal.',
+        );
+      }
+    }
+    final result = await updateTaskPlans(
+      [
+        for (final item in selected)
+          TaskPlanPatch(
+            id: item.taskId,
+            scheduledStartAt: item.proposedStartAt,
+            estimatedMinutes: item.estimatedMinutes,
+          ),
+      ],
+      origin: 'planner-proposal',
+      description: 'applied ${selected.length} proposed plan changes',
+      frozenInputs: {
+        'proposalId': proposal.id,
+        'recordIds': selected.map((item) => item.taskId).toList(),
+      },
+    );
+    if (result.ok) {
+      planProposals.save(proposal.copyWith(
+        state: PlanProposalState.applied,
+        updatedAt: now,
+        message: 'Applied as one reversible plan change.',
+      ));
+    }
+    return result;
+  }
+
+  Future<String?> _proposalCommand(String utterance, DateTime clock) async {
+    if (_planWeekRe.hasMatch(utterance)) {
+      final proposal = createWeeklyProposal();
+      _outSource = 'plan-proposal';
+      _outSkill = 'propose-week';
+      return proposal.items.isEmpty
+          ? 'Your open work is already scheduled, blocked, or outside this week’s capacity — no changes proposed.'
+          : 'I drafted ${proposal.items.length} changes for this week without applying them. Review the proposal, adjust it, or say “apply the proposal.”';
+    }
+    final proposal = planProposals.active;
+    if (proposal == null || proposal.state != PlanProposalState.draft) {
+      return null;
+    }
+    if (_applyProposalRe.hasMatch(utterance)) {
+      final result = await applyPlanProposal();
+      _outSource = 'plan-proposal';
+      _outSkill = 'apply-plan-proposal';
+      _lastTurnWrote = result.ok;
+      return result.message;
+    }
+    if (_dismissProposalRe.hasMatch(utterance)) {
+      dismissPlanProposal();
+      _outSource = 'plan-proposal';
+      _outSkill = 'dismiss-plan-proposal';
+      return 'Dismissed the proposal — your plan was not changed.';
+    }
+    const indexes = {
+      'first': 0,
+      'second': 1,
+      'third': 2,
+      'fourth': 3,
+      'fifth': 4,
+    };
+    final exclude = _proposalExcludeRe.firstMatch(utterance);
+    if (exclude != null) {
+      final index = indexes[exclude.group(1)!.toLowerCase()]!;
+      if (index >= proposal.items.length)
+        return 'That proposal item is not visible.';
+      final item = proposal.items[index];
+      setProposalItemSelected(item.taskId, false);
+      _outSource = 'plan-proposal';
+      _outSkill = 'refine-plan-proposal';
+      return 'Removed “${item.title}” from the proposed changes. Nothing has been applied yet.';
+    }
+    final move = _proposalMoveRe.firstMatch(utterance);
+    if (move != null) {
+      final index = indexes[move.group(1)!.toLowerCase()]!;
+      if (index >= proposal.items.length)
+        return 'That proposal item is not visible.';
+      final resolved = router.resolveDateTime(move.group(2)!, clock);
+      final start = resolved == null ? null : DateTime.tryParse(resolved);
+      if (start == null) return 'I found the proposal item, but not the time.';
+      final item = proposal.items[index];
+      moveProposalItem(item.taskId, start);
+      _outSource = 'plan-proposal';
+      _outSkill = 'refine-plan-proposal';
+      return 'Moved “${item.title}” in the proposal. Nothing has been applied yet.';
+    }
+    return null;
+  }
+
+  String _startDetachedSynthesis(
+    String kind,
+    String title,
+    Future<String> Function(Map<String, Map<String, dynamic>> snapshot) work,
+  ) {
+    final snapshot = {
+      for (final entry in store.entries)
+        entry.key: Map<String, dynamic>.from(entry.value),
+    };
+    late String operationId;
+    final operation = operations.start(
+      kind: kind,
+      title: title,
+      input: {'recordCount': snapshot.length},
+      run: (_) => _runDetachedLogged(
+        operationId,
+        kind,
+        () => work(snapshot),
+      ),
+    );
+    operationId = operation.id;
+    _outSource = 'operation';
+    _outSkill = kind;
+    return 'Started $title in the background (${operation.id}). You can keep capturing and planning; I’ll show the result when it finishes.';
+  }
+
+  Future<String> _runDetachedLogged(
+    String operationId,
+    String kind,
+    Future<String> Function() work,
+  ) async {
+    final startedAt = DateTime.now();
+    final client = claude;
+    final in0 = client is ClaudeClient ? client.inTokens : 0;
+    final out0 = client is ClaudeClient ? client.outTokens : 0;
+    final sonnetIn0 = client is ClaudeClient ? client.sonnetInTokens : 0;
+    final sonnetOut0 = client is ClaudeClient ? client.sonnetOutTokens : 0;
+    try {
+      final result = await work();
+      _logDetachedCompletion(
+        operationId,
+        kind,
+        startedAt,
+        result: result,
+        in0: in0,
+        out0: out0,
+        sonnetIn0: sonnetIn0,
+        sonnetOut0: sonnetOut0,
+      );
+      return result;
+    } catch (error, stack) {
+      _logDetachedCompletion(
+        operationId,
+        kind,
+        startedAt,
+        error: '$error\n$stack',
+        in0: in0,
+        out0: out0,
+        sonnetIn0: sonnetIn0,
+        sonnetOut0: sonnetOut0,
+      );
+      rethrow;
+    }
+  }
+
+  void _logDetachedCompletion(
+    String operationId,
+    String kind,
+    DateTime startedAt, {
+    String? result,
+    String? error,
+    required int in0,
+    required int out0,
+    required int sonnetIn0,
+    required int sonnetOut0,
+  }) {
+    final client = claude;
+    final input = client is ClaudeClient
+        ? (client.inTokens - in0) + (client.sonnetInTokens - sonnetIn0)
+        : 0;
+    final output = client is ClaudeClient
+        ? (client.outTokens - out0) + (client.sonnetOutTokens - sonnetOut0)
+        : 0;
+    try {
+      repo.logTurn({
+        'at': startedAt.toIso8601String(),
+        'ms': DateTime.now().difference(startedAt).inMilliseconds,
+        'source': 'operation-completion',
+        'operationId': operationId,
+        'operationKind': kind,
+        if (client is ClaudeClient && (input > 0 || output > 0))
+          'cost': {
+            'in': input,
+            'out': output,
+            'usd': ClaudeClient.costUsd(
+                  client.inTokens - in0,
+                  client.outTokens - out0,
+                ) +
+                ClaudeClient.sonnetCostUsd(
+                  client.sonnetInTokens - sonnetIn0,
+                  client.sonnetOutTokens - sonnetOut0,
+                ),
+          },
+        if (result != null)
+          'response':
+              result.length > 240 ? '${result.substring(0, 240)}…' : result,
+        if (error != null) 'error': error,
+      });
+    } catch (_) {
+      // Diagnostic persistence must never convert successful cloud work into a
+      // failed operation; the result remains durable in OperationCenter.
+    }
+  }
+
   void setPlannerContext(PlannerContext context) {
     _plannerContext = PlannerContext(
       visibleStart: context.visibleStart,
@@ -1506,7 +2006,12 @@ class Session {
   /// Apply one or more structured planner edits as a single durable execution.
   /// Voice context and direct manipulation call this same method; UI code never
   /// synthesizes English and a multi-select change produces one targeted undo.
-  Future<ManualWrite> updateTaskPlans(List<TaskPlanPatch> patches) async {
+  Future<ManualWrite> updateTaskPlans(
+    List<TaskPlanPatch> patches, {
+    String origin = 'planner-direct',
+    String? description,
+    Map<String, dynamic> frozenInputs = const {},
+  }) async {
     if (patches.isEmpty) {
       return const ManualWrite.fail('No tasks were selected.');
     }
@@ -1560,6 +2065,17 @@ class Session {
         next['status'] = 'done';
         next['completedAt'] = now.toIso8601String();
       }
+      if (patch.reviewDecision != null) {
+        next['reviewDecision'] = patch.reviewDecision;
+        if (patch.reviewDecision == 'defer') {
+          next.remove('scheduledStartAt');
+          next['status'] = 'someday';
+        } else if (patch.reviewDecision == 'drop') {
+          next['completed'] = true;
+          next['status'] = 'done';
+          next['completedAt'] = now.toIso8601String();
+        }
+      }
       updated.add(next);
     }
 
@@ -1587,11 +2103,13 @@ class Session {
     final result = _executeMutation(
       writes: validated,
       deletes: const [],
-      origin: 'planner-direct',
-      description: count == 1
-          ? 'updated “${validated.single['description']}” in the plan'
-          : 'updated $count tasks in the plan',
+      origin: origin,
+      description: description ??
+          (count == 1
+              ? 'updated “${validated.single['description']}” in the plan'
+              : 'updated $count tasks in the plan'),
       frozenInputs: {
+        ...frozenInputs,
         'recordIds': validated.map((record) => record['id']).toList(),
       },
     );
@@ -1609,7 +2127,7 @@ class Session {
     }
     try {
       repo.logTurn({
-        'source': 'planner-direct',
+        'source': origin,
         'op': 'update-plan',
         'count': count,
         'executionId': result.record!.id,
@@ -2962,15 +3480,18 @@ class Session {
     if (draft != null) {
       if (_activateRe.hasMatch(u)) {
         _pendingActivation = null;
+        capabilityDrafts.clear();
         return _activateCapability(draft);
       }
       if (_cancelRe.hasMatch(u)) {
         _pendingActivation = null;
+        capabilityDrafts.clear();
         _outSource = 'clarify';
         return "Okay — I won't add that.";
       }
       _pendingActivation =
           null; // moved on — drop the draft, handle this input normally
+      capabilityDrafts.clear();
     }
 
     // Authoring OFFER (DF-01): a "start tracking X" with no built-in tracker and no template
@@ -2980,7 +3501,7 @@ class Session {
     if (offer != null) {
       _pendingAuthorOffer = null;
       if (_activateRe.hasMatch(u)) {
-        return _authorAndPreview(offer, now);
+        return _startDetachedAuthoring(offer, now);
       }
       if (_cancelRe.hasMatch(u)) {
         _outSource = 'clarify';
@@ -3141,6 +3662,11 @@ class Session {
       return _undoLastInternal();
     }
 
+    // An active proposal owns its own numbered context. Refinement must happen
+    // before current-plan pronouns, because proposed positions are not yet truth.
+    final proposalCommand = await _proposalCommand(u, now);
+    if (proposalCommand != null) return proposalCommand;
+
     // A planner surface publishes the exact records and order currently in view.
     // Resolve pronouns against that snapshot before generic routing; without a
     // visible context these patterns decline to match and normal voice routing wins.
@@ -3288,15 +3814,37 @@ class Session {
           reconnect.group(1) ?? reconnect.group(2) ?? reconnect.group(3) ?? '';
       return _generative.reconnect(who.trim(), store, now);
     }
+    if (_morningPlanRe.hasMatch(u)) {
+      final artifact = createMorningPlan();
+      _outSource = 'planning-artifact';
+      _outSkill = 'morning-plan';
+      return '${artifact.summary} I kept the morning plan on Today until you accept or dismiss it.';
+    }
+    final relationshipPrep = _relationshipPrepRe.firstMatch(u);
+    if (relationshipPrep != null) {
+      final name = relationshipPrep.group(1)!.trim();
+      final artifact = createRelationshipPrep(name);
+      _outSource = 'planning-artifact';
+      _outSkill = 'relationship-prep';
+      return artifact == null
+          ? "I don't have $name as a contact yet, so I couldn't build a grounded prep card."
+          : '${artifact.summary} I kept the prep card on Today until you accept or dismiss it.';
+    }
     if (_weeklyReviewRe.hasMatch(u)) {
-      _outSource = 'generative';
-      _outSkill = 'weekly_review';
-      return _generative.weeklyReview(store, now);
+      final review = createWeeklyReview();
+      final background = _startDetachedSynthesis(
+        'weekly_review',
+        'your weekly reflection',
+        (snapshot) => _generative.weeklyReview(snapshot, now),
+      );
+      return 'Drafted ${review.items.length} editable keep/defer/drop recommendations from your current tasks and goals. $background';
     }
     if (_patternInsightRe.hasMatch(u)) {
-      _outSource = 'generative';
-      _outSkill = 'pattern_insight';
-      return _generative.patternInsight(store, now);
+      return _startDetachedSynthesis(
+        'pattern_insight',
+        'a pattern review',
+        (snapshot) => _generative.patternInsight(snapshot, now),
+      );
     }
     final draftMsg = _draftMessageRe.firstMatch(u);
     if (draftMsg != null) {
@@ -3337,7 +3885,7 @@ class Session {
         return "I don't have a built-in tracker for that yet. I can build you a custom one — "
             "that uses your Claude credits (a paid step). Want me to go ahead?";
       }
-      return _authorAndPreview(desc, now);
+      return _startDetachedAuthoring(desc, now);
     }
 
     // Content search (F-12): "find that note about the cabin trip" / "search my notes for X".
@@ -4040,6 +4588,7 @@ class Session {
           'displayName': skill['displayName'] ?? skillId,
           'examples': eg,
         };
+        capabilityDrafts.save(_pendingActivation!);
         _outSource = 'authoring-preview';
         return 'I can build "${skill['displayName'] ?? skillId}" for you'
             '${eg.isNotEmpty ? ' — you\'d be able to say things like "${eg.first}"' : ''}. '
@@ -4052,6 +4601,26 @@ class Session {
       }
     }
     return "I couldn't build that right now."; // loop always returns; satisfies the analyzer
+  }
+
+  String _startDetachedAuthoring(String desc, DateTime requestedAt) {
+    late String operationId;
+    final operation = operations.start(
+      kind: 'capability_authoring',
+      title: 'your custom capability',
+      input: {'description': desc},
+      run: (_) => _runDetachedLogged(
+        operationId,
+        'capability_authoring',
+        () => _authorAndPreview(desc, requestedAt),
+      ),
+    );
+    operationId = operation.id;
+    _outSource = 'operation';
+    _outSkill = 'capability_authoring';
+    return 'Started building your custom capability in the background '
+        '(${operation.id}). You can keep using Plenara; I’ll show the validated '
+        'preview when it finishes.';
   }
 
   Future<String?> _tryInstantiateTemplate(String desc, DateTime now) async {

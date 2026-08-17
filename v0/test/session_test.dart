@@ -876,16 +876,22 @@ void main() {
       () {
     // Each routes to GenerativeService and hits its honest no-cloud degrade path (thin data /
     // unknown contact) — so _NoCloud (which throws on generate) proves the route without a cloud call.
-    test('"how was my week" -> weekly_review (empty week degrades locally)',
+    test('"how was my week" -> detached weekly_review with durable delivery',
         () async {
       final s = await _session();
       expect((await s.handle('how was my week')).toLowerCase(),
+          contains('started your weekly reflection'));
+      final finished = await s.operations.wait(s.operations.records.single.id);
+      expect(finished.result?.toLowerCase(),
           contains('nothing logged this past week'));
     });
-    test('"any patterns" -> pattern_insight (thin data degrades locally)',
+    test('"any patterns" -> detached pattern_insight with durable delivery',
         () async {
       final s = await _session();
       expect((await s.handle('any patterns')).toLowerCase(),
+          contains('started a pattern review'));
+      final finished = await s.operations.wait(s.operations.records.single.id);
+      expect(finished.result?.toLowerCase(),
           contains("don't have enough logged data"));
     });
     test(

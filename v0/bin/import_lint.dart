@@ -21,7 +21,9 @@ const kRank = <String, int>{
   'interpreter': 2, 'reminders': 2, 'people': 2, 'generative': 2,
   'automations': 2, 'config': 2, 'turnlog': 2, 'migration': 2, 'routines': 2,
   'execution_coordinator': 2, 'schema_registry': 2, 'value_codec': 2,
-  'conversation_ledger': 2, 'planner': 2,
+  'conversation_ledger': 2, 'planner': 2, 'plan_proposal': 2,
+  'operation_center': 2, 'weekly_review': 2, 'capability_draft_store': 2,
+  'planning_artifact': 2,
   'session': 2,
 };
 

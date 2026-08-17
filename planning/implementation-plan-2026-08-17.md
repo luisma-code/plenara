@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-17  
 **Inputs:** [specification and code review](../reviews/2026-08-17-spec-code-review.md), [art and animation review](../reviews/2026-08-17-art-animation-review.md), and [planner UX review](../reviews/2026-08-17-planner-ux-review.md)  
-**Status:** approved and in implementation. Increments 0–3 are implemented and repository-gated. Increment 3 also passed a schema-v4 migration against a disposable copy of real dogfood data and the local iPhone 17 Pro simulator real-engine gate. Human glance-time, planning-speed, correction-rate, and retrieval-quality measurements wait for ordinary use of a usable deployment, never a test harness on Luis's phone.
+**Status:** approved and in implementation. Increments 0–4 are implemented and repository-gated. Increment 4 passed a schema-v5 migration against a disposable copy of real dogfood data, the host gate, and the local iPhone 17 Pro simulator real-engine gate. Human glance-time, planning-speed, correction-rate, and retrieval-quality measurements wait for ordinary use of a usable deployment, never a test harness on Luis's phone.
 **Planning rule:** dependencies and evidence gates determine order. There are no calendar deadlines, and a later increment does not begin merely because an earlier one has code—the earlier increment must pass its user-visible and failure-path gates.
 
 ## Executive decision

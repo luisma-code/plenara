@@ -2,6 +2,7 @@
 /// built-ins or traverse the filesystem, malformed/throwing cloud output can't
 /// crash the turn, and a leaked "none" slot no longer RangeErrors.
 import 'package:plenara/claude.dart';
+import 'package:plenara/operation_center.dart';
 import 'package:plenara/session.dart';
 import 'package:test/test.dart';
 
@@ -15,23 +16,30 @@ class _ScriptCloud implements CloudClient {
   final Map<String, dynamic>? authorResult;
   final Map<String, dynamic>? routeResult;
   final bool throwOnAuthor;
-  _ScriptCloud({this.authorResult, this.routeResult, this.throwOnAuthor = false});
+  _ScriptCloud(
+      {this.authorResult, this.routeResult, this.throwOnAuthor = false});
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
+          String u, Map<String, Map<String, dynamic>> s,
+          {Set<String> knownContacts = const {}}) async =>
       CloudOk(routeResult);
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async {
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d,
+      {String? priorError}) async {
     if (throwOnAuthor) throw StateError('boom');
     return CloudOk(authorResult);
   }
+
   @override
-  Future<CloudResult<String>> generate(String kind, String context) async => const CloudError(CloudErrorKind.noKey);
+  Future<CloudResult<String>> generate(String kind, String context) async =>
+      const CloudError(CloudErrorKind.noKey);
 }
 
 Future<Session> _session(CloudClient cloud) async {
   final s = Session(makeTempDataDir(), clock: _now, cloud: cloud);
   await s.init(retrieval: false);
-  s.confirmCloudSpend = true; // these tests drive the DF-01 paid offer, now opt-in
+  s.confirmCloudSpend =
+      true; // these tests drive the DF-01 paid offer, now opt-in
   return s;
 }
 
@@ -47,83 +55,147 @@ Map<String, dynamic> _authored(String typeId, String skillId) => {
       'skill': {
         'skillId': skillId,
         'displayName': 'Log X',
-        'inputs': [{'name': 'value', 'required': true}],
+        'inputs': [
+          {'name': 'value', 'required': true}
+        ],
         'examplePhrases': ['log x'],
-        'steps': {'main': [
-          {'op': 'compute', 'fn': 'today', 'into': 't'},
-          {'op': 'write_record', 'typeId': typeId, 'fields': {'value': {'var': 'value'}, 'loggedAt': {'var': 't'}}, 'into': 'r'},
-          {'op': 'format', 'template': 'Logged {value}.', 'into': 'confirmationText'},
-        ]}
+        'steps': {
+          'main': [
+            {'op': 'compute', 'fn': 'today', 'into': 't'},
+            {
+              'op': 'write_record',
+              'typeId': typeId,
+              'fields': {
+                'value': {'var': 'value'},
+                'loggedAt': {'var': 't'}
+              },
+              'into': 'r'
+            },
+            {
+              'op': 'format',
+              'template': 'Logged {value}.',
+              'into': 'confirmationText'
+            },
+          ]
+        }
       },
     };
 
+Future<OperationRecord> _finishAuthoring(Session session) =>
+    session.operations.wait(session.operations.records.first.id);
+
 void main() {
   group('authoring hardening (Fable review)', () {
-    test('a valid authored capability offers, then previews on yes, then activates (§6.5, DF-01)', () async {
-      final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
-      expect((await s.handle('start tracking my pushups')).toLowerCase(), contains('want me to go ahead')); // DF-01: no cloud yet
-      final preview = await s.handle('yes');
+    test(
+        'a valid authored capability offers, then previews on yes, then activates (§6.5, DF-01)',
+        () async {
+      final s = await _session(
+          _ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
+      expect((await s.handle('start tracking my pushups')).toLowerCase(),
+          contains('want me to go ahead')); // DF-01: no cloud yet
+      expect((await s.handle('yes')).toLowerCase(), contains('background'));
+      final preview = (await _finishAuthoring(s)).result!;
       expect(preview.toLowerCase(), contains('activate'));
-      expect(s.types.containsKey('water_intake'), isFalse, reason: 'nothing registered until activate');
+      expect(s.types.containsKey('water_intake'), isFalse,
+          reason: 'nothing registered until activate');
       expect(s.skills.containsKey('log_water'), isFalse);
-      expect((await s.handle('activate')).toLowerCase(), contains('learned it'));
+      expect(
+          (await s.handle('activate')).toLowerCase(), contains('learned it'));
       expect(s.types.containsKey('water_intake'), isTrue);
       expect(s.skills.containsKey('log_water'), isTrue);
     });
-    test('a previewed capability can be declined with "never mind" (nothing registered)', () async {
-      final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
-      expect((await s.handle('start tracking my pushups')).toLowerCase(), contains('want me to go ahead'));
-      expect((await s.handle('yes')).toLowerCase(), contains('activate'));
-      expect((await s.handle('never mind')).toLowerCase(), contains("won't add"));
+    test(
+        'a previewed capability can be declined with "never mind" (nothing registered)',
+        () async {
+      final s = await _session(
+          _ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
+      expect((await s.handle('start tracking my pushups')).toLowerCase(),
+          contains('want me to go ahead'));
+      await s.handle('yes');
+      expect((await _finishAuthoring(s)).result!.toLowerCase(),
+          contains('activate'));
+      expect(
+          (await s.handle('never mind')).toLowerCase(), contains("won't add"));
       expect(s.types.containsKey('water_intake'), isFalse);
       expect(s.skills.containsKey('log_water'), isFalse);
     });
-    test('declining the OFFER itself builds nothing, no cloud call (DF-01)', () async {
-      final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
-      expect((await s.handle('start tracking my pushups')).toLowerCase(), contains('want me to go ahead'));
-      expect((await s.handle('never mind')).toLowerCase(), contains("won't build"));
+    test('declining the OFFER itself builds nothing, no cloud call (DF-01)',
+        () async {
+      final s = await _session(
+          _ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
+      expect((await s.handle('start tracking my pushups')).toLowerCase(),
+          contains('want me to go ahead'));
+      expect((await s.handle('never mind')).toLowerCase(),
+          contains("won't build"));
       expect(s.types.containsKey('water_intake'), isFalse);
     });
-    test('moving on without activating drops the draft and handles the new input', () async {
-      final s = await _session(_ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
-      expect((await s.handle('start tracking my pushups')).toLowerCase(), contains('want me to go ahead'));
-      expect((await s.handle('yes')).toLowerCase(), contains('activate'));
-      expect(await s.handle('add buy milk to my list'), contains('buy milk')); // handled normally
-      expect(s.types.containsKey('water_intake'), isFalse); // draft dropped, never registered
+    test(
+        'moving on without activating drops the draft and handles the new input',
+        () async {
+      final s = await _session(
+          _ScriptCloud(authorResult: _authored('water_intake', 'log_water')));
+      expect((await s.handle('start tracking my pushups')).toLowerCase(),
+          contains('want me to go ahead'));
+      await s.handle('yes');
+      expect((await _finishAuthoring(s)).result!.toLowerCase(),
+          contains('activate'));
+      expect(await s.handle('add buy milk to my list'),
+          contains('buy milk')); // handled normally
+      expect(s.types.containsKey('water_intake'),
+          isFalse); // draft dropped, never registered
     });
 
-    test('a colliding typeId cannot clobber or delete a built-in type', () async {
-      final s = await _session(_ScriptCloud(authorResult: _authored('task', 'log_task_thing')));
+    test('a colliding typeId cannot clobber or delete a built-in type',
+        () async {
+      final s = await _session(
+          _ScriptCloud(authorResult: _authored('task', 'log_task_thing')));
       final before = s.types['task'];
       await s.handle('start tracking my task thing'); // DF-01 offer
-      final r = await s.handle('yes');
+      await s.handle('yes');
+      final r = (await _finishAuthoring(s)).result!;
       expect(r, isNot(contains('Built')));
-      expect(s.types['task'], same(before)); // built-in intact — not overwritten or removed on rollback
-      expect(await s.handle('add buy milk to my list'), contains('buy milk')); // still works
+      expect(
+          s.types['task'],
+          same(
+              before)); // built-in intact — not overwritten or removed on rollback
+      expect(await s.handle('add buy milk to my list'),
+          contains('buy milk')); // still works
     });
 
-    test('a path-traversal / bad-charset id is rejected, nothing registered', () async {
-      final s = await _session(_ScriptCloud(authorResult: _authored('../evil', 'log_evil')));
+    test('a path-traversal / bad-charset id is rejected, nothing registered',
+        () async {
+      final s = await _session(
+          _ScriptCloud(authorResult: _authored('../evil', 'log_evil')));
       await s.handle('start tracking my evil thing'); // DF-01 offer
-      final r = await s.handle('yes');
+      await s.handle('yes');
+      final r = (await _finishAuthoring(s)).result!;
       expect(r, contains('could not be validated'));
       expect(s.types.containsKey('../evil'), isFalse);
     });
 
-    test('a malformed authoring shape degrades gracefully (no crash)', () async {
-      final s = await _session(_ScriptCloud(authorResult: {'type': 'not a map', 'skill': 42}));
+    test('a malformed authoring shape degrades gracefully (no crash)',
+        () async {
+      final s = await _session(
+          _ScriptCloud(authorResult: {'type': 'not a map', 'skill': 42}));
       await s.handle('start tracking my something'); // DF-01 offer
-      expect(await s.handle('yes'), contains('could not be validated'));
+      await s.handle('yes');
+      expect((await _finishAuthoring(s)).result,
+          contains('could not be validated'));
     });
 
-    test('a throwing cloud is caught by the boundary (no exception escapes)', () async {
+    test('a throwing cloud is caught by the boundary (no exception escapes)',
+        () async {
       final s = await _session(_ScriptCloud(throwOnAuthor: true));
       await s.handle('start tracking my whatever'); // DF-01 offer
-      expect(await s.handle('yes'), contains('something went wrong'));
+      await s.handle('yes');
+      final failed = await _finishAuthoring(s);
+      expect(failed.state, OperationState.failed);
+      expect(failed.error, contains('boom'));
     });
   });
 
-  group('record integrity — refuses fabricating the past (DP-05, principle #7)', () {
+  group('record integrity — refuses fabricating the past (DP-05, principle #7)',
+      () {
     for (final u in const [
       'pretend that I called mom yesterday',
       'add a fake interaction with Sam',
@@ -135,10 +207,12 @@ void main() {
         final s = await _session(_ScriptCloud()); // never reaches cloud
         final r = await s.handle(u);
         expect(r.toLowerCase(), contains("didn't happen"));
-        expect(s.store.isEmpty, isTrue, reason: 'a refused fabrication must not write');
+        expect(s.store.isEmpty, isTrue,
+            reason: 'a refused fabrication must not write');
       });
     }
-    test('a genuine (even backdated) log is NOT treated as fabrication', () async {
+    test('a genuine (even backdated) log is NOT treated as fabrication',
+        () async {
       final s = await _session(_ScriptCloud());
       final r = await s.handle('i talked to Sam about the project');
       expect(r.toLowerCase(), isNot(contains("didn't happen")));
@@ -164,16 +238,21 @@ void main() {
       });
     }
     // a tracker the app ALREADY ships routes to it for free — never to paid authoring
-    test('"start tracking my runs" points to the built-in, no cloud call', () async {
+    test('"start tracking my runs" points to the built-in, no cloud call',
+        () async {
       final s = await _session(_ScriptCloud());
       final r = await s.handle('start tracking my runs');
       expect(r.toLowerCase(), contains('already'));
       expect(r, contains('log a 3k run'));
     });
-    test('a third-party tracker ("my daughter\'s mood") still goes to authoring', () async {
-      final s = await _session(_ScriptCloud()); // author returns null -> "couldn't build"
+    test(
+        'a third-party tracker ("my daughter\'s mood") still goes to authoring',
+        () async {
+      final s = await _session(
+          _ScriptCloud()); // author returns null -> "couldn't build"
       final r = await s.handle("start tracking my daughter's mood");
-      expect(r.toLowerCase(), isNot(contains('already'))); // not short-circuited as a built-in
+      expect(r.toLowerCase(),
+          isNot(contains('already'))); // not short-circuited as a built-in
     });
     // must NOT block (benign, merely-sensitive topic) — the flagship parenting use
     for (final u in const [
@@ -183,7 +262,8 @@ void main() {
       'track my own weight',
     ]) {
       test('allows: "$u"', () async {
-        final s = await _session(_ScriptCloud()); // returns null -> "couldn't build", not a refusal
+        final s = await _session(
+            _ScriptCloud()); // returns null -> "couldn't build", not a refusal
         expect(await s.handle(u), isNot(contains("won't create tools")));
       });
     }
@@ -197,14 +277,18 @@ void main() {
       // sanitization in Session, not a lucky fixture.
       final s = await _session(_ScriptCloud(routeResult: {
         'skillId': 'create-task',
-        'slots': <String, dynamic>{'description': 'call the dentist', 'dueDate': 'none'},
+        'slots': <String, dynamic>{
+          'description': 'call the dentist',
+          'dueDate': 'none'
+        },
         'source': 'cloud',
       }));
       final r = await s.handle("don't let me forget to call the dentist");
       expect(r, contains('call the dentist'));
       final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();
       expect(tasks.length, 1);
-      expect(tasks.single['dueAt'], isNull); // normalized, not the string "none"
+      expect(
+          tasks.single['dueAt'], isNull); // normalized, not the string "none"
     });
   });
 }

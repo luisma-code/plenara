@@ -1,8 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:plenara/claude.dart';
 import 'package:plenara/planner.dart';
+import 'package:plenara/plan_proposal.dart';
+import 'package:plenara/planning_artifact.dart';
 import 'package:plenara/session.dart';
+import 'package:plenara/weekly_review.dart';
 import 'package:test/test.dart';
 
 import 'helpers.dart';
@@ -28,6 +33,29 @@ class _NoCloud implements CloudClient {
   @override
   Future<CloudResult<String>> generate(String kind, String context) async =>
       const CloudError(CloudErrorKind.noKey);
+}
+
+class _DeferredCloud implements CloudClient {
+  final started = Completer<void>();
+  final result = Completer<CloudResult<String>>();
+
+  @override
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
+          String utterance, Map<String, Map<String, dynamic>> skills,
+          {Set<String> knownContacts = const {}}) async =>
+      const CloudError(CloudErrorKind.noKey);
+
+  @override
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(
+          String description,
+          {String? priorError}) async =>
+      const CloudError(CloudErrorKind.noKey);
+
+  @override
+  Future<CloudResult<String>> generate(String kind, String context) {
+    if (!started.isCompleted) started.complete();
+    return result.future;
+  }
 }
 
 void main() {
@@ -298,5 +326,211 @@ void main() {
       isNot(contains('a note about quantum physics')),
       reason: 'retrieval never acts without the candidate-specific task cue',
     );
+  });
+
+  test(
+      'weekly proposal previews, refines by voice, applies once, and undoes once',
+      () async {
+    final data = makeTempDataDir();
+    addTearDown(() => Directory(data).deleteSync(recursive: true));
+    final device =
+        Directory.systemTemp.createTempSync('plenara_plan_proposal_').path;
+    addTearDown(() => Directory(device).deleteSync(recursive: true));
+    final session =
+        Session(data, deviceDir: device, clock: now, cloud: _NoCloud());
+    await session.init(retrieval: false);
+    await session.handle('add write proposal to my list');
+    await session.handle('add call Sam to my list');
+    final ids = session.store.values
+        .where((record) => record['typeId'] == 'task')
+        .map((record) => '${record['id']}')
+        .toList();
+
+    final preview = await session.handle('plan my week');
+
+    expect(preview, contains('without applying'));
+    expect(session.activePlanProposal!.state, PlanProposalState.draft);
+    expect(session.store[ids.first]!.containsKey('scheduledStartAt'), isFalse);
+    expect(await session.handle('move the first one to tomorrow at 11am'),
+        contains('Nothing has been applied'));
+    expect(await session.handle('remove the second one'),
+        contains('Nothing has been applied'));
+    final applied = await session.handle('apply the proposal');
+    expect(applied, contains('Updated'));
+    expect(session.activePlanProposal!.state, PlanProposalState.applied);
+    expect(session.store[ids.first]!['scheduledStartAt'],
+        '2026-08-18T11:00:00.000');
+    expect(session.store[ids.last]!.containsKey('scheduledStartAt'), isFalse);
+    final execution = session.executions.completed.last;
+    expect(execution.origin, 'planner-proposal');
+    expect(await session.undoById(execution.id), contains('Undone'));
+    expect(session.store[ids.first]!.containsKey('scheduledStartAt'), isFalse);
+  });
+
+  test('a stale proposal fails before any write and survives relaunch',
+      () async {
+    final data = makeTempDataDir();
+    addTearDown(() => Directory(data).deleteSync(recursive: true));
+    final device =
+        Directory.systemTemp.createTempSync('plenara_plan_stale_').path;
+    addTearDown(() => Directory(device).deleteSync(recursive: true));
+    final session =
+        Session(data, deviceDir: device, clock: now, cloud: _NoCloud());
+    await session.init(retrieval: false);
+    await session.handle('add write proposal to my list');
+    await session.handle('plan my week');
+    final id = session.activePlanProposal!.items.single.taskId;
+    await session.resizeTask(id, 75);
+
+    final result = await session.applyPlanProposal();
+
+    expect(result.ok, isFalse);
+    expect(result.message, contains('nothing was applied'));
+    expect(session.store[id]!.containsKey('scheduledStartAt'), isFalse);
+    expect(session.activePlanProposal!.state, PlanProposalState.stale);
+    final reopened =
+        Session(data, deviceDir: device, clock: now, cloud: _NoCloud());
+    await reopened.init(retrieval: false);
+    expect(reopened.activePlanProposal!.state, PlanProposalState.stale);
+  });
+
+  test(
+      'detached synthesis leaves local capture available while cloud is running',
+      () async {
+    final data = makeTempDataDir();
+    addTearDown(() => Directory(data).deleteSync(recursive: true));
+    final cloud = _DeferredCloud();
+    final session = Session(data, clock: now, cloud: cloud);
+    await session.init(retrieval: false);
+    await session.handle('add finish taxes to my list');
+    final firstId = '${session.store.values.single['id']}';
+    await session.completeTask(firstId);
+
+    final startedReply = await session.handle('how was my week');
+    expect(startedReply, contains('keep capturing'));
+    await cloud.started.future;
+
+    final capture = await session.handle('add call the school to my list');
+    expect(capture, contains('call the school'));
+    cloud.result.complete(const CloudOk('A finished weekly review'));
+    final operation = await session.operations.wait(
+      session.operations.records.single.id,
+    );
+    expect(operation.result, 'A finished weekly review');
+    expect(session.operations.takeDeliveries(), hasLength(1));
+    expect(session.operations.takeDeliveries(), isEmpty);
+    final traces = File('$data/turnlog.jsonl')
+        .readAsLinesSync()
+        .map((line) => jsonDecode(line) as Map<String, dynamic>);
+    expect(
+      traces.any(
+        (trace) =>
+            trace['source'] == 'operation-completion' &&
+            trace['operationKind'] == 'weekly_review',
+      ),
+      isTrue,
+    );
+  });
+
+  test('weekly review decisions apply together and undo together', () async {
+    final data = makeTempDataDir();
+    addTearDown(() => Directory(data).deleteSync(recursive: true));
+    final device =
+        Directory.systemTemp.createTempSync('plenara_weekly_apply_').path;
+    addTearDown(() => Directory(device).deleteSync(recursive: true));
+    final session =
+        Session(data, deviceDir: device, clock: now, cloud: _NoCloud());
+    await session.init(retrieval: false);
+    await session.handle('add write proposal to my list');
+    await session.handle('add call Sam to my list');
+
+    final reply = await session.handle('how was my week');
+    expect(reply, contains('editable keep/defer/drop'));
+    final review = session.activeWeeklyReview!;
+    expect(review.state, WeeklyReviewState.draft);
+    session.setWeeklyReviewDecision(
+      review.items.first.recordId,
+      ReviewDecision.keep,
+    );
+    final result = await session.applyWeeklyReview();
+
+    expect(result.ok, isTrue);
+    expect(session.activeWeeklyReview!.state, WeeklyReviewState.applied);
+    expect(session.executions.completed.last.origin, 'weekly-review');
+    expect(
+      session.store[review.items.first.recordId]!['reviewDecision'],
+      'keep',
+    );
+    expect(
+      session.store[review.items.last.recordId]!['reviewDecision'],
+      'defer',
+    );
+    expect(await session.undoById(result.undoId!), contains('Undone'));
+    expect(
+      session.store.values
+          .where((record) => record['typeId'] == 'task')
+          .every((record) => record['reviewDecision'] == null),
+      isTrue,
+    );
+  });
+
+  test('weekly review fails closed when reviewed plan state changed', () async {
+    final data = makeTempDataDir();
+    addTearDown(() => Directory(data).deleteSync(recursive: true));
+    final session = Session(data, clock: now, cloud: _NoCloud());
+    await session.init(retrieval: false);
+    await session.handle('add write proposal to my list');
+    final taskId = '${session.store.values.single['id']}';
+    session.createWeeklyReview();
+    await session.updateTaskPlans([
+      TaskPlanPatch(id: taskId, estimatedMinutes: 30),
+    ]);
+    final executionsBeforeApply = session.executions.completed.length;
+
+    final result = await session.applyWeeklyReview();
+
+    expect(result.ok, isFalse);
+    expect(result.message, contains('nothing was applied'));
+    expect(session.activeWeeklyReview!.state, WeeklyReviewState.stale);
+    expect(session.executions.completed.length, executionsBeforeApply);
+    expect(session.store[taskId]!['reviewDecision'], isNull);
+  });
+
+  test('morning and relationship prep stay durable until explicitly resolved',
+      () async {
+    final data = makeTempDataDir();
+    addTearDown(() => Directory(data).deleteSync(recursive: true));
+    final device =
+        Directory.systemTemp.createTempSync('plenara_artifacts_').path;
+    addTearDown(() => Directory(device).deleteSync(recursive: true));
+    final session =
+        Session(data, deviceDir: device, clock: now, cloud: _NoCloud());
+    await session.init(retrieval: false);
+    await session.handle('add call Dad to my list');
+    final taskId = '${session.store.values.single['id']}';
+    await session.updateTaskPlans([
+      TaskPlanPatch(id: taskId, scheduledStartAt: now),
+    ]);
+
+    expect(await session.handle('plan my morning'), contains('kept'));
+    expect(
+        session.activePlanningArtifacts.single.items.single.title, 'call Dad');
+
+    final reopened =
+        Session(data, deviceDir: device, clock: now, cloud: _NoCloud());
+    await reopened.init(retrieval: false);
+    expect(reopened.activePlanningArtifacts, hasLength(1));
+    reopened.resolvePlanningArtifact(
+      reopened.activePlanningArtifacts.single.id,
+      accepted: true,
+    );
+    expect(reopened.activePlanningArtifacts, isEmpty);
+
+    await reopened.handle('remember that Sam loves jazz');
+    expect(await reopened.handle('prepare me for seeing Sam'),
+        contains('prep card'));
+    final prep = reopened.activePlanningArtifacts.single;
+    expect(prep.kind, PlanningArtifactKind.relationshipPrep);
+    expect(prep.items.map((item) => item.title), contains('loves jazz'));
   });
 }

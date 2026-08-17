@@ -64,6 +64,18 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - The same five real-engine tests pass on the explicitly addressed local iPhone 17 Pro simulator. The small-phone run caught and fixed an off-screen Library test path. RSS was sampled during the short run, which completed normally; this is not a long-soak leak claim. The simulator was shut down and no app/test/build process remains.
 - A disposable copy of the real dogfood folder migrated its one real task to schema v4, made one record backup, reported zero repair issues, and proved the live source stayed byte-identical. It also exposed and drove the built-in-upgrade fix above; live data was never mutated.
 
+## Increment 4 state
+
+- One device-local `OperationCenter` persists queued/running/terminal long work, serializes by completion events, delivers results exactly once, supports local cancellation, and marks uncertain relaunch work interrupted instead of risking duplicate provider spend. Today renders live operation progress and cancellation.
+- Weekly review and pattern synthesis detach immediately so capture/planning remain usable. Completion/error/token-cost diagnostics are written as operation-completion traces without changing the approved content-bearing internal-log policy.
+- Custom capability authoring is detached through the same operation door. A validated preview persists device-locally across relaunch; only `activate` promotes it into live definitions, and cancel/move-on clears it.
+- Plan proposals persist selected task moves, rationale, estimates, conflict delta, and explicit blocked/dependency/capacity omissions. Voice can move/exclude numbered items. Apply revalidates fingerprints, then uses one durable execution and undo. The deterministic benchmark passed 10/10 scenarios (gate ≥80%).
+- Task schema v5 adds `reviewDecision` through a contiguous 4→5 migration. Structured weekly review cards expose evidence and editable keep/defer/drop decisions; stale reviewed records fail before any write; accepted decisions apply and undo atomically.
+- Morning orientation and relationship/event-prep are durable Today artifacts until accepted, dismissed, or superseded. Relationship prep is grounded only in saved facts, birthdays, and the latest logged interaction.
+- Every implemented generative assembler declares its allowed record classes and explicit-invocation consent in the outgoing context. Settings renders the same content catalog; a journal canary proves current assemblers never include journal text.
+- The full gate is green: 1,904 engine tests + 36 skips; 123 Flutter tests + the intentional external-channel skip; tier coverage 94.2% deterministic core / 90.5% product logic / 68.1% transport; macOS build; five macOS real-engine integration tests; external-channel, secret, and 24/60 conformance gates.
+- A disposable real-data copy migrated the one task to schema v5 with one backup, zero repair issues, and byte-identical source. The same five integration tests passed on the explicitly selected local iPhone 17 Pro simulator; RSS was about 504 MB during the short sample, the simulator was shut down, and no app/test process remained.
+
 ## Owner action
 
 - Rotate the Anthropic credential that appeared in a non-hermetic test failure before this increment. The repository/reports do not contain it, but the earlier tool transcript did. Credential rotation requires Luis's account authority.
@@ -91,7 +103,7 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Next implementation order
 
-1. Increment 4: durable detached operations, structured planning proposals, and collaborative replanning.
+1. Increment 5: presence ladder, semantic motion, expressive curation, reduced-motion/still-presence controls, and routine-art coherence.
 2. Later increments follow `planning/implementation-plan-2026-08-17.md`; dependencies and evidence gates determine order, not calendar dates.
 
 ## Authoritative documents

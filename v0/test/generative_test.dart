@@ -14,10 +14,13 @@ final _now = DateTime.parse('2026-07-06T09:00:00');
 class _GenCloud implements CloudClient {
   final CloudErrorKind? err;
   String? lastKind, lastContext;
-  int residualCalls = 0; // how many times the cloud residual was consulted (0 after a learned hit)
+  int residualCalls =
+      0; // how many times the cloud residual was consulted (0 after a learned hit)
   _GenCloud({this.err});
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async {
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
+      String u, Map<String, Map<String, dynamic>> s,
+      {Set<String> knownContacts = const {}}) async {
     residualCalls++;
     // Stand in for Haiku's G-46 generative recognition: a "suggest/gift … for <name>" phrasing the
     // frozen regex misses is classified as gift_ideas with the contact param (mirrors the real
@@ -27,27 +30,39 @@ class _GenCloud implements CloudClient {
     // the generative half (simulates routeResidual's skippedGenerative path, §7.3.2). Uses a
     // corpus-missing carrier ("errand") so the turn actually reaches the residual, not the corpus.
     if (lc.contains('errand') && lc.contains('gift')) {
-      return CloudOk<Map<String, dynamic>?>(
-          {'skillId': 'create-task', 'slots': <String, dynamic>{'description': 'buy milk'}, 'source': 'cloud', 'skippedGenerative': 1});
+      return CloudOk<Map<String, dynamic>?>({
+        'skillId': 'create-task',
+        'slots': <String, dynamic>{'description': 'buy milk'},
+        'source': 'cloud',
+        'skippedGenerative': 1
+      });
     }
-    if (lc.contains('gift') && (lc.contains('suggest') || RegExp(r'gift ideas? for').hasMatch(lc))) {
-      final m = RegExp(r'\bfor\s+([A-Za-z]+)', caseSensitive: false).firstMatch(u);
+    if (lc.contains('gift') &&
+        (lc.contains('suggest') || RegExp(r'gift ideas? for').hasMatch(lc))) {
+      final m =
+          RegExp(r'\bfor\s+([A-Za-z]+)', caseSensitive: false).firstMatch(u);
       return CloudOk<Map<String, dynamic>?>({
         'generativeKind': 'gift_ideas',
-        'params': {'contact': m?.group(1)}, // null contact when no "for <name>" — exercises the follow-up
+        'params': {
+          'contact': m?.group(1)
+        }, // null contact when no "for <name>" — exercises the follow-up
         'source': 'cloud',
       });
     }
     return const CloudOk(null); // abstain
   }
+
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d,
+          {String? priorError}) async =>
       const CloudOk(null);
   @override
   Future<CloudResult<String>> generate(String kind, String context) async {
     lastKind = kind;
     lastContext = context;
-    return err != null ? CloudError(err!) : CloudOk('Some ideas, grounded in:\n$context');
+    return err != null
+        ? CloudError(err!)
+        : CloudOk('Some ideas, grounded in:\n$context');
   }
 }
 
@@ -58,8 +73,25 @@ Future<Session> _s(CloudClient c) async {
 }
 
 void main() {
+  test('every implemented cloud assembler declares a closed content class set',
+      () {
+    expect(generativeDataClasses.keys, {
+      'gift_ideas',
+      'reconnect',
+      'briefing',
+      'weekly_review',
+      'pattern_insight',
+      'draft_message',
+    });
+    expect(
+      generativeDataClasses.values.expand((classes) => classes),
+      isNot(contains('journal')),
+    );
+  });
+
   group('gift ideas — grounded in the person\'s real facts', () {
-    test('assembles the actual facts into the prompt (never invents)', () async {
+    test('assembles the actual facts into the prompt (never invents)',
+        () async {
       final cloud = _GenCloud();
       final s = await _s(cloud);
       await s.handle('remember that Sarah loves hiking');
@@ -80,7 +112,9 @@ void main() {
       expect(cloud.lastContext, contains('hiking'));
     });
 
-    test('"suggest a gift for X" the regex misses is recognized by the residual (G-46; dogfood 2026-07-15)', () async {
+    test(
+        '"suggest a gift for X" the regex misses is recognized by the residual (G-46; dogfood 2026-07-15)',
+        () async {
       // The frozen _giftRe does NOT match these; recognition comes from the cloud residual, and the
       // session dispatches the {generativeKind, params} route to giftIdeas.
       for (final phrase in [
@@ -97,90 +131,127 @@ void main() {
       }
     });
 
-    test('a DELIVERED recognition is learned — the 2nd identical phrasing routes OFFLINE (G-46)', () async {
+    test(
+        'a DELIVERED recognition is learned — the 2nd identical phrasing routes OFFLINE (G-46)',
+        () async {
       final cloud = _GenCloud();
       final s = await _s(cloud);
       await s.handle('remember that Sarah loves hiking');
-      await s.handle('can you suggest a gift for Sarah'); // residual recognizes, delivers, LEARNS
+      await s.handle(
+          'can you suggest a gift for Sarah'); // residual recognizes, delivers, LEARNS
       final callsAfterFirst = cloud.residualCalls;
       expect(callsAfterFirst, greaterThan(0));
       cloud.lastKind = null;
-      await s.handle('can you suggest a gift for Sarah'); // 2nd: the learned corpus template catches it
-      expect(cloud.residualCalls, callsAfterFirst, reason: 'no NEW residual call — recognized offline');
+      await s.handle(
+          'can you suggest a gift for Sarah'); // 2nd: the learned corpus template catches it
+      expect(cloud.residualCalls, callsAfterFirst,
+          reason: 'no NEW residual call — recognized offline');
       expect(cloud.lastKind, 'gift_ideas'); // still dispatched the synthesis
     });
 
-    test('a DEGRADED generation is NOT learned — the 2nd phrasing still hits the residual (G-46)', () async {
-      final cloud = _GenCloud(err: CloudErrorKind.offline); // the generate() call fails
+    test(
+        'a DEGRADED generation is NOT learned — the 2nd phrasing still hits the residual (G-46)',
+        () async {
+      final cloud =
+          _GenCloud(err: CloudErrorKind.offline); // the generate() call fails
       final s = await _s(cloud);
       await s.handle('remember that Sarah loves hiking');
-      await s.handle('can you suggest a gift for Sarah'); // recognized, but generation degrades → no learn
+      await s.handle(
+          'can you suggest a gift for Sarah'); // recognized, but generation degrades → no learn
       final callsAfterFirst = cloud.residualCalls;
       await s.handle('can you suggest a gift for Sarah');
-      expect(cloud.residualCalls, greaterThan(callsAfterFirst), reason: 'not learned → re-consults the residual');
+      expect(cloud.residualCalls, greaterThan(callsAfterFirst),
+          reason: 'not learned → re-consults the residual');
     });
 
-    test('a learned recognition is FORGOTTEN on a next-turn correction (§5.2 negative half, G-46)', () async {
+    test(
+        'a learned recognition is FORGOTTEN on a next-turn correction (§5.2 negative half, G-46)',
+        () async {
       final cloud = _GenCloud();
       final s = await _s(cloud);
       await s.handle('remember that Sarah loves hiking');
       await s.handle('can you suggest a gift for Sarah'); // learns
-      await s.handle('no, I meant remember that Sarah is my sister'); // correct → forget the learned template
+      await s.handle(
+          'no, I meant remember that Sarah is my sister'); // correct → forget the learned template
       final callsBefore = cloud.residualCalls;
-      await s.handle('can you suggest a gift for Sarah'); // template gone → back to the residual
-      expect(cloud.residualCalls, greaterThan(callsBefore), reason: 'forgotten → re-consults the residual');
+      await s.handle(
+          'can you suggest a gift for Sarah'); // template gone → back to the residual
+      expect(cloud.residualCalls, greaterThan(callsBefore),
+          reason: 'forgotten → re-consults the residual');
     });
 
-    test('a learned template is forgotten on correction even after it CORPUS-matched a later turn', () async {
+    test(
+        'a learned template is forgotten on correction even after it CORPUS-matched a later turn',
+        () async {
       // Fable-review fix: _lastTurnTemplate must be set on a corpus-matched generative turn (not only
       // the fresh-learn turn), or a mislearned template is uncorrectable.
       final cloud = _GenCloud();
       final s = await _s(cloud);
       await s.handle('remember that Sarah loves hiking');
       await s.handle('can you suggest a gift for Sarah'); // turn 1: learns
-      await s.handle('can you suggest a gift for Sarah'); // turn 2: corpus-matches, no re-learn
-      await s.handle('no, I meant remember that Sarah is my sister'); // turn 3: correction → forget
+      await s.handle(
+          'can you suggest a gift for Sarah'); // turn 2: corpus-matches, no re-learn
+      await s.handle(
+          'no, I meant remember that Sarah is my sister'); // turn 3: correction → forget
       final before = cloud.residualCalls;
-      await s.handle('can you suggest a gift for Sarah'); // turn 4: template gone → residual again
-      expect(cloud.residualCalls, greaterThan(before), reason: 'forgotten after a corpus-matched turn');
+      await s.handle(
+          'can you suggest a gift for Sarah'); // turn 4: template gone → residual again
+      expect(cloud.residualCalls, greaterThan(before),
+          reason: 'forgotten after a corpus-matched turn');
     });
 
-    test('a system command during the generative follow-up is not swallowed as the contact', () async {
+    test(
+        'a system command during the generative follow-up is not swallowed as the contact',
+        () async {
       // Fable-review fix: the _pendingGen resume must let undo/help/new-command through, not treat
       // them as the person's name.
       final cloud = _GenCloud();
       final s = await _s(cloud);
       await s.handle('add buy milk to my list'); // something to undo
       await s.handle('can you suggest a gift'); // no contact → "for whom?"
-      final r = await s.handle('undo'); // must undo the task, NOT become a contact name
+      final r = await s
+          .handle('undo'); // must undo the task, NOT become a contact name
       expect(r.toLowerCase(), isNot(contains('as a contact')));
       expect(cloud.lastKind, isNull); // no gift generation ran
     });
 
-    test('a learned generative template does not crash a compound utterance', () async {
+    test('a learned generative template does not crash a compound utterance',
+        () async {
       // Fable-review fix: a generative half in _splitCompound has no skillId/slots — must be skipped,
       // not dispatched as a skill (which threw AFTER the other half wrote).
       final cloud = _GenCloud();
       final s = await _s(cloud);
       await s.handle('remember that Sarah loves hiking');
       await s.handle('can you suggest a gift for Sarah'); // learns the template
-      final r = await s.handle('add buy milk to my list and suggest a gift for Sarah'); // compound
+      final r = await s.handle(
+          'add buy milk to my list and suggest a gift for Sarah'); // compound
       expect(r, isNotEmpty);
-      expect(r.toLowerCase(), isNot(contains("didn't do anything"))); // no false "nothing done" after a write
+      expect(
+          r.toLowerCase(),
+          isNot(contains(
+              "didn't do anything"))); // no false "nothing done" after a write
     });
 
-    test('a generative half dropped from a batch is admitted, not silently swallowed (§7.3.2, P2.8)', () async {
+    test(
+        'a generative half dropped from a batch is admitted, not silently swallowed (§7.3.2, P2.8)',
+        () async {
       final cloud = _GenCloud();
       final s = await _s(cloud);
       // "errand …" misses the corpus, so it reaches the residual, which collapses to the task and
       // counts the dropped generative half.
       final r = await s.handle('errand buy milk and suggest a gift for Sarah');
       expect(r.toLowerCase(), contains('milk')); // the record half ran
-      expect(r.toLowerCase(), contains('gift')); // and the dropped generative half is ADMITTED, not silent
-      expect(cloud.lastKind, isNull); // no generation was spent on the dropped half
+      expect(
+          r.toLowerCase(),
+          contains(
+              'gift')); // and the dropped generative half is ADMITTED, not silent
+      expect(cloud.lastKind,
+          isNull); // no generation was spent on the dropped half
     });
 
-    test('a generative request with no contact asks (§6.3 follow-up), then the answer runs it (G-46)', () async {
+    test(
+        'a generative request with no contact asks (§6.3 follow-up), then the answer runs it (G-46)',
+        () async {
       final cloud = _GenCloud();
       final s = await _s(cloud);
       await s.handle('remember that Sarah loves hiking');
@@ -193,7 +264,8 @@ void main() {
       expect(r, contains('hiking'));
     });
 
-    test('unknown person -> asks to learn about them first, no cloud call', () async {
+    test('unknown person -> asks to learn about them first, no cloud call',
+        () async {
       final cloud = _GenCloud();
       final s = await _s(cloud);
       final r = await s.handle('gift ideas for Nobody');
@@ -205,14 +277,16 @@ void main() {
       final cloud = _GenCloud(err: CloudErrorKind.offline);
       final s = await _s(cloud);
       await s.handle('remember that Sarah loves hiking');
-      expect((await s.handle('gift ideas for Sarah')).toLowerCase(), contains('offline'));
+      expect((await s.handle('gift ideas for Sarah')).toLowerCase(),
+          contains('offline'));
     });
 
     test('no key -> tier degrade names it a cloud feature', () async {
       final cloud = _GenCloud(err: CloudErrorKind.noKey);
       final s = await _s(cloud);
       await s.handle('remember that Sarah loves hiking');
-      expect((await s.handle('gift ideas for Sarah')).toLowerCase(), contains('cloud feature'));
+      expect((await s.handle('gift ideas for Sarah')).toLowerCase(),
+          contains('cloud feature'));
     });
   });
 
@@ -221,7 +295,8 @@ void main() {
       final cloud = _GenCloud();
       final s = await _s(cloud);
       await s.handle('remember that Sam loves jazz');
-      await s.handle('i talked to Sam about the concert'); // logs an interaction
+      await s
+          .handle('i talked to Sam about the concert'); // logs an interaction
       final r = await s.handle('help me reconnect with Sam');
       expect(cloud.lastKind, 'reconnect');
       expect(cloud.lastContext, contains('jazz'));
@@ -239,7 +314,8 @@ void main() {
       final cloud = _GenCloud(err: CloudErrorKind.offline);
       final s = await _s(cloud);
       await s.handle('remember that Sam loves jazz');
-      expect((await s.handle('help me reconnect with Sam')).toLowerCase(), contains('offline'));
+      expect((await s.handle('help me reconnect with Sam')).toLowerCase(),
+          contains('offline'));
     });
   });
 
@@ -266,13 +342,24 @@ void main() {
   // prompt is grounded in the hand-built store and that thin-data/tier failures
   // degrade honestly.
   group('weekly review — grounded in the week\'s actual activity', () {
-    test('assembles this week\'s workouts, moods, interactions, done tasks', () async {
+    test('assembles this week\'s workouts, moods, interactions, done tasks',
+        () async {
       final cloud = _GenCloud();
       final g = GenerativeService(cloud);
       final store = _store([
         {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sarah'},
-        {'typeId': 'interaction', 'subject': 'c1', 'at': '2026-07-02', 'note': 'caught up about the trip'},
-        {'typeId': 'workout', 'activity': 'run', 'distance': 5, 'date': '2026-07-03'},
+        {
+          'typeId': 'interaction',
+          'subject': 'c1',
+          'at': '2026-07-02',
+          'note': 'caught up about the trip'
+        },
+        {
+          'typeId': 'workout',
+          'activity': 'run',
+          'distance': 5,
+          'date': '2026-07-03'
+        },
         {'typeId': 'mood', 'rating': 'great', 'loggedAt': '2026-07-04'},
         {'typeId': 'task', 'description': 'buy milk', 'completed': true},
       ]);
@@ -280,7 +367,8 @@ void main() {
       expect(cloud.lastKind, 'weekly_review');
       expect(cloud.lastContext, contains('run 5 km on 2026-07-03'));
       expect(cloud.lastContext, contains('great'));
-      expect(cloud.lastContext, contains('Sarah on 2026-07-02 (caught up about the trip)'));
+      expect(cloud.lastContext,
+          contains('Sarah on 2026-07-02 (caught up about the trip)'));
       expect(cloud.lastContext, contains('buy milk'));
       expect(r, isNotEmpty);
     });
@@ -289,7 +377,12 @@ void main() {
       final cloud = _GenCloud();
       final g = GenerativeService(cloud);
       final store = _store([
-        {'typeId': 'workout', 'activity': 'run', 'distance': 10, 'date': '2026-06-01'}, // stale
+        {
+          'typeId': 'workout',
+          'activity': 'run',
+          'distance': 10,
+          'date': '2026-06-01'
+        }, // stale
         {'typeId': 'mood', 'rating': 'fine', 'loggedAt': '2026-07-05'},
       ]);
       await g.weeklyReview(store, _now);
@@ -312,7 +405,8 @@ void main() {
       final store = _store([
         {'typeId': 'mood', 'rating': 'great', 'loggedAt': '2026-07-04'},
       ]);
-      expect((await g.weeklyReview(store, _now)).toLowerCase(), contains('offline'));
+      expect((await g.weeklyReview(store, _now)).toLowerCase(),
+          contains('offline'));
     });
   });
 
@@ -323,7 +417,13 @@ void main() {
       final store = _store([
         {'typeId': 'mood', 'rating': 'great', 'loggedAt': '2026-07-03'},
         {'typeId': 'mood', 'rating': 'meh', 'loggedAt': '2026-07-05'},
-        {'typeId': 'workout', 'activity': 'run', 'distance': 5, 'date': '2026-07-03'},
+        {
+          'typeId': 'workout',
+          'activity': 'run',
+          'distance': 5,
+          'date': '2026-07-03'
+        },
+        {'typeId': 'journal', 'text': 'JOURNAL_CANARY_MUST_STAY_LOCAL'},
       ]);
       await g.patternInsight(store, _now);
       expect(cloud.lastKind, 'pattern_insight');
@@ -331,9 +431,17 @@ void main() {
       expect(cloud.lastContext, contains('2026-07-05: meh'));
       expect(cloud.lastContext, contains('2026-07-03: run, 5 km'));
       expect(cloud.lastContext, contains('never invent one'));
+      expect(cloud.lastContext, contains('Consent: explicit user invocation'));
+      expect(
+        cloud.lastContext,
+        contains('Declared data classes: [interaction, mood, workout]'),
+      );
+      expect(
+          cloud.lastContext, isNot(contains('JOURNAL_CANARY_MUST_STAY_LOCAL')));
     });
 
-    test('only one tracker logged -> honest local answer, no cloud call', () async {
+    test('only one tracker logged -> honest local answer, no cloud call',
+        () async {
       final cloud = _GenCloud();
       final g = GenerativeService(cloud);
       final store = _store([
@@ -351,32 +459,47 @@ void main() {
         {'typeId': 'mood', 'rating': 'great', 'loggedAt': '2026-07-03'},
         {'typeId': 'workout', 'activity': 'run', 'date': '2026-07-03'},
       ]);
-      expect((await g.patternInsight(store, _now)).toLowerCase(), contains('cloud feature'));
+      expect((await g.patternInsight(store, _now)).toLowerCase(),
+          contains('cloud feature'));
     });
   });
 
-  group('draft message — the user\'s voice, grounded in recent interactions', () {
-    test('assembles facts + most-recent-first interactions into the prompt', () async {
+  group('draft message — the user\'s voice, grounded in recent interactions',
+      () {
+    test('assembles facts + most-recent-first interactions into the prompt',
+        () async {
       final cloud = _GenCloud();
       final g = GenerativeService(cloud);
       final store = _store([
         {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sam'},
         {'typeId': 'contact_fact', 'subject': 'c1', 'fact': 'loves jazz'},
-        {'typeId': 'interaction', 'subject': 'c1', 'at': '2026-06-20', 'note': 'planned the gig'},
-        {'typeId': 'interaction', 'subject': 'c1', 'at': '2026-07-01', 'note': 'talked about the concert'},
+        {
+          'typeId': 'interaction',
+          'subject': 'c1',
+          'at': '2026-06-20',
+          'note': 'planned the gig'
+        },
+        {
+          'typeId': 'interaction',
+          'subject': 'c1',
+          'at': '2026-07-01',
+          'note': 'talked about the concert'
+        },
       ]);
       final r = await g.draftMessage('Sam', store, _now);
       expect(cloud.lastKind, 'draft_message');
       expect(cloud.lastContext, contains('loves jazz'));
       expect(cloud.lastContext, contains('talked about the concert'));
       // most recent interaction listed before the older one
-      expect(cloud.lastContext!.indexOf('2026-07-01'), lessThan(cloud.lastContext!.indexOf('2026-06-20')));
+      expect(cloud.lastContext!.indexOf('2026-07-01'),
+          lessThan(cloud.lastContext!.indexOf('2026-06-20')));
       // the draft boundary is pinned in the prompt itself (DP-03: drafts yes, sends no)
       expect(cloud.lastContext, contains('never sends'));
       expect(r, isNotEmpty);
     });
 
-    test('unknown contact -> asks to learn about them first, no cloud call', () async {
+    test('unknown contact -> asks to learn about them first, no cloud call',
+        () async {
       final cloud = _GenCloud();
       final g = GenerativeService(cloud);
       final r = await g.draftMessage('Nobody', _store([]), _now);
@@ -384,7 +507,9 @@ void main() {
       expect(cloud.lastKind, isNull);
     });
 
-    test('known contact, no interactions yet -> still grounded, says so honestly', () async {
+    test(
+        'known contact, no interactions yet -> still grounded, says so honestly',
+        () async {
       final cloud = _GenCloud();
       final g = GenerativeService(cloud);
       final store = _store([
@@ -392,7 +517,8 @@ void main() {
       ]);
       await g.draftMessage('Sam', store, _now);
       expect(cloud.lastKind, 'draft_message');
-      expect(cloud.lastContext, contains('Recent interactions: none logged yet'));
+      expect(
+          cloud.lastContext, contains('Recent interactions: none logged yet'));
     });
 
     test('offline -> honest degrade', () async {
@@ -401,7 +527,8 @@ void main() {
       final store = _store([
         {'id': 'c1', 'typeId': 'contact', 'displayName': 'Sam'},
       ]);
-      expect((await g.draftMessage('Sam', store, _now)).toLowerCase(), contains('offline'));
+      expect((await g.draftMessage('Sam', store, _now)).toLowerCase(),
+          contains('offline'));
     });
   });
 }

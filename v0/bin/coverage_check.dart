@@ -31,6 +31,11 @@ const fileTiers = <String, CoverageTier>{
   'schema_registry.dart': CoverageTier.productLogic,
   'value_codec.dart': CoverageTier.productLogic,
   'conversation_ledger.dart': CoverageTier.productLogic,
+  'operation_center.dart': CoverageTier.productLogic,
+  'plan_proposal.dart': CoverageTier.productLogic,
+  'weekly_review.dart': CoverageTier.productLogic,
+  'capability_draft_store.dart': CoverageTier.productLogic,
+  'planning_artifact.dart': CoverageTier.productLogic,
   'planner.dart': CoverageTier.productLogic,
   'router.dart': CoverageTier.productLogic,
   'embed.dart': CoverageTier.productLogic,
@@ -40,10 +45,7 @@ const fileTiers = <String, CoverageTier>{
 
 /// Operator/temporary integration code excluded until replay recording is split
 /// from its product replay seam.
-const coverageExclusions = {
-  'fixture_inputs.dart',
-  'replay_cloud.dart'
-};
+const coverageExclusions = {'fixture_inputs.dart', 'replay_cloud.dart'};
 
 double percentage(List<int> value) =>
     value[1] == 0 ? 100 : 100 * value[0] / value[1];

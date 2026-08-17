@@ -1,17 +1,17 @@
 # Spec 17 — Living Planner & Multimodal Product Model
 
-**Status:** v0.3 — 2026-08-17, active implementation authority. Today, phone/desktop Plan, purpose-built Library, the durable conversation ledger, task schema v4, structured planner context, in-process retrieval, cloud admission, and the adaptive full-screen/collaborator presence are wired; proposals, detached operations, and the detail ember remain later increments.
+**Status:** v0.4 — 2026-08-17, active implementation authority. Today, phone/desktop Plan, purpose-built Library, the durable conversation ledger, task schema v5, structured planner context, in-process retrieval, cloud admission, durable proposals/reviews, detached operations, and the adaptive full-screen/collaborator presence are wired; the detail ember remains a later increment.
 **Supersedes:** research §2.2's overlay-only/no-touch rule; Spec 07 P1–P2 and its four-surface model; Spec 15 D1/D14 where they make full-screen presence or ephemeral exchange the steady-state product. Those documents remain design history and point here for current behavior.
 **Depends on:** Specs 01–06 for schema, skills, routing, orchestration, functional behavior, and storage; Spec 07 for visual language and generic archetypes; Spec 12 for voice; Spec 15 for Plena's renderer.
 
 ---
 
-## Current realization — Increment 3
+## Current realization — Increment 4
 
 - Opening the app renders the deterministic Today projection rather than an ephemeral greeting. It includes bounded Now/Next/Later sections, one relationship date, the latest durable execution with targeted undo, Inbox count, operational notices, and repair state.
 - Voice and typed capture continue through `Session.handle`; Today completion calls the typed `Session.completeTask` command directly. Both converge on `ExecutionCoordinator` and its durable device-local journal.
 - The device-local conversation ledger retains the final utterance, full reply, routing source, time, and execution link for 250 turns. It is a user-facing product history distinct from content-bearing internal diagnostic logs. History-linked writes expose targeted undo.
-- Task schema v3 owns `status`, `scheduledStartAt`, `estimatedMinutes`, `priority`, `projectRef`, `areaRef`, `contactRefs`, `notes`, and `completedAt`; `dueAt` remains deadline-only. Project and area are registered record types.
+- Task schema v3 introduced `status`, `scheduledStartAt`, `estimatedMinutes`, `priority`, `projectRef`, `areaRef`, `contactRefs`, `notes`, and `completedAt`; v4 added dependency/energy/context/recurrence semantics and v5 added `reviewDecision`. `dueAt` remains deadline-only. Project and area are registered record types.
 - Plena remains full-bleed during conversation and yields within the same canvas when Today is visible. The populated surface has an explicit accessible voice target; tap-anywhere remains active only on non-interactive space.
 - Onboarding uses the same warm presence and palette, pins both decisions outside its scrollable story area, and states the internal-dogfood diagnostic policy. Platform icons are generated from a deterministic Plena particle mark for iOS, macOS, and Windows.
 - Phone Plan now has a week strip, selected-day agenda, deadlines, unscheduled queue, load, conflict state, direct schedule/defer/resize/complete actions, and multi-select. Desktop expands the same semantics into a week/queue workspace with drag-to-day scheduling.
@@ -20,8 +20,16 @@
 - Plan and Today publish structured visible dates, ordered objects, and selection ids. Contextual commands such as “move these to tomorrow at 10am” and “make the first one 45 minutes” resolve against those ids and enter the same durable execution/undo path as touch and pointer actions.
 - Production routing now builds an in-process deterministic feature-hash index and orders common work as corpus → bounded accepted retrieval with deterministic slot extraction → cloud residual → visible clarification. Localhost embeddings remain an explicit development experiment, not a runtime dependency.
 - Every Anthropic request crosses one persisted admission controller before HTTP: 200 calls per local day and 30 per rolling ten minutes. Corrupt or unwritable usage state fails closed, and Settings shows both counters.
+- Task schema v5 adds the explicit weekly-review decision (`keep`, `defer`, or `drop`) through a contiguous 4→5 migration. A structured weekly review persists evidence and editable decisions, revalidates record fingerprints before apply, and commits selected task changes through one durable execution and undo.
+- `PlanProposal` is a durable no-write preview with selected items, proposed times, estimates, rationale, conflict delta, and explicit omission reasons. It respects represented capacity, deadlines, dependencies, and blocked state. Voice can move or exclude numbered proposal items; apply revalidates every task fingerprint and commits once.
+- Long weekly/pattern synthesis and custom-capability authoring enter one persistent serial `OperationCenter`. The initiating turn returns immediately, Today renders progress/cancel state, terminal delivery is exactly once, and relaunch marks uncertain in-flight work interrupted rather than risking duplicate provider spend.
+- A validated authored-capability preview is persisted device-locally until activation, cancellation, or an unrelated move-on turn. Only activation promotes it to the live type/skill registry.
+- Morning plans and relationship/event-preparation cards are deterministic durable artifacts on Today. A draft remains until accepted, dismissed, or superseded; relationship preparation uses only saved facts, dates, and the latest logged interaction.
+- Generative prompt assembly stamps its declared record classes and explicit-invocation consent into every implemented request. The same declarations are visible in Settings; journal is excluded from all current assemblers.
 
 Increment 3's automated evidence gate is complete: 1,877 engine tests plus 36 declared skips, 118 Flutter tests plus the intentional internal-build external-channel skip, tier coverage of 94.2% deterministic core / 90.3% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, and the same five tests on a local iPhone 17 Pro simulator all pass. A disposable-copy exercise migrated the real task to v4 with one backup, zero repair issues, and byte-identical source data. Human glance-time, compare/sequence speed, correction rate, and local retrieval quality require ordinary use of an explicitly deployed build; automated harnesses never target Luis's physical phone.
+
+Increment 4's automated evidence gate is complete: 1,904 engine tests plus 36 declared skips, 123 Flutter tests plus the intentional external-channel skip, tier coverage of 94.2% deterministic core / 90.5% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, and the same five tests on the explicitly selected local iPhone 17 Pro simulator all pass. The proposal benchmark accepts 10/10 deterministic scenarios without immediate correction (gate ≥80%). A disposable-copy exercise migrated the real task to v5 with one backup, zero repair issues, and byte-identical source data. The simulator run reached roughly 504 MB RSS during its short sample, completed normally, was shut down, and left no app/test process; this is not a long-soak leak claim.
 
 ## 0. Product decision
 
@@ -164,7 +172,7 @@ Dependencies, `blockedReason`, energy/context, recurrence, and explicit capacity
 
 ### 4.3 Proposals
 
-A `PlanProposal` contains typed candidate operations, rationale facts, conflicts, unchanged items, and an expiry/rebase token. Previewing performs no writes. Acceptance revalidates current record versions, then submits selected operations as one durable execution with one visible undo/change entry. Stale proposals never apply silently.
+A `PlanProposal` contains typed candidate operations, rationale facts, conflicts, explicit omission reasons, unchanged items, and record fingerprints. Previewing performs no writes. Acceptance revalidates current record fingerprints, then submits selected operations as one durable execution with one visible undo/change entry. Stale proposals never apply silently.
 
 ---
 

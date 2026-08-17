@@ -39,6 +39,27 @@ void main() {
     },
   );
 
+  testWidgets('declares cloud content classes and journal exclusion', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(home: SettingsView(configPath: newCfg())),
+    );
+    await tester.pumpAndSettle();
+
+    final declaration = find.byKey(const Key('cloud-content-declarations'));
+    await tester.ensureVisible(declaration);
+    await tester.tap(declaration);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gift ideas'), findsOneWidget);
+    expect(find.text('contact, contact_fact'), findsWidgets);
+    expect(find.text('Journal'), findsOneWidget);
+    expect(find.textContaining('ask separately each session'), findsOneWidget);
+  });
+
   testWidgets(
     'Test connection: a working key auto-saves and reports connected',
     (tester) async {

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
+import 'package:plenara/generative.dart';
 import 'package:plenara/turnlog.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
@@ -45,6 +46,45 @@ class _SettingsViewState extends State<SettingsView> {
   bool _testing = false;
   DiagnosticPolicy get _diagnostics =>
       widget.diagnosticPolicy ?? activeDiagnosticPolicy;
+
+  static const _cloudNames = <String, String>{
+    'gift_ideas': 'Gift ideas',
+    'reconnect': 'Reconnect coaching',
+    'briefing': 'Briefing',
+    'weekly_review': 'Weekly reflection',
+    'pattern_insight': 'Pattern insight',
+    'draft_message': 'Message draft',
+  };
+
+  Widget _cloudContentSection(ColorScheme cs) => ExpansionTile(
+    key: const Key('cloud-content-declarations'),
+    tilePadding: EdgeInsets.zero,
+    childrenPadding: const EdgeInsets.only(bottom: 8),
+    title: const Text('What each cloud feature sends'),
+    subtitle: const Text(
+      'Only the record classes listed here, for the feature you ask for.',
+    ),
+    children: [
+      for (final entry in generativeDataClasses.entries)
+        ListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text(_cloudNames[entry.key] ?? entry.key),
+          subtitle: Text(
+            (entry.value.toList()..sort()).join(', '),
+            style: TextStyle(color: cs.outline),
+          ),
+        ),
+      const ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        title: Text('Journal'),
+        subtitle: Text(
+          'Never included by these features. A future journal-based feature must ask separately each session.',
+        ),
+      ),
+    ],
+  );
 
   @override
   void dispose() {
@@ -623,6 +663,7 @@ class _SettingsViewState extends State<SettingsView> {
           ),
           const SizedBox(height: 6),
           _usageSection(cs),
+          _cloudContentSection(cs),
           const Divider(height: 32),
           const Text('Voice', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
