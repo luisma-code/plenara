@@ -76,6 +76,33 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - The full gate is green: 1,904 engine tests + 36 skips; 123 Flutter tests + the intentional external-channel skip; tier coverage 94.2% deterministic core / 90.5% product logic / 68.1% transport; macOS build; five macOS real-engine integration tests; external-channel, secret, and 24/60 conformance gates.
 - A disposable real-data copy migrated the one task to schema v5 with one backup, zero repair issues, and byte-identical source. The same five integration tests passed on the explicitly selected local iPhone 17 Pro simulator; RSS was about 504 MB during the short sample, the simulator was shut down, and no app/test process remained.
 
+## Increment 5 state
+
+- Plena now has explicit neutral, clarification, and failure expressions that alter geometry and
+  luminance as well as color. The system recognizer feeds normalized live mic level into listening
+  energy; the local Whisper path retains the calm no-level fallback.
+- OS Reduce Motion and the independent persisted **Still presence** preference both use fixed
+  per-state forms with opacity-only transitions. Presence semantics name input mode, muted state,
+  and expression.
+- Today and Plan use one shared identity-preserving continuity transition for durable objects;
+  durations and easing live in `PlenaraMotion`. The permanent 11-frame harness distinguishes a
+  correct create transition from a deliberately broken instant insertion and shows monotonic
+  growth/fade without disturbing the existing row.
+- The 52-glyph corpus remains an internal sketchbook. Production admits 12 consequential marks
+  through a fail-closed persisted 90-second/3-per-day gate; routine writes and ordinary actions use
+  a sub-300 ms whole-body acknowledgement. Forced preview is internal-channel only.
+- Settings and Data carry a Y2 ember, and record detail carries an inline ember. iOS is an explicit
+  trail-free tier; no per-frame image-buffer workaround is used there.
+- Routine-generated figures render labeled START/FINISH A/B stills. The three animated catalogue
+  payloads are decoded to their first frame and held; no unverified tween or looping instructional
+  art ships. First-frame loading is generation-guarded when a reused widget changes assets.
+- Verification is green: 1,904 engine tests + 36 intentional conformance skips; 134 Flutter tests
+  plus the intentional external-channel skip; tier coverage 94.2% deterministic core / 90.5%
+  product logic / 68.1% transport; macOS build; five macOS real-engine integration tests; external,
+  secret, and 24/60 ratchet gates. The same five integration tests pass on the explicitly selected
+  local iPhone 17 Pro simulator. The simulator was shut down and no app/test process remains. No
+  physical phone was touched.
+
 ## Owner action
 
 - Rotate the Anthropic credential that appeared in a non-hermetic test failure before this increment. The repository/reports do not contain it, but the earlier tool transcript did. Credential rotation requires Luis's account authority.
@@ -103,8 +130,8 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Next implementation order
 
-1. Increment 5: presence ladder, semantic motion, expressive curation, reduced-motion/still-presence controls, and routine-art coherence.
-2. Later increments follow `planning/implementation-plan-2026-08-17.md`; dependencies and evidence gates determine order, not calendar dates.
+1. Increment 6: relationship-centered planning and healthy engagement.
+2. Increments 7–8 then follow `planning/implementation-plan-2026-08-17.md`; dependencies and evidence gates determine order, not calendar dates.
 
 ## Authoritative documents
 

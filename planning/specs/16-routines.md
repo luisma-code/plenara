@@ -1,7 +1,8 @@
 # Spec 16 — Routines & Guided Movement
 
-_Status: v0.1, implemented 2026-07-28. Designed with Fable; the figure decision is grounded in a
-measured spike rather than taste (§2)._
+_Status: v0.2, implemented 2026-08-17. The figure decision is grounded in a measured spike rather
+than taste (§2); the player now renders explicit labeled A/B instructional stills and freezes the
+three animated catalogue payloads on frame one._
 
 ## 0. What this is
 
@@ -77,11 +78,13 @@ the whole figure is rejected, never partially scrubbed. Stroke colour and width 
 renderer**, never authored, so figures cannot drift in style between generations. Rendered by a
 static rasterizer that executes nothing. 16 attack vectors are pinned by tests.
 
-**Motion is NOT shipped.** Two frames are authored and a `figureTween` flag is computed, but the app
-renders `figureA` only — there is no interpolation and no two-frame toggle. An earlier draft of this
-section claimed both; that was untrue, and a spec asserting a feature the code lacks is worse than
-one that names the gap. The data is recorded now because it is cheap at authoring time and expensive
-to backfill.
+**A/B instruction is shipped; interpolation is not.** When authored `figureA` and `figureB` both
+exist, the player presents them simultaneously as **START** and **FINISH**. This is the default
+instructional grammar: it exposes the movement endpoints without inventing unsafe in-betweens.
+`figureTween` remains recorded but ignored. No tween ships until an 11-frame verifier proves limb
+correspondence, pivots, monotonic travel, boundaries, and shape integrity. The three catalogue files
+whose payloads are animated GIFs despite `.png` names are decoded to frame one and held; no routine
+illustration loops, including when Reduce Motion is off.
 
 **The renderer imposes the stroke by WRAPPING the markup, not with a colour filter.** flutter_svg has
 no CSS, and a path with `fill="none"` and no stroke attributes computes a null paint and is never
@@ -159,6 +162,12 @@ Plena's glyph system has hard rarity caps and an apt-or-absent rule, and a funct
 
 **Ear-sufficiency is a validator rule, not a prompt hope:** every step must stand alone for the ear,
 and the figure is never the sole carrier of the movement.
+
+**One visual grammar.** Model figures are light, round-capped 2.4-unit strokes on the void, with no
+model-authored color, weight, face detail, shading, or decoration. A/B poses share the available
+width equally and carry explicit uppercase endpoint labels. Catalogue art retains its licensed
+pixels and is recolored only at render time. Header and stop affordance meet the calm-surface
+contrast floor; spoken/written instructions remain authoritative if either image tier fails.
 
 **Honest limit — "screen off" is not yet true on iOS.** The cadence is a Dart timer in the widget
 tree plus foreground TTS, and the app declares no `UIBackgroundModes`. Locking the phone suspends

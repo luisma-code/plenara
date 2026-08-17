@@ -56,6 +56,7 @@ detection, tap again to ABORT:
 abstract class SpeechRecognizer {
   Future<void> init();
   bool get available;
+  Stream<double> get levels; // normalized 0..1 when the platform exposes live level
   /// onResult streams the transcript; isFinal marks the engine's final result for an utterance.
   Future<void> listen({required void Function(String text, bool isFinal) onResult,
                        required void Function() onDone});
@@ -73,6 +74,10 @@ abstract class SpeechRecognizer {
   transcribes a completed VAD segment). Live partial captioning while the user speaks: **still
   planned** (would need sherpa's streaming/online models; Spec 12 §4 owns the transcript-display
   contract).
+- Listening level: the system recognizer maps its platform sound-level callback into a normalized
+  broadcast `levels` stream for the presence. Sherpa currently exposes no equivalent platform
+  signal and returns an empty stream; the presence uses its calm listening shimmer there. Level is
+  ephemeral UI input only: never routed, persisted, or written to diagnostics.
 
 **Engines (SHIPPED):**
 

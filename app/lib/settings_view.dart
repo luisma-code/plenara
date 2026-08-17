@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'app_log.dart';
 import 'credential_store.dart';
+import 'presence_shell.dart';
 import 'voice_setup.dart';
 
 /// The settings surface (Spec 07 §2.6): view the data folder + diagnostics log path, and connect
@@ -26,12 +27,14 @@ class SettingsView extends StatefulWidget {
   final Future<void> Function(String url)? openUrl;
   final Future<CloudResult<String>> Function(String key)? validateKey;
   final DiagnosticPolicy? diagnosticPolicy;
+  final ValueChanged<bool>? onStillPresenceChanged;
   const SettingsView({
     super.key,
     this.configPath,
     this.openUrl,
     this.validateKey,
     this.diagnosticPolicy,
+    this.onStillPresenceChanged,
   });
   @override
   State<SettingsView> createState() => _SettingsViewState();
@@ -175,6 +178,18 @@ class _SettingsViewState extends State<SettingsView> {
           : 'Paid mode on — restart Plenara to re-enable cloud features.';
       _statusColor = null;
     });
+  }
+
+  void _setStillPresence(bool value) {
+    saveConfig(stillPresence: value, configPath: widget.configPath);
+    setState(() {
+      _cfg = loadAppConfig(configPath: widget.configPath);
+      _statusMsg = value
+          ? 'Still presence on — Plena will hold expressive static forms.'
+          : 'Ambient presence motion restored.';
+      _statusColor = null;
+    });
+    widget.onStillPresenceChanged?.call(value);
   }
 
   /// Explicitly remove the key ('' clears; null would leave it untouched).
@@ -521,187 +536,221 @@ class _SettingsViewState extends State<SettingsView> {
         title: const Text('Settings'),
         backgroundColor: cs.inversePrimary,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Stack(
         children: [
-          const Text(
-            'Data folder',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          SelectableText(_cfg.dataDir),
-          const Divider(height: 32),
-          Row(
-            children: [
-              const Text(
-                'Connect Claude',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(width: 8),
-              Chip(
-                key: const Key('key-status'),
-                label: Text(
-                  _cfg.apiKey != null ? 'connected ✓' : 'not connected',
+          Positioned.fill(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 76, 16),
+              children: [
+                const Text(
+                  'Data folder',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Plenara uses your own Anthropic account, so your notes stay private and you pay Anthropic '
-            'directly — typically a few cents a month. It’s a one-time setup:',
-          ),
-          const SizedBox(height: 10),
-          _step(
-            '1',
-            'Open the Anthropic Console (button below) and sign in or sign up.',
-          ),
-          _step(
-            '2',
-            'Under Billing, add a payment method — new accounts get free trial credits to start.',
-          ),
-          _step('3', 'Create an API key, then copy it (it’s shown only once).'),
-          _step('4', 'Paste it below and press Test connection.'),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              onPressed: () => (widget.openUrl ?? _defaultOpen)(_keysUrl),
-              icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('Open Anthropic Console'),
-            ),
-          ),
-          const SizedBox(height: 4),
-          SelectableText(
-            _keysUrl,
-            style: TextStyle(fontSize: 12, color: cs.outline),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _keyCtrl,
-            obscureText: true,
-            decoration: const InputDecoration(
-              hintText: 'Paste your key (sk-ant-…)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              FilledButton.icon(
-                onPressed: _testing ? null : _test,
-                icon: _testing
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check_circle_outline, size: 18),
-                label: const Text('Test connection'),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: _testing ? null : _save,
-                child: const Text('Save without testing'),
-              ),
-              const Spacer(),
-              if (_cfg.apiKey != null)
-                TextButton(
-                  onPressed: _testing ? null : _disconnect,
-                  style: TextButton.styleFrom(foregroundColor: cs.error),
-                  child: const Text('Disconnect'),
+                SelectableText(_cfg.dataDir),
+                const Divider(height: 32),
+                Row(
+                  children: [
+                    const Text(
+                      'Connect Claude',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Chip(
+                      key: const Key('key-status'),
+                      label: Text(
+                        _cfg.apiKey != null ? 'connected ✓' : 'not connected',
+                      ),
+                    ),
+                  ],
                 ),
-            ],
-          ),
-          if (_statusMsg != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              _statusMsg!,
-              style: TextStyle(
-                color: _statusColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-          const SizedBox(height: 8),
-          Text(
-            'Your key is stored locally and only ever sent to Anthropic when a cloud feature runs. '
-            'Everything else works offline without it.',
-            style: TextStyle(fontSize: 12, color: cs.outline),
-          ),
-          const Divider(height: 32),
-          const Text('Mode', style: TextStyle(fontWeight: FontWeight.bold)),
-          CheckboxListTile(
-            key: const Key('free-mode'),
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: const Text('Free mode (offline only)'),
-            subtitle: const Text(
-              'Turns off every cloud feature — no Claude calls, no spend. Tasks, reminders, '
-              'people, logging and search all keep working on-device. Restart Plenara to apply.',
-            ),
-            value: _cfg.freeTier,
-            onChanged: (v) => _setFreeTier(v ?? false),
-          ),
-          CheckboxListTile(
-            key: const Key('confirm-spend'),
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: const Text('Ask before paid builds'),
-            subtitle: const Text(
-              'Ask before anything that spends your Claude credits to BUILD something — a custom '
-              'tracker, or a movement routine and its drawings. Off by default: you already said '
-              'what you wanted. Everyday cloud use (understanding an unusual phrasing, gift '
-              'ideas, briefings) is not affected. Applies on next launch.',
-            ),
-            value: _cfg.confirmCloudSpend,
-            onChanged: (v) => _setConfirmSpend(v ?? false),
-          ),
-          const Divider(height: 32),
-          const Text(
-            'Cloud usage',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          _usageSection(cs),
-          _cloudContentSection(cs),
-          const Divider(height: 32),
-          const Text('Voice', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const VoiceUpgradeCard(), // iOS: the download nudge, or the voice picker; nothing off iOS
-          const Divider(height: 32),
-          const Text(
-            'Diagnostics log',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          if (_diagnostics.allowsRawExport) ...[
-            const Text(
-              'Internal diagnostics contain your conversation text, record values, and '
-              'exception details. Share them only when troubleshooting; the export is never '
-              'uploaded automatically.',
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Builder(
-                builder: (btnCtx) => OutlinedButton.icon(
-                  key: const Key('share-logs'),
-                  onPressed: () => _shareLogs(btnCtx),
-                  icon: const Icon(Icons.ios_share, size: 18),
-                  label: const Text('Share raw diagnostics'),
+                const SizedBox(height: 6),
+                const Text(
+                  'Plenara uses your own Anthropic account, so your notes stay private and you pay Anthropic '
+                  'directly — typically a few cents a month. It’s a one-time setup:',
                 ),
-              ),
+                const SizedBox(height: 10),
+                _step(
+                  '1',
+                  'Open the Anthropic Console (button below) and sign in or sign up.',
+                ),
+                _step(
+                  '2',
+                  'Under Billing, add a payment method — new accounts get free trial credits to start.',
+                ),
+                _step(
+                  '3',
+                  'Create an API key, then copy it (it’s shown only once).',
+                ),
+                _step('4', 'Paste it below and press Test connection.'),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () => (widget.openUrl ?? _defaultOpen)(_keysUrl),
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: const Text('Open Anthropic Console'),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  _keysUrl,
+                  style: TextStyle(fontSize: 12, color: cs.outline),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _keyCtrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    hintText: 'Paste your key (sk-ant-…)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    FilledButton.icon(
+                      onPressed: _testing ? null : _test,
+                      icon: _testing
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check_circle_outline, size: 18),
+                      label: const Text('Test connection'),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: _testing ? null : _save,
+                      child: const Text('Save without testing'),
+                    ),
+                    const Spacer(),
+                    if (_cfg.apiKey != null)
+                      TextButton(
+                        onPressed: _testing ? null : _disconnect,
+                        style: TextButton.styleFrom(foregroundColor: cs.error),
+                        child: const Text('Disconnect'),
+                      ),
+                  ],
+                ),
+                if (_statusMsg != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    _statusMsg!,
+                    style: TextStyle(
+                      color: _statusColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Text(
+                  'Your key is stored locally and only ever sent to Anthropic when a cloud feature runs. '
+                  'Everything else works offline without it.',
+                  style: TextStyle(fontSize: 12, color: cs.outline),
+                ),
+                const Divider(height: 32),
+                const Text(
+                  'Motion',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SwitchListTile(
+                  key: const Key('still-presence'),
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Keep Plena still'),
+                  subtitle: const Text(
+                    'Use a distinct static form for each state. This is independent of the system Reduce Motion setting.',
+                  ),
+                  value: _cfg.stillPresence,
+                  onChanged: _setStillPresence,
+                ),
+                const Divider(height: 32),
+                const Text(
+                  'Mode',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                CheckboxListTile(
+                  key: const Key('free-mode'),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: const Text('Free mode (offline only)'),
+                  subtitle: const Text(
+                    'Turns off every cloud feature — no Claude calls, no spend. Tasks, reminders, '
+                    'people, logging and search all keep working on-device. Restart Plenara to apply.',
+                  ),
+                  value: _cfg.freeTier,
+                  onChanged: (v) => _setFreeTier(v ?? false),
+                ),
+                CheckboxListTile(
+                  key: const Key('confirm-spend'),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: const Text('Ask before paid builds'),
+                  subtitle: const Text(
+                    'Ask before anything that spends your Claude credits to BUILD something — a custom '
+                    'tracker, or a movement routine and its drawings. Off by default: you already said '
+                    'what you wanted. Everyday cloud use (understanding an unusual phrasing, gift '
+                    'ideas, briefings) is not affected. Applies on next launch.',
+                  ),
+                  value: _cfg.confirmCloudSpend,
+                  onChanged: (v) => _setConfirmSpend(v ?? false),
+                ),
+                const Divider(height: 32),
+                const Text(
+                  'Cloud usage',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                _usageSection(cs),
+                _cloudContentSection(cs),
+                const Divider(height: 32),
+                const Text(
+                  'Voice',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const VoiceUpgradeCard(), // iOS: the download nudge, or the voice picker; nothing off iOS
+                const Divider(height: 32),
+                const Text(
+                  'Diagnostics log',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                if (_diagnostics.allowsRawExport) ...[
+                  const Text(
+                    'Internal diagnostics contain your conversation text, record values, and '
+                    'exception details. Share them only when troubleshooting; the export is never '
+                    'uploaded automatically.',
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Builder(
+                      builder: (btnCtx) => OutlinedButton.icon(
+                        key: const Key('share-logs'),
+                        onPressed: () => _shareLogs(btnCtx),
+                        icon: const Icon(Icons.ios_share, size: 18),
+                        label: const Text('Share raw diagnostics'),
+                      ),
+                    ),
+                  ),
+                ] else
+                  const Text(
+                    'Diagnostics capture and raw export are disabled in this external build.',
+                  ),
+                const SizedBox(height: 8),
+                if (_diagnostics.allowsRawExport)
+                  SelectableText(
+                    AppLog.instance.file.path,
+                    style: TextStyle(fontSize: 12, color: cs.outline),
+                  ),
+              ],
             ),
-          ] else
-            const Text(
-              'Diagnostics capture and raw export are disabled in this external build.',
-            ),
-          const SizedBox(height: 8),
-          if (_diagnostics.allowsRawExport)
-            SelectableText(
-              AppLog.instance.file.path,
-              style: TextStyle(fontSize: 12, color: cs.outline),
-            ),
+          ),
+          const PlenaEmber(mode: 'Settings.'),
         ],
       ),
     );

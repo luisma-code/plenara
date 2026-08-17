@@ -46,6 +46,15 @@ void main() {
     expect(_load(path).apiKey, isNull);
   });
 
+  test('still-presence preference defaults off and round-trips', () {
+    final dir = Directory.systemTemp.createTempSync('plenara_cfg_');
+    final path = '${dir.path}/config.json';
+    saveConfig(dataDir: 'X:/d', stillPresence: true, configPath: path);
+    expect(_load(path).stillPresence, isTrue);
+    saveConfig(stillPresence: false, configPath: path);
+    expect(_load(path).stillPresence, isFalse);
+  });
+
   test('ensureSeeded copies the built-in defs into an empty data dir', () {
     final dir = Directory.systemTemp.createTempSync('plenara_seed_');
     ensureSeeded(dir.path, 'data'); // source = the repo's shipped data dir

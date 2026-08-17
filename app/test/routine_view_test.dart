@@ -12,7 +12,8 @@ Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 const _timed = RoutineStepView(
   routineTitle: 'Low-back loosener',
   name: 'Cat-cow',
-  instruction: 'On all fours, round your back up as you exhale, then let it dip as you inhale.',
+  instruction:
+      'On all fours, round your back up as you exhale, then let it dip as you inhale.',
   position: 2,
   total: 7,
   side: 'both',
@@ -22,85 +23,201 @@ const _timed = RoutineStepView(
 const _drawn = RoutineStepView(
   routineTitle: 'Low-back loosener',
   name: "Child's pose",
-  instruction: 'Sink your hips back toward your heels and reach your arms forward.',
-  position: 1, total: 5, side: 'both', durationSeconds: 40,
-  figureSvg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'
+  instruction:
+      'Sink your hips back toward your heels and reach your arms forward.',
+  position: 1,
+  total: 5,
+  side: 'both',
+  durationSeconds: 40,
+  figureSvg:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'
       '<circle cx="30" cy="60" r="7" fill="none"/><path d="M37 62 L75 55" fill="none"/></svg>',
 );
 
+const _drawnPair = RoutineStepView(
+  routineTitle: 'Mobility',
+  name: 'Reach',
+  instruction: 'Stand tall, reach overhead, then return with control.',
+  position: 1,
+  total: 2,
+  side: 'both',
+  reps: 8,
+  figureSvg:
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="20" r="7"/><path d="M50 27 L50 65"/></svg>',
+  figureSvgB:
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="20" r="7"/><path d="M50 27 L50 65 L75 35"/></svg>',
+);
+
 void main() {
-  testWidgets('a step with no catalogue image falls back to the drawn figure', (tester) async {
-    await tester.pumpWidget(_wrap(RoutineStepCard(step: _drawn, onNext: () {}, onStop: () {})));
+  testWidgets('a step with no catalogue image falls back to the drawn figure', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(RoutineStepCard(step: _drawn, onNext: () {}, onStop: () {})),
+    );
     await tester.pumpAndSettle();
     // the movement is still fully described in words — the figure is never the sole carrier
     expect(find.text("Child's pose"), findsOneWidget);
     expect(find.textContaining('Sink your hips back'), findsOneWidget);
-    expect(find.byType(Image), findsNothing, reason: 'no catalogue asset for this one');
+    expect(
+      find.byType(Image),
+      findsNothing,
+      reason: 'no catalogue asset for this one',
+    );
   });
 
-  testWidgets('a timed step shows where you are, what to do, and how long', (tester) async {
-    await tester.pumpWidget(_wrap(RoutineStepCard(step: _timed, onNext: () {}, onStop: () {})));
+  testWidgets('a timed step shows where you are, what to do, and how long', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(RoutineStepCard(step: _timed, onNext: () {}, onStop: () {})),
+    );
     expect(find.text('STEP 2 OF 7 · LOW-BACK LOOSENER'), findsOneWidget);
     expect(find.text('Cat-cow'), findsOneWidget);
     expect(find.textContaining('round your back up'), findsOneWidget);
     expect(find.text('45s'), findsOneWidget);
   });
 
-  testWidgets('a step with NO illustration is still complete — the words carry it', (tester) async {
-    // ~2/3 of the catalogue has no picture, and a screen-off run has none by definition. A
-    // pictureless step must never look broken or lose information.
-    await tester.pumpWidget(_wrap(RoutineStepCard(step: _timed, onNext: () {}, onStop: () {})));
-    expect(find.byType(Image), findsNothing);
-    expect(find.text('Cat-cow'), findsOneWidget);
-    expect(find.textContaining('round your back up'), findsOneWidget);
-    expect(find.byKey(const Key('routine-next')), findsOneWidget);
-  });
-
-  testWidgets('a rep step shows reps and NO progress bar (it waits for you)', (tester) async {
-    const reps = RoutineStepView(
-      routineTitle: 'Chest day', name: 'Push-ups',
-      instruction: 'Hands under your shoulders, lower under control, press back up.',
-      position: 1, total: 4, side: 'both', reps: 12,
+  testWidgets('generated movement shows labeled start and finish poses', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(RoutineStepCard(step: _drawnPair, onNext: () {}, onStop: () {})),
     );
-    await tester.pumpWidget(_wrap(RoutineStepCard(step: reps, onNext: () {}, onStop: () {})));
-    expect(find.text('12 reps'), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsNothing,
-        reason: 'only the user knows when reps are done — never auto-advance them');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('routine-ab-poses')), findsOneWidget);
+    expect(find.text('START'), findsOneWidget);
+    expect(find.text('FINISH'), findsOneWidget);
   });
 
-  testWidgets('a timed step shows progress when the cadence is running', (tester) async {
-    await tester.pumpWidget(_wrap(
-        RoutineStepCard(step: _timed, progress: 0.4, onNext: () {}, onStop: () {})));
+  testWidgets('animated catalogue payload is frozen instead of looping', (
+    tester,
+  ) async {
+    const step = RoutineStepView(
+      routineTitle: 'Strength',
+      name: 'Rear delt row',
+      instruction: 'Hinge with control and draw both elbows back.',
+      position: 1,
+      total: 1,
+      side: 'both',
+      reps: 10,
+      imageAsset: 'assets/exercises/dumbbell-rear-delt-row.png',
+    );
+    await tester.pumpWidget(
+      _wrap(RoutineStepCard(step: step, onNext: () {}, onStop: () {})),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(FirstFrameAsset), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
+  });
+
+  testWidgets(
+    'a step with NO illustration is still complete — the words carry it',
+    (tester) async {
+      // ~2/3 of the catalogue has no picture, and a screen-off run has none by definition. A
+      // pictureless step must never look broken or lose information.
+      await tester.pumpWidget(
+        _wrap(RoutineStepCard(step: _timed, onNext: () {}, onStop: () {})),
+      );
+      expect(find.byType(Image), findsNothing);
+      expect(find.text('Cat-cow'), findsOneWidget);
+      expect(find.textContaining('round your back up'), findsOneWidget);
+      expect(find.byKey(const Key('routine-next')), findsOneWidget);
+    },
+  );
+
+  testWidgets('a rep step shows reps and NO progress bar (it waits for you)', (
+    tester,
+  ) async {
+    const reps = RoutineStepView(
+      routineTitle: 'Chest day',
+      name: 'Push-ups',
+      instruction:
+          'Hands under your shoulders, lower under control, press back up.',
+      position: 1,
+      total: 4,
+      side: 'both',
+      reps: 12,
+    );
+    await tester.pumpWidget(
+      _wrap(RoutineStepCard(step: reps, onNext: () {}, onStop: () {})),
+    );
+    expect(find.text('12 reps'), findsOneWidget);
+    expect(
+      find.byType(LinearProgressIndicator),
+      findsNothing,
+      reason:
+          'only the user knows when reps are done — never auto-advance them',
+    );
+  });
+
+  testWidgets('a timed step shows progress when the cadence is running', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        RoutineStepCard(
+          step: _timed,
+          progress: 0.4,
+          onNext: () {},
+          onStop: () {},
+        ),
+      ),
+    );
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
 
-  testWidgets('a one-sided step says which side, in the text you can HEAR', (tester) async {
+  testWidgets('a one-sided step says which side, in the text you can HEAR', (
+    tester,
+  ) async {
     const left = RoutineStepView(
-      routineTitle: 'Low-back loosener', name: 'Hip flexor stretch',
+      routineTitle: 'Low-back loosener',
+      name: 'Hip flexor stretch',
       instruction: 'Sink your hips forward and down.',
-      position: 3, total: 7, side: 'left', durationSeconds: 30,
+      position: 3,
+      total: 7,
+      side: 'left',
+      durationSeconds: 30,
     );
-    await tester.pumpWidget(_wrap(RoutineStepCard(step: left, onNext: () {}, onStop: () {})));
+    await tester.pumpWidget(
+      _wrap(RoutineStepCard(step: left, onNext: () {}, onStop: () {})),
+    );
     expect(find.textContaining('(left side)'), findsOneWidget);
   });
 
-  testWidgets('Next and Stop are real touch targets — hands are busy, voice may not be heard',
-      (tester) async {
-    var next = 0, stop = 0;
-    await tester.pumpWidget(_wrap(
-        RoutineStepCard(step: _timed, onNext: () => next++, onStop: () => stop++)));
-    await tester.tap(find.byKey(const Key('routine-next')));
-    await tester.tap(find.byKey(const Key('routine-stop')));
-    expect(next, 1);
-    expect(stop, 1);
-  });
+  testWidgets(
+    'Next and Stop are real touch targets — hands are busy, voice may not be heard',
+    (tester) async {
+      var next = 0, stop = 0;
+      await tester.pumpWidget(
+        _wrap(
+          RoutineStepCard(
+            step: _timed,
+            onNext: () => next++,
+            onStop: () => stop++,
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const Key('routine-next')));
+      await tester.tap(find.byKey(const Key('routine-stop')));
+      expect(next, 1);
+      expect(stop, 1);
+    },
+  );
 
   testWidgets('a long duration reads as m:ss, not raw seconds', (tester) async {
     const long = RoutineStepView(
-      routineTitle: 'X', name: 'Plank', instruction: 'Hold a straight line from head to heels.',
-      position: 1, total: 2, side: 'both', durationSeconds: 90,
+      routineTitle: 'X',
+      name: 'Plank',
+      instruction: 'Hold a straight line from head to heels.',
+      position: 1,
+      total: 2,
+      side: 'both',
+      durationSeconds: 90,
     );
-    await tester.pumpWidget(_wrap(RoutineStepCard(step: long, onNext: () {}, onStop: () {})));
+    await tester.pumpWidget(
+      _wrap(RoutineStepCard(step: long, onNext: () {}, onStop: () {})),
+    );
     expect(find.text('1:30'), findsOneWidget);
   });
 }

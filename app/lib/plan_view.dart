@@ -4,6 +4,7 @@ import 'package:plenara/planner.dart';
 import 'package:plenara/session.dart';
 
 import 'plenara_theme.dart';
+import 'motion.dart';
 
 class PlanBoard extends StatefulWidget {
   final Session session;
@@ -177,6 +178,11 @@ class _PlanBoardState extends State<PlanBoard> {
   @override
   Widget build(BuildContext context) {
     final projection = _projection;
+    final proposal = widget.session.activePlanProposal;
+    final showProposal =
+        proposal != null &&
+        (proposal.state == PlanProposalState.draft ||
+            proposal.state == PlanProposalState.stale);
     final visibleIds = <String>[];
     final seen = <String>{};
     for (final item in [
@@ -256,23 +262,31 @@ class _PlanBoardState extends State<PlanBoard> {
                       id,
                     ], start: DateTime(day.year, day.month, day.day, 9)),
                   ),
-                  if (widget.session.activePlanProposal case final proposal?
-                      when proposal.state == PlanProposalState.draft ||
-                          proposal.state == PlanProposalState.stale)
-                    _ProposalCard(
-                      proposal: proposal,
-                      busy: _busy,
-                      onSelected: (item, selected) {
-                        widget.session.setProposalItemSelected(
-                          item.taskId,
-                          selected,
-                        );
-                        _refresh();
-                      },
-                      onApply: _applyProposal,
-                      onDismiss: _dismissProposal,
-                      onRefresh: _createProposal,
-                    ),
+                  AnimatedSwitcher(
+                    duration: PlenaraMotion.standard,
+                    switchInCurve: PlenaraMotion.enter,
+                    switchOutCurve: PlenaraMotion.leave,
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
+                    child: showProposal
+                        ? _ProposalCard(
+                            proposal: proposal,
+                            busy: _busy,
+                            onSelected: (item, selected) {
+                              widget.session.setProposalItemSelected(
+                                item.taskId,
+                                selected,
+                              );
+                              _refresh();
+                            },
+                            onApply: _applyProposal,
+                            onDismiss: _dismissProposal,
+                            onRefresh: _createProposal,
+                          )
+                        : const SizedBox.shrink(
+                            key: ValueKey('proposal-empty'),
+                          ),
+                  ),
                   if (_selectedIds.isNotEmpty)
                     _SelectionBar(
                       count: _selectedIds.length,
@@ -452,7 +466,7 @@ class _WeekSelector extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: () => onSelected(item.day),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: PlenaraMotion.quick,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: _sameDay(item.day, selected)
@@ -713,38 +727,39 @@ class _PlanSection extends StatelessWidget {
       children: [
         Text(title, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        if (items.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              empty,
-              style: const TextStyle(color: PlenaraTheme.quietInk),
-            ),
-          )
-        else
-          Card(
-            child: Column(
-              children: [
-                for (var index = 0; index < items.length; index++) ...[
-                  _maybeDraggable(
-                    _PlanRow(
-                      item: items[index],
-                      selected: selectedIds.contains(items[index].id),
-                      onToggle: onToggle,
-                      onComplete: onComplete,
-                      onSchedule: onSchedule,
-                      onEstimate: onEstimate,
-                      onDefer: onDefer,
-                      onRename: onRename,
-                    ),
-                    items[index],
+        Card(
+          child: Column(
+            children: [
+              ContinuityColumn<PlanTaskItem>(
+                key: ValueKey('plan-continuity-$title'),
+                items: items,
+                keyOf: (item) => item.id,
+                separator: const Divider(height: 1, indent: 52),
+                itemBuilder: (context, item) => _maybeDraggable(
+                  _PlanRow(
+                    item: item,
+                    selected: selectedIds.contains(item.id),
+                    onToggle: onToggle,
+                    onComplete: onComplete,
+                    onSchedule: onSchedule,
+                    onEstimate: onEstimate,
+                    onDefer: onDefer,
+                    onRename: onRename,
                   ),
-                  if (index != items.length - 1)
-                    const Divider(height: 1, indent: 52),
-                ],
-              ],
-            ),
+                  item,
+                ),
+              ),
+              if (items.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    empty,
+                    style: const TextStyle(color: PlenaraTheme.quietInk),
+                  ),
+                ),
+            ],
           ),
+        ),
       ],
     ),
   );

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:speech_to_text/speech_to_text.dart';
 
@@ -14,6 +15,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 abstract class SpeechRecognizer {
   Future<void> init();
   bool get available;
+  Stream<double> get levels => const Stream<double>.empty();
 
   /// [onResult] fires with the running transcript; [isFinal] marks the one final transcript for the
   /// session, emitted on [stop] (or a watchdog auto-stop). [onDone] fires when listening ends.
@@ -46,6 +48,9 @@ enum SpeechNotice {
 /// The default when no engine is wired: voice unavailable — mic hidden, typing still works.
 class NoopSpeechRecognizer implements SpeechRecognizer {
   @override
+  Stream<double> get levels => const Stream<double>.empty();
+
+  @override
   Future<void> init() async {}
   @override
   bool get available => false;
@@ -54,8 +59,7 @@ class NoopSpeechRecognizer implements SpeechRecognizer {
     required void Function(String, bool) onResult,
     required void Function() onDone,
     void Function(SpeechNotice)? onNotice,
-  }) async =>
-      onDone();
+  }) async => onDone();
   @override
   Future<void> stop() async {}
   @override
@@ -126,8 +130,15 @@ class CaptureLimits {
 /// owns the language model). Partial results stream live so the input fills as the user talks.
 class SystemSpeechRecognizer implements SpeechRecognizer {
   final SpeechToText _stt = SpeechToText();
-  final void Function(String msg)? onLog; // diagnostics: the raw engine lifecycle
+  final void Function(String msg)?
+  onLog; // diagnostics: the raw engine lifecycle
   bool _ready = false;
+  final _levels = StreamController<double>.broadcast();
+  double _minLevel = double.infinity;
+  double _maxLevel = double.negativeInfinity;
+
+  @override
+  Stream<double> get levels => _levels.stream;
   void Function()? _onDone;
   SystemSpeechRecognizer({this.onLog});
   void _log(String m) => onLog?.call(m);
@@ -178,6 +189,7 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
   Timer? _noSpeechTimer, _silenceTimer, _hintTimer, _capTimer;
   bool _sawSpeech = false;
   void Function(SpeechNotice)? _onNotice;
+
   /// Engine finals accumulated across the session. The OS engine still endpoints on ITS OWN
   /// schedule (SAPI especially self-finalizes at the first end-of-utterance silence and cannot be
   /// told not to). Forwarding those as the session final would mean this platform never got the
@@ -201,7 +213,10 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
     _noSpeechTimer?.cancel();
     _silenceTimer?.cancel();
     _hintTimer?.cancel();
-    _hintTimer = Timer(CaptureLimits.longPauseHint, () => _onNotice?.call(SpeechNotice.longPause));
+    _hintTimer = Timer(
+      CaptureLimits.longPauseHint,
+      () => _onNotice?.call(SpeechNotice.longPause),
+    );
     _silenceTimer = Timer(CaptureLimits.trailingSilence, () {
       _onNotice?.call(SpeechNotice.autoStopped);
       // ignore: discarded_futures
@@ -224,21 +239,35 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
     _emit = onResult;
     _sawSpeech = false;
     _session = SessionTranscript();
+    _minLevel = double.infinity;
+    _maxLevel = double.negativeInfinity;
     _clearTimers();
     _noSpeechTimer = Timer(CaptureLimits.noSpeech, () {
       if (_sawSpeech) return;
       _onNotice?.call(SpeechNotice.autoCancelledNoSpeech);
       cancel(); // nothing was said — nothing to send
     });
-    _capTimer = Timer(Platform.isIOS || Platform.isMacOS ? CaptureLimits.appleSession : CaptureLimits.session, () {
-      _onNotice?.call(SpeechNotice.autoStopped);
-      // ignore: discarded_futures
-      stop();
-    });
+    _capTimer = Timer(
+      Platform.isIOS || Platform.isMacOS
+          ? CaptureLimits.appleSession
+          : CaptureLimits.session,
+      () {
+        _onNotice?.call(SpeechNotice.autoStopped);
+        // ignore: discarded_futures
+        stop();
+      },
+    );
     _log('listen: start');
     final started = DateTime.now();
     try {
       await _stt.listen(
+        onSoundLevelChange: (level) {
+          _minLevel = math.min(_minLevel, level);
+          _maxLevel = math.max(_maxLevel, level);
+          final span = _maxLevel - _minLevel;
+          final normalized = span < .01 ? 0.0 : (level - _minLevel) / span;
+          _levels.add(normalized.clamp(0.0, 1.0));
+        },
         onResult: (r) {
           // STALE-RESULT GUARD (Windows): the plugin's SAPI backend leaves an undelivered final
           // result queued in the recognition context when a session is stopped before the engine
@@ -251,8 +280,10 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
           // would drop real words.
           final age = DateTime.now().difference(started);
           if (Platform.isWindows && age < const Duration(milliseconds: 500)) {
-            _log("result: DISCARDED stale '${r.recognizedWords}' final=${r.finalResult} "
-                '(${age.inMilliseconds}ms after listen start)');
+            _log(
+              "result: DISCARDED stale '${r.recognizedWords}' final=${r.finalResult} "
+              '(${age.inMilliseconds}ms after listen start)',
+            );
             return;
           }
           _log("result: '${r.recognizedWords}' final=${r.finalResult}");
@@ -261,17 +292,26 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
           if (r.finalResult) {
             // An ENGINE final is a segment boundary, not the end of the utterance.
             _session.addFinal(words);
-            onResult(_session.text, false); // shown, never sent — no stop tap yet
+            onResult(
+              _session.text,
+              false,
+            ); // shown, never sent — no stop tap yet
           } else {
-            onResult([_session.text, words].where((w) => w.isNotEmpty).join(' '), false);
+            onResult(
+              [_session.text, words].where((w) => w.isNotEmpty).join(' '),
+              false,
+            );
           }
         },
         listenOptions: SpeechListenOptions(
-          partialResults: true, // stream words as they're recognized (no-op on Windows: the SAPI
+          partialResults:
+              true, // stream words as they're recognized (no-op on Windows: the SAPI
           // backend never registers for hypothesis events, so ONLY finals arrive)
           cancelOnError: true,
           // The session cap, not an endpoint. Apple gets the shorter cap (see CaptureLimits).
-          listenFor: Platform.isIOS || Platform.isMacOS ? CaptureLimits.appleSession : CaptureLimits.session,
+          listenFor: Platform.isIOS || Platform.isMacOS
+              ? CaptureLimits.appleSession
+              : CaptureLimits.session,
           // pauseFor is DELETED, deliberately. It was Apple's auto-endpoint — a Dart timer that
           // ended the session ~2s after the speaker paused — and it is precisely the behavior being
           // removed: it cut off mid-thought and sent half a command. The user now ends the session

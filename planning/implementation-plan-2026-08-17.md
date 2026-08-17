@@ -313,6 +313,11 @@ Plena can reason about a plan without blocking the assistant or silently rewriti
 
 ## Increment 5 — finish the presence, motion, and routine system
 
+**Implementation status (2026-08-17): complete in code and automated evidence.** Human sound-off
+recognition and ordinary-use calibration remain release observations, not substitutes for the
+implemented gates; autonomous verification used only host/widget renderers and a local iPhone
+simulator, never Luis's physical phone.
+
 ### Outcome
 
 The entire product feels authored by the same visual system. Motion explains state change, Plena's expression becomes rarer and more legible, and routines teach movement coherently and accessibly.

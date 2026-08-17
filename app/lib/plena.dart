@@ -12,7 +12,8 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +22,17 @@ import 'glyphs.dart';
 
 /// The four base states of Spec 12 / Spec 15 §3.1. Everything else is a modifier (difficulty).
 enum PresenceState { idle, listening, thinking, speaking }
+
+/// A semantic modifier, separate from turn state. It is both spoken by
+/// accessibility semantics in the host and rendered without relying on hue.
+enum PresenceExpression { neutral, clarification, failure }
+
+/// iOS/Impeller deliberately runs trail-free: its render-to-texture feedback
+/// path has a reproducible native abort. Motion, state, and glyph geometry stay
+/// intact; only persistence is tiered off until Flutter exposes a supported
+/// feedback surface.
+bool presenceTrailEnabled(TargetPlatform platform, {required bool animating}) =>
+    animating && platform != TargetPlatform.iOS;
 
 /// Live aesthetic controls (the mockup's knobs, brought into the app so the feel is tunable
 /// without a rebuild). Defaults are the values dialed in during the mockup pass.
@@ -63,16 +75,18 @@ class PresenceTuning {
 /// The whole contract between "what Plena feels" and "how she looks" (Spec 15 §2.4). Smoothed
 /// toward a per-state target by the director; the renderer only reads it.
 class _Frame {
-  double energy = .10,
-      tempo = 1,
-      coherence = .80,
-      turbulence = .05,
-      luminance = .42,
-      spread = .52,
-      lean = 0,
+  double
+  energy = .10,
+  tempo = 1,
+  coherence = .80,
+  turbulence = .05,
+  luminance = .42,
+  spread = .52,
+  lean = 0,
       // 0 = full-bleed, 1 = eased to the corner (Spec 15 §2.4 veilYield). Driven by the widget,
       // not the per-state target, so a list/prose reply can read beside her.
-      veilYield = 0;
+      veilYield =
+      0;
 }
 
 class _Target {
@@ -110,6 +124,12 @@ class PresenceView extends StatefulWidget {
   final GlyphDef? glyph;
   final int glyphNonce;
   final PresenceTuning tuning;
+  final PresenceExpression expression;
+  final double listeningLevel;
+
+  /// Bump for the sub-300ms whole-body acknowledgement used by everyday
+  /// writes. It replaces a traced symbol, keeping glyphs rare.
+  final int acknowledgementNonce;
 
   /// Ease Plena to a corner (0 = full-bleed, 1 = cornered) so a list/prose reply reads beside her.
   /// She flies there WITHIN the full-bleed canvas — the entity translates + shrinks, the widget
@@ -127,6 +147,9 @@ class PresenceView extends StatefulWidget {
     this.glyph,
     this.glyphNonce = 0,
     this.tuning = const PresenceTuning(),
+    this.expression = PresenceExpression.neutral,
+    this.listeningLevel = 0,
+    this.acknowledgementNonce = 0,
     this.yieldTarget = 0,
     this.yieldAnchor = const Alignment(0.62, -0.58),
   });
@@ -171,7 +194,9 @@ class _PresenceViewState extends State<PresenceView>
   Duration _last = Duration.zero;
   double _acc = 0;
   bool _reduce = false;
-  bool _appHidden = false; // app backgrounded/occluded → suspend the director entirely (Spec 15 §9.1)
+  double _ackMs = 1000;
+  bool _appHidden =
+      false; // app backgrounded/occluded → suspend the director entirely (Spec 15 §9.1)
 
   // ---- Idle suspension (the overnight-balloon guard) ----
   // AppLifecycleState does NOT change when the DISPLAY sleeps: an app left frontmost keeps its
@@ -210,7 +235,9 @@ class _PresenceViewState extends State<PresenceView>
     final hidden = state != AppLifecycleState.resumed;
     if (hidden == _appHidden) return;
     _appHidden = hidden;
-    if (!hidden) _markActive(); // coming back to the foreground counts as activity
+    if (!hidden) {
+      _markActive(); // coming back to the foreground counts as activity
+    }
     _sync(); // start/stop the ticker to match visibility
   }
 
@@ -256,6 +283,9 @@ class _PresenceViewState extends State<PresenceView>
         widget.glyphNonce != old.glyphNonce) {
       _startGlyph(widget.glyph!);
     }
+    if (_animating && widget.acknowledgementNonce != old.acknowledgementNonce) {
+      _ackMs = 0;
+    }
   }
 
   /// Start/stop the ticker to match [_animating]; when static, snap the frame to the current
@@ -291,7 +321,16 @@ class _PresenceViewState extends State<PresenceView>
     _f.luminance = t.luminance;
     _f.spread = t.spread;
     _f.lean = t.lean;
-    _f.veilYield = widget.yieldTarget; // static path: snap straight to the target
+    if (widget.expression == PresenceExpression.clarification) {
+      _f.coherence = (_f.coherence + .06).clamp(0.0, 1.0);
+      _f.lean = -.10;
+    } else if (widget.expression == PresenceExpression.failure) {
+      _f.spread = (_f.spread - .14).clamp(.25, 1.0);
+      _f.luminance = (_f.luminance + .12).clamp(0.0, 1.0);
+      _f.lean = -.18;
+    }
+    _f.veilYield =
+        widget.yieldTarget; // static path: snap straight to the target
     _repaint.value++;
   }
 
@@ -354,7 +393,9 @@ class _PresenceViewState extends State<PresenceView>
         pts.add([p.dx, p.dy, s.delayMs + u * s.drawMs]);
       }
     }
-    if (pts.isEmpty) return; // a glyph with no strokes and no dots — nothing to fly
+    if (pts.isEmpty) {
+      return; // a glyph with no strokes and no dots — nothing to fly
+    }
     pts.sort((a, b) => a[2].compareTo(b[2]));
     final cap = math.min(600, pts.length);
     final run = _GlyphRun();
@@ -419,7 +460,10 @@ class _PresenceViewState extends State<PresenceView>
       _acc -= 1 / 60;
       steps++;
     }
-    _acc = math.min(_acc, 1 / 60); // don't bank time-debt past the step cap (no 4x sprint on recovery)
+    _acc = math.min(
+      _acc,
+      1 / 60,
+    ); // don't bank time-debt past the step cap (no 4x sprint on recovery)
     // repaint only when the sim actually advanced — so on a 120 Hz display the persistence buffer
     // isn't eroded/deposited twice per 60 Hz step (which halved the trail and doubled brightness).
     if (steps > 0) _repaint.value++;
@@ -444,14 +488,41 @@ class _PresenceViewState extends State<PresenceView>
     _f.luminance = lp(_f.luminance, t.luminance, k);
     _f.spread = lp(_f.spread, t.spread, k);
     _f.lean = lp(_f.lean, t.lean, .06);
-    _f.veilYield = lp(_f.veilYield, widget.yieldTarget, .055); // ~600ms ease to/from the corner
+    _f.veilYield = lp(
+      _f.veilYield,
+      widget.yieldTarget,
+      .055,
+    ); // ~600ms ease to/from the corner
+    _ackMs += 1000 / 60;
+    if (_ackMs < 260) {
+      // One compact nod: gather, brighten, then release. The shape change is
+      // deliberately larger than ambient breath so it reads without a glyph.
+      final u = _ackMs / 260;
+      final pulse = math.sin(u * math.pi);
+      _f.energy = (_f.energy + .22 * pulse).clamp(0.0, 1.0);
+      _f.spread = (_f.spread - .10 * pulse).clamp(.25, 1.0);
+      _f.lean += .08 * pulse;
+    }
+    if (widget.expression == PresenceExpression.clarification) {
+      _f.coherence = (_f.coherence + .06).clamp(0.0, 1.0);
+      _f.lean = -.10;
+    } else if (widget.expression == PresenceExpression.failure) {
+      _f.spread = (_f.spread - .14).clamp(.25, 1.0);
+      _f.luminance = (_f.luminance + .12).clamp(0.0, 1.0);
+      _f.lean = -.18;
+    }
     if (_reduce) {
       return; // reduced motion: params settle, motes hold still (Spec 15 §8.3)
     }
-    // Listening shimmer: the STT plugins don't surface live mic level, so a gentle self-driven
-    // flutter stands in — she visibly *hears* while the mic is open (Spec 15 §3.1 listening).
+    // Listening shimmer follows the platform mic meter where it exists, plus
+    // a gentle floor so the state remains alive on engines without a meter.
     if (widget.state == PresenceState.listening) {
-      _f.energy = (_f.energy + .07 * math.sin(_phase * 7) + .04 * math.sin(_phase * 13)).clamp(0.0, 1.0);
+      _f.energy =
+          (_f.energy +
+                  .07 * math.sin(_phase * 7) +
+                  .04 * math.sin(_phase * 13) +
+                  .14 * widget.listeningLevel.clamp(0.0, 1.0))
+              .clamp(0.0, 1.0);
     }
 
     // ---- glyph state machine: Plena flies the path, sheds her tail, flourishes, rejoins ----
@@ -575,7 +646,13 @@ class _PresenceViewState extends State<PresenceView>
     final tn = widget.tuning;
     final hue =
         tn.hue + (214.0 - tn.hue) * math.min(1, widget.difficulty * .22);
-    final sat = (tn.sat * (widget.difficulty >= 4 ? .8 : 1)).clamp(0.0, 1.0);
+    final expressionScale = widget.expression == PresenceExpression.failure
+        ? .68
+        : widget.expression == PresenceExpression.clarification
+        ? .86
+        : 1.0;
+    final sat = (tn.sat * (widget.difficulty >= 4 ? .8 : 1) * expressionScale)
+        .clamp(0.0, 1.0);
     return HSLColor.fromAHSL(1, ((hue % 360) + 360) % 360, sat, .56).toColor();
   }
 
@@ -620,9 +697,13 @@ class _PlenaPainter extends CustomPainter {
     final yt = f.veilYield;
     final a = s.widget.yieldAnchor;
     final scale =
-        mind * 0.58 * tn.breadth * ui.lerpDouble(1.0, 0.34, yt)!; // Breadth, shrunk when cornered
+        mind *
+        0.58 *
+        tn.breadth *
+        ui.lerpDouble(1.0, 0.34, yt)!; // Breadth, shrunk when cornered
     final cx = ui.lerpDouble(w * .5, w * (.5 + a.x * .5), yt)!;
-    final cy = ui.lerpDouble(h * .5, h * (.5 + a.y * .5), yt)! - f.lean * mind * .28;
+    final cy =
+        ui.lerpDouble(h * .5, h * (.5 + a.y * .5), yt)! - f.lean * mind * .28;
     final rgb = s._color;
     final bri = tn.bright;
 
@@ -709,12 +790,14 @@ class _PlenaPainter extends CustomPainter {
     // iOS EXCEPTION (2026-07-14): this per-frame toImageSync feedback loop — a render-to-texture that
     // reads its OWN prior output, then dstOut-erodes it and drawAtlas-adds motes — natively ABORTS the
     // app under Impeller, iOS's only renderer (Skia was removed, so Impeller can't be turned off).
-    // Diagnosed on-device: the app exited the instant the animated presence appeared, with NO Dart
+    // Observed in a historical explicitly deployed dogfood build: the app exited the instant the animated presence appeared, with NO Dart
     // exception (a GPU-side abort, invisible to FlutterError). Until an Impeller-safe persistence path
     // lands, iOS falls to the straight-draw branch below — Plena still animates, just without the
     // trail. Motes move every frame onto a fresh layer, so the stationary-ghosting caveat doesn't bite.
     final noPersistence =
-        !s._animating || w <= 0 || h <= 0 || defaultTargetPlatform == TargetPlatform.iOS;
+        !presenceTrailEnabled(defaultTargetPlatform, animating: s._animating) ||
+        w <= 0 ||
+        h <= 0;
     if (noPersistence) {
       // Static / reduced-motion / iOS-Impeller: no persistence — draw straight to the canvas (else repeated
       // repaints of stationary motes accumulate toward white and ghost prior states, §8.3).
@@ -723,8 +806,15 @@ class _PlenaPainter extends CustomPainter {
       s._tw = 0;
       s._th = 0;
       if (w > 0 && h > 0) {
-        canvas.drawAtlas(sprite, transforms, rects, colors, BlendMode.modulate, null,
-            Paint()..blendMode = BlendMode.plus);
+        canvas.drawAtlas(
+          sprite,
+          transforms,
+          rects,
+          colors,
+          BlendMode.modulate,
+          null,
+          Paint()..blendMode = BlendMode.plus,
+        );
       }
       return;
     }
@@ -748,8 +838,15 @@ class _PlenaPainter extends CustomPainter {
     }
     tc.save();
     tc.scale(bufScale);
-    tc.drawAtlas(sprite, transforms, rects, colors, BlendMode.modulate, null,
-        Paint()..blendMode = BlendMode.plus);
+    tc.drawAtlas(
+      sprite,
+      transforms,
+      rects,
+      colors,
+      BlendMode.modulate,
+      null,
+      Paint()..blendMode = BlendMode.plus,
+    );
     tc.restore();
     final pic = rec.endRecording();
     final next = pic.toImageSync(bw, bh);

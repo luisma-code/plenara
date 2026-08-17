@@ -16,6 +16,9 @@ import 'package:plenara_app/speech.dart';
 import 'package:plenara_app/speech_out.dart';
 
 class _FakeSpeech implements SpeechRecognizer {
+  @override
+  Stream<double> get levels => const Stream<double>.empty();
+
   final bool avail;
   final String? result;
   _FakeSpeech(this.avail, this.result);
@@ -43,6 +46,9 @@ class _FakeSpeech implements SpeechRecognizer {
 
 class _ThrowSpeech implements SpeechRecognizer {
   @override
+  Stream<double> get levels => const Stream<double>.empty();
+
+  @override
   Future<void> init() async {}
   @override
   bool get available => true;
@@ -63,6 +69,10 @@ class _ThrowSpeech implements SpeechRecognizer {
 /// `cancel`/`stop` end the session by firing `onDone` once (as a real engine does), which lets a
 /// test exercise the deliberate-abort guard in `_toggleMic`'s onDone.
 class _HoldingSpeech implements SpeechRecognizer {
+  final _levels = StreamController<double>.broadcast();
+  @override
+  Stream<double> get levels => _levels.stream;
+
   void Function(String, bool)? _onResult;
   void Function()? _onDone;
   bool _active = false;
@@ -84,6 +94,7 @@ class _HoldingSpeech implements SpeechRecognizer {
   void emitPartial(String t) =>
       _onResult?.call(t, false); // interim (non-final)
   void emitFinal(String t) => _onResult?.call(t, true); // final -> auto-send
+  void emitLevel(double value) => _levels.add(value);
 
   void _finish() {
     if (!_active) return;
@@ -664,6 +675,28 @@ void main() {
     },
   );
 
+  testWidgets('platform mic level drives listening presence energy input', (
+    tester,
+  ) async {
+    final speech = _HoldingSpeech();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChatScreen(session: _session(), speech: speech),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('today-voice')));
+    await tester.pump();
+    speech.emitLevel(.8);
+    await tester.pump();
+
+    final presence = tester.widget<PresenceView>(find.byType(PresenceView));
+    expect(presence.state, PresenceState.listening);
+    expect(presence.listeningLevel, .8);
+    await tester.tap(find.byKey(const Key('cancel-listen')));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets(
     'M6 — deliberate ✕-abort never trips the no-audio hint, and clears listening',
     (tester) async {
@@ -777,6 +810,7 @@ void main() {
       final node = tester.getSemantics(find.byType(PresenceView));
       // The a11y label carries Plena's current state name…
       expect(node.label, contains('Plena — ${presence.name}'));
+      expect(node.label, contains('text mode'));
       expect(find.byKey(const Key('today-board')), findsOneWidget);
       handle.dispose();
     },

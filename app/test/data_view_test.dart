@@ -204,6 +204,7 @@ void main() {
       find.byKey(const Key('record-detail')),
       findsOneWidget,
     ); // the detail sheet opened
+    expect(find.byKey(const Key('plena-inline-ember')), findsOneWidget);
     expect(
       find.text('createdAt'),
       findsOneWidget,

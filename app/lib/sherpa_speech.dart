@@ -25,6 +25,9 @@ import 'speech.dart';
 /// If the model files are absent or init fails, [available] is false and the app falls back
 /// (SAPI, then typing).
 class SherpaSpeechRecognizer implements SpeechRecognizer {
+  @override
+  Stream<double> get levels => const Stream<double>.empty();
+
   final String modelDir;
   final void Function(String msg)? onLog;
   SherpaSpeechRecognizer(this.modelDir, {this.onLog});
@@ -41,10 +44,12 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
   void Function(SpeechNotice)? _onNotice;
   bool _listening = false;
   bool _emitted = false;
+
   /// Transcribed text of every VAD segment closed so far this session, in order.
   final List<String> _segments = [];
   Timer? _noSpeechTimer, _silenceTimer, _hintTimer, _capTimer;
   bool _sawSpeech = false;
+
   /// When the currently-open speech segment began — used to force a flush before the VAD's 30s
   /// buffer overflows on one unbroken utterance.
   DateTime? _segmentOpenedAt;
@@ -57,22 +62,45 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
         _log('model dir missing: $modelDir');
         return;
       }
-      final files = dir.listSync().whereType<File>().map((f) => f.path).toList();
+      final files = dir
+          .listSync()
+          .whereType<File>()
+          .map((f) => f.path)
+          .toList();
       String? pick(String kind) {
-        final m = files.where((p) => p.toLowerCase().endsWith('.onnx') && p.toLowerCase().contains(kind)).toList();
+        final m = files
+            .where(
+              (p) =>
+                  p.toLowerCase().endsWith('.onnx') &&
+                  p.toLowerCase().contains(kind),
+            )
+            .toList();
         if (m.isEmpty) return null;
-        final i8 = m.where((p) => p.contains('int8')); // prefer int8 (smaller, ~same accuracy)
+        final i8 = m.where(
+          (p) => p.contains('int8'),
+        ); // prefer int8 (smaller, ~same accuracy)
         return i8.isNotEmpty ? i8.first : m.first;
       }
 
       final encoder = pick('encoder');
       final decoder = pick('decoder');
-      final tokens = files.firstWhere((p) => p.toLowerCase().endsWith('tokens.txt'), orElse: () => '');
+      final tokens = files.firstWhere(
+        (p) => p.toLowerCase().endsWith('tokens.txt'),
+        orElse: () => '',
+      );
       final vadModel = files.firstWhere(
-          (p) => p.toLowerCase().contains('silero') && p.toLowerCase().endsWith('.onnx'),
-          orElse: () => '');
-      if (encoder == null || decoder == null || tokens.isEmpty || vadModel.isEmpty) {
-        _log('model incomplete (enc=$encoder dec=$decoder tok=$tokens vad=$vadModel)');
+        (p) =>
+            p.toLowerCase().contains('silero') &&
+            p.toLowerCase().endsWith('.onnx'),
+        orElse: () => '',
+      );
+      if (encoder == null ||
+          decoder == null ||
+          tokens.isEmpty ||
+          vadModel.isEmpty) {
+        _log(
+          'model incomplete (enc=$encoder dec=$decoder tok=$tokens vad=$vadModel)',
+        );
         return;
       }
 
@@ -80,18 +108,27 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
         sherpa.initBindings();
         _bindingsInited = true;
       }
-      _recognizer = sherpa.OfflineRecognizer(sherpa.OfflineRecognizerConfig(
-        model: sherpa.OfflineModelConfig(
-          whisper: sherpa.OfflineWhisperModelConfig(encoder: encoder, decoder: decoder),
-          tokens: tokens,
-          modelType: 'whisper',
-          numThreads: 2,
-          debug: false,
+      _recognizer = sherpa.OfflineRecognizer(
+        sherpa.OfflineRecognizerConfig(
+          model: sherpa.OfflineModelConfig(
+            whisper: sherpa.OfflineWhisperModelConfig(
+              encoder: encoder,
+              decoder: decoder,
+            ),
+            tokens: tokens,
+            modelType: 'whisper',
+            numThreads: 2,
+            debug: false,
+          ),
         ),
-      ));
+      );
       _vad = sherpa.VoiceActivityDetector(
         config: sherpa.VadModelConfig(
-          sileroVad: sherpa.SileroVadModelConfig(model: vadModel, minSilenceDuration: 0.4, minSpeechDuration: 0.2),
+          sileroVad: sherpa.SileroVadModelConfig(
+            model: vadModel,
+            minSilenceDuration: 0.4,
+            minSpeechDuration: 0.2,
+          ),
           numThreads: 1,
           debug: false,
         ),
@@ -136,11 +173,19 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     _log('listen: start');
     try {
       final audio = await _recorder.startStream(
-          const RecordConfig(encoder: AudioEncoder.pcm16bits, sampleRate: 16000, numChannels: 1));
-      _audioSub = audio.listen(_onAudio, onError: (e) {
-        _log('audio error: $e');
-        _finalize();
-      });
+        const RecordConfig(
+          encoder: AudioEncoder.pcm16bits,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+      );
+      _audioSub = audio.listen(
+        _onAudio,
+        onError: (e) {
+          _log('audio error: $e');
+          _finalize();
+        },
+      );
     } catch (e) {
       _log('startStream failed: $e');
       _finalize();
@@ -205,7 +250,8 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     // chunked rather than lost.
     if (_sawSpeech &&
         _segmentOpenedAt != null &&
-        DateTime.now().difference(_segmentOpenedAt!) > const Duration(seconds: 25)) {
+        DateTime.now().difference(_segmentOpenedAt!) >
+            const Duration(seconds: 25)) {
       vad.flush();
       _segmentOpenedAt = DateTime.now();
     }
@@ -247,7 +293,8 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     _recorder.stop();
     if (flush && !_emitted) {
       if (_vad != null) {
-        _vad!.flush(); // whatever is mid-segment when the user taps stop is still real speech
+        _vad!
+            .flush(); // whatever is mid-segment when the user taps stop is still real speech
         while (!_vad!.isEmpty()) {
           final seg = _vad!.front();
           _vad!.pop();
@@ -279,7 +326,8 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     // ignore: discarded_futures
     _recorder.stop();
     _vad?.clear();
-    _segments.clear(); // discard — a cancel must never leak into the next session's transcript
+    _segments
+        .clear(); // discard — a cancel must never leak into the next session's transcript
     _onDone = null;
   }
 

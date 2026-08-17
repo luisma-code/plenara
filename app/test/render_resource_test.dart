@@ -20,7 +20,27 @@ import 'package:plenara_app/glyphs.dart';
 import 'package:plenara_app/plena.dart';
 
 void main() {
-  const step = Duration(microseconds: 16667); // one 60 Hz substep per pump — deterministic sim
+  const step = Duration(
+    microseconds: 16667,
+  ); // one 60 Hz substep per pump — deterministic sim
+
+  test(
+    'iOS trail-free tier is explicit while supported hosts retain trails',
+    () {
+      expect(
+        presenceTrailEnabled(TargetPlatform.iOS, animating: true),
+        isFalse,
+      );
+      expect(
+        presenceTrailEnabled(TargetPlatform.macOS, animating: true),
+        isTrue,
+      );
+      expect(
+        presenceTrailEnabled(TargetPlatform.macOS, animating: false),
+        isFalse,
+      );
+    },
+  );
 
   testWidgets(
     'animated presence holds bounded live Pictures/Images over sustained frames (no per-frame leak)',
@@ -39,18 +59,23 @@ void main() {
       }
 
       FlutterMemoryAllocations.instance.addListener(listener);
-      addTearDown(() => FlutterMemoryAllocations.instance.removeListener(listener));
+      addTearDown(
+        () => FlutterMemoryAllocations.instance.removeListener(listener),
+      );
 
       Widget host(int nonce) => Directionality(
         textDirection: TextDirection.ltr,
         child: MediaQuery(
-          data: const MediaQueryData(), // disableAnimations=false → the real ticker runs
+          data:
+              const MediaQueryData(), // disableAnimations=false → the real ticker runs
           child: Center(
             child: SizedBox(
               width: 400,
               height: 400,
               child: PresenceView(
-                key: const ValueKey('plena'), // stable → a nonce bump fires a glyph via didUpdate
+                key: const ValueKey(
+                  'plena',
+                ), // stable → a nonce bump fires a glyph via didUpdate
                 state: PresenceState.speaking, // the busiest state
                 glyph: kGlyphs['heart'],
                 glyphNonce: nonce,
@@ -82,12 +107,14 @@ void main() {
       expect(
         livePictures,
         lessThan(8),
-        reason: 'live Pictures=$livePictures (peak $maxPictures) after ~480 frames — per-frame Picture leak?',
+        reason:
+            'live Pictures=$livePictures (peak $maxPictures) after ~480 frames — per-frame Picture leak?',
       );
       expect(
         liveImages,
         lessThan(8),
-        reason: 'live Images=$liveImages (peak $maxImages) after ~480 frames — Image ping-pong leak?',
+        reason:
+            'live Images=$liveImages (peak $maxImages) after ~480 frames — Image ping-pong leak?',
       );
     },
   );
@@ -101,7 +128,9 @@ void main() {
       }
 
       FlutterMemoryAllocations.instance.addListener(listener);
-      addTearDown(() => FlutterMemoryAllocations.instance.removeListener(listener));
+      addTearDown(
+        () => FlutterMemoryAllocations.instance.removeListener(listener),
+      );
 
       await tester.pumpWidget(
         const Directionality(
@@ -121,7 +150,11 @@ void main() {
       for (var i = 0; i < 30; i++) {
         await tester.pump(step);
       }
-      expect(createdPictures, greaterThan(0), reason: 'the visible presence should be churning frames');
+      expect(
+        createdPictures,
+        greaterThan(0),
+        reason: 'the visible presence should be churning frames',
+      );
 
       // Background the app → the director must suspend (the painter only repaints on ticker ticks).
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
@@ -133,7 +166,8 @@ void main() {
       expect(
         createdPictures,
         atPause,
-        reason: 'a hidden app produced ${createdPictures - atPause} new frames — it should render ZERO',
+        reason:
+            'a hidden app produced ${createdPictures - atPause} new frames — it should render ZERO',
       );
 
       // Foreground again → it resumes.
@@ -141,7 +175,11 @@ void main() {
       for (var i = 0; i < 30; i++) {
         await tester.pump(step);
       }
-      expect(createdPictures, greaterThan(atPause), reason: 'resuming should restart the animation');
+      expect(
+        createdPictures,
+        greaterThan(atPause),
+        reason: 'resuming should restart the animation',
+      );
     },
   );
 
@@ -158,7 +196,9 @@ void main() {
       }
 
       FlutterMemoryAllocations.instance.addListener(listener);
-      addTearDown(() => FlutterMemoryAllocations.instance.removeListener(listener));
+      addTearDown(
+        () => FlutterMemoryAllocations.instance.removeListener(listener),
+      );
 
       await tester.pumpWidget(
         const Directionality(
@@ -178,7 +218,11 @@ void main() {
       for (var i = 0; i < 30; i++) {
         await tester.pump(step);
       }
-      expect(createdPictures, greaterThan(0), reason: 'an active presence should be churning frames');
+      expect(
+        createdPictures,
+        greaterThan(0),
+        reason: 'an active presence should be churning frames',
+      );
 
       // No pointer/key input for longer than the idle timeout → she suspends.
       await tester.pump(const Duration(minutes: 4));

@@ -18,6 +18,7 @@ import 'build_channel.dart';
 import 'credential_store.dart';
 import 'data_view.dart';
 import 'glyphs.dart';
+import 'glyph_policy.dart';
 import 'library_home.dart';
 import 'onboarding_view.dart';
 import 'plan_view.dart';
@@ -31,6 +32,7 @@ import 'speech.dart';
 import 'speech_out.dart';
 import 'today_view.dart';
 import 'macos_scheduler.dart';
+import 'motion.dart';
 import 'windows_scheduler.dart';
 
 // Dev fallback seed source. A SHIPPED build installs/upgrades from its BUNDLED assets instead —
@@ -232,8 +234,11 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   SpeechRecognizer? _speech;
   SpeechOutput? _voice; // Plena's talk-back (Spec 12 §6); chosen in _init
   StreamSubscription<OperationRecord>? _operationSub;
+  StreamSubscription<double>? _micLevelSub;
+  double _micLevel = 0;
   bool _voiceMuted =
       false; // mute silences her voice; captions still show (Spec 15 §7)
+  bool _stillPresence = false;
   int _noMatchStreak =
       0; // consecutive tap-to-talks that heard nothing → surface a mic-permission hint
   int _micEpoch =
@@ -273,29 +278,33 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   int _plannerTab =
       0; // Today / Plan / Library, the three primary roots (Spec 17)
   // The glyph Plena should trace next, fired by bumping the nonce (Spec 15 §5A). apt-or-absent:
-  // most turns fire none. A short debounce keeps them from stacking during rapid dogfooding.
+  // most turns fire none. The persistent rarity gate keeps the register scarce across relaunches.
   GlyphDef? _glyph;
   int _glyphNonce = 0, _glyphPreview = 0;
-  DateTime _lastGlyphAt = DateTime.fromMillisecondsSinceEpoch(0);
+  int _acknowledgementNonce = 0;
+  PresenceExpression _expression = PresenceExpression.neutral;
+  late final GlyphRarityGate _glyphGate = GlyphRarityGate(
+    path: widget.configPath == null
+        ? '${defaultDeviceDir()}/glyph-budget.json'
+        : '${File(widget.configPath!).parent.path}/glyph-budget.json',
+  );
   PresenceTuning _tuning =
       const PresenceTuning(); // live aesthetic controls (the tune sheet)
   // Dev harness overrides (the Dev harness sheet): pin the presence state / difficulty so you can
   // watch Plena in any mood without driving a real turn. Null = follow the live turn signals.
   PresenceState? _forceState;
   double? _forceDifficulty;
-  void _fireGlyph(GlyphDef? g, {bool force = false}) {
-    if (g == null) return;
-    final now = DateTime.now();
-    if (!force) {
-      if (now.difference(_lastGlyphAt).inSeconds < 8) return;
-      _lastGlyphAt =
-          now; // only occasion-driven fires debounce; a forced greeting/preview doesn't
-    }
+  bool _fireGlyph(GlyphDef? g, {bool force = false}) {
+    if (g == null) return false;
+    if (!force && !_glyphGate.admit(g.id)) return false;
     setState(() {
       _glyph = g;
       _glyphNonce++;
     });
+    return true;
   }
+
+  void _acknowledge() => setState(() => _acknowledgementNonce++);
 
   /// The tour's "colours" chapter: pin the presence through its palette while Plena narrates it, so
   /// the user SEES what each colour means (the deterministic tour never actually reaches the cloud, so
@@ -379,6 +388,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       final restoredOperations = _session.operations.takeDeliveries();
       _speech =
           await _pickSpeech(); // on-device sherpa if the model's present, else OS SAPI
+      _micLevelSub = _speech?.levels.listen((level) {
+        if (mounted && _listening) setState(() => _micLevel = level);
+      });
       // Talk-back: on-device TTS in production; a fake in tests; Noop under an injected session.
       _voice =
           widget.voice ??
@@ -391,6 +403,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       if (widget.session == null || widget.configPath != null) {
         final cfg = loadConfig(configPath: widget.configPath);
         _voiceMuted = cfg.voiceMuted ?? false;
+        _stillPresence = cfg.stillPresence;
         _micHintsShown =
             cfg.micHintsShown; // the stop-gesture hint decays ACROSS launches
         _session.confirmCloudSpend = cfg.confirmCloudSpend;
@@ -563,7 +576,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     ).hasMatch(s)) {
       Navigator.of(
         context,
-      ).push(MaterialPageRoute(builder: (_) => const SettingsView()));
+      ).push(MaterialPageRoute(builder: (_) => _settingsView()));
       setState(() => _caption = 'Opened settings.');
       _capTimer?.cancel();
       _capTimer = Timer(const Duration(milliseconds: 1600), () {
@@ -573,6 +586,13 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     }
     return false;
   }
+
+  SettingsView _settingsView() => SettingsView(
+    configPath: widget.configPath,
+    onStillPresenceChanged: (value) {
+      if (mounted) setState(() => _stillPresence = value);
+    },
+  );
 
   Future<void> _send() async {
     final t = _ctrl.text.trim();
@@ -589,6 +609,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       _busy = true;
       _deepThink = false;
       _caption = null;
+      _expression = PresenceExpression.neutral;
     });
     // after a beat, a still-running turn reads as "reaching" (D2) — long/cloud work
     _thinkTimer?.cancel();
@@ -645,6 +666,14 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       _displayIsList =
           display.contains('•') ||
           display.split('\n').where((l) => l.trim().isNotEmpty).length > 2;
+      _expression = _session.lastSource == 'clarify'
+          ? PresenceExpression.clarification
+          : RegExp(
+              r"\b(?:couldn't|failed|something went wrong|can't)\b",
+              caseSensitive: false,
+            ).hasMatch(resp)
+          ? PresenceExpression.failure
+          : PresenceExpression.neutral;
     });
     _thinkTimer?.cancel();
     _speakTimer?.cancel();
@@ -686,7 +715,12 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       _speakTimer = Timer(Duration(milliseconds: ms), endSpeak);
     }
     // apt-or-absent: an occasion-appropriate glyph, or nothing (most turns)
-    _fireGlyph(glyphForTurn(_session.lastSkill, resp));
+    final marked = _fireGlyph(glyphForTurn(_session.lastSkill, resp));
+    if (!marked &&
+        _session.lastSkill != null &&
+        _session.lastSource != 'clarify') {
+      _acknowledge();
+    }
     // Tour: each chapter opens with an apt gesture (force past the debounce), and the "colours"
     // capstone drives a live palette demo while Plena describes it.
     final chapter = _session.lastTourChapter;
@@ -735,6 +769,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     // instead of starting a second recognizer session (reviewer d #2).
     setState(() {
       _listening = true;
+      _micLevel = 0;
       _heard = null; // a new utterance supersedes the last "I heard: …"
     });
     _heardTimer?.cancel();
@@ -878,6 +913,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         ?.cancel(); // never leave the recognizer recording after teardown (privacy)
     _voice?.stop(); // don't keep talking after teardown
     _operationSub?.cancel();
+    _micLevelSub?.cancel();
     _speakTimer?.cancel();
     _thinkTimer?.cancel();
     _capTimer?.cancel();
@@ -1227,6 +1263,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       imageAsset: img == null ? null : 'assets/exercises/$img',
       // Fallback tier: only consulted when the catalogue had no illustration for this movement.
       figureSvg: img == null ? step['figureA'] as String? : null,
+      figureSvgB: img == null ? step['figureB'] as String? : null,
     );
   }
 
@@ -1341,6 +1378,17 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         !_busy &&
         !_transcribing &&
         _session.activeRun == null;
+    final systemReducedMotion = MediaQuery.disableAnimationsOf(context);
+    final crossfadeStaticPresence = _stillPresence || systemReducedMotion;
+    final animatePresence =
+        (widget.forceAnimate ?? (widget.session == null)) &&
+        !_stillPresence &&
+        !systemReducedMotion;
+    final presenceMode = _voiceMuted
+        ? 'muted, text mode'
+        : hasStt
+        ? 'voice mode'
+        : 'text mode, microphone unavailable';
 
     return Stack(
       children: [
@@ -1366,17 +1414,30 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
             child: Semantics(
               container: true,
               label:
-                  'Plena — ${_presence.name}${hasContent ? '. ${_caption!}' : ''}',
-              child: PresenceView(
-                state: _presence,
-                difficulty: _difficulty,
-                animate: widget.forceAnimate ?? (widget.session == null),
-                glyph: _glyph,
-                glyphNonce: _glyphNonce,
-                tuning: _tuning,
-                // A list/prose reply eases her to the upper-right corner (within the full-bleed
-                // canvas) so the text reads beside her; a short caption keeps her centered.
-                yieldTarget: (listMode || showPlanner) ? 1 : 0,
+                  'Plena — ${_presence.name}, $presenceMode, ${_expression.name}${hasContent ? '. ${_caption!}' : ''}',
+              child: AnimatedSwitcher(
+                duration: PlenaraMotion.standard,
+                switchInCurve: PlenaraMotion.enter,
+                switchOutCurve: PlenaraMotion.leave,
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+                child: PresenceView(
+                  key: crossfadeStaticPresence
+                      ? ValueKey('still-${_presence.name}-${_expression.name}')
+                      : const ValueKey('continuous-presence'),
+                  state: _presence,
+                  difficulty: _difficulty,
+                  animate: animatePresence,
+                  expression: _expression,
+                  listeningLevel: _micLevel,
+                  acknowledgementNonce: _acknowledgementNonce,
+                  glyph: _glyph,
+                  glyphNonce: _glyphNonce,
+                  tuning: _tuning,
+                  // A list/prose reply eases her to the upper-right corner (within the full-bleed
+                  // canvas) so the text reads beside her; a short caption keeps her centered.
+                  yieldTarget: (listMode || showPlanner) ? 1 : 0,
+                ),
               ),
             ),
           ),
@@ -1449,22 +1510,30 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
               ),
             ),
           ),
-        // The current exchange, materialising over the void
-        if (hasContent)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AnimatedOpacity(
-                opacity: 1,
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeOut,
-                child: _voidText(
-                  _caption!,
-                  list: listMode,
-                  bottomInset: showInput ? 168 : 0,
-                ),
-              ),
+        // The current exchange, materialising over the void. Keep this
+        // transition mounted so clarification and failure text visibly arrives
+        // and resolves instead of teleporting with an `if` branch.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedSwitcher(
+              duration: PlenaraMotion.deliberate,
+              switchInCurve: PlenaraMotion.enter,
+              switchOutCurve: PlenaraMotion.leave,
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: hasContent
+                  ? KeyedSubtree(
+                      key: ValueKey('caption-${_expression.name}-$_caption'),
+                      child: _voidText(
+                        _caption!,
+                        list: listMode,
+                        bottomInset: showInput ? 168 : 0,
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('caption-empty')),
             ),
           ),
+        ),
         // The status line, in the italic "listening" font: "listening…" until your words appear
         // (then the live caption takes over, no overlap); once input ends, "I heard: <what you
         // said>" as a confirmation, until the reply settles.
@@ -1508,8 +1577,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           ),
         // Muted / no-mic → the two-line input box rises from the bottom
         AnimatedPositioned(
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeOut,
+          duration: PlenaraMotion.standard,
+          curve: PlenaraMotion.enter,
           left: 0,
           right: 0,
           bottom: showInput ? (showPlanner ? 78 : 0) : -180,
@@ -1839,7 +1908,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         } else if (v == 'settings') {
           Navigator.of(
             context,
-          ).push(MaterialPageRoute(builder: (_) => const SettingsView()));
+          ).push(MaterialPageRoute(builder: (_) => _settingsView()));
         } else if (v == 'tune') {
           _openTuning();
         } else if (v == 'harness') {

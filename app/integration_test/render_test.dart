@@ -147,10 +147,9 @@ void main() {
         .where((record) => record['typeId'] == 'task')
         .map((record) => '${record['id']}')
         .toList();
-    await session.scheduleTasks(
-      [taskIds.first],
-      DateTime.parse('2026-07-06T10:00:00'),
-    );
+    await session.scheduleTasks([
+      taskIds.first,
+    ], DateTime.parse('2026-07-06T10:00:00'));
     session.createMorningPlan();
     session.createWeeklyReview();
     session.createWeeklyProposal();
@@ -177,9 +176,24 @@ void main() {
       isTrue,
     );
     expect(find.text('Agenda'), findsOneWidget);
-    expect(find.text('Unscheduled'), findsWidgets);
     expect(find.text('write the proposal'), findsOneWidget);
     expect(find.byKey(const Key('plan-proposal')), findsOneWidget);
+    // The proposal card makes the phone plan taller than one viewport. This is
+    // a real scroll surface, so prove the lower section by bringing it into
+    // view instead of assuming every lazy child was built at first paint.
+    if (find.text('Unscheduled').evaluate().isEmpty &&
+        find.byKey(const Key('phone-plan')).evaluate().isNotEmpty) {
+      final planScroll = find
+          .descendant(
+            of: find.byKey(const Key('phone-plan')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final state = tester.state<ScrollableState>(planScroll);
+      state.position.jumpTo(state.position.maxScrollExtent);
+      await runFrames(tester, 3);
+    }
+    expect(find.text('Unscheduled'), findsWidgets);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.text('Library').last);

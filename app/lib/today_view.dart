@@ -7,6 +7,7 @@ import 'package:plenara/session.dart';
 import 'package:plenara/weekly_review.dart';
 
 import 'plenara_theme.dart';
+import 'motion.dart';
 
 class TodayBoard extends StatelessWidget {
   final Session session;
@@ -178,13 +179,13 @@ class TodayBoard extends StatelessWidget {
                       onChanged();
                     },
                   ),
-                if (projection.now.isNotEmpty)
-                  _Section(
-                    title: 'Now',
-                    items: projection.now,
-                    session: session,
-                    onChanged: onChanged,
-                  ),
+                _Section(
+                  title: 'Now',
+                  empty: 'Nothing is underway.',
+                  items: projection.now,
+                  session: session,
+                  onChanged: onChanged,
+                ),
                 for (final operation in session.operations.records.where(
                   (record) =>
                       record.state == OperationState.queued ||
@@ -232,13 +233,13 @@ class TodayBoard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (projection.later.isNotEmpty)
-                  _Section(
-                    title: 'Later this week',
-                    items: projection.later,
-                    session: session,
-                    onChanged: onChanged,
-                  ),
+                _Section(
+                  title: 'Later this week',
+                  empty: 'Nothing waiting later this week.',
+                  items: projection.later,
+                  session: session,
+                  onChanged: onChanged,
+                ),
                 if (projection.relationshipNudge case final nudge?)
                   _RelationshipCard(item: nudge),
                 if (projection.latestChange case final change?)
@@ -490,31 +491,32 @@ class _Section extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 9),
-        if (items.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              empty ?? 'Clear',
-              style: const TextStyle(color: PlenaraTheme.quietInk),
-            ),
-          )
-        else
-          Card(
-            child: Column(
-              children: [
-                for (var index = 0; index < items.length; index++) ...[
-                  _PlannerRow(
-                    item: items[index],
-                    onComplete: items[index].completable
-                        ? () => _complete(context, items[index])
-                        : null,
+        Card(
+          child: Column(
+            children: [
+              ContinuityColumn<PlannerItem>(
+                key: ValueKey('today-continuity-$title'),
+                items: items,
+                keyOf: (item) => item.id,
+                separator: const Divider(height: 1, indent: 54),
+                itemBuilder: (context, item) => _PlannerRow(
+                  item: item,
+                  onComplete: item.completable
+                      ? () => _complete(context, item)
+                      : null,
+                ),
+              ),
+              if (items.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    empty ?? 'Clear',
+                    style: const TextStyle(color: PlenaraTheme.quietInk),
                   ),
-                  if (index != items.length - 1)
-                    const Divider(height: 1, indent: 54),
-                ],
-              ],
-            ),
+                ),
+            ],
           ),
+        ),
       ],
     ),
   );

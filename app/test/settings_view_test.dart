@@ -28,6 +28,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
+      expect(find.byKey(const Key('plena-detail-ember')), findsOneWidget);
       expect(find.widgetWithText(Chip, 'not connected'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField), 'my-byok-key');
@@ -178,6 +179,30 @@ void main() {
     await tester.tap(find.byKey(const Key('free-mode')));
     await tester.pumpAndSettle();
     expect(loadConfig(configPath: path).freeTier, isFalse); // back to paid
+  });
+
+  testWidgets('still presence toggles immediately and persists', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final path = newCfg();
+    bool? changed;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SettingsView(
+          configPath: path,
+          onStillPresenceChanged: (value) => changed = value,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('still-presence')));
+    await tester.pumpAndSettle();
+    expect(loadConfig(configPath: path).stillPresence, isTrue);
+    expect(changed, isTrue);
+    expect(find.textContaining('Still presence on'), findsOneWidget);
   });
 
   testWidgets('Cloud usage shows persisted admission counters', (tester) async {

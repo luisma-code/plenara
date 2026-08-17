@@ -11,7 +11,10 @@
 ///    with a display transform is a cleaner position than distributing a modified copy.
 library;
 
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:plenara/routines.dart' show sanitizeFigure;
 
@@ -21,13 +24,16 @@ class RoutineStepView {
   final int position, total;
   final int? durationSeconds, reps;
   final String side;
+
   /// Bundled asset path for the catalogue illustration, or null.
   final String? imageAsset;
+
   /// A model-drawn stick figure for a movement the catalogue could not illustrate — the fallback
   /// tier (catalogue image > drawn figure > text only). Already sanitised against a strict
   /// render-only allowlist in the engine; stroke colour and width are imposed HERE, never authored,
   /// so every generated figure looks like one product.
   final String? figureSvg;
+  final String? figureSvgB;
   const RoutineStepView({
     required this.routineTitle,
     required this.name,
@@ -39,7 +45,68 @@ class RoutineStepView {
     this.reps,
     this.imageAsset,
     this.figureSvg,
+    this.figureSvgB,
   });
+}
+
+/// Decode only the first frame of an animated catalogue image. The three GIF
+/// payloads are intentionally frozen: an instructional surface must not loop
+/// forever, and Reduce Motion must never depend on the filename extension.
+class FirstFrameAsset extends StatefulWidget {
+  final String asset;
+  const FirstFrameAsset({super.key, required this.asset});
+
+  @override
+  State<FirstFrameAsset> createState() => _FirstFrameAssetState();
+}
+
+class _FirstFrameAssetState extends State<FirstFrameAsset> {
+  ui.Image? _image;
+  int _loadGeneration = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(FirstFrameAsset oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.asset == widget.asset) return;
+    _image?.dispose();
+    _image = null;
+    _load();
+  }
+
+  Future<void> _load() async {
+    final generation = ++_loadGeneration;
+    try {
+      final data = await rootBundle.load(widget.asset);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      codec.dispose();
+      if (!mounted || generation != _loadGeneration) {
+        frame.image.dispose();
+        return;
+      }
+      setState(() => _image = frame.image);
+    } catch (_) {
+      // The spoken/written instruction remains the source of truth.
+    }
+  }
+
+  @override
+  void dispose() {
+    _loadGeneration++;
+    _image?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => _image == null
+      ? const SizedBox.shrink()
+      : RawImage(image: _image, fit: BoxFit.contain);
 }
 
 /// Renders a model-drawn figure. **This is where stroke colour and width are imposed**, and it has
@@ -56,7 +123,11 @@ class RoutineStepView {
 class FigureView extends StatelessWidget {
   final String svg;
   final Color color;
-  const FigureView({super.key, required this.svg, this.color = const Color(0xFFEAE2D8)});
+  const FigureView({
+    super.key,
+    required this.svg,
+    this.color = const Color(0xFFEAE2D8),
+  });
 
   static const _strokeWidth = '2.4';
 
@@ -71,7 +142,8 @@ class FigureView extends StatelessWidget {
     if (safe == null) return '';
     final open = RegExp(r'<svg[^>]*>').firstMatch(safe);
     if (open == null) return '';
-    final hex = '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
+    final hex =
+        '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
     final head = safe.substring(0, open.end);
     final body = safe.substring(open.end, safe.lastIndexOf('</svg>'));
     return '$head<g fill="none" stroke="$hex" stroke-width="$_strokeWidth" '
@@ -81,12 +153,14 @@ class FigureView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final markup = strokedMarkup;
-    if (markup.isEmpty) return const SizedBox.shrink(); // degrade to text, as a missing figure does
+    if (markup.isEmpty) {
+      return const SizedBox.shrink(); // degrade to text, as a missing figure does
+    }
     return SvgPicture.string(
-        markup,
-        fit: BoxFit.contain,
-        placeholderBuilder: (_) => const SizedBox.shrink(),
-      );
+      markup,
+      fit: BoxFit.contain,
+      placeholderBuilder: (_) => const SizedBox.shrink(),
+    );
   }
 }
 
@@ -94,6 +168,7 @@ class RoutineStepCard extends StatelessWidget {
   final RoutineStepView step;
   final VoidCallback onNext;
   final VoidCallback onStop;
+
   /// 0..1 through the current timed step; null for a rep-based step (which waits for you).
   final double? progress;
   const RoutineStepCard({
@@ -107,7 +182,9 @@ class RoutineStepCard extends StatelessWidget {
   String get _amount {
     if (step.durationSeconds != null) {
       final s = step.durationSeconds!;
-      return s < 60 ? '${s}s' : '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+      return s < 60
+          ? '${s}s'
+          : '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
     }
     return step.reps == null ? '' : '${step.reps} reps';
   }
@@ -116,22 +193,53 @@ class RoutineStepCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final img = step.imageAsset;
     final svg = step.figureSvg;
+    final svgB = step.figureSvgB;
+    const animatedCatalogueAssets = {
+      'assets/exercises/dumbbell-rear-delt-row.png',
+      'assets/exercises/dumbbell-wide-bicep-curls.png',
+      'assets/exercises/smith-machine-split-squat.png',
+    };
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(26, 88, 26, 26),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('step ${step.position} of ${step.total} · ${step.routineTitle}'.toUpperCase(),
-                key: const Key('routine-step-header'),
-                style: const TextStyle(
-                    color: Color(0x996F6F85), fontSize: 11, letterSpacing: 1.2)),
+            Text(
+              'step ${step.position} of ${step.total} · ${step.routineTitle}'
+                  .toUpperCase(),
+              key: const Key('routine-step-header'),
+              style: const TextStyle(
+                color: Color(0xFFBDB3A7),
+                fontSize: 11,
+                letterSpacing: 1.2,
+              ),
+            ),
             Expanded(
               child: Center(
                 child: img == null && svg != null
                     // A drawn figure. Rendered by a STATIC rasterizer — flutter_svg executes
                     // nothing — and only after the engine's allowlist has already accepted it.
-                    ? FigureView(svg: svg)
+                    ? svgB == null
+                          ? FigureView(svg: svg)
+                          : Row(
+                              key: const Key('routine-ab-poses'),
+                              children: [
+                                Expanded(
+                                  child: _LabeledPose(
+                                    label: 'Start',
+                                    child: FigureView(svg: svg),
+                                  ),
+                                ),
+                                const SizedBox(width: 18),
+                                Expanded(
+                                  child: _LabeledPose(
+                                    label: 'Finish',
+                                    child: FigureView(svg: svgB),
+                                  ),
+                                ),
+                              ],
+                            )
                     : img != null
                     ? ColorFiltered(
                         // invert() turns the catalogue's dark-on-transparent line art into light
@@ -144,24 +252,39 @@ class RoutineStepCard extends StatelessWidget {
                         ]),
                         // errorBuilder, not an existence check: a missing asset must degrade to
                         // the text-only rendering rather than throw mid-workout.
-                        child: Image.asset(img, fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const SizedBox.shrink()),
+                        child: animatedCatalogueAssets.contains(img)
+                            ? FirstFrameAsset(asset: img)
+                            : Image.asset(
+                                img,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) =>
+                                    const SizedBox.shrink(),
+                              ),
                       )
                     // No illustration for this movement: the words carry it, which they must do
                     // anyway for a screen-off run.
                     : const SizedBox.shrink(),
               ),
             ),
-            Text(step.name,
-                key: const Key('routine-step-name'),
-                style: const TextStyle(
-                    color: Color(0xFFEAE2D8), fontSize: 22, fontWeight: FontWeight.w600)),
+            Text(
+              step.name,
+              key: const Key('routine-step-name'),
+              style: const TextStyle(
+                color: Color(0xFFEAE2D8),
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: 6),
             Text(
               step.side == 'left' || step.side == 'right'
                   ? '${step.instruction}  (${step.side} side)'
                   : step.instruction,
-              style: const TextStyle(color: Color(0xFFA9A9BB), fontSize: 14.5, height: 1.45),
+              style: const TextStyle(
+                color: Color(0xFFA9A9BB),
+                fontSize: 14.5,
+                height: 1.45,
+              ),
             ),
             const SizedBox(height: 18),
             if (progress != null)
@@ -178,29 +301,45 @@ class RoutineStepCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(_amount,
-                    style: const TextStyle(
-                        color: Color(0xFFEAE2D8), fontSize: 16, fontFeatures: [])),
-                Row(children: [
-                  TextButton(
-                    key: const Key('routine-stop'),
-                    onPressed: onStop,
-                    child: const Text('Stop', style: TextStyle(color: Color(0x886F6F85))),
+                Text(
+                  _amount,
+                  style: const TextStyle(
+                    color: Color(0xFFEAE2D8),
+                    fontSize: 16,
+                    fontFeatures: [],
                   ),
-                  const SizedBox(width: 8),
-                  // The touch parallel to saying "next". Tap-anywhere stays the MIC gesture, so
-                  // stepping needs its own target — and the timer means neither is required.
-                  OutlinedButton(
-                    key: const Key('routine-next'),
-                    onPressed: onNext,
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0x33FFFFFF)),
-                      shape: const StadiumBorder(),
-                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                ),
+                Row(
+                  children: [
+                    TextButton(
+                      key: const Key('routine-stop'),
+                      onPressed: onStop,
+                      child: const Text(
+                        'Stop',
+                        style: TextStyle(color: Color(0xFFBDB3A7)),
+                      ),
                     ),
-                    child: const Text('Next', style: TextStyle(color: Color(0xFFEAE2D8))),
-                  ),
-                ]),
+                    const SizedBox(width: 8),
+                    // The touch parallel to saying "next". Tap-anywhere stays the MIC gesture, so
+                    // stepping needs its own target — and the timer means neither is required.
+                    OutlinedButton(
+                      key: const Key('routine-next'),
+                      onPressed: onNext,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0x33FFFFFF)),
+                        shape: const StadiumBorder(),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: const Text(
+                        'Next',
+                        style: TextStyle(color: Color(0xFFEAE2D8)),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ],
@@ -208,4 +347,30 @@ class RoutineStepCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _LabeledPose extends StatelessWidget {
+  final String label;
+  final Widget child;
+  const _LabeledPose({required this.label, required this.child});
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: '$label position',
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Expanded(child: child),
+        const SizedBox(height: 6),
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            color: Color(0xFFBDB3A7),
+            fontSize: 11,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    ),
+  );
 }

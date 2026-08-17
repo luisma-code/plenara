@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:plenara/automations.dart';
 import 'package:plenara/session.dart';
 
+import 'presence_shell.dart';
+
 /// The generic-data portion of Library. Records are grouped by type and each
 /// type renders through an ARCHETYPE chosen from the type's STRUCTURE, not per-type code (Spec 07
 /// §4's no-per-type-UI guarantee). This is a faithful subset of the archetype set.
@@ -167,33 +169,40 @@ class _DataViewState extends State<DataView> {
         title: Text(widget.title),
         backgroundColor: cs.inversePrimary,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Stack(
         children: [
-          if (autos.isNotEmpty) _AutomationsCard(session: session),
-          if (typeIds.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: Center(
-                child: Text(
-                  'Nothing logged yet.\nStart with a task, a run, or a note.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            )
-          else
-            for (final typeId in typeIds)
-              _TypeSection(
-                session: session,
-                typeId: typeId,
-                typeDef: (session.types[typeId] ?? const {})
-                    .cast<String, dynamic>(),
-                records: byType[typeId]!,
-                onComplete: _complete,
-                onEdit: _edit,
-                onDelete: _delete,
-              ),
-          _LearnedPhrasesCard(session: session),
+          Positioned.fill(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 76, 16),
+              children: [
+                if (autos.isNotEmpty) _AutomationsCard(session: session),
+                if (typeIds.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Center(
+                      child: Text(
+                        'Nothing logged yet.\nStart with a task, a run, or a note.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                else
+                  for (final typeId in typeIds)
+                    _TypeSection(
+                      session: session,
+                      typeId: typeId,
+                      typeDef: (session.types[typeId] ?? const {})
+                          .cast<String, dynamic>(),
+                      records: byType[typeId]!,
+                      onComplete: _complete,
+                      onEdit: _edit,
+                      onDelete: _delete,
+                    ),
+                _LearnedPhrasesCard(session: session),
+              ],
+            ),
+          ),
+          PlenaEmber(mode: 'Browsing ${widget.title}.'),
         ],
       ),
     );
@@ -566,10 +575,18 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                (widget.typeDef['displayName'] as String?) ?? widget.typeId,
-                key: const Key('record-detail'),
-                style: Theme.of(context).textTheme.titleLarge,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      (widget.typeDef['displayName'] as String?) ??
+                          widget.typeId,
+                      key: const Key('record-detail'),
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  const PlenaEmberInline(mode: 'Record detail.'),
+                ],
               ),
               const Divider(),
               for (final a in _attrs) _attrRow(context, rec, a),
