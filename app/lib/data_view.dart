@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plenara/automations.dart';
 import 'package:plenara/session.dart';
 
-/// A first slice of Spec 07 — a read-only "Your data" view. Records are grouped by type and each
+/// The generic-data portion of Library. Records are grouped by type and each
 /// type renders through an ARCHETYPE chosen from the type's STRUCTURE, not per-type code (Spec 07
 /// §4's no-per-type-UI guarantee). This is a faithful subset of the archetype set.
 enum Archetype { checklist, personCard, tracker, timeline, collection }
@@ -13,9 +13,14 @@ Archetype archetypeFor(String typeId, Map<String, dynamic> typeDef) {
       .whereType<Map>()
       .map((a) => a.cast<String, dynamic>())
       .toList();
-  bool boolNamed(String n) => attrs.any((a) => a['name'] == n && a['valueType'] == 'boolean');
-  final hasDate = attrs.any((a) => a['valueType'] == 'date' || a['valueType'] == 'datetime');
-  final hasNum = attrs.any((a) => a['valueType'] == 'number' || a['valueType'] == 'decimal');
+  bool boolNamed(String n) =>
+      attrs.any((a) => a['name'] == n && a['valueType'] == 'boolean');
+  final hasDate = attrs.any(
+    (a) => a['valueType'] == 'date' || a['valueType'] == 'datetime',
+  );
+  final hasNum = attrs.any(
+    (a) => a['valueType'] == 'number' || a['valueType'] == 'decimal',
+  );
   if (boolNamed('done') || boolNamed('completed')) return Archetype.checklist;
   if (typeId == 'contact') return Archetype.personCard;
   if (hasDate && hasNum) return Archetype.tracker;
@@ -25,20 +30,40 @@ Archetype archetypeFor(String typeId, Map<String, dynamic> typeDef) {
 
 /// The name of the first date/datetime attribute of a type (the timeline/tracker axis), or null.
 String? _dateField(Map<String, dynamic> typeDef) {
-  for (final a in ((typeDef['attributes'] as List?) ?? const []).whereType<Map>()) {
-    if (a['valueType'] == 'date' || a['valueType'] == 'datetime') return a['name'] as String?;
+  for (final a
+      in ((typeDef['attributes'] as List?) ?? const []).whereType<Map>()) {
+    if (a['valueType'] == 'date' || a['valueType'] == 'datetime') {
+      return a['name'] as String?;
+    }
   }
   return null;
 }
 
 String? _numField(Map<String, dynamic> typeDef) {
-  for (final a in ((typeDef['attributes'] as List?) ?? const []).whereType<Map>()) {
-    if (a['valueType'] == 'number' || a['valueType'] == 'decimal') return a['name'] as String?;
+  for (final a
+      in ((typeDef['attributes'] as List?) ?? const []).whereType<Map>()) {
+    if (a['valueType'] == 'number' || a['valueType'] == 'decimal') {
+      return a['name'] as String?;
+    }
   }
   return null;
 }
 
-const _months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const _months = [
+  '',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 /// Render a field value per its Spec 01 §3 value type (Spec 07's per-value-type treatment):
 /// dates/datetimes as friendly labels, booleans as ✓/✗, tags/lists joined. A null [valueType]
@@ -103,16 +128,18 @@ class _DataViewState extends State<DataView> {
     setState(() {});
     if (r.ok) {
       final token = r.undoId;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(r.message),
-        action: SnackBarAction(
-          label: 'UNDO',
-          onPressed: () async {
-            if (token != null) await session.undoById(token);
-            if (mounted) setState(() {});
-          },
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(r.message),
+          action: SnackBarAction(
+            label: 'UNDO',
+            onPressed: () async {
+              if (token != null) await session.undoById(token);
+              if (mounted) setState(() {});
+            },
+          ),
         ),
-      ));
+      );
     }
   }
 
@@ -127,7 +154,10 @@ class _DataViewState extends State<DataView> {
     final typeIds = byType.keys.toList()..sort();
     final autos = session.automations.statuses;
     return Scaffold(
-      appBar: AppBar(title: const Text('Your data'), backgroundColor: cs.inversePrimary),
+      appBar: AppBar(
+        title: const Text('Library'),
+        backgroundColor: cs.inversePrimary,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -135,14 +165,20 @@ class _DataViewState extends State<DataView> {
           if (typeIds.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 32),
-              child: Center(child: Text('Nothing logged yet.\nStart with a task, a run, or a note.', textAlign: TextAlign.center)),
+              child: Center(
+                child: Text(
+                  'Nothing logged yet.\nStart with a task, a run, or a note.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
             )
           else
             for (final typeId in typeIds)
               _TypeSection(
                 session: session,
                 typeId: typeId,
-                typeDef: (session.types[typeId] ?? const {}).cast<String, dynamic>(),
+                typeDef: (session.types[typeId] ?? const {})
+                    .cast<String, dynamic>(),
                 records: byType[typeId]!,
                 onComplete: _complete,
                 onEdit: _edit,
@@ -162,10 +198,10 @@ class _AutomationsCard extends StatelessWidget {
   const _AutomationsCard({required this.session});
 
   IconData _icon(String state) => switch (state) {
-        'active' => Icons.play_circle,
-        'pending' => Icons.hourglass_empty,
-        _ => Icons.pause_circle_outline, // deferred / inert
-      };
+    'active' => Icons.play_circle,
+    'pending' => Icons.hourglass_empty,
+    _ => Icons.pause_circle_outline, // deferred / inert
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +214,11 @@ class _AutomationsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Automations', key: const Key('automations-card'), style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Automations',
+              key: const Key('automations-card'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const Divider(),
             for (final a in statuses)
               ListTile(
@@ -194,7 +234,9 @@ class _AutomationsCard extends StatelessWidget {
                   dense: true,
                   leading: const Icon(Icons.rule),
                   title: Text('Review: ${p.description}'),
-                  subtitle: const Text('Say "approve it" or "dismiss it" in the chat.'),
+                  subtitle: const Text(
+                    'Say "approve it" or "dismiss it" in the chat.',
+                  ),
                 ),
             ],
           ],
@@ -210,7 +252,8 @@ class _TypeSection extends StatelessWidget {
   final Map<String, dynamic> typeDef;
   final List<Map<String, dynamic>> records;
   final Future<void> Function(String description)? onComplete;
-  final Future<ManualWrite> Function(String id, String field, Object? value) onEdit;
+  final Future<ManualWrite> Function(String id, String field, Object? value)
+  onEdit;
   final Future<void> Function(String id) onDelete;
   const _TypeSection({
     required this.session,
@@ -233,15 +276,17 @@ class _TypeSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Text(title, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(width: 8),
-              Chip(
-                label: Text('${archetype.name} · ${records.length}'),
-                visualDensity: VisualDensity.compact,
-                key: Key('archetype-$typeId'),
-              ),
-            ]),
+            Row(
+              children: [
+                Text(title, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(width: 8),
+                Chip(
+                  label: Text('${archetype.name} · ${records.length}'),
+                  visualDensity: VisualDensity.compact,
+                  key: Key('archetype-$typeId'),
+                ),
+              ],
+            ),
             const Divider(),
             ..._renderBody(context, archetype),
           ],
@@ -257,13 +302,19 @@ class _TypeSection extends StatelessWidget {
           for (final r in records)
             () {
               final done = r['done'] == true || r['completed'] == true;
-              final desc = fmtValue(r['description'] ?? r['title'] ?? r['text']);
+              final desc = fmtValue(
+                r['description'] ?? r['title'] ?? r['text'],
+              );
               return ListTile(
                 dense: true,
                 leading: IconButton(
-                  icon: Icon(done ? Icons.check_circle : Icons.radio_button_unchecked),
+                  icon: Icon(
+                    done ? Icons.check_circle : Icons.radio_button_unchecked,
+                  ),
                   tooltip: done ? 'Done' : 'Mark done',
-                  onPressed: (done || onComplete == null) ? null : () => onComplete!(desc),
+                  onPressed: (done || onComplete == null)
+                      ? null
+                      : () => onComplete!(desc),
                 ),
                 title: Text(desc),
                 onTap: () => _showRecord(context, r),
@@ -277,7 +328,9 @@ class _TypeSection extends StatelessWidget {
               dense: true,
               leading: const CircleAvatar(child: Icon(Icons.person)),
               title: Text(fmtValue(r['displayName'] ?? r['name'])),
-              subtitle: r['aliases'] != null ? Text('aka ${fmtValue(r['aliases'])}') : null,
+              subtitle: r['aliases'] != null
+                  ? Text('aka ${fmtValue(r['aliases'])}')
+                  : null,
               onTap: () => _showRecord(context, r),
             ),
         ];
@@ -287,19 +340,26 @@ class _TypeSection extends StatelessWidget {
         num total = 0;
         for (final r in records) {
           final v = numF == null ? null : r[numF];
-          if (v is num) total += v;
+          final parsed = v is num ? v : num.tryParse('${v ?? ''}');
+          if (parsed != null) total += parsed;
         }
         final sorted = _byDateDesc(records, dateF);
         return [
-          Text('${records.length} entries · total ${_trim(total)}',
-              style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            '${records.length} entries · total ${_trim(total)}',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
           const SizedBox(height: 4),
           for (final r in sorted.take(5))
             ListTile(
               dense: true,
               leading: const Icon(Icons.timeline),
-              title: Text(numF == null ? '—' : renderValue(r[numF], _valueTypes[numF])),
-              trailing: Text(dateF == null ? '' : renderValue(r[dateF], _valueTypes[dateF])),
+              title: Text(
+                numF == null ? '—' : renderValue(r[numF], _valueTypes[numF]),
+              ),
+              trailing: Text(
+                dateF == null ? '' : renderValue(r[dateF], _valueTypes[dateF]),
+              ),
               onTap: () => _showRecord(context, r),
             ),
         ];
@@ -311,7 +371,9 @@ class _TypeSection extends StatelessWidget {
               dense: true,
               leading: const Icon(Icons.schedule),
               title: Text(_summary(r)),
-              trailing: Text(dateF == null ? '' : renderValue(r[dateF], _valueTypes[dateF])),
+              trailing: Text(
+                dateF == null ? '' : renderValue(r[dateF], _valueTypes[dateF]),
+              ),
               onTap: () => _showRecord(context, r),
             ),
         ];
@@ -331,7 +393,8 @@ class _TypeSection extends StatelessWidget {
   /// Field name -> Spec 01 §3 value type, from the type definition (for per-type rendering).
   Map<String, String> get _valueTypes {
     final out = <String, String>{};
-    for (final a in ((typeDef['attributes'] as List?) ?? const []).whereType<Map>()) {
+    for (final a
+        in ((typeDef['attributes'] as List?) ?? const []).whereType<Map>()) {
       final n = a['name'], vt = a['valueType'];
       if (n is String && vt is String) out[n] = vt;
     }
@@ -343,7 +406,15 @@ class _TypeSection extends StatelessWidget {
     final vt = _valueTypes;
     final parts = <String>[];
     for (final e in r.entries) {
-      if (const {'id', 'typeId', 'schemaVersion', '_schemaVersion', '_meta'}.contains(e.key)) continue;
+      if (const {
+        'id',
+        'typeId',
+        'schemaVersion',
+        '_schemaVersion',
+        '_meta',
+      }.contains(e.key)) {
+        continue;
+      }
       if (e.value == null) continue;
       parts.add('${e.key}: ${renderValue(e.value, vt[e.key])}');
     }
@@ -366,17 +437,29 @@ class _TypeSection extends StatelessWidget {
     );
   }
 
-  List<Map<String, dynamic>> _byDateDesc(List<Map<String, dynamic>> rs, String? dateF) {
+  List<Map<String, dynamic>> _byDateDesc(
+    List<Map<String, dynamic>> rs,
+    String? dateF,
+  ) {
     if (dateF == null) return rs;
     final copy = [...rs];
-    copy.sort((a, b) => '${b[dateF]}'.compareTo('${a[dateF]}')); // ISO strings sort lexically
+    copy.sort(
+      (a, b) => '${b[dateF]}'.compareTo('${a[dateF]}'),
+    ); // ISO strings sort lexically
     return copy;
   }
 
-  String _trim(num n) => n == n.roundToDouble() ? n.toInt().toString() : n.toString();
+  String _trim(num n) =>
+      n == n.roundToDouble() ? n.toInt().toString() : n.toString();
 }
 
-const _plumbingFields = {'id', 'typeId', 'schemaVersion', '_schemaVersion', '_meta'};
+const _plumbingFields = {
+  'id',
+  'typeId',
+  'schemaVersion',
+  '_schemaVersion',
+  '_meta',
+};
 
 /// An editable record detail sheet (Spec 07 §5.5 tap-to-edit — a reading page, NOT a form: each
 /// value edits in place and commits on its own, one journal entry per field). Reads the live record
@@ -387,7 +470,8 @@ class _RecordDetailSheet extends StatefulWidget {
   final String typeId;
   final Map<String, dynamic> typeDef;
   final String recordId;
-  final Future<ManualWrite> Function(String id, String field, Object? value) onEdit;
+  final Future<ManualWrite> Function(String id, String field, Object? value)
+  onEdit;
   final Future<void> Function(String id) onDelete;
   const _RecordDetailSheet({
     required this.session,
@@ -402,9 +486,12 @@ class _RecordDetailSheet extends StatefulWidget {
 }
 
 class _RecordDetailSheetState extends State<_RecordDetailSheet> {
-  String? _editing; // the attribute name currently in edit mode (text/number only)
-  String? _error; // inline validation failure for the editing row (shown IN the sheet, not behind it)
-  bool _committing = false; // in-flight guard so a double-tap doesn't write twice (two journal entries)
+  String?
+  _editing; // the attribute name currently in edit mode (text/number only)
+  String?
+  _error; // inline validation failure for the editing row (shown IN the sheet, not behind it)
+  bool _committing =
+      false; // in-flight guard so a double-tap doesn't write twice (two journal entries)
   final _ctrl = TextEditingController();
 
   @override
@@ -413,10 +500,11 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> get _attrs => ((widget.typeDef['attributes'] as List?) ?? const [])
-      .whereType<Map>()
-      .map((a) => a.cast<String, dynamic>())
-      .toList();
+  List<Map<String, dynamic>> get _attrs =>
+      ((widget.typeDef['attributes'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((a) => a.cast<String, dynamic>())
+          .toList();
 
   Future<void> _commit(String field, Object? value) async {
     if (_committing) return;
@@ -445,28 +533,46 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
     final cs = Theme.of(context).colorScheme;
     if (rec == null) {
       // deleted out from under the sheet (e.g. via undo of a create) — close it cleanly.
-      return const SafeArea(child: Padding(padding: EdgeInsets.all(24), child: Text('This record is gone.')));
+      return const SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text('This record is gone.'),
+        ),
+      );
     }
     final schemaNames = _attrs.map((a) => a['name'] as String).toSet();
-    final extraKeys = rec.keys.where((k) => !_plumbingFields.contains(k) && !schemaNames.contains(k)).toList();
+    final extraKeys = rec.keys
+        .where((k) => !_plumbingFields.contains(k) && !schemaNames.contains(k))
+        .toList();
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
-          left: 16, right: 16, top: 16, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text((widget.typeDef['displayName'] as String?) ?? widget.typeId,
-                  key: const Key('record-detail'), style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                (widget.typeDef['displayName'] as String?) ?? widget.typeId,
+                key: const Key('record-detail'),
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const Divider(),
               for (final a in _attrs) _attrRow(context, rec, a),
               if (extraKeys.isNotEmpty) ...[
                 const Divider(),
                 for (final k in extraKeys)
                   if (rec[k] != null)
-                    ListTile(dense: true, title: Text(k), trailing: Text(renderValue(rec[k], null))),
+                    ListTile(
+                      dense: true,
+                      title: Text(k),
+                      trailing: Text(renderValue(rec[k], null)),
+                    ),
               ],
               const SizedBox(height: 8),
               Align(
@@ -488,7 +594,11 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
     );
   }
 
-  Widget _attrRow(BuildContext context, Map<String, dynamic> rec, Map<String, dynamic> attr) {
+  Widget _attrRow(
+    BuildContext context,
+    Map<String, dynamic> rec,
+    Map<String, dynamic> attr,
+  ) {
     final name = attr['name'] as String;
     final vt = attr['valueType'] as String? ?? 'text';
     final value = rec[name];
@@ -496,7 +606,11 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
     // json — a structured value; NOT hand-editable in a text field (Spec 07 §5 "voice/skill only").
     // Show it read-only rather than let a raw TextField stringify a Map into garbage.
     if (vt == 'json') {
-      return ListTile(dense: true, title: Text(name), trailing: Text(renderValue(value, vt)));
+      return ListTile(
+        dense: true,
+        title: Text(name),
+        trailing: Text(renderValue(value, vt)),
+      );
     }
 
     // boolean — the row IS the toggle; each tap commits a flip.
@@ -530,8 +644,14 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
               child: TextField(
                 controller: _ctrl,
                 autofocus: true,
-                keyboardType: isNum ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
-                decoration: InputDecoration(labelText: name, isDense: true, errorText: _error),
+                keyboardType: isNum
+                    ? const TextInputType.numberWithOptions(decimal: true)
+                    : TextInputType.text,
+                decoration: InputDecoration(
+                  labelText: name,
+                  isDense: true,
+                  errorText: _error,
+                ),
                 onSubmitted: (t) => _commit(name, t),
               ),
             ),
@@ -557,12 +677,17 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
       title: Text(name),
       trailing: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 200),
-        child: Text(renderValue(value, vt),
-            textAlign: TextAlign.end, overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+        child: Text(
+          renderValue(value, vt),
+          textAlign: TextAlign.end,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+        ),
       ),
       onTap: () {
-        _ctrl.text = value is List ? value.join(', ') : (value?.toString() ?? '');
+        _ctrl.text = value is List
+            ? value.join(', ')
+            : (value?.toString() ?? '');
         setState(() {
           _editing = name;
           _error = null;
@@ -587,12 +712,24 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
     );
     if (d == null || !mounted) return;
     if (vt == 'date') {
-      await _commit(name, '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}');
+      await _commit(
+        name,
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+      );
       return;
     }
-    final t = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(seed));
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(seed),
+    );
     if (!mounted) return;
-    final dt = DateTime(d.year, d.month, d.day, t?.hour ?? seed.hour, t?.minute ?? seed.minute);
+    final dt = DateTime(
+      d.year,
+      d.month,
+      d.day,
+      t?.hour ?? seed.hour,
+      t?.minute ?? seed.minute,
+    );
     await _commit(name, dt.toIso8601String());
   }
 }
@@ -636,16 +773,20 @@ class _LearnedPhrasesCardState extends State<_LearnedPhrasesCard> {
     final raw = widget.session.forgetLearnedFlow(f.template);
     setState(() {});
     if (raw != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text("Forgotten — Plena won't recognize that phrasing."),
-        action: SnackBarAction(
-          label: 'UNDO',
-          onPressed: () {
-            widget.session.restoreLearnedFlow(raw);
-            if (mounted) setState(() {});
-          },
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            "Forgotten — Plena won't recognize that phrasing.",
+          ),
+          action: SnackBarAction(
+            label: 'UNDO',
+            onPressed: () {
+              widget.session.restoreLearnedFlow(raw);
+              if (mounted) setState(() {});
+            },
+          ),
         ),
-      ));
+      );
     }
   }
 
@@ -660,13 +801,22 @@ class _LearnedPhrasesCardState extends State<_LearnedPhrasesCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Learned phrases', key: const Key('learned-phrases-card'), style: tt.titleMedium),
-            Text('Ways of saying things Plena has picked up from you.', style: tt.bodySmall),
+            Text(
+              'Learned phrases',
+              key: const Key('learned-phrases-card'),
+              style: tt.titleMedium,
+            ),
+            Text(
+              'Ways of saying things Plena has picked up from you.',
+              style: tt.bodySmall,
+            ),
             const Divider(),
             if (flows.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text('Nothing yet — Plena learns your phrasings as you talk (and when you correct her).'),
+                child: Text(
+                  'Nothing yet — Plena learns your phrasings as you talk (and when you correct her).',
+                ),
               )
             else
               for (final f in flows)

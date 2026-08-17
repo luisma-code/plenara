@@ -17,7 +17,8 @@ final _now = DateTime.parse('2026-07-06T09:00:00');
 final _skills = loadDefs('data/skills', 'skillId');
 ReplayCloud _cloud() => ReplayCloud.load('test/fixtures/cloud.json');
 // unwrap a replayed result — the cassette holds only genuine (Ok) answers.
-Map<String, dynamic>? _ok(CloudResult<Map<String, dynamic>?> r) => (r as CloudOk<Map<String, dynamic>?>).value;
+Map<String, dynamic>? _ok(CloudResult<Map<String, dynamic>?> r) =>
+    (r as CloudOk<Map<String, dynamic>?>).value;
 
 void main() {
   group('replay — residual routing matches recorded Haiku (in-domain)', () {
@@ -36,7 +37,8 @@ void main() {
   group('replay — out-of-domain: Haiku abstains (null)', () {
     for (final u in outOfDomainUtterances) {
       test('"$u" -> null (abstain)', () async {
-        expect(_ok(await _cloud().routeResidual(u, _skills)), isNull, reason: u);
+        expect(_ok(await _cloud().routeResidual(u, _skills)), isNull,
+            reason: u);
       });
     }
   });
@@ -46,20 +48,28 @@ void main() {
   // capability. Driving the loop (not just the raw first attempt) matches production:
   // a first-attempt out-of-vocab fn is corrected on the recorded retry, so this catches
   // genuine drift without flaking on Haiku's first-shot imperfections.
-  group('replay — authoring previews then activates a valid capability for every description', () {
+  group(
+      'replay — authoring previews then activates a valid capability for every description',
+      () {
     for (final desc in authoringDescriptions) {
-      test('"start tracking $desc" previews, then "activate" registers it', () async {
+      test('"start tracking $desc" previews, then "activate" registers it',
+          () async {
         final s = Session(makeTempDataDir(), clock: _now, cloud: _cloud());
         await s.init(retrieval: false);
-        s.confirmCloudSpend = true; // this group is ABOUT the DF-01 paid offer, now opt-in
+        s.confirmCloudSpend =
+            true; // this group is ABOUT the DF-01 paid offer, now opt-in
         final before = s.skills.length;
-        expect((await s.handle('start tracking $desc')).toLowerCase(), contains('want me to go ahead'),
+        expect((await s.handle('start tracking $desc')).toLowerCase(),
+            contains('want me to go ahead'),
             reason: '"$desc" DF-01 offer'); // no cloud spent until yes
         final preview = await s.handle('yes');
-        expect(preview.toLowerCase(), contains('activate'), reason: '"$desc": $preview');
-        expect(s.skills.length, before, reason: 'nothing registered until activate ($desc)');
+        expect(preview.toLowerCase(), contains('activate'),
+            reason: '"$desc": $preview');
+        expect(s.skills.length, before,
+            reason: 'nothing registered until activate ($desc)');
         final added = await s.handle('activate');
-        expect(added.toLowerCase(), contains('learned it'), reason: '"$desc": $added');
+        expect(added.toLowerCase(), contains('learned it'),
+            reason: '"$desc": $added');
         expect(added.toLowerCase(), contains('is that what you wanted'),
             reason: 'activation must SAY what changed and check');
         expect(s.skills.length, before + 1);
@@ -67,25 +77,32 @@ void main() {
     }
   });
 
-  group('replay through Session — cloud route -> execute -> LEARN (§13 ratchet)', () {
+  group(
+      'replay through Session — cloud route -> execute -> LEARN (§13 ratchet)',
+      () {
     late String dir;
     setUp(() => dir = makeTempDataDir());
 
-    test('novel task phrasing: routes via cloud, creates the task, and learns it', () async {
+    test(
+        'novel task phrasing: routes via cloud, creates the task, and learns it',
+        () async {
       final s = Session(dir, clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
-      s.confirmCloudSpend = true; // this test is ABOUT the paid-confirm offer, now opt-in
+      s.confirmCloudSpend =
+          true; // this test is ABOUT the paid-confirm offer, now opt-in
       const u = 'jot down that I need to buy milk';
       expect(s.router.route(u), isNull, reason: 'corpus should miss first');
       final resp = await s.handle(u);
       expect(resp.toLowerCase(), contains('buy milk'));
       expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
       final learned = s.router.route(u);
-      expect(learned, isNotNull, reason: 'phrasing should be learned into the corpus');
+      expect(learned, isNotNull,
+          reason: 'phrasing should be learned into the corpus');
       expect(learned!['source'], 'corpus');
     });
 
-    test('every in-domain novel phrasing executes the right downstream write', () async {
+    test('every in-domain novel phrasing executes the right downstream write',
+        () async {
       // create-task and log-* variants all flow route->execute with no mis-action
       for (final entry in {
         'create-task': ('put emailing the accountant on my to-do list', 'task'),
@@ -96,7 +113,8 @@ void main() {
         final s = Session(d, clock: _now, cloud: _cloud());
         await s.init(retrieval: false);
         await s.handle(entry.value.$1);
-        final written = s.store.values.where((r) => r['typeId'] == entry.value.$2).toList();
+        final written =
+            s.store.values.where((r) => r['typeId'] == entry.value.$2).toList();
         expect(written.length, 1, reason: '${entry.key}: ${entry.value.$1}');
       }
     });
@@ -104,60 +122,86 @@ void main() {
     test('log-run cloud path extracts the distance', () async {
       final s = Session(dir, clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
-      s.confirmCloudSpend = true; // this test is ABOUT the paid-confirm offer, now opt-in
+      s.confirmCloudSpend =
+          true; // this test is ABOUT the paid-confirm offer, now opt-in
       final resp = await s.handle('I did a 6k jog this morning');
       expect(resp.toLowerCase(), contains('run'));
-      final runs = s.store.values.where((r) => r['typeId'] == 'workout').toList();
+      final runs =
+          s.store.values.where((r) => r['typeId'] == 'workout').toList();
       expect(runs.length, 1);
       expect(runs.first['distance'].toString(), '6');
     });
   });
 
   group('replay through Session — corpus-learning NEGATIVE half (§5.2)', () {
-    test('a correction forgets the learned template that routed the corrected turn', () async {
+    test(
+        'a correction forgets the learned template that routed the corrected turn',
+        () async {
       final s = Session(makeTempDataDir(), clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
-      s.confirmCloudSpend = true; // this test is ABOUT the paid-confirm offer, now opt-in
-      await s.handle('jot down that I need to buy milk'); // cloud routes + learns a template
+      s.confirmCloudSpend =
+          true; // this test is ABOUT the paid-confirm offer, now opt-in
+      await s.handle(
+          'jot down that I need to buy milk'); // cloud routes + learns a template
       // Capture WHATEVER was learned rather than hardcoding the surface: the template comes from
       // the cloud's own suggestion, so its exact casing/wording moves when fixtures are re-recorded.
       // The behaviour under test is learn-then-forget, not the string.
-      final learned = s.router.corpus.map((c) => c.template).where(s.router.isLearned).toList();
-      expect(learned, hasLength(1), reason: 'the cloud-routed turn should learn exactly one template');
+      final learned = s.router.corpus
+          .map((c) => c.template)
+          .where(s.router.isLearned)
+          .toList();
+      expect(learned, hasLength(1),
+          reason: 'the cloud-routed turn should learn exactly one template');
       final t = learned.single;
-      expect(t, contains('{description:text}')); // a SHAPE was abstracted, not a stored value
-      await s.handle('jot down that I need to sweep'); // corpus routes via the learned t
+      expect(
+          t,
+          contains(
+              '{description:text}')); // a SHAPE was abstracted, not a stored value
+      await s.handle(
+          'jot down that I need to sweep'); // corpus routes via the learned t
       await s.handle('no, I meant to log a 3k run'); // correction -> forgets t
       expect(s.router.isLearned(t), isFalse);
-      expect(s.router.route('jot down that I need to vacuum'), isNull); // t is gone from routing
+      expect(s.router.route('jot down that I need to vacuum'),
+          isNull); // t is gone from routing
     });
   });
 
-  group('replay through Session — authoring activates a working capability', () {
-    test('an authored capability previews, then "activate" registers + persists its files', () async {
+  group('replay through Session — authoring activates a working capability',
+      () {
+    test(
+        'an authored capability previews, then "activate" registers + persists its files',
+        () async {
       final dir = makeTempDataDir();
       final s = Session(dir, clock: _now, cloud: _cloud());
       await s.init(retrieval: false);
-      s.confirmCloudSpend = true; // this test is ABOUT the paid-confirm offer, now opt-in
+      s.confirmCloudSpend =
+          true; // this test is ABOUT the paid-confirm offer, now opt-in
       final beforeSkills = s.skills.keys.toSet();
-      await s.handle('start tracking coffee cups per day'); // no template -> DF-01 offer
+      await s.handle(
+          'start tracking coffee cups per day'); // no template -> DF-01 offer
       final preview = await s.handle('yes'); // accept -> authors
       expect(preview.toLowerCase(), contains('activate'));
-      expect(s.skills.keys.toSet(), beforeSkills, reason: 'nothing registered until activate');
+      expect(s.skills.keys.toSet(), beforeSkills,
+          reason: 'nothing registered until activate');
       final added = await s.handle('activate');
       expect(added.toLowerCase(), contains('learned it'));
       // the authored id is model-chosen (varies across re-records) — find the new skill and
       // assert its DECLARED write-type was registered + persisted, not a hardcoded name.
       final newSkill = s.skills.keys.toSet().difference(beforeSkills).single;
       expect(File('$dir/skills/$newSkill.json').existsSync(), isTrue);
-      final authoredType = (s.skills[newSkill]!['writes'] as List).first as String;
+      final authoredType =
+          (s.skills[newSkill]!['writes'] as List).first as String;
       expect(s.types.containsKey(authoredType), isTrue);
       expect(File('$dir/types/$authoredType.json').existsSync(), isTrue);
     });
   });
 
   group('replay through Session — EVERY in-domain fixture routes AND acts', () {
-    const expectedWrite = {'create-task': 'task', 'log-run': 'workout', 'log-mood': 'mood'};
+    const expectedWrite = {
+      'create-task': 'task',
+      'log-run': 'workout',
+      'log-mood': 'mood'
+    };
     residualBySkill.forEach((skillId, utterances) {
       for (final u in utterances) {
         test('"$u" -> $skillId', () async {
@@ -166,14 +210,29 @@ void main() {
           final resp = await s.handle(u);
           expect(resp, isNotEmpty);
           if (expectedWrite.containsKey(skillId)) {
-            final w = s.store.values.where((r) => r['typeId'] == expectedWrite[skillId]).toList();
-            expect(w.length, 1, reason: '$u should write one ${expectedWrite[skillId]}');
-            // every written string slot is real text, never a leaked sentinel
-            for (final v in w.single.values) {
-              if (v is String) expect(v.toLowerCase(), isNot('none'));
+            final w = s.store.values
+                .where((r) => r['typeId'] == expectedWrite[skillId])
+                .toList();
+            expect(w.length, 1,
+                reason: '$u should write one ${expectedWrite[skillId]}');
+            // Every written free-text slot is real text, never a leaked cloud
+            // sentinel. A declared enum may legitimately contain "none" (task
+            // priority does), so validate by schema meaning rather than string.
+            final attributes = <String, Map>{
+              for (final attribute
+                  in (s.types[w.single['typeId']]!['attributes'] as List)
+                      .whereType<Map>())
+                '${attribute['name']}': attribute,
+            };
+            for (final entry in w.single.entries) {
+              if (entry.value is String &&
+                  attributes[entry.key]?['valueType'] == 'text') {
+                expect((entry.value as String).toLowerCase(), isNot('none'));
+              }
             }
           } else {
-            expect(s.store, isEmpty, reason: '$u is a read-only skill and must not write');
+            expect(s.store, isEmpty,
+                reason: '$u is a read-only skill and must not write');
           }
         });
       }
@@ -188,8 +247,10 @@ void main() {
         await s.init(retrieval: false);
         final resp = await s.handle(u);
         expect(s.store.isEmpty, isTrue, reason: 'OOD must not write');
-        expect(resp.toLowerCase(),
-            anyOf(contains('not sure'), contains("didn't catch"), contains("don't have"), contains('outside what')));
+        expect(
+            resp.toLowerCase(),
+            anyOf(contains('not sure'), contains("didn't catch"),
+                contains("don't have"), contains('outside what')));
       });
     }
   });

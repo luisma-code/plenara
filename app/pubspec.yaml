@@ -63,6 +63,8 @@ dependency_overrides:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Deterministic Plena-derived platform icon generation and pixel-level checks.
+  image: ^4.8.0
   # Real-device (real engine/GPU) tests — the ONLY place the animated presence + comet-trail
   # offscreen buffer (toImageSync) actually rasterizes. Headless flutter_test can't fault there,
   # which is how the list-reply raster crash slipped through. See integration_test/.

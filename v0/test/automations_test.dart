@@ -20,10 +20,14 @@ final _now = DateTime.parse('2026-07-06T09:00:00'); // a Monday, 09:00
 /// Cloud that must never be hit (all flows here are corpus/offline).
 class _NoCloud implements CloudClient {
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
-      throw StateError('cloud hit for "$u" — automation flows must be pure corpus');
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
+          String u, Map<String, Map<String, dynamic>> s,
+          {Set<String> knownContacts = const {}}) async =>
+      throw StateError(
+          'cloud hit for "$u" — automation flows must be pure corpus');
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d,
+          {String? priorError}) async =>
       throw StateError('cloud authoring hit — unexpected');
   @override
   Future<CloudResult<String>> generate(String kind, String context) async =>
@@ -45,7 +49,12 @@ final Map<String, Map<String, dynamic>> _types = {
     'typeId': 'task',
     'attributes': [
       {'name': 'description', 'valueType': 'text', 'required': true},
-      {'name': 'completed', 'valueType': 'boolean', 'required': false, 'default': false},
+      {
+        'name': 'completed',
+        'valueType': 'boolean',
+        'required': false,
+        'default': false
+      },
       {'name': 'createdAt', 'valueType': 'date', 'required': true},
     ],
   },
@@ -63,8 +72,19 @@ Map<String, dynamic> _summarySkill() => {
       'steps': {
         'main': [
           {'op': 'read_many', 'typeId': 'workout', 'into': 'ws'},
-          {'op': 'compute', 'fn': 'count', 'args': [{'var': 'ws'}], 'into': 'n'},
-          {'op': 'format', 'template': 'You have {n} workout(s) logged.', 'into': 'confirmationText'},
+          {
+            'op': 'compute',
+            'fn': 'count',
+            'args': [
+              {'var': 'ws'}
+            ],
+            'into': 'n'
+          },
+          {
+            'op': 'format',
+            'template': 'You have {n} workout(s) logged.',
+            'into': 'confirmationText'
+          },
         ]
       },
     };
@@ -79,16 +99,38 @@ Map<String, dynamic> _followupSkill() => {
       'steps': {
         'main': [
           {'op': 'read_many', 'typeId': 'workout', 'into': 'ws'},
-          {'op': 'compute', 'fn': 'count', 'args': [{'var': 'ws'}], 'into': 'n'},
-          {'op': 'compute', 'fn': 'concat', 'args': ['Stretch — workout #', {'var': 'n'}], 'into': 'desc'},
+          {
+            'op': 'compute',
+            'fn': 'count',
+            'args': [
+              {'var': 'ws'}
+            ],
+            'into': 'n'
+          },
+          {
+            'op': 'compute',
+            'fn': 'concat',
+            'args': [
+              'Stretch — workout #',
+              {'var': 'n'}
+            ],
+            'into': 'desc'
+          },
           {'op': 'compute', 'fn': 'today', 'into': 'td'},
           {
             'op': 'write_record',
             'typeId': 'task',
-            'fields': {'description': {'var': 'desc'}, 'createdAt': {'var': 'td'}},
+            'fields': {
+              'description': {'var': 'desc'},
+              'createdAt': {'var': 'td'}
+            },
             'into': 't'
           },
-          {'op': 'format', 'template': '{desc} added to your tasks.', 'into': 'confirmationText'},
+          {
+            'op': 'format',
+            'template': '{desc} added to your tasks.',
+            'into': 'confirmationText'
+          },
         ]
       },
     };
@@ -102,8 +144,19 @@ Map<String, dynamic> _taskCountSkill() => {
       'steps': {
         'main': [
           {'op': 'read_many', 'typeId': 'task', 'into': 'ts'},
-          {'op': 'compute', 'fn': 'count', 'args': [{'var': 'ts'}], 'into': 'n'},
-          {'op': 'format', 'template': 'You now have {n} task(s).', 'into': 'confirmationText'},
+          {
+            'op': 'compute',
+            'fn': 'count',
+            'args': [
+              {'var': 'ts'}
+            ],
+            'into': 'n'
+          },
+          {
+            'op': 'format',
+            'template': 'You now have {n} task(s).',
+            'into': 'confirmationText'
+          },
         ]
       },
     };
@@ -116,7 +169,10 @@ Map<String, dynamic> _purgeSkill() => {
       ],
       'steps': {
         'main': [
-          {'op': 'delete_record', 'id': {'var': 'recordId'}},
+          {
+            'op': 'delete_record',
+            'id': {'var': 'recordId'}
+          },
           {'op': 'format', 'template': 'Purged.', 'into': 'confirmationText'},
         ]
       },
@@ -179,13 +235,16 @@ Future<Session> _open(String dir) async {
 
 void main() {
   group('registration & validation (Spec 01 §4.4 / §5.2 step 7)', () {
-    test('a valid onWrite automation with an inline skill registers active', () {
+    test('a valid onWrite automation with an inline skill registers active',
+        () {
       final r = _runner([_auto('a1', inline: _summarySkill())]);
       expect(_st(r, 'a1').state, 'active');
       expect(_st(r, 'a1').reason, isNull);
     });
 
-    test('a valid onWrite automation with a shared-registry skill registers active and fires', () {
+    test(
+        'a valid onWrite automation with a shared-registry skill registers active and fires',
+        () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final r = _runner([_auto('a1', skillId: 'workout-summary')],
           skills: {'workout-summary': _summarySkill()}, store: store);
@@ -194,9 +253,13 @@ void main() {
       expect(r.deliveries.single.text, 'You have 1 workout(s) logged.');
     });
 
-    test('pendingSkill registers as pending and stays inert (no fire, no refusal)', () {
+    test(
+        'pendingSkill registers as pending and stays inert (no fire, no refusal)',
+        () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
-      final r = _runner([_auto('a1', skillId: 'not-yet-authored', pending: true)], store: store);
+      final r = _runner(
+          [_auto('a1', skillId: 'not-yet-authored', pending: true)],
+          store: store);
       expect(_st(r, 'a1').state, 'pending');
       r.notifyWrites([store['workout-1']!]);
       expect(r.deliveries, isEmpty);
@@ -204,10 +267,12 @@ void main() {
       expect(r.refusals, isEmpty);
     });
 
-    test('a pendingSkill automation goes live the moment its skill is authored', () {
+    test('a pendingSkill automation goes live the moment its skill is authored',
+        () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final skills = <String, Map<String, dynamic>>{};
-      final r = _runner([_auto('a1', skillId: 'workout-summary', pending: true)],
+      final r = _runner(
+          [_auto('a1', skillId: 'workout-summary', pending: true)],
           skills: skills, store: store);
       r.notifyWrites([store['workout-1']!]);
       expect(r.deliveries, isEmpty); // not authored yet
@@ -223,33 +288,42 @@ void main() {
     });
 
     test('an unresolved targetType is inert and surfaced', () {
-      final r = _runner([_auto('a1', target: 'no_such_type', inline: _summarySkill())]);
+      final r = _runner(
+          [_auto('a1', target: 'no_such_type', inline: _summarySkill())]);
       expect(_st(r, 'a1').state, 'inert');
       expect(_st(r, 'a1').reason, contains('unresolved targetType'));
     });
 
-    test('an afterField that is not an attribute of the target type is inert', () {
-      final r = _runner([_auto('a1', after: 'heartRate', inline: _summarySkill())]);
+    test('an afterField that is not an attribute of the target type is inert',
+        () {
+      final r =
+          _runner([_auto('a1', after: 'heartRate', inline: _summarySkill())]);
       expect(_st(r, 'a1').state, 'inert');
       expect(_st(r, 'a1').reason, contains('not an attribute'));
     });
 
-    test('a schedule automation registers ARMED and fires on a due tick (catch-up on open)', () {
+    test(
+        'a schedule automation registers ARMED and fires on a due tick (catch-up on open)',
+        () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final r = _runner([
-        _auto('a1',
-            inline: _summarySkill(),
-            condition: {'kind': 'schedule', 'cronExpression': '0 20 * * 0'}) // Sunday 8pm
+        _auto('a1', inline: _summarySkill(), condition: {
+          'kind': 'schedule',
+          'cronExpression': '0 20 * * 0'
+        }) // Sunday 8pm
       ], store: store);
       expect(_st(r, 'a1').state, 'active');
       r.notifyWrites([store['workout-1']!]); // a schedule never fires onWrite
       expect(r.deliveries, isEmpty);
-      r.tick(DateTime.parse('2026-07-11T09:00:00')); // Sat: first sight -> baseline, no back-fill
+      r.tick(DateTime.parse(
+          '2026-07-11T09:00:00')); // Sat: first sight -> baseline, no back-fill
       expect(r.deliveries, isEmpty);
-      r.tick(DateTime.parse('2026-07-13T09:00:00')); // Mon: Sunday 8pm passed -> read-only delivery
+      r.tick(DateTime.parse(
+          '2026-07-13T09:00:00')); // Mon: Sunday 8pm passed -> read-only delivery
       expect(r.deliveries, isNotEmpty);
       r.takeDeliveries();
-      r.tick(DateTime.parse('2026-07-13T10:00:00')); // same window, no new cron time -> no re-fire
+      r.tick(DateTime.parse(
+          '2026-07-13T10:00:00')); // same window, no new cron time -> no re-fire
       expect(r.deliveries, isEmpty);
     });
 
@@ -269,14 +343,17 @@ void main() {
       expect(_st(r, 'a1').reason, contains('unknown condition kind'));
     });
 
-    test('a destructive skill is rejected at registration (Spec 01 §5.3 / Spec 02 §7.5)', () {
+    test(
+        'a destructive skill is rejected at registration (Spec 01 §5.3 / Spec 02 §7.5)',
+        () {
       final r = _runner([_auto('a1', skillId: 'purge-workouts')],
           skills: {'purge-workouts': _purgeSkill()});
       expect(_st(r, 'a1').state, 'inert');
       expect(_st(r, 'a1').reason, contains('destructive'));
     });
 
-    test('a dangerLevel:destructive skill is rejected even without a delete op', () {
+    test('a dangerLevel:destructive skill is rejected even without a delete op',
+        () {
       final skill = _summarySkill()..['dangerLevel'] = 'destructive';
       final r = _runner([_auto('a1', skillId: 'workout-summary')],
           skills: {'workout-summary': skill});
@@ -284,7 +361,9 @@ void main() {
       expect(_st(r, 'a1').reason, contains('destructive'));
     });
 
-    test('an invalid inline skill (no confirmation) is inert with the validation reason', () {
+    test(
+        'an invalid inline skill (no confirmation) is inert with the validation reason',
+        () {
       final bad = {
         'skillId': 'bad-skill',
         'inputs': <dynamic>[],
@@ -299,13 +378,18 @@ void main() {
       expect(_st(r, 'a1').reason, contains('failed validation'));
     });
 
-    test("an inline skill whose skillId doesn't match the automation's is inert", () {
-      final r = _runner([_auto('a1', skillId: 'other-id', inline: _summarySkill())]);
+    test(
+        "an inline skill whose skillId doesn't match the automation's is inert",
+        () {
+      final r =
+          _runner([_auto('a1', skillId: 'other-id', inline: _summarySkill())]);
       expect(_st(r, 'a1').state, 'inert');
       expect(_st(r, 'a1').reason, contains('must match'));
     });
 
-    test('a def missing its description is inert (the automation UI needs the why)', () {
+    test(
+        'a def missing its description is inert (the automation UI needs the why)',
+        () {
       final def = _auto('a1', inline: _summarySkill())..remove('description');
       final r = _runner([def]);
       expect(_st(r, 'a1').state, 'inert');
@@ -314,29 +398,38 @@ void main() {
   });
 
   group('onWrite firing & the §7.5 gate', () {
-    test('a matching write fires a read-only skill and DELIVERS (no approval)', () {
+    test('a matching write fires a read-only skill and DELIVERS (no approval)',
+        () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final persisted = <Map<String, dynamic>>[];
-      final r = _runner([_auto('a1', inline: _summarySkill())], store: store, persisted: persisted);
+      final r = _runner([_auto('a1', inline: _summarySkill())],
+          store: store, persisted: persisted);
       r.notifyWrites([store['workout-1']!]);
       final d = r.deliveries.single;
       expect(d.automationId, 'a1');
       expect(d.text, 'You have 1 workout(s) logged.');
       expect(r.pendingReview, isEmpty);
-      expect(persisted, isEmpty); // read-only: nothing written, nothing persisted
+      expect(
+          persisted, isEmpty); // read-only: nothing written, nothing persisted
       expect(r.refusals, isEmpty);
     });
 
     test('a write of a non-matching type does not fire', () {
       final r = _runner([_auto('a1', inline: _summarySkill())]);
       r.notifyWrites([
-        {'id': 'task-1', 'typeId': 'task', 'description': 'x', 'createdAt': '2026-07-06'}
+        {
+          'id': 'task-1',
+          'typeId': 'task',
+          'description': 'x',
+          'createdAt': '2026-07-06'
+        }
       ]);
       expect(r.deliveries, isEmpty);
       expect(r.pendingReview, isEmpty);
     });
 
-    test('a write without the afterField does not fire (afterField respected)', () {
+    test('a write without the afterField does not fire (afterField respected)',
+        () {
       final r = _runner([_auto('a1', inline: _summarySkill())]);
       r.notifyWrites([
         {'id': 'workout-1', 'typeId': 'workout', 'activity': 'run'} // no date
@@ -348,7 +441,8 @@ void main() {
     test('a writing skill is HELD for review — never applied unattended', () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final persisted = <Map<String, dynamic>>[];
-      final r = _runner([_auto('a1', inline: _followupSkill())], store: store, persisted: persisted);
+      final r = _runner([_auto('a1', inline: _followupSkill())],
+          store: store, persisted: persisted);
       r.notifyWrites([store['workout-1']!]);
       expect(r.deliveries, isEmpty);
       final item = r.pendingReview.single;
@@ -361,12 +455,15 @@ void main() {
       expect(persisted, isEmpty);
     });
 
-    test('a skill that turned destructive after registration is refused at fire time', () {
+    test(
+        'a skill that turned destructive after registration is refused at fire time',
+        () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final skills = <String, Map<String, dynamic>>{};
       final r = _runner([_auto('a1', skillId: 'purge-workouts', pending: true)],
           skills: skills, store: store);
-      skills['purge-workouts'] = _purgeSkill(); // authored later — and destructive
+      skills['purge-workouts'] =
+          _purgeSkill(); // authored later — and destructive
       r.notifyWrites([store['workout-1']!]);
       expect(r.refusals.single, contains('destructive'));
       expect(r.deliveries, isEmpty);
@@ -374,7 +471,8 @@ void main() {
       expect(store.length, 1); // nothing deleted
     });
 
-    test('a skill that fails to resolve is a surfaced refusal, not a crash', () {
+    test('a skill that fails to resolve is a surfaced refusal, not a crash',
+        () {
       // read_one with an unresolvable ambiguity is hard to fake here; simplest
       // resolve failure: a shared skill with an unknown compute fn.
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
@@ -388,7 +486,8 @@ void main() {
           ]
         },
       };
-      final r = _runner([_auto('a1', skillId: 'broken')], skills: {'broken': broken}, store: store);
+      final r = _runner([_auto('a1', skillId: 'broken')],
+          skills: {'broken': broken}, store: store);
       r.notifyWrites([store['workout-1']!]);
       expect(r.refusals.single, contains('failed to resolve'));
       expect(r.deliveries, isEmpty);
@@ -408,7 +507,8 @@ void main() {
     test('approve re-verifies, executes, persists, and reaps the item', () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final persisted = <Map<String, dynamic>>[];
-      final r = _runner([_auto('a1', inline: _followupSkill())], store: store, persisted: persisted);
+      final r = _runner([_auto('a1', inline: _followupSkill())],
+          store: store, persisted: persisted);
       r.notifyWrites([store['workout-1']!]);
       final res = r.approve(r.pendingReview.single.id);
       expect(res.kind, 'applied');
@@ -423,7 +523,8 @@ void main() {
     test('decline reaps the item and writes nothing', () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final persisted = <Map<String, dynamic>>[];
-      final r = _runner([_auto('a1', inline: _followupSkill())], store: store, persisted: persisted);
+      final r = _runner([_auto('a1', inline: _followupSkill())],
+          store: store, persisted: persisted);
       r.notifyWrites([store['workout-1']!]);
       final id = r.pendingReview.single.id;
       expect(r.decline(id), isTrue);
@@ -433,7 +534,8 @@ void main() {
       expect(r.decline(id), isFalse); // already reaped
     });
 
-    test('a stale approval never executes: data moved → planChanged → re-approve applies the NEW plan',
+    test(
+        'a stale approval never executes: data moved → planChanged → re-approve applies the NEW plan',
         () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final r = _runner([_auto('a1', inline: _followupSkill())], store: store);
@@ -449,7 +551,8 @@ void main() {
           'Stretch — workout #2'); // the item now carries the fresh plan
       final res2 = r.approve(item.id);
       expect(res2.kind, 'applied');
-      expect(store.values.singleWhere((x) => x['typeId'] == 'task')['description'],
+      expect(
+          store.values.singleWhere((x) => x['typeId'] == 'task')['description'],
           'Stretch — workout #2');
     });
 
@@ -458,11 +561,14 @@ void main() {
       expect(r.approve('review-999').kind, 'notFound');
     });
 
-    test('an approved write cascades onWrite at depth+1 (and stays bounded)', () {
+    test('an approved write cascades onWrite at depth+1 (and stays bounded)',
+        () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final r = _runner([
-        _auto('a-write', inline: _followupSkill()), // workout → writes a task (held)
-        _auto('b-read', target: 'task', after: 'description', inline: _taskCountSkill()),
+        _auto('a-write',
+            inline: _followupSkill()), // workout → writes a task (held)
+        _auto('b-read',
+            target: 'task', after: 'description', inline: _taskCountSkill()),
       ], store: store);
       r.notifyWrites([store['workout-1']!]);
       expect(r.deliveries, isEmpty); // b has not fired: the task is only HELD
@@ -473,23 +579,30 @@ void main() {
       expect(r.pendingReview, isEmpty);
     });
 
-    test('the cascade bound suppresses (and surfaces) hooks at maxCascadeDepth', () {
+    test('the cascade bound suppresses (and surfaces) hooks at maxCascadeDepth',
+        () {
       final store = {'workout-1': _workout('workout-1', '2026-07-06')};
       final r = _runner([_auto('a1', inline: _summarySkill())], store: store);
-      r.notifyWrites([store['workout-1']!], depth: AutomationRunner.maxCascadeDepth);
+      r.notifyWrites([store['workout-1']!],
+          depth: AutomationRunner.maxCascadeDepth);
       expect(r.deliveries, isEmpty);
       expect(r.refusals.single, contains('suppressed at cascade depth'));
     });
   });
 
   group('Session end-to-end — the worked example (data/automations/)', () {
-    test('logging a run delivers the encouragement out-of-band; the turn response is unchanged',
+    test(
+        'logging a run delivers the encouragement out-of-band; the turn response is unchanged',
         () async {
       final s = await _open(_dirWithAutomations());
       expect(_stOf(s, 'workout-encouragement').state, 'active');
       final r = await s.handle('log a 3k run');
-      expect(r, contains('Logged a 3 km run')); // the normal act-then-describe line
-      expect(r, isNot(contains('Nice work'))); // the automation never edits the response
+      expect(r,
+          contains('Logged a 3 km run')); // the normal act-then-describe line
+      expect(
+          r,
+          isNot(contains(
+              'Nice work'))); // the automation never edits the response
       final d = s.automations.deliveries.single;
       expect(d.automationId, 'workout-encouragement');
       expect(d.text, contains("1 workout(s) this week"));
@@ -503,7 +616,8 @@ void main() {
       await s.handle('log a 3k run');
       await s.handle('i ran 4k');
       expect(s.automations.deliveries.length, 2);
-      expect(s.automations.deliveries.last.text, contains('2 workout(s) this week'));
+      expect(s.automations.deliveries.last.text,
+          contains('2 workout(s) this week'));
     });
 
     test('deliveries surface in pendingNudges until drained', () async {
@@ -514,7 +628,8 @@ void main() {
       expect(s.pendingNudges().where((n) => n.startsWith('✨')), isEmpty);
     });
 
-    test('undo of the triggering write still works exactly as before', () async {
+    test('undo of the triggering write still works exactly as before',
+        () async {
       final s = await _open(_dirWithAutomations());
       await s.handle('log a 3k run');
       final r = await s.handle('undo that');
@@ -522,8 +637,10 @@ void main() {
       expect(s.store.values.where((x) => x['typeId'] == 'workout'), isEmpty);
     });
 
-    test('no automations folder → empty registry → zero behavior change', () async {
-      final s = await _open(makeTempDataDir()); // the standard dir has no automations/
+    test('no automations folder → empty registry → zero behavior change',
+        () async {
+      final s = await _open(
+          makeTempDataDir()); // the standard dir has no automations/
       await s.handle('log a 3k run');
       expect(s.automations.statuses, isEmpty);
       expect(s.automations.deliveries, isEmpty);
@@ -531,21 +648,25 @@ void main() {
       expect(s.pendingNudges().where((n) => n.startsWith('✨')), isEmpty);
     });
 
-    test('a WRITING automation through a real turn is held, then approve applies + persists',
+    test(
+        'a WRITING automation through a real turn is held, then approve applies + persists',
         () async {
       final dir = makeTempDataDir();
       Directory('$dir/automations').createSync(recursive: true);
-      File('$dir/automations/workout-followup.json').writeAsStringSync(jsonEncode(
-          _auto('workout-followup', inline: _followupSkill(), description: 'adds a stretch task')));
+      File('$dir/automations/workout-followup.json').writeAsStringSync(
+          jsonEncode(_auto('workout-followup',
+              inline: _followupSkill(), description: 'adds a stretch task')));
       final s = await _open(dir);
       await s.handle('log a 3k run');
       // held, not applied: no task exists, and the pending item is surfaced
       expect(s.store.values.where((x) => x['typeId'] == 'task'), isEmpty);
-      final item = s.automations.pendingReview.single;
+      expect(s.automations.pendingReview, hasLength(1));
       expect(s.pendingNudges().any((n) => n.startsWith('📋')), isTrue);
       // approve → executed and persisted through the repository
-      expect(s.automations.approve(item.id).kind, 'applied');
-      expect(s.store.values.singleWhere((x) => x['typeId'] == 'task')['description'],
+      expect(await s.handle('approve it'), contains('Done'));
+      expect(
+          s.store.values
+              .singleWhere((x) => x['typeId'] == 'task')['description'],
           contains('Stretch'));
       final s2 = await _open(dir); // fresh process over the same folder
       expect(s2.store.values.where((x) => x['typeId'] == 'task').length, 1,
@@ -555,18 +676,22 @@ void main() {
     test('declining a held automation write leaves no trace', () async {
       final dir = makeTempDataDir();
       Directory('$dir/automations').createSync(recursive: true);
-      File('$dir/automations/workout-followup.json').writeAsStringSync(jsonEncode(
-          _auto('workout-followup', inline: _followupSkill(), description: 'adds a stretch task')));
+      File('$dir/automations/workout-followup.json').writeAsStringSync(
+          jsonEncode(_auto('workout-followup',
+              inline: _followupSkill(), description: 'adds a stretch task')));
       final s = await _open(dir);
       await s.handle('log a 3k run');
-      expect(s.automations.decline(s.automations.pendingReview.single.id), isTrue);
+      expect(
+          s.automations.decline(s.automations.pendingReview.single.id), isTrue);
       expect(s.automations.pendingReview, isEmpty);
       expect(s.store.values.where((x) => x['typeId'] == 'task'), isEmpty);
       final s2 = await _open(dir);
       expect(s2.store.values.where((x) => x['typeId'] == 'task'), isEmpty);
     });
 
-    test('a pendingSkill automation in the folder registers pending and never fires', () async {
+    test(
+        'a pendingSkill automation in the folder registers pending and never fires',
+        () async {
       final dir = makeTempDataDir();
       Directory('$dir/automations').createSync(recursive: true);
       File('$dir/automations/future.json').writeAsStringSync(jsonEncode(

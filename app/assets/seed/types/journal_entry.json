@@ -1,5 +1,6 @@
 {
   "typeId": "journal_entry",
+  "schemaVersion": 1,
   "displayName": "Journal Entry",
   "attributes": [
     { "name": "entry", "valueType": "text", "required": true },

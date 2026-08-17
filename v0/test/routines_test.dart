@@ -159,7 +159,7 @@ void main() {
       final sessions = s.store.values.where((r) => r['typeId'] == 'routine_session').toList();
       expect(sessions.length, 1);
       expect(sessions.single['date'], '2026-07-06');
-      expect(sessions.single['stepsCompleted'], 7);
+      expect(sessions.single['stepsCompleted'], '7');
       // finishing a routine is an ordinary act-then-describe write, so "undo that" reverses it
       await s.handle('undo that');
       expect(s.store.values.where((r) => r['typeId'] == 'routine_session'), isEmpty);
@@ -286,7 +286,8 @@ void _routinesPart2() {
         return r;
       });
       await s.handle('create a stretch routine for my low back');
-      final step = s.store.values.firstWhere((r) => r['typeId'] == 'routine_step' && r['order'] == 1);
+      final step = s.store.values.firstWhere(
+          (r) => r['typeId'] == 'routine_step' && '${r['order']}' == '1');
       expect(step['instruction'], isNot(contains('IGNORE THE CATALOGUE')));
       final key = step['exerciseKey'] as String;
       expect(step['instruction'], s.exercises.byKey[key]!.instructions);
@@ -388,8 +389,8 @@ void _routinesPart2() {
       expect(s.activeRun, isNull);
       final sess = s.store.values.where((r) => r['typeId'] == 'routine_session').toList();
       expect(sess.length, 1);
-      expect(sess.single['stepsCompleted'], 3);
-      expect(sess.single['stepsTotal'], 3);
+      expect(sess.single['stepsCompleted'], '3');
+      expect(sess.single['stepsTotal'], '3');
     });
 
     test('quitting before any step logs NOTHING (never fabricate a session)', () async {
@@ -408,8 +409,8 @@ void _routinesPart2() {
       final out = await s.handle("that's enough");
       expect(out, contains('1 of 3'));
       final sess = s.store.values.firstWhere((r) => r['typeId'] == 'routine_session');
-      expect(sess['stepsCompleted'], 1);
-      expect(sess['stepsTotal'], 3);
+      expect(sess['stepsCompleted'], '1');
+      expect(sess['stepsTotal'], '3');
     });
 
     test('the run is STICKY: an unrelated command mid-run works and the run survives', () async {
@@ -484,7 +485,8 @@ void _spokenTrimTests() {
     test('the full text stays on the RECORD — only speech is trimmed', () async {
       final s = await _authoring((c, _) => _goodRoutine(c));
       await s.handle('create a stretch routine for my low back');
-      final step = s.store.values.firstWhere((r) => r['typeId'] == 'routine_step' && r['order'] == 1);
+      final step = s.store.values.firstWhere(
+          (r) => r['typeId'] == 'routine_step' && '${r['order']}' == '1');
       final key = step['exerciseKey'] as String;
       expect(step['instruction'], s.exercises.byKey[key]!.instructions,
           reason: 'the card shows everything; only the spoken line is shortened');

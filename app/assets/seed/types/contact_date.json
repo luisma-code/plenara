@@ -1,5 +1,6 @@
 {
   "typeId": "contact_date",
+  "schemaVersion": 1,
   "displayName": "Contact Date",
   "parentType": "contact",
   "attributes": [

@@ -54,12 +54,12 @@
     },
     {
       "name": "figureA",
-      "valueType": "json",
+      "valueType": "text",
       "required": false
     },
     {
       "name": "figureB",
-      "valueType": "json",
+      "valueType": "text",
       "required": false
     },
     {

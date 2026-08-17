@@ -1,5 +1,6 @@
 {
   "typeId": "reminder",
+  "schemaVersion": 1,
   "displayName": "Reminder",
   "attributes": [
     { "name": "text", "valueType": "text", "required": true },

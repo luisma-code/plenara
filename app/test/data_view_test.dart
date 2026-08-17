@@ -1,4 +1,4 @@
-// Tests for the Spec 07 "Your data" view: the structural archetype inference (unit) and the
+// Tests for Library's generic-data view: structural archetype inference (unit) and the
 // view rendering + reachability (widget). Hermetic — an offline cloud, a temp data dir.
 import 'dart:convert';
 import 'dart:io';
@@ -161,10 +161,10 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_horiz)); // open the discreet menu
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Your data'));
+      await tester.tap(find.text('Library'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Your data'), findsOneWidget);
+      expect(find.text('Library'), findsOneWidget);
       expect(
         find.byKey(const Key('archetype-task')),
         findsOneWidget,
@@ -192,7 +192,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Your data'));
+    await tester.tap(find.text('Library'));
     await tester.pumpAndSettle();
 
     await tester.tap(
@@ -223,7 +223,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Your data'));
+      await tester.tap(find.text('Library'));
       await tester.pumpAndSettle();
 
       expect(
@@ -293,7 +293,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Your data'));
+      await tester.tap(find.text('Library'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('automations-card')), findsOneWidget);
       expect(find.text('demo-auto'), findsOneWidget);
@@ -307,26 +307,30 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Your data'));
+    await tester.tap(find.text('Library'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Nothing logged yet'), findsOneWidget);
   });
 
   Future<Session> openDataViewWithTask(WidgetTester tester) async {
     final session = _session();
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
+    await tester.pumpWidget(
+      MaterialApp(home: ChatScreen(session: session, retrieval: false)),
+    );
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'add buy milk to my list');
     await tester.tap(find.text('Send'));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Your data'));
+    await tester.tap(find.text('Library'));
     await tester.pumpAndSettle();
     return session;
   }
 
-  testWidgets('tap-to-edit a field commits through the engine (Spec 07 §5.5)', (tester) async {
+  testWidgets('tap-to-edit a field commits through the engine (Spec 07 §5.5)', (
+    tester,
+  ) async {
     final session = await openDataViewWithTask(tester);
     await tester.tap(find.widgetWithText(ListTile, 'buy milk'));
     await tester.pumpAndSettle();
@@ -337,77 +341,141 @@ void main() {
     await tester.tap(find.byIcon(Icons.check));
     await tester.pumpAndSettle();
     final task = session.store.values.firstWhere((r) => r['typeId'] == 'task');
-    expect(task['description'], 'buy oat milk'); // persisted through session.editField
+    expect(
+      task['description'],
+      'buy oat milk',
+    ); // persisted through session.editField
   });
 
-  testWidgets('delete from the detail sheet removes the record with an UNDO snackbar', (tester) async {
-    final session = await openDataViewWithTask(tester);
-    await tester.tap(find.widgetWithText(ListTile, 'buy milk'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('record-delete')));
-    await tester.pumpAndSettle();
-    expect(session.store.values.where((r) => r['typeId'] == 'task'), isEmpty); // gone
-    expect(find.text('UNDO'), findsOneWidget); // the safety-net snackbar
-    await tester.tap(find.text('UNDO'));
-    await tester.pumpAndSettle();
-    expect(session.store.values.where((r) => r['typeId'] == 'task'), isNotEmpty); // restored
-  });
+  testWidgets(
+    'delete from the detail sheet removes the record with an UNDO snackbar',
+    (tester) async {
+      final session = await openDataViewWithTask(tester);
+      await tester.tap(find.widgetWithText(ListTile, 'buy milk'));
+      await tester.pumpAndSettle();
+      final delete = find.byKey(const Key('record-delete'));
+      await tester.ensureVisible(delete);
+      await tester.pumpAndSettle();
+      await tester.tap(delete);
+      await tester.pumpAndSettle();
+      expect(
+        session.store.values.where((r) => r['typeId'] == 'task'),
+        isEmpty,
+      ); // gone
+      expect(find.text('UNDO'), findsOneWidget); // the safety-net snackbar
+      await tester.tap(find.text('UNDO'));
+      await tester.pumpAndSettle();
+      expect(
+        session.store.values.where((r) => r['typeId'] == 'task'),
+        isNotEmpty,
+      ); // restored
+    },
+  );
 
-  testWidgets('the Learned phrases card lists a learned flow and can forget it', (tester) async {
-    final session = _session();
-    await session.init(retrieval: false);
-    session.router.addLearned('list-tasks', 'show my todo list');
-    session.repo.appendCorpusLearned({'skillId': 'list-tasks', 'template': 'show my todo list'});
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.more_horiz));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Your data'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('learned-phrases-card')), findsOneWidget);
-    expect(find.textContaining('show my todo list'), findsOneWidget);
-    expect(find.textContaining('List your tasks'), findsOneWidget); // human target, not skillId
-    await tester.tap(find.byIcon(Icons.close));
-    await tester.pumpAndSettle();
-    expect(session.learnedFlows.any((f) => f.template == 'show my todo list'), isFalse);
-  });
+  testWidgets(
+    'the Learned phrases card lists a learned flow and can forget it',
+    (tester) async {
+      final session = _session();
+      await session.init(retrieval: false);
+      session.router.addLearned('list-tasks', 'show my todo list');
+      session.repo.appendCorpusLearned({
+        'skillId': 'list-tasks',
+        'template': 'show my todo list',
+      });
+      await tester.pumpWidget(
+        MaterialApp(home: ChatScreen(session: session, retrieval: false)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Library'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('learned-phrases-card')), findsOneWidget);
+      expect(find.textContaining('show my todo list'), findsOneWidget);
+      expect(
+        find.textContaining('List your tasks'),
+        findsOneWidget,
+      ); // human target, not skillId
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      expect(
+        session.learnedFlows.any((f) => f.template == 'show my todo list'),
+        isFalse,
+      );
+    },
+  );
 
   test('humanizeTemplate turns slot placeholders into plain nouns', () {
-    expect(humanizeTemplate('suggest a gift for {contact:entity}'), 'suggest a gift for someone');
+    expect(
+      humanizeTemplate('suggest a gift for {contact:entity}'),
+      'suggest a gift for someone',
+    );
     expect(humanizeTemplate('remind me on {when:date}'), 'remind me on a date');
-    expect(humanizeTemplate('log lunch with {name:contact}'), 'log lunch with someone'); // contact, not "something"
+    expect(
+      humanizeTemplate('log lunch with {name:contact}'),
+      'log lunch with someone',
+    ); // contact, not "something"
     expect(humanizeTemplate('due {day:futuredate}'), 'due a date');
   });
 
-  testWidgets('tapping a date field with a decades-old value opens the picker without crashing (review critical)', (tester) async {
-    final session = _session();
-    await session.init(retrieval: false);
-    await session.handle('add renew passport to my list');
-    final t = session.store.values.firstWhere((r) => r['typeId'] == 'task');
-    await session.editField(t['id'] as String, 'dueAt', '1985-04-12'); // decades before a ±5y window
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session, retrieval: false)));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.more_horiz));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Your data'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'renew passport'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'dueAt'));
-    await tester.pumpAndSettle(); // pre-fix: showDatePicker asserts here and crashes
-    expect(find.byType(CalendarDatePicker), findsOneWidget); // the picker opened, no assertion
-  });
+  testWidgets(
+    'tapping a date field with a decades-old value opens the picker without crashing (review critical)',
+    (tester) async {
+      final session = _session();
+      await session.init(retrieval: false);
+      await session.handle('add renew passport to my list');
+      final t = session.store.values.firstWhere((r) => r['typeId'] == 'task');
+      await session.editField(
+        t['id'] as String,
+        'dueAt',
+        '1985-04-12',
+      ); // decades before a ±5y window
+      await tester.pumpWidget(
+        MaterialApp(home: ChatScreen(session: session, retrieval: false)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Library'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, 'renew passport'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, 'dueAt'));
+      await tester
+          .pumpAndSettle(); // pre-fix: showDatePicker asserts here and crashes
+      expect(
+        find.byType(CalendarDatePicker),
+        findsOneWidget,
+      ); // the picker opened, no assertion
+    },
+  );
 
-  testWidgets('a failed edit shows the reason INSIDE the sheet (review #3, no silent failure)', (tester) async {
-    final session = await openDataViewWithTask(tester);
-    await tester.tap(find.widgetWithText(ListTile, 'buy milk'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'description')); // enter edit mode
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).last, '   '); // empty a REQUIRED field
-    await tester.tap(find.byIcon(Icons.check));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('required'), findsOneWidget); // the failure is visible in the sheet
-    expect(session.store.values.firstWhere((r) => r['typeId'] == 'task')['description'], 'buy milk'); // unchanged
-  });
+  testWidgets(
+    'a failed edit shows the reason INSIDE the sheet (review #3, no silent failure)',
+    (tester) async {
+      final session = await openDataViewWithTask(tester);
+      await tester.tap(find.widgetWithText(ListTile, 'buy milk'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.widgetWithText(ListTile, 'description'),
+      ); // enter edit mode
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextField).last,
+        '   ',
+      ); // empty a REQUIRED field
+      await tester.tap(find.byIcon(Icons.check));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('required'),
+        findsOneWidget,
+      ); // the failure is visible in the sheet
+      expect(
+        session.store.values.firstWhere(
+          (r) => r['typeId'] == 'task',
+        )['description'],
+        'buy milk',
+      ); // unchanged
+    },
+  );
 }

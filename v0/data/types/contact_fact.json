@@ -1,5 +1,6 @@
 {
   "typeId": "contact_fact",
+  "schemaVersion": 1,
   "displayName": "Contact Fact",
   "parentType": "contact",
   "attributes": [

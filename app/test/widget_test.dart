@@ -81,7 +81,8 @@ class _HoldingSpeech implements SpeechRecognizer {
     _active = true; // holds — no callback fires until the test drives one
   }
 
-  void emitPartial(String t) => _onResult?.call(t, false); // interim (non-final)
+  void emitPartial(String t) =>
+      _onResult?.call(t, false); // interim (non-final)
   void emitFinal(String t) => _onResult?.call(t, true); // final -> auto-send
 
   void _finish() {
@@ -218,25 +219,22 @@ void main() {
     expect(find.byIcon(Icons.mic_none), findsNothing);
   });
 
-  testWidgets(
-    'greeting materialises, and a typed turn gets a reply over the void',
-    (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(home: ChatScreen(session: _session())),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('Today materialises, and a typed turn gets a reply over it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
+    await tester.pumpAndSettle();
 
-      expect(find.textContaining("I'm Plena"), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Send'), findsOneWidget);
+    expect(find.byKey(const Key('today-board')), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Send'), findsOneWidget);
 
-      await _send(tester, 'add buy milk to my list');
-      expect(
-        find.textContaining('Added'),
-        findsOneWidget,
-      ); // the reply, over the void
-      expect(find.textContaining('buy milk'), findsWidgets);
-    },
-  );
+    await _send(tester, 'add buy milk to my list');
+    expect(
+      find.textContaining('Added'),
+      findsOneWidget,
+    ); // the reply, over the void
+    expect(find.textContaining('buy milk'), findsWidgets);
+  });
 
   testWidgets('tap-to-talk transcribes and auto-sends (hands-free)', (
     tester,
@@ -250,7 +248,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tapAt(const Offset(400, 300)); // tap the void → talk
+    await tester.tap(find.byKey(const Key('today-voice')));
     await tester.pumpAndSettle();
     expect(
       find.textContaining('Added'),
@@ -258,107 +256,145 @@ void main() {
     ); // transcribed + auto-sent + replied
   });
 
-  testWidgets('a list reply\'s trailing footer renders separately, not glued to the last bullet (Fable #8)', (
-    tester,
-  ) async {
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
-    await tester.pumpAndSettle();
-    await _send(tester, 'what can you do'); // opens the Tour
-    await _send(tester, 'show me everything'); // → the full map (_helpText: bullets + a footer line)
-    // The footer "And "undo that" reverses the last thing." must be its OWN Text, not folded into
-    // the last bullet — a predicate on exact data catches the glued-in regression.
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is Text && w.data == 'And "undo that" reverses the last thing.',
-      ),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('"open settings" opens the Settings window, not a routed turn (H5)', (
-    tester,
-  ) async {
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'open settings');
-    await tester.tap(find.text('Send'));
-    await tester.pumpAndSettle();
-    expect(find.byType(SettingsView), findsOneWidget);
-  });
-
-  testWidgets('a settings-mentioning task does NOT hijack to Settings (H5 negative)', (
-    tester,
-  ) async {
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
-    await tester.pumpAndSettle();
-    await _send(tester, 'add review the settings to my list');
-    expect(find.byType(SettingsView), findsNothing); // it's a task, not a nav command
-    expect(find.textContaining('Added'), findsOneWidget);
-  });
-
-  testWidgets('repeated no-audio taps surface the mic hint — no silent failure (H4)', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ChatScreen(session: _session(), speech: _FakeSpeech(true, null)),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tapAt(const Offset(400, 300)); // tap 1 → hears nothing
-    await tester.pumpAndSettle();
-    expect(find.textContaining('not hearing any audio'), findsNothing); // not after ONE
-    await tester.tapAt(const Offset(400, 300)); // tap 2 → hears nothing
-    await tester.pumpAndSettle();
-    expect(find.textContaining('not hearing any audio'), findsOneWidget); // hint on the 2nd
-  });
-
-  testWidgets('the intro clears on MUTE, not only on tap-to-talk (M7)', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ChatScreen(session: _session(), speech: _FakeSpeech(true, 'x')),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.textContaining("I'm Plena"), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.volume_up)); // mute
-    await tester.pumpAndSettle();
-    expect(find.textContaining("I'm Plena"), findsNothing); // intro cleared on mute
-  });
-
-  testWidgets('mute preference persists across launches (H2, via configPath seam)', (
-    tester,
-  ) async {
-    final dir = Directory.systemTemp.createTempSync('plenara_mute_');
-    final cfg = '${dir.path}/config.json';
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ChatScreen(
-          session: _session(),
-          speech: _FakeSpeech(true, 'x'),
-          configPath: cfg,
+  testWidgets(
+    'a list reply\'s trailing footer renders separately, not glued to the last bullet (Fable #8)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: ChatScreen(session: _session())),
+      );
+      await tester.pumpAndSettle();
+      await _send(tester, 'what can you do'); // opens the Tour
+      await _send(
+        tester,
+        'show me everything',
+      ); // → the full map (_helpText: bullets + a footer line)
+      // The footer "And "undo that" reverses the last thing." must be its OWN Text, not folded into
+      // the last bullet — a predicate on exact data catches the glued-in regression.
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text && w.data == 'And "undo that" reverses the last thing.',
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.volume_up)); // mute → should persist to cfg
-    await tester.pumpAndSettle();
-    expect(loadConfig(configPath: cfg).voiceMuted, isTrue);
-    // relaunch pointing at the same config → inits muted (the volume_off icon)
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ChatScreen(
-          session: _session(),
-          speech: _FakeSpeech(true, 'x'),
-          configPath: cfg,
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    '"open settings" opens the Settings window, not a routed turn (H5)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: ChatScreen(session: _session())),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'open settings');
+      await tester.tap(find.text('Send'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsView), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a settings-mentioning task does NOT hijack to Settings (H5 negative)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: ChatScreen(session: _session())),
+      );
+      await tester.pumpAndSettle();
+      await _send(tester, 'add review the settings to my list');
+      expect(
+        find.byType(SettingsView),
+        findsNothing,
+      ); // it's a task, not a nav command
+      expect(find.textContaining('Added'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'repeated no-audio taps surface the mic hint — no silent failure (H4)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(
+            session: _session(),
+            speech: _FakeSpeech(true, null),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.volume_off), findsOneWidget); // launched already muted
-  });
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('today-voice')),
+      ); // tap 1 → hears nothing
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('not hearing any audio'),
+        findsNothing,
+      ); // not after ONE
+      await tester.tap(
+        find.byKey(const Key('today-voice')),
+      ); // tap 2 → hears nothing
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('not hearing any audio'),
+        findsOneWidget,
+      ); // hint on the 2nd
+    },
+  );
+
+  testWidgets(
+    'muting keeps planner truth visible and changes the voice control',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(session: _session(), speech: _FakeSpeech(true, 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('today-board')), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.volume_up)); // mute
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('today-board')), findsOneWidget);
+      expect(find.byIcon(Icons.volume_off), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'mute preference persists across launches (H2, via configPath seam)',
+    (tester) async {
+      final dir = Directory.systemTemp.createTempSync('plenara_mute_');
+      final cfg = '${dir.path}/config.json';
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(
+            session: _session(),
+            speech: _FakeSpeech(true, 'x'),
+            configPath: cfg,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byIcon(Icons.volume_up),
+      ); // mute → should persist to cfg
+      await tester.pumpAndSettle();
+      expect(loadConfig(configPath: cfg).voiceMuted, isTrue);
+      // relaunch pointing at the same config → inits muted (the volume_off icon)
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(
+            session: _session(),
+            speech: _FakeSpeech(true, 'x'),
+            configPath: cfg,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byIcon(Icons.volume_off),
+        findsOneWidget,
+      ); // launched already muted
+    },
+  );
 
   testWidgets('voice echoes "I heard: <transcript>" as a confirmation', (
     tester,
@@ -372,13 +408,16 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tapAt(const Offset(400, 300)); // tap the void → talk
+    await tester.tap(find.byKey(const Key('today-voice')));
     await tester.pumpAndSettle();
     expect(
       find.textContaining('I heard: add milk to my list'),
       findsOneWidget,
     ); // the confirmation, in the listening font
-    expect(find.textContaining('Added'), findsOneWidget); // and it still auto-sent
+    expect(
+      find.textContaining('Added'),
+      findsOneWidget,
+    ); // and it still auto-sent
   });
 
   testWidgets('tap-to-talk with no transcript sends nothing', (tester) async {
@@ -388,13 +427,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tapAt(const Offset(400, 300));
+    await tester.tap(find.byKey(const Key('today-voice')));
     await tester.pumpAndSettle();
     expect(find.textContaining('Added'), findsNothing); // nothing sent
-    expect(
-      find.textContaining("I'm Plena"),
-      findsNothing,
-    ); // the intro clears the moment you tap to interact
+    expect(find.byKey(const Key('today-board')), findsOneWidget);
   });
 
   testWidgets('a transcribe error is caught and listening clears', (
@@ -406,7 +442,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tapAt(const Offset(400, 300));
+    await tester.tap(find.byKey(const Key('today-voice')));
     await tester.pumpAndSettle();
     expect(find.text('listening…'), findsNothing); // not stuck listening
   });
@@ -429,8 +465,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: reopened)));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining("I'm Plena"), findsOneWidget);
-    expect(find.textContaining('Reminder: call mom'), findsOneWidget);
+    expect(find.text('Now'), findsOneWidget);
+    expect(find.text('call mom'), findsOneWidget);
   });
 
   testWidgets('an upcoming birthday surfaces on open', (tester) async {
@@ -451,10 +487,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: reopened)));
     await tester.pumpAndSettle();
 
-    expect(
-      find.textContaining("Sarah's birthday is in 4 days"),
-      findsOneWidget,
-    );
+    expect(find.text("Sarah's birthday"), findsOneWidget);
+    expect(find.text('In 4 days'), findsOneWidget);
   });
 
   testWidgets('empty send does nothing', (tester) async {
@@ -462,10 +496,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Send'));
     await tester.pumpAndSettle();
-    expect(
-      find.textContaining("I'm Plena"),
-      findsOneWidget,
-    ); // greeting still there, no reply
+    expect(find.byKey(const Key('today-board')), findsOneWidget);
   });
 
   testWidgets('undo from the UI reverses the last turn', (tester) async {
@@ -477,21 +508,18 @@ void main() {
     expect(find.textContaining('Undone'), findsOneWidget);
   });
 
-  testWidgets(
-    'multi-turn: a task added is shown (bulleted) by "list my tasks"',
-    (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(home: ChatScreen(session: _session())),
-      );
-      await tester.pumpAndSettle();
-      await _send(tester, 'add buy milk to my list');
-      await _send(tester, 'list my tasks');
-      // List register: the item renders in the reading column with a mote mark (not an ASCII "•"),
-      // so the item text is just "buy milk" (bullet stripped, drawn as a coloured dot).
-      expect(find.textContaining('buy milk'), findsWidgets);
-      expect(find.textContaining('• buy milk'), findsNothing);
-    },
-  );
+  testWidgets('multi-turn: a task added is shown (bulleted) by "list my tasks"', (
+    tester,
+  ) async {
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
+    await tester.pumpAndSettle();
+    await _send(tester, 'add buy milk to my list');
+    await _send(tester, 'list my tasks');
+    // List register: the item renders in the reading column with a mote mark (not an ASCII "•"),
+    // so the item text is just "buy milk" (bullet stripped, drawn as a coloured dot).
+    expect(find.textContaining('buy milk'), findsWidgets);
+    expect(find.textContaining('• buy milk'), findsNothing);
+  });
 
   testWidgets('an unrecognized input gets a graceful reply', (tester) async {
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
@@ -564,108 +592,160 @@ void main() {
     expect(voice.spoken.length, before); // silent while muted
   });
 
-  testWidgets('M5 — a live partial transcript materialises mid-listen, then the final replies', (
-    tester,
-  ) async {
-    final speech = _HoldingSpeech();
-    await tester.pumpWidget(
-      MaterialApp(home: ChatScreen(session: _session(), speech: speech)),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tapAt(const Offset(400, 300)); // tap the void → start listening
-    await tester.pumpAndSettle();
-    // Before any words: the status line teaches the stop gesture (first sessions only).
-    expect(find.textContaining("tap anywhere when you're done"), findsOneWidget);
-
-    speech.emitPartial('add buy bread'); // interim words stream in
-    await tester.pump();
-    // The live partial appears as the caption over the void…
-    expect(find.textContaining('add buy bread'), findsWidgets);
-    // …and the status line is gone the moment a partial takes over (no overlap).
-    expect(find.textContaining("tap anywhere when you're done"), findsNothing);
-
-    speech.emitFinal('add buy bread to my list'); // final → auto-send
-    await tester.pumpAndSettle();
-    expect(find.textContaining('I heard: add buy bread to my list'), findsOneWidget);
-    expect(find.textContaining('Added'), findsOneWidget); // the reply landed
-  });
-
-  testWidgets('M6 — deliberate ✕-abort never trips the no-audio hint, and clears listening', (
-    tester,
-  ) async {
-    final speech = _HoldingSpeech();
-    await tester.pumpWidget(
-      MaterialApp(home: ChatScreen(session: _session(), speech: speech)),
-    );
-    await tester.pumpAndSettle();
-
-    const void_ = Offset(400, 300);
-    // Two full start→abort cycles. Each abort's cancel fires onDone; the _aborting guard must keep
-    // it from counting as a no-audio miss. Without the guard, two misses would streak to the hint.
-    for (var i = 0; i < 2; i++) {
-      await tester.tapAt(void_); // start
+  testWidgets(
+    'M5 — a live partial transcript materialises mid-listen, then the final replies',
+    (tester) async {
+      final speech = _HoldingSpeech();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(session: _session(), speech: speech),
+        ),
+      );
       await tester.pumpAndSettle();
-      expect(find.textContaining('listening'), findsOneWidget); // genuinely listening
-      await tester.tap(find.byKey(const Key('cancel-listen'))); // abort via ✕ (NOT a second tap)
+
+      await tester.tap(find.byKey(const Key('today-voice')));
       await tester.pumpAndSettle();
-    }
+      // Before any words: the status line teaches the stop gesture (first sessions only).
+      expect(
+        find.textContaining("tap anywhere when you're done"),
+        findsOneWidget,
+      );
 
-    expect(find.textContaining('not hearing any audio'), findsNothing); // abort ≠ no-audio miss
-    expect(find.textContaining('listening'), findsNothing); // listener not left stuck
-  });
+      speech.emitPartial('add buy bread'); // interim words stream in
+      await tester.pump();
+      // The live partial appears as the caption over the void…
+      expect(find.textContaining('add buy bread'), findsWidgets);
+      // …and the status line is gone the moment a partial takes over (no overlap).
+      expect(
+        find.textContaining("tap anywhere when you're done"),
+        findsNothing,
+      );
 
-  testWidgets('the SECOND tap stops and sends — it does not discard (user-delimited capture)', (
-    tester,
-  ) async {
-    final speech = _HoldingSpeech()..pendingFinal = 'add buy bread to my list';
-    await tester.pumpWidget(
-      MaterialApp(home: ChatScreen(session: _session(), speech: speech)),
-    );
-    await tester.pumpAndSettle();
+      speech.emitFinal('add buy bread to my list'); // final → auto-send
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('I heard: add buy bread to my list'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Added'), findsOneWidget); // the reply landed
+    },
+  );
 
-    const void_ = Offset(400, 300);
-    await tester.tapAt(void_); // start
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('cancel-listen')), findsOneWidget); // ✕ only exists while listening
+  testWidgets(
+    'M6 — deliberate ✕-abort never trips the no-audio hint, and clears listening',
+    (tester) async {
+      final speech = _HoldingSpeech();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(session: _session(), speech: speech),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tapAt(void_); // STOP — the engine finalizes and the app sends
-    await tester.pumpAndSettle();
+      // Two full start→abort cycles. Each abort's cancel fires onDone; the _aborting guard must keep
+      // it from counting as a no-audio miss. Without the guard, two misses would streak to the hint.
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.byKey(const Key('today-voice'))); // start
+        await tester.pumpAndSettle();
+        expect(
+          find.textContaining('listening'),
+          findsOneWidget,
+        ); // genuinely listening
+        await tester.tap(
+          find.byKey(const Key('cancel-listen')),
+        ); // abort via ✕ (NOT a second tap)
+        await tester.pumpAndSettle();
+      }
 
-    expect(find.textContaining('I heard: add buy bread to my list'), findsOneWidget);
-    expect(find.textContaining('Added'), findsOneWidget); // it really was sent, not discarded
-    expect(find.byKey(const Key('cancel-listen')), findsNothing); // and the ✕ is gone again
-  });
+      expect(
+        find.textContaining('not hearing any audio'),
+        findsNothing,
+      ); // abort ≠ no-audio miss
+      expect(
+        find.textContaining('listening'),
+        findsNothing,
+      ); // listener not left stuck
+    },
+  );
+
+  testWidgets(
+    'the SECOND tap stops and sends — it does not discard (user-delimited capture)',
+    (tester) async {
+      final speech = _HoldingSpeech()
+        ..pendingFinal = 'add buy bread to my list';
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(session: _session(), speech: speech),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      const void_ = Offset(400, 300);
+      await tester.tap(find.byKey(const Key('today-voice'))); // start
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('cancel-listen')),
+        findsOneWidget,
+      ); // ✕ only exists while listening
+
+      await tester.tapAt(
+        void_,
+      ); // STOP — the engine finalizes and the app sends
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('I heard: add buy bread to my list'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Added'),
+        findsOneWidget,
+      ); // it really was sent, not discarded
+      expect(
+        find.byKey(const Key('cancel-listen')),
+        findsNothing,
+      ); // and the ✕ is gone again
+    },
+  );
 
   testWidgets('✕ discards what was said — nothing is sent', (tester) async {
     final speech = _HoldingSpeech()..pendingFinal = 'add buy bread to my list';
     await tester.pumpWidget(
-      MaterialApp(home: ChatScreen(session: _session(), speech: speech)),
+      MaterialApp(
+        home: ChatScreen(session: _session(), speech: speech),
+      ),
     );
     await tester.pumpAndSettle();
 
-    await tester.tapAt(const Offset(400, 300));
+    await tester.tap(find.byKey(const Key('today-voice')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('cancel-listen')));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('I heard:'), findsNothing);
-    expect(find.textContaining('Added'), findsNothing); // the pending transcript never reached the turn
+    expect(
+      find.textContaining('Added'),
+      findsNothing,
+    ); // the pending transcript never reached the turn
   });
 
-  testWidgets('Semantics: the presence exposes an accessible label with Plena\'s state and caption', (
-    tester,
-  ) async {
-    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: _session())));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'Semantics: Plena exposes state while Today exposes planner truth',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: ChatScreen(session: _session())),
+      );
+      await tester.pumpAndSettle();
 
-    final handle = tester.ensureSemantics();
-    final presence = tester.widget<PresenceView>(find.byType(PresenceView)).state;
-    final node = tester.getSemantics(find.byType(PresenceView));
-    // The a11y label carries Plena's current state name…
-    expect(node.label, contains('Plena — ${presence.name}'));
-    // …and the current caption (here, the greeting) so screen readers hear what's on the void.
-    expect(node.label, contains("I'm Plena"));
-    handle.dispose();
-  });
+      final handle = tester.ensureSemantics();
+      final presence = tester
+          .widget<PresenceView>(find.byType(PresenceView))
+          .state;
+      final node = tester.getSemantics(find.byType(PresenceView));
+      // The a11y label carries Plena's current state name…
+      expect(node.label, contains('Plena — ${presence.name}'));
+      expect(find.byKey(const Key('today-board')), findsOneWidget);
+      handle.dispose();
+    },
+  );
 }

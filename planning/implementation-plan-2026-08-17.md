@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-17  
 **Inputs:** [specification and code review](../reviews/2026-08-17-spec-code-review.md), [art and animation review](../reviews/2026-08-17-art-animation-review.md), and [planner UX review](../reviews/2026-08-17-planner-ux-review.md)  
-**Status:** implementation design approved in principle; no production change is implied by this document  
+**Status:** approved and in implementation. Increments 0–2 are implemented and repository-gated. Increment 2 also passed disposable-copy migration against real dogfood data and the local iPhone 17 Pro simulator real-engine gate. Human five-second-glance and capture-time measurements wait for an ordinary usable deployment, never a test harness on Luis's phone.
 **Planning rule:** dependencies and evidence gates determine order. There are no calendar deadlines, and a later increment does not begin merely because an earlier one has code—the earlier increment must pass its user-visible and failure-path gates.
 
 ## Executive decision
@@ -98,7 +98,7 @@ Rules for the destination:
 4. **Deliver a usable Today vertical slice before completing every backend ambition.** Local routing, full Week, sync, and illustration curation do not block the first durable planner surface.
 5. **Use output-level gates.** A passing widget test does not prove a readable iPhone layout; an execution-unit test does not prove restart recovery.
 6. **One rule, one home.** Each increment names the specs and restatements it changes; stale prose is fixed in the same change.
-7. **Batch physical-device cycles.** Finish all known work for an increment, then do one iPhone pass covering layout, motion, voice, memory, and logs.
+7. **Keep verification off Luis's phone.** Automated layout, motion, voice, memory, and log checks run on local iPhone simulators. The physical iPhone is used only to deploy a usable build Luis explicitly asked to receive; ordinary implementation gates never install or run test harnesses there.
 
 ## Increment 0 — make the development loop safe and honest
 
@@ -235,7 +235,7 @@ Opening Plenara answers “what do I need to know and do now?” without a query
 
 ### Acceptance gate
 
-- On every supported iPhone class, no brand/control intersects the Dynamic Island or home indicator and both onboarding choices are visible without scrolling.
+- On simulated supported iPhone classes, no brand/control intersects the Dynamic Island or home indicator and both onboarding choices are visible without scrolling.
 - In a five-second glance across ten scripted states, the next commitment, overdue risk, and latest undoability are identified correctly in at least nine.
 - Six mixed voice captures land in the intended semantic place without increasing median capture time by more than 10% from the baseline.
 - Every voice write appears visibly in the same response beat and remains findable after relaunch.

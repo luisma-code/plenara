@@ -1,0 +1,10 @@
+{
+  "typeId": "project",
+  "schemaVersion": 1,
+  "displayName": "Project",
+  "attributes": [
+    { "name": "name", "valueType": "text", "required": true },
+    { "name": "status", "valueType": "enum", "enumValues": ["active", "paused", "done"], "required": false, "default": "active" },
+    { "name": "notes", "valueType": "text", "required": false }
+  ]
+}

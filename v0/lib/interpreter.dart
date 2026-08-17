@@ -8,9 +8,11 @@ import 'dart:math';
 
 import 'dates.dart';
 import 'reference.dart';
+import 'value_codec.dart';
 
 class ResolveError implements Exception {
   final String message;
+
   /// Candidate labels when the failure is an AMBIGUITY (G-12) — lets the caller ask
   /// the user which one instead of leaking a raw error.
   final List<String>? options;
@@ -19,7 +21,8 @@ class ResolveError implements Exception {
   String toString() => 'ResolveError: $message';
 }
 
-typedef Record = Map<String, dynamic>; // flat: {id, typeId, <field>: <value>...}
+typedef Record
+    = Map<String, dynamic>; // flat: {id, typeId, <field>: <value>...}
 typedef TypeDef = Map<String, dynamic>;
 typedef Skill = Map<String, dynamic>;
 
@@ -31,6 +34,7 @@ class Plan {
   /// without re-reading records or re-running the turn.
   final List<Map<String, dynamic>> reads = [];
   String? confirmation;
+
   /// The ordered list a numbered readback (the `enumerate` op) rendered, so the Session can
   /// resolve a later "delete 2" / "correct 1" against EXACTLY what was spoken — never a
   /// re-derived order (Feature: numbered-list corrections). Shape:
@@ -43,7 +47,8 @@ class Plan {
 class _VCtx {
   final String sid;
   bool setsConfirmation = false;
-  final Set<String> readTypes = {}; // types actually read (for the capability closure)
+  final Set<String> readTypes =
+      {}; // types actually read (for the capability closure)
   final Set<String> writeTypes = {}; // types actually written
   _VCtx(this.sid);
 }
@@ -52,10 +57,12 @@ class Interpreter {
   final Map<String, TypeDef> types;
   final DateTime now;
   final Random _rng;
+
   /// Reference datasets (Spec 13) keyed by name (e.g. 'nutrition'), for the read_reference op.
   /// Empty by default so the interpreter stays pure/testable; the Session injects the real ones.
   final Map<String, ReferenceStore> references;
-  Interpreter(this.types, this.now, {Random? rng, Map<String, ReferenceStore>? references})
+  Interpreter(this.types, this.now,
+      {Random? rng, Map<String, ReferenceStore>? references})
       : _rng = rng ?? Random(),
         references = references ?? const {};
 
@@ -134,7 +141,8 @@ class Interpreter {
         final d = _asDate(a[0]);
         if (d == null) return null;
         var yrs = now.year - d.year;
-        if (now.month < d.month || (now.month == d.month && now.day < d.day)) yrs -= 1;
+        if (now.month < d.month || (now.month == d.month && now.day < d.day))
+          yrs -= 1;
         return yrs;
       case 'current_streak':
         // consecutive days (ending today, or yesterday if today is blank) that the
@@ -142,10 +150,16 @@ class Interpreter {
         final days = _daysSet(a[0], a[1]);
         var t = _epochDay(now);
         if (!days.contains(t)) {
-          if (days.contains(t - 1)) t -= 1; else return 0;
+          if (days.contains(t - 1))
+            t -= 1;
+          else
+            return 0;
         }
         var n = 0;
-        while (days.contains(t)) { n++; t -= 1; }
+        while (days.contains(t)) {
+          n++;
+          t -= 1;
+        }
         return n;
       case 'longest_streak':
         final days = (_daysSet(a[0], a[1]).toList())..sort();
@@ -158,7 +172,9 @@ class Interpreter {
         return best;
       case 'start_of_week':
         final d = _asDate(a[0]);
-        return d == null ? null : _dateOnly(d.subtract(Duration(days: d.weekday - 1)));
+        return d == null
+            ? null
+            : _dateOnly(d.subtract(Duration(days: d.weekday - 1)));
       case 'start_of_month':
         final d = _asDate(a[0]);
         return d == null ? null : _dateOnly(DateTime(d.year, d.month, 1));
@@ -166,33 +182,44 @@ class Interpreter {
         // Numeric-only, like mul/div. Unguarded `+` on two numeric-looking STRINGS silently
         // concatenates ("5" + "1" -> "51") and would write that into a number field; on a
         // string + a num it throws. `concat` is the op for joining text.
-        final x = a.isEmpty ? null : a[0], y = a.length > 1 ? a[1] : null;
-        if (x != null && x is! num) return null;
-        if (y != null && y is! num) return null;
-        return ((x as num?) ?? 0) + ((y as num?) ?? 0);
+        final x = a.isEmpty ? null : _number(a[0]);
+        final y = a.length > 1 ? _number(a[1]) : null;
+        if (a.isNotEmpty && a[0] != null && x == null) return null;
+        if (a.length > 1 && a[1] != null && y == null) return null;
+        return (x ?? 0) + (y ?? 0);
       case 'mul':
-        return (a[0] is num && a[1] is num) ? (a[0] as num) * (a[1] as num) : null;
+        final x = _number(a[0]), y = _number(a[1]);
+        return x == null || y == null ? null : x * y;
       case 'div':
         // guarded: divide-by-zero (or a non-number) -> null, never a crash/Infinity
-        return (a[0] is num && a[1] is num && (a[1] as num) != 0) ? (a[0] as num) / (a[1] as num) : null;
+        final x = _number(a[0]), y = _number(a[1]);
+        return x == null || y == null || y == 0 ? null : x / y;
       case 'round':
-        return a[0] is num ? (a[0] as num).round() : null;
+        return _number(a[0])?.round();
       case 'days_between':
         final d1 = _asDate(a[0]), d2 = _asDate(a[1]);
         return (d1 == null || d2 == null) ? null : d2.difference(d1).inDays;
       case 'add_days':
         final d = _asDate(a[0]);
-        return d == null || a[1] is! num ? null : _dateOnly(d.add(Duration(days: (a[1] as num).toInt())));
+        final days = _number(a[1]);
+        return d == null || days == null
+            ? null
+            : _dateOnly(d.add(Duration(days: days.toInt())));
       case 'count':
         return (a[0] as List?)?.length ?? 0;
       case 'count_where':
         // count records in list a[0] whose field a[1] equals value a[2]
-        return ((a[0] as List?) ?? []).where((r) => r is Map && r[a[1]] == a[2]).length;
+        return ((a[0] as List?) ?? [])
+            .where((r) => r is Map && r[a[1]] == a[2])
+            .length;
       case 'sum':
         return _nums(a[0], a[1]).fold<num>(0, (s, x) => s + x);
       case 'avg':
         final ns = _nums(a[0], a[1]);
-        return ns.isEmpty ? null : ns.reduce((s, x) => s + x) / ns.length; // no data -> null, not a misleading 0 (spec §3.7)
+        return ns.isEmpty
+            ? null
+            : ns.reduce((s, x) => s + x) /
+                ns.length; // no data -> null, not a misleading 0 (spec §3.7)
       case 'min':
         final ns = _nums(a[0], a[1]);
         return ns.isEmpty ? null : ns.reduce((x, y) => x < y ? x : y);
@@ -225,21 +252,35 @@ class Interpreter {
         // stays one item instead of tearing into "1" and "000 widgets".
         final sepRe = RegExp(r'(?<!\d),|,(?!\d)');
         final seps = sepRe.allMatches(ls).length;
-        final oxford = RegExp(r',\s*(?:and|&)\s', caseSensitive: false).hasMatch(ls);
+        final oxford =
+            RegExp(r',\s*(?:and|&)\s', caseSensitive: false).hasMatch(ls);
         if (seps == 0 || (seps < 2 && !oxford)) return [ls];
         return ls
             .split(sepRe)
-            .map((e) => e.trim().replaceFirst(RegExp(r'^(?:and|&)\s+', caseSensitive: false), '').trim())
+            .map((e) => e
+                .trim()
+                .replaceFirst(
+                    RegExp(r'^(?:and|&)\s+', caseSensitive: false), '')
+                .trim())
             .where((e) => e.isNotEmpty)
             .toList();
       case 'position_index':
         // a spoken position -> a 1-based index, with -1 meaning "last". Handles ordinal
         // words ("first".."tenth"), ordinal/plain digits ("3rd", "3"), and "last".
         final pt = (a.isEmpty ? '' : '${a[0]}').toLowerCase().trim();
-        if (RegExp(r'\blast\b').hasMatch(pt)) return -1; // 'last' as a WORD, not a substring
+        if (RegExp(r'\blast\b').hasMatch(pt))
+          return -1; // 'last' as a WORD, not a substring
         const posWords = {
-          'first': 1, 'second': 2, 'third': 3, 'fourth': 4, 'fifth': 5,
-          'sixth': 6, 'seventh': 7, 'eighth': 8, 'ninth': 9, 'tenth': 10,
+          'first': 1,
+          'second': 2,
+          'third': 3,
+          'fourth': 4,
+          'fifth': 5,
+          'sixth': 6,
+          'seventh': 7,
+          'eighth': 8,
+          'ninth': 9,
+          'tenth': 10,
         };
         for (final e in posWords.entries) {
           if (RegExp('\\b${e.key}\\b').hasMatch(pt)) return e.value;
@@ -274,7 +315,8 @@ class Interpreter {
         final found = <int>{};
         for (var tok in wtext.split(RegExp(r'[^a-z]+'))) {
           if (tok.isEmpty) continue;
-          if (tok.endsWith('s')) tok = tok.substring(0, tok.length - 1); // "tuesdays" -> "tuesday"
+          if (tok.endsWith('s'))
+            tok = tok.substring(0, tok.length - 1); // "tuesdays" -> "tuesday"
           final n = _weekdayNums[tok];
           if (n != null) found.add(n);
         }
@@ -297,15 +339,46 @@ class Interpreter {
   }
 
   static const _days = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
   ];
   static const _weekdayNums = {
-    'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7,
-    'mon': 1, 'tue': 2, 'tues': 2, 'wed': 3, 'thu': 4, 'thur': 4, 'thurs': 4, 'fri': 5, 'sat': 6, 'sun': 7,
+    'monday': 1,
+    'tuesday': 2,
+    'wednesday': 3,
+    'thursday': 4,
+    'friday': 5,
+    'saturday': 6,
+    'sunday': 7,
+    'mon': 1,
+    'tue': 2,
+    'tues': 2,
+    'wed': 3,
+    'thu': 4,
+    'thur': 4,
+    'thurs': 4,
+    'fri': 5,
+    'sat': 6,
+    'sun': 7,
   };
   static const _months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
   ];
   static String _weekday(DateTime d) => _days[d.weekday - 1];
   static String _dateOnly(DateTime d) =>
@@ -319,10 +392,12 @@ class Interpreter {
   }
 
   // full datetime (keeps the time-of-day; used by format_time). Never throws.
-  static DateTime? _asDateTime(dynamic s) => s == null ? null : DateTime.tryParse(s.toString());
+  static DateTime? _asDateTime(dynamic s) =>
+      s == null ? null : DateTime.tryParse(s.toString());
 
   // day number in UTC (no DST) so consecutive calendar days differ by exactly 1.
-  static int _epochDay(DateTime d) => DateTime.utc(d.year, d.month, d.day).millisecondsSinceEpoch ~/ 86400000;
+  static int _epochDay(DateTime d) =>
+      DateTime.utc(d.year, d.month, d.day).millisecondsSinceEpoch ~/ 86400000;
   // numeric values of [field] across a record list (parses numeric strings; skips non-numbers).
   static List<num> _nums(dynamic list, dynamic field) {
     final out = <num>[];
@@ -335,6 +410,9 @@ class Interpreter {
     }
     return out;
   }
+
+  static num? _number(dynamic value) =>
+      value is num ? value : num.tryParse(value?.toString() ?? '');
 
   // ordering/filter comparison: numeric when both look numeric, else lexical (ISO dates sort right).
   static int _cmp(dynamic a, dynamic b) {
@@ -413,11 +491,15 @@ class Interpreter {
       case 'lt':
         return _cmp(rv, fv) < 0;
       case 'contains':
-        return rv is String && fv is String && rv.toLowerCase().contains(fv.toLowerCase());
+        return rv is String &&
+            fv is String &&
+            rv.toLowerCase().contains(fv.toLowerCase());
       case 'ieq':
         // case-insensitive, whitespace-trimmed string equality — for duplicate detection
         // ("Buy Milk" == "buy milk") without depending on exact casing.
-        return rv is String && fv is String && rv.trim().toLowerCase() == fv.trim().toLowerCase();
+        return rv is String &&
+            fv is String &&
+            rv.trim().toLowerCase() == fv.trim().toLowerCase();
       case 'in':
         return fv is List && fv.contains(rv);
       default:
@@ -426,12 +508,70 @@ class Interpreter {
   }
 
   // ---- static validation (authoring-time gate; Spec 02 §6.4) --------------
-  static const _ops = {'read_one', 'read_many', 'read_related', 'read_reference', 'write_record', 'delete_record', 'compute', 'set', 'format', 'branch', 'foreach', 'enumerate', 'ref_mark'};
-  static const _fns = {'now', 'today', 'format_date', 'format_time', 'start_of_week', 'start_of_month', 'add', 'count', 'concat',
-    'next_annual', 'days_until_annual', 'years_since', 'current_streak', 'longest_streak',
-    'days_between', 'add_days', 'count_where', 'sum', 'avg', 'min', 'max', 'if', 'ordinal_num', 'ordinal_suffix',
-    'weekday_nums', 'date_part', 'time_part', 'split_list', 'dedup_list', 'position_index', 'nth', 'mul', 'div', 'round'};
-  static const _filterOps = {'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'ieq', 'in', 'isNull', 'notNull'};
+  static const _ops = {
+    'read_one',
+    'read_many',
+    'read_related',
+    'read_reference',
+    'write_record',
+    'delete_record',
+    'compute',
+    'set',
+    'format',
+    'branch',
+    'foreach',
+    'enumerate',
+    'ref_mark'
+  };
+  static const _fns = {
+    'now',
+    'today',
+    'format_date',
+    'format_time',
+    'start_of_week',
+    'start_of_month',
+    'add',
+    'count',
+    'concat',
+    'next_annual',
+    'days_until_annual',
+    'years_since',
+    'current_streak',
+    'longest_streak',
+    'days_between',
+    'add_days',
+    'count_where',
+    'sum',
+    'avg',
+    'min',
+    'max',
+    'if',
+    'ordinal_num',
+    'ordinal_suffix',
+    'weekday_nums',
+    'date_part',
+    'time_part',
+    'split_list',
+    'dedup_list',
+    'position_index',
+    'nth',
+    'mul',
+    'div',
+    'round'
+  };
+  static const _filterOps = {
+    'eq',
+    'neq',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+    'contains',
+    'ieq',
+    'in',
+    'isNull',
+    'notNull'
+  };
 
   /// Branch CONDITION forms (Spec 02 §3) — a SMALLER set than [_filterOps], and a common
   /// authoring trap: `lte`/`lt`/`gt` are filter ops only. Order a comparison the other way round
@@ -451,14 +591,18 @@ class Interpreter {
     final tid = type['typeId'];
     if (tid is! String) throw ResolveError('type must have a string typeId');
     final attrs = type['attributes'];
-    if (attrs is! List) throw ResolveError("type '$tid': attributes must be a list");
+    if (attrs is! List)
+      throw ResolveError("type '$tid': attributes must be a list");
     for (final a in attrs) {
-      if (a is! Map || a['name'] is! String) throw ResolveError("type '$tid': each attribute needs a name");
+      if (a is! Map || a['name'] is! String)
+        throw ResolveError("type '$tid': each attribute needs a name");
       if (!_valueTypes.contains(a['valueType'])) {
-        throw ResolveError("type '$tid': attribute '${a['name']}' has unknown valueType '${a['valueType']}'");
+        throw ResolveError(
+            "type '$tid': attribute '${a['name']}' has unknown valueType '${a['valueType']}'");
       }
       if (a['valueType'] == 'entityRef' && a['refType'] is! String) {
-        throw ResolveError("type '$tid': entity attribute '${a['name']}' needs a refType");
+        throw ResolveError(
+            "type '$tid': entity attribute '${a['name']}' needs a refType");
       }
     }
   }
@@ -474,22 +618,30 @@ class Interpreter {
       throw ResolveError("$sid: skill must have steps.main (a list of ops)");
     }
     final c = _VCtx(sid);
-    _validate(steps['main'] as List, <String, String?>{}, <String, String?>{}, c);
+    _validate(
+        steps['main'] as List, <String, String?>{}, <String, String?>{}, c);
     if (!c.setsConfirmation) {
-      throw ResolveError("$sid: no step produces a 'confirmationText' (a format op into confirmationText is required)");
+      throw ResolveError(
+          "$sid: no step produces a 'confirmationText' (a format op into confirmationText is required)");
     }
     _checkVarClosure(steps['main'] as List, skill, sid);
     // capability closure (Spec 02 §6.4 rule 3): if the skill declares reads/writes,
     // it may not touch a type it didn't declare. Enforced-if-present.
-    final declaredReads = (skill['reads'] as List?)?.map((e) => e.toString()).toSet();
+    final declaredReads =
+        (skill['reads'] as List?)?.map((e) => e.toString()).toSet();
     if (declaredReads != null) {
       final extra = c.readTypes.difference(declaredReads);
-      if (extra.isNotEmpty) throw ResolveError("$sid: reads undeclared type(s) ${extra.join(', ')} — add to 'reads'");
+      if (extra.isNotEmpty)
+        throw ResolveError(
+            "$sid: reads undeclared type(s) ${extra.join(', ')} — add to 'reads'");
     }
-    final declaredWrites = (skill['writes'] as List?)?.map((e) => e.toString()).toSet();
+    final declaredWrites =
+        (skill['writes'] as List?)?.map((e) => e.toString()).toSet();
     if (declaredWrites != null) {
       final extra = c.writeTypes.difference(declaredWrites);
-      if (extra.isNotEmpty) throw ResolveError("$sid: writes undeclared type(s) ${extra.join(', ')} — add to 'writes'");
+      if (extra.isNotEmpty)
+        throw ResolveError(
+            "$sid: writes undeclared type(s) ${extra.join(', ')} — add to 'writes'");
     }
   }
 
@@ -509,8 +661,10 @@ class Interpreter {
       for (final s in steps) {
         if (s is! Map) continue;
         if (s['into'] is String) bound.add(s['into'] as String);
-        if (s['op'] == 'set' && s['var'] is String) bound.add(s['var'] as String); // set's target binds
-        if (s['op'] == 'foreach' && s['as'] is String) bound.add(s['as'] as String);
+        if (s['op'] == 'set' && s['var'] is String)
+          bound.add(s['var'] as String); // set's target binds
+        if (s['op'] == 'foreach' && s['as'] is String)
+          bound.add(s['as'] as String);
         collect(s['then']);
         collect(s['else']);
         collect(s['body']);
@@ -524,9 +678,11 @@ class Interpreter {
         if (node['var'] is String) refs.add(node['var'] as String);
         if (node['ref'] is String) refs.add(node['ref'] as String);
         final f = node['field'];
-        if (f is List && f.isNotEmpty && f.first is String) refs.add(f.first as String);
+        if (f is List && f.isNotEmpty && f.first is String)
+          refs.add(f.first as String);
         node.forEach((k, v) {
-          if (k != 'into' && k != 'as' && k != 'var') refsIn(v); // skip binding sites
+          if (k != 'into' && k != 'as' && k != 'var')
+            refsIn(v); // skip binding sites
         });
       } else if (node is List) {
         for (final e in node) {
@@ -542,19 +698,32 @@ class Interpreter {
         if (s['op'] == 'format' && s['template'] is String) {
           // match {name} AND {var:name} — the runtime format op renders both, so the closure
           // gate must check both or a typo'd {var:persoName} silently renders empty (Fable review).
-          for (final m in RegExp(r'\{(?:var:)?(\w+)\}').allMatches(s['template'] as String)) {
+          for (final m in RegExp(r'\{(?:var:)?(\w+)\}')
+              .allMatches(s['template'] as String)) {
             refs.add(m.group(1)!);
           }
         }
         final cond = s['cond'];
         if (cond is Map) {
           for (final key in const ['isNull', 'notNull']) {
-            if (cond[key] is String) refs.add(cond[key] as String); // cond takes a bare var name
+            if (cond[key] is String)
+              refs.add(cond[key] as String); // cond takes a bare var name
           }
           refsIn(cond);
         }
-        for (final key in const ['value', 'args', 'fields', 'filter', 'list', 'from', 'match', 'id', 'label']) {
-          refsIn(s[key]); // 'id'/'label' close ref_mark + delete_record exprs (else a typo'd {var} no-ops silently)
+        for (final key in const [
+          'value',
+          'args',
+          'fields',
+          'filter',
+          'list',
+          'from',
+          'match',
+          'id',
+          'label'
+        ]) {
+          refsIn(s[
+              key]); // 'id'/'label' close ref_mark + delete_record exprs (else a typo'd {var} no-ops silently)
         }
         scanRefs(s['then']);
         scanRefs(s['else']);
@@ -571,73 +740,101 @@ class Interpreter {
     }
   }
 
-  void _validate(List steps, Map<String, String?> recVars, Map<String, String?> listVars, _VCtx c) {
+  void _validate(List steps, Map<String, String?> recVars,
+      Map<String, String?> listVars, _VCtx c) {
     for (final raw in steps) {
-      if (raw is! Map) throw ResolveError("${c.sid}: a step must be an object, got $raw");
+      if (raw is! Map)
+        throw ResolveError("${c.sid}: a step must be an object, got $raw");
       final step = raw;
       final op = step['op'];
       if (!_ops.contains(op)) {
-        throw ResolveError("${c.sid}: unknown op '$op' (closed vocabulary: ${_ops.join(', ')})");
+        throw ResolveError(
+            "${c.sid}: unknown op '$op' (closed vocabulary: ${_ops.join(', ')})");
       }
       switch (op) {
         case 'compute':
-          if (!_fns.contains(step['fn'])) throw ResolveError("${c.sid}: unknown compute fn '${step['fn']}'");
+          if (!_fns.contains(step['fn']))
+            throw ResolveError("${c.sid}: unknown compute fn '${step['fn']}'");
         case 'read_one':
           final tid = step['typeId'];
-          if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_one unknown type '$tid'");
+          if (!types.containsKey(tid))
+            throw ResolveError("${c.sid}: read_one unknown type '$tid'");
           c.readTypes.add(tid as String);
           if (step['into'] is String) recVars[step['into'] as String] = tid;
         case 'read_many':
           final tid = step['typeId'];
-          if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_many unknown type '$tid'");
+          if (!types.containsKey(tid))
+            throw ResolveError("${c.sid}: read_many unknown type '$tid'");
           c.readTypes.add(tid as String);
           final f = step['filter'];
           if (f != null) {
             final preds = f is List ? f : [f];
             // an empty filter list would make the runtime's `.every` vacuously true and match
             // ALL records — reject it at authoring time (never silently match all).
-            if (preds.isEmpty) throw ResolveError("${c.sid}: read_many filter list is empty");
+            if (preds.isEmpty)
+              throw ResolveError("${c.sid}: read_many filter list is empty");
             for (final p in preds) {
               // validation MUST reject what execution would crash on (`p as Map`): a non-Map entry.
-              if (p is! Map) throw ResolveError("${c.sid}: read_many filter entry must be an object");
+              if (p is! Map)
+                throw ResolveError(
+                    "${c.sid}: read_many filter entry must be an object");
               if (p['op'] != null && !_filterOps.contains(p['op'])) {
-                throw ResolveError("${c.sid}: read_many unsupported filter op '${p['op']}' (${_filterOps.join('/')})");
+                throw ResolveError(
+                    "${c.sid}: read_many unsupported filter op '${p['op']}' (${_filterOps.join('/')})");
               }
             }
           }
-          if (step['orderDir'] != null && step['orderDir'] != 'asc' && step['orderDir'] != 'desc') {
-            throw ResolveError("${c.sid}: read_many orderDir must be 'asc' or 'desc'");
+          if (step['orderDir'] != null &&
+              step['orderDir'] != 'asc' &&
+              step['orderDir'] != 'desc') {
+            throw ResolveError(
+                "${c.sid}: read_many orderDir must be 'asc' or 'desc'");
           }
-          if (step['limit'] != null && step['limit'] is! int) throw ResolveError("${c.sid}: read_many limit must be an int");
+          if (step['limit'] != null && step['limit'] is! int)
+            throw ResolveError("${c.sid}: read_many limit must be an int");
           if (step['into'] is String) listVars[step['into'] as String] = tid;
         case 'read_reference':
-          if (step['dataset'] is! String) throw ResolveError("${c.sid}: read_reference needs a 'dataset' name");
-          if (step['key'] == null) throw ResolveError("${c.sid}: read_reference needs a 'key'");
-          if (step['into'] is! String) throw ResolveError("${c.sid}: read_reference needs an 'into'");
+          if (step['dataset'] is! String)
+            throw ResolveError(
+                "${c.sid}: read_reference needs a 'dataset' name");
+          if (step['key'] == null)
+            throw ResolveError("${c.sid}: read_reference needs a 'key'");
+          if (step['into'] is! String)
+            throw ResolveError("${c.sid}: read_reference needs an 'into'");
         case 'read_related':
           final tid = step['typeId'];
-          if (!types.containsKey(tid)) throw ResolveError("${c.sid}: read_related unknown type '$tid'");
-          if (step['via'] is! String) throw ResolveError("${c.sid}: read_related needs a 'via' attribute name");
+          if (!types.containsKey(tid))
+            throw ResolveError("${c.sid}: read_related unknown type '$tid'");
+          if (step['via'] is! String)
+            throw ResolveError(
+                "${c.sid}: read_related needs a 'via' attribute name");
           // Same static checks read_many gets: an authored orderDir of "descending" would pass the
           // gate and silently sort ASCENDING at run time — the exact "'delete 2' means a different
           // row" class this op's ordering was added to prevent.
-          if (step['orderDir'] != null && step['orderDir'] != 'asc' && step['orderDir'] != 'desc') {
-            throw ResolveError("${c.sid}: read_related orderDir must be 'asc' or 'desc'");
+          if (step['orderDir'] != null &&
+              step['orderDir'] != 'asc' &&
+              step['orderDir'] != 'desc') {
+            throw ResolveError(
+                "${c.sid}: read_related orderDir must be 'asc' or 'desc'");
           }
           if (step['limit'] != null && step['limit'] is! int) {
             throw ResolveError("${c.sid}: read_related limit must be an int");
           }
-          if (step['from'] == null) throw ResolveError("${c.sid}: read_related needs a 'from' record reference");
+          if (step['from'] == null)
+            throw ResolveError(
+                "${c.sid}: read_related needs a 'from' record reference");
           c.readTypes.add(tid as String);
           if (step['into'] is String) listVars[step['into'] as String] = tid;
         case 'write_record':
           final tid = step['typeId'];
           final td = types[tid];
-          if (td == null) throw ResolveError("${c.sid}: write_record unknown type '$tid'");
+          if (td == null)
+            throw ResolveError("${c.sid}: write_record unknown type '$tid'");
           c.writeTypes.add(tid as String);
           final entity = <String, dynamic>{
             for (final a in ((td['attributes'] as List?) ?? []))
-              if (a is Map && a['valueType'] == 'entityRef') a['name'] as String: a['refType']
+              if (a is Map && a['valueType'] == 'entityRef')
+                a['name'] as String: a['refType']
           };
           ((step['fields'] as Map?) ?? {}).forEach((name, fval) {
             if (!entity.containsKey(name)) return;
@@ -651,17 +848,20 @@ class Interpreter {
               srcVar = (fval['field'] as List)[0] as String;
             }
             if (srcVar == null || !recVars.containsKey(srcVar)) {
-              throw ResolveError("${c.sid}: entity field '$tid.$name' must be fed by a resolved record "
+              throw ResolveError(
+                  "${c.sid}: entity field '$tid.$name' must be fed by a resolved record "
                   "reference (read_one/write_record → {ref}), not $fval (G-17, static)");
             }
             final refType = entity[name], srcType = recVars[srcVar];
             if (refType is String && srcType != null && srcType != refType) {
-              throw ResolveError("${c.sid}: entity field '$tid.$name' expects a $refType, but '$srcVar' is a $srcType");
+              throw ResolveError(
+                  "${c.sid}: entity field '$tid.$name' expects a $refType, but '$srcVar' is a $srcType");
             }
           });
           if (step['into'] is String) recVars[step['into'] as String] = tid;
         case 'delete_record':
-          if (step['id'] == null) throw ResolveError("${c.sid}: delete_record needs an 'id'");
+          if (step['id'] == null)
+            throw ResolveError("${c.sid}: delete_record needs an 'id'");
         case 'format':
           if (step['into'] == 'confirmationText') c.setsConfirmation = true;
         case 'branch':
@@ -674,9 +874,11 @@ class Interpreter {
           if (cnd is! Map || cnd.isEmpty) {
             throw ResolveError("${c.sid}: branch needs a 'cond' object");
           }
-          final unknown = cnd.keys.where((k) => !_condForms.contains(k)).toList();
+          final unknown =
+              cnd.keys.where((k) => !_condForms.contains(k)).toList();
           if (unknown.isNotEmpty) {
-            throw ResolveError("${c.sid}: branch cond '${unknown.first}' is not a condition "
+            throw ResolveError(
+                "${c.sid}: branch cond '${unknown.first}' is not a condition "
                 '(${_condForms.join('/')})');
           }
           // cond() evaluates the FIRST form it recognises, so a two-key cond silently ignores half
@@ -685,38 +887,53 @@ class Interpreter {
             throw ResolveError("${c.sid}: branch cond has ${cnd.length} forms "
                 "(${cnd.keys.join(', ')}) — exactly one is evaluated; split it into nested branches");
           }
-          final tRec = Map<String, String?>.from(recVars), eRec = Map<String, String?>.from(recVars);
-          final tList = Map<String, String?>.from(listVars), eList = Map<String, String?>.from(listVars);
+          final tRec = Map<String, String?>.from(recVars),
+              eRec = Map<String, String?>.from(recVars);
+          final tList = Map<String, String?>.from(listVars),
+              eList = Map<String, String?>.from(listVars);
           _validate((step['then'] as List?) ?? const [], tRec, tList, c);
           _validate((step['else'] as List?) ?? const [], eRec, eList, c);
           // only bindings resolved on BOTH paths (same type) survive the branch
           for (final k in tRec.keys) {
-            if (!recVars.containsKey(k) && eRec.containsKey(k) && eRec[k] == tRec[k]) recVars[k] = tRec[k];
+            if (!recVars.containsKey(k) &&
+                eRec.containsKey(k) &&
+                eRec[k] == tRec[k]) recVars[k] = tRec[k];
           }
         case 'foreach':
           final listExpr = step['list'];
-          final elemType = (listExpr is Map && listExpr['var'] is String) ? listVars[listExpr['var']] : null;
+          final elemType = (listExpr is Map && listExpr['var'] is String)
+              ? listVars[listExpr['var']]
+              : null;
           final scoped = Map<String, String?>.from(recVars);
           if (step['as'] is String) scoped[step['as'] as String] = elemType;
-          _validate((step['body'] as List?) ?? const [], scoped, Map<String, String?>.from(listVars), c);
+          _validate((step['body'] as List?) ?? const [], scoped,
+              Map<String, String?>.from(listVars), c);
         case 'set':
           break;
         case 'enumerate':
           // Renders a numbered readback AND exports the ordered id/label list it rendered.
           // `label` is the identity field (what confirmations quote + what "correct N" replaces);
           // optional `line` composes a richer per-row string over record fields (omit-if-null).
-          if (step['list'] is! Map) throw ResolveError("${c.sid}: enumerate needs a 'list' expression");
-          if (step['label'] is! String) throw ResolveError("${c.sid}: enumerate needs a 'label' field name");
-          if (step['into'] is! String) throw ResolveError("${c.sid}: enumerate needs an 'into' var");
-          // `label`/`line` name RECORD attributes, not env vars — so they're exempt from var-closure.
+          if (step['list'] is! Map)
+            throw ResolveError("${c.sid}: enumerate needs a 'list' expression");
+          if (step['label'] is! String)
+            throw ResolveError(
+                "${c.sid}: enumerate needs a 'label' field name");
+          if (step['into'] is! String)
+            throw ResolveError("${c.sid}: enumerate needs an 'into' var");
+        // `label`/`line` name RECORD attributes, not env vars — so they're exempt from var-closure.
         case 'ref_mark':
           // Captures ONE item's {id,label} into the reference channel from inside a foreach — so
           // a skill that composes rich/conditional readback lines still exports numbered refs.
           if (!types.containsKey(step['typeId'])) {
-            throw ResolveError("${c.sid}: ref_mark unknown type '${step['typeId']}'");
+            throw ResolveError(
+                "${c.sid}: ref_mark unknown type '${step['typeId']}'");
           }
-          if (step['id'] == null) throw ResolveError("${c.sid}: ref_mark needs an 'id'");
-          if (step['field'] is! String) throw ResolveError("${c.sid}: ref_mark needs a 'field' (the label attribute)");
+          if (step['id'] == null)
+            throw ResolveError("${c.sid}: ref_mark needs an 'id'");
+          if (step['field'] is! String)
+            throw ResolveError(
+                "${c.sid}: ref_mark needs a 'field' (the label attribute)");
       }
     }
   }
@@ -727,7 +944,8 @@ class Interpreter {
   Plan? lastPlan;
 
   // ---- resolve (pure; no store mutation) ----------------------------------
-  Plan resolve(Skill skill, Map<String, dynamic> slots, Map<String, Record> store) {
+  Plan resolve(
+      Skill skill, Map<String, dynamic> slots, Map<String, Record> store) {
     final env = Map<String, dynamic>.from(slots);
     final plan = Plan();
     lastPlan = plan;
@@ -735,7 +953,11 @@ class Interpreter {
     // readback that renders zero rows still clears any stale reference context (never a wrong "delete
     // 1"). enumerate overwrites it; ref_mark appends and fills typeId/labelField on the first mark.
     if (_declaresEnumeration(skill['steps']['main'] as List)) {
-      plan.enumeration = {'typeId': null, 'labelField': null, 'items': <Map<String, dynamic>>[]};
+      plan.enumeration = {
+        'typeId': null,
+        'labelField': null,
+        'items': <Map<String, dynamic>>[]
+      };
     }
     _run(skill['steps']['main'] as List, env, store, plan);
     return plan;
@@ -753,16 +975,19 @@ class Interpreter {
     return false;
   }
 
-  void _run(List steps, Map<String, dynamic> env, Map<String, Record> store, Plan plan) {
+  void _run(List steps, Map<String, dynamic> env, Map<String, Record> store,
+      Plan plan) {
     for (final step in steps) {
       _op(step as Map, env, store, plan);
     }
   }
 
-  void _op(Map step, Map<String, dynamic> env, Map<String, Record> store, Plan plan) {
+  void _op(Map step, Map<String, dynamic> env, Map<String, Record> store,
+      Plan plan) {
     switch (step['op']) {
       case 'compute':
-        env[step['into']] = compute(step['fn'], (step['args'] ?? []) as List, env);
+        env[step['into']] =
+            compute(step['fn'], (step['args'] ?? []) as List, env);
       case 'set':
         env[step['var']] = val(step['value'], env);
       case 'format':
@@ -776,29 +1001,39 @@ class Interpreter {
         if (step['into'] == 'confirmationText') plan.confirmation = out;
       case 'read_one':
         final match = {
-          for (final e in (step['match'] as Map).entries) e.key: val(e.value, env)
+          for (final e in (step['match'] as Map).entries)
+            e.key: val(e.value, env)
         };
         bool matches(Record r, bool Function(String rv, String mv) strCmp) =>
             r['typeId'] == step['typeId'] &&
             match.entries.every((e) {
               final rv = r[e.key], mv = e.value;
-              return (rv is String && mv is String) ? strCmp(rv.toLowerCase(), mv.toLowerCase()) : rv == mv;
+              return (rv is String && mv is String)
+                  ? strCmp(rv.toLowerCase(), mv.toLowerCase())
+                  : rv == mv;
             });
         // Exact (case-insensitive) resolution first — "mia" finds "Mia", never a
         // duplicate. With `partial:true` (people lookups), fall back to a substring
         // match so "Sam" finds "Sam Rivera" — surfacing a clarify when >1 qualifies.
-        var hits = store.values.where((r) => matches(r, (rv, mv) => rv == mv)).toList();
+        var hits = store.values
+            .where((r) => matches(r, (rv, mv) => rv == mv))
+            .toList();
         if (hits.isEmpty && step['partial'] == true) {
-          hits = store.values.where((r) => matches(r, (rv, mv) => rv.contains(mv))).toList();
+          hits = store.values
+              .where((r) => matches(r, (rv, mv) => rv.contains(mv)))
+              .toList();
         }
         // alias tier (G-24): a record whose comma-separated `aliases` holds the match
         // value exactly (case-insensitive) — resolves "Mum", "my boss", "the wife".
-        if (hits.isEmpty && (step['partial'] == true || step['resolve'] == true) && match['displayName'] is String) {
+        if (hits.isEmpty &&
+            (step['partial'] == true || step['resolve'] == true) &&
+            match['displayName'] is String) {
           final want = (match['displayName'] as String).toLowerCase().trim();
           hits = store.values.where((r) {
             if (r['typeId'] != step['typeId']) return false;
             final a = r['aliases'];
-            return a is String && a.toLowerCase().split(',').map((s) => s.trim()).contains(want);
+            return a is String &&
+                a.toLowerCase().split(',').map((s) => s.trim()).contains(want);
           }).toList();
         }
         // RESOLVE (find-or-create de-duplication, G-12): reuse an existing record whose name
@@ -807,8 +1042,15 @@ class Interpreter {
         // distinct from "Samantha" (not a whole-word token). A UNIQUE token match is reused; TWO+
         // token matches (e.g. "John" with a "John Smith" AND a "John Doe") are genuinely ambiguous
         // and fall to the shared >1 clarify below — never a silent length-based guess.
-        if (hits.isEmpty && step['resolve'] == true && match['displayName'] is String) {
-          Set<String> toks(String s) => s.toLowerCase().trim().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toSet();
+        if (hits.isEmpty &&
+            step['resolve'] == true &&
+            match['displayName'] is String) {
+          Set<String> toks(String s) => s
+              .toLowerCase()
+              .trim()
+              .split(RegExp(r'\s+'))
+              .where((t) => t.isNotEmpty)
+              .toSet();
           final wantToks = toks(match['displayName'] as String);
           if (wantToks.isNotEmpty) {
             hits = store.values.where((r) {
@@ -816,7 +1058,8 @@ class Interpreter {
               final dn = r['displayName'];
               if (dn is! String || dn.trim().isEmpty) return false;
               final t = toks(dn);
-              return wantToks.difference(t).isEmpty || t.difference(wantToks).isEmpty; // one ⊆ the other
+              return wantToks.difference(t).isEmpty ||
+                  t.difference(wantToks).isEmpty; // one ⊆ the other
             }).toList();
           }
         }
@@ -826,7 +1069,10 @@ class Interpreter {
         if (step['first'] == true && hits.length > 1) hits = [hits.first];
         if (hits.length > 1) {
           final labelField = (step['match'] as Map).keys.first as String;
-          final labels = hits.map((h) => (h['displayName'] ?? h[labelField] ?? h['id']).toString()).toList();
+          final labels = hits
+              .map((h) =>
+                  (h['displayName'] ?? h[labelField] ?? h['id']).toString())
+              .toList();
           throw ResolveError(
               "read_one ${step['typeId']} $match matched ${hits.length} (ambiguous — G-12)",
               options: labels);
@@ -838,7 +1084,11 @@ class Interpreter {
           'type': step['typeId'],
           'match': match.map((k, v) => MapEntry(k, '$v')),
           'into': step['into'],
-          'resolved': chosen == null ? null : (chosen['displayName'] ?? chosen['description'] ?? chosen['id']),
+          'resolved': chosen == null
+              ? null
+              : (chosen['displayName'] ??
+                  chosen['description'] ??
+                  chosen['id']),
           if (chosen != null) 'id': chosen['id'],
         });
       case 'read_reference':
@@ -847,10 +1097,12 @@ class Interpreter {
         final refStore = references[step['dataset']];
         final refKey = val(step['key'], env)?.toString() ?? '';
         final hit = refStore?.lookup(refKey);
-        env[step['into']] =
-            hit == null ? null : {...hit.data, 'provenance': hit.provenance, 'refKey': hit.key};
+        env[step['into']] = hit == null
+            ? null
+            : {...hit.data, 'provenance': hit.provenance, 'refKey': hit.key};
       case 'read_many':
-        var recs = store.values.where((r) => r['typeId'] == step['typeId']).toList();
+        var recs =
+            store.values.where((r) => r['typeId'] == step['typeId']).toList();
         final f = step['filter'];
         if (f != null) {
           // filter may be a single predicate {field,op,value} OR a list of predicates
@@ -860,9 +1112,12 @@ class Interpreter {
           for (final p in preds) {
             final op = (p as Map)['op'] ?? 'eq';
             // fail loudly on a bad op even over an empty set (never silently match all)
-            if (!_filterOps.contains(op)) throw ResolveError("read_many: unsupported filter op '$op'");
+            if (!_filterOps.contains(op))
+              throw ResolveError("read_many: unsupported filter op '$op'");
           }
-          recs = recs.where((r) => preds.every((p) => _filterMatch(p as Map, r, env))).toList();
+          recs = recs
+              .where((r) => preds.every((p) => _filterMatch(p as Map, r, env)))
+              .toList();
         }
         // orderBy <field> [orderDir asc|desc]
         final orderBy = step['orderBy'];
@@ -872,7 +1127,8 @@ class Interpreter {
         }
         // limit N (top-N after ordering)
         final limit = step['limit'];
-        if (limit is int && limit >= 0 && recs.length > limit) recs = recs.sublist(0, limit);
+        if (limit is int && limit >= 0 && recs.length > limit)
+          recs = recs.sublist(0, limit);
         env[step['into']] = recs;
       case 'read_related':
         // records of typeId whose `via` entity attr points at the `from` record's id
@@ -891,7 +1147,8 @@ class Interpreter {
           rel.sort((x, y) => dir * _cmp(x[relOrder], y[relOrder]));
         }
         final relLimit = step['limit'];
-        if (relLimit is int && relLimit >= 0 && rel.length > relLimit) rel = rel.sublist(0, relLimit);
+        if (relLimit is int && relLimit >= 0 && rel.length > relLimit)
+          rel = rel.sublist(0, relLimit);
         env[step['into']] = rel;
       case 'write_record':
         env[step['into']] = _resolveWrite(step, env, store, plan);
@@ -899,7 +1156,12 @@ class Interpreter {
         final id = val(step['id'], env);
         if (id is String && store.containsKey(id)) plan.deletes.add(id);
       case 'branch':
-        _run((cond(step['cond'] as Map, env) ? step['then'] : step['else']) ?? [], env, store, plan);
+        _run(
+            (cond(step['cond'] as Map, env) ? step['then'] : step['else']) ??
+                [],
+            env,
+            store,
+            plan);
       case 'foreach':
         for (final item in (val(step['list'], env) as List? ?? [])) {
           env[step['as']] = item;
@@ -910,7 +1172,8 @@ class Interpreter {
         // so numbering and reference-resolution can never drift (they come from one iteration).
         final list = (val(step['list'], env) as List? ?? const []);
         final labelField = step['label'] as String;
-        final lineTpl = step['line']; // optional composite; omit-if-null placeholders
+        final lineTpl =
+            step['line']; // optional composite; omit-if-null placeholders
         final sb = StringBuffer();
         final items = <Map<String, dynamic>>[];
         String? typeId;
@@ -921,16 +1184,28 @@ class Interpreter {
           typeId ??= r['typeId'] as String?;
           final label = '${r[labelField] ?? ''}';
           final rendered = lineTpl is String
-              ? lineTpl.replaceAllMapped(RegExp(r'\{(?:var:)?(\w+)\}'), (m) => '${r[m.group(1)] ?? ''}').trim()
+              ? lineTpl
+                  .replaceAllMapped(RegExp(r'\{(?:var:)?(\w+)\}'),
+                      (m) => '${r[m.group(1)] ?? ''}')
+                  .trim()
               : label;
           sb.write('\n  $n. $rendered');
           // Per-item typeId + field: a single readback can enumerate MORE THAN ONE type (e.g.
           // recall-facts numbers facts AND relationships), so a later "correct N" must edit the
           // right type's right field — a channel-level pair would corrupt the odd one out.
-          items.add({'id': r['id'], 'label': label, 'typeId': r['typeId'], 'field': labelField});
+          items.add({
+            'id': r['id'],
+            'label': label,
+            'typeId': r['typeId'],
+            'field': labelField
+          });
         }
         env[step['into'] as String] = sb.toString();
-        plan.enumeration = {'typeId': typeId, 'labelField': labelField, 'items': items};
+        plan.enumeration = {
+          'typeId': typeId,
+          'labelField': labelField,
+          'items': items
+        };
       case 'ref_mark':
         // Append this item's ref to the channel; the skill owns the numbering (its own counter)
         // and the line text. First mark fixes typeId + labelField for the whole readback.
@@ -938,14 +1213,24 @@ class Interpreter {
         if (id is String) {
           final field = step['field'] as String;
           final en = plan.enumeration ??= {
-            'typeId': step['typeId'], 'labelField': field, 'items': <Map<String, dynamic>>[]
+            'typeId': step['typeId'],
+            'labelField': field,
+            'items': <Map<String, dynamic>>[]
           };
-          en['typeId'] ??= step['typeId']; // fill the pre-armed empty marker on the first mark
+          en['typeId'] ??= step[
+              'typeId']; // fill the pre-armed empty marker on the first mark
           en['labelField'] ??= field;
           // Prefer an explicit label expr; else read the label field off the live record.
-          final label = step['label'] != null ? '${val(step['label'], env) ?? ''}' : '${store[id]?[field] ?? ''}';
+          final label = step['label'] != null
+              ? '${val(step['label'], env) ?? ''}'
+              : '${store[id]?[field] ?? ''}';
           // Per-item typeId + field (each mark may be a different type in one readback).
-          (en['items'] as List).add({'id': id, 'label': label, 'typeId': step['typeId'], 'field': field});
+          (en['items'] as List).add({
+            'id': id,
+            'label': label,
+            'typeId': step['typeId'],
+            'field': field
+          });
         }
       default:
         throw ResolveError("unknown op '${step['op']}'");
@@ -962,35 +1247,24 @@ class Interpreter {
   /// schema rather than trusting the author. A value that cannot be coerced is a ResolveError
   /// (surfaced, P2.8), never a silent junk write.
   Object? _coerceToSchema(String typeId, Map td, String field, Object? v) {
-    if (v == null) return null;
-    String? valueType;
-    for (final a in ((td['attributes'] as List?) ?? const []).whereType<Map>()) {
-      if (a['name'] == field) {
-        valueType = a['valueType'] as String?;
-        break;
-      }
-    }
-    switch (valueType) {
-      case 'number':
-      case 'decimal':
-        if (v is num) return v;
-        final n = num.tryParse('$v'.trim());
-        if (n == null) {
-          throw ResolveError("write $typeId: '$field' expects a number, got \"$v\"");
-        }
-        return valueType == 'number' && n is double && n == n.roundToDouble() ? n.toInt() : n;
-      case 'boolean':
-        if (v is bool) return v;
-        final s = '$v'.toLowerCase().trim();
-        if (s == 'true' || s == 'yes') return true;
-        if (s == 'false' || s == 'no') return false;
-        throw ResolveError("write $typeId: '$field' expects true/false, got \"$v\"");
-      default:
-        return v; // text/entity/date/datetime/tag/list/json — unchanged
+    final attribute = ((td['attributes'] as List?) ?? const [])
+        .whereType<Map>()
+        .where((raw) => raw['name'] == field)
+        .firstOrNull;
+    if (attribute == null) return v;
+    try {
+      return const ValueCodec().coerce(
+        Map<String, dynamic>.from(attribute),
+        v,
+        requireEntity: false,
+      );
+    } on ValueCodecError catch (error) {
+      throw ResolveError('write $typeId.$field: ${error.message}');
     }
   }
 
-  Record _resolveWrite(Map step, Map<String, dynamic> env, Map<String, Record> store, Plan plan) {
+  Record _resolveWrite(Map step, Map<String, dynamic> env,
+      Map<String, Record> store, Plan plan) {
     final typeId = step['typeId'] as String;
     final td = types[typeId]!;
     final fields = <String, dynamic>{
@@ -998,20 +1272,29 @@ class Interpreter {
         e.key: _coerceToSchema(typeId, td, '${e.key}', val(e.value, env))
     };
     Record rec;
-    final target = step['target']; // {ref: recVar} / an id expr -> UPDATE the existing record
+    final target = step[
+        'target']; // {ref: recVar} / an id expr -> UPDATE the existing record
     if (target != null) {
       final id = val(target, env);
       final existing = id == null ? null : store[id];
-      if (existing == null) throw ResolveError("write $typeId: update target '$id' not found");
+      if (existing == null)
+        throw ResolveError("write $typeId: update target '$id' not found");
       // merge: keep existing fields, overlay the new ones (id-based upsert, Spec 02 §3.2)
-      rec = <String, dynamic>{...existing, ...fields, 'id': existing['id'], 'typeId': typeId};
+      rec = <String, dynamic>{
+        ...existing,
+        ...fields,
+        'id': existing['id'],
+        'typeId': typeId
+      };
     } else {
       for (final a in (td['attributes'] as List)) {
-        if (fields[a['name']] == null && a.containsKey('default')) fields[a['name']] = a['default'];
+        if (fields[a['name']] == null && a.containsKey('default'))
+          fields[a['name']] = a['default'];
       }
       for (final a in (td['attributes'] as List)) {
         if (a['required'] == true && fields[a['name']] == null) {
-          throw ResolveError("write $typeId: required '${a['name']}' missing (schema validation)");
+          throw ResolveError(
+              "write $typeId: required '${a['name']}' missing (schema validation)");
         }
       }
       rec = <String, dynamic>{'id': _mint(typeId), 'typeId': typeId, ...fields};
@@ -1023,19 +1306,29 @@ class Interpreter {
   /// Applies the plan and returns the before-images (Spec 02 §5.4): recordId ->
   /// prior state, or null when the write created the record. This is what makes
   /// `undo` deterministic and reliable — the safety net act-then-describe rests on.
-  Map<String, Map<String, dynamic>?> execute(Plan plan, Map<String, Record> store) {
+  Map<String, Map<String, dynamic>?> execute(
+      Plan plan, Map<String, Record> store) {
     final before = <String, Map<String, dynamic>?>{};
     // putIfAbsent, not assign: a plan that touches the same id twice (or writes-then-deletes it)
     // must record the ORIGINAL pre-plan state as the before-image, never an intermediate one, or
     // undo restores a mid-plan value instead of the true prior state.
     for (final rec in plan.writes) {
       final id = rec['id'] as String;
-      before.putIfAbsent(id, () => store.containsKey(id) ? Map<String, dynamic>.from(store[id]!) : null);
+      before.putIfAbsent(
+          id,
+          () => store.containsKey(id)
+              ? Map<String, dynamic>.from(store[id]!)
+              : null);
       store[id] = Map<String, dynamic>.from(rec);
     }
     for (final id in plan.deletes) {
-      before.putIfAbsent(id, () => store.containsKey(id) ? Map<String, dynamic>.from(store[id]!) : null);
-      store.remove(id); // the before-image (the deleted record) lets undo restore it
+      before.putIfAbsent(
+          id,
+          () => store.containsKey(id)
+              ? Map<String, dynamic>.from(store[id]!)
+              : null);
+      store.remove(
+          id); // the before-image (the deleted record) lets undo restore it
     }
     return before;
   }

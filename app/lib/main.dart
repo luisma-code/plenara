@@ -18,12 +18,14 @@ import 'data_view.dart';
 import 'glyphs.dart';
 import 'onboarding_view.dart';
 import 'plena.dart';
+import 'plenara_theme.dart';
 import 'routine_view.dart';
 import 'seed_assets.dart';
 import 'settings_view.dart';
 import 'sherpa_speech.dart';
 import 'speech.dart';
 import 'speech_out.dart';
+import 'today_view.dart';
 import 'macos_scheduler.dart';
 import 'windows_scheduler.dart';
 
@@ -45,7 +47,9 @@ String? _bundledSeedDir;
 NotificationScheduler _platformScheduler() {
   if (Platform.isWindows) return WindowsToastScheduler();
   if (Platform.isMacOS) return MacToastScheduler();
-  AppLog.instance.log('sched: no native notification backend on this platform — in-app nudges only');
+  AppLog.instance.log(
+    'sched: no native notification backend on this platform — in-app nudges only',
+  );
   return FakeScheduler();
 }
 
@@ -58,7 +62,10 @@ Session buildSession({NotificationScheduler? scheduler}) {
   final dataDir = cfg.dataDir;
   // Seed source priority: explicit dev override > extracted bundled assets (shipped build) > dev
   // path. ensureSeeded no-ops once the data folder is already seeded, so this is first-run only.
-  final seed = Platform.environment['PLENARA_SEED_DIR'] ?? _bundledSeedDir ?? sourceDataDir;
+  final seed =
+      Platform.environment['PLENARA_SEED_DIR'] ??
+      _bundledSeedDir ??
+      sourceDataDir;
   ensureSeeded(dataDir, seed);
   // Free mode runs offline-only: hand the Session an EXPLICIT offline client (empty key ->
   // every cloud call returns noKey, zero Anthropic spend). Passing null would NOT work — the
@@ -87,7 +94,9 @@ Future<void> main() async {
     if (Platform.isIOS || Platform.isAndroid) {
       try {
         homeOverride = (await getApplicationDocumentsDirectory()).path;
-      } catch (_) {/* desktop never reaches here; on failure fall back to env/'.' */}
+      } catch (_) {
+        /* desktop never reaches here; on failure fall back to env/'.' */
+      }
     }
     await initializeAppCredentials();
     final log = AppLog.instance;
@@ -104,7 +113,9 @@ Future<void> main() async {
           log('boot: extracted bundled seed assets -> $_bundledSeedDir');
         }
       } catch (e, st) {
-        log('boot: seed asset extraction FAILED (falling back to dev path): $e\n$st');
+        log(
+          'boot: seed asset extraction FAILED (falling back to dev path): $e\n$st',
+        );
       }
     }
     FlutterError.onError = (details) {
@@ -121,7 +132,7 @@ class PlenaraApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     title: 'Plenara v0',
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.teal),
+    theme: PlenaraTheme.dark,
     home: const Home(),
   );
 }
@@ -197,8 +208,10 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     // — while the user is in another app.
     if (_listening) {
       _cancelListening();
-      setState(() => _caption =
-          'I stopped listening when Plenara went to the background — tap and say it again.');
+      setState(
+        () => _caption =
+            'I stopped listening when Plenara went to the background — tap and say it again.',
+      );
     }
     _cancelStepTimer(); // a routine cadence must not tick (or speak) while hidden
   }
@@ -216,21 +229,27 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   SpeechOutput? _voice; // Plena's talk-back (Spec 12 §6); chosen in _init
   bool _voiceMuted =
       false; // mute silences her voice; captions still show (Spec 15 §7)
-  bool _greetingShowing =
-      false; // the intro is up — cleared the moment the user interacts (tap or mute)
   int _noMatchStreak =
       0; // consecutive tap-to-talks that heard nothing → surface a mic-permission hint
-  int _micEpoch = 0; // bumped on every tap/abort; a listen-start whose epoch went stale bails (race)
-  bool _aborting = false; // a deliberate ✕/mute abort — its cancel's onDone must not count as no-audio
-  String? _heard; // the finalized transcript, echoed as "I heard: X" (the listening font), briefly
+  int _micEpoch =
+      0; // bumped on every tap/abort; a listen-start whose epoch went stale bails (race)
+  bool _aborting =
+      false; // a deliberate ✕/mute abort — its cancel's onDone must not count as no-audio
+  String?
+  _heard; // the finalized transcript, echoed as "I heard: X" (the listening font), briefly
   Timer? _heardTimer;
   // Capture is user-delimited now (tap to start, tap to stop). These support that:
-  bool _transcribing = false; // stop tapped, final not back yet → presence shows thinking, not idle
-  bool _autoStopped = false; // a watchdog ended the session, not a tap → say so on the "I heard" line
-  String? _micPrompt; // the "tap when you're done" affordance line (decays; see _micHintSessions)
+  bool _transcribing =
+      false; // stop tapped, final not back yet → presence shows thinking, not idle
+  bool _autoStopped =
+      false; // a watchdog ended the session, not a tap → say so on the "I heard" line
+  String?
+  _micPrompt; // the "tap when you're done" affordance line (decays; see _micHintSessions)
   Timer? _hintTimer;
-  static const _micHintSessions = 5; // teach the gesture, then go quiet (Spec 07 P8)
-  int _micHintsShown = 0; // persisted, so the hint decays across launches rather than per-run
+  static const _micHintSessions =
+      5; // teach the gesture, then go quiet (Spec 07 P8)
+  int _micHintsShown =
+      0; // persisted, so the hint decays across launches rather than per-run
   final _ctrl = TextEditingController();
   bool _ready = false, _busy = false, _listening = false;
   // Plena's presence state (Spec 15): derived from the real turn/speech signals. No TTS yet,
@@ -240,7 +259,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   // The tour's "colours" chapter drives a scripted presence-colour demo (idle → listening → thinking
   // → the cooler AI shade) while Plena narrates it. Timers held so a new turn / teardown cancels it.
   final List<Timer> _colorDemoTimers = [];
-  bool _colorDemoActive = false; // true while the demo owns the _forceState/_forceDifficulty pins
+  bool _colorDemoActive =
+      false; // true while the demo owns the _forceState/_forceDifficulty pins
   String?
   _caption; // the current exchange text, materialised over the void (Spec 15 §6.1 / §7.3)
   bool _displayIsList =
@@ -261,7 +281,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     final now = DateTime.now();
     if (!force) {
       if (now.difference(_lastGlyphAt).inSeconds < 8) return;
-      _lastGlyphAt = now; // only occasion-driven fires debounce; a forced greeting/preview doesn't
+      _lastGlyphAt =
+          now; // only occasion-driven fires debounce; a forced greeting/preview doesn't
     }
     setState(() {
       _glyph = g;
@@ -284,15 +305,19 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       (10500, PresenceState.thinking, 3.6), // "a cooler, bluer shade … the AI"
     ];
     for (final (ms, st, diff) in beats) {
-      _colorDemoTimers.add(Timer(Duration(milliseconds: ms), () {
-        if (!mounted) return;
-        setState(() {
-          _forceState = st;
-          _forceDifficulty = diff;
-        });
-      }));
+      _colorDemoTimers.add(
+        Timer(Duration(milliseconds: ms), () {
+          if (!mounted) return;
+          setState(() {
+            _forceState = st;
+            _forceDifficulty = diff;
+          });
+        }),
+      );
     }
-    _colorDemoTimers.add(Timer(const Duration(milliseconds: 14500), _cancelColorDemo));
+    _colorDemoTimers.add(
+      Timer(const Duration(milliseconds: 14500), _cancelColorDemo),
+    );
   }
 
   /// Stop the colour demo and release the presence back to the live signals — but ONLY the pins the
@@ -357,7 +382,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       if (widget.session == null || widget.configPath != null) {
         final cfg = loadConfig(configPath: widget.configPath);
         _voiceMuted = cfg.voiceMuted ?? false;
-        _micHintsShown = cfg.micHintsShown; // the stop-gesture hint decays ACROSS launches
+        _micHintsShown =
+            cfg.micHintsShown; // the stop-gesture hint decays ACROSS launches
         _session.confirmCloudSpend = cfg.confirmCloudSpend;
       }
       log(
@@ -374,21 +400,13 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         // ignore: discarded_futures
         _scheduler.selfTest();
       }
-      const greeting =
-          'Hi — I\'m Plena. Tap anywhere and just talk to me (or mute me, bottom-left, to type). '
-          'Ask me "what can you do?" and I\'ll show you.';
-      // On-open nudges (past-due reminders + upcoming birthdays) join the greeting over the void.
       final nudges = _session.pendingNudges();
       setState(() {
         _ready = true;
-        _caption = nudges.isEmpty
-            ? greeting
-            : '$greeting\n\n${nudges.join('\n')}';
-        _greetingShowing = true; // clears on first interaction (tap/mute)
-        _displayIsList =
-            false; // the greeting keeps Plena full-screen (list-mode is for data)
+        _caption = null;
+        _displayIsList = false;
       });
-      // a greeting on open — a birthday today earns the candle, otherwise a smile
+      // A birthday today earns the candle; otherwise Plena acknowledges arrival.
       _fireGlyph(
         nudges.any((n) => n.toLowerCase().contains('birthday'))
             ? kGlyphs['candle']
@@ -397,7 +415,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       );
     } catch (e, st) {
       log('init: FAILED: $e\n$st');
-      if (!mounted) return; // torn down during a failing init -> don't setState after dispose
+      if (!mounted) {
+        return; // torn down during a failing init -> don't setState after dispose
+      }
       // no infinite spinner: surface the failure over the void
       setState(() {
         _ready = true;
@@ -437,7 +457,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       return s;
     }
     // Windows (and any other): prefer on-device sherpa_onnx Whisper if its model is present.
-    final modelDir = '${modelsDir()}/en-whisper'; // config.dart owns the ~/.plenara path layout
+    final modelDir =
+        '${modelsDir()}/en-whisper'; // config.dart owns the ~/.plenara path layout
     final sherpa = SherpaSpeechRecognizer(
       modelDir,
       onLog: (m) => log.debug('sherpa: $m'),
@@ -447,7 +468,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       log('speech: using on-device sherpa_onnx');
       return sherpa;
     }
-    log.debug('speech: sherpa model unavailable -> falling back to the built-in OS engine');
+    log.debug(
+      'speech: sherpa model unavailable -> falling back to the built-in OS engine',
+    );
     final s = sys();
     await s.init();
     return s;
@@ -458,8 +481,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   /// both typed and voice input, since voice auto-sends through [_send].
   bool _maybeNavCommand(String t) {
     final s = t.toLowerCase().trim().replaceAll(RegExp(r'[.!?]+$'), '');
-    if (RegExp(r'^(?:(?:open|show|go to|take me to|open up)\s+)?(?:the\s+)?settings$')
-        .hasMatch(s)) {
+    if (RegExp(
+      r'^(?:(?:open|show|go to|take me to|open up)\s+)?(?:the\s+)?settings$',
+    ).hasMatch(s)) {
       Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (_) => const SettingsView()));
@@ -478,13 +502,16 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     if (t.isEmpty || _busy) return;
     _ctrl.clear();
     _cancelColorDemo(); // a new turn ends any in-flight colours demo, releasing the pinned presence
-    if (_maybeNavCommand(t)) return; // "open settings" et al. open a window, not a turn
-    if (_voice?.speaking ?? false) unawaited(_voice!.stop()); // a new turn stops any in-flight reply
+    if (_maybeNavCommand(t)) {
+      return; // "open settings" et al. open a window, not a turn
+    }
+    if (_voice?.speaking ?? false) {
+      unawaited(_voice!.stop()); // a new turn stops any in-flight reply
+    }
     setState(() {
       _busy = true;
       _deepThink = false;
       _caption = null;
-      _greetingShowing = false;
     });
     // after a beat, a still-running turn reads as "reaching" (D2) — long/cloud work
     _thinkTimer?.cancel();
@@ -523,23 +550,24 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     // automation deliveries (✨) + newly-held writes (📋) join the reply over the void
     final extras = <String>[
       for (final d in deliveries) '✨ ${d.text}',
-      for (final p in newReviews) '📋 ${p.description} — say "approve it" or "dismiss it".',
+      for (final p in newReviews)
+        '📋 ${p.description} — say "approve it" or "dismiss it".',
     ];
     final shown = extras.isEmpty ? resp : '$resp\n\n${extras.join('\n')}';
-    // Voice-first: when Plena actually SPEAKS the reply, don't also print it — subtitles are for muted
-    // (text) mode only. Extras (automation deliveries ✨ / held reviews 📋) are never spoken, so they
-    // still surface as text even in voice mode.
+    // Every reply is simultaneous text. Voice is a delivery channel, not the
+    // only durable representation of what happened.
     final willSpeak = !_voiceMuted && (_voice?.available ?? false);
-    final display = willSpeak ? (extras.isEmpty ? null : extras.join('\n')) : shown;
+    final display = shown;
     setState(() {
       _busy = false;
       _deepThink = false;
       _speaking = true; // Plena "speaks" the reply — a brief presence flourish
       _lastCloud = usedCloud;
-      _caption = display; // muted → her words over the void (§6.1); voice → nothing, she just speaks
+      _caption = display;
       // list-shaped (bullets / several lines) → Plena eases to a corner and it floats (§6.3)
-      _displayIsList = display != null &&
-          (display.contains('•') || display.split('\n').where((l) => l.trim().isNotEmpty).length > 2);
+      _displayIsList =
+          display.contains('•') ||
+          display.split('\n').where((l) => l.trim().isNotEmpty).length > 2;
     });
     _thinkTimer?.cancel();
     _speakTimer?.cancel();
@@ -614,7 +642,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _listening = false;
-          _transcribing = true; // the presence goes to thinking; the stop tap is never a dead beat
+          _transcribing =
+              true; // the presence goes to thinking; the stop tap is never a dead beat
           _micPrompt = null;
         });
       }
@@ -630,16 +659,12 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     setState(() {
       _listening = true;
       _heard = null; // a new utterance supersedes the last "I heard: …"
-      if (_greetingShowing) {
-        _caption = null; // the intro clears the moment you interact
-        _greetingShowing = false;
-      }
     });
     _heardTimer?.cancel();
-    // Mid-conversation the last reply stays until your first spoken word replaces it (onResult
-    // partials); only the intro greeting is cleared eagerly on tap.
+    // Mid-conversation the last reply stays until the first spoken word replaces it.
     if (_voice?.speaking ?? false) {
-      await _voice!.stop(); // barge-in: cut Plena off the moment you start to speak (Spec 12 §7)
+      await _voice!
+          .stop(); // barge-in: cut Plena off the moment you start to speak (Spec 12 §7)
       if (mounted) setState(() => _speaking = false);
       // HARD BARRIER (macOS): AVSpeechSynthesizer (TTS) and Apple Speech's AVAudioEngine (STT)
       // contend for the audio device. Starting capture immediately after TTS stops yields silent
@@ -653,18 +678,25 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     // The learnable-affordance half of removing auto-endpointing: for the first few sessions the
     // status line says HOW to finish. After that it decays to plain "listening…" (quiet by default).
     if (mounted) {
-      setState(() => _micPrompt =
-          _micHintsShown < _micHintSessions ? "tap anywhere when you're done" : null);
+      setState(
+        () => _micPrompt = _micHintsShown < _micHintSessions
+            ? "tap anywhere when you're done"
+            : null,
+      );
     }
     if (_micHintsShown < _micHintSessions) {
       _micHintsShown++;
       // Same guard the mute pref uses: only touch the real config for the real app (or a test that
       // injected a configPath). An injected session must never write the user's ~/.plenara.
       if (widget.session == null || widget.configPath != null) {
-        saveConfig(micHintsShown: _micHintsShown, configPath: widget.configPath);
+        saveConfig(
+          micHintsShown: _micHintsShown,
+          configPath: widget.configPath,
+        );
       }
     }
-    _autoStopped = false; // never carry a previous session's "(stopped on my own)" label forward
+    _autoStopped =
+        false; // never carry a previous session's "(stopped on my own)" label forward
     var heard = false; // did this session get ANY audio it could transcribe?
     try {
       await _speech!.listen(
@@ -710,7 +742,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
             _micPrompt = null;
             // Confirm what was captured, in the listening font, until the reply settles. When a
             // watchdog ended the session rather than a tap, say that too (P2.8).
-            _heard = _autoStopped ? '(stopped on my own after a long pause) $t' : t;
+            _heard = _autoStopped
+                ? '(stopped on my own after a long pause) $t'
+                : t;
             _autoStopped = false;
           });
           _heardTimer?.cancel();
@@ -719,7 +753,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           });
           _speech!.cancel(); // one utterance per tap
           if (!_busy) {
-            _ctrl.text = t; // what we send — only written when we can actually send it (no ghost)
+            _ctrl.text =
+                t; // what we send — only written when we can actually send it (no ghost)
             log.debug('speech: auto-send on final result');
             _send();
           }
@@ -732,7 +767,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
             _micPrompt = null;
           });
           if (_aborting) {
-            _aborting = false; // a deliberate tap-to-abort ended this session — not a no-audio miss
+            _aborting =
+                false; // a deliberate tap-to-abort ended this session — not a no-audio miss
             return;
           }
           // No-silent-failure (principle #7): if tap-to-talk keeps hearing nothing, the mic is
@@ -742,7 +778,6 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
             _noMatchStreak++;
             if (_noMatchStreak >= 2 && !_busy) {
               setState(() {
-                _greetingShowing = false;
                 _displayIsList = false;
                 _caption =
                     "I'm not hearing any audio. Check that Microphone and Speech "
@@ -768,7 +803,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     _speakTimer?.cancel();
     _thinkTimer?.cancel();
     _capTimer?.cancel();
-    _stepTimer?.cancel(); // never leave a routine cadence ticking after teardown
+    _stepTimer
+        ?.cancel(); // never leave a routine cadence ticking after teardown
     _heardTimer?.cancel();
     for (final t in _colorDemoTimers) {
       t.cancel();
@@ -889,8 +925,13 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
 
           Widget label(String s) => Padding(
             padding: const EdgeInsets.only(top: 14, bottom: 6),
-            child: Text(s.toUpperCase(),
-                style: tt.labelSmall?.copyWith(letterSpacing: 1.4, color: Colors.white54)),
+            child: Text(
+              s.toUpperCase(),
+              style: tt.labelSmall?.copyWith(
+                letterSpacing: 1.4,
+                color: Colors.white54,
+              ),
+            ),
           );
           Widget pick(String text, bool on, VoidCallback onTap) => ChoiceChip(
             label: Text(text),
@@ -900,7 +941,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
 
           return SafeArea(
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * .52),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * .52,
+              ),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                 child: Column(
@@ -908,78 +951,126 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Dev harness', style: tt.titleMedium),
-                    Text('Force the UI directly — no turn required.',
-                        style: tt.bodySmall?.copyWith(color: Colors.white54)),
+                    Text(
+                      'Force the UI directly — no turn required.',
+                      style: tt.bodySmall?.copyWith(color: Colors.white54),
+                    ),
 
                     label('Presence state'),
-                    Wrap(spacing: 8, runSpacing: 8, children: [
-                      pick('Live', _forceState == null, () => both(() => _forceState = null)),
-                      for (final s in PresenceState.values)
-                        pick(s.name, _forceState == s, () => both(() => _forceState = s)),
-                    ]),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        pick(
+                          'Live',
+                          _forceState == null,
+                          () => both(() => _forceState = null),
+                        ),
+                        for (final s in PresenceState.values)
+                          pick(
+                            s.name,
+                            _forceState == s,
+                            () => both(() => _forceState = s),
+                          ),
+                      ],
+                    ),
 
                     label('Difficulty (0 effortless → 4 can\'t)'),
-                    Row(children: [
-                      pick('Live', _forceDifficulty == null, () => both(() => _forceDifficulty = null)),
-                      Expanded(
-                        child: Slider(
-                          value: (_forceDifficulty ?? 0).clamp(0, 4),
-                          min: 0,
-                          max: 4,
-                          divisions: 4,
-                          label: (_forceDifficulty ?? 0).toStringAsFixed(0),
-                          onChanged: (v) => both(() => _forceDifficulty = v),
+                    Row(
+                      children: [
+                        pick(
+                          'Live',
+                          _forceDifficulty == null,
+                          () => both(() => _forceDifficulty = null),
                         ),
-                      ),
-                    ]),
+                        Expanded(
+                          child: Slider(
+                            value: (_forceDifficulty ?? 0).clamp(0, 4),
+                            min: 0,
+                            max: 4,
+                            divisions: 4,
+                            label: (_forceDifficulty ?? 0).toStringAsFixed(0),
+                            onChanged: (v) => both(() => _forceDifficulty = v),
+                          ),
+                        ),
+                      ],
+                    ),
 
                     label('Display over the void'),
-                    Wrap(spacing: 8, runSpacing: 8, children: [
-                      pick('Clear', _caption == null, () => both(() {
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        pick(
+                          'Clear',
+                          _caption == null,
+                          () => both(() {
                             _caption = null;
                             _displayIsList = false;
-                          })),
-                      pick('Caption', _caption != null && !_displayIsList, () => both(() {
-                            _caption = 'Logged dinner with Katherine — Rina got into UW.';
+                          }),
+                        ),
+                        pick(
+                          'Caption',
+                          _caption != null && !_displayIsList,
+                          () => both(() {
+                            _caption =
+                                'Logged dinner with Katherine — Rina got into UW.';
                             _displayIsList = false;
-                          })),
-                      pick('List (ease to corner)', _displayIsList, () => both(() {
-                            _caption = 'Interactions with Katherine:\n  • dinner (Sun)\n'
+                          }),
+                        ),
+                        pick(
+                          'List (ease to corner)',
+                          _displayIsList,
+                          () => both(() {
+                            _caption =
+                                'Interactions with Katherine:\n  • dinner (Sun)\n'
                                 '  • coffee (Fri)\n  • call (Wed)';
                             _displayIsList = true;
-                          })),
-                    ]),
+                          }),
+                        ),
+                      ],
+                    ),
 
                     label('Voice'),
-                    Wrap(spacing: 8, runSpacing: 8, children: [
-                      FilledButton.tonal(
-                        onPressed: (_voice?.available ?? false)
-                            ? () => _voice?.speak('This is Plena — testing, one two three.')
-                            : null,
-                        child: const Text('Speak a test line'),
-                      ),
-                      OutlinedButton(
-                        onPressed: () => _voice?.stop(),
-                        child: const Text('Stop'),
-                      ),
-                      FilledButton.tonal(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          _openTuning();
-                        },
-                        child: const Text('Tune Plena…'),
-                      ),
-                    ]),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.tonal(
+                          onPressed: (_voice?.available ?? false)
+                              ? () => _voice?.speak(
+                                  'This is Plena — testing, one two three.',
+                                )
+                              : null,
+                          child: const Text('Speak a test line'),
+                        ),
+                        OutlinedButton(
+                          onPressed: () => _voice?.stop(),
+                          child: const Text('Stop'),
+                        ),
+                        FilledButton.tonal(
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            _openTuning();
+                          },
+                          child: const Text('Tune Plena…'),
+                        ),
+                      ],
+                    ),
 
                     label('Fire a gesture (${kGlyphs.length} glyphs)'),
-                    Wrap(spacing: 6, runSpacing: 6, children: [
-                      for (final e in kGlyphs.entries)
-                        ActionChip(
-                          label: Text(e.key),
-                          tooltip: e.value.occasion,
-                          onPressed: () => _fireGlyph(e.value, force: true),
-                        ),
-                    ]),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final e in kGlyphs.entries)
+                          ActionChip(
+                            label: Text(e.key),
+                            tooltip: e.value.occasion,
+                            onPressed: () => _fireGlyph(e.value, force: true),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -994,12 +1085,33 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xFF0A0908),
     body: !_ready
-        ? const Center(child: CircularProgressIndicator())
+        ? const Stack(
+            children: [
+              Positioned.fill(
+                child: PresenceView(
+                  state: PresenceState.thinking,
+                  animate: false,
+                ),
+              ),
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 28),
+                    child: Text(
+                      'Waking up…',
+                      style: TextStyle(color: Color(0x99EAE2D8)),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          )
         // A live routine run takes the screen (a Y1 guest surface, Spec 16): Plena stays alive in
         // her corner within _presenceHome, and the step hovers over the void.
         : _routineStep() != null
-            ? Stack(children: [_presenceHome(context), _routineOverlay(context)])
-            : _presenceHome(context),
+        ? Stack(children: [_presenceHome(context), _routineOverlay(context)])
+        : _presenceHome(context),
   );
 
   // ---- the routine player (Spec 16) -----------------------------------------------------------
@@ -1012,6 +1124,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   Timer? _stepTimer;
   DateTime? _stepStartedAt;
   int? _stepSeconds;
+
   /// Which step the armed timer belongs to, so an unrelated turn mid-hold doesn't restart the
   /// clock and a stale tick can't advance a step the run has already left.
   String? _timedStepId;
@@ -1029,8 +1142,10 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       position: run.position,
       total: run.total,
       side: '${step['side'] ?? 'both'}',
-      durationSeconds: (step['durationSeconds'] as num?)?.toInt(),
-      reps: (step['reps'] as num?)?.toInt(),
+      durationSeconds: num.tryParse(
+        '${step['durationSeconds'] ?? ''}',
+      )?.toInt(),
+      reps: num.tryParse('${step['reps'] ?? ''}')?.toInt(),
       imageAsset: img == null ? null : 'assets/exercises/$img',
       // Fallback tier: only consulted when the catalogue had no illustration for this movement.
       figureSvg: img == null ? step['figureA'] as String? : null,
@@ -1114,7 +1229,10 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       final live = _session.activeRun;
       // Stop counting if the run ended, was paused (by voice — the tick used to ignore that and
       // complete the paused step), or moved on to a different step.
-      if (!mounted || live == null || live.paused || live.current?['id'] != _timedStepId) {
+      if (!mounted ||
+          live == null ||
+          live.paused ||
+          live.current?['id'] != _timedStepId) {
         _cancelStepTimer();
         return;
       }
@@ -1139,6 +1257,12 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     final hasContent = _caption != null && _caption!.trim().isNotEmpty;
     final listMode =
         hasContent && _displayIsList; // a list eases Plena to a corner
+    final showPlanner =
+        !hasContent &&
+        !_listening &&
+        !_busy &&
+        !_transcribing &&
+        _session.activeRun == null;
 
     return Stack(
       children: [
@@ -1147,10 +1271,12 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
-            onLongPress: activeBuildChannel.allowsInternalTools ? () {
-              final all = kGlyphs.values.toList();
-              _fireGlyph(all[_glyphPreview++ % all.length], force: true);
-            } : null,
+            onLongPress: activeBuildChannel.allowsInternalTools
+                ? () {
+                    final all = kGlyphs.values.toList();
+                    _fireGlyph(all[_glyphPreview++ % all.length], force: true);
+                  }
+                : null,
           ),
         ),
         // Plena — always full-bleed. (She used to shrink to a 260px corner box in list mode, but
@@ -1172,11 +1298,22 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                 tuning: _tuning,
                 // A list/prose reply eases her to the upper-right corner (within the full-bleed
                 // canvas) so the text reads beside her; a short caption keeps her centered.
-                yieldTarget: listMode ? 1 : 0,
+                yieldTarget: (listMode || showPlanner) ? 1 : 0,
               ),
             ),
           ),
         ),
+        if (showPlanner)
+          Positioned.fill(
+            child: TodayBoard(
+              session: _session,
+              onChanged: () => setState(() {}),
+              onVoice: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
+              onOpenLibrary: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => DataView(session: _session)),
+              ),
+            ),
+          ),
         // The current exchange, materialising over the void
         if (hasContent)
           Positioned.fill(
@@ -1211,7 +1348,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                     // only "how do I finish?" needs words.
                     _heard != null
                         ? 'I heard: $_heard'
-                        : (_micPrompt == null ? 'listening…' : 'listening — $_micPrompt'),
+                        : (_micPrompt == null
+                              ? 'listening…'
+                              : 'listening — $_micPrompt'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Color(0x99EAE2D8),
@@ -1244,8 +1383,16 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         // Offset the corner controls by the safe-area insets: at top:6 the menu button sat UNDER the
         // status bar / Dynamic Island, where iOS eats the touch (that's why "…" didn't react); the
         // mute button likewise clears the home indicator.
-        Positioned(left: 14, bottom: 14 + MediaQuery.of(context).padding.bottom, child: _muteButton()),
-        Positioned(right: 6, top: 6 + MediaQuery.of(context).padding.top, child: _menuButton(context)),
+        Positioned(
+          left: 14,
+          bottom: 14 + MediaQuery.of(context).padding.bottom,
+          child: _muteButton(),
+        ),
+        Positioned(
+          right: 6,
+          top: 6 + MediaQuery.of(context).padding.top,
+          child: _menuButton(context),
+        ),
       ],
     );
   }
@@ -1276,7 +1423,11 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           alignment: const Alignment(0, 0.5),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 680),
-            child: Text(text, textAlign: TextAlign.center, style: _captionStyle),
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: _captionStyle,
+            ),
           ),
         ),
       );
@@ -1343,9 +1494,12 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       } else if (!seenItem) {
         leadIn.add(l.trim());
       } else if (RegExp(r'^\s').hasMatch(l) && items.isNotEmpty) {
-        items[items.length - 1] += ' ${l.trim()}'; // an indented continuation of the last bullet
+        items[items.length - 1] +=
+            ' ${l.trim()}'; // an indented continuation of the last bullet
       } else {
-        footer.add(l.trim()); // a flush-left line after the bullets → a footer paragraph
+        footer.add(
+          l.trim(),
+        ); // a flush-left line after the bullets → a footer paragraph
       }
     }
     final marker = HSLColor.fromAHSL(
@@ -1476,14 +1630,14 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
 
   /// Discard the live capture without sending (the abort path the second tap used to be).
   Widget _cancelListenButton() => Material(
-        color: Colors.transparent,
-        child: IconButton(
-          key: const Key('cancel-listen'),
-          icon: const Icon(Icons.close, color: Color(0x88FFFFFF)),
-          tooltip: 'Cancel without sending',
-          onPressed: _cancelListening,
-        ),
-      );
+    color: Colors.transparent,
+    child: IconButton(
+      key: const Key('cancel-listen'),
+      icon: const Icon(Icons.close, color: Color(0x88FFFFFF)),
+      tooltip: 'Cancel without sending',
+      onPressed: _cancelListening,
+    ),
+  );
 
   /// Stop capturing and throw the audio away. Used by the ✕, by mute, and by backgrounding.
   void _cancelListening() {
@@ -1515,10 +1669,6 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       onPressed: () {
         setState(() {
           _voiceMuted = !_voiceMuted;
-          if (_greetingShowing) {
-            _caption = null; // the intro clears the moment you interact
-            _greetingShowing = false;
-          }
         });
         // remember the choice between launches (real app, or a test with an injected configPath).
         // Persist ONLY the pref — no dataDir, so a PLENARA_DATA env override isn't baked in.
@@ -1567,7 +1717,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
             child: Text(switch (action) {
               'harness' => 'Dev harness',
               'tune' => 'Tune Plena',
-              'data' => 'Your data',
+              'data' => 'Library',
               _ => 'Settings',
             }),
           ),

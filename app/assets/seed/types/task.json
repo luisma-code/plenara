@@ -1,10 +1,37 @@
 {
   "typeId": "task",
+  "schemaVersion": 3,
   "displayName": "Task",
   "attributes": [
     { "name": "description", "valueType": "text", "required": true },
     { "name": "dueAt", "valueType": "date", "required": false },
     { "name": "completed", "valueType": "boolean", "required": false, "default": false },
-    { "name": "createdAt", "valueType": "date", "required": true }
+    { "name": "createdAt", "valueType": "datetime", "required": true },
+    { "name": "status", "valueType": "enum", "enumValues": ["inbox", "today", "scheduled", "waiting", "someday", "done"], "required": false, "default": "inbox" },
+    { "name": "scheduledStartAt", "valueType": "datetime", "required": false },
+    { "name": "estimatedMinutes", "valueType": "number", "required": false },
+    { "name": "priority", "valueType": "enum", "enumValues": ["none", "low", "medium", "high"], "required": false, "default": "none" },
+    { "name": "projectRef", "valueType": "entityRef", "refType": "project", "required": false },
+    { "name": "areaRef", "valueType": "entityRef", "refType": "area", "required": false },
+    { "name": "contactRefs", "valueType": "entityRef", "refType": "contact", "cardinality": "many", "required": false },
+    { "name": "notes", "valueType": "text", "required": false },
+    { "name": "completedAt", "valueType": "datetime", "required": false }
+  ],
+  "migrations": [
+    {
+      "fromVersion": 1,
+      "toVersion": 2,
+      "fieldTypeCoercions": {
+        "createdAt": { "from": "date", "to": "datetime" }
+      }
+    },
+    {
+      "fromVersion": 2,
+      "toVersion": 3,
+      "fieldDefaults": {
+        "status": "inbox",
+        "priority": "none"
+      }
+    }
   ]
 }

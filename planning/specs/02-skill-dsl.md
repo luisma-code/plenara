@@ -682,7 +682,7 @@ The execution journal does **not** live in the skill file, and it does **not** l
 - **Privacy.** A resolved action plan contains literal field values lifted from records — including values from `sensitive` attributes (a journal-entry body, private contact notes). The encryption model guarantees skill files are *always plaintext* (Spec 01 §8.2). Writing resolved user data into the skill file would leak sensitive content into a file that is never encrypted. The journal is instead **encrypted at rest** using the same platform key store as sensitive instance records (Spec 01 §8.2).
 - **Definition stability.** With execution state out of the skill file, the file changes only when the definition is edited, so `lastModified` stays meaningful and executions no longer generate sync churn (a rewrite of `log-meal.json` on every meal).
 
-Location: `[app-support]/plenara/executions/{executionId}.json` (encrypted). One file per in-flight execution.
+Current walking-skeleton location: `[app-support]/execution-journal.json`, one atomically replaced, bounded device-local ledger. The richer per-execution-file layout remains the v1 destination when detached concurrent operations require it. Because the current coordinator is serial and the file never syncs, the single-file form has no cross-device merge path. Corrupt bytes are preserved as `execution-journal.json.corrupt` and surfaced for repair before a later atomic write replaces the active file.
 
 > **v1 posture (suite-sync CS-17):** "encrypted at rest" activates when Spec 01 §8.7 ships; until then `CryptoBox` is a pass-through and the journal is **plaintext device-local** (Spec 04 §3.1's posture note). Device-local placement — the sync-correctness and definition-stability arguments above — holds regardless.
 
@@ -721,7 +721,7 @@ An execution-journal entry records one in-flight execution:
 | `beforeImages` | Captured at execute (Spec 04 §3.3); the basis for `undo`. Empty until `executing`→`done`. |
 | `origin` | `interactive` \| `automation` — the orchestrator uses this to decide whether an approval gate applies (§4.2, §7.5). |
 
-One entry per in-flight execution at `[app-support]/plenara/executions/{executionId}.json` (encrypted); a `done` entry lingers only until its undo window closes (Spec 04 §3.11).
+Each entry is stored inside the current bounded device-local ledger; a terminal entry lingers while it is among the most recent 25 executions. Time-window expiry and per-execution files remain destination behavior (Spec 04 §3.11), not a claim about the present walking skeleton.
 
 ### 5.4 Before-images and reap-at-done — the undo backbone
 

@@ -192,7 +192,7 @@ void main() {
       });
       await s.handle('create a stretch routine for my low back');
       final r = s.store.values.firstWhere((x) => x['typeId'] == 'routine');
-      expect((r['estMinutes'] as num) < 180, isTrue);
+      expect(num.parse('${r['estMinutes']}') < 180, isTrue);
     });
 
     test('newlines are stripped from model-supplied text (it is spoken and stored)', () async {

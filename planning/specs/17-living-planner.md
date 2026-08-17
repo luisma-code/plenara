@@ -1,10 +1,21 @@
 # Spec 17 — Living Planner & Multimodal Product Model
 
-**Status:** v0.1 — 2026-08-17, approved direction; authoritative for Today, Plan, Library, the conversation ledger, interaction modality, proposals, and Plena's scale within product surfaces.
+**Status:** v0.2 — 2026-08-17, active implementation authority. Today v1, the durable conversation ledger, task schema v3, and the adaptive full-screen/collaborator presence are wired; Plan, purpose-built Library, proposals, and detail ember remain later increments.
 **Supersedes:** research §2.2's overlay-only/no-touch rule; Spec 07 P1–P2 and its four-surface model; Spec 15 D1/D14 where they make full-screen presence or ephemeral exchange the steady-state product. Those documents remain design history and point here for current behavior.
 **Depends on:** Specs 01–06 for schema, skills, routing, orchestration, functional behavior, and storage; Spec 07 for visual language and generic archetypes; Spec 12 for voice; Spec 15 for Plena's renderer.
 
 ---
+
+## Current realization — Increment 2
+
+- Opening the app renders the deterministic Today projection rather than an ephemeral greeting. It includes bounded Now/Next/Later sections, one relationship date, the latest durable execution with targeted undo, Inbox count, operational notices, and repair state.
+- Voice and typed capture continue through `Session.handle`; Today completion calls the typed `Session.completeTask` command directly. Both converge on `ExecutionCoordinator` and its durable device-local journal.
+- The device-local conversation ledger retains the final utterance, full reply, routing source, time, and execution link for 250 turns. It is a user-facing product history distinct from content-bearing internal diagnostic logs. History-linked writes expose targeted undo.
+- Task schema v3 owns `status`, `scheduledStartAt`, `estimatedMinutes`, `priority`, `projectRef`, `areaRef`, `contactRefs`, `notes`, and `completedAt`; `dueAt` remains deadline-only. Project and area are registered record types.
+- Plena remains full-bleed during conversation and yields within the same canvas when Today is visible. The populated surface has an explicit accessible voice target; tap-anywhere remains active only on non-interactive space.
+- Onboarding uses the same warm presence and palette, pins both decisions outside its scrollable story area, and states the internal-dogfood diagnostic policy. Platform icons are generated from a deterministic Plena particle mark for iOS, macOS, and Windows.
+
+This realization is not a claim that the complete Increment 2 evidence gate has passed. Physical-device safe-area/glance testing, dogfood capture timing, and the real-data migration/rollback exercise remain gate evidence rather than inferred code properties.
 
 ## 0. Product decision
 

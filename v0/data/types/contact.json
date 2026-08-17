@@ -1,5 +1,6 @@
 {
   "typeId": "contact",
+  "schemaVersion": 1,
   "displayName": "Contact",
   "attributes": [
     { "name": "displayName", "valueType": "text", "required": true },

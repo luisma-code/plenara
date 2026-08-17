@@ -8,15 +8,20 @@ import 'dart:async';
 import 'automations.dart';
 import 'claude.dart';
 import 'content_search.dart';
+import 'conversation_ledger.dart';
+import 'execution_coordinator.dart';
 import 'reference.dart';
 import 'generative.dart';
 import 'interpreter.dart';
 import 'migration.dart';
 import 'people.dart';
+import 'planner.dart';
 import 'reminders.dart';
 import 'routines.dart';
 import 'router.dart';
+import 'schema_registry.dart';
 import 'storage_repository.dart';
+import 'value_codec.dart';
 
 final _undoRe = RegExp(
     r"^(?:(?:no,?|never ?mind,?|wait,?|actually,?)\s+)?(?:(?:can|could|will) you\s+)?(?:please\s+)?(?:undo|revert|take (?:that|it) back|scratch that|roll (?:that|it) back)(?:\s+(?:that|it|this|please|(?:the|my|that) last (?:one|thing|entry|log)))?[.!]?$",
@@ -28,14 +33,17 @@ final _undoRe = RegExp(
 // order or fuzzy text — so a misheard item ("Zpack my clothes") is still trivially re-targetable.
 class _EnumItem {
   final String id;
-  final String typeId; // per-item: one readback can enumerate several types (facts + relationships)
+  final String
+      typeId; // per-item: one readback can enumerate several types (facts + relationships)
   final String labelField; // the field "correct" replaces on THIS item's type
-  final String spokenLabel; // fallback if the record vanishes before a reference
+  final String
+      spokenLabel; // fallback if the record vanishes before a reference
   _EnumItem(this.id, this.typeId, this.labelField, this.spokenLabel);
 }
 
 class _EnumCtx {
-  final List<_EnumItem> items; // ordered exactly as spoken (1-based to the user)
+  final List<_EnumItem>
+      items; // ordered exactly as spoken (1-based to the user)
   final String skillId; // diagnostics only
   _EnumCtx(this.items, this.skillId);
 }
@@ -46,21 +54,30 @@ const _refNum = r'(?:number\s+|no\.?\s*|#\s*|item\s+|the\s+)?'
     r'one|two|three|four|five|six|seven|eight|nine|ten|last(?:\s+one)?)';
 final _refCompleteRe = RegExp(
     r'^(?:complete|finish|mark(?:\s+off)?|check(?:\s+off)?|tick(?:\s+off)?|cross\s+off|'
-    r"i(?:'ve)?\s+(?:finished|did|completed|done)|done\s+with)\s+"
-    r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' + _refNum +
-    r'(?:\s+(?:as\s+)?(?:done|complete|completed|off))?[.!]?$', caseSensitive: false);
+            r"i(?:'ve)?\s+(?:finished|did|completed|done)|done\s+with)\s+"
+            r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' +
+        _refNum +
+        r'(?:\s+(?:as\s+)?(?:done|complete|completed|off))?[.!]?$',
+    caseSensitive: false);
 final _refDeleteRe = RegExp(
     r'^(?:delete|remove|drop|scratch|erase|get\s+rid\s+of|take\s+(?:off|out))\s+'
-    r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' + _refNum +
-    r'(?:\s+(?:from|off)\s+(?:my|the)\s+list)?[.!]?$', caseSensitive: false);
-final _refCorrectRe = RegExp( // two-turn: "correct 1" -> re-speak next turn
-    r'^(?:correct|fix|change|edit|replace|reword|rephrase|redo)\s+'
-    r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' + _refNum + r'[.!]?$',
+            r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' +
+        _refNum +
+        r'(?:\s+(?:from|off)\s+(?:my|the)\s+list)?[.!]?$',
     caseSensitive: false);
-final _refCorrectInlineRe = RegExp( // one-turn: "change 2 to buy oat milk"
+final _refCorrectRe = RegExp(
+    // two-turn: "correct 1" -> re-speak next turn
+    r'^(?:correct|fix|change|edit|replace|reword|rephrase|redo)\s+'
+            r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' +
+        _refNum +
+        r'[.!]?$', caseSensitive: false);
+final _refCorrectInlineRe = RegExp(
+    // one-turn: "change 2 to buy oat milk"
     r'^(?:correct|fix|change|edit|replace|reword|rephrase|update|make)\s+'
-    r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' + _refNum +
-    r'\s+(?:to|into|read|say)\s+(?:say\s+)?(.+?)[.!]?$', caseSensitive: false);
+            r'(?:the\s+)?(?:todo|task|item|entry|reminder|one)?\s*' +
+        _refNum +
+        r'\s+(?:to|into|read|say)\s+(?:say\s+)?(.+?)[.!]?$',
+    caseSensitive: false);
 
 /// Resolve a captured number/ordinal word to a 1-based position, or -1 for "last".
 /// Returns 0 on an unrecognized token (never matched by the regexes, but defensive).
@@ -70,12 +87,30 @@ int _refPos(String tok) {
   final d = int.tryParse(t);
   if (d != null) return d;
   const words = {
-    'first': 1, 'one': 1, 'second': 2, 'two': 2, 'third': 3, 'three': 3, 'fourth': 4, 'four': 4,
-    'fifth': 5, 'five': 5, 'sixth': 6, 'six': 6, 'seventh': 7, 'seven': 7, 'eighth': 8, 'eight': 8,
-    'ninth': 9, 'nine': 9, 'tenth': 10, 'ten': 10,
+    'first': 1,
+    'one': 1,
+    'second': 2,
+    'two': 2,
+    'third': 3,
+    'three': 3,
+    'fourth': 4,
+    'four': 4,
+    'fifth': 5,
+    'five': 5,
+    'sixth': 6,
+    'six': 6,
+    'seventh': 7,
+    'seven': 7,
+    'eighth': 8,
+    'eight': 8,
+    'ninth': 9,
+    'nine': 9,
+    'tenth': 10,
+    'ten': 10,
   };
   return words[t] ?? 0;
 }
+
 // Discoverability (Spec 03 §6.3): a clarify dead-ends without "here's what I can do".
 // A DSL skill can't introspect the skill registry, so this is a Session-level surface.
 final _helpRe = RegExp(
@@ -88,6 +123,7 @@ final _helpRe = RegExp(
 final _helpTopicRe = RegExp(
     r"^(?:what can (?:you|i) do with|what can i do (?:for|about)|how (?:do|can|would) i (?:use|track|log|manage|handle)|how do(?:es)?|help (?:me )?with|what are my options for)\s+(?:my |the )?(.+?)(?:\s+work)?\??$",
     caseSensitive: false);
+
 // ---- The Tour (Fable's capability-discovery design) — a guided, conversational answer to "what
 // can you do?" instead of a bullet dump. A closed vocabulary + a one-slot state machine; zero LLM.
 // Each chapter is a TERRITORY (not a skill): essence + one example + an invitation to try it live.
@@ -98,10 +134,11 @@ class _TourChapter {
   final String tryLine; // the single "you could say" example
   final String followOn; // the invitation (names the next chapter)
   final String coda; // appended after a live, in-domain try (teach-by-doing)
-  final List<String> domainKeywords; // a dispatched skill id containing one of these = "tried this"
+  final List<String>
+      domainKeywords; // a dispatched skill id containing one of these = "tried this"
   final List<String> aliases; // selection words ("tell me about reminders")
-  const _TourChapter(this.id, this.gate, this.essence, this.tryLine, this.followOn, this.coda,
-      this.domainKeywords, this.aliases);
+  const _TourChapter(this.id, this.gate, this.essence, this.tryLine,
+      this.followOn, this.coda, this.domainKeywords, this.aliases);
 }
 
 // Curated order: reminders → tasks → people → tracking. Journal/mood/birthdays fold into essences.
@@ -133,8 +170,25 @@ const _tourChapters = <_TourChapter>[
     'You could say — "remember that Mia is Sarah\'s daughter."',
     'Later you\'d just ask "what do I know about Mia." Want to try one, or hear about tracking?',
     "Now it's yours to ask back anytime. \"Undo that\" forgets it again.",
-    ['person', 'contact', 'interaction', 'relation', 'fact', 'birthday', 'alias'],
-    ['people', 'person', 'contact', 'contacts', 'friend', 'friends', 'relationship', 'relationships'],
+    [
+      'person',
+      'contact',
+      'interaction',
+      'relation',
+      'fact',
+      'birthday',
+      'alias'
+    ],
+    [
+      'people',
+      'person',
+      'contact',
+      'contacts',
+      'friend',
+      'friends',
+      'relationship',
+      'relationships'
+    ],
   ),
   _TourChapter(
     'tracking',
@@ -143,8 +197,28 @@ const _tourChapters = <_TourChapter>[
     'You could say — "log a 3k run."',
     'That one\'s free to try — I\'ll undo it after if you like. Or say "next" for one last thing: how to read me.',
     "Logged — and I'll total it up whenever you ask. \"Undo that\" clears it.",
-    ['run', 'walk', 'mood', 'journal', 'meal', 'goal', 'streak', 'track', 'water', 'step'],
-    ['track', 'tracking', 'run', 'running', 'mood', 'journal', 'habit', 'habits'],
+    [
+      'run',
+      'walk',
+      'mood',
+      'journal',
+      'meal',
+      'goal',
+      'streak',
+      'track',
+      'water',
+      'step'
+    ],
+    [
+      'track',
+      'tracking',
+      'run',
+      'running',
+      'mood',
+      'journal',
+      'habit',
+      'habits'
+    ],
   ),
   _TourChapter(
     'movement',
@@ -155,7 +229,15 @@ const _tourChapters = <_TourChapter>[
     'Making one takes a moment and uses your credits. Or say "next" for one last thing: how to read me.',
     "It's yours now — say \"let's do\" it whenever, and I'll count you through.",
     ['routine'],
-    ['routine', 'routines', 'stretch', 'stretching', 'exercise', 'workout', 'movement'],
+    [
+      'routine',
+      'routines',
+      'stretch',
+      'stretching',
+      'exercise',
+      'workout',
+      'movement'
+    ],
   ),
   // The presence itself — no skill to gate on, no live "try". The UI stages a colour demo while this
   // is spoken (drives idle→listening→thinking→the cooler AI shade). Kept LAST: a capstone that
@@ -196,11 +278,16 @@ final _corrRe = RegExp(
     caseSensitive: false);
 // Re-classification correction (F-14): "no, that was a walk" — the last log was the wrong
 // TYPE; reverse it and re-log as the corrected activity, carrying the original slots.
-final _reclassifyRe =
-    RegExp(r'^(?:no,?|actually,?|nope,?|wait,?)\s+that was (?:a |an )?(\w+)\.?$', caseSensitive: false);
+final _reclassifyRe = RegExp(
+    r'^(?:no,?|actually,?|nope,?|wait,?)\s+that was (?:a |an )?(\w+)\.?$',
+    caseSensitive: false);
 const _activitySkill = {
-  'run': 'log-run', 'running': 'log-run', 'jog': 'log-run', 'jogging': 'log-run',
-  'walk': 'log-walk', 'walking': 'log-walk',
+  'run': 'log-run',
+  'running': 'log-run',
+  'jog': 'log-run',
+  'jogging': 'log-run',
+  'walk': 'log-walk',
+  'walking': 'log-walk',
 };
 const _workoutSkills = {'log-run', 'log-walk'};
 // Same-record slot correction (F-15): "actually, 28 minutes" / "make it 3k" updates a field
@@ -218,7 +305,8 @@ final _cancelRe = RegExp(
 // Yes / no for the post-activation "is that what you wanted?" check. Kept separate from
 // _activateRe (which is a COMMIT word) and _cancelRe (which backs out of a pending action) —
 // this pair answers a question about something that already happened.
-final _yesRe = RegExp(r"^(?:yes|yep|yeah|yup|correct|that'?s (?:it|right)|perfect|great|exactly)[.!]?$",
+final _yesRe = RegExp(
+    r"^(?:yes|yep|yeah|yup|correct|that'?s (?:it|right)|perfect|great|exactly)[.!]?$",
     caseSensitive: false);
 final _noRe = RegExp(
     r"^(?:no|nope|nah|not (?:really|quite|what i wanted|it)|that'?s not (?:it|right|what i meant)"
@@ -226,7 +314,9 @@ final _noRe = RegExp(
     caseSensitive: false);
 
 // confirms an authored-capability draft (Spec 02 §6.5: nothing registered until "activate")
-final _activateRe = RegExp(r'^(activate|add it|yes,? add it|go ahead|do it|yes,? do it|yes)\.?$', caseSensitive: false);
+final _activateRe = RegExp(
+    r'^(activate|add it|yes,? add it|go ahead|do it|yes,? do it|yes)\.?$',
+    caseSensitive: false);
 // resolves a HELD automation write (Spec 02 §7.5 Review Feed): apply it, or dismiss it.
 final _approveReviewRe = RegExp(
     r'^(?:approve|apply|run)(?: (?:it|that|the (?:change|automation|review|suggestion|task)))?\.?$',
@@ -255,11 +345,13 @@ final _medicalRe = RegExp(
     r"|based on my (meds|medications|symptoms).{0,40}(wrong|diagnos|have|serious)",
     caseSensitive: false);
 // Impersonation refusal (DP-09): drafts in the USER's voice, never as a third party.
-final _impersonateRe =
-    RegExp(r"\b(pretend(ing)? to be|impersonat(e|ing)|speak as (my|his|her|their)|write as (my|his|her|their))\b", caseSensitive: false);
+final _impersonateRe = RegExp(
+    r"\b(pretend(ing)? to be|impersonat(e|ing)|speak as (my|his|her|their)|write as (my|his|her|their))\b",
+    caseSensitive: false);
 // Schema-edit denial (DF-03): adding a field to an EXISTING tracker is a paid authoring edit.
-final _schemaEditRe =
-    RegExp(r'\badd (a |an )?[\w-]+( [\w-]+)? (field|score|metric|column|attribute) to my \w+', caseSensitive: false);
+final _schemaEditRe = RegExp(
+    r'\badd (a |an )?[\w-]+( [\w-]+)? (field|score|metric|column|attribute) to my \w+',
+    caseSensitive: false);
 // A "start tracking X in glasses / with calories" specifies a UNIT or FIELD a shipped template
 // can't honor — so a keyword match ("water") must NOT pre-empt it (route to authoring instead).
 // The negative lookahead excludes innocuous "in the morning"/"with my book" time/possessive tails.
@@ -328,7 +420,8 @@ final _worldKnowledgeRe = RegExp(
     r"convert |the news|latest news|score of|who won|population of|"
     r"distance (from|to|between)|meaning of life)\b",
     caseSensitive: false);
-final _personalCueRe = RegExp(r"\b(i|i'?ve|i'?m|my|mine|our|ours|we|us|me)\b", caseSensitive: false);
+final _personalCueRe = RegExp(r"\b(i|i'?ve|i'?m|my|mine|our|ours|we|us|me)\b",
+    caseSensitive: false);
 // A tracker the app ALREADY ships — "start tracking my runs" should use it for FREE,
 // not pay Haiku to author a duplicate type (Spec 05 §3.7; the free→paid misroute). Kept
 // deliberately narrow: only unambiguous SELF trackers, and skipped entirely when a
@@ -367,8 +460,7 @@ final _harmfulRe = RegExp(
     r"|anorexi\w*|bulimi\w*|eating disorder|binge\w*|purging"
     r"|burn(?:ing)? off (?:my |the )?(?:binge|meal|food|calories|dinner|lunch)"
     r"|compensate for (?:my |the )?(?:binge|meal|eating)"
-    r"|cut down harder|so i can cut|eat less so",
-    caseSensitive: false);
+    r"|cut down harder|so i can cut|eat less so", caseSensitive: false);
 // ---- Routine creation / entry (Spec 16) -------------------------------------------------------
 // "create a stretch routine for my low back" / "make me a chest day workout".
 // The routine NOUN is REQUIRED (with it optional this swallowed "create a tracker to hide my
@@ -395,8 +487,11 @@ final _routineCreateRe = RegExp(
 // must keep going to the tracker path even though it contains "workout".
 // "tracker"/"log"/"journal" words, and the routine nouns, as separate patterns. Which one comes
 // FIRST decides the intent — see [_isTrackerAsk].
-final _trackerWordRe = RegExp(r"\b(tracker|logger|log|journal|diary|track)\b", caseSensitive: false);
-final _routineNounRe = RegExp(r"\b(routine|workout|stretches|warm[- ]?up|session)\b", caseSensitive: false);
+final _trackerWordRe = RegExp(r"\b(tracker|logger|log|journal|diary|track)\b",
+    caseSensitive: false);
+final _routineNounRe = RegExp(
+    r"\b(routine|workout|stretches|warm[- ]?up|session)\b",
+    caseSensitive: false);
 // "let's do my low back routine" / "start chest day" / "run the shoulder routine"
 final _routineDoRe = RegExp(
     r"^(?:(?:let'?s|lets)\s+)?(?:do|start|run|begin|play)\s+"
@@ -406,25 +501,39 @@ final _routineDoRe = RegExp(
 // ---- Routine player control words (Spec 16). Offline regex: free, deterministic, and available
 // mid-workout with no cloud round-trip. Deliberately narrow so an ordinary command mid-run
 // ("remind me to buy milk") falls through and routes normally instead of being swallowed.
-final _routineNextRe = RegExp(r"^(?:next|done|got it|finished|ok(?:ay)?(?: done)?)[.!]?$", caseSensitive: false);
-final _routineSkipRe = RegExp(r"^(?:skip(?: (?:this|it|that))?|pass|no(?:pe)?, ?skip)[.!]?$", caseSensitive: false);
-final _routineBackRe = RegExp(r"^(?:back|go back|previous|last one|repeat that one)[.!]?$", caseSensitive: false);
-final _routineRepeatRe = RegExp(r"^(?:repeat|again|say (?:that )?again|what(?:'| i)?s this one|how do i do (?:this|that)|what was that)\??[.!]?$", caseSensitive: false);
-final _routinePauseRe = RegExp(r"^(?:pause|wait|hold on|hang on|one (?:sec|second|moment))[.!]?$", caseSensitive: false);
-final _routineResumeRe = RegExp(r"^(?:go on|carry on|continue|resume|i'?m back|ready)[.!]?$", caseSensitive: false);
-final _routineStopRe = RegExp(r"^(?:stop|quit|that'?s enough|i'?m done|end (?:it|the routine)|finish(?: up)?)[.!]?$", caseSensitive: false);
+final _routineNextRe = RegExp(
+    r"^(?:next|done|got it|finished|ok(?:ay)?(?: done)?)[.!]?$",
+    caseSensitive: false);
+final _routineSkipRe = RegExp(
+    r"^(?:skip(?: (?:this|it|that))?|pass|no(?:pe)?, ?skip)[.!]?$",
+    caseSensitive: false);
+final _routineBackRe = RegExp(
+    r"^(?:back|go back|previous|last one|repeat that one)[.!]?$",
+    caseSensitive: false);
+final _routineRepeatRe = RegExp(
+    r"^(?:repeat|again|say (?:that )?again|what(?:'| i)?s this one|how do i do (?:this|that)|what was that)\??[.!]?$",
+    caseSensitive: false);
+final _routinePauseRe = RegExp(
+    r"^(?:pause|wait|hold on|hang on|one (?:sec|second|moment))[.!]?$",
+    caseSensitive: false);
+final _routineResumeRe = RegExp(
+    r"^(?:go on|carry on|continue|resume|i'?m back|ready)[.!]?$",
+    caseSensitive: false);
+final _routineStopRe = RegExp(
+    r"^(?:stop|quit|that'?s enough|i'?m done|end (?:it|the routine)|finish(?: up)?)[.!]?$",
+    caseSensitive: false);
 
 // authored ids are model output; keep them out of file paths and odd charsets
 final _idRe = RegExp(r'^[a-z0-9_-]{1,64}$');
 
-/// One reversible turn (Spec 02 §5.2 / Spec 04 §3.11): the before-images to
-/// restore + a human description of what it did. The execution journal is a
-/// device-local, volatile ring of these — undo can walk back the last N turns.
+/// The visible cache of a reversible durable execution. Before-images and
+/// execution state live only in [ExecutionCoordinator]'s device-local journal;
+/// this cache carries the stable handle and user-facing description.
 class _JournalEntry {
-  final Map<String, Map<String, dynamic>?> before;
   final String? desc;
-  final int id; // stable handle so a data-view snackbar can undo THIS entry, not the ring's tail
-  _JournalEntry(this.before, this.desc, {this.id = 0});
+  final int
+      id; // stable handle so a data-view snackbar can undo THIS entry, not the ring's tail
+  _JournalEntry(this.desc, {required this.id});
 }
 
 /// Outcome of a manual (data-view) write — a VALUE, never an exception across the UI seam
@@ -433,9 +542,12 @@ class _JournalEntry {
 class ManualWrite {
   final bool ok;
   final String message;
-  final int? undoId; // on success: the journal handle to pass to undoById for a TARGETED undo
+  final int?
+      undoId; // on success: the journal handle to pass to undoById for a TARGETED undo
   const ManualWrite.ok(this.message, {this.undoId}) : ok = true;
-  const ManualWrite.fail(this.message) : ok = false, undoId = null;
+  const ManualWrite.fail(this.message)
+      : ok = false,
+        undoId = null;
 }
 
 /// One learned NLU corpus entry, shaped for the "Learned phrases" showcase (the UI never sees
@@ -451,36 +563,50 @@ class LearnedFlow {
 class Session {
   final String dataDir;
   final DateTime? _fixedClock;
+
   /// The clock, read live per access so a long-open app never freezes at launch
   /// time (Spec 03 §4 wants a per-turn snapshot). Tests/the demo pin it via the
   /// [clock] constructor arg for reproducibility.
   DateTime get now => _fixedClock ?? DateTime.now();
   late Map<String, Map<String, dynamic>> types;
+  late SchemaRegistry schemaRegistry;
+  final List<MigrationRepairItem> migrationRepairItems = [];
+  final List<MigrationBackup> migrationBackups = [];
+  final List<String> executionRepairIssues = [];
+  late ConversationLedger conversationLedger;
   late Map<String, Map<String, dynamic>> skills;
-  late Map<String, Map<String, dynamic>> templates; // binary-shipped tracker templates (Spec 05 §6)
+  late Map<String, Map<String, dynamic>>
+      templates; // binary-shipped tracker templates (Spec 05 §6)
   late Map<String, Map<String, dynamic>> store;
   late Interpreter interp;
+
   /// The AutomationRunner + Review Feed (Spec 04 §3.9). Fired after _dispatch's
   /// writes via the onWrite seam (§4.8); read-only results are delivered
   /// (pendingNudges / takeDeliveries), writing plans are HELD in
   /// [AutomationRunner.pendingReview] for the user's approval (Spec 02 §7.5).
   late AutomationRunner automations;
   late Router router;
+
   /// The shipped exercise catalogue that grounds routine authoring (Spec 16).
   late ExerciseCatalogue exercises;
+
   /// The in-flight figure fill, if any — awaited by tests, ignored by the app (figures are
   /// presentation and arrive after the routine is already usable).
   Future<void>? pendingFigureFill;
   String? _lastRoutineId;
+
   /// A live routine run, or null. Ephemeral like the Tour — losing it on app kill is acceptable.
   RoutineRun? _run;
   RoutineRun? get activeRun => _run;
+
   /// Set when a routine was asked for with no focus area ("create a stretching routine"); the next
   /// utterance supplies it. Holds the requested kind so "a STRENGTH routine" stays a strength one.
   String? _pendingRoutineKind;
   late CloudClient claude;
   late GenerativeService _generative;
   late StorageRepository repo;
+  late ExecutionCoordinator executions;
+
   /// A routine build awaiting a yes, when the confirm preference is on.
   Map<String, dynamic>? _pendingRoutineBuild;
 
@@ -492,13 +618,14 @@ class Session {
   bool confirmCloudSpend = false;
   final CloudClient? _injectedCloud;
   final StorageRepository? _injectedStorage;
+  final ExecutionJournal? _injectedExecutionJournal;
   // The OS-notification adapter (Spec 04 §3.1). Null -> reminders still persist and
   // nudge on open, they just don't arm a native toast. The reconciled armed set is
   // DERIVED from the record store, so undo/delete cancel notifications for free.
   final NotificationScheduler? _scheduler;
   static const _journalMax = 25; // ring depth
-  final List<_JournalEntry> _journal = []; // execution journal of REVERSIBLE (write) turns
-  int _journalSeq = 0; // monotonic id source for targeted (data-view snackbar) undo
+  final List<_JournalEntry> _journal =
+      []; // execution journal of REVERSIBLE (write) turns
   // the immediately-previous routed turn (write OR read), so a correction targets
   // the right thing: forget its template, and reverse it ONLY if it actually wrote.
   String? _lastTurnTemplate;
@@ -507,14 +634,18 @@ class Session {
   // ("no, that was a walk", F-14) can re-log the corrected activity carrying the slots.
   Map<String, dynamic>? _lastDispatch;
   String _outSource = 'clarify'; // telemetry: how this turn resolved
+  int? _lastTurnExecutionId;
+
   /// How the LAST turn resolved (corpus | cloud | cloud-multi | compound | generative | ...).
   String get lastSource => _outSource;
   bool _lastTurnSpentCloud = false;
+
   /// Whether the last turn actually SPENT Anthropic tokens — drives the per-response cloud
   /// indicator. Keyed on real token spend (not the route source), so a cloud/generative call
   /// that FAILED and fell back to an offline reply shows no dot (review #22).
   bool get lastTurnUsedCloud => _lastTurnSpentCloud;
   String? _outSkill;
+
   /// The skill id (or "a+b" for a compound/multi-action turn) that the last turn dispatched.
   /// Read by the UI to choose an occasion-appropriate presence glyph (Spec 15 §5A.5).
   String? get lastSkill => _outSkill;
@@ -522,15 +653,20 @@ class Session {
   /// The Tour chapter id ('reminders'|'tasks'|'people'|'tracking'|'colors') that THIS turn opened, or
   /// null. Read by the UI to stage a chapter-apt glyph + (for 'colors') a live presence-colour demo.
   String? get lastTourChapter => _enteredChapter;
-  String? _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
+  String?
+      _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
   // Rich debug-trace fields (dogfood diagnosis: read the turnlog instead of retrying) —
   // reset each turn in handle(), populated as the turn resolves.
   String? _outTemplate; // the corpus template matched, if a corpus route
   Map<String, dynamic>? _outSlots; // the slots dispatched into the skill
-  final List<Map<String, dynamic>> _outWrites = []; // record ops this turn: {op,id,typeId}
-  final List<Map<String, dynamic>> _outReads = []; // what each read RESOLVED to (diagnose wrong-match bugs)
-  String? _outError; // exception type + message + stack, on the error path (never shown to the user)
-  Map<String, dynamic>? _outDiag; // on a MISS: the near-miss (closest skill + score) it computed
+  final List<Map<String, dynamic>> _outWrites =
+      []; // record ops this turn: {op,id,typeId}
+  final List<Map<String, dynamic>> _outReads =
+      []; // what each read RESOLVED to (diagnose wrong-match bugs)
+  String?
+      _outError; // exception type + message + stack, on the error path (never shown to the user)
+  Map<String, dynamic>?
+      _outDiag; // on a MISS: the near-miss (closest skill + score) it computed
   // A paused turn waiting for the user to supply a missing required slot (Spec 03
   // §6.3 ProvideSlot): {skillId, slots (partial), missing (remaining required names)}.
   // The next turn's input fills it and the completed skill dispatches.
@@ -549,7 +685,8 @@ class Session {
   // A validated-but-UNREGISTERED authored capability awaiting the user's "activate"
   // (Spec 02 §6.5 / G-18): {type, skill, typeId, skillId, displayName, examples}.
   Map<String, dynamic>? _pendingActivation;
-  String? _pendingAuthorOffer; // DF-01: a "start tracking X" awaiting a yes before paid authoring
+  String?
+      _pendingAuthorOffer; // DF-01: a "start tracking X" awaiting a yes before paid authoring
   // The Tour (guided "what can you do?"): {'chapter': String?, 'visited': Set, 'codaGiven': Set}.
   // Ephemeral, never persisted; dropped on app close or when a turn dispatches OUT of the current
   // chapter (the user moved on). A read/undo/clarify keeps it alive (the user is engaging as coached).
@@ -563,8 +700,10 @@ class Session {
   // grows the inventory and must re-index — but only when retrieval is on, so the
   // authoring path stays hermetic under init(retrieval: false), like init() itself.
   bool _retrievalEnabled = true;
-  ContentSearchIndex? _contentIndex; // semantic content search (F-12); null until retrieval builds it
-  Map<String, ReferenceStore> _references = const {}; // reference KBs (Spec 13), loaded at init
+  ContentSearchIndex?
+      _contentIndex; // semantic content search (F-12); null until retrieval builds it
+  Map<String, ReferenceStore> _references =
+      const {}; // reference KBs (Spec 13), loaded at init
 
   /// [cloud] lets tests inject a replay/mock client (lib/replay_cloud.dart); [storage]
   /// lets them inject a repository (in-memory / test double). Production leaves both
@@ -573,11 +712,13 @@ class Session {
       {DateTime? clock,
       CloudClient? cloud,
       StorageRepository? storage,
+      ExecutionJournal? executionJournal,
       NotificationScheduler? scheduler,
       String? deviceDir})
       : _fixedClock = clock,
         _injectedCloud = cloud,
         _injectedStorage = storage,
+        _injectedExecutionJournal = executionJournal,
         _scheduler = scheduler,
         _deviceDir = deviceDir;
 
@@ -593,52 +734,183 @@ class Session {
     return r is FileStorageRepository ? r.corruptFiles : const <String>[];
   }
 
+  /// User-visible repair state across storage, schema, migration, execution,
+  /// and conversation history. Diagnostics retain detail; the planner uses
+  /// this bounded summary so degraded durability is never silent.
+  List<String> get repairIssues => [
+        ...corruptFiles.map((_) => 'A data file could not be read.'),
+        ...schemaRegistry.issues.map((_) => 'A data definition needs repair.'),
+        ...migrationRepairItems.map((_) => 'A record migration needs repair.'),
+        ...executionRepairIssues.map((_) => 'A recent change needs repair.'),
+        ...conversationLedger.issues
+            .map((_) => 'Conversation history needs repair.'),
+      ];
+
   /// [retrieval] builds the embedding index (needs the embed server, ~2s per anchor
   /// when it's DOWN — so the app defaults it OFF). Tests pass false to stay hermetic.
   /// [onPhase] receives a line at the start/end of each init phase — the app writes
   /// these to its diagnostics log, so a startup HANG shows the last phase that began.
-  Future<void> init({bool retrieval = true, void Function(String msg)? onPhase}) async {
+  Future<void> init(
+      {bool retrieval = true, void Function(String msg)? onPhase}) async {
     final sw = Stopwatch()..start();
-    void phase(String msg) => onPhase?.call('init: $msg (+${sw.elapsedMilliseconds}ms)');
+    void phase(String msg) =>
+        onPhase?.call('init: $msg (+${sw.elapsedMilliseconds}ms)');
     phase('start');
-    repo = _injectedStorage ?? FileStorageRepository(dataDir, deviceDir: _deviceDir);
-    types = repo.loadDefs('types', 'typeId');
+    repo = _injectedStorage ??
+        FileStorageRepository(dataDir, deviceDir: _deviceDir);
     skills = repo.loadDefs('skills', 'skillId');
     templates = repo.loadDefs('templates', 'templateId');
+    final automationDefs = repo.loadDefs('automations', 'automationId');
+    final typeSources = repo is FileStorageRepository
+        ? (repo as FileStorageRepository)
+            .loadDefDocuments('types')
+            .map((doc) => SchemaSource(doc.filename, doc.definition))
+        : repo
+            .loadDefs('types', 'typeId')
+            .entries
+            .map((entry) => SchemaSource('${entry.key}.json', entry.value));
+    schemaRegistry = SchemaRegistry.hydrate(
+      typeSources,
+      skills: skills,
+      automations: automationDefs,
+    );
+    types = Map<String, Map<String, dynamic>>.from(schemaRegistry.all);
     store = repo.loadRecords();
-    phase('loaded ${types.length} types, ${skills.length} skills, ${store.length} records');
+    final executionJournal = _injectedExecutionJournal ??
+        (repo is FileStorageRepository
+            ? FileExecutionJournal((repo as FileStorageRepository).deviceDir)
+            : MemoryExecutionJournal());
+    conversationLedger = repo is FileStorageRepository
+        ? FileConversationLedger((repo as FileStorageRepository).deviceDir)
+        : MemoryConversationLedger();
+    executionRepairIssues
+      ..clear()
+      ..addAll(executionJournal.issues);
+    executions = ExecutionCoordinator(
+      repository: repo,
+      store: store,
+      journal: executionJournal,
+      recordValidator: (record, projectedStore) {
+        final type = types[record['typeId']];
+        if (type == null) {
+          throw ValueCodecError(
+            'unknown_record_type',
+            'No active schema exists for ${record['typeId']}.',
+          );
+        }
+        record.putIfAbsent('_schemaVersion', () => typeVersion(type));
+        return const ValueCodec().validateRecord(
+          type,
+          record,
+          records: projectedStore,
+          dataRoot: dataDir,
+        );
+      },
+    );
+    final recoveredExecutions = executions.recover();
+    _journal
+      ..clear()
+      ..addAll(executions.completed
+          .where((record) => record.visible)
+          .map((record) => _JournalEntry(
+                record.description,
+                id: record.id,
+              )));
+    if (recoveredExecutions.isNotEmpty) {
+      phase('recovered ${recoveredExecutions.length} interrupted execution(s)');
+    }
+    phase(
+        'loaded ${types.length} types, ${skills.length} skills, ${store.length} records');
+    if (schemaRegistry.issues.isNotEmpty) {
+      phase('WARNING: ${schemaRegistry.issues.length} schema repair item(s): '
+          '${schemaRegistry.issues.map((issue) => '${issue.code}:${issue.source}').join(', ')}');
+    }
     final r = repo;
     if (r is FileStorageRepository && r.corruptFiles.isNotEmpty) {
       // P2.8: never drop a bad file on the floor — surface it in diagnostics for repair.
-      phase('WARNING: skipped ${r.corruptFiles.length} unreadable file(s), surfaced for repair: ${r.corruptFiles.join(', ')}');
+      phase(
+          'WARNING: skipped ${r.corruptFiles.length} unreadable file(s), surfaced for repair: ${r.corruptFiles.join(', ')}');
     }
-    // Migrate-on-read (Spec 01 §7.4 / Spec 06 D12): bring records written under an older schema
-    // forward to their type's current version, re-persisting only what changed. A future-versioned
-    // record (a newer app wrote it) is left intact and surfaced, never mangled.
-    var migrated = 0, tooNew = 0, unwritable = 0;
+    // Bring records forward only through an explicit contiguous migration
+    // chain. Failed/future records retain their exact disk form but are parked
+    // outside typed reads and exposed as repair items.
+    migrationRepairItems.clear();
+    migrationBackups.clear();
+    var migrated = 0, tooNew = 0, failed = 0;
     for (final e in store.entries.toList()) {
       final td = types[e.value['typeId']];
-      if (td == null) continue;
-      final m = migrateRecord(e.value, td);
-      if (m.changed) {
-        store[e.key] = m.record; // the in-memory migration is correct either way
-        // A single unwritable record must NOT brick startup — the loader already skips corrupt
-        // files rather than throwing, and a read-only/full folder here would otherwise make the
-        // app refuse to open at all. Migrate in memory, count it, surface it (P2.8).
-        try {
-          repo.persist(m.record);
-          migrated++;
-        } catch (_) {
-          unwritable++;
-        }
-      } else if (isFutureVersioned(e.value, td)) {
+      if (td == null) {
+        migrationRepairItems.add(MigrationRepairItem(
+          recordId: e.key,
+          typeId: '${e.value['typeId']}',
+          code: 'unknown_record_type',
+          message: 'The record type is not active in the schema registry.',
+          rawRecord: Map<String, dynamic>.from(e.value),
+        ));
+        store.remove(e.key);
+        failed++;
+        continue;
+      }
+      if (isFutureVersioned(e.value, td)) {
+        migrationRepairItems.add(MigrationRepairItem(
+          recordId: e.key,
+          typeId: '${e.value['typeId']}',
+          code: 'version_too_new',
+          message:
+              'This record needs schema version ${recordVersion(e.value)}, '
+              'but this app has version ${typeVersion(td)}.',
+          rawRecord: Map<String, dynamic>.from(e.value),
+        ));
+        store.remove(e.key);
         tooNew++;
+        continue;
+      }
+      final m = migrateRecord(
+        e.value,
+        td,
+        records: store,
+        dataRoot: dataDir,
+      );
+      if (m.failure != null) {
+        migrationRepairItems.add(MigrationRepairItem(
+          recordId: e.key,
+          typeId: '${e.value['typeId']}',
+          code: m.failure!.code,
+          message: m.failure!.message,
+          rawRecord: Map<String, dynamic>.from(e.value),
+        ));
+        store.remove(e.key);
+        failed++;
+        continue;
+      }
+      if (m.changed) {
+        try {
+          if (repo is FileStorageRepository) {
+            migrationBackups.add(
+              (repo as FileStorageRepository)
+                  .backupForMigration(e.value, typeVersion(td)),
+            );
+          }
+          repo.persist(m.record);
+          store[e.key] = m.record;
+          migrated++;
+        } catch (error) {
+          migrationRepairItems.add(MigrationRepairItem(
+            recordId: e.key,
+            typeId: '${e.value['typeId']}',
+            code: 'migration_persist_failed',
+            message: '$error',
+            rawRecord: Map<String, dynamic>.from(e.value),
+          ));
+          store.remove(e.key);
+          failed++;
+        }
       }
     }
-    if (migrated > 0 || tooNew > 0 || unwritable > 0) {
+    if (migrated > 0 || tooNew > 0 || failed > 0) {
       phase('migrated $migrated record(s) to current schema'
-          '${tooNew > 0 ? '; $tooNew from a newer app left as-is' : ''}'
-          '${unwritable > 0 ? '; WARNING: $unwritable could not be written back (migrated in memory only)' : ''}');
+          '${tooNew > 0 ? '; $tooNew from a newer app parked' : ''}'
+          '${failed > 0 ? '; WARNING: $failed migration repair item(s) parked' : ''}');
     }
     // Reference knowledge bases (Spec 13): shipped, read-only datasets (nutrition calories) —
     // load once; a missing file yields an empty store (the feature just goes quiet).
@@ -650,8 +922,9 @@ class Session {
     // Automations registry (Spec 01 §4.4 / Spec 04 §3.9): loaded like types/skills;
     // an absent automations/ folder is simply an empty registry (zero behavior change).
     final autoRepo = repo;
-    final autoState =
-        autoRepo is FileStorageRepository ? autoRepo.loadAutomationState() : <String, DateTime>{};
+    final autoState = autoRepo is FileStorageRepository
+        ? autoRepo.loadAutomationState()
+        : <String, DateTime>{};
     automations = AutomationRunner(
       types: types,
       skills: skills,
@@ -660,24 +933,35 @@ class Session {
       persist: repo.persist,
       lastFired: autoState, // the runner mutates this map in place
       onFired: (_, __) {
-        if (autoRepo is FileStorageRepository) autoRepo.saveAutomationState(autoState);
+        if (autoRepo is FileStorageRepository)
+          autoRepo.saveAutomationState(autoState);
       },
     );
-    automations.register(repo.loadDefs('automations', 'automationId'));
-    automations.tick(now); // fire any schedule automation whose cron time passed since last open
+    automations.register({
+      for (final entry in automationDefs.entries)
+        if (!schemaRegistry.inertAutomations.contains(entry.key))
+          entry.key: entry.value,
+    });
+    automations.tick(
+        now); // fire any schedule automation whose cron time passed since last open
     if (automations.statuses.isNotEmpty) {
-      phase('automations: ${automations.statuses.map((a) => '${a.automationId}=${a.state}').join(', ')}');
+      phase(
+          'automations: ${automations.statuses.map((a) => '${a.automationId}=${a.state}').join(', ')}');
     }
     // schedule catch-up outcome (diagnosable from the log, not a black box)
-    if (automations.deliveries.isNotEmpty || automations.pendingReview.isNotEmpty || automations.refusals.isNotEmpty) {
+    if (automations.deliveries.isNotEmpty ||
+        automations.pendingReview.isNotEmpty ||
+        automations.refusals.isNotEmpty) {
       phase('automation tick: ${automations.deliveries.length} delivered, '
           '${automations.pendingReview.length} held, ${automations.refusals.length} refused');
     }
-    router = Router.load('$dataDir/corpus.json', now, learnedPath: '$dataDir/corpus-learned.json');
+    router = Router.load('$dataDir/corpus.json', now,
+        learnedPath: '$dataDir/corpus-learned.json');
     if (router.corruptFiles.isNotEmpty) {
       // Routing is gutted without the seed corpus — say so loudly rather than let every utterance
       // clarify-fail for no visible reason (P2.8).
-      phase('WARNING: the seed corpus could not be read (${router.corruptFiles.join(', ')}) — '
+      phase(
+          'WARNING: the seed corpus could not be read (${router.corruptFiles.join(', ')}) — '
           'routing is degraded; reinstall or restore that file to repair.');
     }
     claude = _injectedCloud ?? ClaudeClient();
@@ -688,10 +972,12 @@ class Session {
     phase('validated skills');
     _retrievalEnabled = retrieval;
     if (retrieval) {
-      phase('building retrieval index (embed server — may hang if it is down)…');
+      phase(
+          'building retrieval index (embed server — may hang if it is down)…');
       await router.buildRetrievalIndex(skills);
       _contentIndex = ContentSearchIndex();
-      await _contentIndex!.build(store.values); // semantic content search (F-12); no-op if server down
+      await _contentIndex!.build(
+          store.values); // semantic content search (F-12); no-op if server down
       phase('retrieval index built');
     } else {
       phase('retrieval disabled');
@@ -708,7 +994,9 @@ class Session {
     if (sched == null) return;
     try {
       await reconcileReminders(sched, store, now);
-    } catch (_) {/* an OS notification hiccup is not worth failing the turn over */}
+    } catch (_) {
+      /* an OS notification hiccup is not worth failing the turn over */
+    }
   }
 
   // ---- The Tour (Fable's capability discovery) — a stateful, conversational "what can you do?" ----
@@ -731,7 +1019,8 @@ class Session {
   _TourChapter? _tourSelect(String u) {
     var s = u.toLowerCase().trim().replaceAll(RegExp(r'[.!?,]+$'), '').trim();
     s = s.replaceFirst(
-        RegExp(r"^(?:(?:tell|show) me (?:more )?about |what about |how about |let'?s (?:do|try|hear about) |i'?d like |can we do |about )"),
+        RegExp(
+            r"^(?:(?:tell|show) me (?:more )?about |what about |how about |let'?s (?:do|try|hear about) |i'?d like |can we do |about )"),
         '');
     s = s.replaceFirst(RegExp(r'^the '), '').trim();
     for (final c in _availableChapters()) {
@@ -752,8 +1041,10 @@ class Session {
   /// in-progress tour's visited set (a repeat "what can you do" continues rather than restarts).
   String _openTour() {
     final prior = _pendingTour;
-    final visited = prior == null ? <String>{} : (prior['visited'] as Set).cast<String>();
-    final codaGiven = prior == null ? <String>{} : (prior['codaGiven'] as Set).cast<String>();
+    final visited =
+        prior == null ? <String>{} : (prior['visited'] as Set).cast<String>();
+    final codaGiven =
+        prior == null ? <String>{} : (prior['codaGiven'] as Set).cast<String>();
     _outSource = 'tour';
     _tourSpokeThisTurn = true;
     final avail = _availableChapters();
@@ -766,7 +1057,11 @@ class Session {
       _pendingTour = null;
       return _helpText();
     }
-    _pendingTour = {'chapter': null, 'visited': visited, 'codaGiven': codaGiven};
+    _pendingTour = {
+      'chapter': null,
+      'visited': visited,
+      'codaGiven': codaGiven
+    };
     // Only name territories that are actually installed (never advertise a gated-off chapter). The
     // 'colors' capstone isn't a "remember" territory, so it's left off the pick-menu (still reachable
     // via "next").
@@ -783,7 +1078,8 @@ class Session {
     // Privacy first — only on a FRESH tour (not on a repeat "what can you do"), and said before the
     // people/journal chapters ever ask for anything personal. Accurate to the posture: on-device by
     // default; the only thing that leaves is a smart feature calling the user's OWN AI account.
-    final privacy = prior == null // only on a brand-new tour, never on a repeat while one is live
+    final privacy = prior ==
+            null // only on a brand-new tour, never on a repeat while one is live
         ? 'First, so you know: everything you tell me stays on your phone — it\'s yours. Nothing goes '
             'to any server unless a smart feature needs the AI, and even then it goes to your own '
             'private account, never to me.'
@@ -831,8 +1127,10 @@ class Session {
         '• Reminders — "remind me to call mom on thursday at 5pm", "remind me every day at 9am to take my meds", "what are my reminders", "snooze the reminder to X to friday at 9am", "cancel the reminder to X"',
       if (has('log-run'))
         '• Running — "log a 3k run", "how much have I run this week", "how far have I run", "what\'s my running streak"',
-      if (has('log-mood')) '• Mood — "I\'m feeling great", "how have I been feeling"',
-      if (has('log-journal')) '• Journal — "journal that today was a good day", "read my journal"',
+      if (has('log-mood'))
+        '• Mood — "I\'m feeling great", "how have I been feeling"',
+      if (has('log-journal'))
+        '• Journal — "journal that today was a good day", "read my journal"',
       if (has('list-routines'))
         '• Movement — "create a stretching routine for my low back", then "let\'s do low back" '
             'and I\'ll walk you through it',
@@ -840,7 +1138,8 @@ class Session {
         '• People — "remember that Mia is Sarah\'s daughter", "what do I know about Mia", "talked to Sam about the trip", "when did I last talk to Sam"',
       if (has('set-birthday'))
         '• Birthdays — "Sarah\'s birthday is july 16", "whose birthday is coming up"',
-      if (has('set-alias')) '• Nicknames — "Sarah\'s nickname is Mum", then "when did I last talk to Mum"',
+      if (has('set-alias'))
+        '• Nicknames — "Sarah\'s nickname is Mum", then "when did I last talk to Mum"',
       '• Ideas & briefings (needs a connection) — "gift ideas for Sarah", "help me reconnect with Sam", "give me my briefing"',
       '• New trackers — "start tracking my water intake"',
     ];
@@ -858,7 +1157,8 @@ class Session {
           '"remind me every weekday at 9am to stretch", "remind me on the 15th of every month to pay rent", '
           '"what reminders do I have tomorrow", "snooze the reminder to X to friday at 9am", "cancel the reminder to X".';
     }
-    if (m(['routine', 'stretch', 'exercise', 'workout', 'movement']) && has('list-routines')) {
+    if (m(['routine', 'stretch', 'exercise', 'workout', 'movement']) &&
+        has('list-routines')) {
       return 'For movement you can say: "create a stretching routine for my low back" or '
           '"make me a strength workout for chest" — I\'ll build it once and keep it. Then '
           '"let\'s do low back" and I\'ll walk you through it a move at a time; say "next", '
@@ -879,7 +1179,8 @@ class Session {
       return 'For your journal: "journal that today was a good day", "read my journal", '
           '"what did I write yesterday", "delete my last journal entry".';
     }
-    if (m(['people', 'contact', 'friend', 'relationship']) && has('remember-person-fact')) {
+    if (m(['people', 'contact', 'friend', 'relationship']) &&
+        has('remember-person-fact')) {
       return 'For people: "remember that Mia is Sarah\'s daughter", "what do I know about Mia", '
           '"talked to Sam yesterday", "how old is Sarah", "when did I last talk to Sam".';
     }
@@ -889,7 +1190,16 @@ class Session {
     if (m(['meal', 'food', 'eat', 'calorie']) && has('log-meal')) {
       return 'For meals: "I had eggs for breakfast", "what did I eat today", "how many calories have I had today".';
     }
-    if (m(['water', 'hydrat', 'step', 'weight', 'reading', 'medication', 'meds', 'track'])) {
+    if (m([
+      'water',
+      'hydrat',
+      'step',
+      'weight',
+      'reading',
+      'medication',
+      'meds',
+      'track'
+    ])) {
       return 'You can start a new tracker any time — e.g. "start tracking my water intake", '
           '"start tracking my steps", or "start tracking my weight" — then log with things like "I drank 2 glasses of water".';
     }
@@ -903,21 +1213,26 @@ class Session {
   /// deterministic resolver, so the cloud path matches the corpus path's typed slots.
   /// An unresolvable required datetime becomes null — which drops into a skill's own
   /// "when?" clarify branch rather than persisting a wrong or unparseable time.
-  void _normalizeTypedSlots(Map<String, dynamic>? skill, Map<String, dynamic> slots, DateTime now) {
+  void _normalizeTypedSlots(
+      Map<String, dynamic>? skill, Map<String, dynamic> slots, DateTime now) {
     final inputs = skill?['inputs'] as List?;
     if (inputs == null) return;
     for (final i in inputs) {
       if (i is! Map) continue;
       final name = i['name'], type = i['type'];
       if (name is! String || slots[name] is! String) continue;
-      if (type == 'date') slots[name] = router.resolveDate(slots[name] as String, now);
+      if (type == 'date')
+        slots[name] = router.resolveDate(slots[name] as String, now);
       // a FORWARD-intent date (e.g. create-task.dueDate): a bare month-day that already passed
       // this year rolls to next year — no due dates in the past (reviewer b #6).
-      if (type == 'futuredate') slots[name] = router.resolveFutureDate(slots[name] as String, now);
-      if (type == 'datetime') slots[name] = router.resolveDateTime(slots[name] as String, now);
+      if (type == 'futuredate')
+        slots[name] = router.resolveFutureDate(slots[name] as String, now);
+      if (type == 'datetime')
+        slots[name] = router.resolveDateTime(slots[name] as String, now);
       // a PAST-event date (e.g. log-interaction.at): a bare "tuesday" is the PREVIOUS Tuesday, not
       // the next — else a past interaction gets stamped with a future date (reviews a#4 / b#2).
-      if (type == 'pastday') slots[name] = router.resolvePastday(slots[name] as String, now);
+      if (type == 'pastday')
+        slots[name] = router.resolvePastday(slots[name] as String, now);
     }
   }
 
@@ -928,7 +1243,8 @@ class Session {
   static dynamic _sanitizeSlot(dynamic v) {
     if (v is! String) return v;
     final t = v.trim();
-    if (t.isEmpty || t.toLowerCase() == 'none' || t.toLowerCase() == 'null') return null;
+    if (t.isEmpty || t.toLowerCase() == 'none' || t.toLowerCase() == 'null')
+      return null;
     return v;
   }
 
@@ -949,17 +1265,110 @@ class Session {
           '📋 Pending review: ${p.preview ?? p.description} (from ${p.automationId})',
       ];
 
-  /// Reverse a turn's writes via the repository (undo / correction).
-  void _reverse(Map<String, Map<String, dynamic>?> before) {
-    before.forEach((id, prior) {
-      if (prior == null) {
-        store.remove(id);
-        repo.remove(id); // tombstone
-      } else {
-        store[id] = Map<String, dynamic>.from(prior);
-        repo.persist(prior);
-      }
-    });
+  /// Operational state that is not already represented as a dated planner
+  /// object. Today renders these inline so scheduler degradation, automation
+  /// deliveries, and held writes cannot disappear behind the old greeting.
+  List<String> plannerNotices() => [
+        if (_scheduler?.unavailableReason() case final reason?) '⚠️ $reason',
+        for (final delivery in automations.deliveries) '✨ ${delivery.text}',
+        for (final pending in automations.pendingReview)
+          '📋 ${pending.preview ?? pending.description} (from ${pending.automationId})',
+      ];
+
+  /// Current planner truth, projected across tasks, reminders, routines, and
+  /// relationship dates. The UI reads this directly; it never converts taps
+  /// into synthetic English commands.
+  TodayProjection todayProjection() {
+    final latest =
+        executions.completed.where((entry) => entry.visible).lastOrNull;
+    return buildTodayProjection(
+      store,
+      now,
+      latestChange: latest == null || latest.description == null
+          ? null
+          : PlannerChange(
+              executionId: latest.id,
+              description: latest.description!,
+              origin: latest.origin,
+              at: DateTime.parse(latest.createdAt),
+            ),
+    );
+  }
+
+  /// Direct planner completion. It shares the exact mutation/undo path used by
+  /// voice, without synthesizing an utterance inside UI code.
+  Future<ManualWrite> completeTask(String id) async {
+    final record = store[id];
+    if (record == null || record['typeId'] != 'task') {
+      return const ManualWrite.fail('That task no longer exists.');
+    }
+    if (record['completed'] == true || record['status'] == 'done') {
+      return const ManualWrite.fail('That task is already done.');
+    }
+    final updated = Map<String, dynamic>.from(record)
+      ..['completed'] = true
+      ..['status'] = 'done'
+      ..['completedAt'] = now.toIso8601String();
+    final result = _executeMutation(
+      writes: [updated],
+      deletes: const [],
+      origin: 'planner-direct',
+      description: 'completed "${record['description']}"',
+      frozenInputs: {'recordId': id},
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite ||
+        result.record == null) {
+      return const ManualWrite.fail(
+          "Couldn't start that completion safely, so nothing changed.");
+    }
+    await _reconcileReminders();
+    try {
+      automations.notifyWrites([updated]);
+    } catch (_) {
+      // Automation containment is part of the mutation boundary: the user's
+      // completion remains durable even if an automation definition is bad.
+    }
+    try {
+      repo.logTurn({
+        'source': 'planner-direct',
+        'op': 'complete',
+        'typeId': 'task',
+        'recordId': id,
+      });
+    } catch (_) {
+      // Internal diagnostics must never make a completed action fail.
+    }
+    return ManualWrite.ok(
+      result.state == ExecutionResultState.appliedInMemory
+          ? "Completed here, but couldn't finish saving it. I'll recover it next launch."
+          : 'Completed — ${record['description']}.',
+      undoId: result.record!.id,
+    );
+  }
+
+  ExecutionResult _executeMutation({
+    required List<Map<String, dynamic>> writes,
+    required List<String> deletes,
+    required String origin,
+    String? description,
+    Map<String, dynamic> frozenInputs = const {},
+    bool visible = true,
+  }) {
+    final result = executions.execute(
+      writes: writes,
+      deletes: deletes,
+      origin: origin,
+      description: description,
+      frozenInputs: frozenInputs,
+      visible: visible,
+    );
+    final record = result.record;
+    if (record != null && visible) {
+      _lastTurnExecutionId = record.id;
+      _journal.add(_JournalEntry(record.description, id: record.id));
+      if (_journal.length > _journalMax) _journal.removeAt(0);
+    }
+    return result;
   }
 
   // ---- Reference-by-number handlers (resolve N against the last numbered readback) -----------
@@ -971,33 +1380,53 @@ class Session {
   /// pending-gen guards so "delete 2" mid-follow-up isn't swallowed as a slot value or a contact name.
   bool _looksLikeRefCommand(String u) =>
       _enumCtx != null &&
-      (_refDeleteRe.hasMatch(u) || _refCompleteRe.hasMatch(u) ||
-          _refCorrectRe.hasMatch(u) || _refCorrectInlineRe.hasMatch(u));
+      (_refDeleteRe.hasMatch(u) ||
+          _refCompleteRe.hasMatch(u) ||
+          _refCorrectRe.hasMatch(u) ||
+          _refCorrectInlineRe.hasMatch(u));
 
   /// Resolve a 1-based position (or -1 = "last") against the live enumeration context.
-  ({Map<String, dynamic>? rec, _EnumItem? item, String label, int pos, String? fail}) _refResolve(int n) {
+  ({
+    Map<String, dynamic>? rec,
+    _EnumItem? item,
+    String label,
+    int pos,
+    String? fail
+  }) _refResolve(int n) {
     final ctx = _enumCtx!;
     final count = ctx.items.length;
     final idx = n < 0 ? count - 1 : n - 1;
     if (idx < 0 || idx >= count) {
       final asked = n < 0 ? count : n;
-      return (rec: null, item: null, label: '', pos: asked,
-          fail: 'That list only had $count item${count == 1 ? '' : 's'} — there\'s no number $asked.');
+      return (
+        rec: null,
+        item: null,
+        label: '',
+        pos: asked,
+        fail:
+            'That list only had $count item${count == 1 ? '' : 's'} — there\'s no number $asked.'
+      );
     }
     final it = ctx.items[idx];
     final rec = store[it.id];
     if (rec == null) {
-      return (rec: null, item: it, label: it.spokenLabel, pos: idx + 1,
-          fail: 'Number ${idx + 1} — "${it.spokenLabel}" — isn\'t there any more; '
-              'it may have been deleted since I read the list.');
+      return (
+        rec: null,
+        item: it,
+        label: it.spokenLabel,
+        pos: idx + 1,
+        fail:
+            'Number ${idx + 1} — "${it.spokenLabel}" — isn\'t there any more; '
+            'it may have been deleted since I read the list.'
+      );
     }
-    return (rec: rec, item: it, label: '${rec[it.labelField] ?? it.spokenLabel}', pos: idx + 1, fail: null);
-  }
-
-  void _journalPush(String id, Map<String, dynamic> before, String desc) {
-    _journal.add(_JournalEntry({id: Map<String, dynamic>.from(before)}, desc));
-    if (_journal.length > _journalMax) _journal.removeAt(0);
-    _lastTurnWrote = true;
+    return (
+      rec: rec,
+      item: it,
+      label: '${rec[it.labelField] ?? it.spokenLabel}',
+      pos: idx + 1,
+      fail: null
+    );
   }
 
   String _refDelete(int n) {
@@ -1005,10 +1434,22 @@ class Session {
     final r = _refResolve(n);
     if (r.fail != null) return r.fail!;
     final id = r.rec!['id'] as String;
-    _journalPush(id, r.rec!, 'deleted "${r.label}"');
-    store.remove(id);
-    repo.remove(id);
+    final result = _executeMutation(
+      writes: const [],
+      deletes: [id],
+      origin: 'reference',
+      description: 'deleted "${r.label}"',
+      frozenInputs: {'position': r.pos, 'recordId': id},
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite) {
+      return "I couldn't start that delete safely, so nothing changed.";
+    }
+    _lastTurnWrote = true;
     _outSkill = 'ref-delete';
+    if (result.state == ExecutionResultState.appliedInMemory) {
+      return 'Deleted number ${r.pos} here, but could not finish saving it. '
+          "I'll recover it next launch.";
+    }
     return 'Deleted number ${r.pos} — "${r.label}". (Say "undo that" to restore it.)';
   }
 
@@ -1016,22 +1457,37 @@ class Session {
     _outSource = 'enumref';
     final r = _refResolve(n);
     if (r.fail != null) return r.fail!;
-    final typeId = r.item!.typeId; // this item's own type (a readback may mix types)
+    final typeId =
+        r.item!.typeId; // this item's own type (a readback may mix types)
     final td = types[typeId];
     final doneField = _doneFieldOf(td);
     if (doneField == null) {
       return 'A ${_typeDisplayName(typeId)} isn\'t something I mark done — '
           'I can delete number ${r.pos}, or correct it.';
     }
-    if (r.rec![doneField] == true) return 'Number ${r.pos} — "${r.label}" — was already done.';
+    if (r.rec![doneField] == true)
+      return 'Number ${r.pos} — "${r.label}" — was already done.';
     final id = r.rec!['id'] as String;
-    _journalPush(id, r.rec!, 'completed "${r.label}"');
     final updated = Map<String, dynamic>.from(r.rec!)..[doneField] = true;
     final stampField = _attrNamed(td, 'completedAt', 'datetime');
     if (stampField != null) updated[stampField] = now.toIso8601String();
-    store[id] = updated;
-    repo.persist(updated);
+    if (_attrNamed(td, 'status', 'enum') != null) updated['status'] = 'done';
+    final result = _executeMutation(
+      writes: [updated],
+      deletes: const [],
+      origin: 'reference',
+      description: 'completed "${r.label}"',
+      frozenInputs: {'position': r.pos, 'recordId': id},
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite) {
+      return "I couldn't start that completion safely, so nothing changed.";
+    }
+    _lastTurnWrote = true;
     _outSkill = 'ref-complete';
+    if (result.state == ExecutionResultState.appliedInMemory) {
+      return 'Marked number ${r.pos} done here, but could not finish saving it. '
+          "I'll recover it next launch.";
+    }
     return 'Marked number ${r.pos} done — "${r.label}".';
   }
 
@@ -1041,8 +1497,11 @@ class Session {
     final r = _refResolve(n);
     if (r.fail != null) return r.fail!;
     _pendingCorrection = {
-      'id': r.item!.id, 'typeId': r.item!.typeId, 'labelField': r.item!.labelField,
-      'oldLabel': r.label, 'n': r.pos,
+      'id': r.item!.id,
+      'typeId': r.item!.typeId,
+      'labelField': r.item!.labelField,
+      'oldLabel': r.label,
+      'n': r.pos,
     };
     _outSkill = 'ref-correct';
     return 'Number ${r.pos} says "${r.label}" — what should it say instead?';
@@ -1053,10 +1512,12 @@ class Session {
     _outSource = 'enumref';
     final r = _refResolve(n);
     if (r.fail != null) return r.fail!;
-    return _applyCorrection(r.item!.id, r.item!.typeId, r.item!.labelField, r.label, newText, r.pos, now);
+    return _applyCorrection(r.item!.id, r.item!.typeId, r.item!.labelField,
+        r.label, newText, r.pos, now);
   }
 
-  String _applyCorrection(String id, String typeId, String labelField, String oldLabel, String newText, dynamic n, DateTime now) {
+  String _applyCorrection(String id, String typeId, String labelField,
+      String oldLabel, String newText, dynamic n, DateTime now) {
     _outSource = 'enumref';
     final rec = store[id];
     if (rec == null) {
@@ -1064,28 +1525,54 @@ class Session {
     }
     // Coerce to the label field's declared type so "change 2 to 8" on a numeric field stores a
     // number, not a string (schema drift). Text fields (the common case) pass through unchanged.
-    final vt = _valueTypeOf(typeId, labelField);
-    final coerced = _coerceForType(vt, newText);
-    _journalPush(id, rec, 'changed "$oldLabel" to "$newText"');
+    final attr = _attributeOf(typeId, labelField);
+    if (attr == null) return 'That field is no longer editable.';
+    final Object? coerced;
+    try {
+      coerced = const ValueCodec().coerce(
+        attr,
+        newText,
+        records: store,
+        dataRoot: dataDir,
+      );
+    } on ValueCodecError catch (error) {
+      return "I couldn't use that correction: ${error.message}";
+    }
     final updated = Map<String, dynamic>.from(rec)..[labelField] = coerced;
-    store[id] = updated;
-    repo.persist(updated);
+    final result = _executeMutation(
+      writes: [updated],
+      deletes: const [],
+      origin: 'reference',
+      description: 'changed "$oldLabel" to "$newText"',
+      frozenInputs: {'position': n, 'recordId': id, 'newValue': newText},
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite) {
+      return "I couldn't start that correction safely, so nothing changed.";
+    }
+    _lastTurnWrote = true;
     _outSkill = 'ref-correct';
+    if (result.state == ExecutionResultState.appliedInMemory) {
+      return 'Changed number $n here, but could not finish saving it. '
+          "I'll recover it next launch.";
+    }
     return 'Changed number $n to "$newText".';
   }
 
-  /// The declared valueType of a type's attribute (defaults to 'text').
-  String _valueTypeOf(String typeId, String field) {
-    for (final a in ((types[typeId]?['attributes'] as List?) ?? const []).whereType<Map>()) {
-      if (a['name'] == field) return a['valueType'] as String? ?? 'text';
+  Map<String, dynamic>? _attributeOf(String typeId, String field) {
+    for (final raw in ((types[typeId]?['attributes'] as List?) ?? const [])) {
+      if (raw is Map && raw['name'] == field) {
+        return Map<String, dynamic>.from(raw);
+      }
     }
-    return 'text';
+    return null;
   }
 
   /// The first boolean attribute named `completed`/`done` on a type, or null (no done concept).
   String? _doneFieldOf(Map<String, dynamic>? td) {
-    for (final a in ((td?['attributes'] as List?) ?? const []).whereType<Map>()) {
-      if (a['valueType'] == 'boolean' && (a['name'] == 'completed' || a['name'] == 'done')) {
+    for (final a
+        in ((td?['attributes'] as List?) ?? const []).whereType<Map>()) {
+      if (a['valueType'] == 'boolean' &&
+          (a['name'] == 'completed' || a['name'] == 'done')) {
         return a['name'] as String;
       }
     }
@@ -1094,7 +1581,8 @@ class Session {
 
   /// A named attribute of a given valueType, or null.
   String? _attrNamed(Map<String, dynamic>? td, String name, String valueType) {
-    for (final a in ((td?['attributes'] as List?) ?? const []).whereType<Map>()) {
+    for (final a
+        in ((td?['attributes'] as List?) ?? const []).whereType<Map>()) {
       if (a['name'] == name && a['valueType'] == valueType) return name;
     }
     return null;
@@ -1105,48 +1593,36 @@ class Session {
 
   String _undoLastInternal() {
     if (_journal.isEmpty) return 'Nothing to undo.';
-    final entry = _journal.removeLast(); // walk back the ring, most-recent first
-    _reverse(entry.before);
+    final entry = _journal.last; // walk back the ring, most-recent first
+    final result = executions.undo(entry.id);
+    if (result.state == ExecutionResultState.conflict) {
+      return "I didn't undo that because the record changed afterward.";
+    }
+    if (result.state == ExecutionResultState.failedBeforeWrite) {
+      return "I couldn't start that undo safely, so nothing changed.";
+    }
+    _journal.removeLast();
+    if (result.state == ExecutionResultState.appliedInMemory) {
+      return "I undid that here, but couldn't finish saving the undo. I'll recover it next launch.";
+    }
     // say WHAT was reversed — a silent "Undone." can't be trusted as the safety net
-    return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
+    return entry.desc == null
+        ? 'Undone.'
+        : 'Undone — reversed: "${entry.desc}"';
   }
 
-  // ---- Manual data-view facade (Spec 07 §5.5 — the editable "Your data" view, G-49) -----------
+  // ---- Manual Library facade (Spec 07 §5.5 — editable records, G-49) --------------------------
   // Edits/deletes ride the SAME journal ring as spoken writes, so a following "undo that" reverses
   // a manual edit, and the view's snackbar UNDO is just a button on that ring (one undo system).
 
   String? _oneLineSummary(Map<String, dynamic> rec) {
     final td = types[rec['typeId']];
-    for (final a in ((td?['attributes'] as List?) ?? const []).whereType<Map>()) {
-      if (a['valueType'] == 'text' && rec[a['name']] is String) return rec[a['name']] as String;
+    for (final a
+        in ((td?['attributes'] as List?) ?? const []).whereType<Map>()) {
+      if (a['valueType'] == 'text' && rec[a['name']] is String)
+        return rec[a['name']] as String;
     }
     return (rec['displayName'] ?? rec['description'] ?? rec['id'])?.toString();
-  }
-
-  /// Validate + coerce [value] against an attribute's Spec 01 §3 valueType. Returns the coerced
-  /// value, or a ManualWrite.fail describing the problem (never silently drops bad input).
-  Object? _coerceForType(String valueType, Object? value) {
-    // A null means "clear this field" and must stay null. Interpolating it ('$value') yields the
-    // literal string "null", which is non-empty — so it would sail past the isEmpty check and be
-    // written into the record as junk data.
-    if (value == null) return valueType == 'tag' || valueType == 'list' ? const <String>[] : null;
-    switch (valueType) {
-      case 'number':
-      case 'decimal':
-        if (value is num) return value;
-        final n = num.tryParse('$value'.trim());
-        return n; // null → caller surfaces "enter a number"
-      case 'boolean':
-        if (value is bool) return value;
-        final s = '$value'.toLowerCase().trim();
-        return s == 'true' || s == 'yes' || s == '1';
-      case 'tag':
-      case 'list':
-        if (value is List) return value.map((e) => '$e').toList();
-        return '$value'.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-      default: // text, entity, date, datetime — stored as strings (pickers hand us ISO)
-        return '$value';
-    }
   }
 
   /// Edit one schema-attribute value of a record in place (Spec 07 §5.5 tap-to-edit). Validates
@@ -1154,84 +1630,122 @@ class Session {
   /// the reminder toast set + automations in sync — mirroring the F-15 correction path.
   Future<ManualWrite> editField(String id, String field, Object? value) async {
     final rec = store[id];
-    if (rec == null) return const ManualWrite.fail('That record no longer exists.');
+    if (rec == null)
+      return const ManualWrite.fail('That record no longer exists.');
     final typeId = rec['typeId'] as String;
     final attr = ((types[typeId]?['attributes'] as List?) ?? const [])
         .whereType<Map>()
         .cast<Map<String, dynamic>>()
         .where((a) => a['name'] == field)
         .firstOrNull;
-    if (attr == null) return ManualWrite.fail('"$field" isn\'t an editable field of a ${_typeDisplayName(typeId)}.');
+    if (attr == null)
+      return ManualWrite.fail(
+          '"$field" isn\'t an editable field of a ${_typeDisplayName(typeId)}.');
     final valueType = attr['valueType'] as String? ?? 'text';
     final required = attr['required'] == true;
     // enum: only a declared value is allowed (no free-typing an out-of-set value).
     if (valueType == 'enum') {
-      final allowed = ((attr['enumValues'] as List?) ?? const []).map((e) => '$e').toList();
+      final allowed =
+          ((attr['enumValues'] as List?) ?? const []).map((e) => '$e').toList();
       if (!allowed.contains('$value')) {
-        return ManualWrite.fail('"$field" must be one of: ${allowed.join(', ')}.');
+        return ManualWrite.fail(
+            '"$field" must be one of: ${allowed.join(', ')}.');
       }
     }
-    final coerced = _coerceForType(valueType, value);
+    final Object? coerced;
+    try {
+      coerced = const ValueCodec().coerce(
+        attr,
+        value,
+        records: store,
+        dataRoot: dataDir,
+      );
+    } on ValueCodecError catch (error) {
+      return ManualWrite.fail(error.message);
+    }
     final isEmpty = coerced == null ||
         (coerced is String && coerced.trim().isEmpty) ||
         (coerced is List && coerced.isEmpty);
-    if (coerced == null && (valueType == 'number' || valueType == 'decimal')) {
-      return const ManualWrite.fail('Enter a number.');
-    }
     if (required && isEmpty) {
-      return ManualWrite.fail('"$field" is required for a ${_typeDisplayName(typeId)}.');
+      return ManualWrite.fail(
+          '"$field" is required for a ${_typeDisplayName(typeId)}.');
     }
-    final undoId = _pushManualJournal({id: Map<String, dynamic>.from(rec)}, 'edited ${_typeDisplayName(typeId)} — $field');
+    final updated = Map<String, dynamic>.from(rec);
     if (isEmpty && !required) {
-      rec.remove(field);
+      updated.remove(field);
     } else {
-      rec[field] = coerced;
+      updated[field] = coerced;
     }
-    // ManualWrite is a VALUE across the UI seam — a disk failure here must not throw into Flutter.
-    // The journal entry is already pushed, so the in-memory change stays undoable either way.
-    try {
-      repo.persist(rec);
-    } catch (e) {
-      return ManualWrite.fail("Changed, but couldn't save it to your data folder ($e).");
+    final result = _executeMutation(
+      writes: [updated],
+      deletes: const [],
+      origin: 'manual-edit',
+      description: 'edited ${_typeDisplayName(typeId)} — $field',
+      frozenInputs: {'recordId': id, 'field': field, 'value': coerced},
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite ||
+        result.record == null) {
+      return const ManualWrite.fail(
+          "Couldn't start that edit safely, so nothing changed.");
     }
+    _clearSpokenCorrectionContext();
+    final undoId = result.record!.id;
     await _reconcileReminders(); // idempotent — re-arms/disarms an OS toast if a reminder time moved
     try {
-      automations.notifyWrites([rec]); // a manual edit is a user-origin write, same as a spoken one
+      automations.notifyWrites([
+        updated
+      ]); // a manual edit is a user-origin write, same as a spoken one
     } catch (_) {/* contained — an automation must never break an edit */}
-    repo.logTurn({'source': 'manual-edit', 'op': 'edit', 'typeId': typeId, 'field': field});
-    return ManualWrite.ok('Updated — $field.', undoId: undoId);
+    repo.logTurn({
+      'source': 'manual-edit',
+      'op': 'edit',
+      'typeId': typeId,
+      'field': field
+    });
+    return ManualWrite.ok(
+      result.state == ExecutionResultState.appliedInMemory
+          ? "Updated here, but couldn't finish saving it. I'll recover it next launch."
+          : 'Updated — $field.',
+      undoId: undoId,
+    );
   }
 
   /// Delete a record from the data view — journaled + a storage tombstone, so it's doubly
   /// reversible (the snackbar UNDO, or a later spoken "undo that").
   Future<ManualWrite> deleteRecord(String id) async {
     final rec = store[id];
-    if (rec == null) return const ManualWrite.fail('That record no longer exists.');
+    if (rec == null)
+      return const ManualWrite.fail('That record no longer exists.');
     final summary = _oneLineSummary(rec) ?? 'that record';
-    final undoId = _pushManualJournal({id: Map<String, dynamic>.from(rec)}, 'deleted "$summary"');
     final typeId = rec['typeId']; // read before the store entry goes
-    store.remove(id);
-    try {
-      repo.remove(id); // tombstone
-    } catch (e) {
-      return ManualWrite.fail("Deleted here, but couldn't write that to your data folder ($e).");
+    final result = _executeMutation(
+      writes: const [],
+      deletes: [id],
+      origin: 'manual-edit',
+      description: 'deleted "$summary"',
+      frozenInputs: {'recordId': id},
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite ||
+        result.record == null) {
+      return const ManualWrite.fail(
+          "Couldn't start that delete safely, so nothing changed.");
     }
+    _clearSpokenCorrectionContext();
+    final undoId = result.record!.id;
     await _reconcileReminders();
     repo.logTurn({'source': 'manual-edit', 'op': 'delete', 'typeId': typeId});
-    return ManualWrite.ok('Deleted — $summary.', undoId: undoId);
+    return ManualWrite.ok(
+      result.state == ExecutionResultState.appliedInMemory
+          ? "Deleted here, but couldn't finish saving it. I'll recover it next launch."
+          : 'Deleted — $summary.',
+      undoId: undoId,
+    );
   }
 
-  /// Push a journal entry for a manual (data-view) write. Returns a stable id for a targeted undo,
-  /// AND clears the spoken-correction context: a manual edit supersedes "the previous turn", so a
-  /// following voice "no, I meant…" / "undo that" must NOT reverse an unrelated earlier spoken write.
-  int _pushManualJournal(Map<String, Map<String, dynamic>?> before, String desc) {
-    final jid = ++_journalSeq;
-    _journal.add(_JournalEntry(before, desc, id: jid));
-    if (_journal.length > _journalMax) _journal.removeAt(0);
+  void _clearSpokenCorrectionContext() {
     _lastTurnWrote = false;
     _lastDispatch = null;
     _lastTurnTemplate = null;
-    return jid;
   }
 
   // ---- Routines (Spec 16) ---------------------------------------------------------------------
@@ -1244,7 +1758,8 @@ class Session {
     final t = _trackerWordRe.firstMatch(u);
     if (t == null) return false;
     final r = _routineNounRe.firstMatch(u);
-    if (r == null) return true; // "create a stretch tracker" — no routine noun at all
+    if (r == null)
+      return true; // "create a stretch tracker" — no routine noun at all
     if (t.start < r.start) return true; // "create a log of my workouts"
     // The tracker word comes AFTER the routine noun. Adjacent, it is a compound noun and names the
     // thing wanted ("a workout log"). Separated by a conjunction, it is a coda on a routine request
@@ -1275,7 +1790,8 @@ class Session {
   Map<String, dynamic>? _findRoutine(String name) {
     final n = name.toLowerCase().trim();
     if (n.isEmpty) return null;
-    final routines = store.values.where((r) => r['typeId'] == 'routine').toList();
+    final routines =
+        store.values.where((r) => r['typeId'] == 'routine').toList();
     for (final r in routines) {
       if ('${r['title']}'.toLowerCase() == n) return r;
     }
@@ -1289,7 +1805,8 @@ class Session {
   /// Author a routine: Layer-1 safety gate → deterministic catalogue shortlist → one cloud call →
   /// deterministic validation → records. Act-then-describe: it writes and says what it did, and
   /// "undo that" reverses the whole routine in one go (all records ride one journal entry).
-  Future<String> _createRoutine(String utterance, String focus, String? kindWord, DateTime now,
+  Future<String> _createRoutine(
+      String utterance, String focus, String? kindWord, DateTime now,
       {bool confirmed = false}) async {
     _outSource = 'routine-author';
     _outSkill = 'author-routine';
@@ -1329,7 +1846,11 @@ class Session {
     // the cheapest call — while routine and figure authoring (both Sonnet, and the largest spend in
     // the app) went unasked, which made the Settings copy a false promise.
     if (confirmCloudSpend && !confirmed) {
-      _pendingRoutineBuild = {'utterance': utterance, 'focus': focus, 'kind': kindWord};
+      _pendingRoutineBuild = {
+        'utterance': utterance,
+        'focus': focus,
+        'kind': kindWord
+      };
       _outSource = 'author-offer';
       return 'Building that routine uses your Claude credits (and a second call to draw the '
           'movements the catalogue has no picture for). Want me to go ahead?';
@@ -1348,7 +1869,8 @@ class Session {
     // ONE gated retry, fed the deterministic validation error — the same posture as capability
     // authoring. A second failure registers nothing: a half-routine is worse than none.
     for (var attempt = 0; attempt < 2 && routine == null; attempt++) {
-      final res = await author.authorRoutine(utterance, cat, kind: kind, priorError: lastError);
+      final res = await author.authorRoutine(utterance, cat,
+          kind: kind, priorError: lastError);
       switch (res) {
         case CloudError(:final kind):
           return "I couldn't build that routine — ${cloudReason(kind)}";
@@ -1369,7 +1891,8 @@ class Session {
     // seconds, and making the user stare at nothing until it finishes is indistinguishable from a
     // hang. The routine is already written and usable; figures arrive when they arrive.
     pendingFigureFill = _fillMissingFigures(author, _lastRoutineId!);
-    unawaited(pendingFigureFill!.catchError((_) {/* presentation only — never surfaces */}));
+    unawaited(pendingFigureFill!
+        .catchError((_) {/* presentation only — never surfaces */}));
     return line;
   }
 
@@ -1383,45 +1906,57 @@ class Session {
     for (var n = 2; store.containsKey(rid); n++) {
       rid = 'routine-${now.microsecondsSinceEpoch}-$n';
     }
-    final before = <String, Map<String, dynamic>?>{};
     final written = <Map<String, dynamic>>[];
     final routineRec = <String, dynamic>{
-      'id': rid, 'typeId': 'routine', 'title': r.title, 'focusArea': r.focusArea,
-      'kind': r.kind, 'intent': utterance, 'estMinutes': r.estMinutes,
-      'safetyNote': r.safetyNote, 'status': 'active',
+      'id': rid,
+      'typeId': 'routine',
+      'title': r.title,
+      'focusArea': r.focusArea,
+      'kind': r.kind,
+      'intent': utterance,
+      'estMinutes': r.estMinutes,
+      'safetyNote': r.safetyNote,
+      'status': 'active',
       'createdAt': now.toIso8601String().split('T').first,
     };
-    before[rid] = null;
-    store[rid] = routineRec;
     written.add(routineRec);
     for (final s in r.steps) {
       final sid = '$rid-step-${s.order}';
       final rec = <String, dynamic>{
-        'id': sid, 'typeId': 'routine_step', 'routine': rid, 'order': s.order,
-        'name': s.name, 'instruction': s.instruction, 'side': s.side,
+        'id': sid,
+        'typeId': 'routine_step',
+        'routine': rid,
+        'order': s.order,
+        'name': s.name,
+        'instruction': s.instruction,
+        'side': s.side,
         if (s.exerciseKey != null) 'exerciseKey': s.exerciseKey,
         if (s.durationSeconds != null) 'durationSeconds': s.durationSeconds,
         if (s.reps != null) 'reps': s.reps,
       };
-      before[sid] = null;
-      store[sid] = rec;
       written.add(rec);
     }
-    // Journal BEFORE persisting, for the same reason every other write does (a disk failure must
-    // not leave an un-undoable change) — see the note in _dispatch.
-    _journal.add(_JournalEntry(before, 'created the "${r.title}" routine'));
-    if (_journal.length > _journalMax) _journal.removeAt(0);
+    final result = _executeMutation(
+      writes: written,
+      deletes: const [],
+      origin: 'routine-authoring',
+      description: 'created the "${r.title}" routine',
+      frozenInputs: {'utterance': utterance, 'routineId': rid},
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite) {
+      return 'I built the routine draft, but could not start saving it safely, so nothing changed.';
+    }
     _lastTurnWrote = true;
     _lastRoutineId = rid;
-    try {
-      for (final w in written) {
-        repo.persist(w);
-      }
-    } catch (e) {
-      return 'I built "${r.title}", but couldn\'t save it ($e). Say "undo that" to drop it.';
+    if (result.state == ExecutionResultState.appliedInMemory) {
+      return 'I built "${r.title}" here, but could not finish saving it. '
+          "I'll recover it next launch — say \"undo that\" to drop it now.";
     }
-    final illustrated = r.steps.where((s) => s.exerciseKey != null &&
-        exercises.byKey[s.exerciseKey]?.image != null).length;
+    final illustrated = r.steps
+        .where((s) =>
+            s.exerciseKey != null &&
+            exercises.byKey[s.exerciseKey]?.image != null)
+        .length;
     _outSkill = 'author-routine';
     return 'Made "${r.title}" — ${r.steps.length} steps, about ${r.estMinutes} minutes'
         '${illustrated < r.steps.length ? ' ($illustrated with pictures)' : ''}. '
@@ -1432,7 +1967,8 @@ class Session {
   /// Best-effort by construction: a cloud failure, a malformed frame, or a figure that fails the
   /// render-only subset simply leaves that step as it already was — text-only, which is a
   /// first-class rendering because every instruction has to stand alone for the ear anyway.
-  Future<void> _fillMissingFigures(RoutineAuthor author, String routineId) async {
+  Future<void> _fillMissingFigures(
+      RoutineAuthor author, String routineId) async {
     // Scoped to the routine JUST created. Scanning the whole store meant an older routine whose
     // figures had failed would fill the (capped) batch every time, so a new routine could be
     // starved of figures forever — while re-spending tokens redrawing the same rejected steps. It
@@ -1443,14 +1979,16 @@ class Session {
             r['typeId'] == 'routine_step' &&
             r['routine'] == routineId &&
             r['figureA'] == null &&
-            (r['exerciseKey'] == null || exercises.byKey['${r['exerciseKey']}']?.image == null))
+            (r['exerciseKey'] == null ||
+                exercises.byKey['${r['exerciseKey']}']?.image == null))
         .toList();
     if (needy.isEmpty) return;
     // De-duplicate by movement name: a routine that bookends with the same stretch should cost one
     // drawing, not two.
     final names = <String>{for (final r in needy) '${r['name']}'}.toList();
     final res = await author.authorFigures(names);
-    if (res is! CloudOk<Map<String, dynamic>>) return; // no figures this time; steps stay text-only
+    if (res is! CloudOk<Map<String, dynamic>>)
+      return; // no figures this time; steps stay text-only
     final byName = <String, StepFigure>{};
     for (final raw in (res.value['figures'] as List? ?? const [])) {
       if (raw is! Map) continue;
@@ -1458,19 +1996,27 @@ class Session {
       if (fig != null) byName['${raw['name']}'.toLowerCase().trim()] = fig;
     }
     if (byName.isEmpty) return;
-    var filled = 0;
+    final writes = <Map<String, dynamic>>[];
     for (final r in needy) {
       final fig = byName['${r['name']}'.toLowerCase().trim()];
       if (fig == null) continue;
-      r['figureA'] = fig.frameA;
-      r['figureB'] = fig.frameB;
-      r['figureTween'] = fig.tweenable;
-      try {
-        repo.persist(r);
-        filled++;
-      } catch (_) {/* a figure is presentation — never fail the routine over one */}
+      writes.add(Map<String, dynamic>.from(r)
+        ..['figureA'] = fig.frameA
+        ..['figureB'] = fig.frameB
+        ..['figureTween'] = fig.tweenable);
     }
-    if (filled > 0) _outWrites.add({'op': 'figures', 'n': filled});
+    if (writes.isEmpty) return;
+    final result = _executeMutation(
+      writes: writes,
+      deletes: const [],
+      origin: 'routine-figure-fill',
+      description: 'filled routine figures',
+      frozenInputs: {'routineId': routineId},
+      visible: false,
+    );
+    if (result.state == ExecutionResultState.persisted) {
+      _outWrites.add({'op': 'figures', 'n': writes.length});
+    }
   }
 
   /// Control words recognised while a run is live. Returns the reply, or null to let the utterance
@@ -1543,13 +2089,17 @@ class Session {
     // ambiguity; a rename or delete mid-run stranded it) — telling the user a session exists when
     // it doesn't is exactly the silent failure principle #7 forbids, and it quietly corrupts
     // streaks and "when did I last do X".
-    await dispatchSkill('log-routine-session', {
-      'routineId': run.routineId,
-      'stepsCompleted': done,
-      'stepsTotal': run.total,
-    }, source: 'routine');
+    await dispatchSkill(
+        'log-routine-session',
+        {
+          'routineId': run.routineId,
+          'stepsCompleted': done,
+          'stepsTotal': run.total,
+        },
+        source: 'routine');
     final logged = store.values.any((r) =>
-        r['typeId'] == 'routine_session' && r['routine'] == run.routineId &&
+        r['typeId'] == 'routine_session' &&
+        r['routine'] == run.routineId &&
         r['date'] == now.toIso8601String().split('T').first);
     final mins = now.difference(run.startedAt).inMinutes;
     if (!logged) {
@@ -1568,9 +2118,11 @@ class Session {
     final r = store[routineId];
     if (r == null) return "I can't find that routine any more.";
     final steps = store.values
-        .where((s) => s['typeId'] == 'routine_step' && s['routine'] == routineId)
+        .where(
+            (s) => s['typeId'] == 'routine_step' && s['routine'] == routineId)
         .toList()
-      ..sort((a, b) => ((a['order'] as num?) ?? 0).compareTo((b['order'] as num?) ?? 0));
+      ..sort((a, b) => (num.tryParse('${a['order']}') ?? 0)
+          .compareTo(num.tryParse('${b['order']}') ?? 0));
     if (steps.isEmpty) return '"${r['title']}" has no steps yet.';
     _run = RoutineRun(
       routineId: routineId,
@@ -1582,8 +2134,8 @@ class Session {
     _outSkill = 'routine-player';
     // The safety line is spoken ONCE per routine, on its first run — repeated warnings are
     // themselves a safety failure (they stop being heard).
-    final firstRun = !store.values.any((s) =>
-        s['typeId'] == 'routine_session' && s['routine'] == routineId);
+    final firstRun = !store.values.any(
+        (s) => s['typeId'] == 'routine_session' && s['routine'] == routineId);
     final note = firstRun ? '${r['safetyNote'] ?? standingSafetyNote} ' : '';
     return '$note${_run!.announce()}';
   }
@@ -1600,8 +2152,11 @@ class Session {
     final msg = await _dispatch(skillId, slots, source, now);
     await _reconcileReminders();
     repo.logTurn({
-      'source': source, 'skill': skillId, 'at': now.toIso8601String(),
-      if (_outWrites.isNotEmpty) 'writes': List<Map<String, dynamic>>.from(_outWrites),
+      'source': source,
+      'skill': skillId,
+      'at': now.toIso8601String(),
+      if (_outWrites.isNotEmpty)
+        'writes': List<Map<String, dynamic>>.from(_outWrites),
     });
     return msg;
   }
@@ -1619,10 +2174,23 @@ class Session {
   Future<String> undoById(int undoId) async {
     final i = _journal.indexWhere((e) => e.id == undoId);
     if (i < 0) return 'That change is no longer undoable here.';
-    final entry = _journal.removeAt(i);
-    _reverse(entry.before);
+    final entry = _journal[i];
+    final result = executions.undo(entry.id);
+    if (result.state == ExecutionResultState.conflict) {
+      return "I didn't undo that because the record changed afterward.";
+    }
+    if (result.state == ExecutionResultState.failedBeforeWrite) {
+      return "I couldn't start that undo safely, so nothing changed.";
+    }
+    _journal.removeAt(i);
+    if (result.state == ExecutionResultState.appliedInMemory) {
+      await _reconcileReminders();
+      return "I undid that here, but couldn't finish saving the undo. I'll recover it next launch.";
+    }
     await _reconcileReminders();
-    return entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"';
+    return entry.desc == null
+        ? 'Undone.'
+        : 'Undone — reversed: "${entry.desc}"';
   }
 
   /// The learned NLU flows, shaped for the "Learned phrases" showcase (most-recent first — learn()
@@ -1641,7 +2209,9 @@ class Session {
 
   static String _humanizeKind(String kind) {
     final words = kind.replaceAll('_', ' ');
-    return words.isEmpty ? words : '${words[0].toUpperCase()}${words.substring(1)}';
+    return words.isEmpty
+        ? words
+        : '${words[0].toUpperCase()}${words.substring(1)}';
   }
 
   /// Forget a learned flow (data-view "×"). Returns the raw map as an undo token, or null if it
@@ -1649,19 +2219,25 @@ class Session {
   /// missing from the persisted file (a persist race), synthesize a minimal token from the router
   /// entry so the user still gets a working undo (never forget without an undo path).
   Map<String, dynamic>? forgetLearnedFlow(String template) {
-    var raw = repo.loadCorpusLearned()
+    var raw = repo
+        .loadCorpusLearned()
         .whereType<Map>()
         .cast<Map<String, dynamic>>()
         .where((m) => m['template'] == template)
         .firstOrNull;
-    final entry = router.corpus.where((c) => c.template == template).firstOrNull;
-    if (!router.forget(template)) return null; // wasn't learned (a seed / unknown) — nothing to undo
+    final entry =
+        router.corpus.where((c) => c.template == template).firstOrNull;
+    if (!router.forget(template))
+      return null; // wasn't learned (a seed / unknown) — nothing to undo
     repo.removeCorpusLearned(template);
     raw ??= entry == null
         ? {'template': template}
         : {
             'template': template,
-            if (entry.generativeKind != null) 'generativeKind': entry.generativeKind else 'skillId': entry.skillId,
+            if (entry.generativeKind != null)
+              'generativeKind': entry.generativeKind
+            else
+              'skillId': entry.skillId,
           };
     return raw;
   }
@@ -1670,7 +2246,8 @@ class Session {
   /// a duplicate persisted line (which would show the flow twice after the next launch).
   void restoreLearnedFlow(Map<String, dynamic> raw) {
     final t = raw['template'];
-    if (router.corpus.any((c) => c.template == t)) return; // already back — don't duplicate-persist
+    if (router.corpus.any((c) => c.template == t))
+      return; // already back — don't duplicate-persist
     router.restore(raw);
     repo.appendCorpusLearned(raw);
   }
@@ -1683,8 +2260,10 @@ class Session {
     u = u.trim();
     _outSource = 'clarify';
     _outSkill = null;
-    _tourSpokeThisTurn = false; // set true by the tour helpers if THIS turn navigates the tour
-    _enteredChapter = null; // set by _enterChapter when THIS turn opens a tour chapter (UI reads it)
+    _tourSpokeThisTurn =
+        false; // set true by the tour helpers if THIS turn navigates the tour
+    _enteredChapter =
+        null; // set by _enterChapter when THIS turn opens a tour chapter (UI reads it)
     _cloudStatus = null;
     _outTemplate = null;
     _outSlots = null;
@@ -1692,6 +2271,7 @@ class Session {
     _outReads.clear();
     _outError = null;
     _outDiag = null;
+    _lastTurnExecutionId = null;
     // Snapshot the automation runner so this turn's UNATTENDED activity (onWrite fires) is
     // visible in the trace — otherwise an automation that fired/held/refused leaves no record.
     final autoDelivered0 = automations.deliveries.length;
@@ -1714,8 +2294,10 @@ class Session {
       resp = await _handle(u);
     } catch (e, st) {
       _outSource = 'error';
-      _outError = '${e.runtimeType}: $e\n$st'; // full detail to the trace, never to the user
-      resp = "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
+      _outError =
+          '${e.runtimeType}: $e\n$st'; // full detail to the trace, never to the user
+      resp =
+          "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
     }
     // Tour teach-by-doing (post-turn). A tour is live and THIS turn wasn't tour-navigation:
     //  - In-domain WRITE (the user tried the example for real) → append the coda ONCE per chapter,
@@ -1730,19 +2312,24 @@ class Session {
       final chapter = liveTour['chapter'] as String?;
       final ch = chapter == null ? null : _tourChapterOf(chapter);
       final skill = _outSkill;
-      final inDomain = ch != null && skill != null && ch.domainKeywords.any(skill.contains);
+      final inDomain =
+          ch != null && skill != null && ch.domainKeywords.any(skill.contains);
       if (inDomain) {
         final codaGiven = liveTour['codaGiven'] as Set;
-        if (_lastTurnWrote && _outSource != 'error' && !codaGiven.contains(chapter)) {
+        if (_lastTurnWrote &&
+            _outSource != 'error' &&
+            !codaGiven.contains(chapter)) {
           codaGiven.add(chapter);
           resp = '$resp ${ch.coda}';
-          if (_availableChapters().every((c) => (liveTour['visited'] as Set).contains(c.id))) {
+          if (_availableChapters()
+              .every((c) => (liveTour['visited'] as Set).contains(c.id))) {
             _pendingTour = null;
             resp = '$resp\n\n${_tourClosing()}';
           }
         }
       } else if (skill != null && !skill.startsWith('ref-')) {
-        _pendingTour = null; // a skill ran outside this chapter's domain → moved on → end silently
+        _pendingTour =
+            null; // a skill ran outside this chapter's domain → moved on → end silently
       }
       // else (no skill dispatched — clarify/undo/error/template — OR a reference-by-number action,
       // which is engagement with the list just read, like undo) → keep the tour alive.
@@ -1758,63 +2345,83 @@ class Session {
     // already-computed response — a turnlog I/O error or a reconcile hiccup is non-fatal to the
     // turn (Fable review: these sat outside the try). Wrap so they can't escape to the UI.
     try {
-    // the turn may have added/undone/completed a reminder — keep the OS armed set
-    // in sync with the (now-updated) store. Derived, so no per-skill wiring needed.
-    await _reconcileReminders();
-    // Rich per-turn trace (dogfood): summary telemetry (clarify/cloud/correction rates) PLUS
-    // enough to DIAGNOSE a bad turn from the log alone — route path, matched template,
-    // extracted slots, records written/deleted, the response, and any error + stack.
-    repo.logTurn({
-      'at': startedAt.toIso8601String(),
-      'ms': DateTime.now().difference(startedAt).inMilliseconds,
-      'utterance': u,
-      'source': _outSource,
-      if (_outSkill != null) 'skill': _outSkill,
-      if (_outTemplate != null) 'template': _outTemplate,
-      if (_outSlots != null && _outSlots!.isNotEmpty) 'slots': _outSlots,
-      if (_cloudStatus != null) 'cloud': _cloudStatus,
-      if (c is ClaudeClient &&
-          (c.inTokens - inTok0 > 0 ||
-              c.outTokens - outTok0 > 0 ||
-              c.sonnetInTokens - sIn0 > 0 ||
-              c.sonnetOutTokens - sOut0 > 0))
-        'cost': {
-          'in': (c.inTokens - inTok0) + (c.sonnetInTokens - sIn0),
-          'out': (c.outTokens - outTok0) + (c.sonnetOutTokens - sOut0),
-          // priced per MODEL — a Sonnet turn costs several times a Haiku one
-          'usd': ClaudeClient.costUsd(c.inTokens - inTok0, c.outTokens - outTok0) +
-              ClaudeClient.sonnetCostUsd(c.sonnetInTokens - sIn0, c.sonnetOutTokens - sOut0),
-        },
-      if (_outReads.isNotEmpty) 'reads': _outReads,
-      if (_outWrites.isNotEmpty) 'writes': _outWrites,
-      'response': resp.length > 240 ? '${resp.substring(0, 240)}…' : resp,
-      if (_outDiag != null) 'diag': _outDiag,
-      if (_outError != null) 'error': _outError,
-      if (automations.deliveries.length > autoDelivered0 ||
-          automations.pendingReview.length > autoHeld0 ||
-          automations.refusals.length > autoRefused0)
-        'automations': {
-          if (automations.deliveries.length > autoDelivered0) 'delivered': automations.deliveries.length - autoDelivered0,
-          if (automations.pendingReview.length > autoHeld0) 'held': automations.pendingReview.length - autoHeld0,
-          if (automations.refusals.length > autoRefused0) 'refused': automations.refusals.sublist(autoRefused0),
-        },
-    });
+      // the turn may have added/undone/completed a reminder — keep the OS armed set
+      // in sync with the (now-updated) store. Derived, so no per-skill wiring needed.
+      await _reconcileReminders();
+      // Rich per-turn trace (dogfood): summary telemetry (clarify/cloud/correction rates) PLUS
+      // enough to DIAGNOSE a bad turn from the log alone — route path, matched template,
+      // extracted slots, records written/deleted, the response, and any error + stack.
+      repo.logTurn({
+        'at': startedAt.toIso8601String(),
+        'ms': DateTime.now().difference(startedAt).inMilliseconds,
+        'utterance': u,
+        'source': _outSource,
+        if (_outSkill != null) 'skill': _outSkill,
+        if (_outTemplate != null) 'template': _outTemplate,
+        if (_outSlots != null && _outSlots!.isNotEmpty) 'slots': _outSlots,
+        if (_cloudStatus != null) 'cloud': _cloudStatus,
+        if (c is ClaudeClient &&
+            (c.inTokens - inTok0 > 0 ||
+                c.outTokens - outTok0 > 0 ||
+                c.sonnetInTokens - sIn0 > 0 ||
+                c.sonnetOutTokens - sOut0 > 0))
+          'cost': {
+            'in': (c.inTokens - inTok0) + (c.sonnetInTokens - sIn0),
+            'out': (c.outTokens - outTok0) + (c.sonnetOutTokens - sOut0),
+            // priced per MODEL — a Sonnet turn costs several times a Haiku one
+            'usd': ClaudeClient.costUsd(
+                    c.inTokens - inTok0, c.outTokens - outTok0) +
+                ClaudeClient.sonnetCostUsd(
+                    c.sonnetInTokens - sIn0, c.sonnetOutTokens - sOut0),
+          },
+        if (_outReads.isNotEmpty) 'reads': _outReads,
+        if (_outWrites.isNotEmpty) 'writes': _outWrites,
+        'response': resp.length > 240 ? '${resp.substring(0, 240)}…' : resp,
+        if (_outDiag != null) 'diag': _outDiag,
+        if (_outError != null) 'error': _outError,
+        if (automations.deliveries.length > autoDelivered0 ||
+            automations.pendingReview.length > autoHeld0 ||
+            automations.refusals.length > autoRefused0)
+          'automations': {
+            if (automations.deliveries.length > autoDelivered0)
+              'delivered': automations.deliveries.length - autoDelivered0,
+            if (automations.pendingReview.length > autoHeld0)
+              'held': automations.pendingReview.length - autoHeld0,
+            if (automations.refusals.length > autoRefused0)
+              'refused': automations.refusals.sublist(autoRefused0),
+          },
+      });
     } catch (_) {/* housekeeping/logging failure must not break the turn */}
+    try {
+      conversationLedger.append(
+        utterance: u,
+        reply: resp,
+        source: _outSource,
+        at: startedAt,
+        executionId: _lastTurnExecutionId,
+      );
+    } catch (_) {
+      /* ledger failure is surfaced at next hydration, not as a lost reply */
+    }
     return resp;
   }
 
   /// A short, honest, user-facing reason a cloud call failed — so a miss names the
   /// cause instead of always blaming the user's phrasing (no silent degradation).
   static String cloudReason(CloudErrorKind k) => switch (k) {
-        CloudErrorKind.noKey => "I don't have an API key set — add one in ~/.plenara/config.json.",
-        CloudErrorKind.badKey => "my API key was rejected — update it in ~/.plenara/config.json.",
+        CloudErrorKind.noKey =>
+          "I don't have an API key set — add one in ~/.plenara/config.json.",
+        CloudErrorKind.badKey =>
+          "my API key was rejected — update it in ~/.plenara/config.json.",
         CloudErrorKind.insufficientCredits =>
           "your Anthropic account has no credits — add a payment method or credits at console.anthropic.com (Settings → Billing). Your key is fine.",
         CloudErrorKind.offline => "I'm offline right now.",
         CloudErrorKind.timeout => "the cloud didn't respond in time.",
-        CloudErrorKind.rateLimited => "I'm being rate-limited — try again shortly.",
+        CloudErrorKind.rateLimited =>
+          "I'm being rate-limited — try again shortly.",
         CloudErrorKind.serverError => "the cloud had a server error.",
-        CloudErrorKind.malformed => "I got an unexpected response from the cloud.",
+        CloudErrorKind.malformed =>
+          "I got an unexpected response from the cloud.",
       };
 
   /// Process one utterance; returns the assistant's response text (may be multi-line).
@@ -1857,8 +2464,11 @@ class Session {
     if (pendingBuild != null) {
       _pendingRoutineBuild = null;
       if (_activateRe.hasMatch(u) || _yesRe.hasMatch(u)) {
-        return await _createRoutine(pendingBuild['utterance'] as String,
-            pendingBuild['focus'] as String, pendingBuild['kind'] as String?, now,
+        return await _createRoutine(
+            pendingBuild['utterance'] as String,
+            pendingBuild['focus'] as String,
+            pendingBuild['kind'] as String?,
+            now,
             confirmed: true);
       }
       if (_cancelRe.hasMatch(u) || _noRe.hasMatch(u)) {
@@ -1881,9 +2491,13 @@ class Session {
       // "remind me to buy milk", "help", "next" and "skip" all became the FOCUS of a paid build —
       // money spent on a junk routine, and the command the user actually gave, lost. This is the
       // same guard _pendingFill and _pendingGen already carry, for the same reason.
-      final focus = u.replaceFirst(RegExp(r'^(?:my|the|for|on)\s+', caseSensitive: false), '').trim();
+      final focus = u
+          .replaceFirst(
+              RegExp(r'^(?:my|the|for|on)\s+', caseSensitive: false), '')
+          .trim();
       if (focus.isNotEmpty && focus.length < 60 && !_isFreshCommand(u)) {
-        return await _createRoutine('$pendingKind routine for $focus', focus, pendingKind, now);
+        return await _createRoutine(
+            '$pendingKind routine for $focus', focus, pendingKind, now);
       }
       // Not a usable focus: fall through and route it normally rather than building something
       // random. The question is simply dropped — asking again would trap the user in a loop.
@@ -1911,19 +2525,30 @@ class Session {
         _outSource = 'clarify';
         return 'Okay — number $n stays "$oldLabel".';
       }
-      if (_helpRe.hasMatch(u)) {/* let help win; fall through with the pause abandoned */}
-      else {
+      if (_helpRe.hasMatch(u)) {
+        /* let help win; fall through with the pause abandoned */
+      } else {
         // strip a light dictation lead-in ("it should say…", "make it…", "change it to…")
         final newText = u
-            .replaceFirst(RegExp(r"^(?:it should (?:say|be)|make it|change it to|call it|say|it'?s)\s+", caseSensitive: false), '')
+            .replaceFirst(
+                RegExp(
+                    r"^(?:it should (?:say|be)|make it|change it to|call it|say|it'?s)\s+",
+                    caseSensitive: false),
+                '')
             .trim();
         if (newText.isEmpty) {
           _pendingCorrection = pendingCorr; // nothing usable — re-ask once
           _outSource = 'clarify';
           return 'I didn\'t catch the new wording — what should number $n say?';
         }
-        return _applyCorrection(pendingCorr['id'] as String, pendingCorr['typeId'] as String,
-            pendingCorr['labelField'] as String, oldLabel, newText, n, now);
+        return _applyCorrection(
+            pendingCorr['id'] as String,
+            pendingCorr['typeId'] as String,
+            pendingCorr['labelField'] as String,
+            oldLabel,
+            newText,
+            n,
+            now);
       }
     }
 
@@ -1937,13 +2562,24 @@ class Session {
         _outSource = 'clarify';
         return 'Okay — never mind.';
       }
-      final genIsSystemCmd =
-          _undoRe.hasMatch(u) || _helpRe.hasMatch(u) || _corrRe.hasMatch(u) || _fabricationRe.hasMatch(u);
-      final genLooksLikeCommand = router.route(u, clock: now, contacts: _knownContactTokens()) != null ||
-          _searchNoteRe.hasMatch(u) || _searchForRe.hasMatch(u) || _looksLikeRefCommand(u);
+      final genIsSystemCmd = _undoRe.hasMatch(u) ||
+          _helpRe.hasMatch(u) ||
+          _corrRe.hasMatch(u) ||
+          _fabricationRe.hasMatch(u);
+      final genLooksLikeCommand =
+          router.route(u, clock: now, contacts: _knownContactTokens()) !=
+                  null ||
+              _searchNoteRe.hasMatch(u) ||
+              _searchForRe.hasMatch(u) ||
+              _looksLikeRefCommand(u);
       if (!genIsSystemCmd && !genLooksLikeCommand) {
-        return _dispatchGenerative(pendingGen['kind'] as String, {'contact': u.trim()},
-            pendingGen['template'] as String?, 'cloud', u, now);
+        return _dispatchGenerative(
+            pendingGen['kind'] as String,
+            {'contact': u.trim()},
+            pendingGen['template'] as String?,
+            'cloud',
+            u,
+            now);
       }
       // else: a command, not a name — abandon the pause and handle this input normally (fall through).
     }
@@ -1959,8 +2595,10 @@ class Session {
       }
       // A system command interrupts the slot-fill and is handled normally below, rather
       // than being swallowed as the slot answer ("help"/"undo"/"no, I meant …" mid-fill).
-      final isSystemCmd =
-          _undoRe.hasMatch(u) || _helpRe.hasMatch(u) || _corrRe.hasMatch(u) || _fabricationRe.hasMatch(u);
+      final isSystemCmd = _undoRe.hasMatch(u) ||
+          _helpRe.hasMatch(u) ||
+          _corrRe.hasMatch(u) ||
+          _fabricationRe.hasMatch(u);
       if (!isSystemCmd) {
         final skillId = pending['skillId'] as String;
         final skill = skills[skillId];
@@ -1970,17 +2608,26 @@ class Session {
         // must NOT be swallowed as the slot value (a TEXT slot coerces ANY string, so without this
         // "what are my reminders" would be written as a meal's food). Treat it as null so the
         // abandon-and-fall-through path below runs. (Fable review, major.)
-        final looksLikeNewCommand = router.route(u, clock: now, contacts: _knownContactTokens()) != null ||
+        final looksLikeNewCommand = router.route(u,
+                    clock: now, contacts: _knownContactTokens()) !=
+                null ||
             _searchNoteRe.hasMatch(u) ||
             _searchForRe.hasMatch(u) ||
-            _looksLikeRefCommand(u); // "delete 2" mid-fill is a reference command, not the slot value
-        final coerced = looksLikeNewCommand ? null : _coerceSlot(skill, missing.first, u, now);
+            _looksLikeRefCommand(
+                u); // "delete 2" mid-fill is a reference command, not the slot value
+        final coerced = looksLikeNewCommand
+            ? null
+            : _coerceSlot(skill, missing.first, u, now);
         if (coerced != null) {
           _pendingFill = null; // got the answer
           slots[missing.first] = coerced;
           final stillMissing = _missingRequired(skill, slots);
           if (stillMissing.isNotEmpty) {
-            _pendingFill = {'skillId': skillId, 'slots': slots, 'missing': stillMissing};
+            _pendingFill = {
+              'skillId': skillId,
+              'slots': slots,
+              'missing': stillMissing
+            };
             _outSource = 'clarify';
             return _askForSlot(skill, stillMissing.first);
           }
@@ -1994,7 +2641,8 @@ class Session {
         // with no time swallowed every later turn as a failed "when?" answer.)
         _pendingFill = null;
       } else {
-        _pendingFill = null; // interrupted by a system command — handle it normally
+        _pendingFill =
+            null; // interrupted by a system command — handle it normally
       }
       // both branches cleared _pendingFill and fall through to normal handling below
     }
@@ -2013,7 +2661,8 @@ class Session {
         _outSource = 'clarify';
         return "Okay — I won't add that.";
       }
-      _pendingActivation = null; // moved on — drop the draft, handle this input normally
+      _pendingActivation =
+          null; // moved on — drop the draft, handle this input normally
     }
 
     // Authoring OFFER (DF-01): a "start tracking X" with no built-in tracker and no template
@@ -2055,7 +2704,8 @@ class Session {
       // a query (list-tasks) — take it before the command guard (Fable review #2). Once IN a chapter,
       // keep command-first so "remind me to …" is TRIED live, not re-selected.
       if (sel != null && chapter == null) return _enterChapter(sel, visited);
-      final isCommand = router.route(u, clock: now, contacts: _knownContactTokens()) != null;
+      final isCommand =
+          router.route(u, clock: now, contacts: _knownContactTokens()) != null;
       if (!isCommand) {
         if (sel != null) return _enterChapter(sel, visited);
         if (_tourNextRe.hasMatch(u)) {
@@ -2076,21 +2726,36 @@ class Session {
     if (automations.pendingReview.isNotEmpty) {
       if (_approveReviewRe.hasMatch(u)) {
         final item = automations.pendingReview.first;
-        final res = automations.approve(item.id);
+        final res = automations.prepareApproval(item.id);
         _outSource = 'automation-review';
         _outSkill = item.skillId;
-        // Journal the approved write so "undo that" reverses THIS, not some unrelated earlier
-        // write ("don't let automations lower a skill's undoability" — CLAUDE.md).
-        final before = res.before;
-        if (res.kind == 'applied' && before != null && before.isNotEmpty) {
-          _journal.add(_JournalEntry(before, 'applied "${item.description}"'));
-          if (_journal.length > _journalMax) _journal.removeAt(0);
+        if (res.kind == 'prepared' && res.plan != null) {
+          final result = _executeMutation(
+            writes: res.plan!.writes,
+            deletes: res.plan!.deletes,
+            origin: 'automation-approval',
+            description: 'applied "${item.description}"',
+            frozenInputs: {
+              'reviewId': item.id,
+              'automationId': item.automationId,
+              'slots': item.slots,
+            },
+          );
+          if (result.state == ExecutionResultState.failedBeforeWrite) {
+            return "I couldn't start that approval safely, so nothing changed.";
+          }
+          automations.completePreparedApproval(item.id, res.plan!.writes);
           _lastTurnWrote = true;
+          if (result.state == ExecutionResultState.appliedInMemory) {
+            return "Applied it here, but couldn't finish saving it. I'll recover it next launch.";
+          }
+          return 'Done — applied "${item.description}".';
         }
         return switch (res.kind) {
-          'applied' => 'Done — applied "${item.description}".',
-          'planChanged' => "That automation's data changed since it queued — ${res.message ?? 'have a look and re-approve'}.",
-          'refused' => "I couldn't apply that — ${res.message ?? 'it was refused'}.",
+          'planChanged' =>
+            "That automation's data changed since it queued — ${res.message ?? 'have a look and re-approve'}.",
+          'refused' =>
+            "I couldn't apply that — ${res.message ?? 'it was refused'}.",
           _ => 'That review is no longer pending.',
         };
       }
@@ -2176,8 +2841,11 @@ class Session {
       if (del != null) return _refDelete(_refPos(del.group(1)!));
       final comp = _refCompleteRe.firstMatch(u);
       if (comp != null) return _refComplete(_refPos(comp.group(1)!), now);
-      final inl = _refCorrectInlineRe.firstMatch(u); // "change 2 to X" — check before the bare form
-      if (inl != null) return _refCorrectInline(_refPos(inl.group(1)!), inl.group(2)!.trim(), now);
+      final inl = _refCorrectInlineRe
+          .firstMatch(u); // "change 2 to X" — check before the bare form
+      if (inl != null)
+        return _refCorrectInline(
+            _refPos(inl.group(1)!), inl.group(2)!.trim(), now);
       final corrRef = _refCorrectRe.firstMatch(u);
       if (corrRef != null) return _refCorrectStart(_refPos(corrRef.group(1)!));
     }
@@ -2210,12 +2878,22 @@ class Session {
     // Re-classification (F-14): "no, that was a walk" reverses the last (mis-typed) workout
     // log and re-logs it as the corrected activity, carrying the original slots (distance).
     final recl = _reclassifyRe.firstMatch(u);
-    if (recl != null && prevWrote && prevDispatch != null && _journal.isNotEmpty) {
+    if (recl != null &&
+        prevWrote &&
+        prevDispatch != null &&
+        _journal.isNotEmpty) {
       final prevSkill = prevDispatch['skillId'] as String;
       final target = _activitySkill[recl.group(1)!.toLowerCase()];
-      if (target != null && _workoutSkills.contains(prevSkill) && target != prevSkill) {
-        _reverse(_journal.removeLast().before); // undo the wrong-activity workout
-        final redo = await _dispatch(target, Map<String, dynamic>.from(prevDispatch['slots'] as Map), 'corpus', now);
+      if (target != null &&
+          _workoutSkills.contains(prevSkill) &&
+          target != prevSkill) {
+        final undone = _undoLastInternal();
+        if (undone.startsWith("I couldn't")) return undone;
+        final redo = await _dispatch(
+            target,
+            Map<String, dynamic>.from(prevDispatch['slots'] as Map),
+            'corpus',
+            now);
         _outSource = 'correction';
         return 'Fixed that — $redo';
       }
@@ -2224,7 +2902,9 @@ class Session {
     // Same-record slot correction (F-15): "actually, 28 minutes" / "make it 3k" updates a
     // field of the just-logged workout IN PLACE (distinguished from F-14: same record, not a
     // reverse-redispatch), journaled so undo restores the prior value.
-    if (prevWrote && prevDispatch != null && _workoutSkills.contains(prevDispatch['skillId'])) {
+    if (prevWrote &&
+        prevDispatch != null &&
+        _workoutSkills.contains(prevDispatch['skillId'])) {
       final dm = _durationCorrectRe.firstMatch(u);
       final km = _distanceCorrectRe.firstMatch(u);
       final id = prevDispatch['writtenId'] as String?;
@@ -2232,15 +2912,24 @@ class Session {
         final field = dm != null ? 'duration' : 'distance';
         final value = num.tryParse((dm ?? km)!.group(1)!);
         if (value != null) {
-          final rec = store[id]!;
-          _journal.add(_JournalEntry({id: Map<String, dynamic>.from(rec)}, 'updated $field'));
-          if (_journal.length > _journalMax) _journal.removeAt(0);
-          rec[field] = value;
-          repo.persist(rec);
+          final rec = Map<String, dynamic>.from(store[id]!)..[field] = value;
+          final result = _executeMutation(
+            writes: [rec],
+            deletes: const [],
+            origin: 'correction',
+            description: 'updated $field',
+            frozenInputs: {'recordId': id, 'field': field, 'value': value},
+          );
+          if (result.state == ExecutionResultState.failedBeforeWrite) {
+            return "I couldn't start that correction safely, so nothing changed.";
+          }
           _lastTurnWrote = true;
-          _lastDispatch = prevDispatch; // keep context so a further correction chains
+          _lastDispatch =
+              prevDispatch; // keep context so a further correction chains
           _outSource = 'correction';
-          return 'Updated — that ${rec['activity']} was $value ${field == 'duration' ? 'minutes' : 'km'}.';
+          return result.state == ExecutionResultState.appliedInMemory
+              ? "Updated here, but couldn't finish saving it. I'll recover it next launch."
+              : 'Updated — that ${rec['activity']} was $value ${field == 'duration' ? 'minutes' : 'km'}.';
         }
       }
     }
@@ -2256,7 +2945,8 @@ class Session {
       }
       // reverse the previous turn ONLY if it actually wrote — never an unrelated earlier write
       if (prevWrote && _journal.isNotEmpty) {
-        _reverse(_journal.removeLast().before);
+        final undone = _undoLastInternal();
+        if (undone.startsWith("I couldn't")) return undone;
         pre = 'Got it — undid that. ';
       }
       final redo = await _handle(corr.group(1)!.trim());
@@ -2280,7 +2970,8 @@ class Session {
     if (reconnect != null) {
       _outSource = 'generative';
       _outSkill = 'reconnect';
-      final who = reconnect.group(1) ?? reconnect.group(2) ?? reconnect.group(3) ?? '';
+      final who =
+          reconnect.group(1) ?? reconnect.group(2) ?? reconnect.group(3) ?? '';
       return _generative.reconnect(who.trim(), store, now);
     }
     if (_weeklyReviewRe.hasMatch(u)) {
@@ -2301,7 +2992,8 @@ class Session {
     }
 
     final def = _defRe.firstMatch(u);
-    if (def != null && router.route(u, clock: now, contacts: _knownContactTokens()) == null) {
+    if (def != null &&
+        router.route(u, clock: now, contacts: _knownContactTokens()) == null) {
       final desc = def.group(1)!;
       if (_harmfulRe.hasMatch('$desc $u')) {
         return "I can't build that — it could monitor someone without consent or cause harm, "
@@ -2354,9 +3046,12 @@ class Session {
         final replies = <String>[];
         for (final p in parts) {
           final slots = (p['slots'] as Map).cast<String, dynamic>();
-          slots.updateAll(
-              (k, v) => (v is String && const {'none', 'null'}.contains(v.trim().toLowerCase())) ? null : v);
-          replies.add(await _dispatch(p['skillId'] as String, slots, 'corpus', now,
+          slots.updateAll((k, v) => (v is String &&
+                  const {'none', 'null'}.contains(v.trim().toLowerCase()))
+              ? null
+              : v);
+          replies.add(await _dispatch(
+              p['skillId'] as String, slots, 'compound-part', now,
               template: p['template'] as String?));
         }
         _outSource = 'compound'; // telemetry: one turn, two dispatches
@@ -2380,7 +3075,8 @@ class Session {
     }
     CloudErrorKind? cloudErr;
     if (routed == null) {
-      switch (await claude.routeResidual(u, skills, knownContacts: _knownContactNames())) {
+      switch (await claude.routeResidual(u, skills,
+          knownContacts: _knownContactNames())) {
         case CloudOk(:final value):
           _cloudStatus = 'ok';
           routed = value; // may be null == the model abstained
@@ -2392,15 +3088,21 @@ class Session {
     // Generative recognition (Spec 03 §2.2a / §7.3.2, G-46): the residual classified a SYNTHESIS
     // request (gift ideas, briefing, …) — dispatch it to the GenerativeService, not the interpreter.
     if (routed != null && routed['generativeKind'] is String) {
-      return _dispatchGenerative(routed['generativeKind'] as String,
+      return _dispatchGenerative(
+          routed['generativeKind'] as String,
           (routed['params'] as Map?)?.cast<String, dynamic>() ?? const {},
-          routed['template'] as String?, routed['source'] as String? ?? 'cloud', u, now);
+          routed['template'] as String?,
+          routed['source'] as String? ?? 'cloud',
+          u,
+          now);
     }
     if (routed == null) {
       // A reference-by-number command with NO list in front of us (the ref handlers above only fire
       // when _enumCtx is live). Point the user at the readback instead of a blank "didn't catch that".
-      if (_refDeleteRe.hasMatch(u) || _refCompleteRe.hasMatch(u) ||
-          _refCorrectRe.hasMatch(u) || _refCorrectInlineRe.hasMatch(u)) {
+      if (_refDeleteRe.hasMatch(u) ||
+          _refCompleteRe.hasMatch(u) ||
+          _refCorrectRe.hasMatch(u) ||
+          _refCorrectInlineRe.hasMatch(u)) {
         _outSource = 'clarify';
         return 'There\'s no numbered list in front of us — say "list my tasks" (or people, or '
             'reminders) first, then "delete 2" or "correct 2".';
@@ -2412,7 +3114,9 @@ class Session {
       // nearest skill + score (when retrieval is on) — so "why didn't it catch that?" is answerable.
       _outDiag = {
         'corpus': 'no-match',
-        'cloud': cloudErr != null ? 'error:${cloudErr.name}' : (_cloudStatus == 'ok' ? 'abstained' : 'not-consulted'),
+        'cloud': cloudErr != null
+            ? 'error:${cloudErr.name}'
+            : (_cloudStatus == 'ok' ? 'abstained' : 'not-consulted'),
         if (sg != null) 'closest': sg['skillId'],
         if (sg != null) 'score': sg['s1'],
         if (sg != null) 'confident': sg['confident'],
@@ -2430,21 +3134,24 @@ class Session {
                   ? 'I don\'t have that phrasing learned — did you mean to "$name"? Say it a known way and I\'ll learn it.'
                   : 'I\'m not sure what you meant — closest is "$name" ($s1), below my confidence bar, so I won\'t guess.';
             })();
-      return cloudErr == null ? base : '$base (I also couldn\'t check with the cloud: ${cloudReason(cloudErr)})';
+      return cloudErr == null
+          ? base
+          : '$base (I also couldn\'t check with the cloud: ${cloudReason(cloudErr)})';
     }
     // Multi-record decomposition (cloud only): the router split a rich statement into
     // several records ("dinner with X and Y", or a relationship AND a fact). Execute each
     // fully-slotted action and compose the confirmations — like the F-13 compound path.
     // An action missing a required slot is skipped (no per-action ProvideSlot in a batch).
     if (routed['actions'] is List) {
-      final replies = <String>[];
-      final done = <String>[];
-      var skipped = (routed['skippedGenerative'] as int?) ?? 0; // generative half(s) dropped from a batch (G-46)
-      final journalBefore = _journal.length;
-      final seen = <String>{}; // dedup: a cloud split can emit the same record twice (reviewer a #8)
+      final accepted = <Map<String, dynamic>>[];
+      var skipped = (routed['skippedGenerative'] as int?) ??
+          0; // generative half(s) dropped from a batch (G-46)
+      final seen =
+          <String>{}; // dedup: a cloud split can emit the same record twice (reviewer a #8)
       for (final a in (routed['actions'] as List).cast<Map>()) {
         final sid = a['skillId'] as String?;
-        final slots = (a['slots'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+        final slots = (a['slots'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
         slots.updateAll((k, v) => _sanitizeSlot(v));
         if (sid == null || !skills.containsKey(sid)) {
           skipped++; // an unusable action is NOT silently dropped — the reply admits it below
@@ -2457,37 +3164,23 @@ class Session {
         }
         // Resolve-then-dedup: two actions that normalise to the same skill + slots are ONE
         // record, not two (a duplicated "dinner with Katherine" would otherwise double-write).
-        final key = '$sid|${(slots.entries.toList()..sort((x, y) => x.key.compareTo(y.key)))
-            .map((e) => '${e.key}=${e.value}').join('&')}';
-        if (!seen.add(key)) continue; // silent — a dedup'd duplicate isn't a "skipped" failure
-        // One bad action (model-shaped slots hitting a resolver, a clarify throw) must not abort
-        // the batch after earlier actions already persisted, nor let handle()'s catch-all falsely
-        // claim nothing was done (review #18). Contain it and count it as skipped.
-        try {
-          replies.add(await _dispatch(sid, slots, 'cloud', now)); // no learn: a compound isn't one template
-          done.add(sid);
-        } catch (_) {
-          skipped++;
-        }
+        final key =
+            '$sid|${(slots.entries.toList()..sort((x, y) => x.key.compareTo(y.key))).map((e) => '${e.key}=${e.value}').join('&')}';
+        if (!seen.add(key))
+          continue; // silent — a dedup'd duplicate isn't a "skipped" failure
+        accepted.add({'skillId': sid, 'slots': slots});
       }
-      if (replies.isNotEmpty) {
-        // Collapse this turn's per-action journal entries into ONE, so undo / "no, I meant"
-        // reverses the WHOLE turn — not just the last record (review #5).
-        if (_journal.length - journalBefore > 1) {
-          final merged = <String, Map<String, dynamic>?>{};
-          for (var i = journalBefore; i < _journal.length; i++) {
-            _journal[i].before.forEach((id, prior) => merged.putIfAbsent(id, () => prior));
-          }
-          _journal.removeRange(journalBefore, _journal.length);
-          _journal.add(_JournalEntry(merged, null));
-        }
-        _lastTurnWrote = _journal.length > journalBefore; // the turn is undoable as a unit
+      if (accepted.isNotEmpty) {
+        final batch = await _dispatchBatch(
+          accepted,
+          'cloud-multi',
+          now,
+          skipped: skipped,
+        );
+        _lastTurnWrote = batch.wrote;
         _outSource = 'cloud-multi'; // telemetry: one turn, several records
-        _outSkill = done.join('+');
-        final reply = replies.join(' ');
-        return skipped > 0
-            ? "$reply (I couldn't record $skipped part${skipped > 1 ? 's' : ''} of that — try rephrasing ${skipped > 1 ? 'them' : 'it'}.)"
-            : reply;
+        _outSkill = batch.done.join('+');
+        return batch.reply;
       }
       // every action was unusable — fall through to the honest miss path
       _outDiag = {'corpus': 'no-match', 'cloud': 'multi-empty'};
@@ -2513,7 +3206,8 @@ class Session {
     // A cloud "2026-07-08" for a datetime slot -> null (no midnight reminders); a raw
     // "tomorrow at 3pm" -> a real ISO datetime (no silently-dropped reminders).
     if (routed['source'] == 'cloud') {
-      _normalizeTypedSlots(skills[routed['skillId']], routed['slots'] as Map<String, dynamic>, now);
+      _normalizeTypedSlots(skills[routed['skillId']],
+          routed['slots'] as Map<String, dynamic>, now);
     }
     final skillId = routed['skillId'] as String;
     final slots = (routed['slots'] as Map).cast<String, dynamic>();
@@ -2525,11 +3219,14 @@ class Session {
       _outSource = 'clarify';
       return _askForSlot(skills[skillId], missing.first);
     }
-    final template = routed['source'] == 'corpus' ? routed['template'] as String? : null;
+    final template =
+        routed['source'] == 'corpus' ? routed['template'] as String? : null;
     // A cloud route may carry a SUGGESTED template (surface-abstracted) to learn — distinct
     // from a matched corpus `template`. The router validates it by round-trip before adopting.
-    final learnTemplate = routed['source'] == 'cloud' ? routed['template'] as String? : null;
-    final reply = await _dispatch(skillId, slots, routed['source'] as String, now,
+    final learnTemplate =
+        routed['source'] == 'cloud' ? routed['template'] as String? : null;
+    final reply = await _dispatch(
+        skillId, slots, routed['source'] as String, now,
         template: template, learnTemplate: learnTemplate, utterance: u);
     // A batch collapsed to one skill because its generative half was dropped (§7.3.2) — admit it, so
     // "log a run and suggest a gift for Sarah" doesn't silently swallow the gift request (P2.8).
@@ -2543,12 +3240,13 @@ class Session {
   /// GenerativeService — the "suggest a gift for Elena" class, recognized by the cloud instead of a
   /// hand-written regex. A contact-param kind with no contact pauses for a missing-param follow-up
   /// (§6.3); [_pendingGen] resumes it next turn. (Recognition-learning is layered on in a follow-up.)
-  Future<String> _dispatchGenerative(String kind, Map<String, dynamic> params, String? template,
-      String source, String u, DateTime now) async {
+  Future<String> _dispatchGenerative(String kind, Map<String, dynamic> params,
+      String? template, String source, String u, DateTime now) async {
     const contactKinds = {'gift_ideas', 'reconnect', 'draft_message'};
     _outSource = 'generative';
     _outSkill = kind;
-    _outTemplate = template; // so a bad generative-template match is diagnosable in the turnlog
+    _outTemplate =
+        template; // so a bad generative-template match is diagnosable in the turnlog
     // Coerce a non-string contact (the model can return a list/number) to null rather than throwing —
     // parity with routeResidual's "coerce, never throw" contract; it then takes the follow-up.
     final raw = params['contact'];
@@ -2565,8 +3263,10 @@ class Session {
     // Track a matched LEARNED template so a next-turn "correct" can forget it (§5.2 negative half) —
     // even on a corpus-matched turn that re-learns nothing. Without this, a mislearned generative
     // template is uncorrectable (both Fable reviewers, HIGH). Mirrors _dispatch.
-    if (template != null && router.isLearned(template)) _lastTurnTemplate = template;
-    _generative.lastDelivered = false; // reset; set true only by a real cloud synthesis
+    if (template != null && router.isLearned(template))
+      _lastTurnTemplate = template;
+    _generative.lastDelivered =
+        false; // reset; set true only by a real cloud synthesis
     final reply = await (switch (kind) {
       'gift_ideas' => _generative.giftIdeas(contact!, store, now),
       'reconnect' => _generative.reconnect(contact!, store, now),
@@ -2580,8 +3280,11 @@ class Session {
     // (Spec 03 §2.7, G-46). Skip it when the route was already a corpus match (source == 'corpus') —
     // it's learned; re-learning appends case/punctuation near-duplicates forever (parity with
     // _dispatch, which learns only on 'cloud'). A degrade / unknown-person leaves lastDelivered false.
-    if (source == 'cloud' && _generative.lastDelivered && contactKinds.contains(kind)) {
-      final learned = router.learnGenerative(u, kind, contact, contacts: _knownContactTokens());
+    if (source == 'cloud' &&
+        _generative.lastDelivered &&
+        contactKinds.contains(kind)) {
+      final learned = router.learnGenerative(u, kind, contact,
+          contacts: _knownContactTokens());
       if (learned != null) {
         repo.appendCorpusLearned({'generativeKind': kind, 'template': learned});
         _lastTurnTemplate = learned;
@@ -2592,12 +3295,14 @@ class Session {
 
   /// Resolve → execute → persist → journal → learn for a fully-slotted skill. Shared by
   /// the normal routing path and a completed ProvideSlot fill.
-  Future<String> _dispatch(String skillId, Map<String, dynamic> slots, String source, DateTime now,
+  Future<String> _dispatch(
+      String skillId, Map<String, dynamic> slots, String source, DateTime now,
       {String? template, String? learnTemplate, String? utterance}) async {
     _outSkill = skillId; // debug trace
     _outSlots = slots;
     _outTemplate = template;
-    final turnInterp = Interpreter(types, now, references: _references); // per-turn clock (Spec 03 §4)
+    final turnInterp = Interpreter(types, now,
+        references: _references); // per-turn clock (Spec 03 §4)
     // A route can outlive its skill: a learned corpus template whose capability was removed here,
     // or a corpus file synced from a device that has a capability this one doesn't. `skills[id]!`
     // turned that into a null-check crash and a "something went wrong". Fail honestly instead, and
@@ -2616,35 +3321,41 @@ class Session {
     }
     try {
       final plan = turnInterp.resolve(def, slots, store);
-      final before = turnInterp.execute(plan, store);
-      // JOURNAL BEFORE PERSISTING. execute() has already mutated the in-memory store, so the
-      // change is live from this line on. If a persist throws (full disk, revoked folder
-      // permission, sandbox denial) and the journal push sits after it, the user is left with a
-      // change they were told didn't happen and CANNOT undo — the safety net that act-then-describe
-      // rests on, missing exactly when it's needed most. Pushing first costs nothing on the happy
-      // path and keeps undo total.
       final wrote = plan.writes.isNotEmpty || plan.deletes.isNotEmpty;
       if (wrote) {
-        _journal.add(_JournalEntry(before, plan.confirmation));
-        if (_journal.length > _journalMax) _journal.removeAt(0);
-      }
-      try {
-        for (final w in plan.writes) {
-          repo.persist(w);
-          _outWrites.add({'op': 'write', 'id': w['id'], 'typeId': w['typeId']}); // debug trace
+        final result = _executeMutation(
+          writes: plan.writes,
+          deletes: plan.deletes,
+          origin: source,
+          description: plan.confirmation,
+          frozenInputs: {
+            'skillId': skillId,
+            'slots': Map<String, dynamic>.from(slots),
+            if (utterance != null) 'utterance': utterance,
+          },
+        );
+        final record = result.record;
+        if (result.state == ExecutionResultState.failedBeforeWrite ||
+            record == null) {
+          _outSource = 'error';
+          _outError = 'execution journal prepare failed: ${result.error}';
+          _lastTurnWrote = false;
+          return "I couldn't start that safely, so nothing changed.";
         }
-        for (final id in plan.deletes) {
-          repo.remove(id);
-          _outWrites.add({'op': 'delete', 'id': id}); // debug trace
+        if (result.state == ExecutionResultState.appliedInMemory) {
+          _outSource = 'error';
+          _outError = 'durable execution interrupted: ${result.error}';
+          _lastTurnWrote = true;
+          return "I did that here, but couldn't save it completely. I'll recover it next launch — "
+              'say "undo that" to take it back now.';
         }
-      } catch (e) {
-        // Tell the truth (P2.8): the change IS applied in memory and IS undoable, it just didn't
-        // reach the folder. Claiming "nothing happened" here would be a lie the store contradicts.
-        _outSource = 'error';
-        _outError = 'persist failed: $e';
-        _lastTurnWrote = wrote;
-        return "I did that, but couldn't save it to your data folder ($e). "
-            'It\'ll be lost when the app restarts — say "undo that" to take it back.';
+        for (final operation in record.operations) {
+          _outWrites.add({
+            'op': operation.kind,
+            'id': operation.id,
+            if (operation.record case final value?) 'typeId': value['typeId'],
+          });
+        }
       }
       // Capture a numbered readback's ordered id/label list so a later "delete 2" / "correct 1"
       // resolves against EXACTLY what was spoken (Feature: numbered-list corrections). A skill that
@@ -2656,17 +3367,20 @@ class Session {
             ? null
             : _EnumCtx([
                 for (final it in items)
-                  _EnumItem('${it['id']}', '${it['typeId']}', '${it['field']}', '${it['label']}'),
+                  _EnumItem('${it['id']}', '${it['typeId']}', '${it['field']}',
+                      '${it['label']}'),
               ], skillId);
       }
       // record the previous-turn state for a correction (every routed turn, write or read).
       // The journal push for this turn already happened above, before persisting.
       _lastTurnWrote = wrote;
-      _lastTurnTemplate = (template != null && router.isLearned(template)) ? template : null;
+      _lastTurnTemplate =
+          (template != null && router.isLearned(template)) ? template : null;
       if (_lastTurnWrote) {
         // for re-classify (F-14) + same-record slot correction (F-15)
         _lastDispatch = {
-          'skillId': skillId, 'slots': slots,
+          'skillId': skillId,
+          'slots': slots,
           if (plan.writes.isNotEmpty) 'writtenId': plan.writes.first['id'],
         };
       }
@@ -2678,7 +3392,9 @@ class Session {
       if (plan.writes.isNotEmpty) {
         try {
           automations.notifyWrites(plan.writes);
-        } catch (_) {/* contained — an automation must never break the user's turn */}
+        } catch (_) {
+          /* contained — an automation must never break the user's turn */
+        }
       }
       if (source == 'cloud' && utterance != null) {
         // Prefer the cloud's surface-abstracted suggestion (learns date/time phrasings the
@@ -2688,7 +3404,8 @@ class Session {
             ? null
             : router.learnSuggested(utterance, skillId, slots, learnTemplate,
                 clock: now, contacts: _knownContactTokens());
-        tmpl ??= router.learn(utterance, skillId, slots, contacts: _knownContactTokens());
+        tmpl ??= router.learn(utterance, skillId, slots,
+            contacts: _knownContactTokens());
         if (tmpl != null) {
           repo.appendCorpusLearned({'skillId': skillId, 'template': tmpl});
           // If the cloud misread this turn and we just LEARNED from it, a next-turn "no, I
@@ -2704,7 +3421,9 @@ class Session {
       if (opts != null && opts.isNotEmpty) {
         // an ambiguity (G-12): ask which one instead of leaking a raw error string
         _outSource = 'clarify';
-        final shown = opts.length <= 5 ? opts.join(', ') : '${opts.take(5).join(', ')}, …';
+        final shown = opts.length <= 5
+            ? opts.join(', ')
+            : '${opts.take(5).join(', ')}, …';
         return 'I know more than one match for that — $shown. Which one? (say the full name)';
       }
       return "I couldn't do that: ${e.message}";
@@ -2713,6 +3432,96 @@ class Session {
       // exactly the turn you most want to diagnose from the log (review low).
       _outReads.addAll(turnInterp.lastPlan?.reads ?? const []);
     }
+  }
+
+  Future<({String reply, List<String> done, int skipped, bool wrote})>
+      _dispatchBatch(
+    List<Map<String, dynamic>> actions,
+    String source,
+    DateTime now, {
+    int skipped = 0,
+  }) async {
+    final scratch = <String, Map<String, dynamic>>{
+      for (final entry in store.entries)
+        entry.key: Map<String, dynamic>.from(entry.value),
+    };
+    final writes = <Map<String, dynamic>>[];
+    final deletes = <String>[];
+    final replies = <String>[];
+    final done = <String>[];
+    for (final action in actions) {
+      final skillId = action['skillId'] as String;
+      final slots = Map<String, dynamic>.from(action['slots'] as Map);
+      try {
+        final interpreter = Interpreter(types, now, references: _references);
+        final plan = interpreter.resolve(skills[skillId]!, slots, scratch);
+        interpreter.execute(plan, scratch);
+        writes.addAll(plan.writes);
+        deletes.addAll(plan.deletes);
+        replies.add(plan.confirmation ?? 'Done.');
+        done.add(skillId);
+        _outReads.addAll(plan.reads);
+      } catch (_) {
+        skipped++;
+      }
+    }
+    if (done.isEmpty) {
+      return (
+        reply:
+            "I understood a few things there but couldn't record them cleanly — try one at a time?",
+        done: done,
+        skipped: skipped,
+        wrote: false,
+      );
+    }
+    final wrote = writes.isNotEmpty || deletes.isNotEmpty;
+    if (wrote) {
+      final result = _executeMutation(
+        writes: writes,
+        deletes: deletes,
+        origin: source,
+        description: replies.join(' '),
+        frozenInputs: {'actions': actions},
+      );
+      if (result.state == ExecutionResultState.failedBeforeWrite) {
+        return (
+          reply: "I couldn't start that safely, so nothing changed.",
+          done: const <String>[],
+          skipped: actions.length + skipped,
+          wrote: false,
+        );
+      }
+      if (result.state == ExecutionResultState.appliedInMemory) {
+        return (
+          reply:
+              "I did that here, but couldn't save it completely. I'll recover it next launch.",
+          done: done,
+          skipped: skipped,
+          wrote: true,
+        );
+      }
+      for (final operation in result.record!.operations) {
+        _outWrites.add({
+          'op': operation.kind,
+          'id': operation.id,
+          if (operation.record case final value?) 'typeId': value['typeId'],
+        });
+      }
+      if (writes.isNotEmpty) {
+        try {
+          automations.notifyWrites(writes);
+        } catch (_) {/* contained */}
+      }
+    }
+    final reply = replies.join(' ');
+    return (
+      reply: skipped > 0
+          ? "$reply (I couldn't record $skipped part${skipped > 1 ? 's' : ''} of that — try rephrasing ${skipped > 1 ? 'them' : 'it'}.)"
+          : reply,
+      done: done,
+      skipped: skipped,
+      wrote: wrote,
+    );
   }
 
   /// F-13 compound-utterance split: find the FIRST " and " (or ", and ") seam where
@@ -2725,21 +3534,29 @@ class Session {
   /// A half that routes but is missing a required slot disqualifies the seam — a
   /// mid-compound ProvideSlot pause can't be composed into one confirmation.
   List<Map<String, dynamic>>? _splitCompound(String u, DateTime now) {
-    for (final m in RegExp(r',?\s+and\s+', caseSensitive: false).allMatches(u)) {
+    for (final m
+        in RegExp(r',?\s+and\s+', caseSensitive: false).allMatches(u)) {
       final left = u.substring(0, m.start).trim();
       final right = u.substring(m.end).trim();
       if (left.isEmpty || right.isEmpty) continue;
-      final lr = router.route(left, clock: now, contacts: _knownContactTokens());
+      final lr =
+          router.route(left, clock: now, contacts: _knownContactTokens());
       if (lr == null) continue;
-      final rr = router.route(right, clock: now, contacts: _knownContactTokens());
+      final rr =
+          router.route(right, clock: now, contacts: _knownContactTokens());
       if (rr == null) continue;
       // A generative half (learned {generativeKind} route) has no skillId/slots — it can't be a
       // batched skill dispatch (Spec 03 §7.3.2: no generative inside a compound). Skip the seam so a
       // generative-shaped half never reaches the skill dispatch code (which would throw after the
       // other half already wrote, then falsely claim nothing was done).
-      if (lr['generativeKind'] != null || rr['generativeKind'] != null) continue;
-      if (_missingRequired(skills[lr['skillId']], (lr['slots'] as Map).cast<String, dynamic>()).isNotEmpty ||
-          _missingRequired(skills[rr['skillId']], (rr['slots'] as Map).cast<String, dynamic>()).isNotEmpty) {
+      if (lr['generativeKind'] != null || rr['generativeKind'] != null)
+        continue;
+      if (_missingRequired(skills[lr['skillId']],
+                  (lr['slots'] as Map).cast<String, dynamic>())
+              .isNotEmpty ||
+          _missingRequired(skills[rr['skillId']],
+                  (rr['slots'] as Map).cast<String, dynamic>())
+              .isNotEmpty) {
         continue;
       }
       return [lr, rr];
@@ -2752,10 +3569,12 @@ class Session {
   /// and handed outward — the G-19 privacy boundary (a stored-person query stays in-domain).
   bool _mentionsKnownContact(String u) {
     final lu = u.toLowerCase();
-    bool wordHit(String s) => s.isNotEmpty && RegExp('\\b${RegExp.escape(s)}\\b').hasMatch(lu);
+    bool wordHit(String s) =>
+        s.isNotEmpty && RegExp('\\b${RegExp.escape(s)}\\b').hasMatch(lu);
     for (final r in store.values) {
       if (r['typeId'] != 'contact') continue;
-      if (wordHit((r['displayName'] as String?)?.toLowerCase() ?? '')) return true;
+      if (wordHit((r['displayName'] as String?)?.toLowerCase() ?? ''))
+        return true;
       final a = r['aliases'];
       if (a is String) {
         for (final al in a.toLowerCase().split(',')) {
@@ -2774,7 +3593,8 @@ class Session {
     _outSource = 'search';
     if (query.isEmpty) return 'What should I search your notes for?';
     var ids = await _contentIndex?.search(query) ?? const <String>[];
-    if (ids.isEmpty) ids = ContentSearchIndex.keywordSearch(query, store.values);
+    if (ids.isEmpty)
+      ids = ContentSearchIndex.keywordSearch(query, store.values);
     if (ids.isEmpty) return 'I couldn\'t find anything about "$query".';
     final byId = {for (final r in store.values) r['id']: r};
     final lines = <String>[];
@@ -2784,7 +3604,8 @@ class Session {
       if (c != null) lines.add('• $c');
     }
     if (lines.isEmpty) return 'I couldn\'t find anything about "$query".';
-    final head = lines.length == 1 ? 'Found 1 match:' : 'Found ${lines.length} matches:';
+    final head =
+        lines.length == 1 ? 'Found 1 match:' : 'Found ${lines.length} matches:';
     return '$head\n${lines.join('\n')}';
   }
 
@@ -2819,6 +3640,25 @@ class Session {
     return s;
   }
 
+  void _validateTypeCandidate(Map<String, dynamic> type) {
+    final id = type['typeId'] as String?;
+    if (id == null) throw ResolveError('typeId is required');
+    final candidate = SchemaRegistry.fromDefinitions(
+      {...types, id: type},
+      skills: skills,
+    );
+    final rejected = candidate.issues.where(
+      (issue) =>
+          issue.source == '$id.json' &&
+          issue.severity == SchemaIssueSeverity.rejected,
+    );
+    if (rejected.isNotEmpty || !candidate.contains(id)) {
+      throw ResolveError(rejected.isEmpty
+          ? 'type "$id" was rejected by the schema registry'
+          : rejected.map((issue) => issue.message).join('; '));
+    }
+  }
+
   /// Instantiate a binary-shipped tracker template (Spec 05 §6 E4 / G-22) — FREE, immediate,
   /// no cloud: register its type(s) + skill(s), persist them, and inject its bundled corpus
   /// so the new tracker works by voice right away. Returns the confirmation, or null if no
@@ -2839,13 +3679,16 @@ class Session {
           authored = value;
       }
       if (authored == null) return "I couldn't build that right now.";
-      String? tempType; // temporarily registered so validateSkill sees the type; rolled back
+      String?
+          tempType; // temporarily registered so validateSkill sees the type; rolled back
       try {
-        final type = (authored['type'] as Map).cast<String, dynamic>();
+        final type = Map<String, dynamic>.from(authored['type'] as Map)
+          ..putIfAbsent('schemaVersion', () => 1);
         final skill = (authored['skill'] as Map).cast<String, dynamic>();
         final typeId = type['typeId'], skillId = skill['skillId'];
         if (typeId is! String || skillId is! String) {
-          throw ResolveError('authored capability is missing a string typeId/skillId');
+          throw ResolveError(
+              'authored capability is missing a string typeId/skillId');
         }
         if (!_idRe.hasMatch(typeId) || !_idRe.hasMatch(skillId)) {
           // model-controlled ids must never steer a file path or carry odd chars
@@ -2853,21 +3696,28 @@ class Session {
         }
         if (types.containsKey(typeId) || skills.containsKey(skillId)) {
           // never overwrite a built-in / existing capability
-          throw ResolveError('a capability like "$skillId" already exists — nothing built');
+          throw ResolveError(
+              'a capability like "$skillId" already exists — nothing built');
         }
         // Validate WITHOUT committing (§6.5 / G-18): temporarily register the type so
         // validateSkill can resolve it, then roll it back — nothing is registered until
         // the user says "activate".
+        _validateTypeCandidate(type);
         interp.validateType(type);
         types[typeId] = type;
         tempType = typeId;
         interp.validateSkill(skill);
         types.remove(tempType);
         tempType = null;
-        final eg = (skill['examplePhrases'] as List?)?.cast<String>() ?? const <String>[];
+        final eg = (skill['examplePhrases'] as List?)?.cast<String>() ??
+            const <String>[];
         _pendingActivation = {
-          'type': type, 'skill': skill, 'typeId': typeId, 'skillId': skillId,
-          'displayName': skill['displayName'] ?? skillId, 'examples': eg,
+          'type': type,
+          'skill': skill,
+          'typeId': typeId,
+          'skillId': skillId,
+          'displayName': skill['displayName'] ?? skillId,
+          'examples': eg,
         };
         _outSource = 'authoring-preview';
         return 'I can build "${skill['displayName'] ?? skillId}" for you'
@@ -2876,7 +3726,8 @@ class Session {
       } catch (e) {
         if (tempType != null) types.remove(tempType); // safe rollback
         priorError = e is ResolveError ? e.message : e.toString();
-        if (attempt == 2) return 'I drafted that but it could not be validated — nothing was registered.';
+        if (attempt == 2)
+          return 'I drafted that but it could not be validated — nothing was registered.';
       }
     }
     return "I couldn't build that right now."; // loop always returns; satisfies the analyzer
@@ -2888,9 +3739,12 @@ class Session {
     // template can't honor — don't let a keyword match pre-empt it; fall through to authoring.
     if (_customizationRe.hasMatch(d)) return null;
     for (final t in templates.values) {
-      final keywords = (t['keywords'] as List?)?.cast<String>() ?? const <String>[];
+      final keywords =
+          (t['keywords'] as List?)?.cast<String>() ?? const <String>[];
       if (!keywords.any((k) => d.contains(k.toLowerCase()))) continue;
-      final skillDefs = (t['skills'] as List).map((s) => (s as Map).cast<String, dynamic>()).toList();
+      final skillDefs = (t['skills'] as List)
+          .map((s) => (s as Map).cast<String, dynamic>())
+          .toList();
       final eg = t['example']?.toString() ?? 'logging one';
       _outSource = 'template';
       if (skillDefs.any((s) => skills.containsKey(s['skillId']))) {
@@ -2898,7 +3752,9 @@ class Session {
       }
       try {
         for (final ty in (t['types'] as List)) {
-          final type = (ty as Map).cast<String, dynamic>();
+          final type = Map<String, dynamic>.from(ty as Map)
+            ..putIfAbsent('schemaVersion', () => 1);
+          _validateTypeCandidate(type);
           interp.validateType(type);
           types[type['typeId'] as String] = type;
           repo.writeDef('types', 'typeId', type);
@@ -2909,7 +3765,8 @@ class Session {
           repo.writeDef('skills', 'skillId', skill);
         }
         for (final c in (t['corpus'] as List)) {
-          final sid = (c as Map)['skillId'] as String, tmpl = c['template'] as String;
+          final sid = (c as Map)['skillId'] as String,
+              tmpl = c['template'] as String;
           router.addLearned(sid, tmpl);
           repo.appendCorpusLearned({'skillId': sid, 'template': tmpl});
         }
@@ -2935,6 +3792,7 @@ class Session {
       return 'A capability like "$skillId" already exists now — nothing added.';
     }
     try {
+      _validateTypeCandidate(type);
       interp.validateType(type);
       types[typeId] = type;
       interp.validateSkill(skill);
@@ -2953,16 +3811,20 @@ class Session {
         // with a shipped phrasing ("log my mood as tired") would permanently reassign it to the new
         // capability, and the user's own entries would start landing in the wrong record type with
         // nothing said about it.
-        if (router.route(phrase, clock: now, contacts: _knownContactTokens()) != null) continue;
+        if (router.route(phrase, clock: now, contacts: _knownContactTokens()) !=
+            null) continue;
         final t = router.learn(phrase, skillId, const {});
-        if (t != null) repo.appendCorpusLearned({'skillId': skillId, 'template': t});
+        if (t != null)
+          repo.appendCorpusLearned({'skillId': skillId, 'template': t});
       }
       // SAY WHAT ACTUALLY CHANGED, then CHECK. "Added X. Try: …" was technically true and
       // practically useless: after two confirmations the user couldn't tell whether anything had
       // happened, because the thing built (a log) looks like something the app already does. So
       // name the phrase that now works, name what it records, and ask — a "no" un-builds it.
       _pendingCapabilityCheck = {
-        'typeId': typeId, 'skillId': skillId, 'displayName': '${draft['displayName']}',
+        'typeId': typeId,
+        'skillId': skillId,
+        'displayName': '${draft['displayName']}',
       };
       // Humanise the field names — "loggedAt" is an implementation detail; "logged at" is a
       // sentence. This line is the whole point of the change, so it has to read like speech.
@@ -2988,7 +3850,10 @@ class Session {
       // user nothing had been added. The learn loop below the assignment widened that window.
       types.remove(typeId);
       skills.remove(skillId);
-      for (final t in router.corpus.where((c) => c.skillId == skillId).map((c) => c.template).toList()) {
+      for (final t in router.corpus
+          .where((c) => c.skillId == skillId)
+          .map((c) => c.template)
+          .toList()) {
         router.forget(t);
         try {
           repo.removeCorpusLearned(t);
@@ -3005,23 +3870,31 @@ class Session {
   /// Undo a just-activated capability: unregister it and delete its definition files, so a "no"
   /// leaves no trace rather than an orphan the user has to hunt down later.
   String _forgetCapability(Map<String, dynamic> check) {
-    final typeId = check['typeId'] as String, skillId = check['skillId'] as String;
+    final typeId = check['typeId'] as String,
+        skillId = check['skillId'] as String;
     types.remove(typeId);
     skills.remove(skillId);
     // UNTEACH THE ROUTING TOO. Activation taught this skill's example phrases to the corpus, so
     // removing only the definition left templates pointing at a skill that no longer exists — the
     // phrase still routed, and _dispatch's `skills[skillId]!` blew up on null. Every capability
     // removal has to take its routing with it.
-    for (final t in router.corpus.where((c) => c.skillId == skillId).map((c) => c.template).toList()) {
+    for (final t in router.corpus
+        .where((c) => c.skillId == skillId)
+        .map((c) => c.template)
+        .toList()) {
       router.forget(t);
       try {
         repo.removeCorpusLearned(t);
-      } catch (_) {/* the in-memory forget is what routing uses; a stale line is inert */}
+      } catch (_) {
+        /* the in-memory forget is what routing uses; a stale line is inert */
+      }
     }
     try {
       repo.removeDef('skills', skillId);
       repo.removeDef('types', typeId);
-    } catch (_) {/* the in-memory removal is what the user sees; a stale file is harmless */}
+    } catch (_) {
+      /* the in-memory removal is what the user sees; a stale file is harmless */
+    }
     // The RETRIEVAL index still embeds the forgotten skill — activation built it. buildRetrievalIndex
     // only assigns, so a stale key survives until restart and retrievalSuggest can still return it.
     // Rebuild from the CURRENT skills so nothing points at a capability that no longer exists.
@@ -3031,27 +3904,34 @@ class Session {
   }
 
   /// The required input slots a routed skill left null (candidates for ProvideSlot).
-  List<String> _missingRequired(Map<String, dynamic>? skill, Map<String, dynamic> slots) {
+  List<String> _missingRequired(
+      Map<String, dynamic>? skill, Map<String, dynamic> slots) {
     final inputs = skill?['inputs'] as List?;
     if (inputs == null) return const [];
     return [
       for (final i in inputs)
-        if (i is Map && i['required'] == true && slots[i['name']] == null) i['name'] as String
+        if (i is Map && i['required'] == true && slots[i['name']] == null)
+          i['name'] as String
     ];
   }
 
   String _askForSlot(Map<String, dynamic>? skill, String slotName) {
     final inputs = skill?['inputs'] as List?;
-    final input = inputs?.cast<dynamic>().firstWhere((i) => i is Map && i['name'] == slotName, orElse: () => null);
+    final input = inputs?.cast<dynamic>().firstWhere(
+        (i) => i is Map && i['name'] == slotName,
+        orElse: () => null);
     final prompt = input is Map ? input['prompt'] as String? : null;
     return prompt ?? "What's the $slotName?";
   }
 
   /// Resolve a slot answer through its declared type (date/datetime) so a ProvideSlot
   /// reply like "tomorrow at 5pm" becomes a real ISO value, like the corpus path.
-  dynamic _coerceSlot(Map<String, dynamic>? skill, String slotName, String raw, DateTime now) {
+  dynamic _coerceSlot(
+      Map<String, dynamic>? skill, String slotName, String raw, DateTime now) {
     final inputs = skill?['inputs'] as List?;
-    final input = inputs?.cast<dynamic>().firstWhere((i) => i is Map && i['name'] == slotName, orElse: () => null);
+    final input = inputs?.cast<dynamic>().firstWhere(
+        (i) => i is Map && i['name'] == slotName,
+        orElse: () => null);
     final type = input is Map ? input['type'] : null;
     final r = raw.trim();
     if (type == 'datetime') return router.resolveDateTime(r, now);

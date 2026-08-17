@@ -1,5 +1,6 @@
 {
   "typeId": "workout",
+  "schemaVersion": 1,
   "displayName": "Workout",
   "attributes": [
     { "name": "activity", "valueType": "text", "required": true },

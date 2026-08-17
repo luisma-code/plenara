@@ -11,6 +11,28 @@ import 'dart:math';
 
 import 'store.dart' as fs;
 
+class DefinitionDocument {
+  final String filename;
+  final Map<String, dynamic> definition;
+  const DefinitionDocument(this.filename, this.definition);
+}
+
+class MigrationBackup {
+  final String recordId;
+  final String typeId;
+  final int fromVersion;
+  final int toVersion;
+  final String path;
+
+  const MigrationBackup({
+    required this.recordId,
+    required this.typeId,
+    required this.fromVersion,
+    required this.toVersion,
+    required this.path,
+  });
+}
+
 abstract interface class StorageRepository {
   /// Load type/skill definition files under [subdir], indexed by [key].
   Map<String, Map<String, dynamic>> loadDefs(String subdir, String key);
@@ -27,7 +49,8 @@ abstract interface class StorageRepository {
   /// The learned-corpus append log (NLU corrections corpus, Spec 03 §5).
   List<dynamic> loadCorpusLearned();
   void appendCorpusLearned(Map<String, dynamic> entry);
-  void removeCorpusLearned(String template); // §5.2 negative half: forget a bad learned template
+  void removeCorpusLearned(
+      String template); // §5.2 negative half: forget a bad learned template
 
   /// Persist an authored type/skill definition file (Spec 02 §6 authoring).
   void writeDef(String subdir, String idKey, Map<String, dynamic> def);
@@ -72,11 +95,14 @@ class FileStorageRepository implements StorageRepository {
       }
     } catch (_) {/* fall through to mint a fresh one */}
     final rnd = Random();
-    final id = 'dev-${List.generate(12, (_) => rnd.nextInt(16).toRadixString(16)).join()}';
+    final id =
+        'dev-${List.generate(12, (_) => rnd.nextInt(16).toRadixString(16)).join()}';
     try {
       f.parent.createSync(recursive: true);
       f.writeAsStringSync(id);
-    } catch (_) {/* best-effort; a non-persisted id is still better than a shared constant */}
+    } catch (_) {
+      /* best-effort; a non-persisted id is still better than a shared constant */
+    }
     return id;
   }
 
@@ -89,14 +115,87 @@ class FileStorageRepository implements StorageRepository {
   Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) =>
       fs.loadDefs('$dataDir/$subdir', key, onCorrupt: _sink);
 
-  @override
-  Map<String, Map<String, dynamic>> loadRecords() => fs.loadRecords('$dataDir/records', onCorrupt: _sink);
+  /// Raw definition documents preserve filenames and duplicates for the
+  /// SchemaRegistry hydration boundary. Indexing first would silently erase
+  /// both filename/id mismatches and duplicate ids.
+  List<DefinitionDocument> loadDefDocuments(String subdir) {
+    final dir = Directory('$dataDir/$subdir');
+    if (!dir.existsSync()) return const [];
+    final out = <DefinitionDocument>[];
+    for (final file in dir.listSync().whereType<File>()) {
+      if (!file.path.endsWith('.json')) continue;
+      try {
+        final value =
+            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+        out.add(DefinitionDocument(file.uri.pathSegments.last, value));
+      } catch (error) {
+        _sink(file.path, error);
+      }
+    }
+    return out;
+  }
 
   @override
-  void persist(Map<String, dynamic> record) => fs.persist(record, '$dataDir/records', dev);
+  Map<String, Map<String, dynamic>> loadRecords() =>
+      fs.loadRecords('$dataDir/records', onCorrupt: _sink);
+
+  @override
+  void persist(Map<String, dynamic> record) =>
+      fs.persist(record, '$dataDir/records', dev);
 
   @override
   void remove(String id) => fs.tombstone(id, '$dataDir/records', dev);
+
+  /// Preserve the exact pre-migration record bytes in device-local storage.
+  /// Backups are immutable and deterministic, so a restart cannot overwrite
+  /// the only rollback point with a partly migrated file.
+  MigrationBackup backupForMigration(
+    Map<String, dynamic> record,
+    int toVersion,
+  ) {
+    final id = record['id'] as String;
+    final typeId = record['typeId'] as String;
+    final fromVersion = (record['_schemaVersion'] as int?) ?? 1;
+    final safeId = base64Url.encode(utf8.encode(id)).replaceAll('=', '');
+    final safeType = base64Url.encode(utf8.encode(typeId)).replaceAll('=', '');
+    final source = File('$dataDir/records/$id.json');
+    if (!source.existsSync()) {
+      throw FileSystemException('Record source is missing', source.path);
+    }
+    final target = File(
+      '$deviceDir/migration-backups/'
+      '$safeType--$safeId--v$fromVersion-to-v$toVersion.json',
+    );
+    if (!target.existsSync()) {
+      target.parent.createSync(recursive: true);
+      final temp = File('${target.path}.tmp');
+      temp.writeAsBytesSync(source.readAsBytesSync(), flush: true);
+      temp.renameSync(target.path);
+    }
+    return MigrationBackup(
+      recordId: id,
+      typeId: typeId,
+      fromVersion: fromVersion,
+      toVersion: toVersion,
+      path: target.path,
+    );
+  }
+
+  /// Restore the exact file captured by [backupForMigration]. The descriptor
+  /// must point inside this repository's device-local migration backup root.
+  void restoreMigrationBackup(MigrationBackup backup) {
+    final root = Directory('$deviceDir/migration-backups').absolute.path;
+    final source = File(backup.path).absolute;
+    if (!source.path.startsWith('$root${Platform.pathSeparator}') ||
+        !source.existsSync()) {
+      throw FileSystemException('Invalid migration backup', source.path);
+    }
+    final target = File('$dataDir/records/${backup.recordId}.json');
+    target.parent.createSync(recursive: true);
+    final temp = File('${target.path}.migration-restore.tmp');
+    temp.writeAsBytesSync(source.readAsBytesSync(), flush: true);
+    temp.renameSync(target.path);
+  }
 
   /// The learned corpus is a whole-file rewrite on every learn/forget. A torn write here used to
   /// be fatal at NEXT LAUNCH — Router.load jsonDecodes it during init, so truncated JSON threw
@@ -109,7 +208,8 @@ class FileStorageRepository implements StorageRepository {
     try {
       return jsonDecode(f.readAsStringSync()) as List;
     } catch (e) {
-      _sink(f.path, e); // P2.8 — surfaced for repair, never a silent drop and never fatal
+      _sink(f.path,
+          e); // P2.8 — surfaced for repair, never a silent drop and never fatal
       return <dynamic>[];
     }
   }
@@ -132,7 +232,8 @@ class FileStorageRepository implements StorageRepository {
   void writeDef(String subdir, String idKey, Map<String, dynamic> def) {
     final f = File('$dataDir/$subdir/${def[idKey]}.json');
     f.parent.createSync(recursive: true);
-    fs.writeJsonAtomic(f, def); // atomic: a torn type/skill file is unrecoverable
+    fs.writeJsonAtomic(
+        f, def); // atomic: a torn type/skill file is unrecoverable
   }
 
   @override
@@ -144,7 +245,9 @@ class FileStorageRepository implements StorageRepository {
   @override
   void logTurn(Map<String, dynamic> entry) {
     final f = File('$deviceDir/turnlog.jsonl');
-    if (deviceDir != dataDir) f.parent.createSync(recursive: true); // the injected device-local dir may not exist yet
+    if (deviceDir != dataDir)
+      f.parent.createSync(
+          recursive: true); // the injected device-local dir may not exist yet
     f.writeAsStringSync('${jsonEncode(entry)}\n', mode: FileMode.append);
   }
 
@@ -155,7 +258,9 @@ class FileStorageRepository implements StorageRepository {
     if (!f.existsSync()) return {};
     try {
       final m = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
-      return {for (final e in m.entries) e.key: DateTime.parse(e.value as String)};
+      return {
+        for (final e in m.entries) e.key: DateTime.parse(e.value as String)
+      };
     } catch (_) {
       return {}; // corrupt state -> start fresh (a missed fire, never a crash)
     }
@@ -164,6 +269,7 @@ class FileStorageRepository implements StorageRepository {
   void saveAutomationState(Map<String, DateTime> state) {
     final f = File('$deviceDir/automation-state.json');
     if (deviceDir != dataDir) f.parent.createSync(recursive: true);
-    fs.writeJsonAtomic(f, {for (final e in state.entries) e.key: e.value.toIso8601String()});
+    fs.writeJsonAtomic(
+        f, {for (final e in state.entries) e.key: e.value.toIso8601String()});
   }
 }

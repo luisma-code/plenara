@@ -31,17 +31,21 @@ class HlcDevice {
 /// P2.8 (no silent failure) holds: the caller surfaces them for repair.
 typedef CorruptSink = void Function(String path, Object error);
 
-Map<String, Map<String, dynamic>> loadDefs(String dir, String key, {CorruptSink? onCorrupt}) {
+Map<String, Map<String, dynamic>> loadDefs(String dir, String key,
+    {CorruptSink? onCorrupt}) {
   final out = <String, Map<String, dynamic>>{};
   final d = Directory(dir);
-  if (!d.existsSync()) return out; // an optional subdir (e.g. templates) may be absent
+  if (!d.existsSync())
+    return out; // an optional subdir (e.g. templates) may be absent
   for (final f in d.listSync().whereType<File>()) {
     if (!f.path.endsWith('.json')) continue;
     try {
       final j = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
-      out[j[key] as String] = j; // a corrupt/half-synced DEF must NOT throw the whole load
+      out[j[key] as String] =
+          j; // a corrupt/half-synced DEF must NOT throw the whole load
     } catch (e) {
-      onCorrupt?.call(f.path, e); // surface it (P2.8) rather than crashing startup
+      onCorrupt?.call(
+          f.path, e); // surface it (P2.8) rather than crashing startup
     }
   }
   return out;
@@ -56,7 +60,8 @@ void writeJsonAtomic(File file, Object? json) => _atomicWrite(file, json);
 /// Tombstoned records are skipped (a delete stays present-but-invisible), and a
 /// single corrupt/partial file is skipped rather than throwing (the folder is a
 /// cloud-sync target, so half-written files are expected, not exotic).
-Map<String, Map<String, dynamic>> loadRecords(String dir, {CorruptSink? onCorrupt}) {
+Map<String, Map<String, dynamic>> loadRecords(String dir,
+    {CorruptSink? onCorrupt}) {
   final store = <String, Map<String, dynamic>>{};
   final d = Directory(dir);
   if (!d.existsSync()) return store;
@@ -66,15 +71,22 @@ Map<String, Map<String, dynamic>> loadRecords(String dir, {CorruptSink? onCorrup
     try {
       rec = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
     } catch (e) {
-      onCorrupt?.call(f.path, e); // surface it (P2.8), don't brick the whole load OR drop silently
+      onCorrupt?.call(f.path,
+          e); // surface it (P2.8), don't brick the whole load OR drop silently
       continue;
     }
     final meta = rec['_meta'];
-    if (meta is Map && meta['deleted'] == true) continue; // tombstone -> not in the live store
+    if (meta is Map && meta['deleted'] == true)
+      continue; // tombstone -> not in the live store
+    final fields =
+        (rec['fields'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+    final schemaVersion = rec['schemaVersion'] ?? fields['_schemaVersion'];
     store[rec['id'] as String] = {
       'id': rec['id'],
       'typeId': rec['typeId'],
-      ...((rec['fields'] as Map?)?.cast<String, dynamic>() ?? const {}),
+      for (final entry in fields.entries)
+        if (entry.key != '_schemaVersion') entry.key: entry.value,
+      if (schemaVersion != null) '_schemaVersion': schemaVersion,
     };
   }
   return store;
@@ -82,8 +94,8 @@ Map<String, Map<String, dynamic>> loadRecords(String dir, {CorruptSink? onCorrup
 
 /// Reverse a turn from its before-images (Spec 02 §5.4 / Spec 04 §3.11): a
 /// created record (prior == null) is TOMBSTONED; an updated one is restored.
-void undoTurn(Map<String, Map<String, dynamic>?> before, String dir, HlcDevice dev,
-    Map<String, Map<String, dynamic>> store) {
+void undoTurn(Map<String, Map<String, dynamic>?> before, String dir,
+    HlcDevice dev, Map<String, Map<String, dynamic>> store) {
   before.forEach((id, prior) {
     if (prior == null) {
       store.remove(id);
@@ -132,38 +144,47 @@ bool _sameJson(Object? a, Object? b) {
 void persist(Map<String, dynamic> flat, String dir, HlcDevice dev) {
   Directory(dir).createSync(recursive: true);
   final file = File('$dir/${flat['id']}.json');
-  Map<String, dynamic> priorFields = const {}, priorStamps = const {}, priorTombs = const {};
+  Map<String, dynamic> priorFields = const {},
+      priorStamps = const {},
+      priorTombs = const {};
   List<dynamic> priorConflicts = const [];
   if (file.existsSync()) {
     try {
       final prev = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-      priorFields = (prev['fields'] as Map?)?.cast<String, dynamic>() ?? const {};
+      priorFields = Map<String, dynamic>.from(
+          (prev['fields'] as Map?)?.cast<String, dynamic>() ?? const {});
+      priorFields.remove('_schemaVersion'); // legacy pre-envelope placement
       final m = prev['_meta'];
       if (m is Map) {
-        priorStamps = (m['stamps'] as Map?)?.cast<String, dynamic>() ?? const {};
+        priorStamps =
+            (m['stamps'] as Map?)?.cast<String, dynamic>() ?? const {};
         priorConflicts = (m['conflicts'] as List?) ?? const [];
-        priorTombs = (m['fieldTombstones'] as Map?)?.cast<String, dynamic>() ?? const {};
+        priorTombs =
+            (m['fieldTombstones'] as Map?)?.cast<String, dynamic>() ?? const {};
       }
     } catch (_) {/* prior unreadable -> treat all fields as changed */}
   }
   final fields = <String, dynamic>{};
   final stamps = <String, dynamic>{};
   flat.forEach((k, v) {
-    if (k == 'id' || k == 'typeId') return;
+    if (k == 'id' || k == 'typeId' || k == '_schemaVersion') return;
     fields[k] = v;
-    final unchanged =
-        priorStamps[k] != null && priorFields.containsKey(k) && _sameJson(priorFields[k], v);
+    final unchanged = priorStamps[k] != null &&
+        priorFields.containsKey(k) &&
+        _sameJson(priorFields[k], v);
     stamps[k] = unchanged ? priorStamps[k] : dev.stamp();
   });
   // Fields that were present (or already tombstoned) and are absent now.
   final tombstones = <String, dynamic>{};
   for (final k in {...priorFields.keys, ...priorTombs.keys}) {
-    if (fields.containsKey(k)) continue; // came back -> live again, no tombstone
+    if (fields.containsKey(k))
+      continue; // came back -> live again, no tombstone
     tombstones[k] = priorTombs[k] ?? dev.stamp(); // stamp once, at removal
   }
   _atomicWrite(file, {
     'id': flat['id'],
     'typeId': flat['typeId'],
+    'schemaVersion': flat['_schemaVersion'] ?? 1,
     'fields': fields,
     '_meta': {
       'stamps': stamps,
@@ -188,7 +209,8 @@ void tombstone(String id, String dir, HlcDevice dev) {
   } catch (_) {
     rec = <String, dynamic>{'id': id};
   }
-  final meta = (rec['_meta'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+  final meta =
+      (rec['_meta'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
   meta['deleted'] = true;
   meta['deletedStamp'] = dev.stamp();
   rec['_meta'] = meta;

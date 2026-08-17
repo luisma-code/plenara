@@ -384,8 +384,10 @@ class RoutineRun {
   int get total => steps.length;
 
   /// Seconds this step should hold, or null for a rep-based step (which waits for the user).
-  int? get currentSeconds => (current?['durationSeconds'] as num?)?.toInt();
-  int? get currentReps => (current?['reps'] as num?)?.toInt();
+  int? get currentSeconds =>
+      num.tryParse('${current?['durationSeconds'] ?? ''}')?.toInt();
+  int? get currentReps =>
+      num.tryParse('${current?['reps'] ?? ''}')?.toInt();
 
   /// The catalogue key of the current step, if it has one — drives which illustration to show.
   String? get currentExerciseKey => current?['exerciseKey'] as String?;

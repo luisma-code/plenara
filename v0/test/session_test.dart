@@ -25,11 +25,15 @@ class _MemStorage implements StorageRepository {
   _MemStorage(this.types, this.skills);
   @override
   Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) =>
-      subdir == 'types' ? types : (subdir == 'skills' ? skills : <String, Map<String, dynamic>>{});
+      subdir == 'types'
+          ? types
+          : (subdir == 'skills' ? skills : <String, Map<String, dynamic>>{});
   @override
-  Map<String, Map<String, dynamic>> loadRecords() => {for (final e in records.entries) e.key: Map.of(e.value)};
+  Map<String, Map<String, dynamic>> loadRecords() =>
+      {for (final e in records.entries) e.key: Map.of(e.value)};
   @override
-  void persist(Map<String, dynamic> record) => records[record['id'] as String] = Map.of(record);
+  void persist(Map<String, dynamic> record) =>
+      records[record['id'] as String] = Map.of(record);
   @override
   void remove(String id) => records.remove(id);
   @override
@@ -37,12 +41,14 @@ class _MemStorage implements StorageRepository {
   @override
   void appendCorpusLearned(Map<String, dynamic> entry) => learned.add(entry);
   @override
-  void removeCorpusLearned(String template) => learned.removeWhere((e) => (e as Map)['template'] == template);
+  void removeCorpusLearned(String template) =>
+      learned.removeWhere((e) => (e as Map)['template'] == template);
   @override
   void writeDef(String subdir, String idKey, Map<String, dynamic> def) =>
       (subdir == 'types' ? types : skills)[def[idKey] as String] = def;
   @override
-  void removeDef(String subdir, String id) => (subdir == 'types' ? types : skills).remove(id);
+  void removeDef(String subdir, String id) =>
+      (subdir == 'types' ? types : skills).remove(id);
   @override
   void logTurn(Map<String, dynamic> entry) => turns.add(entry);
 }
@@ -64,26 +70,35 @@ class _NoCloud implements CloudClient {
   Future<CloudResult<Map<String, dynamic>?>> routeResidual(
           String utterance, Map<String, Map<String, dynamic>> skills,
           {Set<String> knownContacts = const {}}) async =>
-      throw StateError('cloud routeResidual called for "$utterance" — expected a corpus/offline path');
+      throw StateError(
+          'cloud routeResidual called for "$utterance" — expected a corpus/offline path');
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String description, {String? priorError}) async =>
-      throw StateError('cloud authorCapability called — expected a corpus/offline path');
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(
+          String description,
+          {String? priorError}) async =>
+      throw StateError(
+          'cloud authorCapability called — expected a corpus/offline path');
   @override
   Future<CloudResult<String>> generate(String kind, String context) async =>
-      throw StateError('cloud generate called — expected a corpus/offline path');
+      throw StateError(
+          'cloud generate called — expected a corpus/offline path');
 }
 
 /// A cloud with no key set — every call fails cleanly with noKey (the common pre-BYOK dogfood
 /// state), so a miss is a real "corpus + cloud couldn't help" rather than a thrown exception.
 class _NoKeyCloud implements CloudClient {
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s, {Set<String> knownContacts = const {}}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
+          String u, Map<String, Map<String, dynamic>> s,
+          {Set<String> knownContacts = const {}}) async =>
       const CloudError(CloudErrorKind.noKey);
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d,
+          {String? priorError}) async =>
       const CloudError(CloudErrorKind.noKey);
   @override
-  Future<CloudResult<String>> generate(String k, String c) async => const CloudError(CloudErrorKind.noKey);
+  Future<CloudResult<String>> generate(String k, String c) async =>
+      const CloudError(CloudErrorKind.noKey);
 }
 
 /// Captures the knownContacts the session hands the router (Phase 1 entity resolution),
@@ -93,16 +108,20 @@ class _CapturingCloud implements CloudClient {
   final Map<String, dynamic>? route;
   _CapturingCloud(this.route);
   @override
-  Future<CloudResult<Map<String, dynamic>?>> routeResidual(String u, Map<String, Map<String, dynamic>> s,
+  Future<CloudResult<Map<String, dynamic>?>> routeResidual(
+      String u, Map<String, Map<String, dynamic>> s,
       {Set<String> knownContacts = const {}}) async {
     lastContacts = knownContacts;
     return CloudOk(route);
   }
+
   @override
-  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d, {String? priorError}) async =>
+  Future<CloudResult<Map<String, dynamic>?>> authorCapability(String d,
+          {String? priorError}) async =>
       const CloudOk(null);
   @override
-  Future<CloudResult<String>> generate(String k, String c) async => const CloudError(CloudErrorKind.noKey);
+  Future<CloudResult<String>> generate(String k, String c) async =>
+      const CloudError(CloudErrorKind.noKey);
 }
 
 Future<Session> _session([String? dir]) async {
@@ -113,18 +132,26 @@ Future<Session> _session([String? dir]) async {
 
 void main() {
   group('device-local artifacts stay off the synced folder (CS-01/CS-02)', () {
-    test('injected deviceDir holds deviceId + turnlog; the synced dataDir stays clean', () async {
+    test(
+        'injected deviceDir holds deviceId + turnlog; the synced dataDir stays clean',
+        () async {
       final dataDir = makeTempDataDir();
       final deviceDir = Directory.systemTemp.createTempSync('plenara-dev').path;
-      final s = Session(dataDir, clock: _now, cloud: _NoCloud(), deviceDir: deviceDir);
+      final s = Session(dataDir,
+          clock: _now, cloud: _NoCloud(), deviceDir: deviceDir);
       await s.init(retrieval: false);
-      await s.handle('log a run'); // a real turn -> a turnlog line + a minted deviceId
+      await s.handle(
+          'log a run'); // a real turn -> a turnlog line + a minted deviceId
       expect(File('$deviceDir/.device-id').existsSync(), isTrue);
       expect(File('$deviceDir/turnlog.jsonl').existsSync(), isTrue);
-      expect(File('$dataDir/.device-id').existsSync(), isFalse, reason: 'a synced deviceId defeats the HLC tie-break');
-      expect(File('$dataDir/turnlog.jsonl').existsSync(), isFalse, reason: 'telemetry must not ride the sync folder');
+      expect(File('$dataDir/.device-id').existsSync(), isFalse,
+          reason: 'a synced deviceId defeats the HLC tie-break');
+      expect(File('$dataDir/turnlog.jsonl').existsSync(), isFalse,
+          reason: 'telemetry must not ride the sync folder');
     });
-    test('default deviceDir keeps them in dataDir (backward-compatible CLI/tests)', () async {
+    test(
+        'default deviceDir keeps them in dataDir (backward-compatible CLI/tests)',
+        () async {
       final dataDir = makeTempDataDir();
       final s = Session(dataDir, clock: _now, cloud: _NoCloud());
       await s.init(retrieval: false);
@@ -133,7 +160,9 @@ void main() {
     });
   });
 
-  group('corrupt files are surfaced, never silently dropped or crashed (P2.8, Spec 06)', () {
+  group(
+      'corrupt files are surfaced, never silently dropped or crashed (P2.8, Spec 06)',
+      () {
     test('a corrupt record file is skipped AND surfaced for repair', () async {
       final dataDir = makeTempDataDir();
       Directory('$dataDir/records').createSync(recursive: true);
@@ -142,7 +171,9 @@ void main() {
       await s.init(retrieval: false); // must NOT throw
       expect(s.corruptFiles.any((p) => p.endsWith('bad.json')), isTrue);
     });
-    test('a corrupt type def does not crash startup (loadDefs was an unguarded throw)', () async {
+    test(
+        'a corrupt type def does not crash startup (loadDefs was an unguarded throw)',
+        () async {
       final dataDir = makeTempDataDir();
       File('$dataDir/types/bad.json').writeAsStringSync('not json at all');
       final s = Session(dataDir, clock: _now, cloud: _NoCloud());
@@ -151,7 +182,9 @@ void main() {
     });
   });
 
-  group('automation Review Feed — approve/decline a held write from the chat (Spec 02 §7.5)', () {
+  group(
+      'automation Review Feed — approve/decline a held write from the chat (Spec 02 §7.5)',
+      () {
     Map<String, dynamic> stretchAutomation() => {
           'automationId': 'stretch-after-run',
           'targetType': 'workout',
@@ -159,12 +192,28 @@ void main() {
           'skillId': 'stretch-skill',
           'description': 'add a stretch task after a workout',
           'skill': {
-            'skillId': 'stretch-skill', 'displayName': 'Stretch task', 'inputs': [], 'reads': [], 'writes': ['task'],
+            'skillId': 'stretch-skill',
+            'displayName': 'Stretch task',
+            'inputs': [],
+            'reads': [],
+            'writes': ['task'],
             'steps': {
               'main': [
                 {'op': 'compute', 'fn': 'today', 'into': 'ca'},
-                {'op': 'write_record', 'typeId': 'task', 'fields': {'description': 'stretch', 'createdAt': {'var': 'ca'}}, 'into': 'r'},
-                {'op': 'format', 'template': 'queued a stretch task', 'into': 'confirmationText'},
+                {
+                  'op': 'write_record',
+                  'typeId': 'task',
+                  'fields': {
+                    'description': 'stretch',
+                    'createdAt': {'var': 'ca'}
+                  },
+                  'into': 'r'
+                },
+                {
+                  'op': 'format',
+                  'template': 'queued a stretch task',
+                  'into': 'confirmationText'
+                },
               ]
             }
           }
@@ -172,42 +221,53 @@ void main() {
     Future<Session> withStretch() async {
       final dir = makeTempDataDir();
       Directory('$dir/automations').createSync(recursive: true);
-      File('$dir/automations/stretch.json').writeAsStringSync(jsonEncode(stretchAutomation()));
+      File('$dir/automations/stretch.json')
+          .writeAsStringSync(jsonEncode(stretchAutomation()));
       final s = Session(dir, clock: _now, cloud: _NoCloud());
       await s.init(retrieval: false);
       return s;
     }
 
-    bool hasStretch(Session s) => s.store.values.any((x) => x['typeId'] == 'task' && x['description'] == 'stretch');
+    bool hasStretch(Session s) => s.store.values
+        .any((x) => x['typeId'] == 'task' && x['description'] == 'stretch');
 
-    test('a writing automation is HELD (not applied) until "approve it"', () async {
+    test('a writing automation is HELD (not applied) until "approve it"',
+        () async {
       final s = await withStretch();
-      await s.handle('log a run'); // fires the automation, whose plan WRITES -> held for review
-      expect(hasStretch(s), isFalse, reason: 'a writing automation must not auto-apply');
+      await s.handle(
+          'log a run'); // fires the automation, whose plan WRITES -> held for review
+      expect(hasStretch(s), isFalse,
+          reason: 'a writing automation must not auto-apply');
       expect(s.automations.pendingReview, isNotEmpty);
       expect((await s.handle('approve it')).toLowerCase(), contains('applied'));
       expect(hasStretch(s), isTrue);
     });
-    test('an APPROVED automation write is undoable, and undo does not hit an unrelated write', () async {
+    test(
+        'an APPROVED automation write is undoable, and undo does not hit an unrelated write',
+        () async {
       // CLAUDE.md, Things NOT to do: "Don't let automations lower a skill's undoability."
       // Approving executed + persisted with no journal entry, so "undo that" either found
       // nothing or reversed the PREVIOUS unrelated write instead.
       final s = await withStretch();
-      await s.handle('add buy milk to my list'); // an earlier, unrelated journaled write
+      await s.handle(
+          'add buy milk to my list'); // an earlier, unrelated journaled write
       await s.handle('log a run'); // fires the writing automation -> held
       expect((await s.handle('approve it')).toLowerCase(), contains('applied'));
       expect(hasStretch(s), isTrue);
       final undo = await s.handle('undo that');
       expect(undo.toLowerCase(), contains('undone'));
-      expect(hasStretch(s), isFalse, reason: 'undo must reverse the approved automation write');
+      expect(hasStretch(s), isFalse,
+          reason: 'undo must reverse the approved automation write');
       expect(s.store.values.any((x) => x['description'] == 'buy milk'), isTrue,
-          reason: 'and must NOT have reached back to the unrelated earlier write');
+          reason:
+              'and must NOT have reached back to the unrelated earlier write');
     });
 
     test('"dismiss it" reaps the held write, nothing applied', () async {
       final s = await withStretch();
       await s.handle('log a run');
-      expect((await s.handle('dismiss it')).toLowerCase(), contains('dismissed'));
+      expect(
+          (await s.handle('dismiss it')).toLowerCase(), contains('dismissed'));
       expect(hasStretch(s), isFalse);
       expect(s.automations.pendingReview, isEmpty);
     });
@@ -222,16 +282,21 @@ void main() {
     });
     test('"remind me to stretch in an hour"', () async {
       final s = await _session();
-      expect((await s.handle('remind me to stretch in an hour')).toLowerCase(), contains('stretch'));
+      expect((await s.handle('remind me to stretch in an hour')).toLowerCase(),
+          contains('stretch'));
     });
   });
 
   group('gap-fill batch — new capabilities', () {
-    test('partial description: "remove milk from my list" matches "buy milk"', () async {
+    test('partial description: "remove milk from my list" matches "buy milk"',
+        () async {
       final s = await _session();
       await s.handle('add buy milk to my list');
       await s.handle('remove milk from my list');
-      expect(s.store.values.where((x) => x['typeId'] == 'task' && x['completed'] != true), isEmpty);
+      expect(
+          s.store.values
+              .where((x) => x['typeId'] == 'task' && x['completed'] != true),
+          isEmpty);
     });
     test('log-workout logs a generic activity', () async {
       final s = await _session();
@@ -239,17 +304,22 @@ void main() {
       final w = s.store.values.firstWhere((x) => x['typeId'] == 'workout');
       expect(w['activity'].toString().toLowerCase(), contains('bike'));
     });
-    test('offline interaction captures kind + a past date, and the list renders both (b #1/#4/#8)', () async {
+    test(
+        'offline interaction captures kind + a past date, and the list renders both (b #1/#4/#8)',
+        () async {
       final s = await _session();
       final logged = await s.handle('had dinner with Katherine yesterday');
       expect(logged.toLowerCase(), contains('dinner'));
-      final rec = s.store.values.firstWhere((x) => x['typeId'] == 'interaction');
+      final rec =
+          s.store.values.firstWhere((x) => x['typeId'] == 'interaction');
       expect(rec['kind'], 'dinner');
-      expect(rec['at'], '2026-07-05'); // yesterday, resolved backward — not a future date
+      expect(rec['at'],
+          '2026-07-05'); // yesterday, resolved backward — not a future date
       final list = await s.handle('list my interactions with Katherine');
       expect(list, contains('dinner')); // the kind is shown in the line
     });
-    test('last-interaction names the kind of the most recent one (b #8)', () async {
+    test('last-interaction names the kind of the most recent one (b #8)',
+        () async {
       final s = await _session();
       await s.handle('had coffee with Priya');
       final last = await s.handle('when did i last talk to Priya');
@@ -258,7 +328,8 @@ void main() {
     test('list-meals shows today\'s meals', () async {
       final s = await _session();
       await s.handle('i ate a banana');
-      expect((await s.handle('what did i eat today')).toLowerCase(), contains('banana'));
+      expect((await s.handle('what did i eat today')).toLowerCase(),
+          contains('banana'));
     });
     test('walk-distance totals walks', () async {
       final s = await _session();
@@ -268,13 +339,15 @@ void main() {
     test('recall-latest-journal returns the last entry', () async {
       final s = await _session();
       await s.handle('journal that today was productive');
-      expect((await s.handle('read my last journal entry')).toLowerCase(), contains('productive'));
+      expect((await s.handle('read my last journal entry')).toLowerCase(),
+          contains('productive'));
     });
     test('list-completed-tasks after completing one', () async {
       final s = await _session();
       await s.handle('add call the bank to my list');
       await s.handle('mark call the bank as done');
-      expect((await s.handle('what have i completed')).toLowerCase(), contains('bank'));
+      expect((await s.handle('what have i completed')).toLowerCase(),
+          contains('bank'));
     });
   });
 
@@ -288,7 +361,8 @@ void main() {
     test('water-this-week query routes + runs', () async {
       final s = await _session();
       await s.handle('start tracking my water');
-      expect((await s.handle('how much water this week')).toLowerCase(), contains('water'));
+      expect((await s.handle('how much water this week')).toLowerCase(),
+          contains('water'));
     });
   });
 
@@ -312,7 +386,8 @@ void main() {
     });
     test('clear on an empty list says so', () async {
       final s = await _session();
-      expect((await s.handle('delete all todos')).toLowerCase(), contains('already empty'));
+      expect((await s.handle('delete all todos')).toLowerCase(),
+          contains('already empty'));
     });
     test('undo restores the cleared tasks', () async {
       final s = await _session();
@@ -324,7 +399,9 @@ void main() {
   });
 
   group('helpful replies for meta-questions', () {
-    test('"can I start a todo list" explains the built-in list instead of missing', () async {
+    test(
+        '"can I start a todo list" explains the built-in list instead of missing',
+        () async {
       final s = await _session();
       final r = (await s.handle('can i start a todo list')).toLowerCase();
       expect(r, contains('add')); // guidance, not "I didn't catch that"
@@ -338,16 +415,19 @@ void main() {
       final r = (await s.handle('i ate mac and cheese')).toLowerCase();
       expect(r, contains('390'));
       final meal = s.store.values.firstWhere((x) => x['typeId'] == 'meal');
-      expect(meal['kcal'], 390);
-      expect(meal['provenance'], 'reference'); // never confused with a user-entered number
+      expect(meal['kcal'], '390');
+      expect(meal['provenance'],
+          'reference'); // never confused with a user-entered number
     });
     test('meal type is captured (gap #7): "eggs for breakfast"', () async {
       final s = await _session();
       await s.handle('i had eggs for breakfast');
       await s.handle('ate pasta for dinner');
       final meals = s.store.values.where((x) => x['typeId'] == 'meal').toList();
-      expect(meals.firstWhere((m) => m['food'] == 'eggs')['mealType'], 'breakfast');
-      expect(meals.firstWhere((m) => m['food'] == 'pasta')['mealType'], 'dinner');
+      expect(meals.firstWhere((m) => m['food'] == 'eggs')['mealType'],
+          'breakfast');
+      expect(
+          meals.firstWhere((m) => m['food'] == 'pasta')['mealType'], 'dinner');
     });
     test('an article is normalized away ("a banana" -> banana)', () async {
       final s = await _session();
@@ -355,9 +435,12 @@ void main() {
     });
     test('an unknown food logs honestly — no guessed number', () async {
       final s = await _session();
-      final r = (await s.handle('i ate grandmothers secret stew')).toLowerCase();
+      final r =
+          (await s.handle('i ate grandmothers secret stew')).toLowerCase();
       expect(r, contains("don't have calorie data"));
-      expect(s.store.values.firstWhere((x) => x['typeId'] == 'meal')['provenance'], 'user');
+      expect(
+          s.store.values.firstWhere((x) => x['typeId'] == 'meal')['provenance'],
+          'user');
     });
     test('calories today sums the logged meals', () async {
       final s = await _session();
@@ -367,7 +450,8 @@ void main() {
     });
   });
 
-  group('content search (F-12) — "find that note about…", offline via keyword', () {
+  group('content search (F-12) — "find that note about…", offline via keyword',
+      () {
     test('finds a journal entry by keyword', () async {
       final s = await _session();
       await s.handle('journal that the cabin trip to the lake was so peaceful');
@@ -377,69 +461,112 @@ void main() {
     test('"search my notes for X" also works', () async {
       final s = await _session();
       await s.handle('journal that I finally fixed the leaky kitchen faucet');
-      expect((await s.handle('search my notes for the faucet')).toLowerCase(), contains('faucet'));
+      expect((await s.handle('search my notes for the faucet')).toLowerCase(),
+          contains('faucet'));
     });
     test('a miss is honest, never a silent failure', () async {
       final s = await _session();
       await s.handle('journal that today was a good day');
-      expect((await s.handle('find that note about quantum physics')).toLowerCase(), contains("couldn't find"));
+      expect(
+          (await s.handle('find that note about quantum physics'))
+              .toLowerCase(),
+          contains("couldn't find"));
     });
   });
 
   group('offline fact recall (F-08) — a :contact-guarded fact query', () {
-    test('"what is Mia allergic to" recalls the filtered fact offline', () async {
+    test('"what is Mia allergic to" recalls the filtered fact offline',
+        () async {
       final s = await _session();
       await s.handle("Sarah's daughter Mia is allergic to peanuts");
-      expect((await s.handle('what is Mia allergic to')).toLowerCase(), contains('peanuts'));
+      expect((await s.handle('what is Mia allergic to')).toLowerCase(),
+          contains('peanuts'));
     });
-    test('a trailing "?" does not leak into the fact filter (question phrasing works)', () async {
+    test(
+        'a trailing "?" does not leak into the fact filter (question phrasing works)',
+        () async {
       final s = await _session();
       await s.handle("Sarah's daughter Mia is allergic to peanuts");
-      expect((await s.handle('what is Mia allergic to?')).toLowerCase(), contains('peanuts'));
+      expect((await s.handle('what is Mia allergic to?')).toLowerCase(),
+          contains('peanuts'));
     });
-    test('the :contact guard keeps world-knowledge OUT (no over-match to recall)', () async {
+    test(
+        'the :contact guard keeps world-knowledge OUT (no over-match to recall)',
+        () async {
       final s = await _session();
       final r = (await s.handle('what is the capital of france')).toLowerCase();
-      expect(r, isNot(contains("don't know anyone named the"))); // recall-fact-about did NOT fire
+      expect(
+          r,
+          isNot(contains(
+              "don't know anyone named the"))); // recall-fact-about did NOT fire
     });
-    test('the :contact guard lets template queries win ("my" is not a contact)', () async {
+    test('the :contact guard lets template queries win ("my" is not a contact)',
+        () async {
       final s = await _session();
       await s.handle('start tracking my reading');
       await s.handle('i read 20 pages');
       final r = (await s.handle("what's my reading streak")).toLowerCase();
-      expect(r, isNot(contains("don't know anyone"))); // reading-streak, not recall-fact-about
+      expect(
+          r,
+          isNot(contains(
+              "don't know anyone"))); // reading-streak, not recall-fact-about
     });
   });
 
-  group('template vs customization overlap (live-caught) — a unit/field prefers authoring', () {
-    test('"start tracking my water intake in glasses" offers authoring, not the ml template', () async {
+  group(
+      'template vs customization overlap (live-caught) — a unit/field prefers authoring',
+      () {
+    test(
+        '"start tracking my water intake in glasses" offers authoring, not the ml template',
+        () async {
       final s = await _session();
-      s.confirmCloudSpend = true; // the assertion is about the OFFER, which is now opt-in
-      final r = (await s.handle('start tracking my water intake in glasses')).toLowerCase();
-      expect(r, anyOf(contains('want me to go ahead'), contains('build you a custom')));
-      expect(r, isNot(contains('ml'))); // the ml-based water template did NOT pre-empt it
+      s.confirmCloudSpend =
+          true; // the assertion is about the OFFER, which is now opt-in
+      final r = (await s.handle('start tracking my water intake in glasses'))
+          .toLowerCase();
+      expect(
+          r,
+          anyOf(
+              contains('want me to go ahead'), contains('build you a custom')));
+      expect(
+          r,
+          isNot(contains(
+              'ml'))); // the ml-based water template did NOT pre-empt it
     });
-    test('plain "start tracking my water" still hits the free template', () async {
+    test('plain "start tracking my water" still hits the free template',
+        () async {
       final s = await _session();
       final r = (await s.handle('start tracking my water')).toLowerCase();
-      expect(r, isNot(contains('want me to go ahead'))); // template, not paid authoring
+      expect(
+          r,
+          isNot(
+              contains('want me to go ahead'))); // template, not paid authoring
     });
-    test('a time qualifier "in the morning" does NOT trip the customization guard', () async {
+    test(
+        'a time qualifier "in the morning" does NOT trip the customization guard',
+        () async {
       final s = await _session();
-      final r = (await s.handle('start tracking my steps in the morning')).toLowerCase();
-      expect(r, isNot(contains('want me to go ahead'))); // steps template still fires
+      final r = (await s.handle('start tracking my steps in the morning'))
+          .toLowerCase();
+      expect(r,
+          isNot(contains('want me to go ahead'))); // steps template still fires
     });
   });
 
-  group('goal-progress (P-18 offline) — set a goal, track % via mul/div/round', () {
+  group('goal-progress (P-18 offline) — set a goal, track % via mul/div/round',
+      () {
     test('set a goal, log runs, get progress percentage', () async {
       final s = await _session();
-      expect((await s.handle('how am i doing on my goal')).toLowerCase(), contains("haven't set")); // no goal yet
+      expect((await s.handle('how am i doing on my goal')).toLowerCase(),
+          contains("haven't set")); // no goal yet
       await s.handle('set a goal to run 50k');
       await s.handle('log a 3k run');
       await s.handle('log a 2k run'); // 5 of 50 km
       final r = await s.handle('how am i doing on my goal');
-      expect(r, contains('10%')); // round(100 * 5/50) — proves div+mul+round in a real skill
+      expect(
+          r,
+          contains(
+              '10%')); // round(100 * 5/50) — proves div+mul+round in a real skill
       expect(r.toLowerCase(), contains('goal'));
     });
 
@@ -449,7 +576,7 @@ void main() {
       await s.handle('set a goal to run 40k');
       final goals = s.store.values.where((x) => x['typeId'] == 'goal').toList();
       expect(goals.length, 1);
-      expect(goals.single['target'], 40);
+      expect(goals.single['target'], '40');
     });
 
     test('"change my goal to 60k" updates the target (gap #3)', () async {
@@ -459,20 +586,23 @@ void main() {
       expect(r, contains('60'));
       final goals = s.store.values.where((x) => x['typeId'] == 'goal').toList();
       expect(goals.length, 1);
-      expect(goals.single['target'], 60);
+      expect(goals.single['target'], '60');
     });
 
     test('"delete my running goal" clears it (gap #3)', () async {
       final s = await _session();
       await s.handle('set a goal to run 50k');
       await s.handle('delete my running goal');
-      expect(s.store.values.where((x) => x['typeId'] == 'goal').isEmpty, isTrue);
-      expect((await s.handle('how am i doing on my goal')).toLowerCase(), contains("haven't set"));
+      expect(
+          s.store.values.where((x) => x['typeId'] == 'goal').isEmpty, isTrue);
+      expect((await s.handle('how am i doing on my goal')).toLowerCase(),
+          contains("haven't set"));
     });
 
     test('clearing with no goal set is a graceful no-op', () async {
       final s = await _session();
-      expect((await s.handle('delete my running goal')).toLowerCase(), contains("don't have a running goal"));
+      expect((await s.handle('delete my running goal')).toLowerCase(),
+          contains("don't have a running goal"));
     });
   });
 
@@ -491,22 +621,23 @@ void main() {
       await s.handle('log a 3k run');
       final w = s.store.values.firstWhere((x) => x['typeId'] == 'workout');
       expect(w['route'], isNull);
-      expect(w['distance'], 3);
+      expect(w['distance'], '3');
     });
 
-    test('miles are converted to km on the SAME skill (logging gap #1)', () async {
+    test('miles are converted to km on the SAME skill (logging gap #1)',
+        () async {
       final s = await _session();
       await s.handle('ran 3 miles'); // 3 * 1.609 = 4.827 -> rounds to 5 km
       final w = s.store.values.firstWhere((x) => x['typeId'] == 'workout');
       expect(w['activity'], 'run');
-      expect(w['distance'], 5); // stored in km, the tracker's canonical unit
+      expect(w['distance'], '5'); // exact decimal string, stored in km
     });
 
     test('a 10k run in miles (6.2) lands on 10 km', () async {
       final s = await _session();
       await s.handle('i ran 6.2 miles');
       final w = s.store.values.firstWhere((x) => x['typeId'] == 'workout');
-      expect(w['distance'], 10);
+      expect(w['distance'], '10');
     });
   });
 
@@ -528,10 +659,13 @@ void main() {
 
     test('no runs -> a clear message', () async {
       final s = await _session();
-      expect((await s.handle('how far have i run this week')).toLowerCase(), contains("haven't logged any runs"));
+      expect((await s.handle('how far have i run this week')).toLowerCase(),
+          contains("haven't logged any runs"));
     });
 
-    test('"what\'s my longest streak" routes to the streak view (queries gap #3)', () async {
+    test(
+        '"what\'s my longest streak" routes to the streak view (queries gap #3)',
+        () async {
       final s = await _session();
       await s.handle('log a 3k run');
       final r = await s.handle("what's my longest streak");
@@ -539,9 +673,12 @@ void main() {
     });
   });
 
-  group('turnlog diagnostics — enough to diagnose a bad turn from the log alone', () {
+  group(
+      'turnlog diagnostics — enough to diagnose a bad turn from the log alone',
+      () {
     Map<String, dynamic> lastTurn(String dir) =>
-        jsonDecode(File('$dir/turnlog.jsonl').readAsLinesSync().last) as Map<String, dynamic>;
+        jsonDecode(File('$dir/turnlog.jsonl').readAsLinesSync().last)
+            as Map<String, dynamic>;
 
     test('a MISS records diag: corpus no-match + the cloud outcome', () async {
       final dir = makeTempDataDir();
@@ -552,21 +689,28 @@ void main() {
       expect(t['source'], 'clarify');
       final diag = t['diag'] as Map;
       expect(diag['corpus'], 'no-match');
-      expect(diag['cloud'], contains('noKey')); // the cloud couldn't help — and WHY
+      expect(diag['cloud'],
+          contains('noKey')); // the cloud couldn't help — and WHY
     });
 
-    test('the turn trace records WHICH record each read resolved to (diagnose wrong-match)', () async {
+    test(
+        'the turn trace records WHICH record each read resolved to (diagnose wrong-match)',
+        () async {
       final dir = makeTempDataDir();
       final s = Session(dir, clock: _now, cloud: _NoCloud());
       await s.init(retrieval: false);
       await s.handle('talked to Sam Rivera');
-      await s.handle('when did i last talk to Sam'); // resolves "Sam" -> "Sam Rivera"
+      await s.handle(
+          'when did i last talk to Sam'); // resolves "Sam" -> "Sam Rivera"
       final reads = lastTurn(dir)['reads'] as List;
       final contactRead = reads.firstWhere((r) => r['type'] == 'contact');
-      expect(contactRead['resolved'], 'Sam Rivera'); // the log shows the exact record matched
+      expect(contactRead['resolved'],
+          'Sam Rivera'); // the log shows the exact record matched
     });
 
-    test('an unattended onWrite automation fire is recorded in the turn that triggered it', () async {
+    test(
+        'an unattended onWrite automation fire is recorded in the turn that triggered it',
+        () async {
       final dir = makeTempDataDir();
       Directory('$dir/automations').createSync(recursive: true);
       File('$dir/automations/enc.json').writeAsStringSync(jsonEncode({
@@ -576,25 +720,43 @@ void main() {
         'skillId': 'enc-skill',
         'description': 'encourage',
         'skill': {
-          'skillId': 'enc-skill', 'inputs': [], 'reads': ['workout'], 'writes': [],
+          'skillId': 'enc-skill',
+          'inputs': [],
+          'reads': ['workout'],
+          'writes': [],
           'steps': {
             'main': [
               {'op': 'read_many', 'typeId': 'workout', 'into': 'w'},
-              {'op': 'compute', 'fn': 'count', 'args': [{'var': 'w'}], 'into': 'n'},
-              {'op': 'format', 'template': '{n} workouts', 'into': 'confirmationText'},
+              {
+                'op': 'compute',
+                'fn': 'count',
+                'args': [
+                  {'var': 'w'}
+                ],
+                'into': 'n'
+              },
+              {
+                'op': 'format',
+                'template': '{n} workouts',
+                'into': 'confirmationText'
+              },
             ]
           }
         }
       }));
       final s = Session(dir, clock: _now, cloud: _NoCloud());
       await s.init(retrieval: false);
-      await s.handle('log a run'); // writes a workout -> onWrite fires (read-only -> delivered)
+      await s.handle(
+          'log a run'); // writes a workout -> onWrite fires (read-only -> delivered)
       expect((lastTurn(dir)['automations'] as Map)['delivered'], 1);
     });
   });
 
-  group('migrate-on-read brings old records forward (Spec 01 §7.4 / Spec 06 D12)', () {
-    test('a v1 record gains a v2 type\'s new attribute (default) on open', () async {
+  group(
+      'migrate-on-read brings old records forward (Spec 01 §7.4 / Spec 06 D12)',
+      () {
+    test('a v1 record gains a v2 type\'s new attribute (default) on open',
+        () async {
       final dir = makeTempDataDir();
       // a custom type at schemaVersion 2 with a newly-added optional attr
       File('$dir/types/widget.json').writeAsStringSync(jsonEncode({
@@ -603,13 +765,28 @@ void main() {
         'schemaVersion': 2,
         'attributes': [
           {'name': 'name', 'valueType': 'text', 'required': true},
-          {'name': 'color', 'valueType': 'text', 'required': false, 'default': 'blue'},
-        ]
+          {
+            'name': 'color',
+            'valueType': 'text',
+            'required': false,
+            'default': 'blue'
+          },
+        ],
+        'migrations': [
+          {
+            'fromVersion': 1,
+            'toVersion': 2,
+            'fieldDefaults': {'color': 'blue'},
+          }
+        ],
       }));
       // a record written under v1 (no _schemaVersion, missing `color`), in the on-disk envelope
       Directory('$dir/records').createSync(recursive: true);
       File('$dir/records/w1.json').writeAsStringSync(jsonEncode({
-        'id': 'w1', 'typeId': 'widget', 'fields': {'name': 'x'}, '_meta': {'stamps': {}}
+        'id': 'w1',
+        'typeId': 'widget',
+        'fields': {'name': 'x'},
+        '_meta': {'stamps': {}}
       }));
 
       final s = Session(dir, clock: _now, cloud: _NoCloud());
@@ -627,62 +804,96 @@ void main() {
     });
   });
 
-  group('schedule automations fire on open (catch-up) and persist lastFired (Spec 01 §4.4)', () {
+  group(
+      'schedule automations fire on open (catch-up) and persist lastFired (Spec 01 §4.4)',
+      () {
     void seedWeekly(String dir) {
       Directory('$dir/automations').createSync(recursive: true);
       File('$dir/automations/weekly.json').writeAsStringSync(jsonEncode({
         'automationId': 'weekly-workout-summary',
         'targetType': 'workout',
-        'condition': {'kind': 'schedule', 'cronExpression': '0 20 * * 0'}, // Sunday 8pm
+        'condition': {
+          'kind': 'schedule',
+          'cronExpression': '0 20 * * 0'
+        }, // Sunday 8pm
         'skillId': 'wsum',
         'description': 'weekly workout summary',
         'skill': {
-          'skillId': 'wsum', 'inputs': [], 'reads': ['workout'], 'writes': [],
+          'skillId': 'wsum',
+          'inputs': [],
+          'reads': ['workout'],
+          'writes': [],
           'steps': {
             'main': [
               {'op': 'read_many', 'typeId': 'workout', 'into': 'ws'},
-              {'op': 'compute', 'fn': 'count', 'args': [{'var': 'ws'}], 'into': 'n'},
-              {'op': 'format', 'template': 'This week: {n} workout(s) logged.', 'into': 'confirmationText'},
+              {
+                'op': 'compute',
+                'fn': 'count',
+                'args': [
+                  {'var': 'ws'}
+                ],
+                'into': 'n'
+              },
+              {
+                'op': 'format',
+                'template': 'This week: {n} workout(s) logged.',
+                'into': 'confirmationText'
+              },
             ]
           }
         }
       }));
     }
 
-    test('fires once after its cron time, then not again (lastFired persists across opens)', () async {
+    test(
+        'fires once after its cron time, then not again (lastFired persists across opens)',
+        () async {
       final dir = makeTempDataDir();
       final devDir = Directory.systemTemp.createTempSync('plenara-dev').path;
       seedWeekly(dir);
-      Session open(String clock) => Session(dir, clock: DateTime.parse(clock), cloud: _NoCloud(), deviceDir: devDir);
+      Session open(String clock) => Session(dir,
+          clock: DateTime.parse(clock), cloud: _NoCloud(), deviceDir: devDir);
 
-      final s1 = open('2026-07-11T09:00:00'); // Sat — first open baselines, no fire
+      final s1 =
+          open('2026-07-11T09:00:00'); // Sat — first open baselines, no fire
       await s1.init(retrieval: false);
       expect(s1.automations.deliveries, isEmpty);
 
-      final s2 = open('2026-07-13T09:00:00'); // Mon — Sunday 8pm passed -> fires (on-open nudge)
+      final s2 = open(
+          '2026-07-13T09:00:00'); // Mon — Sunday 8pm passed -> fires (on-open nudge)
       await s2.init(retrieval: false);
-      expect(s2.pendingNudges().any((n) => n.toLowerCase().contains('workout')), isTrue);
+      expect(s2.pendingNudges().any((n) => n.toLowerCase().contains('workout')),
+          isTrue);
 
-      final s3 = open('2026-07-13T10:00:00'); // same day — lastFired persisted -> no re-fire
+      final s3 = open(
+          '2026-07-13T10:00:00'); // same day — lastFired persisted -> no re-fire
       await s3.init(retrieval: false);
       expect(s3.automations.deliveries, isEmpty);
     });
   });
 
-  group('generative routing — weekly_review / pattern_insight / draft_message', () {
+  group('generative routing — weekly_review / pattern_insight / draft_message',
+      () {
     // Each routes to GenerativeService and hits its honest no-cloud degrade path (thin data /
     // unknown contact) — so _NoCloud (which throws on generate) proves the route without a cloud call.
-    test('"how was my week" -> weekly_review (empty week degrades locally)', () async {
+    test('"how was my week" -> weekly_review (empty week degrades locally)',
+        () async {
       final s = await _session();
-      expect((await s.handle('how was my week')).toLowerCase(), contains('nothing logged this past week'));
+      expect((await s.handle('how was my week')).toLowerCase(),
+          contains('nothing logged this past week'));
     });
-    test('"any patterns" -> pattern_insight (thin data degrades locally)', () async {
+    test('"any patterns" -> pattern_insight (thin data degrades locally)',
+        () async {
       final s = await _session();
-      expect((await s.handle('any patterns')).toLowerCase(), contains("don't have enough logged data"));
+      expect((await s.handle('any patterns')).toLowerCase(),
+          contains("don't have enough logged data"));
     });
-    test('"draft a message to Sam" -> draft_message (unknown contact asks honestly)', () async {
+    test(
+        '"draft a message to Sam" -> draft_message (unknown contact asks honestly)',
+        () async {
       final s = await _session();
-      expect(await s.handle('draft a message to Sam'), contains("don't have Sam as a contact"));
+      expect(await s.handle('draft a message to Sam'),
+          contains("don't have Sam as a contact"));
     });
   });
 
@@ -710,11 +921,14 @@ void main() {
   });
 
   group('due-tasks (agenda view)', () {
-    test('shows overdue + due-today, excludes future / no-date / completed', () async {
+    test('shows overdue + due-today, excludes future / no-date / completed',
+        () async {
       final s = await _session(); // clock is Monday 2026-07-06
-      await s.handle('add pay rent to my list due yesterday'); // overdue (07-05)
+      await s
+          .handle('add pay rent to my list due yesterday'); // overdue (07-05)
       await s.handle('add call the bank to my list due today'); // due today
-      await s.handle('add book flights to my list due friday'); // future (07-10)
+      await s
+          .handle('add book flights to my list due friday'); // future (07-10)
       await s.handle('add water the plants to my list'); // no due date
       final r = await s.handle("what's due");
       expect(r, contains('pay rent'));
@@ -738,24 +952,31 @@ void main() {
       await s.handle('move pay rent to friday'); // -> 2026-07-10 (future)
       final t = s.store.values.where((x) => x['typeId'] == 'task').single;
       expect(t['dueAt'], '2026-07-10');
-      expect((await s.handle("what's due")).contains('pay rent'), isFalse); // now future
+      expect((await s.handle("what's due")).contains('pay rent'),
+          isFalse); // now future
     });
 
     test('rescheduling an unknown task is a clear no-op', () async {
       final s = await _session();
-      expect(await s.handle('move buy milk to friday'), contains("couldn't find"));
+      expect(
+          await s.handle('move buy milk to friday'), contains("couldn't find"));
     });
   });
 
   group('cloud router gets known contacts (Phase 1 entity resolution)', () {
-    test('the session passes existing contact display-names to the router', () async {
+    test('the session passes existing contact display-names to the router',
+        () async {
       final dir = makeTempDataDir();
       // seed a contact via the corpus path (no cloud)
       final seed = Session(dir, clock: _now, cloud: _NoCloud());
       await seed.init(retrieval: false);
       await seed.handle('talked to Katherine Zinger');
       // now a residual (cloud) turn — capture what the router receives
-      final cap = _CapturingCloud({'skillId': 'log-mood', 'slots': {'rating': 'great'}, 'source': 'cloud'});
+      final cap = _CapturingCloud({
+        'skillId': 'log-mood',
+        'slots': {'rating': 'great'},
+        'source': 'cloud'
+      });
       final s = Session(dir, clock: _now, cloud: cap);
       await s.init(retrieval: false);
       final response =
@@ -767,53 +988,85 @@ void main() {
   });
 
   group('cloud multi-action (Phase 3: several records from one statement)', () {
-    test('executes every fully-slotted action and composes the replies', () async {
+    test('executes every fully-slotted action and composes the replies',
+        () async {
       final route = {
         'actions': [
-          {'skillId': 'log-mood', 'slots': {'rating': 'great'}},
-          {'skillId': 'create-task', 'slots': {'description': 'book flights'}},
+          {
+            'skillId': 'log-mood',
+            'slots': {'rating': 'great'}
+          },
+          {
+            'skillId': 'create-task',
+            'slots': {'description': 'book flights'}
+          },
         ],
         'source': 'cloud',
       };
-      final s = Session(makeTempDataDir(), clock: _now, cloud: _CapturingCloud(route));
+      final s = Session(makeTempDataDir(),
+          clock: _now, cloud: _CapturingCloud(route));
       await s.init(retrieval: false);
-      final r = await s.handle('some multi-thing the corpus will not catch qqzz');
+      final r =
+          await s.handle('some multi-thing the corpus will not catch qqzz');
       expect(r.toLowerCase(), contains('great')); // mood logged
       expect(r, contains('book flights')); // task added
       expect(s.store.values.where((x) => x['typeId'] == 'mood').length, 1);
       expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1);
     });
 
-    test('skips an action missing a required slot, still runs the others (and says so)', () async {
+    test(
+        'skips an action missing a required slot, still runs the others (and says so)',
+        () async {
       final route = {
         'actions': [
-          {'skillId': 'create-task', 'slots': {'description': 'call the vet'}},
-          {'skillId': 'create-task', 'slots': <String, dynamic>{}}, // no description -> skipped
+          {
+            'skillId': 'create-task',
+            'slots': {'description': 'call the vet'}
+          },
+          {
+            'skillId': 'create-task',
+            'slots': <String, dynamic>{}
+          }, // no description -> skipped
         ],
         'source': 'cloud',
       };
-      final s = Session(makeTempDataDir(), clock: _now, cloud: _CapturingCloud(route));
+      final s = Session(makeTempDataDir(),
+          clock: _now, cloud: _CapturingCloud(route));
       await s.init(retrieval: false);
       final r = await s.handle('multi qqzz');
-      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1); // only the valid one
-      expect(r, contains("couldn't record 1 part")); // not silently dropped (review #17)
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length,
+          1); // only the valid one
+      expect(
+          r,
+          contains(
+              "couldn't record 1 part")); // not silently dropped (review #17)
     });
 
-    test('undo reverses the WHOLE multi-action turn, not just the last record (review #5)', () async {
+    test(
+        'undo reverses the WHOLE multi-action turn, not just the last record (review #5)',
+        () async {
       final route = {
         'actions': [
-          {'skillId': 'create-task', 'slots': {'description': 'task one'}},
-          {'skillId': 'create-task', 'slots': {'description': 'task two'}},
+          {
+            'skillId': 'create-task',
+            'slots': {'description': 'task one'}
+          },
+          {
+            'skillId': 'create-task',
+            'slots': {'description': 'task two'}
+          },
         ],
         'source': 'cloud',
       };
-      final s = Session(makeTempDataDir(), clock: _now, cloud: _CapturingCloud(route));
+      final s = Session(makeTempDataDir(),
+          clock: _now, cloud: _CapturingCloud(route));
       await s.init(retrieval: false);
       await s.handle('multi qqzz');
       expect(s.store.values.where((x) => x['typeId'] == 'task').length, 2);
       final r = await s.handle('undo');
       expect(r.toLowerCase(), contains('undone'));
-      expect(s.store.values.where((x) => x['typeId'] == 'task').isEmpty, isTrue); // BOTH reversed
+      expect(s.store.values.where((x) => x['typeId'] == 'task').isEmpty,
+          isTrue); // BOTH reversed
     });
   });
 
@@ -822,14 +1075,20 @@ void main() {
       final s = await _session();
       final r = await s.handle('add buy milk, call mom, and gym to my list');
       expect(r, contains('Added 3 task'));
-      final descs = s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description']).toSet();
+      final descs = s.store.values
+          .where((x) => x['typeId'] == 'task')
+          .map((x) => x['description'])
+          .toSet();
       expect(descs, {'buy milk', 'call mom', 'gym'});
     });
 
     test('a plain comma list (>=2 items) splits too', () async {
       final s = await _session();
       await s.handle('add milk, eggs, bread to my list');
-      final descs = s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description']).toSet();
+      final descs = s.store.values
+          .where((x) => x['typeId'] == 'task')
+          .map((x) => x['description'])
+          .toSet();
       expect(descs, {'milk', 'eggs', 'bread'});
     });
 
@@ -850,8 +1109,10 @@ void main() {
   });
 
   group('task de-duplication (user-reported)', () {
-    Set<String> taskDescs(Session s) =>
-        s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description'] as String).toSet();
+    Set<String> taskDescs(Session s) => s.store.values
+        .where((x) => x['typeId'] == 'task')
+        .map((x) => x['description'] as String)
+        .toSet();
 
     test('adding the same task twice does not duplicate it', () async {
       final s = await _session();
@@ -868,18 +1129,28 @@ void main() {
       expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1);
     });
 
-    test('a completed task can be re-added (dedupe only guards the active list)', () async {
+    test(
+        'a completed task can be re-added (dedupe only guards the active list)',
+        () async {
       final s = await _session();
       await s.handle('add buy milk to my list');
       await s.handle('mark buy milk done');
       await s.handle('add buy milk to my list'); // fresh active task
-      expect(s.store.values.where((x) => x['typeId'] == 'task' && x['completed'] != true).length, 1);
+      expect(
+          s.store.values
+              .where((x) => x['typeId'] == 'task' && x['completed'] != true)
+              .length,
+          1);
     });
 
-    test('a thousands-comma inside a number is not torn apart (review low)', () async {
+    test('a thousands-comma inside a number is not torn apart (review low)',
+        () async {
       final s = await _session();
       await s.handle('add 1,000 widgets, 2,000 gadgets, and bolts to my list');
-      final descs = s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description']).toSet();
+      final descs = s.store.values
+          .where((x) => x['typeId'] == 'task')
+          .map((x) => x['description'])
+          .toSet();
       expect(descs, {'1,000 widgets', '2,000 gadgets', 'bolts'});
     });
 
@@ -889,9 +1160,12 @@ void main() {
       expect(taskDescs(s), {'milk', 'eggs'});
     });
 
-    test('a list that dedups to ONE writes the deduped item, not the raw string (review low)', () async {
+    test(
+        'a list that dedups to ONE writes the deduped item, not the raw string (review low)',
+        () async {
       final s = await _session();
-      await s.handle('add milk, milk, milk to my list'); // collapses to a single "milk"
+      await s.handle(
+          'add milk, milk, milk to my list'); // collapses to a single "milk"
       final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();
       expect(tasks.length, 1);
       expect(tasks.single['description'], 'milk'); // not "milk, milk, milk"
@@ -911,15 +1185,18 @@ void main() {
     Future<String> threeTasks() async {
       final dir = makeTempDataDir();
       for (final (i, name) in ['alpha', 'beta', 'gamma'].indexed) {
-        final s = Session(dir, clock: _now.add(Duration(minutes: i)), cloud: _NoCloud());
+        final s = Session(dir,
+            clock: _now.add(Duration(minutes: i)), cloud: _NoCloud());
         await s.init(retrieval: false);
         await s.handle('add $name to my list');
       }
       return dir;
     }
 
-    Set<String> descs(Session s) =>
-        s.store.values.where((x) => x['typeId'] == 'task').map((x) => x['description'] as String).toSet();
+    Set<String> descs(Session s) => s.store.values
+        .where((x) => x['typeId'] == 'task')
+        .map((x) => x['description'] as String)
+        .toSet();
 
     test('"delete the first task" removes the oldest', () async {
       final s = await _session(await threeTasks());
@@ -948,7 +1225,8 @@ void main() {
       expect(descs(s).length, 3);
     });
 
-    test('"delete the milk task" still matches by description, not position', () async {
+    test('"delete the milk task" still matches by description, not position',
+        () async {
       final s = await _session();
       await s.handle('add buy milk to my list');
       await s.handle('delete the milk task');
@@ -1003,30 +1281,37 @@ void main() {
       await s.handle('add read that book to my list'); // NO due date
       final r = await s.handle("what's due by friday");
       expect(r, contains('pay rent'));
-      expect(r.contains('read that book'), isFalse); // the dateless task must not leak in
+      expect(r.contains('read that book'),
+          isFalse); // the dateless task must not leak in
     });
   });
 
   group('realistic day — broad cross-skill integration (all offline)', () {
-    test('tasks, reminders, people, birthdays, mood all cohere in one session', () async {
-      final s = await _session(); // Monday 2026-07-06, _NoCloud (proves it's all corpus)
+    test('tasks, reminders, people, birthdays, mood all cohere in one session',
+        () async {
+      final s =
+          await _session(); // Monday 2026-07-06, _NoCloud (proves it's all corpus)
 
       // tasks + due
       await s.handle('add pay rent to my list due today');
       await s.handle('add book flights to my list due friday');
       expect(await s.handle("what's due"), contains('pay rent'));
       await s.handle('move pay rent to friday');
-      expect((await s.handle("what's due")).toLowerCase(), contains("you're clear"));
+      expect((await s.handle("what's due")).toLowerCase(),
+          contains("you're clear"));
 
       // people: relationship (the offline gap we closed) + interaction, queryable
       await s.handle("remember that Mia is Sarah Mitchell's daughter");
-      expect(await s.handle('who is Mia related to'), contains('daughter of Sarah Mitchell'));
+      expect(await s.handle('who is Mia related to'),
+          contains('daughter of Sarah Mitchell'));
       await s.handle('talked to Sam about the trip');
-      expect(await s.handle('when did i last talk to Sam'), contains('2026-07-06'));
+      expect(await s.handle('when did i last talk to Sam'),
+          contains('2026-07-06'));
 
       // birthdays
       await s.handle("Sarah Mitchell's birthday is july 10");
-      expect(await s.handle('whose birthday is coming up'), contains('Sarah Mitchell'));
+      expect(await s.handle('whose birthday is coming up'),
+          contains('Sarah Mitchell'));
 
       // mood
       await s.handle("i'm feeling great");
@@ -1034,12 +1319,18 @@ void main() {
 
       // undo the last write (the mood) leaves the rest intact
       await s.handle('undo');
-      expect((await s.handle('how have i been feeling')).toLowerCase(), contains("haven't logged"));
-      expect(await s.handle('who is Mia related to'), contains('Sarah Mitchell')); // untouched
+      expect((await s.handle('how have i been feeling')).toLowerCase(),
+          contains("haven't logged"));
+      expect(await s.handle('who is Mia related to'),
+          contains('Sarah Mitchell')); // untouched
 
       // sanity: nothing crashed, records are coherent
       expect(s.store.values.where((x) => x['typeId'] == 'task').length, 2);
-      expect(s.store.values.where((x) => x['typeId'] == 'contact_relationship').length, 1);
+      expect(
+          s.store.values
+              .where((x) => x['typeId'] == 'contact_relationship')
+              .length,
+          1);
     });
   });
 
@@ -1058,7 +1349,8 @@ void main() {
     test('counts consecutive days of runs', () async {
       final dir = makeTempDataDir();
       for (final d in const ['2026-07-04', '2026-07-05', '2026-07-06']) {
-        final s = Session(dir, clock: DateTime.parse('${d}T09:00:00'), cloud: _NoCloud());
+        final s = Session(dir,
+            clock: DateTime.parse('${d}T09:00:00'), cloud: _NoCloud());
         await s.init(retrieval: false);
         await s.handle('log a 3k run');
       }
@@ -1068,7 +1360,8 @@ void main() {
       expect(r, contains('3 day(s) longest'));
     });
     test('no runs -> friendly empty', () async {
-      expect(await (await _session()).handle('running streak'), contains('No runs logged'));
+      expect(await (await _session()).handle('running streak'),
+          contains('No runs logged'));
     });
   });
 
@@ -1085,11 +1378,14 @@ void main() {
     });
   });
 
-  group('record-anchored dates (F-19) — "the day before Sarah\'s birthday"', () {
-    test('creates a task dated the day before the person\'s birthday', () async {
+  group('record-anchored dates (F-19) — "the day before Sarah\'s birthday"',
+      () {
+    test('creates a task dated the day before the person\'s birthday',
+        () async {
       final s = await _session();
       await s.handle("Sarah's birthday is july 16"); // creates Sarah + birthday
-      final r = await s.handle("remind me to buy flowers the day before Sarah's birthday");
+      final r = await s
+          .handle("remind me to buy flowers the day before Sarah's birthday");
       expect(r, contains('buy flowers'));
       final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();
       expect(tasks.length, 1);
@@ -1097,14 +1393,17 @@ void main() {
     });
     test('unknown person -> asks for their birthday, writes nothing', () async {
       final s = await _session();
-      final r = await s.handle("add call the florist the day before Nobody's birthday");
+      final r = await s
+          .handle("add call the florist the day before Nobody's birthday");
       expect(r.toLowerCase(), contains("don't have"));
       expect(s.store.values.where((x) => x['typeId'] == 'task'), isEmpty);
     });
   });
 
   group('template instantiation (G-22 / #3)', () {
-    test('"start tracking my water intake" instantiates the template free (no cloud), works by voice', () async {
+    test(
+        '"start tracking my water intake" instantiates the template free (no cloud), works by voice',
+        () async {
       final s = await _session(); // _NoCloud throws if the cloud is hit
       final r = await s.handle('start tracking my water intake');
       expect(r.toLowerCase(), contains('set up'));
@@ -1121,15 +1420,19 @@ void main() {
       ('my steps', 'i walked 8000 steps', 'step_log'),
       ('my weight', 'i weigh 165', 'weight_log'),
     ]) {
-      test('template "${c.$1}" instantiates free and routes its log by voice', () async {
+      test('template "${c.$1}" instantiates free and routes its log by voice',
+          () async {
         final s = await _session();
-        expect((await s.handle('start tracking ${c.$1}')).toLowerCase(), contains('set up'));
+        expect((await s.handle('start tracking ${c.$1}')).toLowerCase(),
+            contains('set up'));
         expect((await s.handle(c.$2)).toLowerCase(), contains('logged'));
         expect(s.store.values.where((x) => x['typeId'] == c.$3).length, 1);
       });
     }
 
-    test('a template ships a QUERY skill too: "how many steps this week" aggregates (F-17)', () async {
+    test(
+        'a template ships a QUERY skill too: "how many steps this week" aggregates (F-17)',
+        () async {
       final s = await _session();
       await s.handle('start tracking my steps');
       await s.handle('i walked 8000 steps');
@@ -1149,53 +1452,67 @@ void main() {
     test('a template query answers adherence: meds today (F-16)', () async {
       final s = await _session();
       await s.handle('start tracking my meds');
-      expect((await s.handle('did i take my meds today')).toLowerCase(), contains('not yet'));
+      expect((await s.handle('did i take my meds today')).toLowerCase(),
+          contains('not yet'));
       await s.handle('took my morning meds');
-      expect((await s.handle('did i take my meds today')).toLowerCase(), contains('yes'));
+      expect((await s.handle('did i take my meds today')).toLowerCase(),
+          contains('yes'));
     });
 
-    test('a template query skill computes a streak: reading streak (F-18)', () async {
+    test('a template query skill computes a streak: reading streak (F-18)',
+        () async {
       final s = await _session();
       await s.handle('start tracking my reading');
       await s.handle('i read 30 pages');
-      expect((await s.handle("what's my longest reading streak")).toLowerCase(), contains('streak'));
+      expect((await s.handle("what's my longest reading streak")).toLowerCase(),
+          contains('streak'));
     });
 
     test('re-instantiating is idempotent ("already tracking")', () async {
       final s = await _session();
       await s.handle('start tracking my water intake');
-      expect((await s.handle('start tracking my water')).toLowerCase(), contains('already'));
+      expect((await s.handle('start tracking my water')).toLowerCase(),
+          contains('already'));
       expect(s.store.values.where((x) => x['typeId'] == 'hydration'), isEmpty);
     });
-    test('an instantiated tracker survives a restart (defs + corpus persisted)', () async {
+    test('an instantiated tracker survives a restart (defs + corpus persisted)',
+        () async {
       final dir = makeTempDataDir();
       final s1 = Session(dir, clock: _now, cloud: _NoCloud());
       await s1.init(retrieval: false);
       await s1.handle('start tracking my water intake');
       final s2 = Session(dir, clock: _now, cloud: _NoCloud());
       await s2.init(retrieval: false);
-      expect(s2.skills.containsKey('log-water'), isTrue); // skill def persisted + loaded
-      expect(await s2.handle('log 300ml of water'), contains('300')); // corpus persisted + loaded
+      expect(s2.skills.containsKey('log-water'),
+          isTrue); // skill def persisted + loaded
+      expect(await s2.handle('log 300ml of water'),
+          contains('300')); // corpus persisted + loaded
     });
   });
 
   group('out-of-domain boundary (G-19)', () {
-    test('a world-knowledge question gets a graceful boundary, writes nothing', () async {
+    test('a world-knowledge question gets a graceful boundary, writes nothing',
+        () async {
       final s = await _session();
       final r = await s.handle("what's the capital of France");
       expect(r.toLowerCase(), contains('outside what'));
       expect(s.store, isEmpty);
     });
-    test('a personal-cue query is NEVER classified out-of-domain (privacy, G-19)', () async {
+    test(
+        'a personal-cue query is NEVER classified out-of-domain (privacy, G-19)',
+        () async {
       final s = await _session();
       // "weather" would trip the world-knowledge matcher, but "what did I…" is a personal cue
       final r = await s.handle('what did i say about the weather');
       expect(r.toLowerCase(), isNot(contains('outside what')));
     });
-    test('"who is <a known contact>" is NOT out-of-domain (Fable#2 regression)', () async {
+    test('"who is <a known contact>" is NOT out-of-domain (Fable#2 regression)',
+        () async {
       final s = await _session();
-      await s.handle('remember that Mia loves drawing'); // Mia is now a stored contact
-      final r = await s.handle('who is Mia'); // "who is" trips world-knowledge, but Mia is ours
+      await s.handle(
+          'remember that Mia loves drawing'); // Mia is now a stored contact
+      final r = await s.handle(
+          'who is Mia'); // "who is" trips world-knowledge, but Mia is ours
       expect(r.toLowerCase(), isNot(contains('outside what')));
     });
     test('"who is <a stranger>" still gets the boundary', () async {
@@ -1215,35 +1532,42 @@ void main() {
       'send money to Sam',
       'book a table for two',
     ]) {
-      test('refuses external action, offers the in-scope alternative: "$u"', () async {
+      test('refuses external action, offers the in-scope alternative: "$u"',
+          () async {
         final s = await _session();
         final r = await s.handle(u);
         expect(r.toLowerCase(), contains("can't do that"));
         expect(s.store, isEmpty, reason: 'a scope refusal must not write');
       });
     }
-    test('a real reminder/task containing "text"/"buy" is NOT refused', () async {
+    test('a real reminder/task containing "text"/"buy" is NOT refused',
+        () async {
       final s = await _session();
-      expect(await s.handle('remind me to text mom on thursday at 5pm'), isNot(contains("can't do that")));
+      expect(await s.handle('remind me to text mom on thursday at 5pm'),
+          isNot(contains("can't do that")));
       expect(await s.handle('add buy milk to my list'), contains('buy milk'));
     });
   });
 
-  group('05a corpus-phrasing (F-05 run+duration, F-10 time-since via alias)', () {
+  group('05a corpus-phrasing (F-05 run+duration, F-10 time-since via alias)',
+      () {
     test('F-05: "ran 5k in 27 minutes" records distance + duration', () async {
       final s = await _session();
       await s.handle('ran 5k in 27 minutes');
       final w = s.store.values.where((x) => x['typeId'] == 'workout').single;
-      expect(w['distance'], 5);
-      expect(w['duration'], 27);
+      expect(w['distance'], '5');
+      expect(w['duration'], '27');
     });
-    test('"how is Marco doing" routes to last-interaction (dogfood coverage)', () async {
+    test('"how is Marco doing" routes to last-interaction (dogfood coverage)',
+        () async {
       final s = await _session();
       await s.handle('i talked to Marco about the trip');
       expect(await s.handle('how is Marco doing'), contains('Marco'));
     });
 
-    test('F-10: "how long since I called Mum" resolves via alias to last-interaction', () async {
+    test(
+        'F-10: "how long since I called Mum" resolves via alias to last-interaction',
+        () async {
       final s = await _session();
       await s.handle('i talked to Sarah about the trip');
       await s.handle("Sarah's nickname is Mum");
@@ -1253,21 +1577,33 @@ void main() {
     });
   });
 
-  group('more denial floors (DP-06 medical, DP-09 impersonation, DF-03 schema-edit)', () {
-    test('DP-06 medical: refuses to diagnose, defers to a professional', () async {
+  group(
+      'more denial floors (DP-06 medical, DP-09 impersonation, DF-03 schema-edit)',
+      () {
+    test('DP-06 medical: refuses to diagnose, defers to a professional',
+        () async {
       final s = await _session();
-      expect((await s.handle("based on my meds and symptoms, what's wrong with me")).toLowerCase(),
+      expect(
+          (await s.handle(
+                  "based on my meds and symptoms, what's wrong with me"))
+              .toLowerCase(),
           contains("can't diagnose"));
-      expect((await s.handle('do i have cancer')).toLowerCase(), contains("can't diagnose"));
+      expect((await s.handle('do i have cancer')).toLowerCase(),
+          contains("can't diagnose"));
     });
     test('DP-09 impersonation: refuses to speak as a third party', () async {
       final s = await _session();
-      final r = await s.handle('write a message pretending to be my wife telling my mum she is fine with the plan');
+      final r = await s.handle(
+          'write a message pretending to be my wife telling my mum she is fine with the plan');
       expect(r.toLowerCase(), contains('own voice'));
     });
-    test('DF-03 schema-edit: adding a field to a live tracker is a paid change', () async {
+    test('DF-03 schema-edit: adding a field to a live tracker is a paid change',
+        () async {
       final s = await _session();
-      expect((await s.handle('add a mood-score field to my running tracker')).toLowerCase(), contains('schema edit'));
+      expect(
+          (await s.handle('add a mood-score field to my running tracker'))
+              .toLowerCase(),
+          contains('schema edit'));
     });
     test('normal inputs are not caught by the new floors', () async {
       final s = await _session();
@@ -1282,7 +1618,8 @@ void main() {
       await s.handle('i talked to Sarah about the cabin trip');
       final ack = await s.handle("Sarah's nickname is Mum");
       expect(ack, contains('Mum'));
-      final r = await s.handle('when did i last talk to Mum'); // "Mum" only resolves via alias
+      final r = await s.handle(
+          'when did i last talk to Mum'); // "Mum" only resolves via alias
       expect(r, isNot(contains("don't have")));
       expect(r, contains('last talked to Mum'));
     });
@@ -1301,9 +1638,11 @@ void main() {
       expect(r, contains('2026-07-06')); // dated
     });
 
-    test('recall journal by date (gap #4): "what did I write yesterday"', () async {
+    test('recall journal by date (gap #4): "what did I write yesterday"',
+        () async {
       final dir = makeTempDataDir();
-      final s1 = Session(dir, clock: _now.subtract(const Duration(days: 1)), cloud: _NoCloud());
+      final s1 = Session(dir,
+          clock: _now.subtract(const Duration(days: 1)), cloud: _NoCloud());
       await s1.init(retrieval: false);
       await s1.handle('journal that the move was exhausting');
       final s2 = Session(dir, clock: _now, cloud: _NoCloud());
@@ -1316,7 +1655,8 @@ void main() {
 
     test('delete the latest journal entry (gap #6)', () async {
       final dir = makeTempDataDir();
-      final s1 = Session(dir, clock: _now.subtract(const Duration(days: 1)), cloud: _NoCloud());
+      final s1 = Session(dir,
+          clock: _now.subtract(const Duration(days: 1)), cloud: _NoCloud());
       await s1.init(retrieval: false);
       await s1.handle('journal that entry one happened');
       final s2 = Session(dir, clock: _now, cloud: _NoCloud());
@@ -1331,9 +1671,11 @@ void main() {
   });
 
   group('recall-mood', () {
-    test('lists logged moods, with a clear message when there are none', () async {
+    test('lists logged moods, with a clear message when there are none',
+        () async {
       final s = await _session();
-      expect(await s.handle('how have i been feeling'), contains("haven't logged any moods"));
+      expect(await s.handle('how have i been feeling'),
+          contains("haven't logged any moods"));
       await s.handle("i'm feeling great");
       await s.handle('log my mood as tired');
       final r = await s.handle('show my moods');
@@ -1347,15 +1689,20 @@ void main() {
       expect(await s.handle("i'm exhausted"), contains('exhausted'));
       expect(await s.handle('kind of down'), contains('down'));
       expect(await s.handle("i'm a bit anxious"), contains('anxious'));
-      final moods = s.store.values.where((x) => x['typeId'] == 'mood').map((x) => x['rating']).toSet();
+      final moods = s.store.values
+          .where((x) => x['typeId'] == 'mood')
+          .map((x) => x['rating'])
+          .toSet();
       expect(moods, {'exhausted', 'down', 'anxious'});
     });
 
-    test('control: "i\'m going to the gym" / "i\'m 180 lbs" are NOT moods', () async {
+    test('control: "i\'m going to the gym" / "i\'m 180 lbs" are NOT moods',
+        () async {
       final s = await _session();
       await s.handle("i'm going to the gym");
       await s.handle("i'm 180 lbs");
-      expect(s.store.values.where((x) => x['typeId'] == 'mood').isEmpty, isTrue);
+      expect(
+          s.store.values.where((x) => x['typeId'] == 'mood').isEmpty, isTrue);
     });
   });
 
@@ -1363,13 +1710,15 @@ void main() {
     test('log a run, then the weekly count reflects it', () async {
       final s = await _session();
       await s.handle('log a 3k run');
-      expect(await s.handle('how many runs this week'), contains("You've run 3 km"));
+      expect(await s.handle('how many runs this week'),
+          contains("You've run 3 km"));
     });
     test('log two runs, count sums them', () async {
       final s = await _session();
       await s.handle('log a 3k run');
       await s.handle('i ran 4k');
-      expect(await s.handle('how far have i run this week'), contains("You've run 7 km"));
+      expect(await s.handle('how far have i run this week'),
+          contains("You've run 7 km"));
     });
     test('remember a fact, then recall it', () async {
       final s = await _session();
@@ -1387,13 +1736,16 @@ void main() {
       expect(r, contains('buy milk'));
       expect(r, contains('walk the dog'));
     });
-    test('relational remember creates the graph, recall reads the fact', () async {
+    test('relational remember creates the graph, recall reads the fact',
+        () async {
       final s = await _session();
-      final r = await s.handle("remember that Mia is allergic to peanuts and she is Sarah Mitchell's daughter");
+      final r = await s.handle(
+          "remember that Mia is allergic to peanuts and she is Sarah Mitchell's daughter");
       expect(r, contains('Noted that Mia'));
       // contact(Mia) + fact + contact(Sarah) + relationship = 4 records
       expect(s.store.length, 4);
-      expect(await s.handle('what do i know about Mia'), contains('allergic to peanuts'));
+      expect(await s.handle('what do i know about Mia'),
+          contains('allergic to peanuts'));
     });
   });
 
@@ -1405,7 +1757,9 @@ void main() {
       expect(await s.handle('undo that'), contains('Undone'));
       expect(s.store.length, 0);
     });
-    test('"what can you do" opens the Tour — a conversational invite, not a bullet dump (no write)', () async {
+    test(
+        '"what can you do" opens the Tour — a conversational invite, not a bullet dump (no write)',
+        () async {
       final s = await _session();
       final r = await s.handle('what can you do');
       expect(r.toLowerCase(), contains('pick one')); // the opening invitation
@@ -1414,11 +1768,13 @@ void main() {
       expect(s.lastSource, 'tour');
       expect(s.store, isEmpty); // discoverability is read-only
     });
-    test('domain-scoped help (queries gap): "what can you do with reminders"', () async {
+    test('domain-scoped help (queries gap): "what can you do with reminders"',
+        () async {
       final s = await _session();
       final r = await s.handle('what can you do with reminders');
       expect(r.toLowerCase(), contains('reminder'));
-      expect(r.contains('Here\'s what I can do'), isFalse); // focused, not the full overview
+      expect(r.contains('Here\'s what I can do'),
+          isFalse); // focused, not the full overview
       expect(r.contains('Birthdays'), isFalse);
       expect(s.store, isEmpty);
     });
@@ -1436,7 +1792,9 @@ void main() {
     });
 
     // ---- The Tour (Fable's guided capability discovery) ----
-    test('Tour: opening → pick a chapter → try it live → coda; wandering ends it', () async {
+    test(
+        'Tour: opening → pick a chapter → try it live → coda; wandering ends it',
+        () async {
       final s = await _session();
       final open = await s.handle('what can you do');
       expect(open.toLowerCase(), contains('pick one'));
@@ -1447,17 +1805,24 @@ void main() {
       expect(ch.toLowerCase(), contains('you could say'));
       expect(s.lastSource, 'tour');
 
-      final tried = await s.handle('remind me to call mom tomorrow at 5pm'); // try it LIVE
+      final tried = await s
+          .handle('remind me to call mom tomorrow at 5pm'); // try it LIVE
       expect(tried.toLowerCase(), contains('call mom'));
-      expect(tried.toLowerCase(), contains('undo that')); // the teach-by-doing coda
-      expect(s.store.values.any((r) => r['typeId'] == 'reminder'), isTrue); // a REAL write
+      expect(tried.toLowerCase(),
+          contains('undo that')); // the teach-by-doing coda
+      expect(s.store.values.any((r) => r['typeId'] == 'reminder'),
+          isTrue); // a REAL write
 
-      final wander = await s.handle('add buy milk to my list'); // another domain → tour ends silently
+      final wander = await s.handle(
+          'add buy milk to my list'); // another domain → tour ends silently
       expect(wander.toLowerCase(), contains('added'));
-      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1); // the task really happened
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length,
+          1); // the task really happened
     });
 
-    test('Tour: "give me the tour" then "next" advances; "done" closes with the meta-moves', () async {
+    test(
+        'Tour: "give me the tour" then "next" advances; "done" closes with the meta-moves',
+        () async {
       final s = await _session();
       await s.handle('what can you do');
       final c1 = await s.handle('give me the tour'); // enters the first chapter
@@ -1469,7 +1834,9 @@ void main() {
       expect(close.toLowerCase(), contains('undo that'));
     });
 
-    test('Tour: "show me everything" gives the full map (the flat list survives)', () async {
+    test(
+        'Tour: "show me everything" gives the full map (the flat list survives)',
+        () async {
       final s = await _session();
       await s.handle('what can you do');
       final map = await s.handle('show me everything');
@@ -1477,7 +1844,9 @@ void main() {
       expect(map.contains('•'), isTrue);
     });
 
-    test('Tour: "what can you do with reminders" opens straight into that chapter', () async {
+    test(
+        'Tour: "what can you do with reminders" opens straight into that chapter',
+        () async {
       final s = await _session();
       final r = await s.handle('what can you do with reminders');
       expect(r.toLowerCase(), contains('remind'));
@@ -1485,7 +1854,9 @@ void main() {
       expect(s.lastSource, 'tour');
     });
 
-    test('Tour: a mid-tour real command is TRIED, not swallowed as a chapter pick', () async {
+    test(
+        'Tour: a mid-tour real command is TRIED, not swallowed as a chapter pick',
+        () async {
       final s = await _session();
       await s.handle('what can you do');
       await s.handle('reminders');
@@ -1495,29 +1866,39 @@ void main() {
     });
 
     // ---- Tour lifecycle fixes (Fable review) ----
-    test('Tour: an in-domain READ gets NO write-flavored coda (no dangerous "undo that") — Fable #1', () async {
+    test(
+        'Tour: an in-domain READ gets NO write-flavored coda (no dangerous "undo that") — Fable #1',
+        () async {
       final s = await _session();
-      await s.handle('journal that today was a good day'); // an unrelated earlier write
+      await s.handle(
+          'journal that today was a good day'); // an unrelated earlier write
       await s.handle('what can you do');
       await s.handle('reminders');
-      final r = await s.handle('what are my reminders'); // a READ — writes nothing
+      final r =
+          await s.handle('what are my reminders'); // a READ — writes nothing
       expect(r.toLowerCase(), isNot(contains('undo that')));
       expect(r.toLowerCase(), isNot(contains('the whole trick')));
     });
 
-    test('Tour: picking "tasks" enters the tasks chapter, not a task list — Fable #2', () async {
+    test(
+        'Tour: picking "tasks" enters the tasks chapter, not a task list — Fable #2',
+        () async {
       final s = await _session();
       await s.handle('what can you do');
-      final r = await s.handle('tasks'); // a bare alias at "pick one" — a selection though it routes
+      final r = await s.handle(
+          'tasks'); // a bare alias at "pick one" — a selection though it routes
       expect(r.toLowerCase(), contains('to-do')); // the tasks chapter essence
       expect(r.toLowerCase(), contains('you could say'));
       expect(s.lastSource, 'tour');
-      final n = await s.handle('next'); // tour still alive → advances, not a dead-end
+      final n =
+          await s.handle('next'); // tour still alive → advances, not a dead-end
       expect(s.lastSource, 'tour');
       expect(n.toLowerCase(), isNot(contains("didn't catch")));
     });
 
-    test('Tour: "undo that" (the coda\'s own instruction) keeps the tour alive — Fable #3', () async {
+    test(
+        'Tour: "undo that" (the coda\'s own instruction) keeps the tour alive — Fable #3',
+        () async {
       final s = await _session();
       await s.handle('what can you do');
       await s.handle('reminders');
@@ -1530,14 +1911,19 @@ void main() {
       expect(n.toLowerCase(), isNot(contains("didn't catch")));
     });
 
-    test('Tour: the teach-by-doing coda fires at most once per chapter — Fable #4', () async {
+    test(
+        'Tour: the teach-by-doing coda fires at most once per chapter — Fable #4',
+        () async {
       final s = await _session();
       await s.handle('what can you do');
       await s.handle('reminders');
       final first = await s.handle('remind me to water plants tomorrow at 8am');
-      expect(first.toLowerCase(), contains('the whole trick')); // coda on the first try
-      final second = await s.handle('remind me to call the dentist tomorrow at 9am');
-      expect(second.toLowerCase(), isNot(contains('the whole trick'))); // no repeat
+      expect(first.toLowerCase(),
+          contains('the whole trick')); // coda on the first try
+      final second =
+          await s.handle('remind me to call the dentist tomorrow at 9am');
+      expect(second.toLowerCase(),
+          isNot(contains('the whole trick'))); // no repeat
     });
 
     test('Tour: "never mind" (cancel family) closes the tour — M2', () async {
@@ -1546,11 +1932,13 @@ void main() {
       await s.handle('reminders');
       final close = await s.handle('never mind');
       expect(close.toLowerCase(), contains('undo that')); // closing meta-moves
-      final after = await s.handle('next'); // tour dropped → "next" no longer navigates
+      final after =
+          await s.handle('next'); // tour dropped → "next" no longer navigates
       expect(after.toLowerCase(), isNot(contains('show you')));
     });
 
-    test('Tour: "next" past the last chapter delivers the closing — M2', () async {
+    test('Tour: "next" past the last chapter delivers the closing — M2',
+        () async {
       final s = await _session();
       await s.handle('what can you do');
       await s.handle('give me the tour'); // ch1 reminders
@@ -1563,7 +1951,9 @@ void main() {
       expect(end.toLowerCase(), contains('undo that'));
     });
 
-    test('Tour: once every chapter is visited, a repeat "what can you do" shows the full map — Fable #11', () async {
+    test(
+        'Tour: once every chapter is visited, a repeat "what can you do" shows the full map — Fable #11',
+        () async {
       final s = await _session();
       await s.handle('what can you do');
       await s.handle('give me the tour'); // ch1
@@ -1571,7 +1961,8 @@ void main() {
       await s.handle('next'); // ch3
       await s.handle('next'); // ch4
       await s.handle('next'); // ch5 movement — all visited, tour still live
-      final reask = await s.handle('what can you do'); // seen everything → the flat map
+      final reask =
+          await s.handle('what can you do'); // seen everything → the flat map
       expect(reask, contains("Here's what I can do"));
     });
     test('undo with nothing to undo', () async {
@@ -1584,7 +1975,8 @@ void main() {
       await s.handle('add walk the dog to my list');
       await s.handle('log a 3k run');
       expect(s.store.length, 3);
-      expect(await s.handle('undo that'), contains('run')); // reverses the most recent (the run)
+      expect(await s.handle('undo that'),
+          contains('run')); // reverses the most recent (the run)
       expect(s.store.length, 2);
       await s.handle('undo that'); // walk the dog
       await s.handle('undo that'); // buy milk
@@ -1608,38 +2000,51 @@ void main() {
     test('correction "no, I meant to X" undoes then redoes', () async {
       final s = await _session();
       await s.handle('log a 5k run');
-      final r = await s.handle('no, I meant to add buy running shoes to my list');
+      final r =
+          await s.handle('no, I meant to add buy running shoes to my list');
       expect(r, contains('buy running shoes'));
       expect(s.store.values.where((r) => r['typeId'] == 'workout'), isEmpty);
       expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
     });
-    test('correction after a NON-WRITING turn does not reverse an earlier write (Fable#2 P0)', () async {
+    test(
+        'correction after a NON-WRITING turn does not reverse an earlier write (Fable#2 P0)',
+        () async {
       final s = await _session();
       await s.handle('add buy milk to my list'); // writes a task
-      await s.handle('what can you do'); // help: early return, no write, stale-flag trap
+      await s.handle(
+          'what can you do'); // help: early return, no write, stale-flag trap
       final r = await s.handle('no, I meant to log a 3k run'); // correction
       expect(r, contains('run'));
       // the milk task must survive — the correction must not reverse an unrelated older write
-      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1, reason: 'milk survives');
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1,
+          reason: 'milk survives');
       expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
     });
-    test('mark a task done (update), then undo restores it as not-done', () async {
+    test('mark a task done (update), then undo restores it as not-done',
+        () async {
       final s = await _session();
       await s.handle('add buy milk to my list');
       expect(await s.handle('mark buy milk as done'), contains('done'));
-      expect(s.store.values.firstWhere((r) => r['typeId'] == 'task')['completed'], true);
+      expect(
+          s.store.values.firstWhere((r) => r['typeId'] == 'task')['completed'],
+          true);
       await s.handle('undo that');
-      expect(s.store.values.firstWhere((r) => r['typeId'] == 'task')['completed'], false);
+      expect(
+          s.store.values.firstWhere((r) => r['typeId'] == 'task')['completed'],
+          false);
     });
     test('delete a task, then undo restores it', () async {
       final s = await _session();
       await s.handle('add buy milk to my list');
-      expect(await s.handle('delete buy milk from my list'), contains('Deleted'));
+      expect(
+          await s.handle('delete buy milk from my list'), contains('Deleted'));
       expect(s.store.values.where((r) => r['typeId'] == 'task'), isEmpty);
       await s.handle('undo that');
       expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
     });
-    test('correction with a natural prefix ("sorry, I meant to X") also undoes then redoes', () async {
+    test(
+        'correction with a natural prefix ("sorry, I meant to X") also undoes then redoes',
+        () async {
       final s = await _session();
       await s.handle('log a 5k run');
       final r = await s.handle('sorry, I meant to add buy milk to my list');
@@ -1647,65 +2052,94 @@ void main() {
       expect(s.store.values.where((x) => x['typeId'] == 'workout'), isEmpty);
       expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1);
     });
-    test('F-14: "no, that was a walk" reverses the run and re-logs a walk, carrying distance', () async {
+    test(
+        'F-14: "no, that was a walk" reverses the run and re-logs a walk, carrying distance',
+        () async {
       final s = await _session();
       await s.handle('log a 5k run');
-      expect(s.store.values.where((x) => x['typeId'] == 'workout' && x['activity'] == 'run').length, 1);
+      expect(
+          s.store.values
+              .where((x) => x['typeId'] == 'workout' && x['activity'] == 'run')
+              .length,
+          1);
       final r = await s.handle('no, that was a walk');
       expect(r.toLowerCase(), contains('walk'));
-      final workouts = s.store.values.where((x) => x['typeId'] == 'workout').toList();
-      expect(workouts.length, 1, reason: 'the run was reversed, only the walk remains');
+      final workouts =
+          s.store.values.where((x) => x['typeId'] == 'workout').toList();
+      expect(workouts.length, 1,
+          reason: 'the run was reversed, only the walk remains');
       expect(workouts.single['activity'], 'walk');
-      expect(workouts.single['distance'], 5); // distance carried over from the run
+      expect(workouts.single['distance'],
+          '5'); // distance carried over from the run
     });
-    test('F-15: "actually, 28 minutes" updates the last workout in place (not a reverse)', () async {
+    test(
+        'F-15: "actually, 28 minutes" updates the last workout in place (not a reverse)',
+        () async {
       final s = await _session();
       await s.handle('log a 5k run');
       final r = await s.handle('actually, 28 minutes');
       expect(r, contains('28'));
       final w = s.store.values.where((x) => x['typeId'] == 'workout').toList();
-      expect(w.length, 1, reason: 'same record updated, not reversed+recreated');
-      expect(w.single['duration'], 28);
-      expect(w.single['distance'], 5); // untouched
+      expect(w.length, 1,
+          reason: 'same record updated, not reversed+recreated');
+      expect(w.single['duration'], '28');
+      expect(w.single['distance'], '5'); // untouched
       expect(w.single['activity'], 'run'); // still a run
     });
-    test('F-15: "make it 3k" updates the distance of the last workout', () async {
+    test('F-15: "make it 3k" updates the distance of the last workout',
+        () async {
       final s = await _session();
       await s.handle('log a 5k run');
       await s.handle('make it 3k');
-      expect(s.store.values.where((x) => x['typeId'] == 'workout').single['distance'], 3);
+      expect(
+          s.store.values
+              .where((x) => x['typeId'] == 'workout')
+              .single['distance'],
+          '3');
     });
-    test('F-15: "actually that was 6k" / "that was 30 minutes" (natural correction, live-caught)', () async {
+    test(
+        'F-15: "actually that was 6k" / "that was 30 minutes" (natural correction, live-caught)',
+        () async {
       final s = await _session();
       await s.handle('log a 5k run');
       await s.handle('actually that was 6k');
       await s.handle('that was 30 minutes');
       final w = s.store.values.where((x) => x['typeId'] == 'workout').single;
-      expect(w['distance'], 6);
-      expect(w['duration'], 30);
+      expect(w['distance'], '6');
+      expect(w['duration'], '30');
     });
     test('F-15: undo restores the pre-correction value', () async {
       final s = await _session();
       await s.handle('log a 5k run');
       await s.handle('actually, 28 minutes');
       expect(await s.handle('undo that'), contains('Undone'));
-      expect(s.store.values.where((x) => x['typeId'] == 'workout').single['duration'], isNull);
+      expect(
+          s.store.values
+              .where((x) => x['typeId'] == 'workout')
+              .single['duration'],
+          isNull);
     });
     test('"no wait, I meant X" is a correction', () async {
       final s = await _session();
       await s.handle('log a 5k run');
       await s.handle('no wait, I meant to log a 3k run');
-      final runs = s.store.values.where((x) => x['typeId'] == 'workout').toList();
+      final runs =
+          s.store.values.where((x) => x['typeId'] == 'workout').toList();
       expect(runs.length, 1); // the 5k was reversed, only the 3k remains
-      expect(runs.single['distance'], 3);
+      expect(runs.single['distance'], '3');
     });
-    test('correction after a read-only misroute does not reverse an unrelated write (Fable defect)', () async {
+    test(
+        'correction after a read-only misroute does not reverse an unrelated write (Fable defect)',
+        () async {
       final s = await _session();
       await s.handle('add buy milk to my list'); // a write, two turns back
-      await s.handle('list my tasks'); // read-only route (no write) — the misroute
-      final r = await s.handle('no, I meant to log a 3k run'); // correction of the READ turn
+      await s
+          .handle('list my tasks'); // read-only route (no write) — the misroute
+      final r = await s
+          .handle('no, I meant to log a 3k run'); // correction of the READ turn
       expect(r, contains('run'));
-      expect(s.store.values.where((x) => x['typeId'] == 'task').length, 1); // milk task survives
+      expect(s.store.values.where((x) => x['typeId'] == 'task').length,
+          1); // milk task survives
       expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
     });
     test('scratch that / take that back also undo', () async {
@@ -1717,7 +2151,8 @@ void main() {
   });
 
   group('persistence across Session instances (same data dir)', () {
-    test('a written record is loaded by a fresh Session on the same dir', () async {
+    test('a written record is loaded by a fresh Session on the same dir',
+        () async {
       final dir = makeTempDataDir();
       final s1 = await _session(dir);
       await s1.handle('add buy milk to my list');
@@ -1735,13 +2170,16 @@ void main() {
   });
 
   group('StorageRepository seam (Fable review)', () {
-    test('Session runs on an injected in-memory repository (no disk touched)', () async {
+    test('Session runs on an injected in-memory repository (no disk touched)',
+        () async {
       final file = FileStorageRepository('data');
-      final mem = _MemStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      final mem = _MemStorage(
+          file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
       final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
       await s.init(retrieval: false);
       await s.handle('add buy milk to my list');
-      final tasks = mem.records.values.where((r) => r['typeId'] == 'task').toList();
+      final tasks =
+          mem.records.values.where((r) => r['typeId'] == 'task').toList();
       expect(tasks.length, 1);
       expect(tasks.single['description'], 'buy milk');
       // undo goes through the repo too
@@ -1749,17 +2187,23 @@ void main() {
       expect(mem.records.values.where((r) => r['typeId'] == 'task'), isEmpty);
     });
 
-    test('a persist FAILURE still leaves the write undoable (the safety net must survive disk errors)', () async {
+    test(
+        'a persist FAILURE still leaves the write undoable (the safety net must survive disk errors)',
+        () async {
       // A full disk / revoked folder permission makes repo.persist throw. execute() has already
       // mutated the in-memory store by then, so if the journal entry is pushed after persisting,
       // the user is left with a change they were told didn't happen AND cannot undo.
       final file = FileStorageRepository('data');
-      final mem = _FailingPersistStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      final mem = _FailingPersistStorage(
+          file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
       final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
       await s.init(retrieval: false);
       mem.failPersist = true;
       final resp = await s.handle('add buy milk to my list');
-      expect(resp, contains("couldn't save")); // the failure is surfaced honestly, not swallowed (P2.8)
+      expect(
+          resp,
+          contains(
+              "couldn't save")); // the failure is surfaced honestly, not swallowed (P2.8)
       // the in-memory store DID change despite the error...
       expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
       // ...so "undo that" must be able to reverse it.
@@ -1769,28 +2213,36 @@ void main() {
           reason: 'a write that failed to persist must still be undoable');
     });
 
-    test('turn log records the source + skill of each turn (dogfood telemetry)', () async {
+    test('turn log records the source + skill of each turn (dogfood telemetry)',
+        () async {
       final file = FileStorageRepository('data');
-      final mem = _MemStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      final mem = _MemStorage(
+          file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
       final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
       await s.init(retrieval: false);
       await s.handle('add buy milk to my list');
       await s.handle('list my tasks');
       await s.handle('undo that');
-      expect(mem.turns.map((t) => t['source']).toList(), ['corpus', 'corpus', 'undo']);
+      expect(mem.turns.map((t) => t['source']).toList(),
+          ['corpus', 'corpus', 'undo']);
       expect(mem.turns[0]['skill'], 'create-task');
       expect(mem.turns[1]['skill'], 'list-tasks');
     });
 
-    test('turn log is a rich debug trace — template, slots, writes, timing, response', () async {
+    test(
+        'turn log is a rich debug trace — template, slots, writes, timing, response',
+        () async {
       final file = FileStorageRepository('data');
-      final mem = _MemStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      final mem = _MemStorage(
+          file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
       final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
       await s.init(retrieval: false);
       await s.handle('add buy milk to my list');
       final t = mem.turns.single;
-      expect(t['template'], 'add {description:text} to my {_:text}'); // which corpus template fired
-      expect((t['slots'] as Map)['description'], 'buy milk'); // what was extracted
+      expect(t['template'],
+          'add {description:text} to my {_:text}'); // which corpus template fired
+      expect(
+          (t['slots'] as Map)['description'], 'buy milk'); // what was extracted
       final writes = (t['writes'] as List).cast<Map>();
       expect(writes.single['op'], 'write');
       expect(writes.single['typeId'], 'task'); // what record was written
@@ -1799,14 +2251,19 @@ void main() {
       expect(t.containsKey('error'), isFalse);
     });
 
-    test('a crashing turn logs the exception + stack to the trace (never to the user)', () async {
+    test(
+        'a crashing turn logs the exception + stack to the trace (never to the user)',
+        () async {
       final file = FileStorageRepository('data');
-      final mem = _MemStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      final mem = _MemStorage(
+          file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
       // a cloud that throws forces the handle() catch-all on a corpus-miss turn
       final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
       await s.init(retrieval: false);
-      final resp = await s.handle('zubble frotz wibble'); // corpus miss -> _NoCloud throws
-      expect(resp, contains("didn't do anything")); // user sees the safe message
+      final resp = await s
+          .handle('zubble frotz wibble'); // corpus miss -> _NoCloud throws
+      expect(
+          resp, contains("didn't do anything")); // user sees the safe message
       final t = mem.turns.single;
       expect(t['source'], 'error');
       expect(t['error'], contains('StateError')); // full detail is in the trace
@@ -1814,31 +2271,45 @@ void main() {
   });
 
   group('compound utterances (F-13) — two commands joined by "and"', () {
-    test('"log a run and journal that I feel great" performs BOTH, composed confirmation', () async {
+    test(
+        '"log a run and journal that I feel great" performs BOTH, composed confirmation',
+        () async {
       final s = await _session(); // _NoCloud: the split is fully offline
       final r = await s.handle('log a run and journal that I feel great');
       expect(r, contains('Logged a run'));
       expect(r, contains('Saved to your journal'));
       expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
-      final j = s.store.values.where((x) => x['typeId'] == 'journal_entry').toList();
+      final j =
+          s.store.values.where((x) => x['typeId'] == 'journal_entry').toList();
       expect(j.length, 1);
       expect(j.single['entry'], 'I feel great');
     });
 
-    test('slots survive the split: "log a 3k run and i\'m feeling great"', () async {
+    test('slots survive the split: "log a 3k run and i\'m feeling great"',
+        () async {
       final s = await _session();
       final r = await s.handle("log a 3k run and i'm feeling great");
       expect(r, contains('3 km run'));
       expect(r, contains('mood as great'));
-      expect(s.store.values.where((x) => x['typeId'] == 'workout').single['distance'], 3);
-      expect(s.store.values.where((x) => x['typeId'] == 'mood').single['rating'], 'great');
+      expect(
+          s.store.values
+              .where((x) => x['typeId'] == 'workout')
+              .single['distance'],
+          '3');
+      expect(
+          s.store.values.where((x) => x['typeId'] == 'mood').single['rating'],
+          'great');
     });
 
-    test('write-then-read compound executes in order: the read sees the write', () async {
+    test('write-then-read compound executes in order: the read sees the write',
+        () async {
       final s = await _session();
       final r = await s.handle('log a 3k run and how far have i run');
       expect(r, contains('Logged a 3 km run'));
-      expect(r, contains("You've run 3 km")); // the total includes the run logged a moment before
+      expect(
+          r,
+          contains(
+              "You've run 3 km")); // the total includes the run logged a moment before
     });
 
     test('", and" seam also splits', () async {
@@ -1847,22 +2318,30 @@ void main() {
       expect(r, contains('Logged a run'));
       expect(r, contains('Saved to your journal'));
       expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
-      expect(s.store.values.where((x) => x['typeId'] == 'journal_entry').length, 1);
+      expect(s.store.values.where((x) => x['typeId'] == 'journal_entry').length,
+          1);
     });
 
-    test('undo after a compound walks back one action at a time, most recent first', () async {
+    test(
+        'undo after a compound walks back one action at a time, most recent first',
+        () async {
       final s = await _session();
       await s.handle('log a run and journal that I feel great');
-      await s.handle('undo that'); // reverses the journal entry (the most recent write)
-      expect(s.store.values.where((x) => x['typeId'] == 'journal_entry'), isEmpty);
+      await s.handle(
+          'undo that'); // reverses the journal entry (the most recent write)
+      expect(
+          s.store.values.where((x) => x['typeId'] == 'journal_entry'), isEmpty);
       expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
       await s.handle('undo that'); // then the run
       expect(s.store.values.where((x) => x['typeId'] == 'workout'), isEmpty);
     });
 
-    test('compound turn is logged with source=compound and both skills (telemetry)', () async {
+    test(
+        'compound turn is logged with source=compound and both skills (telemetry)',
+        () async {
       final file = FileStorageRepository('data');
-      final mem = _MemStorage(file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
+      final mem = _MemStorage(
+          file.loadDefs('types', 'typeId'), file.loadDefs('skills', 'skillId'));
       final s = Session('data', clock: _now, cloud: _NoCloud(), storage: mem);
       await s.init(retrieval: false);
       await s.handle('log a run and journal that I feel great');
@@ -1872,57 +2351,78 @@ void main() {
 
     // ---- negative controls: single commands that CONTAIN "and" must NOT split ----
 
-    test('control: "remind me to buy milk and eggs" is ONE task, not two', () async {
+    test('control: "remind me to buy milk and eggs" is ONE task, not two',
+        () async {
       final s = await _session();
       final r = await s.handle('remind me to buy milk and eggs');
       expect(r, contains('buy milk and eggs'));
       final tasks = s.store.values.where((x) => x['typeId'] == 'task').toList();
-      expect(tasks.length, 1, reason: 'a whole-utterance corpus match always wins over a split');
+      expect(tasks.length, 1,
+          reason: 'a whole-utterance corpus match always wins over a split');
       expect(tasks.single['description'], 'buy milk and eggs');
     });
 
-    test('control: "talked to Sam and Jo about the trip" is ONE interaction', () async {
+    test('control: "talked to Sam and Jo about the trip" is ONE interaction',
+        () async {
       final s = await _session();
       await s.handle('talked to Sam and Jo about the trip');
-      expect(s.store.values.where((x) => x['typeId'] == 'interaction').length, 1);
+      expect(
+          s.store.values.where((x) => x['typeId'] == 'interaction').length, 1);
       // the compound NAME stays intact — nothing was split into two dispatches
-      expect(s.store.values.where((x) => x['typeId'] == 'contact' && x['displayName'] == 'Sam and Jo').length, 1);
+      expect(
+          s.store.values
+              .where((x) =>
+                  x['typeId'] == 'contact' && x['displayName'] == 'Sam and Jo')
+              .length,
+          1);
     });
 
-    test('control: seed template with a literal "and" (relational remember) still routes whole', () async {
+    test(
+        'control: seed template with a literal "and" (relational remember) still routes whole',
+        () async {
       final s = await _session();
-      await s.handle("remember that Mia is allergic to peanuts and she is Sarah Mitchell's daughter");
-      expect(s.store.length, 4); // contact(Mia) + fact + contact(Sarah) + relationship — unchanged
+      await s.handle(
+          "remember that Mia is allergic to peanuts and she is Sarah Mitchell's daughter");
+      expect(s.store.length,
+          4); // contact(Mia) + fact + contact(Sarah) + relationship — unchanged
     });
 
-    test('control: "note that Mia loves drawing and painting" keeps the fact whole', () async {
+    test(
+        'control: "note that Mia loves drawing and painting" keeps the fact whole',
+        () async {
       final s = await _session();
       await s.handle('note that Mia loves drawing and painting');
-      final facts = s.store.values.where((x) => x['typeId'] == 'contact_fact').toList();
+      final facts =
+          s.store.values.where((x) => x['typeId'] == 'contact_fact').toList();
       expect(facts.length, 1);
       expect(facts.single['fact'], 'loves drawing and painting');
     });
 
-    test('control: one half not routing means NO split and NO half-execution', () async {
+    test('control: one half not routing means NO split and NO half-execution',
+        () async {
       final s = await _session();
       // "log a run" routes but "dance a jig" does not -> not a compound; falls to the
       // residual path (_NoCloud throws -> the safe catch-all). Crucially: NOTHING was written.
       final r = await s.handle('log a run and dance a jig');
       expect(r, contains("didn't do anything"));
-      expect(s.store, isEmpty, reason: 'a declined split must have zero side effects');
+      expect(s.store, isEmpty,
+          reason: 'a declined split must have zero side effects');
     });
   });
 
   group('multi-turn story (the full offline pipeline)', () {
     test('a realistic sequence keeps consistent state', () async {
       final s = await _session();
-      expect(await s.handle('add call the plumber to my to-do list'), contains('call the plumber'));
+      expect(await s.handle('add call the plumber to my to-do list'),
+          contains('call the plumber'));
       expect(await s.handle('add buy milk to my list'), contains('buy milk'));
       expect(await s.handle('list my tasks'), contains('2 task(s)'));
-      expect(await s.handle('undo that'), contains('Undone')); // undoes the last add (buy milk)
+      expect(await s.handle('undo that'),
+          contains('Undone')); // undoes the last add (buy milk)
       expect(await s.handle('list my tasks'), contains('1 task(s)'));
       await s.handle('log a 6k run');
-      expect(await s.handle('how many runs this week'), contains("You've run 6 km"));
+      expect(await s.handle('how many runs this week'),
+          contains("You've run 6 km"));
       await s.handle('note that Tom fixed the sink');
       expect(await s.handle('tell me about Tom'), contains('fixed the sink'));
     });

@@ -15,10 +15,13 @@ const kRank = <String, int>{
   // storage
   'store': 1, 'storage_repository': 1,
   // intelligence — NLU routing, the cloud seam, retrieval
-  'claude': 1, 'router': 1, 'embed': 1, 'replay_cloud': 1, 'reference': 1, 'content_search': 1,
+  'claude': 1, 'router': 1, 'embed': 1, 'replay_cloud': 1, 'reference': 1,
+  'content_search': 1,
   // business logic + orchestration
   'interpreter': 2, 'reminders': 2, 'people': 2, 'generative': 2,
   'automations': 2, 'config': 2, 'turnlog': 2, 'migration': 2, 'routines': 2,
+  'execution_coordinator': 2, 'schema_registry': 2, 'value_codec': 2,
+  'conversation_ledger': 2, 'planner': 2,
   'session': 2,
 };
 
@@ -28,14 +31,16 @@ List<String> unclassifiedFiles(Iterable<String> names,
 
 /// Pure core (testable): the upward-import violations for [graph] (file → its lib imports).
 /// An unclassified file is treated as the bottom layer, so ITS upward imports are still caught.
-List<String> lintGraph(Map<String, List<String>> graph, [Map<String, int> ranks = kRank]) {
+List<String> lintGraph(Map<String, List<String>> graph,
+    [Map<String, int> ranks = kRank]) {
   final violations = <String>[];
   graph.forEach((name, imports) {
     final srcRank = ranks[name] ?? 0;
     for (final target in imports) {
       final tRank = ranks[target];
       if (tRank != null && tRank > srcRank) {
-        violations.add('$name (L$srcRank) imports $target (L$tRank) — UPWARD import, forbidden by the §9 dependency rule');
+        violations.add(
+            '$name (L$srcRank) imports $target (L$tRank) — UPWARD import, forbidden by the §9 dependency rule');
       }
     }
   });
@@ -57,7 +62,8 @@ void main() {
   }
   final unclassified = unclassifiedFiles(graph.keys);
   for (final u in unclassified) {
-    stderr.writeln('UNCLASSIFIED: lib/$u.dart — add it to bin/import_lint.dart kRank');
+    stderr.writeln(
+        'UNCLASSIFIED: lib/$u.dart — add it to bin/import_lint.dart kRank');
   }
   final violations = lintGraph(graph);
   if (violations.isNotEmpty || unclassified.isNotEmpty) {
@@ -66,5 +72,6 @@ void main() {
     }
     exit(1);
   }
-  print('import-lint OK — no upward imports across ${kRank.length} classified lib files.');
+  print(
+      'import-lint OK — no upward imports across ${kRank.length} classified lib files.');
 }

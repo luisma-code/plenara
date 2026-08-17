@@ -1,5 +1,6 @@
 {
   "typeId": "interaction",
+  "schemaVersion": 1,
   "displayName": "Interaction",
   "parentType": "contact",
   "attributes": [

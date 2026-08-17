@@ -36,8 +36,16 @@ echo "== [3/12] v0 tests + coverage gate (incl. the 05a conformance suite) =="
         --report-on=lib --packages=.dart_tool/package_config.json \
     && "$DART" bin/coverage_check.dart )
 
+# Resolve Flutter packages exactly once. Offline-first makes an already-provisioned
+# development/CI machine independent of pub.dev availability; a fresh machine falls
+# back to the network. Every later Flutter command uses --no-pub so the gate has one
+# dependency boundary rather than five intermittent network points.
+echo "== [app-deps] resolve Flutter packages once (offline cache, then network fallback) =="
+( cd "$ROOT/app" && "$FLUTTER" pub get --offline ) || \
+  ( cd "$ROOT/app" && "$FLUTTER" pub get )
+
 echo "== [4/12] analyze app (lib test integration_test) =="
-( cd "$ROOT/app" && "$FLUTTER" analyze lib test integration_test )
+( cd "$ROOT/app" && "$FLUTTER" analyze --no-pub lib test integration_test )
 
 # Render leak guard: the presence paint() runs ~60fps forever, so a per-frame native SHADER there
 # (a ui.Gradient created every frame, never disposed) leaks GPU memory unboundedly while visible —
@@ -58,10 +66,10 @@ echo "== [6/12] visual verifier unit tests (including RGBA composition calibrati
 python3 -m unittest "$ROOT/app/tool/test_gesture_contact_sheet.py"
 
 echo "== [7/12] app widget tests =="
-( cd "$ROOT/app" && "$FLUTTER" test )
+( cd "$ROOT/app" && "$FLUTTER" test --no-pub )
 
 echo "== [8/12] external channel reachability (diagnostics + internal tools fail closed) =="
-( cd "$ROOT/app" && "$FLUTTER" test \
+( cd "$ROOT/app" && "$FLUTTER" test --no-pub \
     --dart-define=PLENARA_CHANNEL=external test/external_channel_test.dart )
 
 echo "== [9/12] host-OS build (the 'it still builds' floor) =="
@@ -70,7 +78,7 @@ case "$(uname -s)" in
   MINGW*|MSYS*|CYGWIN*|Windows*) TARGET=windows ;;
   *) TARGET=linux ;;
 esac
-( cd "$ROOT/app" && "$FLUTTER" build "$TARGET" --debug )
+( cd "$ROOT/app" && "$FLUTTER" build "$TARGET" --debug --no-pub )
 
 # The real-engine/GPU render smoke — the ONLY coverage of the animated presence + comet-trail
 # offscreen buffer (toImageSync) + veilYield corner transition. Headless widget tests build the
@@ -78,7 +86,7 @@ esac
 # them; this runs the actual raster path on the host desktop. (linux has no runner in the matrix.)
 if [ "$TARGET" != "linux" ]; then
   echo "== [10/12] integration test (real engine/GPU render smoke) =="
-  ( cd "$ROOT/app" && "$FLUTTER" test integration_test -d "$TARGET" )
+  ( cd "$ROOT/app" && "$FLUTTER" test --no-pub integration_test -d "$TARGET" )
 else
   echo "== [10/12] integration test SKIPPED (no desktop device on $TARGET) =="
 fi

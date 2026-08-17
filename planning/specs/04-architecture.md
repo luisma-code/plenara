@@ -1,6 +1,6 @@
 # Spec 04 — Architecture
 
-**Status:** v0.4 — July 2026 (Opus 4.8 first draft v0.1 → Opus 4.8 design-level hardening v0.2 → act-then-describe reconciliation v0.3 → generative-request routing v0.4; bones challenged, calls made and recorded — see Decision Record §9 and Appendix B/C/D review logs)  
+**Status:** v0.5 — durable execution spine implemented 2026-08-17; remaining destination seams are explicitly marked
 **Depends on:** Spec 01 — Meta-Schema & Type System (§4.4, §5, §7, §8); Spec 02 — Skill DSL (§2.3, §4, §5, §7.5); Spec 03 — NLU / Intent (§2.3, §2.6, §2.7, §3.5, §5); Research doc §2.5, §8, §9  
 **Blocks:** Spec 05 — Functional; Spec 06 — Data & Sync; Spec 07 — UI; Spec 09 — Test
 **Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
@@ -189,6 +189,14 @@ Both are defined in full in Spec 01 and only summarized here so the layer's surf
 `MigrationRunner` (Spec 01 §7.2) is a deterministic Business Logic component — **never a runtime model call**: `migrate(typeId) → MigrationResult` applies the declarative migration descriptor (renames/defaults/removals/safe coercions) record-by-record, atomically per record, leaving failures at their old version and surfacing them to a repair view (§5.4). `addMigration(typeId, from, to, fn)` registers developer-authored steps for built-in types.
 
 ### 3.3 Business Logic — `SkillInterpreter` and `ExecutionJournal` (new)
+
+#### 3.3a Current `ExecutionCoordinator` realization (2026-08-17)
+
+All production record mutations now pass through one synchronous, serial `ExecutionCoordinator` after resolve: ordinary skill writes, cloud multi-action batches, reference corrections, manual edit/delete, routine authoring and figure fill, workout correction, and automation approval. It validates projected writes through `ValueCodec`, freezes origin/input metadata, persists intent plus before-images before touching user records, checkpoints after every atomic operation, and resumes `prepared`, `applying`, or `reversing` entries at startup. Results are typed as `persisted`, `appliedInMemory`, `recovered`, `reversed`, `conflict`, or `failedBeforeWrite`, so the description cannot claim nothing changed after a partial storage failure.
+
+The current journal is one atomically replaced device-local `execution-journal.json`, capped at 25 terminal executions. This is an intentional implementation simplification from the per-execution-file destination below: execution is single-device and serial, so it does not create a shared-file sync race. Corrupt bytes are preserved beside the file and surfaced as a repair issue. The v1 at-rest posture remains the project-wide pass-through `CryptoBox` posture until Spec 01 §8.7 activates; device-local does not mean encrypted yet. Targeted undo checks that every affected record still matches the execution's after-image and refuses rather than overwriting a later edit. Undo and recovery use the same coordinator path; the old volatile fallback path no longer exists.
+
+The interfaces below remain the richer destination contract for detached approvals, expiry, and asynchronous storage. They are not a claim that those unimplemented members already exist in the walking skeleton.
 
 Spec 02 defined the interpreter's *semantics* (the closed vocabulary, the resolve/execute split, frozen inputs, idempotent resume) and the *journal's structure*, and explicitly left "its formal interface … to the Architecture spec" (Spec 01 §5.4). Here it is.
 

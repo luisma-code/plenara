@@ -58,7 +58,8 @@ class AutomationStatus {
   const AutomationStatus(this.automationId, this.state, [this.reason]);
 
   @override
-  String toString() => 'AutomationStatus($automationId: $state${reason == null ? '' : ' — $reason'})';
+  String toString() =>
+      'AutomationStatus($automationId: $state${reason == null ? '' : ' — $reason'})';
 }
 
 /// A read-only automation result, delivered without approval (Spec 02 §7.5:
@@ -79,13 +80,15 @@ class ReviewItem {
   final String automationId;
   final String skillId;
   final String description; // why the automation exists — shown in the feed
-  final DateTime firedAt; // the frozen clock; re-resolve reuses it (Spec 02 §4.4)
-  final Map<String, dynamic> slots; // the frozen inputs the skill was fired with
+  final DateTime
+      firedAt; // the frozen clock; re-resolve reuses it (Spec 02 §4.4)
+  final Map<String, dynamic>
+      slots; // the frozen inputs the skill was fired with
   final int depth; // cascade depth of the triggering write (Spec 04 §4.8)
   final Map<String, dynamic> _skill;
   Plan plan; // the held ActionPlan; replaced when a re-resolve differs (§4.2)
-  ReviewItem._(this.id, this.automationId, this.skillId, this.description, this.firedAt,
-      this.slots, this.depth, this._skill, this.plan);
+  ReviewItem._(this.id, this.automationId, this.skillId, this.description,
+      this.firedAt, this.slots, this.depth, this._skill, this.plan);
 
   /// The pending literal writes the user is approving — the review payload.
   List<Map<String, dynamic>> get pendingWrites => plan.writes;
@@ -100,13 +103,16 @@ class ReviewItem {
 /// `refused` (no longer resolvable / turned destructive; item removed), or
 /// `notFound`.
 class ReviewResolution {
-  final String kind; // 'applied' | 'planChanged' | 'refused' | 'notFound'
+  final String
+      kind; // 'prepared' | 'applied' | 'planChanged' | 'refused' | 'notFound'
   final String? message;
+
   /// On `applied`: the before-images of everything the approved plan touched, so the caller can
   /// journal them. An approved automation write must be exactly as undoable as the same skill
   /// spoken by hand — "don't let automations lower a skill's undoability".
   final Map<String, Map<String, dynamic>?>? before;
-  const ReviewResolution(this.kind, [this.message, this.before]);
+  final Plan? plan;
+  const ReviewResolution(this.kind, [this.message, this.before, this.plan]);
 }
 
 class _Registered {
@@ -178,7 +184,8 @@ class AutomationRunner {
 
   List<AutomationStatus> get statuses => [
         for (final r in _regs)
-          AutomationStatus(r.def['automationId']?.toString() ?? '?', r.state, r.reason)
+          AutomationStatus(
+              r.def['automationId']?.toString() ?? '?', r.state, r.reason)
       ];
 
   /// The pending-review surface (Spec 04 §3.9) — automation plans awaiting the
@@ -203,12 +210,15 @@ class AutomationRunner {
       reg.reason = why;
     }
 
-    final id = def['automationId'], target = def['targetType'], skillId = def['skillId'];
+    final id = def['automationId'],
+        target = def['targetType'],
+        skillId = def['skillId'];
     final cond = def['condition'], desc = def['description'];
     if (id is! String || id.isEmpty) return inert('missing automationId');
     if (target is! String || target.isEmpty) return inert('missing targetType');
     if (skillId is! String || skillId.isEmpty) return inert('missing skillId');
-    if (desc is! String || desc.isEmpty) return inert('missing description (why this automation exists)');
+    if (desc is! String || desc.isEmpty)
+      return inert('missing description (why this automation exists)');
     if (cond is! Map) return inert('missing condition');
     final kind = cond['kind'];
     if (kind != 'schedule' && kind != 'onWrite') {
@@ -217,7 +227,8 @@ class AutomationRunner {
     // condition-specific validation
     if (kind == 'schedule') {
       final cron = cond['cronExpression'];
-      if (cron is! String) return inert('schedule condition needs a cronExpression');
+      if (cron is! String)
+        return inert('schedule condition needs a cronExpression');
       try {
         cronMatches(cron, clock()); // parse/validate the expression up front
       } on FormatException catch (e) {
@@ -225,9 +236,11 @@ class AutomationRunner {
       }
     } else {
       final after = cond['afterField'];
-      if (after is! String || after.isEmpty) return inert('onWrite condition needs an afterField');
+      if (after is! String || after.isEmpty)
+        return inert('onWrite condition needs an afterField');
       final td = types[target];
-      if (td == null) return inert("unresolved targetType '$target' — inert until it exists");
+      if (td == null)
+        return inert("unresolved targetType '$target' — inert until it exists");
       final attrs = (td['attributes'] as List?) ?? const [];
       if (!attrs.any((a) => a is Map && a['name'] == after)) {
         return inert("afterField '$after' is not an attribute of '$target'");
@@ -238,10 +251,12 @@ class AutomationRunner {
     if (inline is Map) {
       final s = inline.cast<String, dynamic>();
       if (s['skillId'] != skillId) {
-        return inert("inline skill's skillId ('${s['skillId']}') must match the automation's skillId ('$skillId')");
+        return inert(
+            "inline skill's skillId ('${s['skillId']}') must match the automation's skillId ('$skillId')");
       }
       try {
-        Interpreter(types, clock()).validateSkill(s); // same static gate as any skill
+        Interpreter(types, clock())
+            .validateSkill(s); // same static gate as any skill
       } on ResolveError catch (e) {
         return inert('inline skill failed validation: ${e.message}');
       }
@@ -252,10 +267,12 @@ class AutomationRunner {
     // and re-checked at fire time (the shared registry can change under us).
     final skill = reg.inlineSkill ?? skills[skillId];
     if (skill != null && _isDestructive(skill)) {
-      return inert('destructive skill — forbidden for automations (Spec 02 §7.5)');
+      return inert(
+          'destructive skill — forbidden for automations (Spec 02 §7.5)');
     }
     if (skill == null && def['pendingSkill'] != true) {
-      return inert("skill '$skillId' not found in the registry (mark pendingSkill:true if it is not yet authored)");
+      return inert(
+          "skill '$skillId' not found in the registry (mark pendingSkill:true if it is not yet authored)");
     }
     if (skill == null) {
       reg.state = 'pending';
@@ -295,14 +312,17 @@ class AutomationRunner {
       final autoId = reg.def['automationId'] as String;
       final since = lastFired[autoId];
       if (since == null) {
-        lastFired[autoId] = now; // first sight — baseline, don't back-fill history
+        lastFired[autoId] =
+            now; // first sight — baseline, don't back-fill history
         onFired?.call(autoId, now);
         continue;
       }
-      if (dueSince(cond['cronExpression'] as String, since, now) == null) continue;
+      if (dueSince(cond['cronExpression'] as String, since, now) == null)
+        continue;
       lastFired[autoId] = now;
       onFired?.call(autoId, now);
-      _fireScheduled(reg); // read-only -> deliver; writes -> hold for review (same gating)
+      _fireScheduled(
+          reg); // read-only -> deliver; writes -> hold for review (same gating)
     }
   }
 
@@ -316,34 +336,39 @@ class AutomationRunner {
     final autoId = reg.def['automationId'] as String;
     final skillId = reg.def['skillId'] as String;
     if (depth >= maxCascadeDepth) {
-      refusals.add("automation '$autoId': onWrite suppressed at cascade depth $depth "
+      refusals.add(
+          "automation '$autoId': onWrite suppressed at cascade depth $depth "
           '(bound $maxCascadeDepth, Spec 04 §4.8)');
       return;
     }
     final skill = reg.inlineSkill ?? skills[skillId];
     if (skill == null) return; // pendingSkill — stays inert until authored
     if (_isDestructive(skill)) {
-      refusals.add("automation '$autoId': refused — destructive skills never run unattended (Spec 02 §7.5)");
+      refusals.add(
+          "automation '$autoId': refused — destructive skills never run unattended (Spec 02 §7.5)");
       return;
     }
-    final firedAt = clock(); // the frozen clock a re-resolve reuses (Spec 02 §4.4)
+    final firedAt =
+        clock(); // the frozen clock a re-resolve reuses (Spec 02 §4.4)
     final Plan plan;
     try {
       plan = Interpreter(types, firedAt).resolve(skill, slots, store);
     } catch (e) {
       // surfaced, never thrown into the user's turn (P2.8)
-      refusals.add("automation '$autoId': skill '$skillId' failed to resolve — $e");
+      refusals
+          .add("automation '$autoId': skill '$skillId' failed to resolve — $e");
       return;
     }
     if (plan.deletes.isNotEmpty) {
-      refusals.add("automation '$autoId': refused — the resolved plan deletes records "
+      refusals.add(
+          "automation '$autoId': refused — the resolved plan deletes records "
           '(destructive is forbidden on the unattended path, Spec 02 §7.5)');
       return;
     }
     if (plan.writes.isEmpty) {
       // READ-ONLY → deliver the formatted result, no approval (Spec 02 §7.5).
-      _deliveries.add(AutomationDelivery(
-          autoId, skillId, plan.confirmation ?? '(the skill produced no text)', firedAt));
+      _deliveries.add(AutomationDelivery(autoId, skillId,
+          plan.confirmation ?? '(the skill produced no text)', firedAt));
       return;
     }
     // WRITES → hold for review. NOT applied, NOT persisted (Spec 02 §7.5).
@@ -356,35 +381,53 @@ class AutomationRunner {
   /// fresh plan structurally matches the held one, execute + persist it. If
   /// the data moved and the plan differs, nothing executes on the stale
   /// approval — the item is updated with the new plan for re-approval.
-  ReviewResolution approve(String reviewId) {
+  ReviewResolution prepareApproval(String reviewId) {
     final i = _pending.indexWhere((p) => p.id == reviewId);
-    if (i < 0) return const ReviewResolution('notFound', 'no such pending review item');
+    if (i < 0)
+      return const ReviewResolution('notFound', 'no such pending review item');
     final item = _pending[i];
     final Plan fresh;
     try {
-      fresh = Interpreter(types, item.firedAt).resolve(item._skill, item.slots, store);
+      fresh = Interpreter(types, item.firedAt)
+          .resolve(item._skill, item.slots, store);
     } catch (e) {
       _pending.removeAt(i);
-      return ReviewResolution('refused', 'this plan no longer resolves against the current data — $e');
+      return ReviewResolution('refused',
+          'this plan no longer resolves against the current data — $e');
     }
     if (fresh.deletes.isNotEmpty) {
       _pending.removeAt(i);
-      return const ReviewResolution(
-          'refused', 'the re-resolved plan would delete records — forbidden on the unattended path');
+      return const ReviewResolution('refused',
+          'the re-resolved plan would delete records — forbidden on the unattended path');
     }
     if (!_samePlan(item.plan, fresh)) {
       item.plan = fresh; // the stale approval never executes (Spec 02 §4.2)
       return const ReviewResolution('planChanged',
           'the data changed since this was held — review the updated plan and approve again');
     }
+    return ReviewResolution('prepared', fresh.confirmation, null, fresh);
+  }
+
+  void completePreparedApproval(
+      String reviewId, List<Map<String, dynamic>> writes) {
+    final i = _pending.indexWhere((item) => item.id == reviewId);
+    if (i < 0) return;
+    final item = _pending.removeAt(i);
+    notifyWrites(writes, depth: item.depth + 1);
+  }
+
+  /// Compatibility entry for engine-only callers. Product Session uses
+  /// [prepareApproval] and submits the plan through ExecutionCoordinator.
+  ReviewResolution approve(String reviewId) {
+    final prepared = prepareApproval(reviewId);
+    if (prepared.kind != 'prepared' || prepared.plan == null) return prepared;
+    final item = _pending.firstWhere((entry) => entry.id == reviewId);
+    final fresh = prepared.plan!;
     final before = Interpreter(types, item.firedAt).execute(fresh, store);
     for (final w in fresh.writes) {
       persist?.call(w);
     }
-    _pending.removeAt(i);
-    // An approved automation write is itself a write: cascade at depth+1,
-    // bounded — and every writing hop lands back in the review feed anyway.
-    notifyWrites(fresh.writes, depth: item.depth + 1);
+    completePreparedApproval(reviewId, fresh.writes);
     return ReviewResolution('applied', fresh.confirmation, before);
   }
 
@@ -418,7 +461,8 @@ class AutomationRunner {
   /// interpreter-minted create ids (fresh each resolve) — including where a
   /// minted id feeds another write's entityRef field (normalized positionally).
   bool _samePlan(Plan held, Plan fresh) {
-    if (held.deletes.length != fresh.deletes.length || held.writes.length != fresh.writes.length) {
+    if (held.deletes.length != fresh.deletes.length ||
+        held.writes.length != fresh.writes.length) {
       return false;
     }
     for (var i = 0; i < held.deletes.length; i++) {
@@ -427,9 +471,12 @@ class AutomationRunner {
     final ma = _mintMap(held), mb = _mintMap(fresh);
     for (var i = 0; i < held.writes.length; i++) {
       final wa = held.writes[i], wb = fresh.writes[i];
-      final aCreate = ma.containsKey(wa['id']), bCreate = mb.containsKey(wb['id']);
-      if (aCreate != bCreate) return false; // an update became a create, or vice versa
-      if (!aCreate && wa['id'] != wb['id']) return false; // update targets must match
+      final aCreate = ma.containsKey(wa['id']),
+          bCreate = mb.containsKey(wb['id']);
+      if (aCreate != bCreate)
+        return false; // an update became a create, or vice versa
+      if (!aCreate && wa['id'] != wb['id'])
+        return false; // update targets must match
       final fa = _normalize(Map<String, dynamic>.of(wa)..remove('id'), ma);
       final fb = _normalize(Map<String, dynamic>.of(wb)..remove('id'), mb);
       if (!_deepEq(fa, fb)) return false;
@@ -449,7 +496,8 @@ class AutomationRunner {
 
   static dynamic _normalize(dynamic v, Map<String, String> mints) {
     if (v is String) return mints[v] ?? v;
-    if (v is Map) return {for (final e in v.entries) e.key: _normalize(e.value, mints)};
+    if (v is Map)
+      return {for (final e in v.entries) e.key: _normalize(e.value, mints)};
     if (v is List) return [for (final x in v) _normalize(x, mints)];
     return v;
   }

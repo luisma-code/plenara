@@ -1,6 +1,6 @@
 # Spec 01 — Meta-Schema & Type System
 
-**Status:** Draft v0.3 — July 2026 (reviewed & revised by Claude — see Appendix A)  
+**Status:** Draft v0.4 — implementation spine landed 2026-08-17 (see §§5.1a, 7.2a)
 **Depends on:** Research doc v0.10 (§4, §8, §9)  
 **Blocks:** Skill DSL spec, NLU spec, Architecture spec, Data & Sync spec, UI spec
 **Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
@@ -265,6 +265,12 @@ The SchemaRegistry is the Business Logic layer's single source of truth for all 
 
 ### 5.1 Interface Contract
 
+#### 5.1a Current deterministic hydration boundary (2026-08-17)
+
+The walking skeleton now has one real `SchemaRegistry` hydration boundary. It consumes raw definition documents so filename/id mismatches and duplicates cannot be erased by premature indexing. Before a type becomes active it checks identifier and filename agreement, positive and contiguous schema versions, unique and shaped attributes, known value types, enum/default/ref requirements, migration structure, cross-type references, presentation eligibility, and automation target/skill closure. Local structural defects reject the definition; unresolved cross-links and presentation defects retain capture but mark the type degraded. Automation closure failures are excluded from runner registration. The same registry is used at startup and for template/authored-type preview and activation.
+
+The current seed corpus predates the full descriptive metadata contract below. Hydration therefore enforces the runtime-critical subset today; completing `displayNamePlural`, descriptions, example phrases, authorship metadata, and presentation hints across every seed definition remains part of schema-corpus normalization, not a second validator. `ValueCodec` is the sole instance-value boundary for interpreter, manual, reference, routine, cloud-batch, and automation-approved writes.
+
 ```dart
 abstract class SchemaRegistry {
   /// Load all type definitions from the types/ folder.
@@ -396,6 +402,10 @@ Breaking changes require: (a) incrementing `schemaVersion` in the type file, and
 
 ### 7.2 Migration Runner
 
+#### 7.2a Current migration contract (2026-08-17)
+
+Built-in and authored types use the same declarative `migrations` array. A type above version 1 is inert unless it declares every one-step transition from version 1 to its target. The runner applies rename → safe coercion → missing default → removal, including dot paths, and validates the complete target record through `ValueCodec` before advancing its version. Failed and future-version records retain their exact old disk form, stay out of typed reads, and produce structured repair items. Before a successful filesystem migration, Plenara stores an immutable exact-byte backup in device-local `migration-backups/`; restoration copies those bytes back atomically.
+
 The migration runner is a deterministic Dart component in the Business Logic layer. It is **not** a Claude call at runtime. Its interface:
 
 ```dart
@@ -412,7 +422,7 @@ abstract class MigrationRunner {
 typedef RecordMigrationFn = Map<String, dynamic> Function(Map<String, dynamic> oldRecord);
 ```
 
-Migration steps are registered in code (not authored by Claude at runtime) — they are written by the developer when a type's schema is intentionally changed. For **user-defined types**, the migration step is authored by Claude at type-edit time and stored as part of the type definition file under a `migrations` key:
+Migration descriptors are stored with the type definition for both built-in and user-authored types. A developer writes/reviews a built-in type's descriptor; Claude may propose a user-defined type edit, but the same registry validator accepts or rejects its descriptor before activation. Runtime never executes generated code:
 
 ```json
 "migrations": [

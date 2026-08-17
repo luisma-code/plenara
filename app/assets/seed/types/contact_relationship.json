@@ -1,5 +1,6 @@
 {
   "typeId": "contact_relationship",
+  "schemaVersion": 1,
   "displayName": "Contact Relationship",
   "attributes": [
     { "name": "from", "valueType": "entityRef", "refType": "contact", "required": true },

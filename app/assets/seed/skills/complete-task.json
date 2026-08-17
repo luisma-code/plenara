@@ -40,13 +40,20 @@
         ],
         "else": [
           {
+            "op": "compute",
+            "fn": "now",
+            "into": "completedAt"
+          },
+          {
             "op": "write_record",
             "typeId": "task",
             "target": {
               "ref": "t"
             },
             "fields": {
-              "completed": true
+              "completed": true,
+              "status": "done",
+              "completedAt": { "var": "completedAt" }
             },
             "into": "t2"
           },
