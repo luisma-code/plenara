@@ -52,7 +52,16 @@ void main(List<String> args) {
     schemas[id] = json['schemaVersion'] ?? 1;
     final steps = (json['migrations'] as List? ?? const [])
         .whereType<Map>()
-        .map((step) => '${step['from']}→${step['to']}')
+        .map((step) {
+          final from = step['fromVersion'];
+          final to = step['toVersion'];
+          if (from is! int || to is! int) {
+            throw FormatException(
+              '$id has a migration without integer fromVersion/toVersion',
+            );
+          }
+          return '$from→$to';
+        })
         .toList();
     if (steps.isNotEmpty) migrations[id] = steps;
   }

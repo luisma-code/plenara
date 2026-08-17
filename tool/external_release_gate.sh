@@ -112,5 +112,8 @@ if [ "${#ALLOW_DIRTY[@]}" -gt 0 ]; then
   MANIFEST_ARGS+=("${ALLOW_DIRTY[@]}")
 fi
 dart "$ROOT/tool/generate_release_manifest.dart" "${MANIFEST_ARGS[@]}"
+jq -e '
+  all(.migrations[]?[]?; test("^[0-9]+→[0-9]+$"))
+' "$MANIFEST" >/dev/null
 echo "== EXTERNAL RELEASE GATE GREEN =="
 echo "Manifest: $MANIFEST"
