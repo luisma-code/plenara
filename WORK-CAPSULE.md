@@ -150,6 +150,12 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 - Rotate the Anthropic credential that appeared in a non-hermetic test failure before this increment. The repository/reports do not contain it, but the earlier tool transcript did. Credential rotation requires Luis's account authority.
 
+## Latest phone deployment
+
+- On 2026-08-17 at 16:25 PDT, after Luis explicitly requested a phone deployment, the signed internal-channel iOS release `0.12.0 (18)` from revision `aca107a78a31c04fdcb3a8b99374fe044b9ae06f` was installed wirelessly on **Aluminum Monster** as `com.plenara.plenaraApp`.
+- The exact installed source bundle passed local code-signature verification and contained both the internal raw-diagnostics canary and embedded revision. Its AOT binary SHA-256 is `4f41cc46c4ba6f3cfefe769f1e6bed753dc989c9ac9eb1eebe936fca48cf1502`.
+- Deployment only: no test, probe, log collection, app inspection, or automated launch ran on the physical phone.
+
 ## Live commands
 
 - Keep awake: `pgrep -x caffeinate || nohup caffeinate -dimsu >/dev/null 2>&1 &`
