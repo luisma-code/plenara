@@ -183,4 +183,58 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('planning-artifact-morning')), findsNothing);
   });
+
+  testWidgets('relationship suggestion can be deferred without respawning', (
+    tester,
+  ) async {
+    final session = await _session();
+    await session.handle("Mia's birthday is august 19");
+
+    await tester.pumpWidget(_board(session));
+    await tester.pumpAndSettle();
+
+    final card = find.byKey(
+      const Key('planning-artifact-relationshipSuggestion'),
+    );
+    expect(card, findsOneWidget);
+    expect(find.text("Mia's birthday"), findsWidgets);
+    await tester.ensureVisible(find.text('Tomorrow'));
+    await tester.tap(find.text('Tomorrow'));
+    await tester.pumpAndSettle();
+
+    expect(card, findsNothing);
+    expect(session.plannerEngagement.suggestionsDeferred, 1);
+    expect(session.activePlanningArtifacts, isEmpty);
+  });
+
+  testWidgets('deterministic capacity pressure is visible before AI', (
+    tester,
+  ) async {
+    final session = await _session();
+    await session.handle('add first long task to my list');
+    await session.handle('add second long task to my list');
+    final ids = session.store.values
+        .where((record) => record['typeId'] == 'task')
+        .map((record) => '${record['id']}')
+        .toList();
+    await session.updateTaskPlans([
+      TaskPlanPatch(
+        id: ids[0],
+        scheduledStartAt: session.now,
+        estimatedMinutes: 300,
+      ),
+      TaskPlanPatch(
+        id: ids[1],
+        scheduledStartAt: session.now.add(const Duration(hours: 5)),
+        estimatedMinutes: 240,
+      ),
+    ]);
+
+    await tester.pumpWidget(_board(session));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('planner-signal-overload')), findsOneWidget);
+    expect(find.text('Plan exceeds capacity'), findsOneWidget);
+    expect(find.textContaining('540 minutes'), findsOneWidget);
+  });
 }

@@ -351,6 +351,8 @@ void main() {
     expect(preview, contains('without applying'));
     expect(session.activePlanProposal!.state, PlanProposalState.draft);
     expect(session.store[ids.first]!.containsKey('scheduledStartAt'), isFalse);
+    final firstProposalId = session.activePlanProposal!.items.first.taskId;
+    final secondProposalId = session.activePlanProposal!.items[1].taskId;
     expect(await session.handle('move the first one to tomorrow at 11am'),
         contains('Nothing has been applied'));
     expect(await session.handle('remove the second one'),
@@ -358,13 +360,15 @@ void main() {
     final applied = await session.handle('apply the proposal');
     expect(applied, contains('Updated'));
     expect(session.activePlanProposal!.state, PlanProposalState.applied);
-    expect(session.store[ids.first]!['scheduledStartAt'],
+    expect(session.store[firstProposalId]!['scheduledStartAt'],
         '2026-08-18T11:00:00.000');
-    expect(session.store[ids.last]!.containsKey('scheduledStartAt'), isFalse);
+    expect(session.store[secondProposalId]!.containsKey('scheduledStartAt'),
+        isFalse);
     final execution = session.executions.completed.last;
     expect(execution.origin, 'planner-proposal');
     expect(await session.undoById(execution.id), contains('Undone'));
-    expect(session.store[ids.first]!.containsKey('scheduledStartAt'), isFalse);
+    expect(session.store[firstProposalId]!.containsKey('scheduledStartAt'),
+        isFalse);
   });
 
   test('a stale proposal fails before any write and survives relaunch',

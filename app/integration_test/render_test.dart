@@ -190,8 +190,13 @@ void main() {
           )
           .first;
       final state = tester.state<ScrollableState>(planScroll);
-      state.position.jumpTo(state.position.maxScrollExtent);
-      await runFrames(tester, 3);
+      var offset = 0.0;
+      while (find.text('Unscheduled').evaluate().isEmpty &&
+          offset <= state.position.maxScrollExtent) {
+        state.position.jumpTo(offset);
+        await runFrames(tester, 2);
+        offset += 80;
+      }
     }
     expect(find.text('Unscheduled'), findsWidgets);
     expect(tester.takeException(), isNull);

@@ -1,12 +1,12 @@
 # Spec 17 — Living Planner & Multimodal Product Model
 
-**Status:** v0.4 — 2026-08-17, active implementation authority. Today, phone/desktop Plan, purpose-built Library, the durable conversation ledger, task schema v5, structured planner context, in-process retrieval, cloud admission, durable proposals/reviews, detached operations, and the adaptive full-screen/collaborator presence are wired; the detail ember remains a later increment.
+**Status:** v0.5 — 2026-08-17, active implementation authority. Today, phone/desktop Plan, purpose-built Library and person context, the durable conversation ledger, task schema v5, structured planner context, in-process retrieval, cloud admission, durable proposals/reviews/suggestions, detached operations, and the adaptive full-screen/collaborator/ember presence are wired.
 **Supersedes:** research §2.2's overlay-only/no-touch rule; Spec 07 P1–P2 and its four-surface model; Spec 15 D1/D14 where they make full-screen presence or ephemeral exchange the steady-state product. Those documents remain design history and point here for current behavior.
 **Depends on:** Specs 01–06 for schema, skills, routing, orchestration, functional behavior, and storage; Spec 07 for visual language and generic archetypes; Spec 12 for voice; Spec 15 for Plena's renderer.
 
 ---
 
-## Current realization — Increment 4
+## Current realization — Increment 6
 
 - Opening the app renders the deterministic Today projection rather than an ephemeral greeting. It includes bounded Now/Next/Later sections, one relationship date, the latest durable execution with targeted undo, Inbox count, operational notices, and repair state.
 - Voice and typed capture continue through `Session.handle`; Today completion calls the typed `Session.completeTask` command directly. Both converge on `ExecutionCoordinator` and its durable device-local journal.
@@ -26,10 +26,15 @@
 - A validated authored-capability preview is persisted device-locally until activation, cancellation, or an unrelated move-on turn. Only activation promotes it to the live type/skill registry.
 - Morning plans and relationship/event-preparation cards are deterministic durable artifacts on Today. A draft remains until accepted, dismissed, or superseded; relationship preparation uses only saved facts, dates, and the latest logged interaction.
 - Generative prompt assembly stamps its declared record classes and explicit-invocation consent into every implemented request. The same declarations are visible in Settings; journal is excluded from all current assemblers.
+- People-linked task commitments keep their relationship identity in Today, Plan, weekly proposals/reviews, and person detail. Planned interactions and recurring relationship dates appear in the selected Plan day; goals and active routines remain visible as planning rhythms.
+- Upcoming relationship dates produce one durable proactive suggestion with explicit Keep, Dismiss, and Tomorrow outcomes. Deferral survives relaunch and returns when due; a resolved suggestion does not respawn unchanged.
+- Deterministic overload, stale-queue, and relationship-neglect signals run before AI and are capped at two on Today. Engagement counts explicit suggestion decisions and relationship follow-through, never impressions, opens, animation, or screen time.
 
 Increment 3's automated evidence gate is complete: 1,877 engine tests plus 36 declared skips, 118 Flutter tests plus the intentional internal-build external-channel skip, tier coverage of 94.2% deterministic core / 90.3% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, and the same five tests on a local iPhone 17 Pro simulator all pass. A disposable-copy exercise migrated the real task to v4 with one backup, zero repair issues, and byte-identical source data. Human glance-time, compare/sequence speed, correction rate, and local retrieval quality require ordinary use of an explicitly deployed build; automated harnesses never target Luis's physical phone.
 
 Increment 4's automated evidence gate is complete: 1,904 engine tests plus 36 declared skips, 123 Flutter tests plus the intentional external-channel skip, tier coverage of 94.2% deterministic core / 90.5% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, and the same five tests on the explicitly selected local iPhone 17 Pro simulator all pass. The proposal benchmark accepts 10/10 deterministic scenarios without immediate correction (gate ≥80%). A disposable-copy exercise migrated the real task to v5 with one backup, zero repair issues, and byte-identical source data. The simulator run reached roughly 504 MB RSS during its short sample, completed normally, was shut down, and left no app/test process; this is not a long-soak leak claim.
+
+Increment 6's automated evidence gate is complete: 1,907 engine tests plus 36 declared skips, 138 Flutter tests plus the intentional external-channel skip, tier coverage of 94.2% deterministic core / 90.8% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, external-channel isolation, secret scan, and the 24/60 conformance ratchet all pass. New relationship, signal, and durable-suggestion tests were calibrated against deliberate regressions before restoration. Five-day dogfood, perceived continuity, and dismissal-fatigue gates require ordinary use of an explicitly deployed build and are not inferred from automated verification.
 
 ## 0. Product decision
 

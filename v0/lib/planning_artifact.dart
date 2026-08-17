@@ -8,9 +8,9 @@ import 'dart:io';
 
 import 'store.dart' show writeJsonAtomic;
 
-enum PlanningArtifactKind { morning, relationshipPrep }
+enum PlanningArtifactKind { morning, relationshipPrep, relationshipSuggestion }
 
-enum PlanningArtifactState { draft, accepted, dismissed, superseded }
+enum PlanningArtifactState { draft, deferred, accepted, dismissed, superseded }
 
 class PlanningArtifactItem {
   final String recordId;
@@ -44,6 +44,7 @@ class PlanningArtifact {
   final DateTime createdAt;
   final DateTime updatedAt;
   final PlanningArtifactState state;
+  final DateTime? deferUntil;
   final List<PlanningArtifactItem> items;
   final String summary;
 
@@ -54,6 +55,7 @@ class PlanningArtifact {
     required this.createdAt,
     required this.updatedAt,
     required this.state,
+    this.deferUntil,
     required this.items,
     required this.summary,
   });
@@ -61,6 +63,8 @@ class PlanningArtifact {
   PlanningArtifact copyWith({
     DateTime? updatedAt,
     PlanningArtifactState? state,
+    DateTime? deferUntil,
+    bool clearDeferUntil = false,
   }) =>
       PlanningArtifact(
         id: id,
@@ -69,6 +73,7 @@ class PlanningArtifact {
         createdAt: createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         state: state ?? this.state,
+        deferUntil: clearDeferUntil ? null : deferUntil ?? this.deferUntil,
         items: items,
         summary: summary,
       );
@@ -80,6 +85,7 @@ class PlanningArtifact {
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
         'state': state.name,
+        if (deferUntil != null) 'deferUntil': deferUntil!.toIso8601String(),
         'items': items.map((item) => item.toJson()).toList(),
         'summary': summary,
       };
@@ -92,6 +98,9 @@ class PlanningArtifact {
         createdAt: DateTime.parse(raw['createdAt'] as String),
         updatedAt: DateTime.parse(raw['updatedAt'] as String),
         state: PlanningArtifactState.values.byName(raw['state'] as String),
+        deferUntil: raw['deferUntil'] == null
+            ? null
+            : DateTime.parse(raw['deferUntil'] as String),
         items: (raw['items'] as List)
             .map((item) => PlanningArtifactItem.fromJson(
                   Map<String, dynamic>.from(item as Map),
@@ -265,6 +274,18 @@ class PlanningArtifactStore {
     }
   }
 
+  List<PlanningArtifact> activeAt(DateTime now) => _artifacts
+      .where(
+        (artifact) =>
+            artifact.state == PlanningArtifactState.draft ||
+            (artifact.state == PlanningArtifactState.deferred &&
+                artifact.deferUntil != null &&
+                !artifact.deferUntil!.isAfter(now)),
+      )
+      .toList(growable: false);
+
+  /// Draft-only compatibility view. Time-aware product surfaces use
+  /// [activeAt] so a deferred artifact can return when its date arrives.
   List<PlanningArtifact> get active => _artifacts
       .where((artifact) => artifact.state == PlanningArtifactState.draft)
       .toList(growable: false);
@@ -272,10 +293,12 @@ class PlanningArtifactStore {
   List<PlanningArtifact> get history => List.unmodifiable(_artifacts);
 
   void create(PlanningArtifact artifact) {
+    if (_artifacts.any((existing) => existing.id == artifact.id)) return;
     for (var index = 0; index < _artifacts.length; index++) {
       final current = _artifacts[index];
       if (current.kind == artifact.kind &&
-          current.state == PlanningArtifactState.draft) {
+          (current.state == PlanningArtifactState.draft ||
+              current.state == PlanningArtifactState.deferred)) {
         _artifacts[index] = current.copyWith(
           state: PlanningArtifactState.superseded,
           updatedAt: artifact.createdAt,
@@ -287,18 +310,37 @@ class PlanningArtifactStore {
   }
 
   PlanningArtifact? resolve(
-      String id, PlanningArtifactState state, DateTime now) {
+    String id,
+    PlanningArtifactState state,
+    DateTime now, {
+    DateTime? deferUntil,
+  }) {
     if (state != PlanningArtifactState.accepted &&
-        state != PlanningArtifactState.dismissed) {
+        state != PlanningArtifactState.dismissed &&
+        state != PlanningArtifactState.deferred) {
       throw ArgumentError.value(state, 'state', 'must resolve the artifact');
+    }
+    if (state == PlanningArtifactState.deferred &&
+        (deferUntil == null || !deferUntil.isAfter(now))) {
+      throw ArgumentError.value(
+        deferUntil,
+        'deferUntil',
+        'must be after now',
+      );
     }
     final index = _artifacts.indexWhere(
       (artifact) =>
-          artifact.id == id && artifact.state == PlanningArtifactState.draft,
+          artifact.id == id &&
+          (artifact.state == PlanningArtifactState.draft ||
+              artifact.state == PlanningArtifactState.deferred),
     );
     if (index < 0) return null;
-    _artifacts[index] =
-        _artifacts[index].copyWith(state: state, updatedAt: now);
+    _artifacts[index] = _artifacts[index].copyWith(
+      state: state,
+      updatedAt: now,
+      deferUntil: deferUntil,
+      clearDeferUntil: state != PlanningArtifactState.deferred,
+    );
     _persist();
     return _artifacts[index];
   }
@@ -308,7 +350,7 @@ class PlanningArtifactStore {
     final file = File(path!);
     file.parent.createSync(recursive: true);
     writeJsonAtomic(file, {
-      'version': 1,
+      'version': 2,
       'artifacts': _artifacts.map((artifact) => artifact.toJson()).toList(),
     });
   }

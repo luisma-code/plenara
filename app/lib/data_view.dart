@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plenara/automations.dart';
 import 'package:plenara/session.dart';
+import 'package:plenara/planner.dart' show taskRelationshipNames;
 
 import 'presence_shell.dart';
 
@@ -562,6 +563,17 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
     final extraKeys = rec.keys
         .where((k) => !_plumbingFields.contains(k) && !schemaNames.contains(k))
         .toList();
+    final personContext = widget.typeId == 'contact'
+        ? widget.session.store.values.where((candidate) {
+            if (candidate['id'] == rec['id']) return false;
+            if ('${candidate['subject']}' == '${rec['id']}') return true;
+            return candidate['typeId'] == 'task' &&
+                taskRelationshipNames(
+                  candidate,
+                  widget.session.store,
+                ).contains('${rec['displayName']}');
+          }).toList()
+        : const <Map<String, dynamic>>[];
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
@@ -599,6 +611,27 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
                       title: Text(k),
                       trailing: Text(renderValue(rec[k], null)),
                     ),
+              ],
+              if (personContext.isNotEmpty) ...[
+                const Divider(),
+                Text(
+                  'Connected commitments & history',
+                  key: const Key('person-context'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                for (final related in personContext.take(8))
+                  ListTile(
+                    dense: true,
+                    leading: Icon(
+                      related['typeId'] == 'task'
+                          ? Icons.check_circle_outline_rounded
+                          : Icons.history_rounded,
+                    ),
+                    title: Text(
+                      '${related['description'] ?? related['note'] ?? related['fact'] ?? related['kind'] ?? related['label'] ?? related['typeId']}',
+                    ),
+                    subtitle: Text('${related['typeId']}'),
+                  ),
               ],
               const SizedBox(height: 8),
               Align(

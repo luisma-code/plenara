@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'plan_proposal.dart' show taskPlanFingerprint;
+import 'planner.dart' show taskRelationshipNames;
 import 'store.dart' show writeJsonAtomic;
 
 enum ReviewDecision { keep, defer, drop }
@@ -145,7 +146,7 @@ WeeklyReviewArtifact buildWeeklyReviewArtifact(
           : overdue || record['priority'] == 'high'
               ? ReviewDecision.keep
               : ReviewDecision.defer;
-      final evidence = switch (decision) {
+      final baseEvidence = switch (decision) {
         ReviewDecision.keep => overdue
             ? 'Deadline ${due.month}/${due.day} has passed.'
             : 'Marked high priority.',
@@ -155,6 +156,10 @@ WeeklyReviewArtifact buildWeeklyReviewArtifact(
         ReviewDecision.drop =>
           'Still in Someday after ${now.difference(created!).inDays} days.',
       };
+      final people = taskRelationshipNames(record, records);
+      final evidence = people.isEmpty
+          ? baseEvidence
+          : '$baseEvidence Commitment to ${people.join(', ')}.';
       items.add(WeeklyReviewItem(
         recordId: '${record['id']}',
         recordType: 'task',

@@ -1066,6 +1066,7 @@ class Session {
     } else {
       phase('retrieval disabled');
     }
+    _ensureProactiveRelationshipArtifact();
     await _reconcileReminders(); // arm any future reminders already on disk (re-open)
     phase('reminders reconciled — READY');
   }
@@ -1363,6 +1364,7 @@ class Session {
   /// relationship dates. The UI reads this directly; it never converts taps
   /// into synthetic English commands.
   TodayProjection todayProjection() {
+    _ensureProactiveRelationshipArtifact();
     final latest =
         executions.completed.where((entry) => entry.visible).lastOrNull;
     return buildTodayProjection(
@@ -1389,6 +1391,16 @@ class Session {
         selectedDay: selectedDay,
         dailyCapacityMinutes: dailyCapacityMinutes,
       );
+
+  List<PlannerSignal> plannerSignals({int dailyCapacityMinutes = 8 * 60}) =>
+      buildPlannerSignals(
+        store,
+        now,
+        dailyCapacityMinutes: dailyCapacityMinutes,
+      );
+
+  PlannerEngagementSnapshot get plannerEngagement =>
+      buildPlannerEngagement(store, planningArtifacts.history);
 
   PlanProposal? get activePlanProposal => planProposals.active;
 
@@ -1491,7 +1503,7 @@ class Session {
   }
 
   List<PlanningArtifact> get activePlanningArtifacts =>
-      planningArtifacts.active;
+      planningArtifacts.activeAt(now);
 
   PlanningArtifact createMorningPlan() {
     final artifact = buildMorningPlanningArtifact(store, now);
@@ -1516,6 +1528,44 @@ class Session {
             : PlanningArtifactState.dismissed,
         now,
       );
+
+  PlanningArtifact? deferPlanningArtifact(
+    String id, {
+    Duration forDuration = const Duration(days: 1),
+  }) =>
+      planningArtifacts.resolve(
+        id,
+        PlanningArtifactState.deferred,
+        now,
+        deferUntil: now.add(forDuration),
+      );
+
+  void _ensureProactiveRelationshipArtifact() {
+    final nudge = buildTodayProjection(store, now).relationshipNudge;
+    if (nudge == null || nudge.at == null) return;
+    final day = nudge.at!;
+    final occurrence =
+        '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+    planningArtifacts.create(
+      PlanningArtifact(
+        id: 'relationship-suggestion-${nudge.id}-$occurrence',
+        kind: PlanningArtifactKind.relationshipSuggestion,
+        title: 'Prepare for ${nudge.title}',
+        createdAt: now,
+        updatedAt: now,
+        state: PlanningArtifactState.draft,
+        items: [
+          PlanningArtifactItem(
+            recordId: nudge.id,
+            title: nudge.title,
+            evidence: nudge.detail ?? 'Coming up',
+          ),
+        ],
+        summary:
+            'A timely suggestion based only on a date you saved. Keep it, dismiss it, or move it to tomorrow.',
+      ),
+    );
+  }
 
   PlanProposal createWeeklyProposal() {
     final proposal = buildWeeklyPlanProposal(store, now);

@@ -3,7 +3,25 @@
 /// into fake tasks.
 library;
 
-enum PlannerItemKind { task, reminder, routine, relationship }
+import 'planning_artifact.dart';
+
+enum PlannerItemKind { task, reminder, routine, goal, relationship }
+
+enum PlannerSignalKind { relationshipNeglect, overload, staleQueue }
+
+class PlannerSignal {
+  final PlannerSignalKind kind;
+  final String title;
+  final String detail;
+  final List<String> recordIds;
+
+  const PlannerSignal({
+    required this.kind,
+    required this.title,
+    required this.detail,
+    this.recordIds = const [],
+  });
+}
 
 class PlannerItem {
   final String id;
@@ -13,6 +31,7 @@ class PlannerItem {
   final DateTime? at;
   final bool overdue;
   final bool completable;
+  final String? relationshipContext;
 
   const PlannerItem({
     required this.id,
@@ -22,6 +41,7 @@ class PlannerItem {
     this.at,
     this.overdue = false,
     this.completable = false,
+    this.relationshipContext,
   });
 }
 
@@ -52,6 +72,7 @@ class PlanTaskItem {
   final String? recurrence;
   final bool blocked;
   final String? blockedReason;
+  final String? relationshipContext;
 
   const PlanTaskItem({
     required this.id,
@@ -66,6 +87,7 @@ class PlanTaskItem {
     this.recurrence,
     required this.blocked,
     this.blockedReason,
+    this.relationshipContext,
   });
 }
 
@@ -105,6 +127,7 @@ class PlanProjection {
   final List<PlanTaskItem> agenda;
   final List<PlanTaskItem> deadlines;
   final List<PlanTaskItem> unscheduled;
+  final List<PlanTaskItem> rhythms;
   final List<PlanConflict> conflicts;
 
   const PlanProjection({
@@ -113,6 +136,7 @@ class PlanProjection {
     required this.agenda,
     required this.deadlines,
     required this.unscheduled,
+    this.rhythms = const [],
     required this.conflicts,
   });
 }
@@ -194,6 +218,7 @@ TodayProjection buildTodayProjection(
   final nextCandidates = <({int rank, DateTime at, PlannerItem item})>[];
   final laterCandidates = <PlannerItem>[];
   var inboxCount = 0;
+  final relationshipNames = _contactNames(records);
 
   for (final record in records.values) {
     switch (record['typeId']) {
@@ -204,15 +229,17 @@ TodayProjection buildTodayProjection(
         final deadline = _dateTime(record['dueAt']);
         final at = scheduled ?? deadline;
         final title = '${record['description'] ?? 'Untitled task'}';
+        final people = taskRelationshipNames(record, records);
         final overdue = deadline != null && deadline.isBefore(start);
         final item = PlannerItem(
           id: '${record['id']}',
           kind: PlannerItemKind.task,
           title: title,
-          detail: _taskDetail(record, scheduled, deadline, now),
+          detail: _taskDetail(record, scheduled, deadline, now, people),
           at: at,
           overdue: overdue,
           completable: true,
+          relationshipContext: people.isEmpty ? null : people.join(', '),
         );
         if (scheduled != null &&
             scheduled.isBefore(tomorrow) &&
@@ -230,6 +257,10 @@ TodayProjection buildTodayProjection(
           laterCandidates.add(item);
         } else if (record['priority'] == 'high') {
           nextCandidates.add((rank: 2, at: at ?? weekEnd, item: item));
+        } else if (people.isNotEmpty) {
+          // A promise to a person is planning material even without an
+          // artificial priority flag. It stays behind deadlines/Today state.
+          nextCandidates.add((rank: 2, at: weekEnd, item: item));
         }
       case 'reminder':
         if (record['done'] == true) continue;
@@ -264,6 +295,44 @@ TodayProjection buildTodayProjection(
               detail: 'Ready when you are',
             ),
           ));
+        }
+      case 'goal':
+        // Goals are review anchors, not manufactured appointments. One low-
+        // frequency goal can appear behind today's actual commitments.
+        if (now.weekday == DateTime.monday) {
+          nextCandidates.add((
+            rank: 4,
+            at: weekEnd,
+            item: PlannerItem(
+              id: '${record['id']}',
+              kind: PlannerItemKind.goal,
+              title: '${record['description'] ?? 'Goal'}',
+              detail: 'Weekly direction',
+            ),
+          ));
+        }
+      case 'interaction':
+        final planned = record['planned'] == true;
+        final at = _dateTime(record['at']);
+        if (!planned ||
+            at == null ||
+            at.isBefore(start) ||
+            !at.isBefore(weekEnd)) {
+          continue;
+        }
+        final person = relationshipNames['${record['subject']}'] ?? 'Someone';
+        final item = PlannerItem(
+          id: '${record['id']}',
+          kind: PlannerItemKind.relationship,
+          title: '${record['kind'] ?? 'Time'} with $person',
+          detail: '${_dayLabel(at, now)} · prepare from saved context',
+          at: at,
+          relationshipContext: person,
+        );
+        if (_sameDay(at, start)) {
+          nextCandidates.add((rank: 1, at: at, item: item));
+        } else {
+          laterCandidates.add(item);
         }
     }
   }
@@ -302,6 +371,7 @@ PlanProjection buildPlanProjection(
       .toList();
 
   PlanTaskItem taskItem(Map<String, dynamic> record) {
+    final people = taskRelationshipNames(record, records);
     final dependencies = ((record['dependencyRefs'] as List?) ?? const [])
         .map((value) => '$value')
         .toList();
@@ -330,6 +400,7 @@ PlanProjection buildPlanProjection(
           : unmet.isEmpty
               ? null
               : 'Waiting on ${unmet.length} task${unmet.length == 1 ? '' : 's'}',
+      relationshipContext: people.isEmpty ? null : people.join(', '),
     );
   }
 
@@ -382,6 +453,7 @@ PlanProjection buildPlanProjection(
       ),
     );
   }
+  agenda.addAll(_relationshipItemsForDay(records, selected));
   agenda.sort((a, b) => a.scheduledStartAt!.compareTo(b.scheduledStartAt!));
 
   final deadlines = taskItems
@@ -393,6 +465,38 @@ PlanProjection buildPlanProjection(
           item.scheduledStartAt == null && !_sameDay(item.dueAt, selected))
       .toList()
     ..sort(_planRiskOrder);
+
+  final rhythms = <PlanTaskItem>[];
+  for (final record in records.values) {
+    if (record['typeId'] == 'routine' && record['status'] == 'active') {
+      rhythms.add(
+        PlanTaskItem(
+          id: '${record['id']}',
+          kind: PlannerItemKind.routine,
+          title: '${record['title'] ?? 'Routine'}',
+          scheduledStartAt: null,
+          dueAt: null,
+          estimatedMinutes: _positiveMinutes(record['estMinutes']),
+          priority: 'none',
+          blocked: false,
+        ),
+      );
+    } else if (record['typeId'] == 'goal') {
+      rhythms.add(
+        PlanTaskItem(
+          id: '${record['id']}',
+          kind: PlannerItemKind.goal,
+          title: '${record['description'] ?? 'Goal'}',
+          scheduledStartAt: null,
+          dueAt: null,
+          estimatedMinutes: null,
+          priority: 'none',
+          blocked: false,
+        ),
+      );
+    }
+  }
+  rhythms.sort((a, b) => a.title.compareTo(b.title));
 
   final days = <PlanDaySummary>[];
   for (var offset = 0; offset < 7; offset++) {
@@ -422,9 +526,192 @@ PlanProjection buildPlanProjection(
     agenda: List.unmodifiable(agenda),
     deadlines: List.unmodifiable(deadlines),
     unscheduled: List.unmodifiable(unscheduled),
+    rhythms: List.unmodifiable(rhythms.take(4)),
     conflicts: List.unmodifiable(
       conflicts.where((item) => _sameDay(item.day, selected)),
     ),
+  );
+}
+
+/// Deterministic, bounded pressure signals. They are derived before cloud
+/// interpretation and never require a model to decide whether something is
+/// stale, overloaded, or drifting.
+List<PlannerSignal> buildPlannerSignals(
+  Map<String, Map<String, dynamic>> records,
+  DateTime now, {
+  int dailyCapacityMinutes = 8 * 60,
+}) {
+  final signals = <PlannerSignal>[];
+  final today = _day(now);
+  final load = <DateTime, ({int minutes, List<String> ids})>{};
+  final stale = <String>[];
+  for (final record in records.values) {
+    if (record['typeId'] != 'task' ||
+        record['completed'] == true ||
+        record['status'] == 'done') {
+      continue;
+    }
+    final scheduled = _dateTime(record['scheduledStartAt']);
+    final estimate = _positiveMinutes(record['estimatedMinutes']) ?? 0;
+    if (scheduled != null) {
+      final day = _day(scheduled);
+      final prior = load[day];
+      load[day] = (
+        minutes: (prior?.minutes ?? 0) + estimate,
+        ids: [...?prior?.ids, '${record['id']}'],
+      );
+    } else {
+      final created = _dateTime(record['createdAt']);
+      if (created != null && now.difference(created).inDays >= 14) {
+        stale.add('${record['id']}');
+      }
+    }
+  }
+  final overloaded = load.entries
+      .where((entry) => entry.value.minutes > dailyCapacityMinutes)
+      .toList()
+    ..sort((a, b) => a.key.compareTo(b.key));
+  if (overloaded.isNotEmpty) {
+    final first = overloaded.first;
+    signals.add(
+      PlannerSignal(
+        kind: PlannerSignalKind.overload,
+        title: 'Plan exceeds capacity',
+        detail:
+            '${_dayLabel(first.key, now)} has ${first.value.minutes} minutes against $dailyCapacityMinutes available.',
+        recordIds: first.value.ids,
+      ),
+    );
+  }
+  if (stale.isNotEmpty) {
+    signals.add(
+      PlannerSignal(
+        kind: PlannerSignalKind.staleQueue,
+        title: 'Unscheduled work is getting stale',
+        detail:
+            '${stale.length} item${stale.length == 1 ? '' : 's'} has waited at least 14 days without a plan.',
+        recordIds: stale,
+      ),
+    );
+  }
+
+  final names = _contactNames(records);
+  final latest = <String, DateTime>{};
+  for (final record in records.values) {
+    if (record['typeId'] != 'interaction' || record['planned'] == true)
+      continue;
+    final at = _dateTime(record['at']);
+    final subject = '${record['subject']}';
+    if (at == null || at.isAfter(now) || !names.containsKey(subject)) continue;
+    if (latest[subject] == null || at.isAfter(latest[subject]!)) {
+      latest[subject] = at;
+    }
+  }
+  final neglected = latest.entries
+      .where((entry) => now.difference(entry.value).inDays >= 30)
+      .toList()
+    ..sort((a, b) => a.value.compareTo(b.value));
+  if (neglected.isNotEmpty) {
+    final first = neglected.first;
+    final days = today.difference(_day(first.value)).inDays;
+    signals.add(
+      PlannerSignal(
+        kind: PlannerSignalKind.relationshipNeglect,
+        title: 'A relationship may need attention',
+        detail: '${names[first.key]} has no logged interaction in $days days.',
+        recordIds: [first.key],
+      ),
+    );
+  }
+  return List.unmodifiable(signals.take(2));
+}
+
+Map<String, String> _contactNames(
+  Map<String, Map<String, dynamic>> records,
+) =>
+    {
+      for (final record in records.values)
+        if (record['typeId'] == 'contact')
+          '${record['id']}': '${record['displayName'] ?? 'Someone'}',
+    };
+
+/// Resolve explicit links first, then exact whole-name mentions for legacy
+/// tasks captured before `contactRefs` existed. This only projects context; it
+/// never mutates or silently links the stored task.
+List<String> taskRelationshipNames(
+  Map<String, dynamic> task,
+  Map<String, Map<String, dynamic>> records,
+) {
+  final names = _contactNames(records);
+  final resolved = <String>[];
+  for (final id in (task['contactRefs'] as List? ?? const [])) {
+    final name = names['$id'];
+    if (name != null && !resolved.contains(name)) resolved.add(name);
+  }
+  if (resolved.isNotEmpty) return resolved;
+  final description = '${task['description'] ?? ''}'.toLowerCase();
+  for (final name in names.values) {
+    final escaped = RegExp.escape(name.toLowerCase());
+    if (RegExp('(?:^|\\b)$escaped(?:\\b|\$)').hasMatch(description)) {
+      resolved.add(name);
+    }
+  }
+  return resolved;
+}
+
+class PlannerEngagementSnapshot {
+  final int suggestionsAccepted;
+  final int suggestionsDismissed;
+  final int suggestionsDeferred;
+  final int relationshipCommitmentsCompleted;
+  final int relationshipCommitmentsOpen;
+
+  const PlannerEngagementSnapshot({
+    required this.suggestionsAccepted,
+    required this.suggestionsDismissed,
+    required this.suggestionsDeferred,
+    required this.relationshipCommitmentsCompleted,
+    required this.relationshipCommitmentsOpen,
+  });
+
+  double? get relationshipFollowThrough {
+    final total =
+        relationshipCommitmentsCompleted + relationshipCommitmentsOpen;
+    return total == 0 ? null : relationshipCommitmentsCompleted / total;
+  }
+}
+
+/// Product-health measures intentionally exclude opens, screen time, and
+/// impressions. A draft suggestion contributes nothing until the user acts.
+PlannerEngagementSnapshot buildPlannerEngagement(
+  Map<String, Map<String, dynamic>> records,
+  List<PlanningArtifact> artifacts,
+) {
+  var completed = 0;
+  var open = 0;
+  for (final record in records.values) {
+    if (record['typeId'] != 'task' ||
+        taskRelationshipNames(record, records).isEmpty) {
+      continue;
+    }
+    if (record['completed'] == true || record['status'] == 'done') {
+      completed++;
+    } else {
+      open++;
+    }
+  }
+  return PlannerEngagementSnapshot(
+    suggestionsAccepted: artifacts
+        .where((artifact) => artifact.state == PlanningArtifactState.accepted)
+        .length,
+    suggestionsDismissed: artifacts
+        .where((artifact) => artifact.state == PlanningArtifactState.dismissed)
+        .length,
+    suggestionsDeferred: artifacts
+        .where((artifact) => artifact.state == PlanningArtifactState.deferred)
+        .length,
+    relationshipCommitmentsCompleted: completed,
+    relationshipCommitmentsOpen: open,
   );
 }
 
@@ -492,11 +779,75 @@ PlannerItem? _relationshipNudge(
   return candidates.firstOrNull;
 }
 
+List<PlanTaskItem> _relationshipItemsForDay(
+  Map<String, Map<String, dynamic>> records,
+  DateTime selected,
+) {
+  final names = _contactNames(records);
+  final items = <PlanTaskItem>[];
+  for (final record in records.values) {
+    if (record['typeId'] == 'interaction' && record['planned'] == true) {
+      final at = _dateTime(record['at']);
+      if (!_sameDay(at, selected)) continue;
+      final person = names['${record['subject']}'] ?? 'Someone';
+      items.add(
+        PlanTaskItem(
+          id: '${record['id']}',
+          kind: PlannerItemKind.relationship,
+          title: '${record['kind'] ?? 'Time'} with $person',
+          scheduledStartAt: at,
+          dueAt: null,
+          estimatedMinutes: null,
+          priority: 'none',
+          blocked: false,
+          relationshipContext: person,
+        ),
+      );
+      continue;
+    }
+
+    String? person;
+    Object? rawDate;
+    var label = 'birthday';
+    if (record['typeId'] == 'contact' && record['birthday'] != null) {
+      person = '${record['displayName'] ?? 'Someone'}';
+      rawDate = record['birthday'];
+    } else if (record['typeId'] == 'contact_date') {
+      person = names['${record['subject']}'];
+      rawDate = record['date'];
+      label = '${record['label'] ?? 'important date'}';
+    }
+    final date = _dateTime(rawDate);
+    if (person == null || date == null) continue;
+    if (date.month != selected.month || date.day != selected.day) continue;
+    items.add(
+      PlanTaskItem(
+        id: '${record['id']}',
+        kind: PlannerItemKind.relationship,
+        title: "$person's $label",
+        scheduledStartAt: DateTime(
+          selected.year,
+          selected.month,
+          selected.day,
+          12,
+        ),
+        dueAt: null,
+        estimatedMinutes: null,
+        priority: 'none',
+        blocked: false,
+        relationshipContext: person,
+      ),
+    );
+  }
+  return items;
+}
+
 String? _taskDetail(
   Map<String, dynamic> record,
   DateTime? scheduled,
   DateTime? deadline,
   DateTime now,
+  List<String> people,
 ) {
   final parts = <String>[];
   if (scheduled != null) parts.add('Scheduled ${_timeLabel(scheduled, now)}');
@@ -506,6 +857,7 @@ String? _taskDetail(
     if (estimate != null) parts.add('$estimate min');
   }
   if (record['priority'] == 'high') parts.add('High priority');
+  if (people.isNotEmpty) parts.add('For ${people.join(', ')}');
   return parts.isEmpty ? null : parts.join(' · ');
 }
 

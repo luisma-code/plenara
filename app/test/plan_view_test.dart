@@ -176,4 +176,34 @@ void main() {
       expect(find.byKey(const Key('plan-proposal')), findsNothing);
     },
   );
+
+  testWidgets('Plan keeps people, goals, and routines in the planning frame', (
+    tester,
+  ) async {
+    final session = await _session();
+    await session.handle("Mia's birthday is august 19");
+    await session.handle('add call Mia about school to my list');
+    session.store['goal-visible'] = {
+      'id': 'goal-visible',
+      'typeId': 'goal',
+      'description': 'Be present after work',
+      'status': 'active',
+    };
+    session.store['routine-visible'] = {
+      'id': 'routine-visible',
+      'typeId': 'routine',
+      'title': 'Evening reset',
+      'status': 'active',
+    };
+
+    await tester.pumpWidget(
+      _app(PlanBoard(session: session, onChanged: () {})),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Goals & routines'), findsOneWidget);
+    expect(find.text('Be present after work'), findsOneWidget);
+    expect(find.text('Evening reset'), findsOneWidget);
+    expect(find.textContaining('for Mia'), findsOneWidget);
+  });
 }

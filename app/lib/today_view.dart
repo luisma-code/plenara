@@ -27,6 +27,7 @@ class TodayBoard extends StatelessWidget {
   Widget build(BuildContext context) {
     final projection = session.todayProjection();
     final notices = session.plannerNotices();
+    final signals = session.plannerSignals();
     final day = projection.day;
     final visibleIds = <String>[];
     final seen = <String>{};
@@ -178,6 +179,10 @@ class TodayBoard extends StatelessWidget {
                       );
                       onChanged();
                     },
+                    onDefer: () {
+                      session.deferPlanningArtifact(artifact.id);
+                      onChanged();
+                    },
                   ),
                 _Section(
                   title: 'Now',
@@ -233,6 +238,8 @@ class TodayBoard extends StatelessWidget {
                       ),
                     ),
                   ),
+                for (final signal in signals)
+                  _PlannerSignalCard(signal: signal),
                 _Section(
                   title: 'Later this week',
                   empty: 'Nothing waiting later this week.',
@@ -240,8 +247,6 @@ class TodayBoard extends StatelessWidget {
                   session: session,
                   onChanged: onChanged,
                 ),
-                if (projection.relationshipNudge case final nudge?)
-                  _RelationshipCard(item: nudge),
                 if (projection.latestChange case final change?)
                   _LatestChange(
                     change: change,
@@ -302,11 +307,13 @@ class _PlanningArtifactCard extends StatelessWidget {
   final PlanningArtifact artifact;
   final VoidCallback onAccept;
   final VoidCallback onDismiss;
+  final VoidCallback onDefer;
 
   const _PlanningArtifactCard({
     required this.artifact,
     required this.onAccept,
     required this.onDismiss,
+    required this.onDefer,
   });
 
   @override
@@ -348,11 +355,13 @@ class _PlanningArtifactCard extends StatelessWidget {
               title: Text(item.title),
               subtitle: Text(item.evidence),
             ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 6,
+            runSpacing: 4,
             children: [
               TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
-              const SizedBox(width: 6),
+              TextButton(onPressed: onDefer, child: const Text('Tomorrow')),
               FilledButton(
                 key: Key('accept-artifact-${artifact.kind.name}'),
                 onPressed: onAccept,
@@ -579,23 +588,24 @@ class _PlannerRow extends StatelessWidget {
   );
 }
 
-class _RelationshipCard extends StatelessWidget {
-  final PlannerItem item;
-  const _RelationshipCard({required this.item});
+class _PlannerSignalCard extends StatelessWidget {
+  final PlannerSignal signal;
+  const _PlannerSignalCard({required this.signal});
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 22),
+    padding: const EdgeInsets.only(bottom: 10),
     child: Card(
-      color: const Color(0xD9221917),
       child: ListTile(
-        key: const Key('relationship-nudge'),
-        leading: const Icon(
-          Icons.favorite_outline_rounded,
-          color: Color(0xFFE9A58B),
-        ),
-        title: Text(item.title),
-        subtitle: Text(item.detail ?? 'Coming up'),
+        key: Key('planner-signal-${signal.kind.name}'),
+        leading: Icon(switch (signal.kind) {
+          PlannerSignalKind.relationshipNeglect =>
+            Icons.favorite_outline_rounded,
+          PlannerSignalKind.overload => Icons.balance_rounded,
+          PlannerSignalKind.staleQueue => Icons.inbox_outlined,
+        }, color: PlenaraTheme.amber),
+        title: Text(signal.title),
+        subtitle: Text(signal.detail),
       ),
     ),
   );
@@ -725,6 +735,7 @@ IconData _icon(PlannerItemKind kind) => switch (kind) {
   PlannerItemKind.task => Icons.check_circle_outline_rounded,
   PlannerItemKind.reminder => Icons.notifications_none_rounded,
   PlannerItemKind.routine => Icons.self_improvement_rounded,
+  PlannerItemKind.goal => Icons.flag_outlined,
   PlannerItemKind.relationship => Icons.favorite_outline_rounded,
 };
 

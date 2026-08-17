@@ -47,11 +47,18 @@ String _tempData() {
   return tmp.path;
 }
 
-Session _session() => Session(
-  _tempData(),
-  clock: DateTime.parse('2026-07-06T09:00:00'),
-  cloud: _NullCloud(),
-);
+Session _session() {
+  final path = _tempData();
+  addTearDown(() {
+    final root = Directory(path);
+    if (root.existsSync()) root.deleteSync(recursive: true);
+  });
+  return Session(
+    path,
+    clock: DateTime.parse('2026-07-06T09:00:00'),
+    cloud: _NullCloud(),
+  );
+}
 
 void main() {
   group(
@@ -209,6 +216,23 @@ void main() {
       find.text('createdAt'),
       findsOneWidget,
     ); // a field shown in detail but not in the checklist summary
+  });
+
+  testWidgets('a person detail joins commitments and relationship history', (
+    tester,
+  ) async {
+    final session = _session();
+    await session.init(retrieval: false);
+    await session.handle("Mia's birthday is august 19");
+    await session.handle('add call Mia about school to my list');
+
+    await tester.pumpWidget(MaterialApp(home: DataView(session: session)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'Mia'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('person-context')), findsOneWidget);
+    expect(find.text('call Mia about school'), findsWidgets);
   });
 
   testWidgets(

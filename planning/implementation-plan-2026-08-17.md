@@ -366,6 +366,8 @@ The entire product feels authored by the same visual system. Motion explains sta
 
 ## Increment 6 — relationship-centered planning and healthy engagement
 
+**Implementation status:** Complete on 2026-08-17. Automated gates pass; the five-day dogfood and human perception measures remain deployment evidence, not code work.
+
 ### Outcome
 
 The planner serves Plenara's actual purpose—helping the user show up for people—rather than becoming a generic task manager.
@@ -385,6 +387,14 @@ The planner serves Plenara's actual purpose—helping the user show up for peopl
 - Proactive items have a terminal accepted/dismissed/deferred state and do not repeatedly reappear unchanged.
 - Five-day dogfood shows reduced orientation queries, stale unscheduled items, and forgotten commitments versus the pre-Today baseline.
 - Plena's compact planning form retains perceived continuity and character; full-screen expansion restores intimacy for deeper conversation.
+
+### Implemented evidence
+
+- People-linked tasks retain context in Today, Plan, proposals, weekly review evidence, and person detail; equal-risk weekly proposals prefer a commitment to a known person.
+- Planned interactions, birthdays/important dates, goals, and active routines enter the relevant Today/Plan projections without flattening their semantic kinds.
+- Deterministic overload, stale-queue, and neglect signals are bounded to two; cloud generation is not involved.
+- Relationship suggestions persist as versioned planning artifacts with Keep, Dismiss, and Tomorrow states. Deferrals return when due and resolved stable IDs do not respawn.
+- Engagement measures explicit outcomes and relationship-task follow-through only. The full gate passes 1,907 engine tests + 36 skips, 138 Flutter tests + one external-channel skip, 94.2% / 90.8% / 68.1% coverage tiers, macOS build, five real-engine tests, secret scan, external isolation, and the 24/60 ratchet.
 
 ## Increment 7 — user-controlled sync and loss resilience
 

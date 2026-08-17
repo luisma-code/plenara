@@ -103,6 +103,26 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
   local iPhone 17 Pro simulator. The simulator was shut down and no app/test process remains. No
   physical phone was touched.
 
+## Increment 6 state
+
+- People-linked tasks now carry exact known-person context into Today, Plan, weekly proposals,
+  weekly-review evidence, and person detail. Planned interactions and recurring relationship dates
+  appear on the selected Plan day; goals and active routines remain visible as distinct rhythms.
+- Equal-risk weekly proposal ordering prefers a commitment to a known person, while deadlines and
+  explicit priority still outrank it. Voice refinement continues to address the visible proposal
+  order, and its regression test no longer encodes the retired generic-first ranking.
+- Today derives deterministic overload, stale-queue, and relationship-neglect signals before AI and
+  caps the surface at two signals.
+- Upcoming relationship dates create stable durable suggestion artifacts. Keep, Dismiss, and
+  Tomorrow are explicit; deferral persists and returns when due, and terminal suggestions never
+  respawn unchanged. Impressions do not count as engagement.
+- The relationship/UI tests distinguish deliberate disabled-output regressions from the restored
+  implementation. The complete gate is green: 1,907 engine tests + 36 skips; 138 Flutter tests +
+  the intentional external skip; 94.2% deterministic-core / 90.8% product-logic / 68.1%
+  transport coverage; macOS build; five macOS real-engine tests; external-channel, secret, and
+  24/60 conformance gates. No simulator was booted and no physical phone was touched for this
+  increment.
+
 ## Owner action
 
 - Rotate the Anthropic credential that appeared in a non-hermetic test failure before this increment. The repository/reports do not contain it, but the earlier tool transcript did. Credential rotation requires Luis's account authority.
@@ -130,8 +150,8 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Next implementation order
 
-1. Increment 6: relationship-centered planning and healthy engagement.
-2. Increments 7–8 then follow `planning/implementation-plan-2026-08-17.md`; dependencies and evidence gates determine order, not calendar dates.
+1. Increment 7: user-controlled sync and loss resilience.
+2. Increment 8 then follows `planning/implementation-plan-2026-08-17.md`; dependencies and evidence gates determine order, not calendar dates.
 
 ## Authoritative documents
 

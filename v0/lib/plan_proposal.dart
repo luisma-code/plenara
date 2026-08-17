@@ -214,8 +214,17 @@ PlanProposal buildWeeklyPlanProposal(
         if (due != 0) return due;
       }
       const rank = {'high': 0, 'medium': 1, 'low': 2, 'none': 3};
-      return (rank['${left['priority'] ?? 'none'}'] ?? 3)
+      final priority = (rank['${left['priority'] ?? 'none'}'] ?? 3)
           .compareTo(rank['${right['priority'] ?? 'none'}'] ?? 3);
+      if (priority != 0) return priority;
+      final leftRelationship = taskRelationshipNames(left, records).isNotEmpty;
+      final rightRelationship =
+          taskRelationshipNames(right, records).isNotEmpty;
+      if (leftRelationship != rightRelationship) {
+        return leftRelationship ? -1 : 1;
+      }
+      return '${left['description'] ?? ''}'
+          .compareTo('${right['description'] ?? ''}');
     });
 
   final items = <PlanProposalItem>[];
@@ -246,6 +255,7 @@ PlanProposal buildWeeklyPlanProposal(
       9,
     ).add(Duration(minutes: used[chosenDay] ?? 0));
     used[chosenDay] = (used[chosenDay] ?? 0) + estimate;
+    final relationshipNames = taskRelationshipNames(task, records);
     items.add(PlanProposalItem(
       taskId: '${task['id']}',
       title: '${task['description'] ?? 'Untitled task'}',
@@ -258,7 +268,9 @@ PlanProposal buildWeeklyPlanProposal(
               : 'Placed before the ${_dateLabel(due)} deadline.'
           : task['priority'] == 'high'
               ? 'High priority, placed in the earliest available capacity.'
-              : 'Unscheduled work, placed in the earliest available capacity.',
+              : relationshipNames.isNotEmpty
+                  ? 'A commitment to ${relationshipNames.join(', ')}, placed before generic queue work.'
+                  : 'Unscheduled work, placed in the earliest available capacity.',
     ));
   }
 

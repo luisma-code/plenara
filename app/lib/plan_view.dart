@@ -601,6 +601,18 @@ class _PhonePlan extends StatelessWidget {
         onDefer: onDefer,
         onRename: onRename,
       ),
+      _PlanSection(
+        title: 'Goals & routines',
+        empty: 'No active goals or routines.',
+        items: projection.rhythms,
+        selectedIds: selectedIds,
+        onToggle: onToggle,
+        onComplete: onComplete,
+        onSchedule: onSchedule,
+        onEstimate: onEstimate,
+        onDefer: onDefer,
+        onRename: onRename,
+      ),
     ],
   );
 }
@@ -684,6 +696,18 @@ class _WidePlan extends StatelessWidget {
               onDefer: onDefer,
               onRename: onRename,
               draggable: true,
+            ),
+            _PlanSection(
+              title: 'Goals & routines',
+              empty: 'No active goals or routines.',
+              items: projection.rhythms,
+              selectedIds: selectedIds,
+              onToggle: onToggle,
+              onComplete: onComplete,
+              onSchedule: onSchedule,
+              onEstimate: onEstimate,
+              onDefer: onDefer,
+              onRename: onRename,
             ),
           ],
         ),
@@ -817,6 +841,7 @@ class _PlanRow extends StatelessWidget {
       if (item.energy != null) '${item.energy} energy',
       for (final context in item.contexts) '#$context',
       if (item.recurrence != null) item.recurrence!,
+      if (item.relationshipContext != null) 'for ${item.relationshipContext}',
       if (item.blocked) item.blockedReason ?? 'blocked',
     ];
     return ListTile(
