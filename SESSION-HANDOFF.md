@@ -96,7 +96,7 @@ the distribution cert via the API key (`xcodebuild -allowProvisioningUpdates`).
 - **iPhone:** "Aluminum Monster", id `00008140-000645442862201C`, iOS 26.5.2, bundle
   `com.plenara.plenaraApp`, team `7V63BZ39HU`, deployment target 26.0.
 - **Wireless deploy (only on the SAME WiFi as the Mac + phone unlocked):** from `app/` →
-  `flutter run --release --dart-define=PLENARA_DEBUG=true -d 00008140-000645442862201C`.
+  `flutter run --release --dart-define=PLENARA_CHANNEL=internal -d 00008140-000645442862201C`.
 - **After changing `v0/data/` skills/types:** run `bash tool/sync_seed.sh` (the app bundles a copy);
   `--check` gates drift.
 - **API key for live testing:** Luis provided one this session (passed via `ANTHROPIC_API_KEY` env; not

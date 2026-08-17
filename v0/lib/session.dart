@@ -2498,7 +2498,16 @@ class Session {
     // normalize leaked sentinel slot values from any source before they reach a
     // resolver (a replayed/live "none" for an absent date would otherwise persist
     // as garbage; the crash it once caused is already handled in _asDate).
-    (routed['slots'] as Map?)?.updateAll((k, v) => _sanitizeSlot(v));
+    // Cloud/replay maps may arrive with a runtime type such as Map<String, String>. Mutating that
+    // map with a `(dynamic, dynamic)` callback throws before dispatch. Copy into the engine's owned
+    // slot type while sanitizing so later resolvers can safely replace values with dates/nulls.
+    final rawSlots = routed['slots'];
+    routed['slots'] = rawSlots is Map
+        ? <String, dynamic>{
+            for (final entry in rawSlots.entries)
+              entry.key.toString(): _sanitizeSlot(entry.value),
+          }
+        : <String, dynamic>{};
     // The corpus types its slots via the template; the cloud returns raw strings, so
     // normalize any date/datetime input the routed skill declares (Spec 03 §6.2).
     // A cloud "2026-07-08" for a datetime slot -> null (no midnight reminders); a raw

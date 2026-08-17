@@ -357,7 +357,7 @@ Ephemeral by contract (§4.1): rendered to the subtitle, superseded, gone. Never
 
 A final transcript is *text*, and it flows where the user's words are supposed to flow. Stated plainly:
 
-- **On-device:** it enters the Conversation Stream (visible history), the local diagnostic log (device-local, redacted-on-export per Spec 11), and — via dispatch — whatever records the routed skill writes (which then sync as records under Spec 06's rules, like any user data). The journal transcript is the record body and follows Spec 05 §11's stated posture (syncs to the user's own provider; provider-unreadability deferred with §8.7 encryption; onboarding says so).
+- **On-device:** it enters the durable conversation/action ledger (Spec 17), the device-local diagnostic log according to Spec 11's build channel (content-bearing and manually raw-exportable in internal dogfood; absent from external raw logs), and — via dispatch — whatever records the routed skill writes. The journal transcript is the record body and follows Spec 05 §11's stated sync posture.
 - **Off-device, exactly one path:** on the paid tier, a *novel* phrasing's final transcript is sent **verbatim** to Anthropic as the residual-routing utterance, under the standing tier-(a) consent granted at key connection, with the free/offline tiers never sending it — exactly as specified in Spec 08 §5.2/§5.6. **Voice changes nothing here and adds no new consent**: the transcript's exposure is identical whether the words were spoken or typed (P2.2, one pipeline). The onboarding sentence Spec 08 §5.6 mandates ("it will send that sentence — and only it") is the disclosure; this spec's contribution is that *audio* is categorically not part of that sentence.
 - **The bias list (§4.5)** — contact names, capability names, corpus literals — is handed only to on-device engines and never serialized anywhere off-device.
 
@@ -409,7 +409,7 @@ Free-tier capability, offline operation, and subtitle behavior are untouched by 
 
 ### 9.4 Diagnostics
 
-Voice events in the local diagnostic log record *shapes, not content* beyond the turn transcript already logged by the turn machinery: session mode, durations, finalization trigger, error kinds, latency measurements (§7.2). No interim text, no audio, no bias-list contents. Export redaction is Spec 11's, unchanged.
+Voice-event metadata records session mode, durations, finalization trigger, error kinds, and latency. Final turn transcripts follow Spec 11's channel policy; interim text, audio, and bias-list contents are forbidden in every channel. Internal raw export may contain final transcripts; external raw capture/export is disabled.
 
 ### 9.5 Accessibility (hard requirements)
 

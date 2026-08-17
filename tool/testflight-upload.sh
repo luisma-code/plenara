@@ -2,7 +2,8 @@
 # Export the release archive to a signed IPA and upload it to TestFlight — using ONLY an App Store
 # Connect API key (no interactive Xcode/Apple login). `xcodebuild -allowProvisioningUpdates` with the
 # key creates the iOS Distribution cert + App Store profile on first run; altool uploads with the
-# same key. Run AFTER `flutter build ipa --release` (which builds the .xcarchive even when its own
+# same key. Run after the TESTFLIGHT.md build command, which declares the internal channel and
+# revision (and builds the .xcarchive even when its own
 # export step fails on signing).
 #
 # One-time setup (Luis, in App Store Connect → Users and Access → Integrations → App Store Connect API):
@@ -22,7 +23,7 @@ ENV_FILE="$ROOT/tool/.testflight.env"
 [ -f "$ASC_KEY_PATH" ] || { echo "key file not found: $ASC_KEY_PATH" >&2; exit 1; }
 
 ARCHIVE="$ROOT/app/build/ios/archive/Runner.xcarchive"
-[ -d "$ARCHIVE" ] || { echo "no archive — run 'flutter build ipa --release' in app/ first" >&2; exit 1; }
+[ -d "$ARCHIVE" ] || { echo "no archive — run 'flutter build ipa --release --dart-define=PLENARA_CHANNEL=internal' in app/ first" >&2; exit 1; }
 OUT="$ROOT/app/build/ios/ipa"
 mkdir -p "$OUT"
 

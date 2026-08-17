@@ -87,7 +87,11 @@ void main() {
       final dir = Directory.systemTemp.createTempSync('cfg').path;
       saveConfig(configPath: '$dir/config.json', dataDir: '/somewhere', apiKey: 'sk-test');
       expect(File('$dir/config.json.tmp').existsSync(), isFalse);
-      expect(loadConfig(configPath: '$dir/config.json').apiKey, 'sk-test');
+      // Never let a developer shell credential override and then print through this matcher.
+      expect(
+        loadConfig(configPath: '$dir/config.json', environment: const {}).apiKey,
+        'sk-test',
+      );
     });
 
     test('learned-corpus writes are atomic (no .tmp left, file always parses)', () async {

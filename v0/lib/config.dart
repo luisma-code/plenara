@@ -9,9 +9,12 @@ import 'dart:io';
 
 import 'store.dart' show writeJsonAtomic;
 
+enum ConfigValueSource { environment, file, secureStore, absent }
+
 class PlenaraConfig {
   final String dataDir;
   final String? apiKey;
+  final ConfigValueSource apiKeySource;
   /// Free (offline-only) mode: when true, the app runs with NO cloud client even if a
   /// key is configured — every cloud feature (residual routing, generative, authoring)
   /// degrades to its offline path, so there is zero Anthropic spend. A dev/testing switch
@@ -34,7 +37,8 @@ class PlenaraConfig {
   /// said what they wanted. Turn it on in Settings to get a yes/no before each paid authoring call.
   final bool confirmCloudSpend;
   PlenaraConfig(this.dataDir, this.apiKey,
-      {this.freeTier = false, this.voiceMuted, this.voiceName, this.micHintsShown = 0,
+      {this.freeTier = false, this.apiKeySource = ConfigValueSource.absent,
+      this.voiceMuted, this.voiceName, this.micHintsShown = 0,
       this.confirmCloudSpend = false});
 }
 
@@ -61,7 +65,11 @@ String defaultDeviceDir() => '${_home()}/.plenara';
 /// accept `/` on Windows, so this style is canonical.
 String modelsDir() => '${defaultDeviceDir()}/models';
 
-PlenaraConfig loadConfig({String? configPath}) {
+/// An explicit config path is a hermetic test/tool seam: unless [environment] is also injected it
+/// must not inherit process credentials, whose value a failed matcher could print into logs.
+PlenaraConfig loadConfig({String? configPath, Map<String, String>? environment}) {
+  final env = environment ??
+      (configPath == null ? Platform.environment : const <String, String>{});
   final f = File(configPath ?? defaultConfigPath());
   Map<String, dynamic> cfg = {};
   if (f.existsSync()) {
@@ -73,8 +81,9 @@ PlenaraConfig loadConfig({String? configPath}) {
     cfg = {
       'dataDir': '${_home()}/Plenara',
       'apiKey': '',
-      '_hint': 'Set dataDir to your synced folder (e.g. your OneDrive/Plenara) and '
-          'paste your Anthropic API key. Env ANTHROPIC_API_KEY / PLENARA_DATA override these.',
+      '_hint': 'Set dataDir to your synced folder. The Flutter app stores its API key in the '
+          'platform secure store; apiKey remains only as a legacy/pure-Dart operator migration seam. '
+          'Development env ANTHROPIC_API_KEY / PLENARA_DATA may override these.',
     };
     f.parent.createSync(recursive: true);
     f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(cfg));
@@ -84,16 +93,22 @@ PlenaraConfig loadConfig({String? configPath}) {
   // from the live injected home. Desktop keeps the user's chosen (possibly synced) folder. One source
   // of truth, so buildSession, the first-run seed check, and Settings all agree.
   final mobile = (Platform.isIOS || Platform.isAndroid) && homeOverride != null;
-  final dataDir = Platform.environment['PLENARA_DATA'] ??
+  final dataDir = env['PLENARA_DATA'] ??
       (mobile ? '${_home()}/Plenara' : ((cfg['dataDir'] as String?) ?? '${_home()}/Plenara'));
-  final key = Platform.environment['ANTHROPIC_API_KEY'] ?? (cfg['apiKey'] as String?);
+  final envKey = env['ANTHROPIC_API_KEY'];
+  final fileKey = cfg['apiKey'] as String?;
+  final key = envKey ?? fileKey;
+  final keySource = (key == null || key.trim().isEmpty)
+      ? ConfigValueSource.absent
+      : envKey != null ? ConfigValueSource.environment : ConfigValueSource.file;
   // env PLENARA_FREE=1 forces offline mode (handy for tests/demos); else the persisted flag.
-  final free = Platform.environment['PLENARA_FREE'] == '1' || cfg['freeTier'] == true;
+  final free = env['PLENARA_FREE'] == '1' || cfg['freeTier'] == true;
   final vm = cfg['voiceMuted'];
   final vn = cfg['voiceName'];
   final mh = cfg['micHintsShown'];
   final cs = cfg['confirmCloudSpend'];
   return PlenaraConfig(dataDir, (key != null && key.trim().isNotEmpty) ? key.trim() : null,
+      apiKeySource: keySource,
       freeTier: free,
       voiceMuted: vm is bool ? vm : null,
       voiceName: vn is String && vn.isNotEmpty ? vn : null,
@@ -102,9 +117,9 @@ PlenaraConfig loadConfig({String? configPath}) {
 }
 
 /// Persist config edits from the in-app settings surface (Spec 07 §2.6): merges into the
-/// existing `~/.plenara/config.json`, preserving unknown keys. [apiKey] null leaves the key
-/// untouched; an empty string clears it. The key is written in plaintext (the accepted v0/dogfood
-/// posture — Spec 10 A-08 / G-37 tracks the secure-store follow-up); it is never logged.
+/// existing `~/.plenara/config.json`, preserving unknown keys. [apiKey] null leaves the legacy
+/// field untouched; an empty string clears it. The Flutter app never writes a non-empty value here:
+/// it uses CredentialStore and this field exists only for verified migration and pure-Dart tools.
 void saveConfig(
     {String? dataDir,
     String? apiKey,

@@ -1,189 +1,69 @@
-# Plenara — Work Capsule (living doc)
+# Plenara — Work Capsule
 
-**A continuously-updated working memory.** Unlike `SESSION-HANDOFF.md` / `HANDOFF.md` (point-in-time
-snapshots), this file is kept **current as work happens** — the latest state, the live facts I need
-at my fingertips, hard-won gotchas, decisions + rationale, and open threads. If you're a fresh
-session, read this first; it should already be up to date. Keep it skimmable, prune stale lines.
+_Current working memory. Last updated 2026-08-17 during approved implementation of the full review plan._
 
-_Last updated: 2026-07-28 — TestFlight LIVE; 14-defect correctness review; tap-to-stop voice capture; **Routines (Spec 16) shipped end to end**._
+## Product direction
 
----
+- Spec 17 now owns the product model: **Today / Plan / Library + durable conversation/action ledger + global Plena**.
+- Voice remains free-form, global, and capable of every core outcome. It is no longer forced to carry persistent planner state, comparison, sequencing, or precision editing alone.
+- Plena scales full-screen at empty rest/deep conversation, compact beside Today/Plan, and ember-sized on detail surfaces.
+- Atomic reversible actions act/show/describe. Exploratory or multi-record planning creates an inspectable proposal.
+- Current truth is never made ephemeral to preserve visual minimalism.
 
-## Current state
-- **ROUTINES (Spec 16) shipped** — "create a stretch routine for my low back" → records; "let's do
-  low back" → a hands-free guided run. Verified end-to-end against the live API.
-  - **The model SELECTS from a shipped catalogue; it does not draw.** A spike proved generated SVG
-    stick figures can be safe (19/19 passed a strict render-only subset) and tweenable (18/19
-    corresponding keyframes) — but **supine poses are unreadable**, and neither explicit 3/4
-    projection geometry nor a render-and-critique vision loop fixed them (the loop made them
-    WORSE). Catalogue: wger/Everkinetic, CC BY-SA 4.0, 640 exercises / 200 illustrated / 11 MB.
-  - ~1/3 illustrated is fine by design: a pictureless step renders text-only, and every step must
-    stand alone for the ear anyway (screen-off runs).
-  - The player is a Session MODE (Tour's sibling), **not** a skill — no new DSL opcode. It is
-    STICKY: an unrelated command mid-run works and the run survives.
-  - Safety: Layer-1 injury-framing redirect BEFORE any spend (condition stripped, never sent); the
-    disclaimer is fixed in code (a test proves the model can't reword it); spoken once per routine.
-- **Voice capture is now user-delimited** — tap to start, tap to stop-and-send. The VAD survives as
-  segmenter + watchdog only. PTT was dropped with Luis's approval (amends research §15.1).
-- **TestFlight works end to end**; Claude owns the whole release loop (no browser step).
-- **14 correctness/data-integrity defects fixed** across two review passes — see G-50/G-51.
-- **Still outstanding: the app ships Flutter's PLACEHOLDER icon.** Cosmetic for TestFlight, an
-  automatic rejection at App Review.
+## Increment 0 state
 
-- **v8 shipped** (`releases/VERSIONS.md`; release point `6ceeeb2`). App **runs on the iPhone**, on the
-  **Matilda (Premium, en-AU)** voice. Repo `origin/main` fully pushed, tree clean, tests green
-  (**1676 v0 + 74 app**).
-- **G-49 (numbered corrections + editable data view) — renamed from G-47 (that number was taken by
-  the gap register). 4-lens Fable review done; ALL confirmed defects fixed + regression-tested.** The
-  two majors were data-corruption paths: (1) a mixed-type readback (recall-facts numbers facts AND
-  relationships) wrote a junk field on the wrong type on "change N to X" → fixed with a PER-ITEM
-  `{id,typeId,labelField}` reference channel; (2) a manual data-view edit between a spoken write and a
-  voice "no, I meant…" made the correction reverse the wrong journal entry → manual writes now clear
-  the spoken-correction context + the data-view snackbar uses a TARGETED `undoById(token)`. Plus: a
-  date-picker crash on any date >5y old (birthdays) → clamped; edit-failure was invisible behind the
-  modal sheet → now inline `errorText`; ref-by-number commands could be swallowed mid ProvideSlot →
-  guarded; ref actions killed a live Tour → kept alive; `ref_mark` id/label now var-closure-checked;
-  execute() before-image uses putIfAbsent; +orderBy on the numbered read_many skills; learned-flow
-  forget/restore hardened (token synthesis + dedupe). Specs 02/03/07 synced (§3 ops, §2.3a
-  reference-by-number, §5.5 posture), gap register row added. **v0 1718 + app 80 green.**
-- **G-46 (generative recognition) DONE on `main` + code-review-clean, verified LIVE, NOT yet on the phone.** Spec 03 →
-  v0.7 (Fable-reviewed SOLID); Phase 1 (cloud residual recognizes generative intents + dispatch + §6.3
-  follow-up) + Phase 2 (learn recognition templates → 2nd phrasing routes offline; degrade→no-learn;
-  correct→forget), both tested. **A 2-lens Fable code review found 8 real bugs — ALL 8 fixed + tested**
-  (forget-on-correct on corpus-match, _splitCompound crash on a generative half, learnGenerative
-  substring-corruption → word-boundary + round-trip, _pendingGen swallowing commands, retrieval-index
-  skillId '' crash, near-dup accumulation, non-string contact, **#8 silent multi-action drop → now
-  skipped-and-counted + admitted, P2.8** `f4e018b`). v0 **1680 green**, app analyze clean. iOS build
-  **validated (compiles)**; on-device install is the pending Luis-gated step —
-  **unlock the phone + reconnect the Anthropic key**, deploy, then test "can you suggest a gift for
-  Elena" live (recognized by the cloud, no regex).
-- **G-47 (two features) DONE on `main`, NOT yet on the phone** — Fable-designed, both accepted:
-  1. **Numbered-list corrections.** Every list Plena reads back is now numbered ("1. …, 2. …"), and
-     you reference an item by the number spoken — "delete 2", "complete 1", "correct 3" (two-turn
-     re-speak) or "change 2 to X" (one-turn). Fixes the misheard-item problem ("Zpack my clothes" was
-     un-retargetable). Two new closed-vocab DSL ops — `enumerate` (flat lists) + `ref_mark` (captures
-     a ref from inside a foreach for rich/conditional/joined readbacks); ~18 list skills converted
-     across every domain. Session `_enumCtx` (survives intervening turns, cleared on empty readback)
-     + `_pendingCorrection`; offline regex recognition; all three actions journaled so "undo that"
-     reverses them. 15 corrections tests.
-  2. **Editable "Your data" view.** The existing read-only archetype view (`app/lib/data_view.dart`,
-     behind the "…" menu) is now editable: Spec 07 §5.5 per-value tap-to-edit (NO forms — D5),
-     delete-with-undo-snackbar, and a "Learned phrases" card showing what Plena learned to recognize
-     from how Luis talks (humanized templates) with a per-phrase forget (+ undo). Six new Session
-     facade methods (`editField`, `deleteRecord`, `undoLast`, `learnedFlows`, `forgetLearnedFlow`,
-     `restoreLearnedFlow`) + `Router.restore`; ALL edits ride the ONE journal, so voice "undo that"
-     reverses a manual edit. `ManualWrite`/`LearnedFlow` value types (no exceptions across the UI
-     seam). 9 facade + 4 widget tests. **Ran `tool/sync_seed.sh`** — app carries the numbered skills.
-  Tests: **v0 1704 + app 78, all green.** On-device is the pending Luis-gated step.
-- Developing on **macOS**; **iPhone is P1**. Apple Developer Program **approved** (TestFlight not set up yet).
+- Config tests are hermetic: explicit config paths do not inherit the developer shell; precheck clears credential/config environment variables.
+- Flutter credentials use one `CredentialStore` backed by platform secure storage. iOS uses Keychain; unsigned macOS dogfood uses the native login Keychain through `/usr/bin/security` because the plugin data-protection path requires a provisioning profile; the native round-trip/delete integration test passes. Legacy plaintext migrates only after verified read-back, then clears atomically. Internal/external ignore `ANTHROPIC_API_KEY`; development may use it for the process lifetime without persisting it.
+- Diagnostics use compile-time `BuildChannel`: `development`, `internal`, `external`.
+  - development/internal retain content-bearing logs and manual **Share raw diagnostics** export;
+  - external writes no raw content, exposes no raw export, and purges raw `.log` files inherited from an internal installation;
+  - no automatic uploader exists;
+  - secrets are rejected before serialization in every channel;
+  - raw audio/interim transcripts remain forbidden;
+  - AppLog rotates at 30 days or 100 MB, oldest-first.
+- Production long-press glyph cycling, tuning, and dev harness are gated from external builds.
+- Import lint now fails every unclassified production file; `routines.dart` is classified.
+- The false-green existing-contact cloud-route test now asserts the response and stored mood. Its real typed-map crash is fixed by copying cloud slots into an owned `Map<String, dynamic>`.
+- Conformance counts are generated from test-runner JSON (`24 pass / 36 skip of 60`) and ratcheted at 24.
+- Coverage is enforced by tier, globally, and for unclassified files. Explicit temporary exclusions: `fixture_inputs.dart`, localhost `embed.dart`, and mixed recorder/replay `replay_cloud.dart` pending the retrieval/replay split.
+- The glyph contact-sheet harness now alpha-composites RGBA frames onto the actual `#0A0908` ground; its transparent-pixel test was calibrated against the old false-color conversion.
+- MSIX package version is derived from pubspec instead of a stale duplicate.
+- Verification is green: the complete precheck passed twice (ordinary shell and hostile parent config/credential environment), the native macOS Keychain test passed, and an internal-channel iOS simulator build succeeded. Launched integration apps plateaued during short samples and all app/helper/orphan processes were removed; this is not a long-soak leak claim.
 
-## Live facts / commands (grab these)
-- **SHIP A RELEASE (TestFlight — works from anywhere, no browser, no Xcode login).** Bump
-  `version:` in `app/pubspec.yaml` first — the `+BUILD` must strictly increase or Apple rejects the
-  binary as a duplicate. Then, after the env evals:
-  ```
-  cd app && flutter build ipa --release      # its OWN export step fails on signing — EXPECTED, ignore
-  ../tool/testflight-upload.sh               # re-exports signed + validates + uploads (this is the real one)
-  ../tool/asc.py status                      # wait for processingState=VALID (~2-15 min)
-  ../tool/asc.py release                     # distribute newest build to the Internal group
-  ```
-  `tool/asc.py` = App Store Connect API client (status/groups/add-tester/invite/release/raw). Needs
-  the venv at `~/.plenara-asc/venv`; recreate with
-  `python3 -m venv ~/.plenara-asc/venv && ~/.plenara-asc/venv/bin/pip install 'pyjwt[crypto]' requests`.
-- **TestFlight identifiers:** app record `6795650460`; internal group `Internal`
-  `23726f32-08a5-4c99-9470-5eecd52760ea`; key `AQMT4FFHKW`, issuer `12ee92f1-bd97-4747-bc50-87c476d9eb9b`;
-  `.p8` at `~/.plenara-asc/AuthKey_AQMT4FFHKW.p8` (mode 600) — **Apple allows the download only once,
-  do not delete both copies**. Config in gitignored `tool/.testflight.env`.
-- **iPhone:** "Aluminum Monster", id **`00008140-000645442862201C`**, iOS 26.5.2. Bundle
-  `com.plenara.plenaraApp`, team **`7V63BZ39HU`**, `IPHONEOS_DEPLOYMENT_TARGET = 26.0` (intentional —
-  we want newest APIs).
-- **Deploy to phone (release, verbose logs):** from `app/`, after the env evals —
-  `flutter run --release --dart-define=PLENARA_DEBUG=true -d 00008140-000645442862201C`
-  (release-mode = no debug-attach mDNS/Impeller pitfalls; kill the Mac console after, app stays).
-- **Build env evals:** `eval "$(/opt/homebrew/bin/brew shellenv)"; export LANG=en_US.UTF-8; export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`
-- **Pull device logs (no cable needed via the wireless tunnel):**
-  `xcrun devicectl device copy from --device 00008140-000645442862201C --domain-type appDataContainer --domain-identifier com.plenara.plenaraApp --source Documents/plenara-logs --destination <dir>`
-  (libimobiledevice/idevice* can't see the wireless device; use devicectl.)
-- **Console-launch to capture stdout/crash signal:** `xcrun devicectl device process launch --console --terminate-existing --device <id> com.plenara.plenaraApp`
-- **Keep the Mac awake all session:** `caffeinate -dimsu` detached (see CLAUDE.md). Currently running.
-- **Glyph preview loop:** `flutter test test/glyph_render.dart` → PNG sheet in system temp; then read it.
+## Owner action
 
-## Hard-won gotchas (the gold — don't rediscover these)
-- **`flutter build ipa` ALWAYS prints `exportArchive No Accounts` / `No signing certificate "iOS
-  Distribution" found` — that is EXPECTED and not a failure.** It builds the `.xcarchive` fine; only
-  its own export step can't sign (no Apple account in Xcode, by design). `tool/testflight-upload.sh`
-  re-exports that same archive with the API key. Don't chase these errors, and don't grep build logs
-  for `error:` to decide whether a release worked — grep for `UPLOAD SUCCEEDED`.
-- **TestFlight is NOT preinstalled on iOS** — it's a separate free Apple app from the App Store, and
-  it must be signed into the SAME Apple ID that owns the developer account.
-- **An internal tester's API `state` stays `NOT_INVITED` even after a successful invite (201).** For
-  internal groups that field is effectively cosmetic — access comes from the TestFlight app itself.
-  The real proof a build reached a tester is `GET /v1/builds?filter[betaGroups]=<groupId>`. Note the
-  `builds->betaGroups` relationship allows only CREATE/DELETE, never GET_RELATED.
-- **Make the beta group INTERNAL, never external.** An external group drags every single release
-  through Apple's Beta App Review (days of latency). Internal is instant, capped at 100 testers.
-- **Work-MDM blocked the dev-cert verification** ("internet connection needed to verify") — the
-  corporate network blocked Apple's check. **Removing the work management profile cleared it.** If a
-  work phone is used again → **TestFlight** (MDM devices install App Store/TestFlight apps fine).
-- **iOS rotates the app's container UUID on each `flutter run` reinstall** → data + API key are
-  **wiped every redeploy** (you re-onboard + re-pick voice each time). Stable on normal use + TestFlight.
-- **iOS has no `HOME` env var** → v0's `~/…` paths collapse to non-writable `./…` (white-screened the
-  first build). Fix: app injects the Documents dir (`config.homeOverride`, via path_provider) **before**
-  any config/log path; and `dataDir` is **re-derived live** on mobile (never trust a stored absolute
-  container path). Apps may only write under `<container>/Documents|Library|tmp`, never the root.
-- **Impeller (iOS's only renderer; Skia removed) crashes on the presence's per-frame `toImageSync`
-  comet-trail** — native GPU abort, no Dart exception. iOS skips the offscreen persistence (Plena
-  animates, **no lingering trail on iOS for now**). `FLTEnableImpeller=false` just fails to launch.
-- **iOS TTS needs a `.playback` audio session** (re-asserted **before every utterance**) so Plena is
-  audible in silent mode (like Siri) and after Apple-Speech STT leaves the session in record mode.
-- **Natural voices are a user download** (Settings → Accessibility → Spoken Content/Read & Speak →
-  Voices). App auto-picks the best installed; the in-app picker (Settings → Voice) lets the user choose.
-- **Locked phone → "Could not run …Runner.app"** on deploy. Unlock + keep awake, then re-run.
-- **`path_provider_foundation` pinned to 2.4.1** (dependency_overrides): its 2.6.0 native-assets build
-  hook (`package:objective_c`) breaks `flutter build --release` because a **stale Xcode keychain
-  credential** (`91B206EB…`, "missing Xcode-Username") corrupts the hook's `xcrun` stdout parse.
+- Rotate the Anthropic credential that appeared in a non-hermetic test failure before this increment. The repository/reports do not contain it, but the earlier tool transcript did. Credential rotation requires Luis's account authority.
 
-## Open threads / deferred (with reasons)
-- **Generative recognition via the cloud residual (G-46) — Phase 2 (learning) still to do.** The
-  dogfood miss ("suggest a gift for Elena" → clarify) was root-caused to generative intents being
-  regex-only + the residual being skill-scoped. Spec 03 → v0.7/G-46 (co-designed + reviewed with Fable,
-  SOLID). **Phase 1 SHIPPED:** `routeResidual` carries the fixed generative-kind inventory and returns
-  `{generativeKind, params}`; `session._dispatchGenerative` runs it (missing contact → §6.3 follow-up);
-  the `_giftRe` band-aid is reverted + the regexes frozen. So novel phrasings no longer dead-end.
-  **Phase 2 SHIPPED — the "evolve local handling" half:** `router.dart` now stores + matches a
-  `generativeKind`-target corpus entry; `learnGenerative` abstracts the contact to `{contact:entity}`
-  and learns on a DELIVERED synthesis (`GenerativeService.lastDelivered` flag — degrade/unknown-person/
-  offline turns don't learn); a learned template routes the 2nd identical phrasing OFFLINE (no residual
-  call), and a next-turn "correct" forgets it (§5.2 negative half). Tested end-to-end (learn→offline,
-  degrade→no-learn, correct→forget). So the loop is closed: Claude recognizes a novel phrasing once,
-  the DSL absorbs it — no regex edits. (End-state retrieval migration still deferred, `G-44`.)
-  **Code-review arc CLOSED** — all 8 findings fixed + regression-tested; the last (#8, a generative
-  half silently dropped from a mixed batch) now surfaces a "ask me that on its own" coda instead of
-  vanishing. Nothing left on-repo; only the Luis-gated device deploy remains.
-- **flutter_tts shares one static method-channel handler** (deferred from the 5-lens Fable review):
-  every extra `FlutterTts()` (voice enumeration on each Settings/onboarding open + resume, and the
-  preview instance) re-registers the handler, so the main voice's `setStartHandler`/`setErrorHandler`
-  go dead on iOS after the Voice card is shown (onStart audio-anchor + tts error logs degrade; speech
-  still works), and a **preview shares the one native synthesizer** so it can stop a live reply. Fix
-  needs a single shared `FlutterTts`/`FlutterTtsSpeechOutput` (inject the app's into the card). Soft
-  impact today, so deferred.
-- **Impeller-safe comet trail on iOS** — restore the persistence trail without the toImageSync crash.
-- **Clean the stale Xcode keychain credential** `91B206EB-734B-447D-B085-D12AAC3EC664` (then un-pin
-  path_provider_foundation).
-- **TestFlight setup** — the goal "work remotely, push to my phone" wirelessly (Dev account approved).
-- **iOS notifications** (currently FakeScheduler — on-open nudges only) + **iOS synced-folder storage**.
-- **Glyph polish** — bell could move closer to Luis's reference; pairings are aesthetic/tunable.
+## Live commands
 
-## Decisions worth remembering (why)
-- **Release-mode is the iOS deploy path** (not debug): debug's mDNS/Local-Network attach + Impeller are
-  the pitfalls; release sidesteps both and the app runs standalone.
-- **Voice-first display:** Plena *speaks* replies with no on-screen text; captions only when muted.
-- **Glyphs refined by render-and-review**, not by guessing (`test/glyph_render.dart`); Fable proposes
-  shapes, we render + compare to references.
-- **iOS requires newest APIs on purpose** (deployment target 26.0) — no backward-compat baggage.
+- Keep awake: `pgrep -x caffeinate || nohup caffeinate -dimsu >/dev/null 2>&1 &`
+- Full gate: `bash tool/precheck.sh`
+- External-channel policy gate: `cd app && flutter test --dart-define=PLENARA_CHANNEL=external test/external_channel_test.dart`
+- Generated conformance: `cd v0 && dart run bin/conformance_count.dart`
+- Contact-sheet verifier: `python3 -m unittest app/tool/test_gesture_contact_sheet.py`
+- TestFlight internal builds must use `--dart-define=PLENARA_CHANNEL=internal`; external/release builds use `external` or the release fail-closed default.
+- iPhone: Aluminum Monster, `00008140-000645442862201C`, bundle `com.plenara.plenaraApp`, team `7V63BZ39HU`.
+- Release environment: `eval "$(/opt/homebrew/bin/brew shellenv)"; export LANG=en_US.UTF-8; export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`
 
-## Doc map
-- **This file** — living working memory, kept current.
-- `SESSION-HANDOFF.md`, `HANDOFF.md` — session/history snapshots (older; this capsule supersedes the
-  "what's the current state" role — consider folding them in over time).
-- `TRANSITION.md` — macOS specifics. `planning/` — design specs. `releases/VERSIONS.md` — milestones.
+## Hard-won platform facts
+
+- `flutter build ipa` may build the archive and fail its own export for missing Xcode-account signing; `tool/testflight-upload.sh` performs the API-key export/upload path.
+- iOS rotates the app container on reinstall. `homeOverride` must be set from Documents before config/log paths are derived.
+- iOS Impeller crashes on the old per-frame `toImageSync` trail path; iOS currently omits lingering trail persistence.
+- iOS TTS needs the playback audio session reasserted before every utterance.
+- `path_provider_foundation` remains pinned to 2.4.1 because a stale Xcode keychain warning corrupts the newer native-assets hook output.
+- Any app launched during autonomous verification must have RSS sampled, be killed afterward, and be checked for orphan processes.
+
+## Next implementation order
+
+1. Increment 1: SchemaRegistry, total ValueCodec, real migrations, durable ExecutionCoordinator/journal, restart-safe targeted undo.
+2. Increment 2: first useful Today slice, durable ledger, minimal planner schema, onboarding/icon/identity coherence.
+3. Increment 3: Plan/Library, contextual direct manipulation, in-process retrieval, cloud admission controller.
+4. Later increments follow `planning/implementation-plan-2026-08-17.md`; dependencies and evidence gates determine order, not calendar dates.
+
+## Authoritative documents
+
+- `planning/specs/17-living-planner.md` — product information architecture and multimodal rules.
+- `planning/specs/11-feedback-diagnostics.md` — sole diagnostic collection/export authority.
+- `planning/implementation-plan-2026-08-17.md` — ordered implementation program and acceptance gates.
+- `reviews/2026-08-17-*.md` — historical review evidence; do not rewrite their findings after decisions change.

@@ -12,6 +12,8 @@ import 'package:plenara/reminders.dart';
 import 'package:plenara/session.dart';
 
 import 'app_log.dart';
+import 'build_channel.dart';
+import 'credential_store.dart';
 import 'data_view.dart';
 import 'glyphs.dart';
 import 'onboarding_view.dart';
@@ -48,7 +50,8 @@ NotificationScheduler _platformScheduler() {
 }
 
 Session buildSession({NotificationScheduler? scheduler}) {
-  final cfg = loadConfig();
+  final cfg = loadAppConfig();
+  AppLog.instance.registerSecret(cfg.apiKey);
   // loadConfig already derives the correct dataDir per platform (live Documents dir on mobile, where
   // the container path is unstable; the user's folder on desktop) — one source of truth, so this and
   // main()'s first-run seed check agree (previously they diverged, re-extracting seeds every launch).
@@ -86,7 +89,9 @@ Future<void> main() async {
         homeOverride = (await getApplicationDocumentsDirectory()).path;
       } catch (_) {/* desktop never reaches here; on failure fall back to env/'.' */}
     }
+    await initializeAppCredentials();
     final log = AppLog.instance;
+    log.registerSecret(loadAppConfig().apiKey);
     // Print the diagnostics log path so a manual test that goes wrong is one file away.
     stdout.writeln('Plenara diagnostics log: ${log.file.path}');
     log('boot: main() starting');
@@ -94,7 +99,7 @@ Future<void> main() async {
     // data folder is already seeded) so a shipped binary seeds itself with no repo present.
     if (Platform.environment['PLENARA_SEED_DIR'] == null) {
       try {
-        if (!isSeeded(loadConfig().dataDir)) {
+        if (!isSeeded(loadAppConfig().dataDir)) {
           _bundledSeedDir = await extractSeedAssets();
           log('boot: extracted bundled seed assets -> $_bundledSeedDir');
         }
@@ -141,7 +146,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   late bool _onboarding =
       widget.session == null &&
-      loadConfig(configPath: widget.configPath).apiKey == null;
+      loadAppConfig(configPath: widget.configPath).apiKey == null;
   @override
   Widget build(BuildContext context) => _onboarding
       ? WelcomeScreen(
@@ -1142,10 +1147,10 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
-            onLongPress: () {
+            onLongPress: activeBuildChannel.allowsInternalTools ? () {
               final all = kGlyphs.values.toList();
               _fireGlyph(all[_glyphPreview++ % all.length], force: true);
-            },
+            } : null,
           ),
         ),
         // Plena — always full-bleed. (She used to shrink to a 260px corner box in list mode, but
@@ -1555,11 +1560,17 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           _openHarness();
         }
       },
-      itemBuilder: (_) => const [
-        PopupMenuItem(value: 'harness', child: Text('Dev harness')),
-        PopupMenuItem(value: 'tune', child: Text('Tune Plena')),
-        PopupMenuItem(value: 'data', child: Text('Your data')),
-        PopupMenuItem(value: 'settings', child: Text('Settings')),
+      itemBuilder: (_) => [
+        for (final action in menuActionsFor(activeBuildChannel))
+          PopupMenuItem(
+            value: action,
+            child: Text(switch (action) {
+              'harness' => 'Dev harness',
+              'tune' => 'Tune Plena',
+              'data' => 'Your data',
+              _ => 'Settings',
+            }),
+          ),
       ],
     ),
   );

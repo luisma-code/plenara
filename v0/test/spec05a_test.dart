@@ -4,7 +4,8 @@
 /// cloud (paid authoring / generative), an unbuilt capability, or a phrasing the offline
 /// corpus doesn't yet cover are marked `skip:` with a reason — that IS the worklist.
 ///
-/// A `skip` counts as green. See the tally comment at the bottom (kept in sync with runs).
+/// A `skip` counts as green. `dart run bin/conformance_count.dart` derives the
+/// authoritative per-tier tally from the test runner's JSON result events.
 import 'package:plenara/claude.dart';
 import 'package:plenara/session.dart';
 import 'package:test/test.dart';
@@ -285,16 +286,3 @@ void main() {
     dps.forEach((id, why) => test('$id', () async {}, skip: why));
   });
 }
-
-// ─────────────────────────────────────────────────────────────────────────────────────
-// CONFORMANCE TALLY (offline, exact-or-equivalent utterances) — kept in sync with runs:
-//   F-tier: 14 pass /  6 skip  (F-01,02,04,05,07,08,09,10,12,16,17,18,19,20)
-//   P-tier:  0 pass / 20 skip  (all need BYOK: authoring or generative)
-//   DF-tier: 3 pass /  7 skip  (DF-01 no-template offer, DF-03 schema-edit, DF-10 scope denial)
-//   DP-tier: 7 pass /  3 skip  (DP-01,02,03,04,06,08,09 — deterministic safety/OOD/scope/medical/impersonation floors)
-//   TOTAL:  24 pass / 36 skip  of 60  (up from 9/60 — denial floors, phrasings, tracker+adherence+fact queries, content search, DF-01 offer)
-// The skips ARE the remaining spec worklist: mostly cloud-gated (paid), a handful of
-// genuinely-unbuilt capabilities (search F-12, aggregation queries F-17/18, automations
-// P-19, the generative depth P-08..P-20), and corpus-phrasing gaps where the CAPABILITY
-// is built but the exact 05a wording doesn't route offline (F-05/07/08/10, F-14/15).
-// ─────────────────────────────────────────────────────────────────────────────────────

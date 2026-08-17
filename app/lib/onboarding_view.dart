@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plenara/config.dart';
 
+import 'credential_store.dart';
 import 'settings_view.dart';
 import 'voice_setup.dart';
 
@@ -20,14 +21,16 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen> {
   // Load once (loadConfig reads — and on first run WRITES — the config file; doing it in build()
   // would be filesystem I/O on every frame). Refresh only after returning from Connect.
-  late PlenaraConfig _cfg = loadConfig(configPath: widget.configPath);
+  late PlenaraConfig _cfg = loadAppConfig(configPath: widget.configPath);
   bool get _connected => _cfg.apiKey != null;
 
   Future<void> _openConnect() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => SettingsView(configPath: widget.configPath)),
     );
-    if (mounted) setState(() => _cfg = loadConfig(configPath: widget.configPath)); // reflect a key now set
+    if (mounted) {
+      setState(() => _cfg = loadAppConfig(configPath: widget.configPath));
+    }
   }
 
   @override

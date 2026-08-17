@@ -758,8 +758,11 @@ void main() {
       final cap = _CapturingCloud({'skillId': 'log-mood', 'slots': {'rating': 'great'}, 'source': 'cloud'});
       final s = Session(dir, clock: _now, cloud: cap);
       await s.init(retrieval: false);
-      await s.handle('some phrasing the corpus will not catch xyzzy');
+      final response =
+          await s.handle('some phrasing the corpus will not catch xyzzy');
       expect(cap.lastContacts, contains('Katherine Zinger'));
+      expect(response.toLowerCase(), contains('great'));
+      expect(s.store.values.where((r) => r['typeId'] == 'mood'), hasLength(1));
     });
   });
 

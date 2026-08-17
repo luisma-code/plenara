@@ -5,6 +5,7 @@
 **Blocks:** Spec 09 — Test (widget tests per archetype, Spec 04 §9.3-style UI coverage); the v1.2 "first view archetype" rung (research §11.3).
 **Builds on:** the existing v0 Flutter app (`app/lib/main.dart`) — the chat turn loop, the busy indicator, the log-path greeting, and the on-open nudges are the seed of the Conversation Stream defined in §2.2, not throwaway.
 **Presence sync (2026-07-11 — Spec 15 v0.3):** dated notes in §2.1, §2.2, §7.1–§7.2, §8.4, §10, and D11 reconcile this spec with the shipped presence-primary home: the orb is subsumed by **Plena** (Spec 15), the v0 chat scrollback is retired (history is ephemeral on the home — only the current exchange shows), tap-anywhere is the speak gesture, and the bottom-left mute control raises the text input. Everything else stands as written.
+**Living-planner sync (2026-08-17 — Spec 17):** Spec 17 supersedes the overlay-only/no-touch rule and the four-surface/presence-primary steady state. This document remains authoritative for visual language, value treatments, and generic archetypes; Spec 17 owns Today/Plan/Library, durable history, multimodal interaction, planner projections, and Plena's adaptive scale.
 
 ---
 
@@ -31,9 +32,9 @@ It does **not** cover: the type-file format that carries the hints (Spec 01 §4)
 
 Restated from the research doc and upstream specs, with their UI-specific consequences. They are the frame, not up for re-debate.
 
-**P1 — Voice is uncompromising (research §2.1).** Every screen in this spec must be fully drivable by voice. No flow may *require* a tap. Touch exists as a parallel affordance (chips, cards, undo), never as the only path. If a view seems to need a complex touch interaction, the view is wrong (research §2.2).
+**P1 — Voice is global and first-class (Spec 17 P17.1).** Every core outcome remains reachable by voice. Planner surfaces may also use direct manipulation and spatial comparison suited to touch, pointer, and keyboard; all modalities enter the same typed mutation path. The retired rule treated complex touch interaction as evidence that the view was wrong. Spec 17 replaces it with multimodal parity.
 
-**P2 — Text is an overlay, not an alternative UI (research §2.2).** There is one visual design. The quiet overlay (§7) slides over it; it never reflows it, never swaps to a "keyboard layout," and subtitles are always on regardless of mode.
+**P2 — Text and captions have full parity (Spec 17 P17.1/P17.3).** Captions remain simultaneous and text input remains globally available. A keyboard may reflow a responsive planner surface when required for usability; state, commands, durable results, and undo semantics stay identical across modalities.
 
 **P3 — Beautiful, organic, quiet (research §2.3).** Fluid animation, organic shape, generous whitespace, typography-led hierarchy, curated context-sensitive display — "more like a well-designed magazine than a productivity dashboard." Concretely enforced in this spec as: no full CRUD list views (§3), the one-mover motion rule (§8.2), the shape language (§9.2), and the ban on raw forms (§4.4). The organic visual layer is an explicit v1+ goal; §10 stages it so v1 ships functional-and-clean on the same skeleton.
 
@@ -51,20 +52,20 @@ Restated from the research doc and upstream specs, with their UI-specific conseq
 
 ## 2. Surface Anatomy
 
-The app is composed of exactly four top-level surfaces plus one overlay. Keeping the surface count this small is itself a design decision (P8): Plenara is not a tabbed dashboard.
+**Superseded as top-level information architecture by Spec 17 §2.** The current primary surfaces are Today, Plan, and Library, with a durable conversation/action ledger and global Plena. The historical Stage/Stream/Collections/Operation-Center anatomy below continues to inform component and transition design where Spec 17 reuses it.
 
 ### 2.1 The Stage (home)
 
 The default, ambient surface. Anatomy, top to bottom:
 
-- **The presence** — *(superseded by Spec 15, 2026-07-11:)* **Plena**, the particle-swarm presence (Spec 15 §2.1), not an orb in a layout. As shipped, the Stage *is* Plena full-screen over a warm near-black void, and this anatomy inverts: she is the ground and everything below is a guest on it (Spec 15 §6.3 Y0). The shipped chrome is exactly a small mute control (bottom-left) and a quiet overflow menu; **tap anywhere to speak**. Her state (idle / listening / thinking / speaking) is the primary system-status indicator; there is no spinner anywhere else on the Stage — the v0 `LinearProgressIndicator` (`main.dart`) is gone, replaced by her *thinking* state.
+- **The presence** — Plena is full-screen in empty/rest/deep-conversation states, a compact collaborator beside Today/Plan content, and an ember on detail surfaces (Spec 17 §3). Tap-anywhere speaks only where it cannot collide with interactive plan objects; populated surfaces expose an explicit accessible voice target.
 - **The subtitle region** — the two-slot caption area of §7.3. Always present, mostly empty.
 - **The ambient field** — a curated, context-sensitive selection of at most three cards: the most imminent item (next reminder/task due), the most alive tracker (today's streak state), and — only when non-empty — the AttentionSurface summary chip ("2 things need a look"). Which cards appear is a Business Logic projection, not user configuration, and *empty is a valid and common state*: an empty Stage with a resting orb is the design working, not a bug.
 - **The threshold to the Stream** — the most recent turn's `Done` line lingers at the bottom of the Stage (with its undo chip, §6.2) and can be pulled up to reveal the full Conversation Stream.
 
 ### 2.2 The Conversation Stream
 
-The scrollable history of turns. *(Presence sync, 2026-07-11:)* originally specified as the direct descendant of the v0 `ChatScreen` message list; that list has since been **removed as tech debt** with the presence-primary home (Spec 15 §6.4) — the shipped home shows only the ephemeral current exchange, and history is never a scrollback the home displays. The Stream survives as a *visited* surface (a Y2 yield, Spec 15 §6.3), to be rebuilt from the turn log on the `TurnEvent` contract: voice-first still does not mean history-free, and the v0 dogfooding proved the turn feed is where trust is built (the greeting and nudges now join the current exchange over the void). What changes from the v0 design:
+The durable history of turns and actions, now owned as the conversation/action ledger by Spec 17 §2.4. The 2026-07-11 ephemeral-home experiment is retired: every final utterance, reply, execution link, failure, and targeted undo remains findable after relaunch. What remains from this visual design:
 
 - Turns are not symmetric chat bubbles. **User utterances** render as light, quiet text (a transcript, not a "message I composed"); **Plenara's turns** render as typed cards — a `Done` line, a clarification, a result card, a generative card — per §6. The bubble-vs-bubble chat metaphor is retired with the organic pass (§10).
 - The v0 greeting and on-open nudges (`_session.pendingNudges()`) become AttentionSurface/Review-Feed entries rendered inline at the top of the Stream on open — same behavior, now specified (§6.7).

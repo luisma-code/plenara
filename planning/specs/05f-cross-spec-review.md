@@ -71,7 +71,7 @@ The parallel authors each read the v0 code; where several hit the same divergenc
 | `turnlog.jsonl` in the synced folder (content + conflict + T1 churn) | **06 (V6) + 10 (R-02) + 11 (D9)** — 3× | Fix now (CS-02). The single most-corroborated item in the suite. |
 | Authoring model Haiku-in-v0 vs pinned-capable target | **08 (D3) + 10 (§6.4 implication)**, target set by 02 §6.3 | Accepted interim; spec-side reconcile is CS-05. |
 | Sensitive-skill exclusion (03 §5.6) unimplemented; full inventory sent | **08 (§5.2/Q6) + 10 (R-05)** — 2× | Latent-harmless; hard gate before any `sensitive` capability ships. |
-| API key in plaintext config, not secure store | **08 (D9) + 10 (R-03)** — 2× | Release blocker for any distributed build; both specs agree. |
+| API key secure-store migration | **08 (D9) + 10 (R-03)** — implemented 2026-08-17 | Flutter app now uses verified-before-delete platform secure storage; pure-Dart operator tooling retains its explicit development seam. |
 | Safety Layers 2–3 unbuilt (single-model borderline gate) | **10 (R-04)**, designed in 02 §7.6 | Top open *safety* item despite single flag — see CS-07. |
 | `deviceId` inside the synced root | **06 (V1)** | Single flag but blocker-class — see CS-01. |
 | `writeDef` non-atomic; corrupt-file skip is silent | **06 (V4, V5)** | Next-v0-touch items; V4 especially (a torn type file degrades every instance). |

@@ -18,8 +18,13 @@ const kRank = <String, int>{
   'claude': 1, 'router': 1, 'embed': 1, 'replay_cloud': 1, 'reference': 1, 'content_search': 1,
   // business logic + orchestration
   'interpreter': 2, 'reminders': 2, 'people': 2, 'generative': 2,
-  'automations': 2, 'config': 2, 'turnlog': 2, 'migration': 2, 'session': 2,
+  'automations': 2, 'config': 2, 'turnlog': 2, 'migration': 2, 'routines': 2,
+  'session': 2,
 };
+
+List<String> unclassifiedFiles(Iterable<String> names,
+        [Map<String, int> ranks = kRank]) =>
+    names.where((name) => !ranks.containsKey(name)).toList()..sort();
 
 /// Pure core (testable): the upward-import violations for [graph] (file → its lib imports).
 /// An unclassified file is treated as the bottom layer, so ITS upward imports are still caught.
@@ -39,12 +44,10 @@ List<String> lintGraph(Map<String, List<String>> graph, [Map<String, int> ranks 
 
 void main() {
   final graph = <String, List<String>>{};
-  final unclassified = <String>{};
   final importRe = RegExp(r"^import '([a-z_]+)\.dart'");
   for (final f in Directory('lib').listSync().whereType<File>()) {
     if (!f.path.endsWith('.dart')) continue;
     final name = f.uri.pathSegments.last.replaceAll('.dart', '');
-    if (!kRank.containsKey(name)) unclassified.add(name);
     final imports = <String>[];
     for (final line in f.readAsLinesSync()) {
       final m = importRe.firstMatch(line);
@@ -52,11 +55,12 @@ void main() {
     }
     graph[name] = imports;
   }
+  final unclassified = unclassifiedFiles(graph.keys);
   for (final u in unclassified) {
-    stderr.writeln('note: unclassified lib file "$u" — add it to bin/import_lint.dart kRank');
+    stderr.writeln('UNCLASSIFIED: lib/$u.dart — add it to bin/import_lint.dart kRank');
   }
   final violations = lintGraph(graph);
-  if (violations.isNotEmpty) {
+  if (violations.isNotEmpty || unclassified.isNotEmpty) {
     for (final v in violations) {
       stderr.writeln('VIOLATION: $v');
     }

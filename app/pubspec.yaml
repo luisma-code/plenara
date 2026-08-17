@@ -1,5 +1,5 @@
 name: plenara_app
-description: "A new Flutter project."
+description: "Plenara — a voice-first living planner and relational assistant."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -49,6 +49,9 @@ dependencies:
   path_provider: ^2.1.6
   url_launcher: ^6.3.2
   flutter_svg: ^2.3.0
+  # 11.x currently conflicts with share_plus 10.x over win32 major versions.
+  flutter_secure_storage: ^10.3.1
+  package_info_plus: ^8.3.1
 
 # path_provider_foundation 2.6.0 (pulled in by share_plus) migrated to the experimental native-assets
 # build-hook path via package:objective_c. That hook shells out to xcrun and parses its stdout, which
@@ -78,13 +81,12 @@ dev_dependencies:
   # tool signs with a generated test cert; a real Developer cert for public distribution.
   msix: ^3.16.8
 
-# MSIX packaging config (consumed by `dart run msix:create`). Version is the pubspec version with a
-# 4th part (msix requires x.y.z.0). See RELEASING.md for the signing/distribution steps.
+# MSIX packaging config (consumed by `dart run msix:create`). `msix_version` is deliberately absent:
+# the packaging tool derives it from the app's authoritative pubspec `version`, preventing drift.
 msix_config:
   display_name: Plenara
   publisher_display_name: Plenara
   identity_name: com.plenara.app
-  msix_version: 0.8.0.0
   capabilities: internetClient
   # Validated: `dart run msix:create` produces a signed 22.8 MB plenara_app.msix. For a
   # non-interactive build (CI), add `--install-certificate false` so the tool doesn't prompt to

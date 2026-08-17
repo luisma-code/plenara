@@ -18,6 +18,9 @@ void main() {
     test('an unclassified file (treated as bottom) importing a higher layer is still caught', () {
       expect(lintGraph({'newfile': ['session']}), hasLength(1));
     });
+    test('every unclassified production file fails even when it has no imports', () {
+      expect(unclassifiedFiles(['store', 'brand_new']), ['brand_new']);
+    });
     test('a snapshot of the real lib graph has no violations', () {
       expect(
           lintGraph({

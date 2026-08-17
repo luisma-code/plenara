@@ -40,7 +40,11 @@ internal beta group **Internal** (`23726f32-…`) with Luis as tester.
 ## Then, per release (Claude runs)
 ```
 # bump version: in app/pubspec.yaml first — +BUILD must strictly increase
-cd app && flutter build ipa --release   # builds the archive (its own export step may warn on signing — fine)
+cd app
+revision=$(git rev-parse --short HEAD)
+flutter build ipa --release \
+  --dart-define=PLENARA_CHANNEL=internal \
+  --dart-define=PLENARA_REVISION="$revision"   # internal dogfood diagnostics/tools
 ../tool/testflight-upload.sh            # exports a signed IPA + uploads via the API key
 ../tool/asc.py status                   # wait for processingState=VALID (~2–15 min)
 ../tool/asc.py release                  # distribute the newest build to internal testers

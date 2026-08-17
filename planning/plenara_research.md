@@ -91,23 +91,21 @@ The goal is that within a few weeks of use, the app rarely asks for
 clarification because it has learned the user's vocabulary and phrasing
 patterns.
 
-### 2.2 Text Is an Overlay, Not an Alternative UI
+### 2.2 Voice Is First-Class Within a Multimodal Planner
 
-Principle: The UI is designed for voice. Text input and subtitles are
-surfaced as a quiet-mode overlay without compromising the visual design.
+**Amended 2026-08-17; Spec 17 is authoritative.** Voice remains free-form,
+global, and capable of every core outcome. It is no longer required to carry
+persistent state, spatial comparison, sequencing, or precision editing by
+itself. Today, Plan, Library, and the durable conversation/action ledger make
+consequential state inspectable without speaking; touch, pointer, and keyboard
+use interaction forms suited to them and converge on the same typed business-
+logic mutation path.
 
-Because users sometimes need to interact in situations where speaking
-aloud is not practical (a meeting, a library, a shared space), Plenara
-provides a text input path. However, this is implemented as an overlay
-on top of the voice-first UI --- a text field slides in when activated
---- rather than a separate keyboard-centric layout. Similarly, the app's
-spoken output is simultaneously displayed as subtitles, so the user can
-read rather than listen when needed.
-
-The visual design is never compromised to accommodate keyboard or
-touch-first interaction patterns. If a feature requires a complex touch
-interaction to drive, that is a signal to reconsider whether voice can
-carry it instead.
+Text input and simultaneous captions remain required. The retired rule was
+"the visual design is never compromised to accommodate keyboard or touch-first
+interaction patterns." That rule optimized for aesthetic purity at the cost of
+planner usability and discoverability. The replacement invariant is multimodal
+parity plus one mutation door, defined by Spec 17 §§1 and 5.
 
 ### 2.3 Beautiful, Organic UI
 
@@ -1674,14 +1672,12 @@ vocabulary, the templates, or the routing.
 ### 14.2 Diagnostic Logging
 
 For the rare case where something goes badly wrong, Plenara maintains a
-robust diagnostic log --- code-level tracing detailed enough to
-post-debug a logic error: call paths, layer transitions, interpreter
-steps, error states, timings. It is engineered from the start to hold no
-PII and no user content --- identifiers are opaque and values are
-redacted to their type and shape ("string\[12\]", "date"), never their
-contents. The user can attach and submit this log when reporting a
-serious failure, and again it is shown in readable form, with the
-redaction guarantees stated, before anything is sent.
+robust diagnostic log detailed enough to post-debug the actual exchange.
+**Spec 11 is the sole authority for its build-channel policy:** development
+and single-user internal dogfood deliberately retain content-bearing traces
+and permit an explicit, plainly warned raw export; external builds capture no
+raw content and expose no raw export. Secrets, raw audio, and interim
+transcripts are forbidden in every channel. Nothing uploads automatically.
 
 ### 14.3 Ground Rules
 
@@ -1692,10 +1688,10 @@ redaction guarantees stated, before anything is sent.
     > plain English, not opaque blobs --- so there is no fear it might
     > be leaking private thoughts.
 
--   **No PII, no user content, ever.** By construction, both payloads
-    > carry only functional and code-level facts. This is a design
-    > constraint to be tested (Section 12, item 11), not merely a
-    > promise.
+-   **Build-channel boundary.** Functional-gap payloads and any future
+    > external diagnostic bundle are content-free by construction. An
+    > internal raw export may contain user exchanges under the explicit
+    > Spec 11 warning. Secrets, raw audio, and interim transcripts never do.
 
 -   **Opt-in.** Feedback and diagnostics are off until the user chooses
     > to send, consistent with the local-first, private posture and the

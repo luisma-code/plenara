@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/session.dart';
+import 'package:plenara_app/credential_store.dart';
 import 'package:plenara_app/glyphs.dart';
 import 'package:plenara_app/main.dart';
 import 'package:plenara_app/plena.dart';
@@ -67,12 +68,17 @@ void main() {
   // Re-pumping the SAME widget structure preserves PresenceView's State (Element reuse), so
   // yieldTarget changes flow through didUpdateWidget and the veilYield smoothing animates — the
   // real corner transition, not a fresh mount.
-  Widget harness(double yieldTarget, {GlyphDef? glyph, int nonce = 0}) => MaterialApp(
+  Widget harness(
+    double yieldTarget, {
+    GlyphDef? glyph,
+    int nonce = 0,
+  }) => MaterialApp(
     home: Scaffold(
       backgroundColor: const Color(0xFF0A0908),
       body: PresenceView(
         state: PresenceState.speaking,
-        animate: true, // the REAL ticker + trail buffer — the whole point of this test
+        animate:
+            true, // the REAL ticker + trail buffer — the whole point of this test
         yieldTarget: yieldTarget,
         glyph: glyph,
         glyphNonce: nonce,
@@ -92,7 +98,9 @@ void main() {
       await runFrames(tester, 30);
       // Toggle a few more times quickly — stress the transition + buffer reuse.
       for (var i = 0; i < 4; i++) {
-        await tester.pumpWidget(harness(i.isEven ? 1 : 0, glyph: kGlyphs['heart'], nonce: 2 + i));
+        await tester.pumpWidget(
+          harness(i.isEven ? 1 : 0, glyph: kGlyphs['heart'], nonce: 2 + i),
+        );
         await runFrames(tester, 12);
       }
       expect(tester.takeException(), isNull);
@@ -117,7 +125,10 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'list my tasks');
       await tester.tap(find.text('Send'));
-      await runFrames(tester, 80); // let the yield + trail buffer rasterize a real list reply
+      await runFrames(
+        tester,
+        80,
+      ); // let the yield + trail buffer rasterize a real list reply
 
       expect(tester.takeException(), isNull);
       expect(find.textContaining('buy milk'), findsWidgets);
@@ -128,28 +139,56 @@ void main() {
   // files back-to-back on macOS flakes on app relaunch — one file, one launch, is reliable). The
   // ORIGINAL shipped crash was the presence widget being RESIZED mid-animation, reallocating the
   // trail buffer; the veilYield redesign stopped resizing the widget, but this holds the line.
-  testWidgets('resizing the animated presence mid-flight never crashes the raster', (tester) async {
-    Widget sized(double w, double h) => MaterialApp(
-      home: Scaffold(
-        backgroundColor: const Color(0xFF0A0908),
-        body: Center(
-          child: SizedBox(
-            width: w,
-            height: h,
-            child: const PresenceView(state: PresenceState.speaking, animate: true),
+  testWidgets(
+    'resizing the animated presence mid-flight never crashes the raster',
+    (tester) async {
+      Widget sized(double w, double h) => MaterialApp(
+        home: Scaffold(
+          backgroundColor: const Color(0xFF0A0908),
+          body: Center(
+            child: SizedBox(
+              width: w,
+              height: h,
+              child: const PresenceView(
+                state: PresenceState.speaking,
+                animate: true,
+              ),
+            ),
           ),
         ),
-      ),
-    );
-    const sizes = <List<double>>[
-      [420, 320], [700, 520], [180, 140], [900, 680], [260, 900], [900, 200], [420, 320],
-    ];
-    await tester.pumpWidget(sized(sizes.first[0], sizes.first[1]));
-    await runFrames(tester, 30);
-    for (final s in sizes.skip(1)) {
-      await tester.pumpWidget(sized(s[0], s[1]));
+      );
+      const sizes = <List<double>>[
+        [420, 320],
+        [700, 520],
+        [180, 140],
+        [900, 680],
+        [260, 900],
+        [900, 200],
+        [420, 320],
+      ];
+      await tester.pumpWidget(sized(sizes.first[0], sizes.first[1]));
       await runFrames(tester, 30);
-    }
-    expect(tester.takeException(), isNull);
+      for (final s in sizes.skip(1)) {
+        await tester.pumpWidget(sized(s[0], s[1]));
+        await runFrames(tester, 30);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('native secure storage really round-trips and deletes', (
+    tester,
+  ) async {
+    final store = PlatformCredentialStore(
+      key: 'plenara_integration_test_credential',
+    );
+    addTearDown(store.deleteApiKey);
+
+    await store.deleteApiKey();
+    expect(await store.readApiKey(), isNull);
+    await store.writeApiKey('integration-fixture-value');
+    expect(await store.readApiKey(), 'integration-fixture-value');
+    await store.deleteApiKey();
+    expect(await store.readApiKey(), isNull);
   });
 }

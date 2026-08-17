@@ -1,53 +1,135 @@
-/// Plenara v0 — coverage gate (Spec 09 §8, O1). Reads `coverage/lcov.info`, prints per-file
-/// line coverage (worst first) + the total, and exits non-zero if the total is below the floor
-/// (default 80%, the Spec 09 §8 global target). The CI/quality primitive; ratchet-only in intent.
-///
-/// Run:
-///   dart test --coverage=coverage
-///   dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info \
-///       --report-on=lib --packages=.dart_tool/package_config.json
-///   dart bin/coverage_check.dart [floorPercent]
+/// Coverage gate with owned per-tier and global floors (Spec 09 §8).
 library;
 
 import 'dart:io';
 
-void main(List<String> args) {
-  final floor = args.isNotEmpty ? double.parse(args.first) : 80.0;
-  final f = File('coverage/lcov.info');
-  if (!f.existsSync()) {
-    stderr.writeln('coverage/lcov.info not found — run `dart test --coverage=coverage` + format_coverage first.');
-    exit(2);
+enum CoverageTier { deterministicCore, productLogic, transport }
+
+const tierFloors = <CoverageTier, double>{
+  CoverageTier.deterministicCore: 90,
+  CoverageTier.productLogic: 80,
+  CoverageTier.transport: 60,
+};
+
+const fileTiers = <String, CoverageTier>{
+  'interpreter.dart': CoverageTier.deterministicCore,
+  'store.dart': CoverageTier.deterministicCore,
+  'reminders.dart': CoverageTier.deterministicCore,
+  'dates.dart': CoverageTier.deterministicCore,
+  'session.dart': CoverageTier.productLogic,
+  'people.dart': CoverageTier.productLogic,
+  'generative.dart': CoverageTier.productLogic,
+  'storage_repository.dart': CoverageTier.productLogic,
+  'turnlog.dart': CoverageTier.productLogic,
+  'config.dart': CoverageTier.productLogic,
+  'routines.dart': CoverageTier.productLogic,
+  'automations.dart': CoverageTier.productLogic,
+  'reference.dart': CoverageTier.productLogic,
+  'content_search.dart': CoverageTier.productLogic,
+  'migration.dart': CoverageTier.productLogic,
+  'router.dart': CoverageTier.productLogic,
+  'cron.dart': CoverageTier.productLogic,
+  'claude.dart': CoverageTier.transport,
+};
+
+/// Operator/temporary integration code, excluded until the retrieval backend is
+/// in-process and replay recording is split from its product replay seam.
+const coverageExclusions = {'fixture_inputs.dart', 'embed.dart', 'replay_cloud.dart'};
+
+double percentage(List<int> value) =>
+    value[1] == 0 ? 100 : 100 * value[0] / value[1];
+
+List<String> coverageFailures(
+  Map<String, List<int>> perFile, {
+  double globalFloor = 80,
+  Map<CoverageTier, double> floors = tierFloors,
+}) {
+  final failures = <String>[];
+  final tierTotals = <CoverageTier, List<int>>{
+    for (final tier in CoverageTier.values) tier: [0, 0],
+  };
+  var globalHit = 0;
+  var globalFound = 0;
+  for (final entry in perFile.entries) {
+    final name = entry.key.split(RegExp(r'[\\/]')).last;
+    if (coverageExclusions.contains(name)) continue;
+    final tier = fileTiers[name];
+    if (tier == null) {
+      failures.add('UNCLASSIFIED COVERAGE: $name');
+      continue;
+    }
+    tierTotals[tier]![0] += entry.value[0];
+    tierTotals[tier]![1] += entry.value[1];
+    globalHit += entry.value[0];
+    globalFound += entry.value[1];
   }
-  var totalLines = 0, hitLines = 0;
-  String? sf;
-  var lf = 0, lh = 0;
-  final perFile = <String, List<int>>{}; // path -> [hit, found]
-  for (final line in f.readAsLinesSync()) {
-    if (line.startsWith('SF:')) {
-      sf = line.substring(3);
-      lf = 0;
-      lh = 0;
-    } else if (line.startsWith('LF:')) {
-      lf = int.parse(line.substring(3));
-    } else if (line.startsWith('LH:')) {
-      lh = int.parse(line.substring(3));
-      final key = sf;
-      if (key != null) perFile[key] = [lh, lf];
-      totalLines += lf;
-      hitLines += lh;
+  for (final tier in CoverageTier.values) {
+    final actual = percentage(tierTotals[tier]!);
+    final floor = floors[tier]!;
+    if (actual < floor) {
+      failures.add(
+        '${tier.name} coverage ${actual.toStringAsFixed(1)}% < ${floor.toStringAsFixed(0)}%',
+      );
     }
   }
-  double pct(List<int> v) => v[1] == 0 ? 100.0 : 100 * v[0] / v[1];
-  final entries = perFile.entries.toList()..sort((a, b) => pct(a.value).compareTo(pct(b.value)));
-  for (final e in entries) {
-    final name = e.key.split(RegExp(r'[\\/]')).last;
-    print('${pct(e.value).toStringAsFixed(1).padLeft(6)}%  $name  (${e.value[0]}/${e.value[1]})');
+  final global = percentage([globalHit, globalFound]);
+  if (global < globalFloor) {
+    failures.add(
+      'global coverage ${global.toStringAsFixed(1)}% < ${globalFloor.toStringAsFixed(0)}%',
+    );
   }
-  final total = totalLines == 0 ? 0.0 : 100 * hitLines / totalLines;
-  print('\nTOTAL: ${total.toStringAsFixed(1)}% ($hitLines/$totalLines lines) — floor ${floor.toStringAsFixed(0)}%');
-  if (total < floor) {
-    stderr.writeln('COVERAGE BELOW FLOOR (${total.toStringAsFixed(1)}% < ${floor.toStringAsFixed(0)}%)');
+  return failures;
+}
+
+void main(List<String> args) {
+  final globalFloor = args.isNotEmpty ? double.parse(args.first) : 80.0;
+  final file = File('coverage/lcov.info');
+  if (!file.existsSync()) {
+    stderr.writeln('coverage/lcov.info not found — generate coverage first.');
+    exit(2);
+  }
+  String? source;
+  var found = 0;
+  final perFile = <String, List<int>>{};
+  for (final line in file.readAsLinesSync()) {
+    if (line.startsWith('SF:')) {
+      source = line.substring(3);
+      found = 0;
+    } else if (line.startsWith('LF:')) {
+      found = int.parse(line.substring(3));
+    } else if (line.startsWith('LH:') && source != null) {
+      perFile[source] = [int.parse(line.substring(3)), found];
+    }
+  }
+  final included = perFile.entries.where((entry) {
+    final name = entry.key.split(RegExp(r'[\\/]')).last;
+    return !coverageExclusions.contains(name);
+  }).toList()
+    ..sort((a, b) => percentage(a.value).compareTo(percentage(b.value)));
+  for (final entry in included) {
+    final name = entry.key.split(RegExp(r'[\\/]')).last;
+    print(
+      '${percentage(entry.value).toStringAsFixed(1).padLeft(6)}%  $name  '
+      '(${entry.value[0]}/${entry.value[1]})',
+    );
+  }
+  for (final tier in CoverageTier.values) {
+    final files = included.where(
+      (entry) => fileTiers[entry.key.split(RegExp(r'[\\/]')).last] == tier,
+    );
+    final hit = files.fold<int>(0, (sum, entry) => sum + entry.value[0]);
+    final total = files.fold<int>(0, (sum, entry) => sum + entry.value[1]);
+    print(
+      '${tier.name}: ${percentage([hit, total]).toStringAsFixed(1)}% '
+      '(floor ${tierFloors[tier]!.toStringAsFixed(0)}%)',
+    );
+  }
+  final failures = coverageFailures(perFile, globalFloor: globalFloor);
+  if (failures.isNotEmpty) {
+    for (final failure in failures) {
+      stderr.writeln('COVERAGE FAILURE: $failure');
+    }
     exit(1);
   }
-  print('OK — coverage floor met.');
+  print('OK — every tier and the global coverage floor passed.');
 }
