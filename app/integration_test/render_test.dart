@@ -17,6 +17,7 @@ import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara_app/credential_store.dart';
+import 'package:plenara_app/data_location.dart';
 import 'package:plenara_app/glyphs.dart';
 import 'package:plenara_app/main.dart';
 import 'package:plenara_app/plena.dart';
@@ -272,5 +273,71 @@ void main() {
     expect(await store.readApiKey(), 'integration-fixture-value');
     await store.deleteApiKey();
     expect(await store.readApiKey(), isNull);
+  });
+
+  testWidgets('startup data failure resets and reaches a live fresh Today', (
+    tester,
+  ) async {
+    final root = Directory.systemTemp.createTempSync('plenara_recovery_it_');
+    addTearDown(() {
+      if (root.existsSync()) root.deleteSync(recursive: true);
+    });
+    final data = Directory('${root.path}/Plenara')..createSync();
+    final bad = File('${data.path}/records/broken.json');
+    bad.parent.createSync(recursive: true);
+    bad.writeAsStringSync('{not-json');
+    final device = Directory('${root.path}/device')..createSync();
+    final config = '${root.path}/config.json';
+    final brokenSession = Session(
+      data.path,
+      deviceDir: device.path,
+      cloud: _NullCloud(),
+    );
+    final freshSession = Session(
+      data.path,
+      deviceDir: device.path,
+      cloud: _NullCloud(),
+    );
+    var failed = true;
+    DataResetResult? reset;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setHarnessState) => ChatScreen(
+            key: ValueKey('recovery-$failed'),
+            session: failed ? brokenSession : freshSession,
+            retrieval: false,
+            initializeSession: failed
+                ? (_) async => throw StateError('integration broken folder')
+                : null,
+            resetData: () async {
+              reset = await resetDataToDeviceLocal(
+                configPath: config,
+                localDataDir: data.path,
+              );
+              ensureSeeded(data.path, await extractSeedAssets());
+              return reset!;
+            },
+            onDataReset: () => setHarnessState(() => failed = false),
+          ),
+        ),
+      ),
+    );
+    await runFrames(tester, 20);
+    expect(find.byKey(const Key('startup-recovery')), findsOneWidget);
+    expect(find.textContaining('integration broken folder'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('startup-reset-data')));
+    await runFrames(tester, 45);
+
+    expect(reset?.backupDir, isNotNull);
+    expect(
+      File('${reset!.backupDir}/records/broken.json').existsSync(),
+      isTrue,
+    );
+    expect(find.byKey(const Key('startup-recovery')), findsNothing);
+    expect(find.byKey(const Key('today-board')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +6,8 @@ import 'package:plenara/config.dart';
 import 'package:plenara_app/data_location.dart';
 
 void main() {
+  tearDown(() => dataDirOverride = null);
+
   test(
     'fresh destination receives a complete copy and leaves source intact',
     () async {
@@ -81,6 +84,60 @@ void main() {
       );
       expect(sourceFile.readAsStringSync(), 'source');
       expect(File('${partial.path}/partial.tmp').existsSync(), isTrue);
+    },
+  );
+
+  test(
+    'start fresh preserves cloud data and moves old local bytes to a backup',
+    () async {
+      final root = Directory.systemTemp.createTempSync('plenara_reset_');
+      final local = Directory('${root.path}/local')..createSync();
+      final bad = File('${local.path}/records/broken.json');
+      bad.parent.createSync(recursive: true);
+      bad.writeAsStringSync('{not-json');
+      final cloud = Directory('${root.path}/cloud/Plenara')
+        ..createSync(recursive: true);
+      final cloudRecord = File('${cloud.path}/records/keep.json');
+      cloudRecord.parent.createSync(recursive: true);
+      cloudRecord.writeAsStringSync('{"keep":true}');
+      Directory('${cloud.path}/types').createSync();
+      final config = '${root.path}/config.json';
+      File(config).writeAsStringSync(
+        jsonEncode({
+          'dataDir': cloud.path,
+          'dataFolderSelected': true,
+          'voiceMuted': true,
+        }),
+      );
+      dataDirOverride = cloud.path;
+      var clearedSelection = 0;
+
+      final result = await resetDataToDeviceLocal(
+        configPath: config,
+        localDataDir: local.path,
+        clearSelection: () async => clearedSelection++,
+        now: () => DateTime.utc(2026, 8, 17, 23, 59),
+      );
+
+      expect(clearedSelection, 1);
+      expect(result.dataDir, local.path);
+      expect(result.backupDir, isNotNull);
+      expect(
+        File('${result.backupDir}/records/broken.json').readAsStringSync(),
+        '{not-json',
+      );
+      expect(local.existsSync(), isTrue);
+      expect(local.listSync(), isEmpty);
+      expect(cloudRecord.readAsStringSync(), '{"keep":true}');
+      expect(dataDirOverride, isNull);
+      final cfg = loadConfig(configPath: config, environment: const {});
+      expect(cfg.dataDir, local.path);
+      expect(cfg.dataFolderSelected, isFalse);
+      expect(
+        cfg.voiceMuted,
+        isTrue,
+        reason: 'reset changes data, not preferences',
+      );
     },
   );
 }

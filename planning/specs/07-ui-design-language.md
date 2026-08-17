@@ -1,6 +1,6 @@
 # Spec 07 — UI & Design-Language
 
-**Status:** Draft v0.1 — July 2026 (Fable 5). First full draft of the view-archetype set, the type→archetype mapping rules, the motion language, the quiet overlay, and subtitle behavior — the concrete realization of research §12 item 7 and Principle 2.3.
+**Status:** Draft v0.2 — 17 August 2026 (Fable 5 plus startup/data-location recovery). First full draft of the view-archetype set, the type→archetype mapping rules, the motion language, the quiet overlay, subtitle behavior, and recoverable data reset — the concrete realization of research §12 item 7 and Principle 2.3.
 **Depends on:** Research doc v0.10 (§2.1–2.3, §4.5, §6.2, §12.7, §15.1); Spec 01 — Meta-Schema & Type System (§3 value types, §4.1–4.3 presentation object, §4.5 owned/append, §12.3 seed types); Spec 02 — Skill DSL (§7.1 `confirmationText` via `format`); Spec 03 — NLU / Intent (§2.4, §2.7, §4.3 thresholds, §6.3); Spec 04 — Architecture (§3.6 TurnEvents, §3.6a ConfirmationView, §3.9 Review Feed, §3.10 GenerativeService, §3.11 undo window, §3.12 AttentionSurface, §4.7 detached operations); Spec 05 — Functional (§2 notation, §3 interaction contract, §13 subtitle overlay, §14 authoring preview, §24 deletion).
 **Blocks:** Spec 09 — Test (widget tests per archetype, Spec 04 §9.3-style UI coverage); the v1.2 "first view archetype" rung (research §11.3).
 **Builds on:** the existing v0 Flutter app (`app/lib/main.dart`) — the chat turn loop, the busy indicator, the log-path greeting, and the on-open nudges are the seed of the Conversation Stream defined in §2.2, not throwaway.
@@ -89,6 +89,8 @@ Not a surface — an overlay over any of the four (§7). Nothing beneath it refl
 ### 2.6 Settings — a required addition this spec owns (suite-sync CS-11)
 
 The closed surface list above omitted a surface two other specs bind to, and this spec owns fixing that: **Settings must have a home here.** Required content inventory: BYOK key entry/validation/removal (Spec 08 §6.2–6.5), the user-facing per-kind "what it sends" feature catalog (Spec 08 §5.6 tier b — the table is user-facing, not just spec-facing), the local spend tally (Spec 08 Q3/§6.6), and Feedback & Diagnostics (gap list, sends, delete-all — Spec 11 §9). Placement decision pending a design pass: either a fifth top-level surface (quiet, voice-reachable like the rest) or a third section of the Operation Center (§2.4) — either is acceptable; what is not acceptable is the closed list silently excluding a surface Specs 08 and 11 depend on.
+
+Settings also owns data-location status, **Choose data location**, and **Reset data and start fresh**. Reset copy must say exactly what crosses the boundary: the provider folder is disconnected but not deleted, the old device-local root is retained as a timestamped backup, and credentials/preferences remain. The identical reset action appears on the startup-error surface when storage initialization fails. That surface names the actual failure, stays usable at small-phone/large-text sizes, and restarts the planner in-process after reset; a diagnostics path without an action is not recovery. Spec 06 §3.1 owns the filesystem and bookmark semantics.
 
 ---
 

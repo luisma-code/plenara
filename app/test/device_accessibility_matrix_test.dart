@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plenara/session.dart';
+import 'package:plenara_app/main.dart';
 import 'package:plenara_app/onboarding_view.dart';
 import 'package:plenara_app/plenara_theme.dart';
 
@@ -54,4 +56,37 @@ void main() {
       );
     });
   }
+
+  testWidgets('small phone large text keeps startup recovery actionable', (
+    tester,
+  ) async {
+    const size = Size(320, 568);
+    await tester.binding.setSurfaceSize(size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final dir = Directory.systemTemp.createTempSync('plenara_recovery_matrix_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PlenaraTheme.dark,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: ChatScreen(
+          session: Session('${dir.path}/data', deviceDir: '${dir.path}/device'),
+          initializeSession: (_) async => throw StateError('broken folder'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final action = find.byKey(const Key('startup-reset-data'));
+    expect(action, findsOneWidget);
+    final rect = tester.getRect(action);
+    expect(rect.top, greaterThanOrEqualTo(0));
+    expect(rect.bottom, lessThanOrEqualTo(size.height));
+    expect(tester.takeException(), isNull);
+  });
 }

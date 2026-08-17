@@ -26,6 +26,11 @@ private final class DataFolderBridge: NSObject, UIDocumentPickerDelegate {
         return
       }
       presenter.present(picker, animated: true)
+    case "reset":
+      activeURL?.stopAccessingSecurityScopedResource()
+      activeURL = nil
+      UserDefaults.standard.removeObject(forKey: Self.bookmarkKey)
+      result(nil)
     default:
       result(FlutterMethodNotImplemented)
     }

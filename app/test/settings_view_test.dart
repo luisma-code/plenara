@@ -6,6 +6,7 @@ import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara_app/app_log.dart';
 import 'package:plenara_app/build_channel.dart';
+import 'package:plenara_app/data_location.dart';
 import 'package:plenara_app/settings_view.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -382,6 +383,41 @@ void main() {
         File('${selected.path}/Plenara/records/task.json').existsSync(),
         isTrue,
       );
+    },
+  );
+
+  testWidgets(
+    'data reset uses the shared reset door and requests a live restart',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1000, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final path = newCfg();
+      var resets = 0;
+      var restarts = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SettingsView(
+            configPath: path,
+            resetData: () async {
+              resets++;
+              return const DataResetResult(
+                dataDir: '/fresh/Plenara',
+                backupDir: '/backup/Plenara',
+              );
+            },
+            onDataReset: () => restarts++,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('reset-data')));
+      await tester.pumpAndSettle();
+
+      expect(resets, 1);
+      expect(restarts, 1);
+      expect(find.textContaining('Fresh local data is ready'), findsOneWidget);
+      expect(find.textContaining('/backup/Plenara'), findsOneWidget);
     },
   );
 }

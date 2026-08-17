@@ -31,6 +31,8 @@ class SettingsView extends StatefulWidget {
   final DiagnosticPolicy? diagnosticPolicy;
   final ValueChanged<bool>? onStillPresenceChanged;
   final Future<String?> Function()? chooseDataFolder;
+  final Future<DataResetResult> Function()? resetData;
+  final VoidCallback? onDataReset;
   const SettingsView({
     super.key,
     this.configPath,
@@ -39,6 +41,8 @@ class SettingsView extends StatefulWidget {
     this.diagnosticPolicy,
     this.onStillPresenceChanged,
     this.chooseDataFolder,
+    this.resetData,
+    this.onDataReset,
   });
   @override
   State<SettingsView> createState() => _SettingsViewState();
@@ -52,6 +56,9 @@ class _SettingsViewState extends State<SettingsView> {
   String? _statusMsg;
   Color? _statusColor;
   bool _testing = false;
+  bool _resettingData = false;
+  String? _dataStatusMsg;
+  Color? _dataStatusColor;
   DiagnosticPolicy get _diagnostics =>
       widget.diagnosticPolicy ?? activeDiagnosticPolicy;
   bool get _allowsRawDiagnostics =>
@@ -219,8 +226,8 @@ class _SettingsViewState extends State<SettingsView> {
               const DataFolderAccess().chooseSelection)();
       if (selected == null || selected.trim().isEmpty || !mounted) return;
       setState(() {
-        _statusMsg = 'Moving your Plenara data…';
-        _statusColor = null;
+        _dataStatusMsg = 'Moving your Plenara data…';
+        _dataStatusColor = null;
       });
       final result = await switchDataFolder(
         currentDataDir: _cfg.dataDir,
@@ -230,18 +237,48 @@ class _SettingsViewState extends State<SettingsView> {
       if (!mounted) return;
       setState(() {
         _cfg = loadAppConfig(configPath: widget.configPath);
-        _statusMsg = result.copiedExistingData
+        _dataStatusMsg = result.copiedExistingData
             ? 'Data copied safely. Restart Plenara to use this folder.'
             : result.adoptedExistingData
             ? 'Existing Plenara folder selected. Restart to open it.'
             : 'Folder selected. Restart Plenara to apply.';
-        _statusColor = Colors.green;
+        _dataStatusColor = Colors.green;
       });
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _statusMsg = 'Could not use that folder: $error';
-        _statusColor = Colors.red;
+        _dataStatusMsg = 'Could not use that folder: $error';
+        _dataStatusColor = Colors.red;
+      });
+    }
+  }
+
+  Future<void> _resetData() async {
+    setState(() {
+      _resettingData = true;
+      _dataStatusMsg = 'Creating fresh local data…';
+      _dataStatusColor = null;
+    });
+    try {
+      final result =
+          await (widget.resetData ??
+              () => resetDataToDeviceLocal(configPath: widget.configPath))();
+      if (!mounted) return;
+      setState(() {
+        _resettingData = false;
+        _cfg = loadAppConfig(configPath: widget.configPath);
+        _dataStatusMsg = result.backupDir == null
+            ? 'Fresh local data is ready.'
+            : 'Fresh local data is ready. The previous local folder is retained at ${result.backupDir}.';
+        _dataStatusColor = Colors.green;
+      });
+      widget.onDataReset?.call();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _resettingData = false;
+        _dataStatusMsg = 'Could not reset the data location: $error';
+        _dataStatusColor = Colors.red;
       });
     }
   }
@@ -653,6 +690,38 @@ class _SettingsViewState extends State<SettingsView> {
                     label: const Text('Choose data location'),
                   ),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  'Start fresh disconnects the selected provider folder without deleting it. Any existing device-local data is retained as a backup beside the new empty folder.',
+                  style: TextStyle(fontSize: 12, color: cs.outline),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    key: const Key('reset-data'),
+                    onPressed: _resettingData ? null : _resetData,
+                    style: OutlinedButton.styleFrom(foregroundColor: cs.error),
+                    icon: _resettingData
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.restart_alt, size: 18),
+                    label: const Text('Reset data and start fresh'),
+                  ),
+                ),
+                if (_dataStatusMsg != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _dataStatusMsg!,
+                    style: TextStyle(
+                      color: _dataStatusColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
                 const Divider(height: 32),
                 Row(
                   children: [

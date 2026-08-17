@@ -481,6 +481,18 @@ Every reviewed item has one implementation home:
 | Relationship context absent from the plan | 6 |
 | No real sync/loss resilience | 7 |
 | Internal instrumentation not safe for external distribution | 8 |
+| Startup blocked by an unreadable/stale data location | Post-plan dogfood correction |
+
+## Post-plan dogfood correction — recoverable data reset (complete 2026-08-17)
+
+The first authorized physical-phone deployment exposed a storage-startup failure. The implementation now treats that as a product flow, not an owner-operated cleanup:
+
+- startup failure renders the actual error plus a persistent **Reset and start fresh** action;
+- Settings exposes the same operation as **Reset data and start fresh**;
+- one reset door clears the iOS security-scoped bookmark and selected-folder state, preserves the provider folder unchanged, moves any old device-local root to a timestamped backup, creates a fresh root, and restarts the `Session` in-process;
+- a 320×568/2×-text gate keeps the recovery action visible while details scroll;
+- the filesystem, Settings, and startup tests were each deliberately broken and observed red;
+- the complete failure → native reset → seed → live Today path passed on the local iPhone 17 Pro simulator and macOS real engine. No test ran on the physical phone.
 
 ## Baseline and evaluation program
 

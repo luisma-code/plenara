@@ -156,6 +156,14 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - The exact installed source bundle passed local code-signature verification and contained both the internal raw-diagnostics canary and embedded revision. Its AOT binary SHA-256 is `4f41cc46c4ba6f3cfefe769f1e6bed753dc989c9ac9eb1eebe936fca48cf1502`.
 - Deployment only: no test, probe, log collection, app inspection, or automated launch ran on the physical phone.
 
+## Post-deployment data recovery state
+
+- The first phone launch reported a data-folder read failure. Startup now has a dedicated **Reset and start fresh** surface, and Settings has **Reset data and start fresh**. Both use `resetDataToDeviceLocal`; there is no second reset implementation.
+- Reset clears the iOS security-scoped bookmark and selection flag, never deletes or modifies the provider folder, moves any old device-local root to a timestamped `.reset-backup-*` sibling, preserves credentials/preferences, reseeds, and replaces the failed `Session` in-process.
+- The filesystem, Settings callback, and startup surface tests were calibrated with deliberate mutations and each failed. The 320×568/2×-text case caught an offscreen action; recovery now keeps the action in a safe-area footer while details scroll.
+- Local iPhone 17 Pro simulator real-engine verification reproduced failure and reached a live fresh Today after the native reset bridge. Six integration cases passed; Runner was about 467 MiB in the short sample and was terminated with the simulator. This is not a long-soak leak claim. No physical phone was used for testing.
+- Full precheck is green: 1,920 engine tests + 36 intentional skips; 158 Flutter tests + 3 development-channel skips; 94.7% deterministic / 90.1% product / 68.1% transport coverage; macOS build; six real-engine tests; external, secret, and 24/60 gates.
+
 ## Live commands
 
 - Keep awake: `pgrep -x caffeinate || nohup caffeinate -dimsu >/dev/null 2>&1 &`
@@ -182,7 +190,7 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Implementation queue
 
-- The eight-increment review implementation plan is complete. The next product evidence comes from ordinary dogfood use or an explicitly requested deployment, not another unimplemented review item.
+- The eight-increment review plan and the post-deployment data-recovery correction are complete. The current internal build still needs to be rebuilt from the committed recovery revision and installed under Luis's explicit deployment authorization.
 
 ## Authoritative documents
 

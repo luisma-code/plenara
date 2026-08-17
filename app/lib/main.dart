@@ -113,9 +113,16 @@ Future<void> main() async {
       }
     }
     if (Platform.isIOS) {
-      final selected = await const DataFolderAccess().restoreSelection();
-      if (selected != null && selected.isNotEmpty) {
-        dataDirOverride = dataRootForSelection(selected);
+      try {
+        final selected = await const DataFolderAccess().restoreSelection();
+        if (selected != null && selected.isNotEmpty) {
+          dataDirOverride = dataRootForSelection(selected);
+        }
+      } catch (error) {
+        // A stale provider grant must never prevent runApp from creating the
+        // recovery surface. Session startup will use the device-local root.
+        dataDirOverride = null;
+        stdout.writeln('Plenara data-folder restore failed: $error');
       }
     }
     await initializeAppCredentials();
@@ -173,13 +180,23 @@ class _HomeState extends State<Home> {
   late bool _onboarding =
       widget.session == null &&
       loadAppConfig(configPath: widget.configPath).apiKey == null;
+  int _sessionGeneration = 0;
+
+  void _restartAfterDataReset() => setState(() => _sessionGeneration++);
+
   @override
   Widget build(BuildContext context) => _onboarding
       ? WelcomeScreen(
           onContinue: () => setState(() => _onboarding = false),
           configPath: widget.configPath,
         )
-      : ChatScreen(session: widget.session, retrieval: widget.retrieval);
+      : ChatScreen(
+          key: ValueKey('session-$_sessionGeneration'),
+          session: widget.session,
+          retrieval: widget.retrieval,
+          configPath: widget.configPath,
+          onDataReset: _restartAfterDataReset,
+        );
 }
 
 class ChatScreen extends StatefulWidget {
@@ -200,6 +217,9 @@ class ChatScreen extends StatefulWidget {
   /// Redirect the mute-pref read/write to a temp config file. Lets a test exercise mute PERSISTENCE
   /// (otherwise gated on `session == null` and thus dogfood-only). Null = the real `~/.plenara`.
   final String? configPath;
+  final Future<void> Function(Session session)? initializeSession;
+  final Future<DataResetResult> Function()? resetData;
+  final VoidCallback? onDataReset;
   const ChatScreen({
     super.key,
     this.session,
@@ -208,6 +228,9 @@ class ChatScreen extends StatefulWidget {
     this.voice,
     this.forceAnimate,
     this.configPath,
+    this.initializeSession,
+    this.resetData,
+    this.onDataReset,
   });
   @override
   State<ChatScreen> createState() => _ChatState();
@@ -271,6 +294,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       0; // persisted, so the hint decays across launches rather than per-run
   final _ctrl = TextEditingController();
   bool _ready = false, _busy = false, _listening = false;
+  String? _startupError;
+  String? _resetError;
+  bool _resettingData = false;
   // Plena's presence state (Spec 15): derived from the real turn/speech signals. No TTS yet,
   // so "speaking" is a brief flourish while a reply lands; _lastCloud tints it cooler (D2).
   bool _speaking = false, _lastCloud = false, _deepThink = false;
@@ -392,11 +418,15 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     final log = AppLog.instance;
     try {
       log('init: begin (retrieval=${widget.retrieval})');
-      await _session.init(
-        retrieval: widget.retrieval,
-        watchStorage: widget.session == null,
-        onPhase: log.log,
-      );
+      if (widget.initializeSession != null) {
+        await widget.initializeSession!(_session);
+      } else {
+        await _session.init(
+          retrieval: widget.retrieval,
+          watchStorage: widget.session == null,
+          onPhase: log.log,
+        );
+      }
       _operationSub = _session.operations.changes.listen(_operationChanged);
       _storageSub = _session.storageChanges.listen((_) {
         if (mounted) setState(() {});
@@ -461,9 +491,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       // no infinite spinner: surface the failure over the void
       setState(() {
         _ready = true;
-        _caption =
-            "I couldn't start up — there may be a problem reading your data folder.\n\n$e"
-            "\n\nDiagnostics: ${log.file.path}";
+        _startupError = '$e';
+        _caption = null;
         _displayIsList = false;
       });
     }
@@ -605,10 +634,146 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
 
   SettingsView _settingsView() => SettingsView(
     configPath: widget.configPath,
+    resetData: widget.resetData,
+    onDataReset: () {
+      if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+      widget.onDataReset?.call();
+    },
     onStillPresenceChanged: (value) {
       if (mounted) setState(() => _stillPresence = value);
     },
   );
+
+  Future<void> _resetAfterStartupFailure() async {
+    setState(() {
+      _resettingData = true;
+      _resetError = null;
+    });
+    try {
+      final result =
+          await (widget.resetData ??
+              () => resetDataToDeviceLocal(configPath: widget.configPath))();
+      AppLog.instance.log(
+        'recovery: reset to ${result.dataDir}; backup=${result.backupDir ?? 'none'}',
+      );
+      if (!mounted) return;
+      setState(() => _resettingData = false);
+      if (widget.onDataReset != null) {
+        widget.onDataReset!.call();
+      } else {
+        setState(() {
+          _resetError =
+              'Fresh local data is ready. Reopen Plenara to continue.';
+        });
+      }
+    } catch (error, stack) {
+      AppLog.instance.log('recovery: reset FAILED: $error\n$stack');
+      if (!mounted) return;
+      setState(() {
+        _resettingData = false;
+        _resetError = 'Reset failed: $error';
+      });
+    }
+  }
+
+  Widget _startupRecovery(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Stack(
+      key: const Key('startup-recovery'),
+      children: [
+        const Positioned.fill(
+          child: PresenceView(
+            state: PresenceState.idle,
+            animate: false,
+            expression: PresenceExpression.failure,
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: Card(
+                          color: const Color(0xEE15120F),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "I couldn't open your data",
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.headlineSmall,
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Start fresh uses a new device-local folder. A selected iCloud, OneDrive, or Google Drive folder is disconnected but never deleted; old local bytes are retained as a backup.',
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _startupError ?? 'Unknown startup error',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: cs.outline,
+                                  ),
+                                ),
+                                if (_resetError != null) ...[
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _resetError!,
+                                    style: TextStyle(
+                                      color:
+                                          _resetError!.startsWith(
+                                            'Reset failed',
+                                          )
+                                          ? cs.error
+                                          : cs.primary,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: const Key('startup-reset-data'),
+                      onPressed: _resettingData
+                          ? null
+                          : _resetAfterStartupFailure,
+                      icon: _resettingData
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.restart_alt),
+                      label: const Text('Reset and start fresh'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Future<void> _send() async {
     final t = _ctrl.text.trim();
@@ -1239,6 +1404,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
               ),
             ],
           )
+        : _startupError != null
+        ? _startupRecovery(context)
         // A live routine run takes the screen (a Y1 guest surface, Spec 16): Plena stays alive in
         // her corner within _presenceHome, and the step hovers over the void.
         : _routineStep() != null

@@ -32,6 +32,66 @@ class DataFolderAccess {
     if (Platform.isIOS) return _channel.invokeMethod<String>('choose');
     return getDirectoryPath(confirmButtonText: 'Use this location');
   }
+
+  Future<void> clearSelection() async {
+    if (!Platform.isIOS) return;
+    await _channel.invokeMethod<void>('reset');
+  }
+}
+
+class DataResetResult {
+  final String dataDir;
+  final String? backupDir;
+
+  const DataResetResult({required this.dataDir, required this.backupDir});
+}
+
+/// The single reset door used by startup recovery and Settings.
+///
+/// A selected provider folder is disconnected, never deleted. Existing
+/// device-local bytes are atomically moved beside the live root as a timestamped
+/// backup before a fresh empty root is created. Preferences and credentials stay
+/// intact; only the active record store changes.
+Future<DataResetResult> resetDataToDeviceLocal({
+  String? configPath,
+  String? localDataDir,
+  Future<void> Function()? clearSelection,
+  DateTime Function()? now,
+}) async {
+  final local = Directory(localDataDir ?? defaultDataDir()).absolute;
+  Directory? backup;
+  if (local.existsSync()) {
+    final timestamp = (now ?? DateTime.now)()
+        .toUtc()
+        .toIso8601String()
+        .replaceAll(RegExp(r'[:.]'), '-');
+    var candidate = Directory('${local.path}.reset-backup-$timestamp');
+    var suffix = 2;
+    while (candidate.existsSync()) {
+      candidate = Directory('${local.path}.reset-backup-$timestamp-$suffix');
+      suffix++;
+    }
+    backup = local.renameSync(candidate.path);
+  }
+  local.createSync(recursive: true);
+
+  try {
+    await (clearSelection ?? const DataFolderAccess().clearSelection)();
+  } catch (_) {
+    // The OS grant is still active, so restore the exact prior local root. This
+    // keeps a failed reset from creating a half-switched state.
+    if (local.existsSync()) local.deleteSync(recursive: true);
+    backup?.renameSync(local.path);
+    rethrow;
+  }
+
+  dataDirOverride = null;
+  saveConfig(
+    dataDir: local.path,
+    dataFolderSelected: false,
+    configPath: configPath,
+  );
+  return DataResetResult(dataDir: local.path, backupDir: backup?.path);
 }
 
 class DataFolderSwitchResult {

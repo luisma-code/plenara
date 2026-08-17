@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/session.dart';
+import 'package:plenara_app/data_location.dart';
 import 'package:plenara_app/main.dart';
 import 'package:plenara_app/plena.dart';
 import 'package:plenara_app/settings_view.dart';
@@ -337,6 +338,40 @@ void main() {
       expect(find.byType(SettingsView), findsOneWidget);
     },
   );
+
+  testWidgets('a startup data failure offers an in-app fresh-start recovery', (
+    tester,
+  ) async {
+    var resets = 0;
+    var restarts = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChatScreen(
+          session: _session(),
+          initializeSession: (_) async =>
+              throw StateError('broken data folder'),
+          resetData: () async {
+            resets++;
+            return const DataResetResult(
+              dataDir: '/fresh/Plenara',
+              backupDir: '/backup/Plenara',
+            );
+          },
+          onDataReset: () => restarts++,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('startup-recovery')), findsOneWidget);
+    expect(find.textContaining('broken data folder'), findsOneWidget);
+    expect(find.byKey(const Key('today-board')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('startup-reset-data')));
+    await tester.pumpAndSettle();
+    expect(resets, 1);
+    expect(restarts, 1);
+  });
 
   testWidgets(
     'a settings-mentioning task does NOT hijack to Settings (H5 negative)',

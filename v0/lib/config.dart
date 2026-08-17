@@ -76,6 +76,11 @@ String _home() =>
 /// The user config file location (`~/.plenara/config.json`), overridable for tests.
 String defaultConfigPath() => '${_home()}/.plenara/config.json';
 
+/// The fresh, device-local record root. Folder selection may override this at
+/// runtime, but recovery always returns here instead of trusting a stale synced
+/// path or a mobile container UUID persisted by an older build.
+String defaultDataDir() => '${_home()}/Plenara';
+
 /// The DEVICE-LOCAL (non-synced) app directory — `~/.plenara`, the same home as the
 /// config + key. The deviceId and turnlog live here, NOT in the synced [dataDir]: a
 /// synced `.device-id` is adopted by a second install and defeats the HLC tie-break,
@@ -102,7 +107,7 @@ PlenaraConfig loadConfig(
   } else {
     // first run: scaffold a config the user can edit (point at OneDrive, paste key)
     cfg = {
-      'dataDir': '${_home()}/Plenara',
+      'dataDir': defaultDataDir(),
       'apiKey': '',
       '_hint': 'Set dataDir to your synced folder. The Flutter app stores its API key in the '
           'platform secure store; apiKey remains only as a legacy/pure-Dart operator migration seam. '
@@ -121,9 +126,9 @@ PlenaraConfig loadConfig(
       (dataDirOverride ??
           (mobile
               ? (Platform.isAndroid && storedSelection
-                    ? ((cfg['dataDir'] as String?) ?? '${_home()}/Plenara')
-                    : '${_home()}/Plenara')
-              : ((cfg['dataDir'] as String?) ?? '${_home()}/Plenara')));
+                  ? ((cfg['dataDir'] as String?) ?? defaultDataDir())
+                  : defaultDataDir())
+              : ((cfg['dataDir'] as String?) ?? defaultDataDir())));
   final envKey = env['ANTHROPIC_API_KEY'];
   final fileKey = cfg['apiKey'] as String?;
   final key = envKey ?? fileKey;

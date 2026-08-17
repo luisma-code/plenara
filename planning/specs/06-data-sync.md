@@ -1,6 +1,6 @@
 # Spec 06 — Data & Sync
 
-**Status:** v0.2 — 17 August 2026 (merge/reconcile, device-local shadow, watcher, conflict review, and user-selected folder flow implemented. Formalizes and **supersedes** the preliminary [storage-sync assessment](storage-sync-assessment.md): its Option-C verdict is adopted here as normative design, with later calls recorded below.)
+**Status:** v0.3 — 17 August 2026 (merge/reconcile, device-local shadow, watcher, conflict review, user-selected folder flow, and fresh-start recovery implemented. Formalizes and **supersedes** the preliminary [storage-sync assessment](storage-sync-assessment.md): its Option-C verdict is adopted here as normative design, with later calls recorded below.)
 **Depends on:** Research doc v0.10 (§4.9, §8, §10.3, §11.1); Spec 01 §§4.5, 5, 7, 8, 12; Spec 02 §5; Spec 03 §5; Spec 04 §§3.1, 3.11, 3.12, 4.5, 5, 7; storage-sync-assessment.md; the v0 implementation.
 **Blocks:** Spec 09 — Test (merge property tests, §6.1); the iOS file-sync spike (05c D-1) charter (§9.5); the P2 (second-device) milestone (§6.1, §10.1).
 
@@ -68,6 +68,8 @@ The formal fit (assessment §4): over an unordered, at-least-once, whole-file tr
 The user-chosen folder (`dataDir`; pointed at an iCloud/OneDrive/Drive/Dropbox location — research §8.1, `v0/lib/config.dart`):
 
 **Folder authority as shipped.** Settings labels the default mobile root **Device-local only**. Choosing a location uses the platform folder picker; iOS stores a security-scoped bookmark and resolves it afresh before configuration on every boot. Plenara copies the complete existing root through a sibling staging directory, validates the result, switches configuration only after success, and retains the old root as rollback. A non-empty existing Plenara root is adopted rather than overwritten; an incomplete or unrelated root is rejected. Desktop uses the system folder chooser. The app never guesses that its sandbox Documents directory is synced.
+
+**Fresh-start recovery as shipped.** A folder/bootstrap failure must render a usable recovery surface rather than only an error caption or a blank pre-`runApp` failure. **Reset and start fresh** and Settings' **Reset data and start fresh** call the same reset operation: clear the iOS security-scoped bookmark, clear the selected-folder flag and live override, and reopen against the canonical device-local root. The selected provider folder is disconnected but never modified or deleted. Any pre-existing device-local root is atomically renamed beside itself as a timestamped `.reset-backup-*` folder before the empty replacement is created; credentials and preferences survive. The running `Session` is then replaced in-process so recovery does not depend on the owner becoming the test/relaunch harness.
 
 ```
 Plenara/                              ← the synced root; everything here syncs
