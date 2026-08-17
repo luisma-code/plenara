@@ -52,6 +52,7 @@ dependencies:
   # 11.x currently conflicts with share_plus 10.x over win32 major versions.
   flutter_secure_storage: ^10.3.1
   package_info_plus: ^8.3.1
+  file_selector: ^1.1.0
 
 # path_provider_foundation 2.6.0 (pulled in by share_plus) migrated to the experimental native-assets
 # build-hook path via package:objective_c. That hook shells out to xcrun and parses its stdout, which

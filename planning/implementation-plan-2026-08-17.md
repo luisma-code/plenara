@@ -398,6 +398,8 @@ The planner serves Plenara's actual purpose—helping the user show up for peopl
 
 ## Increment 7 — user-controlled sync and loss resilience
 
+**Status: implemented 17 August 2026.** The remaining real-provider observation is an environment validation item: simulator/local-provider behavior is proven; Luis's physical phone remains deployment-only and is not a test target.
+
 ### Outcome
 
 The storage claim becomes true: data lives in a user-chosen synced location, reconciles external changes, survives device loss, and does not trade durability for hidden conflict.

@@ -274,7 +274,7 @@ void main() {
     (tester) async {
       final dir = _tempData();
       Directory('$dir/automations').createSync(recursive: true);
-      File('$dir/automations/x.json').writeAsStringSync(
+      File('$dir/automations/demo-auto.json').writeAsStringSync(
         jsonEncode({
           'automationId': 'demo-auto',
           'targetType': 'workout',

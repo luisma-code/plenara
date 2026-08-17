@@ -45,6 +45,7 @@ class PlenaraConfig {
   /// Stops Plena's ambient particle motion independently of the operating
   /// system's Reduce Motion preference. State remains legible as a still form.
   final bool stillPresence;
+  final bool dataFolderSelected;
   PlenaraConfig(this.dataDir, this.apiKey,
       {this.freeTier = false,
       this.apiKeySource = ConfigValueSource.absent,
@@ -52,7 +53,8 @@ class PlenaraConfig {
       this.voiceName,
       this.micHintsShown = 0,
       this.confirmCloudSpend = false,
-      this.stillPresence = false});
+      this.stillPresence = false,
+      this.dataFolderSelected = false});
 }
 
 /// App-injected home base. Desktop leaves this null — USERPROFILE/HOME are set. iOS and Android
@@ -61,6 +63,10 @@ class PlenaraConfig {
 /// `loadConfig` tried to create `./.plenara` → "operation not permitted"). The Flutter app resolves
 /// the real per-user directory via path_provider and sets this BEFORE any config/log path is derived.
 String? homeOverride;
+
+/// Live path restored from an OS security-scoped folder grant. Mobile container
+/// paths are not trusted from JSON; the native bookmark must resolve each boot.
+String? dataDirOverride;
 String _home() =>
     homeOverride ??
     Platform.environment['USERPROFILE'] ??
@@ -110,10 +116,14 @@ PlenaraConfig loadConfig(
   // from the live injected home. Desktop keeps the user's chosen (possibly synced) folder. One source
   // of truth, so buildSession, built-in installation, and Settings all agree.
   final mobile = (Platform.isIOS || Platform.isAndroid) && homeOverride != null;
+  final storedSelection = cfg['dataFolderSelected'] == true;
   final dataDir = env['PLENARA_DATA'] ??
-      (mobile
-          ? '${_home()}/Plenara'
-          : ((cfg['dataDir'] as String?) ?? '${_home()}/Plenara'));
+      (dataDirOverride ??
+          (mobile
+              ? (Platform.isAndroid && storedSelection
+                    ? ((cfg['dataDir'] as String?) ?? '${_home()}/Plenara')
+                    : '${_home()}/Plenara')
+              : ((cfg['dataDir'] as String?) ?? '${_home()}/Plenara')));
   final envKey = env['ANTHROPIC_API_KEY'];
   final fileKey = cfg['apiKey'] as String?;
   final key = envKey ?? fileKey;
@@ -129,6 +139,7 @@ PlenaraConfig loadConfig(
   final mh = cfg['micHintsShown'];
   final cs = cfg['confirmCloudSpend'];
   final sp = cfg['stillPresence'];
+  final dfs = storedSelection && (!Platform.isIOS || dataDirOverride != null);
   return PlenaraConfig(
       dataDir, (key != null && key.trim().isNotEmpty) ? key.trim() : null,
       apiKeySource: keySource,
@@ -137,7 +148,8 @@ PlenaraConfig loadConfig(
       voiceName: vn is String && vn.isNotEmpty ? vn : null,
       micHintsShown: mh is int ? mh : 0,
       confirmCloudSpend: cs is bool ? cs : false,
-      stillPresence: sp is bool ? sp : false);
+      stillPresence: sp is bool ? sp : false,
+      dataFolderSelected: dfs);
 }
 
 /// Persist config edits from the in-app settings surface (Spec 07 §2.6): merges into the
@@ -153,6 +165,7 @@ void saveConfig(
     int? micHintsShown,
     bool? confirmCloudSpend,
     bool? stillPresence,
+    bool? dataFolderSelected,
     String? configPath}) {
   final f = File(configPath ?? defaultConfigPath());
   Map<String, dynamic> cfg = {};
@@ -176,6 +189,9 @@ void saveConfig(
   if (micHintsShown != null) cfg['micHintsShown'] = micHintsShown;
   if (confirmCloudSpend != null) cfg['confirmCloudSpend'] = confirmCloudSpend;
   if (stillPresence != null) cfg['stillPresence'] = stillPresence;
+  if (dataFolderSelected != null) {
+    cfg['dataFolderSelected'] = dataFolderSelected;
+  }
   f.parent.createSync(recursive: true);
   // ATOMIC. loadConfig degrades a malformed config to defaults, which is the right call for a
   // hand-edited file — but it means a torn write silently loses dataDir and the API key, and the

@@ -622,6 +622,7 @@ class Session {
   final List<MigrationRepairItem> migrationRepairItems = [];
   final List<MigrationBackup> migrationBackups = [];
   final List<String> executionRepairIssues = [];
+  final List<String> externalStorageIssues = [];
   late ConversationLedger conversationLedger;
   late OperationCenter operations;
   late CapabilityDraftStore capabilityDrafts;
@@ -660,6 +661,16 @@ class Session {
   late GenerativeService _generative;
   late StorageRepository repo;
   late ExecutionCoordinator executions;
+  final StreamController<void> _storageChanges =
+      StreamController<void>.broadcast();
+  StreamSubscription<void>? _storageWatch;
+  bool _turnInProgress = false;
+  bool _storageRefreshInProgress = false;
+  bool _storageRefreshPending = false;
+
+  /// Fires after an external provider/file event has been reconciled into the
+  /// live in-memory store. The UI rebuilds planner surfaces from this event.
+  Stream<void> get storageChanges => _storageChanges.stream;
 
   /// A routine build awaiting a yes, when the confirm preference is on.
   Map<String, dynamic>? _pendingRoutineBuild;
@@ -789,14 +800,77 @@ class Session {
     return r is FileStorageRepository ? r.corruptFiles : const <String>[];
   }
 
+  List<Map<String, dynamic>> get recordSyncConflicts =>
+      repo is FileStorageRepository
+          ? List.unmodifiable((repo as FileStorageRepository).recordConflicts)
+          : const [];
+
+  List<DefinitionConflict> get definitionSyncConflicts => repo
+          is FileStorageRepository
+      ? List.unmodifiable((repo as FileStorageRepository).definitionConflicts)
+      : const [];
+
+  bool resolveRecordSyncConflict(
+    Map<String, dynamic> conflict, {
+    required bool restoreOther,
+  }) {
+    final id = '${conflict['recordId']}';
+    final field = '${conflict['field']}';
+    final current = store[id];
+    final fileRepo =
+        repo is FileStorageRepository ? repo as FileStorageRepository : null;
+    if (current == null || fileRepo == null) return false;
+    if (restoreOther) {
+      final updated = Map<String, dynamic>.from(current)
+        ..[field] = conflict['value'];
+      final result = _executeMutation(
+        writes: [updated],
+        deletes: const [],
+        origin: 'sync-conflict-review',
+        description: 'Resolved sync conflict for $field',
+        frozenInputs: {'recordId': id, 'field': field},
+      );
+      if (result.state != ExecutionResultState.persisted &&
+          result.state != ExecutionResultState.appliedInMemory) {
+        return false;
+      }
+    }
+    fileRepo.clearRecordConflicts(id, field);
+    return true;
+  }
+
+  bool resolveDefinitionSyncConflict(
+    DefinitionConflict conflict, {
+    required bool useConflicting,
+  }) {
+    final fileRepo =
+        repo is FileStorageRepository ? repo as FileStorageRepository : null;
+    if (fileRepo == null) return false;
+    fileRepo.resolveDefinitionConflict(
+      conflict,
+      useConflicting: useConflicting,
+    );
+    return true;
+  }
+
   /// User-visible repair state across storage, schema, migration, execution,
   /// and conversation history. Diagnostics retain detail; the planner uses
   /// this bounded summary so degraded durability is never silent.
   List<String> get repairIssues => [
         ...corruptFiles.map((_) => 'A data file could not be read.'),
+        if (repo is FileStorageRepository)
+          ...(repo as FileStorageRepository)
+              .recordConflicts
+              .map((_) => 'A record field has a preserved sync conflict.'),
+        if (repo is FileStorageRepository)
+          ...(repo as FileStorageRepository)
+              .definitionConflicts
+              .map((_) => 'A data definition has a sync conflict.'),
         ...schemaRegistry.issues.map((_) => 'A data definition needs repair.'),
         ...migrationRepairItems.map((_) => 'A record migration needs repair.'),
         ...executionRepairIssues.map((_) => 'A recent change needs repair.'),
+        ...externalStorageIssues
+            .map((_) => 'The selected data folder could not be refreshed.'),
         ...conversationLedger.issues
             .map((_) => 'Conversation history needs repair.'),
         ...operations.issues.map((_) => 'Detached work history needs repair.'),
@@ -813,7 +887,9 @@ class Session {
   /// [onPhase] receives a line at the start/end of each init phase — the app writes
   /// these to its diagnostics log, so a startup HANG shows the last phase that began.
   Future<void> init(
-      {bool retrieval = true, void Function(String msg)? onPhase}) async {
+      {bool retrieval = true,
+      bool watchStorage = false,
+      void Function(String msg)? onPhase}) async {
     final sw = Stopwatch()..start();
     void phase(String msg) =>
         onPhase?.call('init: $msg (+${sw.elapsedMilliseconds}ms)');
@@ -1068,7 +1144,70 @@ class Session {
     }
     _ensureProactiveRelationshipArtifact();
     await _reconcileReminders(); // arm any future reminders already on disk (re-open)
+    if (watchStorage && repo is FileStorageRepository) {
+      _storageWatch = (repo as FileStorageRepository).watchChanges().listen(
+        (_) => _queueStorageRefresh(),
+        onError: (Object error) {
+          externalStorageIssues
+            ..clear()
+            ..add('$error');
+          if (!_storageChanges.isClosed) _storageChanges.add(null);
+        },
+      );
+    }
     phase('reminders reconciled — READY');
+  }
+
+  void _queueStorageRefresh() {
+    _storageRefreshPending = true;
+    if (_turnInProgress || _storageRefreshInProgress) return;
+    unawaited(_refreshExternalStorage());
+  }
+
+  Future<void> _refreshExternalStorage() async {
+    if (_turnInProgress || _storageRefreshInProgress) return;
+    _storageRefreshInProgress = true;
+    try {
+      while (_storageRefreshPending && !_turnInProgress) {
+        _storageRefreshPending = false;
+        Map<String, Map<String, dynamic>> loaded;
+        try {
+          loaded = repo.loadRecords();
+          externalStorageIssues.clear();
+        } catch (error) {
+          externalStorageIssues
+            ..clear()
+            ..add('$error');
+          if (!_storageChanges.isClosed) _storageChanges.add(null);
+          break;
+        }
+        final accepted = <String, Map<String, dynamic>>{};
+        for (final entry in loaded.entries) {
+          final type = types[entry.value['typeId']];
+          if (type == null || isFutureVersioned(entry.value, type)) continue;
+          final migrated = migrateRecord(
+            entry.value,
+            type,
+            records: loaded,
+            dataRoot: dataDir,
+          );
+          if (migrated.failure == null) accepted[entry.key] = migrated.record;
+        }
+        store
+          ..clear()
+          ..addAll(accepted);
+        await _contentIndex?.build(store.values);
+        await _reconcileReminders();
+        if (!_storageChanges.isClosed) _storageChanges.add(null);
+      }
+    } finally {
+      _storageRefreshInProgress = false;
+    }
+  }
+
+  Future<void> dispose() async {
+    await _storageWatch?.cancel();
+    await _storageChanges.close();
   }
 
   /// Re-derive the armed notification set from the record store and reconcile the
@@ -3133,6 +3272,7 @@ class Session {
   /// console. A crash becomes a visible, non-destructive message (no silent
   /// failure, P7) rather than a bricked input box.
   Future<String> handle(String u) async {
+    _turnInProgress = true;
     u = u.trim();
     _outSource = 'clarify';
     _outSkill = null;
@@ -3279,6 +3419,8 @@ class Session {
     } catch (_) {
       /* ledger failure is surfaced at next hydration, not as a lost reply */
     }
+    _turnInProgress = false;
+    if (_storageRefreshPending) await _refreshExternalStorage();
     return resp;
   }
 

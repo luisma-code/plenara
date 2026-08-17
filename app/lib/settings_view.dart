@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'app_log.dart';
 import 'credential_store.dart';
+import 'data_location.dart';
 import 'presence_shell.dart';
 import 'voice_setup.dart';
 
@@ -28,6 +29,7 @@ class SettingsView extends StatefulWidget {
   final Future<CloudResult<String>> Function(String key)? validateKey;
   final DiagnosticPolicy? diagnosticPolicy;
   final ValueChanged<bool>? onStillPresenceChanged;
+  final Future<String?> Function()? chooseDataFolder;
   const SettingsView({
     super.key,
     this.configPath,
@@ -35,6 +37,7 @@ class SettingsView extends StatefulWidget {
     this.validateKey,
     this.diagnosticPolicy,
     this.onStillPresenceChanged,
+    this.chooseDataFolder,
   });
   @override
   State<SettingsView> createState() => _SettingsViewState();
@@ -202,6 +205,41 @@ class _SettingsViewState extends State<SettingsView> {
       _statusMsg = 'Disconnected. Offline features still work.';
       _statusColor = null;
     });
+  }
+
+  Future<void> _chooseDataFolder() async {
+    String? selected;
+    try {
+      selected =
+          await (widget.chooseDataFolder ??
+              const DataFolderAccess().chooseSelection)();
+      if (selected == null || selected.trim().isEmpty || !mounted) return;
+      setState(() {
+        _statusMsg = 'Moving your Plenara data…';
+        _statusColor = null;
+      });
+      final result = await switchDataFolder(
+        currentDataDir: _cfg.dataDir,
+        selectedPath: selected,
+        configPath: widget.configPath,
+      );
+      if (!mounted) return;
+      setState(() {
+        _cfg = loadAppConfig(configPath: widget.configPath);
+        _statusMsg = result.copiedExistingData
+            ? 'Data copied safely. Restart Plenara to use this folder.'
+            : result.adoptedExistingData
+            ? 'Existing Plenara folder selected. Restart to open it.'
+            : 'Folder selected. Restart Plenara to apply.';
+        _statusColor = Colors.green;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _statusMsg = 'Could not use that folder: $error';
+        _statusColor = Colors.red;
+      });
+    }
   }
 
   /// Live probe: validate the pasted key, name the exact problem, and save on success.
@@ -546,7 +584,42 @@ class _SettingsViewState extends State<SettingsView> {
                   'Data folder',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Chip(
+                    key: const Key('data-location-status'),
+                    avatar: Icon(
+                      _cfg.dataFolderSelected
+                          ? Icons.cloud_done_outlined
+                          : Icons.phone_iphone,
+                      size: 17,
+                    ),
+                    label: Text(
+                      _cfg.dataFolderSelected
+                          ? 'User-selected folder'
+                          : 'Device-local only',
+                    ),
+                  ),
+                ),
                 SelectableText(_cfg.dataDir),
+                const SizedBox(height: 6),
+                Text(
+                  _cfg.dataFolderSelected
+                      ? 'Plenara watches this folder for changes from your sync provider.'
+                      : 'Device-local data can be lost with the device. Choose an iCloud Drive, OneDrive, Google Drive, or other backed-up folder.',
+                  style: TextStyle(fontSize: 12, color: cs.outline),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    key: const Key('choose-data-folder'),
+                    onPressed: _chooseDataFolder,
+                    icon: const Icon(Icons.folder_open, size: 18),
+                    label: const Text('Choose data location'),
+                  ),
+                ),
                 const Divider(height: 32),
                 Row(
                   children: [

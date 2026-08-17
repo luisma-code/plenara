@@ -118,14 +118,13 @@ void main() {
       }, dir, dev);
       final store = loadRecords(dir);
       expect(store.length, 3);
-      expect(store['w-1'], {
-        'id': 'w-1',
-        'typeId': 'workout',
-        'activity': 'run',
-        'distance': 5,
-        'date': '2026-07-06',
-        '_schemaVersion': 1,
-      });
+      expect(store['w-1'], containsPair('id', 'w-1'));
+      expect(store['w-1'], containsPair('typeId', 'workout'));
+      expect(store['w-1'], containsPair('activity', 'run'));
+      expect(store['w-1'], containsPair('distance', 5));
+      expect(store['w-1'], containsPair('date', '2026-07-06'));
+      expect(store['w-1'], containsPair('_schemaVersion', 1));
+      expect(store['w-1']!['createdAt'], isA<String>());
       expect(store['w-2']!['distance'], 2.5);
       expect(store['t-1']!['completed'], true);
       expect(store['t-1']!.containsKey('dueAt'), isTrue);

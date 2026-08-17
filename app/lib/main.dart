@@ -14,8 +14,10 @@ import 'package:plenara/session.dart';
 import 'package:plenara/planner.dart';
 
 import 'app_log.dart';
+import 'attention_view.dart';
 import 'build_channel.dart';
 import 'credential_store.dart';
+import 'data_location.dart';
 import 'data_view.dart';
 import 'glyphs.dart';
 import 'glyph_policy.dart';
@@ -108,6 +110,12 @@ Future<void> main() async {
         homeOverride = (await getApplicationDocumentsDirectory()).path;
       } catch (_) {
         /* desktop never reaches here; on failure fall back to env/'.' */
+      }
+    }
+    if (Platform.isIOS) {
+      final selected = await const DataFolderAccess().restoreSelection();
+      if (selected != null && selected.isNotEmpty) {
+        dataDirOverride = dataRootForSelection(selected);
       }
     }
     await initializeAppCredentials();
@@ -234,6 +242,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   SpeechRecognizer? _speech;
   SpeechOutput? _voice; // Plena's talk-back (Spec 12 §6); chosen in _init
   StreamSubscription<OperationRecord>? _operationSub;
+  StreamSubscription<void>? _storageSub;
   StreamSubscription<double>? _micLevelSub;
   double _micLevel = 0;
   bool _voiceMuted =
@@ -383,8 +392,15 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     final log = AppLog.instance;
     try {
       log('init: begin (retrieval=${widget.retrieval})');
-      await _session.init(retrieval: widget.retrieval, onPhase: log.log);
+      await _session.init(
+        retrieval: widget.retrieval,
+        watchStorage: widget.session == null,
+        onPhase: log.log,
+      );
       _operationSub = _session.operations.changes.listen(_operationChanged);
+      _storageSub = _session.storageChanges.listen((_) {
+        if (mounted) setState(() {});
+      });
       final restoredOperations = _session.operations.takeDeliveries();
       _speech =
           await _pickSpeech(); // on-device sherpa if the model's present, else OS SAPI
@@ -913,6 +929,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         ?.cancel(); // never leave the recognizer recording after teardown (privacy)
     _voice?.stop(); // don't keep talking after teardown
     _operationSub?.cancel();
+    _storageSub?.cancel();
+    if (widget.session == null) unawaited(_session.dispose());
     _micLevelSub?.cancel();
     _speakTimer?.cancel();
     _thinkTimer?.cancel();
@@ -1468,6 +1486,16 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                 onChanged: () => setState(() {}),
                 onVoice: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
                 onOpenLibrary: () => setState(() => _plannerTab = 2),
+                onOpenAttention: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AttentionView(
+                      session: _session,
+                      onChanged: () {
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                  ),
+                ),
               ),
             },
           ),

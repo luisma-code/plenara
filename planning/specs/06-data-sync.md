@@ -1,6 +1,6 @@
 # Spec 06 — Data & Sync
 
-**Status:** Draft v0.1 — July 2026 (Claude Fable 5 first draft. Formalizes and **supersedes** the preliminary [storage-sync assessment](storage-sync-assessment.md): its Option-C verdict is adopted here as normative design, its recommendations amended where later calls overrode them — see D2, D15. Documents the storage decisions **actually implemented** in `v0/lib/store.dart` / `v0/lib/storage_repository.dart` as the format baseline, and lists where v0 must still be brought into conformance — §11.)
+**Status:** v0.2 — 17 August 2026 (merge/reconcile, device-local shadow, watcher, conflict review, and user-selected folder flow implemented. Formalizes and **supersedes** the preliminary [storage-sync assessment](storage-sync-assessment.md): its Option-C verdict is adopted here as normative design, with later calls recorded below.)
 **Depends on:** Research doc v0.10 (§4.9, §8, §10.3, §11.1); Spec 01 §§4.5, 5, 7, 8, 12; Spec 02 §5; Spec 03 §5; Spec 04 §§3.1, 3.11, 3.12, 4.5, 5, 7; storage-sync-assessment.md; the v0 implementation.
 **Blocks:** Spec 09 — Test (merge property tests, §6.1); the iOS file-sync spike (05c D-1) charter (§9.5); the P2 (second-device) milestone (§6.1, §10.1).
 
@@ -66,6 +66,8 @@ The formal fit (assessment §4): over an unordered, at-least-once, whole-file tr
 ### 3.1 The synced root
 
 The user-chosen folder (`dataDir`; pointed at an iCloud/OneDrive/Drive/Dropbox location — research §8.1, `v0/lib/config.dart`):
+
+**Folder authority as shipped.** Settings labels the default mobile root **Device-local only**. Choosing a location uses the platform folder picker; iOS stores a security-scoped bookmark and resolves it afresh before configuration on every boot. Plenara copies the complete existing root through a sibling staging directory, validates the result, switches configuration only after success, and retains the old root as rollback. A non-empty existing Plenara root is adopted rather than overwritten; an incomplete or unrelated root is rejected. Desktop uses the system folder chooser. The app never guesses that its sandbox Documents directory is synced.
 
 ```
 Plenara/                              ← the synced root; everything here syncs
@@ -170,7 +172,7 @@ Each device maintains one HLC (`store.dart HlcDevice`): a wall-clock millisecond
 
 - **Stamp shape:** the structured map `{ms, counter, deviceId}` — the form v0 actually writes, adopted over the assessment §4.1 string-tag sketch (D7: same information; structured beats re-parsing).
 - **Send rule** (implemented): stamping advances `ms` to `now` if the wall clock moved forward, else increments `counter`. Monotonic per device by construction.
-- **Receive rule** (specified here; not yet in v0, which never observes remote stamps — §11): whenever hydration or a merge observes a stamp with `ms` greater than the local HLC's `ms`, the local HLC advances to it (counter resets past the observed counter). This preserves causality across devices: a write made *after seeing* a remote value always out-stamps it, even under backward wall-clock skew. A remote `ms` implausibly far ahead of local wall time (> `maxClockDriftMs`, default 1 hour) is still adopted — convergence beats suspicion — but logged to diagnostics (Q7 owns tightening this).
+- **Receive rule** (implemented): hydration and merge feed every observed field/deletion stamp into the local HLC before a subsequent local stamp is minted. The clock advances to `max(local, remote, wall)` and its counter past every equal maximum. This preserves causality across devices: a write made *after seeing* a remote value always out-stamps it, even under backward wall-clock skew. A remote `ms` implausibly far ahead of local wall time is still adopted — convergence beats suspicion — while drift diagnostics remain Q7.
 - **Total order:** stamps compare by `(ms, counter, deviceId)` — deviceId lexicographic as the final tiebreaker, which is the entire reason deviceId is in the stamp (§4.3).
 
 ### 4.3 The per-install `deviceId`
@@ -183,7 +185,7 @@ A stable, random, per-install identifier (`dev-` + 12 hex; `storage_repository.d
 
 Implemented in `store.dart persist` and normative: on every write, a field receives a fresh stamp **only if its value actually changed**; unchanged fields carry their prior stamp (and prior `conflicts`) forward. Without this, every whole-record save would re-stamp every field and the per-field metadata would collapse into whole-record LWW — the exact failure the format exists to prevent. Corollary (implemented): if the prior file is unreadable, all fields are treated as changed (fresh stamps) — conservative and convergent.
 
-A field *removed* by a write (present in prior `fields`, absent in the new flat record) is not currently representable distinctly in v0 (the field and its stamp simply vanish). Specified here: field removal writes a stamp with a reserved `"__absent__"` value marker in `fields`, so a removal can win or lose a merge like any other write. Rare in practice (attribute removal is a migration operation, Spec 01 §7.2, not a runtime write); required for merge correctness; a v0 delta (§11).
+A field *removed* by a write (present in prior `fields`, absent in the new flat record) writes `_meta.fieldTombstones[field] = HLC` and removes its live value/stamp. The marker is stamped once, carried unchanged, and removed only when that field is written again. This shipped representation supersedes the earlier reserved-string sketch: absence never collides with a legitimate text value, and a removal can win or lose a merge like any other write.
 
 ---
 
@@ -201,9 +203,9 @@ Guarantees and their honest limits (D10):
 - **Not guaranteed:** power-loss durability of the very last write (no fsync in the path). Accepted for a personal-notes workload: the loss bound is the final in-flight record, the in-memory store is rebuilt from disk at next launch (Spec 04 §4.5), and a mid-execute crash is recovered by the execution journal's before-images (Spec 04 §5.4), not by storage-layer durability.
 - **Hygiene:** hydration ignores non-`.json` suffixes by construction (the loader's `endsWith('.json')` filter — `.tmp`/`.bak` never load); a startup GC pass deletes orphaned `.tmp`/`.bak` files older than 7 days (§7.3).
 
-**Corrupt or half-synced files never brick startup** (`store.dart loadRecords`): a file that fails to parse is skipped and hydration continues — the folder is a sync target, so partially-transferred files are expected, not exotic. Conformance note (P5): v0 skips *silently*; v1 must route each skipped file into the `HydrationReport` → `AttentionSurface` (Spec 04 §3.1, §5.5, §7.1) so a corrupt record is a visible repair item, not a quiet disappearance (§11). A skipped file is left untouched on disk — the sync client may still be mid-transfer, and the file watcher (Spec 04 §4.5) re-reads it when it settles.
+**Corrupt or half-synced files never brick startup** (`store.dart loadRecords`): a file that fails to parse is skipped and hydration continues — the folder is a sync target, so partially-transferred files are expected, not exotic. The concrete repository retains the path in its hydration issues and `Session.repairIssues` puts it on Today → Needs attention. The file remains untouched for provider completion or manual repair, and a later watcher event retries it.
 
-Definition files (`types/`, `skills/`, `automations/`) use the same primitive. v0's `writeDef` currently writes directly (`writeAsStringSync`, no temp/rename) — a v0 delta (§11): a crash mid-write of a *type* file is strictly worse than mid-write of one record (it degrades every instance of the type at next hydration, Spec 01 §5.2 step 5).
+Definition files (`types/`, `skills/`, `automations/`) use the same atomic primitive. A crash mid-write of a *type* file therefore leaves a temp/backup artifact rather than degrading every instance at the next hydration.
 
 ---
 
@@ -230,10 +232,10 @@ Formally (assessment §4): each record is a per-field LWW-register map with a ve
    - Present on one side only → keep it (with its stamp).
    - Present on both, equal values → keep either; keep the higher stamp.
    - Present on both, different values → **higher HLC stamp wins** (§4.2 total order); the losing `(value, stamp)` is appended to `_meta.conflicts`, and the record is flagged to the `AttentionSurface` — the *record-conflict* analogue of Spec 01 §7.5's type escalation, except records auto-resolve (capture must not block on modals) and the surface is for review/recovery, not a gate. This extends Spec 04 §3.12's bucket list with a `recordConflicts` bucket (✅ landed in 04 §3.12 + a 07 §6.7 rendering line — suite-sync CS-15).
-   - Resulting `vv` = element-wise max; `conflicts` = union, deduped by `(field, stamp)`.
+   - Resulting `vv` = element-wise max; `conflicts` = union, deduped by `(field, value)` while retaining the highest stamp for an identical losing value. A loser equal to the final winner is removed. This canonicalization is required for associativity: delivery grouping cannot create duplicate history for the same alternative.
 4. **Legacy rule (records without `vv`** — everything v0 wrote before D8 lands, §11): dominance cannot be computed, so step 2 is skipped and every cross-device same-field divergence goes through step 3's stash path. Convergent and lossless, but it may stash "conflicts" that were actually ordered overwrites (a remote deliberate overwrite is indistinguishable from a concurrent edit without `vv`). Accepted for the small v0-era corpus; it is exactly the noise `vv` exists to remove, which is why `vv` is **required before the merge engine ships** (D8).
 
-**The named residue — the dead-device window** (assessment §4.3, accepted as D1's price): device A writes field *f* and syncs; B, unaware, later uploads its older version; the provider silently LWWs → *f* is absent from the cloud until A next reconciles and re-merges from its own state. If A is destroyed first, *f* is lost. Requires divergent same-record edits AND silent-LWW provider behavior AND permanent origin-device death before one reconcile; bounded to one record's fields; provider version history (~30 days on all major providers) is the manual backstop. This is the honest cost of having no backend, and it is *named* here rather than hidden (P5). The **local shadow** that closes the recoverable half of this window — a small device-local dirty-set of records this device wrote whose `vv` contribution has not yet been observed back from the synced file — ships with the merge engine at P2 (assessment §4.1 call site 2).
+**The named residue — the dead-device window** (assessment §4.3, accepted as D1's price): device A writes field *f* and syncs; B, unaware, later uploads its older version; the provider silently LWWs → *f* is absent from the cloud until A next reconciles and re-merges from its own state. If A is destroyed first, *f* is lost. Requires divergent same-record edits AND silent-LWW provider behavior AND permanent origin-device death before one reconcile; bounded to one record's fields. The implemented **device-local observed-state shadow** closes the recoverable half: every locally persisted or successfully reconciled record is mirrored outside the synced root; if the provider overwrites the visible file, the next reconcile merges both states and writes convergence back. Keeping the latest full observed record rather than only a dirty set costs roughly one extra small record file locally and makes rollback/recovery deterministic.
 
 **Where merges run** (P2; one pure function, three call sites — assessment §4.1):
 1. **Watcher reconcile** (Spec 04 §4.5): a synced-in record vs. the in-store version → merge; if result ≠ disk, write back (idempotent; converges across devices doing the same).
@@ -244,7 +246,7 @@ Formally (assessment §4): each record is a per-field LWW-register map with a ve
 
 ### 6.2 Reconcile semantics — idempotent, unordered, mid-turn-safe
 
-Restating the Spec 04 §4.5 contract from the storage side, since T2–T4 make it load-bearing: watcher events arrive debounced and batched; each batch is reconciled by re-reading only the changed files; every reconcile action (merge + conditional write-back, re-register, re-index) is idempotent, so duplicate or reordered observation of the same state is harmless. A change arriving mid-turn never mutates the turn's frozen inputs — it lands in the store and is caught by the execute-phase re-verify (Spec 02 §4.2). Cross-file ordering is never assumed: a record referencing a type whose file has not yet arrived is the *same* state as a dangling reference (Spec 01 §4.5, §5.3) — tolerated, surfaced if it persists, self-healing when the file lands (§8.3 is the schemaVersion instance of this).
+Restating the Spec 04 §4.5 contract from the storage side, since T2–T4 make it load-bearing: the OS/provider file event is the positive trigger—there is no polling timer. `Session` coalesces duplicate events with one pending bit while a turn or refresh is active; the current implementation then performs a bounded records-folder reconcile rather than trusting an event path that providers may rename/coalesce. Every reconcile action (merge + conditional write-back, re-register, re-index) is idempotent, so duplicate or reordered observation is harmless. A change arriving mid-turn waits until the turn's frozen inputs and durable execution finish, then replaces the shared in-memory map in place and re-reconciles reminders/search. Cross-file ordering is never assumed: a record referencing a type whose file has not yet arrived is tolerated and surfaced if it persists.
 
 ### 6.3 Type & skill definition files — escalate on ambiguity, and how a conflict is actually detected
 
@@ -410,14 +412,14 @@ What the v0 implementation already got right, and the ordered list of deltas bet
 | # | Delta | Spec § | Urgency |
 |---|---|---|---|
 | V1 | ~~Move `deviceId` from `{dataDir}/.device-id` (synced!) off the synced root~~ **✅ DONE (commit `d956390`)** — deviceId now lives in the app-injected device-local `deviceDir` (`~/.plenara`); a synced id would be adopted by the next install, silently breaking the HLC tiebreak | §4.3, D6 | Landed before any second install existed |
-| V2 | Write `schemaVersion` (and `createdAt`) into the record envelope; absent reads as 1 | §4.1, D5 | Before any type reaches schemaVersion 2 (the migration runner needs it) |
-| V3 | Add `_meta.vv`, incremented per persist | §4.1, D8 | Before the P2 merge engine; earlier is cheaper (less legacy-rule noise) |
-| V4 | Route `writeDef` through the atomic-write primitive | §5, D10 | Next v0 touch — a torn type file degrades every instance |
-| V5 | Surface skipped corrupt files into `HydrationReport`/`AttentionSurface` instead of silent `continue` | §5, P5 | With the v1 attention-surface work |
+| V2 | **✅ DONE.** `schemaVersion` and write-once `createdAt` live in the envelope; absent versions read as 1 | §4.1, D5 | Landed with migrations/storage merge |
+| V3 | **✅ DONE.** `_meta.vv` is incremented for the writing device on every persist/delete | §4.1, D8 | Landed before multi-device use |
+| V4 | **✅ DONE.** `writeDef` routes through the atomic-write primitive | §5, D10 | Landed |
+| V5 | **✅ DONE.** Corrupt/misnamed files remain on disk and surface through `Session.repairIssues` / Today → Needs attention | §5, P5 | Landed |
 | V6 | ~~Relocate `turnlog.jsonl` off the synced root~~ **✅ DONE (commit `d956390`)** — turnlog now lives in the app-injected device-local `deviceDir` (`~/.plenara`); rotation still pending (§10.3) | §10.3 | Landed; rotation with the v1 diagnostics work |
-| V7 | HLC receive rule — advance the local clock on observing remote stamps at hydration/merge | §4.2 | With the merge engine (no remote stamps are observed before it) |
-| V8 | Field-removal marker (`"__absent__"`) | §4.4 | With the merge engine |
-| V9 | Migrate-on-read guard + version parking in the repository read path | §8.2, §8.3 | With the first real schemaVersion bump |
+| V7 | **✅ DONE.** HLC receive advances past every observed remote field/delete stamp before local stamping | §4.2 | Landed with merge |
+| V8 | **✅ DONE, representation amended.** `_meta.fieldTombstones` replaces the reserved `"__absent__"` string | §4.4 | Landed with merge |
+| V9 | **✅ DONE.** Session hydration and watcher refresh migrate older records and park invalid/future records outside typed reads | §8.2, §8.3 | Landed with schema v2–v5 migrations |
 
 ---
 
@@ -426,7 +428,7 @@ What the v0 implementation already got right, and the ordered list of deltas bet
 ### Resolved
 
 - **D1 — Record format: per-record current-state files + per-field HLC metadata (the assessment's Option C), adopted.** Per-device event logs are **rejected** as the record source of truth (relocate conflicts to compaction/GC, worsen iOS and sync traffic, break human readability — assessment §3); their single-writer insight is adopted narrowly for the corpus at P2 (§10.1). This formalizes the assessment's verdict; that document is superseded.
-- **D2 — Format now, engine at P2.** The mergeable format ships from the first record (it has — v0); the merge engine, local shadow, and per-device corpus split land together at P2, after the iOS spike (§6.1, assessment §6.3). v1 single-device behavior is the format without the engine.
+- **D2 — Merge engine landed before second-device use.** The mergeable format shipped from the first record; the pure merge, full observed-state shadow, watcher reconcile, and repair surface landed in Increment 7. The learned-corpus whole-file exception remains separately owned by §10.1 and is not allowed to weaken record convergence.
 - **D3 — One flat `records/` folder,** `typeId` in the envelope; supersedes research §8.2's per-type folders (§3.1). Type-agnostic storage, no file moves on type merge, one listing at scan time.
 - **D4 — Journal entries are ordinary UUID records; the date lives in the record id** (`YYYY-MM-DD-<uuid>`), reconciling research §10.3's amended naming with the assessment's collision fix (§3.1).
 - **D5 — The envelope is `{id, typeId, schemaVersion, createdAt, parentId?, fields, _meta}`; absent `schemaVersion` reads as 1; `lastModified` is derived from stamps, never stored, never merge authority** (§4.1 — reconciles Spec 01 §8.2 and re-grounds Spec 04 §3.11's revival tiebreak in stamps, §6.6).

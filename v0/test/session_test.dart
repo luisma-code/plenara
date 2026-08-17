@@ -221,7 +221,7 @@ void main() {
     Future<Session> withStretch() async {
       final dir = makeTempDataDir();
       Directory('$dir/automations').createSync(recursive: true);
-      File('$dir/automations/stretch.json')
+      File('$dir/automations/stretch-after-run.json')
           .writeAsStringSync(jsonEncode(stretchAutomation()));
       final s = Session(dir, clock: _now, cloud: _NoCloud());
       await s.init(retrieval: false);
@@ -809,7 +809,8 @@ void main() {
       () {
     void seedWeekly(String dir) {
       Directory('$dir/automations').createSync(recursive: true);
-      File('$dir/automations/weekly.json').writeAsStringSync(jsonEncode({
+      File('$dir/automations/weekly-workout-summary.json')
+          .writeAsStringSync(jsonEncode({
         'automationId': 'weekly-workout-summary',
         'targetType': 'workout',
         'condition': {

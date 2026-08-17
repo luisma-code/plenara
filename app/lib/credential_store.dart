@@ -189,6 +189,8 @@ PlenaraConfig loadAppConfig({String? configPath}) {
     voiceName: cfg.voiceName,
     micHintsShown: cfg.micHintsShown,
     confirmCloudSpend: cfg.confirmCloudSpend,
+    stillPresence: cfg.stillPresence,
+    dataFolderSelected: cfg.dataFolderSelected,
   );
 }
 

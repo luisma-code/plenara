@@ -123,6 +123,17 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
   24/60 conformance gates. No simulator was booted and no physical phone was touched for this
   increment.
 
+## Increment 7 state
+
+- Settings now distinguishes **Device-local only** from a user-selected location. Desktop uses the system folder chooser; iOS uses a native document-provider folder picker and persists a security-scoped bookmark that is resolved before config on each boot.
+- Folder changes copy through a sibling staging directory, validate before switching config, preserve the old root as rollback, adopt a coherent existing Plenara root without overwriting it, and reject partial/unrelated roots.
+- Record envelopes now carry write-once `createdAt`, per-device version vectors, field tombstones, HLC receive semantics, and canonical conflict stashes. The pure merge is commutative, associative, and idempotent under 100 randomized three-way schedules.
+- Every locally persisted/reconciled record has a device-local observed-state shadow. Provider overwrites and recognized conflict-copy siblings reconcile against it; corrupt/misnamed inputs remain on disk and become repair items.
+- Positive file-system events drive live reconciliation. Events that arrive during a turn wait for the durable turn to finish, then update the shared in-memory store, search index, reminders, and planner UI; no polling timer sequences the refresh.
+- Today’s repair card opens an inspectable attention view. Record conflicts show current/other values with **Keep current** and undoable **Restore other**; definition conflict copies show both documents and require an explicit choice. Definition conflicts never activate by directory enumeration order.
+- New real-filesystem tests cover cold/live bootstrap, concurrent/offline branches, deletion versus update, field removal, provider overwrite recovery, conflict copies, corrupt/interrupted input, definition choice, HLC receive, folder copy/adoption/interruption, and UI conflict recovery. The merge, watcher, and folder-copy tests were calibrated against deliberate broken implementations and turned red.
+- An iOS simulator build compiles the security-scoped bookmark bridge. No physical phone was touched.
+
 ## Owner action
 
 - Rotate the Anthropic credential that appeared in a non-hermetic test failure before this increment. The repository/reports do not contain it, but the earlier tool transcript did. Credential rotation requires Luis's account authority.
@@ -150,8 +161,8 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Next implementation order
 
-1. Increment 7: user-controlled sync and loss resilience.
-2. Increment 8 then follows `planning/implementation-plan-2026-08-17.md`; dependencies and evidence gates determine order, not calendar dates.
+1. Increment 8: external-release hardening.
+2. After the full external gate, record the final revision and verification evidence in this capsule.
 
 ## Authoritative documents
 

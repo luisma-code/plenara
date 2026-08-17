@@ -14,12 +14,14 @@ class TodayBoard extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback? onVoice;
   final VoidCallback onOpenLibrary;
+  final VoidCallback? onOpenAttention;
 
   const TodayBoard({
     super.key,
     required this.session,
     required this.onChanged,
     required this.onOpenLibrary,
+    this.onOpenAttention,
     this.onVoice,
   });
 
@@ -122,6 +124,8 @@ class TodayBoard extends StatelessWidget {
                         ),
                         title: const Text('Some local data needs attention'),
                         subtitle: Text(session.repairIssues.first),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: onOpenAttention,
                       ),
                     ),
                   ),

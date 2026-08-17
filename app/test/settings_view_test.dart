@@ -297,4 +297,46 @@ void main() {
     await tester.pumpAndSettle();
     expect(opened, contains('console.anthropic.com'));
   });
+
+  testWidgets(
+    'data location chooser copies data and reports backed-up status',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1000, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final root = Directory.systemTemp.createTempSync(
+        'plenara_settings_folder_',
+      );
+      final source = Directory('${root.path}/source')..createSync();
+      final selected = Directory('${root.path}/cloud')..createSync();
+      final path = '${root.path}/config.json';
+      File(
+        path,
+      ).writeAsStringSync('{"dataDir": "${source.path}", "apiKey": ""}');
+      final record = File('${source.path}/records/task.json');
+      record.parent.createSync(recursive: true);
+      record.writeAsStringSync('{"id":"task"}');
+      Directory('${source.path}/types').createSync();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SettingsView(
+            configPath: path,
+            chooseDataFolder: () async => selected.path,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(Chip, 'Device-local only'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('choose-data-folder')));
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(Chip, 'User-selected folder'), findsOneWidget);
+      expect(find.textContaining('Data copied safely'), findsOneWidget);
+      expect(
+        File('${selected.path}/Plenara/records/task.json').existsSync(),
+        isTrue,
+      );
+    },
+  );
 }

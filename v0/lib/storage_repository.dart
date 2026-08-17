@@ -5,6 +5,7 @@
 /// only implementation wraps the per-record JSON store (store.dart).
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -30,6 +31,20 @@ class MigrationBackup {
     required this.fromVersion,
     required this.toVersion,
     required this.path,
+  });
+}
+
+class DefinitionConflict {
+  final String subdir;
+  final String id;
+  final String canonicalPath;
+  final String conflictingPath;
+
+  const DefinitionConflict({
+    required this.subdir,
+    required this.id,
+    required this.canonicalPath,
+    required this.conflictingPath,
   });
 }
 
@@ -109,11 +124,29 @@ class FileStorageRepository implements StorageRepository {
   /// Files that failed to parse during load (corrupt / half-synced), surfaced for repair
   /// instead of silently dropped (P2.8). The Session logs these at startup.
   final List<String> corruptFiles = [];
-  void _sink(String path, Object _) => corruptFiles.add(path);
+  final List<Map<String, dynamic>> recordConflicts = [];
+  final List<DefinitionConflict> definitionConflicts = [];
+  void _sink(String path, Object _) {
+    if (!corruptFiles.contains(path)) corruptFiles.add(path);
+  }
 
   @override
-  Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) =>
-      fs.loadDefs('$dataDir/$subdir', key, onCorrupt: _sink);
+  Map<String, Map<String, dynamic>> loadDefs(String subdir, String key) {
+    final loaded = <String, Map<String, dynamic>>{};
+    final dir = Directory('$dataDir/$subdir');
+    if (!dir.existsSync()) return loaded;
+    for (final file in dir.listSync().whereType<File>()) {
+      if (!file.path.endsWith('.json')) continue;
+      final document = _readDocument(file);
+      final id = document?[key];
+      if (id is! String) continue;
+      // Provider conflict copies and filename/id mismatches are never activated
+      // by directory enumeration order. They remain on disk for explicit repair.
+      if (file.uri.pathSegments.last != '$id.json') continue;
+      loaded[id] = document!;
+    }
+    return loaded;
+  }
 
   /// Raw definition documents preserve filenames and duplicates for the
   /// SchemaRegistry hydration boundary. Indexing first would silently erase
@@ -136,15 +169,204 @@ class FileStorageRepository implements StorageRepository {
   }
 
   @override
-  Map<String, Map<String, dynamic>> loadRecords() =>
-      fs.loadRecords('$dataDir/records', onCorrupt: _sink);
+  Map<String, Map<String, dynamic>> loadRecords() {
+    reconcileRecords();
+    _scanDefinitionConflicts();
+    return fs.loadRecords('$dataDir/records', onCorrupt: _sink);
+  }
 
   @override
-  void persist(Map<String, dynamic> record) =>
-      fs.persist(record, '$dataDir/records', dev);
+  void persist(Map<String, dynamic> record) {
+    final document = fs.persist(record, '$dataDir/records', dev);
+    _writeShadow('${record['id']}', document);
+  }
 
   @override
-  void remove(String id) => fs.tombstone(id, '$dataDir/records', dev);
+  void remove(String id) {
+    fs.tombstone(id, '$dataDir/records', dev);
+    final file = File('$dataDir/records/$id.json');
+    _writeShadow(
+      id,
+      jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
+    );
+  }
+
+  Directory get _shadowRecords => Directory('$deviceDir/sync-shadow/records');
+
+  void _writeShadow(String id, Map<String, dynamic> document) {
+    final file = File('${_shadowRecords.path}/$id.json');
+    file.parent.createSync(recursive: true);
+    fs.writeRecordDocument(file, document);
+  }
+
+  Map<String, dynamic>? _readDocument(File file) {
+    try {
+      return jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+    } catch (error) {
+      _sink(file.path, error);
+      return null;
+    }
+  }
+
+  /// Reconcile the provider-visible record directory with this install's last
+  /// observed state. The shadow is device-local, so an overwrite-style sync
+  /// provider cannot erase a local branch before the CRDT sees both versions.
+  bool reconcileRecords() {
+    final records = Directory('$dataDir/records');
+    records.createSync(recursive: true);
+    _shadowRecords.createSync(recursive: true);
+    final canonical = <String, Map<String, dynamic>>{};
+    final variants = <String, List<(File, Map<String, dynamic>)>>{};
+    final shadows = <String, Map<String, dynamic>>{};
+
+    for (final file in records.listSync().whereType<File>()) {
+      if (!file.path.endsWith('.json')) continue;
+      final document = _readDocument(file);
+      if (document == null || document['id'] is! String) continue;
+      final id = document['id'] as String;
+      final canonicalName = '$id.json';
+      if (file.uri.pathSegments.last == canonicalName) {
+        canonical[id] = document;
+      } else if (_isConflictCopy(file.uri.pathSegments.last, id)) {
+        (variants[id] ??= []).add((file, document));
+      } else {
+        _sink(
+          file.path,
+          StateError('Record filename does not match its id.'),
+        );
+      }
+    }
+    for (final file in _shadowRecords.listSync().whereType<File>()) {
+      if (!file.path.endsWith('.json')) continue;
+      final document = _readDocument(file);
+      if (document != null && document['id'] is String) {
+        shadows[document['id'] as String] = document;
+      }
+    }
+
+    var changed = false;
+    recordConflicts.clear();
+    for (final id in {...canonical.keys, ...variants.keys, ...shadows.keys}) {
+      Map<String, dynamic>? merged = shadows[id] ?? canonical[id];
+      final candidates = <Map<String, dynamic>>[
+        if (shadows[id] != null && canonical[id] != null) canonical[id]!,
+        for (final variant in variants[id] ?? const []) variant.$2,
+      ];
+      for (final candidate in candidates) {
+        if (merged == null) {
+          merged = candidate;
+          continue;
+        }
+        final result = fs.mergeRecordDocuments(merged, candidate);
+        merged = result.document;
+      }
+      if (merged == null) continue;
+      final target = File('${records.path}/$id.json');
+      final current = canonical[id];
+      if (current == null || jsonEncode(current) != jsonEncode(merged)) {
+        fs.writeRecordDocument(target, merged);
+        changed = true;
+      }
+      _writeShadow(id, merged);
+      for (final variant in variants[id] ?? const []) {
+        if (variant.$1.existsSync()) variant.$1.deleteSync();
+        changed = true;
+      }
+      final meta = (merged['_meta'] as Map?) ?? const {};
+      for (final conflict in ((meta['conflicts'] as List?) ?? const [])) {
+        if (conflict is Map) {
+          recordConflicts.add({
+            'recordId': id,
+            ...Map<String, dynamic>.from(conflict),
+          });
+        }
+      }
+      for (final stamp in [
+        ...((meta['stamps'] as Map?) ?? const {}).values,
+        ...((meta['fieldTombstones'] as Map?) ?? const {}).values,
+        meta['deletedStamp'],
+      ]) {
+        dev.observe(stamp);
+      }
+    }
+    return changed;
+  }
+
+  void clearRecordConflicts(String id, String field) {
+    final file = File('$dataDir/records/$id.json');
+    final document = _readDocument(file);
+    if (document == null) return;
+    final meta = Map<String, dynamic>.from(
+      (document['_meta'] as Map?) ?? const {},
+    );
+    meta['conflicts'] = ((meta['conflicts'] as List?) ?? const [])
+        .where((value) => value is! Map || '${value['field']}' != field)
+        .toList();
+    document['_meta'] = meta;
+    fs.writeRecordDocument(file, document);
+    _writeShadow(id, document);
+    reconcileRecords();
+  }
+
+  void resolveDefinitionConflict(
+    DefinitionConflict conflict, {
+    required bool useConflicting,
+  }) {
+    final conflicting = File(conflict.conflictingPath);
+    final canonical = File(conflict.canonicalPath);
+    if (useConflicting) {
+      final document = _readDocument(conflicting);
+      if (document == null) return;
+      fs.writeJsonAtomic(canonical, document);
+    }
+    if (conflicting.existsSync()) conflicting.deleteSync();
+    _scanDefinitionConflicts();
+  }
+
+  bool _isConflictCopy(String filename, String id) {
+    final lower = filename.toLowerCase();
+    return lower.contains('conflicted copy') || filename == '$id 2.json';
+  }
+
+  void _scanDefinitionConflicts() {
+    definitionConflicts.clear();
+    for (final config in const [('types', 'typeId'), ('skills', 'skillId')]) {
+      final dir = Directory('$dataDir/${config.$1}');
+      if (!dir.existsSync()) continue;
+      for (final file in dir.listSync().whereType<File>()) {
+        if (!file.path.endsWith('.json')) continue;
+        final document = _readDocument(file);
+        final id = document?[config.$2];
+        if (id is! String) continue;
+        final canonical = File('${dir.path}/$id.json');
+        if (file.absolute.path != canonical.absolute.path) {
+          definitionConflicts.add(DefinitionConflict(
+            subdir: config.$1,
+            id: id,
+            canonicalPath: canonical.path,
+            conflictingPath: file.path,
+          ));
+        }
+      }
+    }
+  }
+
+  /// Positive provider/file-system events drive refresh; no polling timer is
+  /// used. Callers serialize reconciliation with active turns.
+  Stream<void> watchChanges() {
+    final root = Directory(dataDir)..createSync(recursive: true);
+    return root.watch(recursive: true).where((event) {
+      final relative = event.path.startsWith(root.path)
+          ? event.path.substring(root.path.length)
+          : event.path;
+      return relative.startsWith(
+              '${Platform.pathSeparator}records${Platform.pathSeparator}') ||
+          relative.startsWith(
+              '${Platform.pathSeparator}types${Platform.pathSeparator}') ||
+          relative.startsWith(
+              '${Platform.pathSeparator}skills${Platform.pathSeparator}');
+    }).map((_) {});
+  }
 
   /// Preserve the exact pre-migration record bytes in device-local storage.
   /// Backups are immutable and deterministic, so a restart cannot overwrite
@@ -195,6 +417,10 @@ class FileStorageRepository implements StorageRepository {
     final temp = File('${target.path}.migration-restore.tmp');
     temp.writeAsBytesSync(source.readAsBytesSync(), flush: true);
     temp.renameSync(target.path);
+    _writeShadow(
+      backup.recordId,
+      jsonDecode(target.readAsStringSync()) as Map<String, dynamic>,
+    );
   }
 
   /// The learned corpus is a whole-file rewrite on every learn/forget. A torn write here used to
