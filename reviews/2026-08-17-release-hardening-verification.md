@@ -76,8 +76,8 @@ The new gates were shown known-bad and known-good states before being trusted:
 
 ### Complete project gate
 
-`bash tool/precheck.sh` passed after the optional soak was moved out of the
-default integration directory:
+`bash tool/precheck.sh` passed after its ordinary integration invocation was
+narrowed to the explicit `render_test.dart` target:
 
 - 1,920 pure-Dart engine tests passed; 36 intentional Spec 05a cases skipped;
 - deterministic-core coverage 94.7%, product-logic coverage 90.1%, transport
@@ -128,7 +128,9 @@ not claimed because the phone is deployment-only.
   or developer harness markers;
 - the promotion script records external channel, git revision, app version,
   artifact SHA-256, every shipped type schema version, and migration chains in
-  `app/build/release/release-manifest.json`.
+  `app/build/release/release-manifest.json`. Its migration validator was
+  calibrated against and rejected the initial malformed `null→null` output;
+  the final manifest records the contiguous task chain `1→2→3→4→5`.
 
 ## Deliberate boundary
 
