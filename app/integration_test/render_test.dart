@@ -243,44 +243,57 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a task-title tap completes on Today and never enters voice', (
-    tester,
-  ) async {
-    final session = await _session();
-    await session.init(retrieval: false);
-    await session.handle('add pack clothes to my list');
-    final task = session.store.values.singleWhere(
-      (record) => record['typeId'] == 'task',
-    );
-    expect(
-      (await session.editField('${task['id']}', 'status', 'today')).ok,
-      isTrue,
-    );
-    final speech = _ListeningTrapSpeech();
+  testWidgets(
+    'task title opens details; its circle completes; neither enters voice',
+    (tester) async {
+      final session = await _session();
+      await session.init(retrieval: false);
+      await session.handle('add pack clothes to my list');
+      final task = session.store.values.singleWhere(
+        (record) => record['typeId'] == 'task',
+      );
+      expect(
+        (await session.editField('${task['id']}', 'status', 'today')).ok,
+        isTrue,
+      );
+      final speech = _ListeningTrapSpeech();
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ChatScreen(
-          session: session,
-          speech: speech,
-          retrieval: false,
-          forceAnimate: true,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(
+            session: session,
+            speech: speech,
+            retrieval: false,
+            forceAnimate: true,
+          ),
         ),
-      ),
-    );
-    await runFrames(tester, 35);
-    expect(find.text('pack clothes'), findsOneWidget);
+      );
+      await runFrames(tester, 35);
+      expect(find.text('pack clothes'), findsOneWidget);
 
-    await tester.tap(find.text('pack clothes'));
-    await runFrames(tester, 25);
+      await tester.tap(find.text('pack clothes'));
+      await runFrames(tester, 25);
 
-    expect(session.store['${task['id']}']!['status'], 'done');
-    expect(find.byKey(const Key('today-board')), findsOneWidget);
-    expect(find.text('Completed — pack clothes.'), findsOneWidget);
-    expect(session.todayProjection().latestChange, isNotNull);
-    expect(speech.listenCalls, 0);
-    expect(tester.takeException(), isNull);
-  });
+      expect(session.store['${task['id']}']!['status'], 'today');
+      expect(find.byKey(const Key('record-detail')), findsOneWidget);
+      expect(find.byKey(const Key('today-board')), findsOneWidget);
+      expect(speech.listenCalls, 0);
+
+      Navigator.of(
+        tester.element(find.byKey(const Key('record-detail'))),
+      ).pop();
+      await runFrames(tester, 15);
+      await tester.tap(find.byTooltip('Complete pack clothes'));
+      await runFrames(tester, 25);
+
+      expect(session.store['${task['id']}']!['status'], 'done');
+      expect(find.byKey(const Key('record-detail')), findsNothing);
+      expect(find.text('Completed — pack clothes.'), findsOneWidget);
+      expect(session.todayProjection().latestChange, isNotNull);
+      expect(speech.listenCalls, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   // Resize-crash guard (kept in THIS file, not a separate one: running multiple integration_test
   // files back-to-back on macOS flakes on app relaunch — one file, one launch, is reliable). The

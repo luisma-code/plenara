@@ -93,6 +93,60 @@ String renderValue(dynamic v, [String? valueType]) {
 /// Best-effort render where the value type isn't in hand.
 String fmtValue(dynamic v) => renderValue(v, null);
 
+/// Open the one type-driven record editor used by Library and planner surfaces.
+/// The sheet edits one value at a time through Session's durable facade; delete
+/// and undo also stay on that same execution path.
+Future<void> showRecordDetailSheet({
+  required BuildContext context,
+  required Session session,
+  required String recordId,
+  required VoidCallback onChanged,
+}) async {
+  final record = session.store[recordId];
+  if (record == null) return;
+  final typeId = '${record['typeId']}';
+  final typeDef = (session.types[typeId] ?? const {}).cast<String, dynamic>();
+
+  Future<ManualWrite> edit(String id, String field, Object? value) async {
+    final result = await session.editField(id, field, value);
+    onChanged();
+    return result;
+  }
+
+  Future<void> delete(String id) async {
+    final result = await session.deleteRecord(id);
+    if (!context.mounted) return;
+    onChanged();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.message),
+        action: result.undoId == null
+            ? null
+            : SnackBarAction(
+                label: 'UNDO',
+                onPressed: () async {
+                  await session.undoById(result.undoId!);
+                  onChanged();
+                },
+              ),
+      ),
+    );
+  }
+
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => _RecordDetailSheet(
+      session: session,
+      typeId: typeId,
+      typeDef: typeDef,
+      recordId: recordId,
+      onEdit: edit,
+      onDelete: delete,
+    ),
+  );
+}
+
 class DataView extends StatefulWidget {
   final Session session;
   final String title;
@@ -120,37 +174,8 @@ class _DataViewState extends State<DataView> {
     if (mounted) setState(() => _busy = false);
   }
 
-  /// Edit one field (Spec 07 §5.5 tap-to-edit) — validates in the engine. The FAILURE message is
-  /// surfaced by the detail sheet inline (a SnackBar would render behind the modal sheet, invisible),
-  /// so this just persists + refreshes the view and hands the result back to the sheet.
-  Future<ManualWrite> _edit(String id, String field, Object? value) async {
-    final r = await session.editField(id, field, value);
+  void _refresh() {
     if (mounted) setState(() {});
-    return r;
-  }
-
-  /// Delete a record with an UNDO snackbar — the voice-undo ethos (act-then-describe), doubly
-  /// reversible (journal + storage tombstone), so no pre-delete confirm dialog. The UNDO is TARGETED
-  /// to this delete's journal entry, so a later write can't make it reverse the wrong thing.
-  Future<void> _delete(String id) async {
-    final r = await session.deleteRecord(id);
-    if (!mounted) return;
-    setState(() {});
-    if (r.ok) {
-      final token = r.undoId;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(r.message),
-          action: SnackBarAction(
-            label: 'UNDO',
-            onPressed: () async {
-              if (token != null) await session.undoById(token);
-              if (mounted) setState(() {});
-            },
-          ),
-        ),
-      );
-    }
   }
 
   @override
@@ -196,8 +221,7 @@ class _DataViewState extends State<DataView> {
                           .cast<String, dynamic>(),
                       records: byType[typeId]!,
                       onComplete: _complete,
-                      onEdit: _edit,
-                      onDelete: _delete,
+                      onChanged: _refresh,
                     ),
                 _LearnedPhrasesCard(session: session),
               ],
@@ -271,16 +295,13 @@ class _TypeSection extends StatelessWidget {
   final Map<String, dynamic> typeDef;
   final List<Map<String, dynamic>> records;
   final Future<void> Function(String description)? onComplete;
-  final Future<ManualWrite> Function(String id, String field, Object? value)
-  onEdit;
-  final Future<void> Function(String id) onDelete;
+  final VoidCallback onChanged;
   const _TypeSection({
     required this.session,
     required this.typeId,
     required this.typeDef,
     required this.records,
-    required this.onEdit,
-    required this.onDelete,
+    required this.onChanged,
     this.onComplete,
   });
 
@@ -440,21 +461,14 @@ class _TypeSection extends StatelessWidget {
     return parts.isEmpty ? '(empty)' : parts.join('  ·  ');
   }
 
-  /// Drill into one record — an editable bottom sheet (Spec 07 §5.5 tap-to-edit + delete).
-  void _showRecord(BuildContext context, Map<String, dynamic> r) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _RecordDetailSheet(
+  /// Drill into the shared editable record sheet (Spec 07 §5.5).
+  Future<void> _showRecord(BuildContext context, Map<String, dynamic> record) =>
+      showRecordDetailSheet(
+        context: context,
         session: session,
-        typeId: typeId,
-        typeDef: typeDef,
-        recordId: r['id'] as String,
-        onEdit: onEdit,
-        onDelete: onDelete,
-      ),
-    );
-  }
+        recordId: '${record['id']}',
+        onChanged: onChanged,
+      );
 
   List<Map<String, dynamic>> _byDateDesc(
     List<Map<String, dynamic>> rs,

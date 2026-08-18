@@ -1,6 +1,6 @@
 # Spec 17 — Living Planner & Multimodal Product Model
 
-**Status:** v0.5 — 2026-08-17, active implementation authority. Today, phone/desktop Plan, purpose-built Library and person context, the durable conversation ledger, task schema v5, structured planner context, in-process retrieval, cloud admission, durable proposals/reviews/suggestions, detached operations, and the adaptive full-screen/collaborator/ember presence are wired.
+**Status:** v0.6 — 2026-08-17, active implementation authority. Today, phone/desktop Plan, purpose-built Library and person context, the durable conversation ledger, task schema v5, structured planner context, in-process retrieval, cloud admission, durable proposals/reviews/suggestions, detached operations, and the adaptive full-screen/collaborator/ember presence are wired.
 **Supersedes:** research §2.2's overlay-only/no-touch rule; Spec 07 P1–P2 and its four-surface model; Spec 15 D1/D14 where they make full-screen presence or ephemeral exchange the steady-state product. Those documents remain design history and point here for current behavior.
 **Depends on:** Specs 01–06 for schema, skills, routing, orchestration, functional behavior, and storage; Spec 07 for visual language and generic archetypes; Spec 12 for voice; Spec 15 for Plena's renderer.
 
@@ -10,6 +10,7 @@
 
 - Opening the app renders the deterministic Today projection rather than an ephemeral greeting. It includes bounded Now/Next/Later sections, one relationship date, the latest durable execution with targeted undo, Inbox count, operational notices, and repair state.
 - Voice and typed capture continue through `Session.handle`; Today completion calls the typed `Session.completeTask` command directly. Both converge on `ExecutionCoordinator` and its durable device-local journal.
+- Today task rows separate navigation from mutation: tapping the task body opens the shared type-driven detail editor; only the explicit leading circle completes it. Both consume their gesture before the background voice target, and a trailing chevron makes the row's navigation role visible.
 - The device-local conversation ledger retains the final utterance, full reply, routing source, time, and execution link for 250 turns. It is a user-facing product history distinct from content-bearing internal diagnostic logs. History-linked writes expose targeted undo.
 - Task schema v3 introduced `status`, `scheduledStartAt`, `estimatedMinutes`, `priority`, `projectRef`, `areaRef`, `contactRefs`, `notes`, and `completedAt`; v4 added dependency/energy/context/recurrence semantics and v5 added `reviewDecision`. `dueAt` remains deadline-only. Project and area are registered record types.
 - Plena remains full-bleed during conversation and yields within the same canvas when Today is visible. The populated surface has an explicit accessible voice target; tap-anywhere remains active only on non-interactive space.
@@ -189,7 +190,12 @@ The NLU context includes the visible date range, selected day, selected records,
 
 ### 5.2 Direct manipulation
 
-Complete, schedule, reschedule, resize, defer, and inline edit emit typed commands. Gesture completion waits for positive mutation/persistence events, never elapsed-time assumptions. Optimistic visuals must reconcile to a typed execution state and visibly reverse on failure.
+Complete, schedule, reschedule, resize, defer, and inline edit emit typed commands. On Today, the
+task body's row tap is navigation to its shared detail editor; completion belongs only to the
+explicit leading circle. A trailing chevron and accessibility hint communicate the row action.
+Both controls consume their gestures before the background voice target. Gesture completion waits
+for positive mutation/persistence events, never elapsed-time assumptions. Optimistic visuals must
+reconcile to a typed execution state and visibly reverse on failure.
 
 ### 5.3 Failure and recovery
 

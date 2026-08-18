@@ -249,7 +249,7 @@ void main() {
   });
 
   testWidgets(
-    'tapping a task title completes it without dismissing Today into voice mode',
+    'task title opens details while its circle remains the completion action',
     (tester) async {
       final session = _session();
       await session.init(retrieval: false);
@@ -272,14 +272,25 @@ void main() {
       await tester.tap(find.text('pack clothes'));
       await tester.pumpAndSettle();
 
-      expect(session.store[task['id']]!['status'], 'done');
+      expect(session.store[task['id']]!['status'], 'today');
+      expect(find.byKey(const Key('record-detail')), findsOneWidget);
       expect(find.byKey(const Key('today-board')), findsOneWidget);
-      expect(find.byKey(const Key('latest-change')), findsOneWidget);
       expect(
         find.byKey(const Key('cancel-listen')),
         findsNothing,
-        reason: 'the row action must win over Today\'s background voice tap',
+        reason: 'the detail action must win over Today\'s background voice tap',
       );
+
+      Navigator.of(
+        tester.element(find.byKey(const Key('record-detail'))),
+      ).pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Complete pack clothes'));
+      await tester.pumpAndSettle();
+
+      expect(session.store[task['id']]!['status'], 'done');
+      expect(find.byKey(const Key('record-detail')), findsNothing);
+      expect(find.byKey(const Key('latest-change')), findsOneWidget);
     },
   );
 

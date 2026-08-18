@@ -8,6 +8,7 @@ import 'package:plenara/weekly_review.dart';
 
 import 'plenara_theme.dart';
 import 'motion.dart';
+import 'data_view.dart';
 
 class TodayBoard extends StatelessWidget {
   final Session session;
@@ -517,6 +518,9 @@ class _Section extends StatelessWidget {
                   onComplete: item.completable
                       ? () => _complete(context, item)
                       : null,
+                  onOpen: session.store.containsKey(item.id)
+                      ? () => _open(context, item)
+                      : null,
                 ),
               ),
               if (items.isEmpty)
@@ -553,22 +557,32 @@ class _Section extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _open(BuildContext context, PlannerItem item) =>
+      showRecordDetailSheet(
+        context: context,
+        session: session,
+        recordId: item.id,
+        onChanged: onChanged,
+      );
 }
 
 class _PlannerRow extends StatelessWidget {
   final PlannerItem item;
   final VoidCallback? onComplete;
+  final VoidCallback? onOpen;
 
-  const _PlannerRow({required this.item, this.onComplete});
+  const _PlannerRow({required this.item, this.onComplete, this.onOpen});
 
   @override
   Widget build(BuildContext context) => Semantics(
-    button: onComplete != null,
+    button: onOpen != null,
     label:
         '${item.kind.name}: ${item.title}${item.detail == null ? '' : ', ${item.detail}'}',
+    hint: onOpen == null ? null : 'Open details and edit',
     child: ListTile(
       key: Key('planner-${item.id}'),
-      onTap: onComplete,
+      onTap: onOpen,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       leading: onComplete == null
           ? Icon(_icon(item.kind), color: PlenaraTheme.amber)
@@ -590,6 +604,9 @@ class _PlannerRow extends StatelessWidget {
               item.detail!,
               style: const TextStyle(color: PlenaraTheme.quietInk),
             ),
+      trailing: onOpen == null
+          ? null
+          : const Icon(Icons.chevron_right_rounded, size: 20),
     ),
   );
 }

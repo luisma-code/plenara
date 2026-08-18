@@ -262,6 +262,7 @@ Plenara supports externalizing, comparing, sequencing, editing, and revisiting a
 **Interaction**
 
 - Add direct complete, schedule/reschedule, resize estimate, defer, inline edit, and multi-select.
+  Today task bodies open the shared detail editor; only their explicit leading circles complete.
 - Add the observed-need planner fields from the previous increment—dependencies, blocked reason, energy/context, and recurrence—with real migrations and UI only where the benchmark scenarios require them.
 - Send each structured action through the same `ExecutionCoordinator`; no English synthesis and no second undo model.
 - Put current selection, visible date range, and numbered objects into structured NLU context so “move these two,” “the first one,” and “after school pickup” are deterministic references.

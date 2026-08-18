@@ -188,8 +188,11 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
   phone launch or test occurred. It shows that tapping the `pack clothes` row reached Today’s
   background voice gesture, then Apple produced visible partial words followed by native `done`
   without an engine-final result. There was no crash.
-- The entire task row now owns its completion gesture, not only the small leading circle. Completion
-  stays on Today, publishes the durable latest-change/undo surface, and cannot bubble into voice.
+- The first diagnostic correction made the entire task row complete so it could not bubble into
+  voice. Luis correctly found that hidden completion contract unclear. The current rule supersedes
+  it: the task body opens the shared editable record sheet (signaled by a chevron); only the explicit
+  leading circle completes. Both controls consume their gesture before Today’s background voice
+  target.
 - Recognition now retains the latest Apple partial alongside completed segments. Native `done`,
   error, watchdog stop, and `stop()` completion converge on one idempotent finalization door; the
   fixed 350 ms guess is removed. Any real words flush exactly once, while explicit cancel remains
@@ -201,9 +204,11 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - Final-tree precheck is green: 1,922 engine tests + 36 skips; 161 Flutter tests + 3 development
   skips; 94.7% / 90.5% / 68.1% coverage tiers; macOS build; seven macOS real-engine cases; external,
   secret, and 24/60 conformance gates. All seven cases also passed on the local iPhone 17 Pro
-  simulator, including the exact task-title interaction with completion feedback and zero speech
-  calls. One mid-run RSS sample was about 546 MiB; the run ended normally, the simulator was shut
-  down, and no app/test orphan remains. This is not a long-soak leak claim.
+  simulator, including title → detail editor, circle → completion feedback, and zero speech calls.
+  The simulator guard failed against the deliberately restored whole-row completion behavior, then
+  passed restored. RSS rose from about 529 MiB to a roughly 558 MiB plateau during the short run;
+  the run ended normally, the simulator was shut down, and no app/test orphan remains. This is not
+  a long-soak leak claim.
 - The diagnostic trace also proved the old cross-doc “interim transcripts are forbidden in every
   channel” restatement was stale. Spec 11 v0.4 is the sole authority: internal dogfood may retain
   recognizer hypotheses for post-hoc diagnosis; external captures none; raw audio and secrets stay
@@ -237,8 +242,11 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 ## Implementation queue
 
 - The eight-increment review plan, phone-diagnostic startup correction, and task-row/Apple-partial
-  correction are complete. Revision `c26560f7a149` is installed on the authorized deployment-only
-  physical phone; no implementation or deployment work remains open.
+  correction are complete. The follow-up task-row clarity change is also implemented and verified:
+  body → shared detail editor, explicit circle → complete, neither → voice. The full gate and seven
+  local-iPhone-simulator cases pass; the old whole-row-completes behavior made both widget and
+  simulator guards fail as intended. Revision `c26560f7a149` remains on the deployment-only physical
+  phone; this follow-up has not been installed because Luis did not request another phone deployment.
 
 ## Authoritative documents
 
