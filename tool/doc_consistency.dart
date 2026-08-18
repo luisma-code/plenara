@@ -10,6 +10,7 @@ void main() {
   final errors = <String>[];
 
   const activeDocs = <String>[
+    'AGENTS.md',
     'README.md',
     'app/README.md',
     'CLAUDE.md',
@@ -38,6 +39,9 @@ void main() {
     'planning/specs/16-routines.md',
     'planning/specs/17-living-planner.md',
     'planning/specs/storage-sync-assessment.md',
+    '.agents/skills/plenara-doc-alignment/SKILL.md',
+    '.agents/skills/plenara-phone-deploy/SKILL.md',
+    '.agents/skills/plenara-simulator-verification/SKILL.md',
   ];
 
   var linkCount = 0;
@@ -75,7 +79,19 @@ void main() {
   }
 
   const staleClaims = <String, List<String>>{
-    'CLAUDE.md': ['Text/subtitles are overlays — UI is never compromised'],
+    'AGENTS.md': [
+      'Text/subtitles are overlays — UI is never compromised',
+      'retrieval-embedding model (~80MB',
+      'journal + `sensitive` content **sync**',
+      'Five layers: UI → DispatchOrchestrator',
+      '## Locked design principles',
+      '## Bring-up order',
+    ],
+    'CLAUDE.md': [
+      'Text/subtitles are overlays — UI is never compromised',
+      '## Locked design principles',
+      '## Bring-up order',
+    ],
     'PRIVACY.md': [
       'Credentials, raw audio, and interim speech transcripts are excluded',
     ],
@@ -119,6 +135,75 @@ void main() {
       if (text.contains(claim)) {
         errors.add('${entry.key}: retired claim returned: `$claim`');
       }
+    }
+  }
+
+  final claudeLines = File(
+    '${root.path}/CLAUDE.md',
+  ).readAsLinesSync().where((line) => line.trim().isNotEmpty).length;
+  final claudeText = File('${root.path}/CLAUDE.md').readAsStringSync();
+  if (claudeLines > 6 || !claudeText.contains('[`AGENTS.md`](AGENTS.md)')) {
+    errors.add(
+      'CLAUDE.md: must remain a thin compatibility pointer to canonical AGENTS.md',
+    );
+  }
+
+  const skillDefinitions = <String>[
+    '.agents/skills/plenara-doc-alignment/SKILL.md',
+    '.agents/skills/plenara-phone-deploy/SKILL.md',
+    '.agents/skills/plenara-simulator-verification/SKILL.md',
+  ];
+  for (final relative in skillDefinitions) {
+    final file = File('${root.path}/$relative');
+    if (!file.existsSync()) {
+      errors.add('$relative: project skill definition is missing');
+      continue;
+    }
+    final text = file.readAsStringSync();
+    final expectedName = file.parent.uri.pathSegments
+        .where((segment) => segment.isNotEmpty)
+        .last;
+    final name = RegExp(
+      r'^name:\s*([^\s]+)\s*$',
+      multiLine: true,
+    ).firstMatch(text)?.group(1);
+    if (name != expectedName) {
+      errors.add(
+        '$relative: skill name `${name ?? 'missing'}` does not match `$expectedName`',
+      );
+    }
+    final description = RegExp(
+      r'^description:\s*(.+)$',
+      multiLine: true,
+    ).firstMatch(text)?.group(1);
+    if (description == null || description.trim().length < 40) {
+      errors.add('$relative: discriminating skill description is missing');
+    }
+  }
+
+  const agentDefinitions = <String>[
+    '.codex/agents/product-experience-reviewer.toml',
+    '.codex/agents/simulator-verifier.toml',
+    '.codex/agents/spec-code-reviewer.toml',
+  ];
+  for (final relative in agentDefinitions) {
+    final file = File('${root.path}/$relative');
+    if (!file.existsSync()) {
+      errors.add('$relative: project agent definition is missing');
+      continue;
+    }
+    final text = file.readAsStringSync();
+    for (final field in const [
+      'name',
+      'description',
+      'developer_instructions',
+    ]) {
+      if (!RegExp('^$field\\s*=', multiLine: true).hasMatch(text)) {
+        errors.add('$relative: required `$field` field is missing');
+      }
+    }
+    if (!text.contains('AGENTS.md')) {
+      errors.add('$relative: agent does not route to canonical AGENTS.md');
     }
   }
 
@@ -186,7 +271,9 @@ void main() {
 
   stdout.writeln(
     'doc consistency: ${activeDocs.length} active docs, $linkCount relative links, '
-    '$staleChecks retired-claim guards, ${engineKinds.length} cloud kinds',
+    '$staleChecks retired-claim guards, ${skillDefinitions.length} project skills, '
+    '${agentDefinitions.length} project agents, '
+    '${engineKinds.length} cloud kinds',
   );
   stdout.writeln('cloud kinds: ${(engineKinds.toList()..sort()).join(', ')}');
   if (errors.isNotEmpty) {

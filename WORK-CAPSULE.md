@@ -221,7 +221,7 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
   Spec 17 owns the living-planner surface; current voice is tap-toggle; production retrieval is the
   Router-owned in-process feature hash; the execution journal is durable, device-local, and
   plaintext; content search is in-memory; and exactly six cloud synthesis kinds are implemented.
-- Specs 01–13/15/17, research, CLAUDE, DOGFOOD, privacy, implementation, release, and handoff docs
+- Specs 01–13/15/17, research, AGENTS, DOGFOOD, privacy, implementation, release, and handoff docs
   were reconciled. Historical walking-skeleton/transition/release docs have archive banners rather
   than silently presenting old plaintext-key, localhost-retrieval, volatile-undo, or overlay-only
   instructions as current.
@@ -230,15 +230,41 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
   privacy policy now matches Spec 11.
 - `Session.cloudReason` now directs missing/rejected-key users to Settings rather than legacy
   plaintext config. The regression assertions failed against the old copy and pass restored.
-- `tool/doc_consistency.dart` is a calibrated precheck gate: 28 active docs, 18 resolved relative
-  links, 19 retired-claim guards, and six cloud kinds compared across engine, assembler, Settings,
-  and Spec 08. A deliberately restored push-to-talk heading made it fail before restoration.
+- `tool/doc_consistency.dart` is a calibrated precheck gate for active docs, instruction assets,
+  retired claims, project-agent schema, and the six cloud kinds compared across engine, assembler,
+  Settings, and Spec 08. Deliberately restored stale claims must make it fail before restoration.
 - Final precheck is green: 1,922 engine tests + 36 skips; 161 Flutter tests + 3 development skips;
   94.7% / 90.5% / 68.1% coverage; macOS build; seven real-engine cases; external, secret, and
   24/60 gates. No simulator or physical phone was used; no app/test process remains.
-- The review is `reviews/2026-08-17-code-spec-doc-consistency-review.md`. The only unresolved local
-  contradiction is untracked user-owned `AGENTS.md`, whose product-context section still describes
-  the retired overlay-only UI and packaged model. It was not edited or staged.
+- The review is `reviews/2026-08-17-code-spec-doc-consistency-review.md`. Its then-unresolved
+  `AGENTS.md` contradiction was resolved with Luis's explicit authorization in the instruction
+  package described below.
+
+## Project instruction package
+
+- Root `AGENTS.md` is the tracked, canonical project-specific instruction authority. It contains
+  current product facts, authority routing, diagnostics policy, device safety, verification, and
+  maintenance rules without copying Luis's cross-project working preferences.
+- `CLAUDE.md` is intentionally only a compatibility pointer to `AGENTS.md`, preventing two full
+  copies from drifting. The obsolete `.claude/settings.json` was removed because its blanket shell
+  grant, Windows paths, and retired llama commands were machine policy rather than portable project
+  guidance.
+- Repo-scoped Codex skills live under `.agents/skills/`: simulator verification, documentation
+  alignment, and explicit physical-phone deployment. Project agent definitions under
+  `.codex/agents/` cover spec/code review, product/art/motion review, and simulator verification.
+  Agent roles do not grant permission to delegate, deploy, or take external actions.
+- The instruction guard checks all three skills, requires each project agent to route through
+  `AGENTS.md`, rejects the retired instruction claims, and keeps `CLAUDE.md` as a thin pointer.
+- Calibration restored the actual overlay-only claim, expanded `CLAUDE.md` into a second authority,
+  mismatched a skill name, and removed an agent description; one run named all four defects, and
+  the restored run passed. The official Codex skill validator also passed all three skills from an
+  isolated temporary environment, which was removed afterward.
+- Final precheck is green: 1,922 engine tests + 36 intentional skips; 161 Flutter tests + 3
+  development-channel skips; 94.7% deterministic / 90.5% product / 68.1% transport coverage;
+  macOS build; seven real-engine cases; external-channel, secret, and 24/60 conformance gates.
+  The local integration app reached about 423 MiB in the single process sample and exited normally;
+  no app/test process or booted simulator remains. This was not a leak soak and no physical phone
+  was touched.
 
 ## Live commands
 
@@ -267,13 +293,14 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 ## Implementation queue
 
 - The eight-increment review plan, phone-diagnostic corrections, task-row clarity change, and
-  code/spec/document consistency pass are complete. Revision `c26560f7a149` remains on the
-  deployment-only physical phone; this documentation/code-copy pass was not deployed because Luis
-  did not request a phone deployment.
+  code/spec/document consistency and instruction-package passes are complete. Revision
+  `c26560f7a149` remains on the deployment-only physical phone; the documentation/instruction work
+  was not deployed because it does not change the app binary.
 
 ## Authoritative documents
 
 - `planning/specs/17-living-planner.md` — product information architecture and multimodal rules.
 - `planning/specs/11-feedback-diagnostics.md` — sole diagnostic collection/export authority.
 - `planning/implementation-plan-2026-08-17.md` — ordered implementation program and acceptance gates.
+- `AGENTS.md` — canonical project instructions and authority routing for coding agents.
 - `reviews/2026-08-17-*.md` — historical review evidence; do not rewrite their findings after decisions change.
