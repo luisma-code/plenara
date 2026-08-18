@@ -153,6 +153,12 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Latest phone deployment
 
+- On 2026-08-17 at 17:36 PDT, the task-row/Apple-partial correction was installed on **Aluminum
+  Monster**: signed internal-channel `0.12.0 (18)`, revision `c26560f7a149`, bundle
+  `com.plenara.plenaraApp`. The verified AOT SHA-256 is
+  `031d438eda3c29bdda44b99cd59271a4fd58dabfbdff4ff5a0ea5bd487b5473f`; signature, team,
+  provisioning, embedded revision, internal raw diagnostics, both reset surfaces, and absence of an
+  API-key pattern were checked before install. Deployment only—no physical-phone launch or test.
 - On 2026-08-17 at 17:16 PDT, the phone-diagnostic correction was installed on **Aluminum Monster**: signed internal-channel `0.12.0 (18)`, revision `472587a3c4c8`, bundle `com.plenara.plenaraApp`. The locally verified AOT SHA-256 is `8651797bfe02c173da7cf8de95343869634ed3ca9e67083ca36d958734020723`; code signing, embedded revision, both reset actions, internal diagnostics, and absence of an API-key pattern were checked before install. The first wireless tunnel attempt timed out before installation; CoreDevice returned to paired/available and the retry succeeded. Deployment only—no physical-phone launch or test.
 - On 2026-08-17 at 16:49 PDT, the recovery build replaced the earlier install on **Aluminum Monster**: signed internal-channel `0.12.0 (18)`, revision `ecbd0ee`, bundle `com.plenara.plenaraApp`. The locally verified AOT SHA-256 is `3f3491e45c9a1f136714b5f3c5f5c2c4e40feb2f4ab045bc5dda652770ccac8f`; it contains both reset actions and the approved internal-diagnostics canary. Deployment only—no physical-phone launch, test, probe, log collection, or inspection.
 - On 2026-08-17 at 16:25 PDT, after Luis explicitly requested a phone deployment, the signed internal-channel iOS release `0.12.0 (18)` from revision `aca107a78a31c04fdcb3a8b99374fe044b9ae06f` was installed wirelessly on **Aluminum Monster** as `com.plenara.plenaraApp`.
@@ -202,7 +208,7 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
   channel” restatement was stale. Spec 11 v0.4 is the sole authority: internal dogfood may retain
   recognizer hypotheses for post-hoc diagnosis; external captures none; raw audio and secrets stay
   forbidden everywhere. Research, Voice, Security, the implementation plan, and this capsule now
-  point to that boundary. No corrected phone build has been installed yet.
+  point to that boundary. The corrected signed build was installed deployment-only at 17:36 PDT.
 
 ## Live commands
 
@@ -230,10 +236,9 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Implementation queue
 
-- The eight-increment review plan and phone-diagnostic startup correction are complete. The
-  task-row/Apple-partial correction is implemented and fully verified. Commit, signed internal
-  build inspection, and deployment-only phone installation remain in this active turn; the phone
-  will not be launched or tested.
+- The eight-increment review plan, phone-diagnostic startup correction, and task-row/Apple-partial
+  correction are complete. Revision `c26560f7a149` is installed on the authorized deployment-only
+  physical phone; no implementation or deployment work remains open.
 
 ## Authoritative documents
 
