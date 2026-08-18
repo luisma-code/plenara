@@ -280,6 +280,27 @@ void main() {
       File('$shared/records/external.json').writeAsStringSync('{}');
       await expectLater(event, completes);
     });
+
+    test('unsupported native watching leaves a file-backed session usable',
+        () async {
+      final shared = makeTempDataDir();
+      final repo = FileStorageRepository(shared, watchSupported: false);
+      await expectLater(
+        repo.watchChanges().timeout(const Duration(milliseconds: 100)),
+        emitsDone,
+      );
+      final session = Session(
+        shared,
+        storage: repo,
+        cloud: ClaudeClient(apiKeyOverride: ''),
+      );
+
+      await session.init(retrieval: false, watchStorage: true);
+      addTearDown(session.dispose);
+
+      expect(session.externalStorageIssues, isEmpty);
+      expect(session.skills, contains('create-task'));
+    });
   });
 
   test('HLC observes a future remote stamp before issuing locally', () {

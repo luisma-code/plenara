@@ -469,7 +469,7 @@ All other coercions are unsafe and must not be applied automatically.
 ### 7.4 Migration Trigger Points
 
 - **Startup:** If the type file's `schemaVersion` is greater than the highest version seen in any instance record of that type, a migration is needed. The app detects this during hydration and queues a migration run before the data layer is made available to the rest of the app.
-- **After sync:** When incoming sync changes update a type file to a newer `schemaVersion`, the file watcher triggers the same check.
+- **After sync:** When incoming sync changes update a type file to a newer `schemaVersion`, the storage reconciliation event triggers the same check. Native file events provide this live where supported; physical iOS currently performs the reconciliation on cold open (Spec 04 §4.5).
 - **After type edit:** When the user (via Claude) edits a type in a way that bumps `schemaVersion`, the new type file is written to disk **first**, then the migration runs over the local store. Ordering matters: because each record carries its own `schemaVersion`, writing the type file first makes the run **idempotent and resumable** — a crash mid-run leaves the type at vN with some records still at vN−1, exactly the condition the startup check detects and finishes. Writing records first would risk records advancing to vN while the type file is stranded at vN−1, which the startup check cannot see.
 
 Migrations are **atomic per record**: each record is read, transformed, and written before moving to the next. A failed migration on a single record is logged and the record is left at its old version; the migration continues for all other records. Failed records are surfaced in a repair view.

@@ -1146,10 +1146,11 @@ on startup), but it is never the source of truth on disk.
 -   **On write:** write the JSON file first (source of truth), then
     > update the in-memory cache.
 
--   **On sync:** a file watcher (FSEvents / inotify /
-    > ReadDirectoryChangesW, abstracted by Flutter's file\_watcher
-    > package) detects incoming changes from the cloud client and
-    > re-reads only the changed files.
+-   **On sync:** a platform-capable file watcher (FSEvents / inotify /
+    > ReadDirectoryChangesW) detects incoming changes from the cloud client and
+    > re-reads only the changed files. Physical iOS was later measured not to
+    > support Dart's recursive watcher; Spec 04 §4.5 owns the current cold-open
+    > fallback and the future native document-provider adapter.
 
 ### 8.5 Platform Path Access
 
@@ -1230,7 +1231,7 @@ well-defined layers rather than leaking across them.
   ---------------- ----------------------------------------------------------------------------------------- ---------------------------------------------------- -----------------------------------------------
   UI               Render state; emit user events; map types to view archetypes                              View models / state                                  Storage, AI, business rules
   Business Logic   Validate/transform/apply rules; run the Skill Interpreter over the primitive vocabulary   Storage + Intelligence interfaces; Schema Registry   How data is stored or how AI works internally
-  Storage          Read/write JSON (type-agnostic); in-memory cache; watch files                             File system / content URIs; meta-schema              Business rules, UI, AI
+  Storage          Read/write JSON (type-agnostic); in-memory cache; observe changes where supported         File system / content URIs; meta-schema              Business rules, UI, AI
   Intelligence     NLU, routing, Claude calls, type/skill authoring, corrections corpus                      BL contracts (intent types, entity + type schemas)   Storage internals, UI
   Voice Pipeline   STT, TTS, push-to-talk / wake-word                                                        Intelligence layer                                   Storage, UI, business logic
 
@@ -1395,9 +1396,9 @@ and their code is expected to be discarded.
     > it.
 
 -   **Storage + sync reliability.** Exercise the per-record JSON +
-    > file-watcher model against real cloud providers on iOS and Android
-    > --- the fragile case flagged in 8.5 --- before betting the data
-    > layer on it.
+    > platform reconciliation model against real cloud providers on iOS and
+    > Android --- the fragile case flagged in 8.5 --- before betting the data
+    > layer on it. Spec 04 §4.5 records the later physical-iOS watcher result.
 
 Gate: proceed to v0 only once these four spikes are green, or the design
 is adjusted until they are. This is the reassessment point.

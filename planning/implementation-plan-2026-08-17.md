@@ -398,7 +398,7 @@ The planner serves Plenara's actual purpose—helping the user show up for peopl
 
 ## Increment 7 — user-controlled sync and loss resilience
 
-**Status: implemented 17 August 2026.** The remaining real-provider observation is an environment validation item: simulator/local-provider behavior is proven; Luis's physical phone remains deployment-only and is not a test target.
+**Status: implemented with an explicit iOS degraded mode 17 August 2026.** Device diagnostics established that physical iOS does not support Dart's recursive directory watcher even though simulator/local-provider verification passed. Startup now remains usable and reconciles at cold open; live provider-side edits on iOS require relaunch until a native document-provider event adapter is implemented. The physical phone remains deployment-only and was used only for owner-requested diagnostic retrieval, never as a test target.
 
 ### Outcome
 
@@ -411,6 +411,7 @@ The storage claim becomes true: data lives in a user-chosen synced location, rec
 - Add record version vectors, watcher/reconcile seam, pure merge, tombstone handling, conflict stash, and repair surfaces.
 - Keep the execution journal device-local; sync user records and appropriate user-authored definitions according to the owned specs.
 - Add cold-bootstrap, concurrent-edit, offline-edit, deletion, definition-conflict, and interrupted-sync tests using real storage—not a mocked database.
+- Treat native watch support as a platform capability: unsupported watching completes empty and can never prevent Ready. Do not replace positive events with a polling timer.
 
 ### Acceptance gate
 
@@ -419,6 +420,7 @@ The storage claim becomes true: data lives in a user-chosen synced location, rec
 - Delete/update and definition conflicts preserve recoverable data.
 - Offline changes reconcile after reconnect.
 - Credential material and device-local execution state never enter the synced folder.
+- One rejected user-authored type or dependent skill is parked as visible repair state; it cannot brick unrelated planner capabilities.
 
 ## Increment 8 — external-release hardening
 

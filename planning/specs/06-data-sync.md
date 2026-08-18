@@ -1,6 +1,6 @@
 # Spec 06 — Data & Sync
 
-**Status:** v0.3 — 17 August 2026 (merge/reconcile, device-local shadow, watcher, conflict review, user-selected folder flow, and fresh-start recovery implemented. Formalizes and **supersedes** the preliminary [storage-sync assessment](storage-sync-assessment.md): its Option-C verdict is adopted here as normative design, with later calls recorded below.)
+**Status:** v0.4 — 17 August 2026 (merge/reconcile, device-local shadow, capability-gated watcher, conflict review, user-selected folder flow, and fresh-start recovery implemented. Physical iOS uses cold-open reconciliation because its Dart runtime does not support recursive file watching; Spec 04 §4.5 owns that measured degraded mode. Formalizes and **supersedes** the preliminary [storage-sync assessment](storage-sync-assessment.md): its Option-C verdict is adopted here as normative design, with later calls recorded below.)
 **Depends on:** Research doc v0.10 (§4.9, §8, §10.3, §11.1); Spec 01 §§4.5, 5, 7, 8, 12; Spec 02 §5; Spec 03 §5; Spec 04 §§3.1, 3.11, 3.12, 4.5, 5, 7; storage-sync-assessment.md; the v0 implementation.
 **Blocks:** Spec 09 — Test (merge property tests, §6.1); the iOS file-sync spike (05c D-1) charter (§9.5); the P2 (second-device) milestone (§6.1, §10.1).
 
@@ -205,7 +205,7 @@ Guarantees and their honest limits (D10):
 - **Not guaranteed:** power-loss durability of the very last write (no fsync in the path). Accepted for a personal-notes workload: the loss bound is the final in-flight record, the in-memory store is rebuilt from disk at next launch (Spec 04 §4.5), and a mid-execute crash is recovered by the execution journal's before-images (Spec 04 §5.4), not by storage-layer durability.
 - **Hygiene:** hydration ignores non-`.json` suffixes by construction (the loader's `endsWith('.json')` filter — `.tmp`/`.bak` never load); a startup GC pass deletes orphaned `.tmp`/`.bak` files older than 7 days (§7.3).
 
-**Corrupt or half-synced files never brick startup** (`store.dart loadRecords`): a file that fails to parse is skipped and hydration continues — the folder is a sync target, so partially-transferred files are expected, not exotic. The concrete repository retains the path in its hydration issues and `Session.repairIssues` puts it on Today → Needs attention. The file remains untouched for provider completion or manual repair, and a later watcher event retries it.
+**Corrupt or half-synced files never brick startup** (`store.dart loadRecords`): a file that fails to parse is skipped and hydration continues — the folder is a sync target, so partially-transferred files are expected, not exotic. The concrete repository retains the path in its hydration issues and `Session.repairIssues` puts it on Today → Needs attention. The file remains untouched for provider completion or manual repair, and a later reconciliation event—or the next cold open on physical iOS—retries it. A structurally rejected type and any skill depending on it are parked the same way; validation never aborts unrelated capability startup.
 
 Definition files (`types/`, `skills/`, `automations/`) use the same atomic primitive. A crash mid-write of a *type* file therefore leaves a temp/backup artifact rather than degrading every instance at the next hydration.
 
@@ -248,7 +248,7 @@ Formally (assessment §4): each record is a per-field LWW-register map with a ve
 
 ### 6.2 Reconcile semantics — idempotent, unordered, mid-turn-safe
 
-Restating the Spec 04 §4.5 contract from the storage side, since T2–T4 make it load-bearing: the OS/provider file event is the positive trigger—there is no polling timer. `Session` coalesces duplicate events with one pending bit while a turn or refresh is active; the current implementation then performs a bounded records-folder reconcile rather than trusting an event path that providers may rename/coalesce. Every reconcile action (merge + conditional write-back, re-register, re-index) is idempotent, so duplicate or reordered observation is harmless. A change arriving mid-turn waits until the turn's frozen inputs and durable execution finish, then replaces the shared in-memory map in place and re-reconciles reminders/search. Cross-file ordering is never assumed: a record referencing a type whose file has not yet arrived is tolerated and surfaced if it persists.
+Restating the Spec 04 §4.5 contract from the storage side, since T2–T4 make it load-bearing: where the platform supplies it, the OS/provider file event is the positive trigger—there is no polling timer. `Session` coalesces duplicate events with one pending bit while a turn or refresh is active; the current implementation then performs a bounded records-folder reconcile rather than trusting an event path that providers may rename/coalesce. Every reconcile action (merge + conditional write-back, re-register, re-index) is idempotent, so duplicate or reordered observation is harmless. A change arriving mid-turn waits until the turn's frozen inputs and durable execution finish, then replaces the shared in-memory map in place and re-reconciles reminders/search. Cross-file ordering is never assumed: a record referencing a type whose file has not yet arrived is tolerated and surfaced if it persists. Physical iOS has no Dart recursive watcher: its watch stream completes empty, Ready still opens, and cold open is the positive reconciliation event until a native document-provider adapter replaces that degraded mode.
 
 ### 6.3 Type & skill definition files — escalate on ambiguity, and how a conflict is actually detected
 
@@ -257,7 +257,7 @@ The resolution rule is Spec 01 §7.5, normative and restated: (1) one side has a
 What Spec 01 §7.5 left open is *detection* — the transport does not announce conflicts (T5). Mechanics (D11):
 
 - **The definition shadow.** The registry keeps a device-local map `{defId → contentHash}` of each definition as last registered/adopted on this device, plus a **dirty flag** set when *this device* writes a definition (authoring, type edit) and cleared when the write is observed back as the synced state.
-- **Watcher delivers a changed definition file:**
+- **Reconciliation observes a changed definition file:**
   - hash == shadow → echo of our own write or a duplicate delivery; no-op (T4).
   - incoming `schemaVersion` > registered → adopt, re-register, run migration (§8.1), re-index (Spec 04 §4.5).
   - same `schemaVersion`, different content, **dirty flag clear** → a remote edit with no local divergence; adopt and re-register (this is not a conflict, just a change we didn't make).
@@ -272,7 +272,7 @@ What Spec 01 §7.5 left open is *detection* — the transport does not announce 
 
 ### 6.5 The conflict-copy sweep
 
-At hydration and on watcher settle, any sibling matching provider conflict-copy patterns — `* (conflicted copy)*` / `*conflicted copy*` (Dropbox/OneDrive families), `{name} 2.json` (iCloud's pattern), and per-provider variants (Q3 tracks verifying the current-generation patterns empirically) — is resolved: parse the sibling; **records** → merge into the base (§6.1) and delete the sibling; **definitions** → escalate per §6.3; unparseable sibling → repair surface. The sweep is recovery for providers that mint copies instead of silently LWW-ing (T5); the merge discipline never *depends* on it.
+At hydration and on reconciliation settle, any sibling matching provider conflict-copy patterns — `* (conflicted copy)*` / `*conflicted copy*` (Dropbox/OneDrive families), `{name} 2.json` (iCloud's pattern), and per-provider variants (Q3 tracks verifying the current-generation patterns empirically) — is resolved: parse the sibling; **records** → merge into the base (§6.1) and delete the sibling; **definitions** → escalate per §6.3; unparseable sibling → repair surface. The sweep is recovery for providers that mint copies instead of silently LWW-ing (T5); the merge discipline never *depends* on it.
 
 ### 6.6 Delete vs. edit, and the undo-revival race
 
@@ -314,7 +314,7 @@ Spec 01 §7 defines the runner — declarative descriptors, safe coercions, atom
 Per Spec 01 §7.4, with the storage-side mechanics filled in:
 
 - **Startup:** hydration (§9.1) compares each record's envelope `schemaVersion` (§4.1; absent ⇒ 1) against its type's current version. Any record below current queues a migration run **before the dispatch gate opens** (Spec 04 §4.5/§7.1 — the interpreter must never resolve against un-migrated records; see §8.2 for the read-side guard that makes the gate cheap).
-- **After sync:** the watcher reconcile (§6.2) re-runs the same per-record check for (a) a type file arriving at a higher `schemaVersion` — migrate all local instances; (b) *record* files arriving below the local type's version (written by a device whose type file lags) — migrate those records.
+- **After sync:** the storage reconcile (§6.2) re-runs the same per-record check for (a) a type file arriving at a higher `schemaVersion` — migrate all local instances; (b) *record* files arriving below the local type's version (written by a device whose type file lags) — migrate those records. This is live from native events where supported and occurs on the next cold open on physical iOS.
 - **After type edit:** type file first, then the record run — the write order Spec 01 §7.4 fixes, and the reason it matters *doubles* under sync: because each record carries its own `schemaVersion`, a crash mid-run — or a sync snapshot taken mid-run (T2: other devices can observe the folder half-migrated) — is simply "type at vN, some records at vN−1," the exact state every device's startup/after-sync check detects and finishes idempotently. Migration needs no cross-device coordination: any device that sees the vN type file and a vN−1 record applies the same deterministic descriptor and converges (re-application is prevented per record by its version field, and double-application cannot happen — a record at vN matches no vN−1→vN step).
 
 ### 8.2 Migrate-on-read — the guard between the triggers
@@ -323,7 +323,7 @@ Between batch runs, individual stale records can surface (a file synced in secon
 
 ### 8.3 Version skew — a record from the future
 
-The inverse arrival (T2): a record lands with `schemaVersion` *greater* than the local type file's version — another device migrated before its type file synced here, or wrote under a newer type. The record is **parked**: held out of the dispatch-visible store, surfaced as `SchemaError.versionTooNew` on direct access (Spec 04 §5.1/§5.2 — "this needs a newer definition," and if the type file never comes, "a newer Plenara"), listed on the `AttentionSurface`, and **auto-cleared** the moment the watcher delivers the newer type file (at which point it is simply a current-version record). Parking is the record-level twin of Spec 01 §5.3's degraded-reference tolerance: unordered arrival is a normal state, never an error dialog, and it self-heals (§6.2).
+The inverse arrival (T2): a record lands with `schemaVersion` *greater* than the local type file's version — another device migrated before its type file synced here, or wrote under a newer type. The record is **parked**: held out of the dispatch-visible store, surfaced as `SchemaError.versionTooNew` on direct access (Spec 04 §5.1/§5.2 — "this needs a newer definition," and if the type file never comes, "a newer Plenara"), listed on the `AttentionSurface`, and **auto-cleared** when reconciliation observes the newer type file (at the next cold open on physical iOS), at which point it is simply a current-version record. Parking is the record-level twin of Spec 01 §5.3's degraded-reference tolerance: unordered arrival is a normal state, never an error dialog, and it self-heals (§6.2).
 
 ### 8.4 Failed migration — surface for repair
 
@@ -351,7 +351,7 @@ The bootstrap cache (D13), at `[app-support]/plenara/bootstrap/`:
 - **A fingerprint map** `{relativePath → (mtimeMs, size)}` captured with it — a *per-file* map, deliberately not a single `lastStartupScan` watermark, because sync clients set mtimes from source metadata across skewed device clocks (T7): a synced-in file can carry an mtime *older* than any watermark, which a watermark scan silently misses and a fingerprint diff still catches (the entry changed). **This amends Spec 01 §5.2 step 1 and research §8.2's scan sketch:** the scan state lives in the device-local bootstrap cache, **not** in `settings.json` — a per-device cursor in a synced file is wrong twice (it self-conflicts across devices under LWW, §10.2, and it lies under T7).
 - **Startup diff:** one directory listing (metadata-only — no content reads, which on iOS means no dataless-file materialization for unchanged files, T6) → compare against the map → re-parse only changed/new entries; entries missing from disk are dropped from the store (their tombstones, if any, arrived as changed files).
 - **The cache is a cache** (assessment §6.3): device-local, versioned by envelope-format revision, discarded wholesale on version mismatch, folder-path change, or corruption — the folder is always sufficient to rebuild, and deleting the cache is always safe.
-- **Named residue:** a content change with identical `(mtime, size)` is invisible to the diff. Live changes are covered by the watcher regardless (Spec 04 §4.5); the between-runs case is bounded by same-size rewrites with preserved mtimes — pathological for JSON records whose serialized size tracks content. Accepted; Q2 tracks whether a periodic full-hash validation pass is worth its cost.
+- **Named residue:** a content change with identical `(mtime, size)` is invisible to the diff. Live changes are covered by native watcher events where supported (Spec 04 §4.5); physical iOS has no additional live event guarantee and rechecks at cold open. The remaining case is same-size rewrites with preserved mtimes — pathological for JSON records whose serialized size tracks content. Accepted; Q2 tracks whether a full-hash validation pass is worth its cost.
 
 ### 9.3 The budget
 
@@ -374,7 +374,7 @@ The escalation ladder, in order, without reopening the format decision (assessme
 
 ### 9.5 What the iOS spike (05c D-1) must measure for this spec
 
-The spike happens regardless (assessment constraints); these are its Spec-06 exit questions: (a) cold-bootstrap wall time for ~5k per-record files through the iOS file provider (dataless materialization + per-file overhead) — decides whether §9.4's bundle ships for P1; (b) watcher/metadata-query latency and reliability for detecting a changed subset (research §8.5's "fragile part"); (c) whether directory listing alone avoids materializing dataless files (T6, the premise of §9.2's diff); (d) conflict-artifact behavior of iCloud under concurrent edit (feeds §6.5's pattern table, Q3). Go/no-go: B1's warm-start budget within 2× on a mid-range iPhone; miss → the bundle plus, in the limit, the `StorageRepository` swap-out clause (P6).
+The spike happens regardless (assessment constraints); these are its Spec-06 exit questions: (a) cold-bootstrap wall time for ~5k per-record files through the iOS file provider (dataless materialization + per-file overhead) — decides whether §9.4's bundle ships for P1; (b) native document-provider event latency and reliability for detecting a changed subset, because Dart recursive watching is now measured unavailable on physical iOS (research §8.5's "fragile part"); (c) whether directory listing alone avoids materializing dataless files (T6, the premise of §9.2's diff); (d) conflict-artifact behavior of iCloud under concurrent edit (feeds §6.5's pattern table, Q3). Go/no-go: B1's warm-start budget within 2× on a mid-range iPhone; miss → the bundle plus, in the limit, the `StorageRepository` swap-out clause (P6).
 
 ---
 
@@ -421,7 +421,7 @@ What the v0 implementation already got right, and the ordered list of deltas bet
 | V6 | ~~Relocate `turnlog.jsonl` off the synced root~~ **✅ DONE (commit `d956390`)** — turnlog now lives in the app-injected device-local `deviceDir` (`~/.plenara`); rotation still pending (§10.3) | §10.3 | Landed; rotation with the v1 diagnostics work |
 | V7 | **✅ DONE.** HLC receive advances past every observed remote field/delete stamp before local stamping | §4.2 | Landed with merge |
 | V8 | **✅ DONE, representation amended.** `_meta.fieldTombstones` replaces the reserved `"__absent__"` string | §4.4 | Landed with merge |
-| V9 | **✅ DONE.** Session hydration and watcher refresh migrate older records and park invalid/future records outside typed reads | §8.2, §8.3 | Landed with schema v2–v5 migrations |
+| V9 | **✅ DONE.** Session hydration and platform-capable reconciliation migrate older records and park invalid/future records outside typed reads | §8.2, §8.3 | Landed with schema v2–v5 migrations; physical iOS refreshes at cold open |
 
 ---
 
@@ -430,7 +430,7 @@ What the v0 implementation already got right, and the ordered list of deltas bet
 ### Resolved
 
 - **D1 — Record format: per-record current-state files + per-field HLC metadata (the assessment's Option C), adopted.** Per-device event logs are **rejected** as the record source of truth (relocate conflicts to compaction/GC, worsen iOS and sync traffic, break human readability — assessment §3); their single-writer insight is adopted narrowly for the corpus at P2 (§10.1). This formalizes the assessment's verdict; that document is superseded.
-- **D2 — Merge engine landed before second-device use.** The mergeable format shipped from the first record; the pure merge, full observed-state shadow, watcher reconcile, and repair surface landed in Increment 7. The learned-corpus whole-file exception remains separately owned by §10.1 and is not allowed to weaken record convergence.
+- **D2 — Merge engine landed before second-device use.** The mergeable format shipped from the first record; the pure merge, full observed-state shadow, platform-capable reconcile stream, and repair surface landed in Increment 7. The learned-corpus whole-file exception remains separately owned by §10.1 and is not allowed to weaken record convergence.
 - **D3 — One flat `records/` folder,** `typeId` in the envelope; supersedes research §8.2's per-type folders (§3.1). Type-agnostic storage, no file moves on type merge, one listing at scan time.
 - **D4 — Journal entries are ordinary UUID records; the date lives in the record id** (`YYYY-MM-DD-<uuid>`), reconciling research §10.3's amended naming with the assessment's collision fix (§3.1).
 - **D5 — The envelope is `{id, typeId, schemaVersion, createdAt, parentId?, fields, _meta}`; absent `schemaVersion` reads as 1; `lastModified` is derived from stamps, never stored, never merge authority** (§4.1 — reconciles Spec 01 §8.2 and re-grounds Spec 04 §3.11's revival tiebreak in stamps, §6.6).
@@ -448,7 +448,7 @@ What the v0 implementation already got right, and the ordered list of deltas bet
 
 ### Open questions
 
-- **Q1 — iOS numbers (D-1 spike).** Cold bootstrap, watcher reliability, dataless-listing behavior, iCloud conflict artifacts (§9.5). Gates the bundle decision and, in the limit, P1's storage posture.
+- **Q1 — iOS provider numbers (D-1 spike).** Recursive Dart watcher support is closed negatively from physical-device diagnostics. Cold bootstrap, native provider-event reliability, dataless-listing behavior, and iCloud conflict artifacts remain (§9.5). These gate the bundle decision and, in the limit, P1's storage posture.
 - **Q2 — The fingerprint residue.** Is a same-`(mtime, size)` content change observable from real providers often enough to justify a periodic full-hash validation pass (§9.2)?
 - **Q3 — Conflict-copy patterns.** Empirically verify current-generation sibling naming per provider (iCloud/OneDrive/Drive/Dropbox) for the sweep's matcher (§6.5).
 - **Q4 — The bootstrap cache's physical form.** Plain JSON snapshot vs. SQLite/Isar materialization — decide on spike startup numbers (assessment §6.3 item 8); invisible behind `StorageRepository` either way.

@@ -83,6 +83,7 @@ abstract interface class StorageRepository {
 /// The filesystem implementation — the current per-record JSON store.
 class FileStorageRepository implements StorageRepository {
   final String dataDir;
+  final bool watchSupported;
 
   /// A DEVICE-LOCAL (non-synced) directory for artifacts that must NOT ride the sync
   /// provider: the per-install `deviceId` (a synced id makes two installs share it and
@@ -92,8 +93,12 @@ class FileStorageRepository implements StorageRepository {
   /// CLI/tests are unchanged.
   final String deviceDir;
   final fs.HlcDevice dev;
-  FileStorageRepository(this.dataDir, {String? deviceDir, fs.HlcDevice? device})
+  FileStorageRepository(this.dataDir,
+      {String? deviceDir, fs.HlcDevice? device, bool? watchSupported})
       : deviceDir = deviceDir ?? dataDir,
+        // dart:io recursive Directory.watch is unavailable on physical iOS.
+        // Keep startup usable there; the store still reconciles on every open.
+        watchSupported = watchSupported ?? !Platform.isIOS,
         dev = device ?? fs.HlcDevice(_deviceId(deviceDir ?? dataDir));
 
   /// A STABLE, per-install device id (persisted in the DEVICE-LOCAL dir), NOT the constant
@@ -355,6 +360,7 @@ class FileStorageRepository implements StorageRepository {
   /// used. Callers serialize reconciliation with active turns.
   Stream<void> watchChanges() {
     final root = Directory(dataDir)..createSync(recursive: true);
+    if (!watchSupported) return const Stream<void>.empty();
     return root.watch(recursive: true).where((event) {
       final relative = event.path.startsWith(root.path)
           ? event.path.substring(root.path.length)

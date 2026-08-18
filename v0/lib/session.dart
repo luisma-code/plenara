@@ -621,6 +621,7 @@ class Session {
   late SchemaRegistry schemaRegistry;
   final List<MigrationRepairItem> migrationRepairItems = [];
   final List<MigrationBackup> migrationBackups = [];
+  final List<String> skillRepairIssues = [];
   final List<String> executionRepairIssues = [];
   final List<String> externalStorageIssues = [];
   late ConversationLedger conversationLedger;
@@ -867,6 +868,8 @@ class Session {
               .definitionConflicts
               .map((_) => 'A data definition has a sync conflict.'),
         ...schemaRegistry.issues.map((_) => 'A data definition needs repair.'),
+        ...skillRepairIssues
+            .map((_) => 'A capability definition needs repair.'),
         ...migrationRepairItems.map((_) => 'A record migration needs repair.'),
         ...executionRepairIssues.map((_) => 'A recent change needs repair.'),
         ...externalStorageIssues
@@ -1077,6 +1080,23 @@ class Session {
     // routine authoring then declines honestly and nothing else in the app is affected.
     exercises = ExerciseCatalogue.load(dataDir);
     interp = Interpreter(types, now, references: _references);
+    // A user-authored skill can outlive a rejected/missing type definition. Park
+    // only that capability and surface repair state; one bad definition must not
+    // make every unrelated planner capability unavailable at startup.
+    skillRepairIssues.clear();
+    for (final entry in skills.entries.toList()) {
+      try {
+        interp.validateSkill(entry.value);
+      } catch (error) {
+        skillRepairIssues.add('${entry.key}: $error');
+        skills.remove(entry.key);
+      }
+    }
+    if (skillRepairIssues.isNotEmpty) {
+      phase('WARNING: parked ${skillRepairIssues.length} invalid skill(s): '
+          '${skillRepairIssues.join('; ')}');
+    }
+    phase('validated ${skills.length} active skills');
     // Automations registry (Spec 01 §4.4 / Spec 04 §3.9): loaded like types/skills;
     // an absent automations/ folder is simply an empty registry (zero behavior change).
     final autoRepo = repo;
@@ -1127,10 +1147,6 @@ class Session {
           usagePath: '${_deviceDir ?? dataDir}/cloud-usage.json',
         );
     _generative = GenerativeService(claude);
-    for (final s in skills.values) {
-      interp.validateSkill(s);
-    }
-    phase('validated skills');
     _retrievalEnabled = retrieval;
     if (retrieval) {
       phase('building in-process retrieval index…');

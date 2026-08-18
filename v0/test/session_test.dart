@@ -180,6 +180,51 @@ void main() {
       await s.init(retrieval: false); // previously threw and bricked startup
       expect(s.corruptFiles.any((p) => p.endsWith('bad.json')), isTrue);
     });
+    test(
+        'a skill whose rejected type is unavailable is parked instead of bricking startup',
+        () async {
+      final dataDir = makeTempDataDir();
+      File('$dataDir/types/back_stretch_session.json').writeAsStringSync(
+        jsonEncode({
+          'typeId': 'back_stretch_session',
+          'displayName': 'Back stretch session',
+          // Deliberately missing schemaVersion, matching the device failure.
+          'attributes': <Map<String, dynamic>>[],
+        }),
+      );
+      File('$dataDir/skills/log_back_stretch.json').writeAsStringSync(
+        jsonEncode({
+          'skillId': 'log_back_stretch',
+          'displayName': 'Log back stretch',
+          'inputs': <Map<String, dynamic>>[],
+          'reads': <String>[],
+          'writes': ['back_stretch_session'],
+          'steps': {
+            'main': [
+              {
+                'op': 'write_record',
+                'typeId': 'back_stretch_session',
+                'fields': <String, dynamic>{},
+              },
+              {
+                'op': 'format',
+                'template': 'Logged a back stretch.',
+                'into': 'confirmationText',
+              },
+            ],
+          },
+        }),
+      );
+
+      final s = Session(dataDir, clock: _now, cloud: _NoCloud());
+      await s.init(retrieval: false);
+
+      expect(s.skills, isNot(contains('log_back_stretch')));
+      expect(s.skillRepairIssues.single, contains('log_back_stretch'));
+      expect(s.repairIssues, contains('A capability definition needs repair.'));
+      expect(s.skills, contains('create-task'),
+          reason: 'unrelated capabilities must remain available');
+    });
   });
 
   group(

@@ -46,7 +46,7 @@ Five layers. The research doc §9.1 table is refined here with the concrete comp
 |---|---|---|---|---|
 | **UI** | Render view state; emit user events; map types to view archetypes; host confirmation surfaces | View models, archetype renderers, the confirmation/clarification widgets | Business Logic (via an app-facing façade + an event/state stream) | Storage, Intelligence, Voice internals; business rules |
 | **Business Logic** | Validate, transform, apply rules; run the interpreter; own the dispatch turn, automations, generation, and undo; drive migration and reconciliation | `DispatchOrchestrator`, `SkillInterpreter`, `SchemaRegistry`, `MigrationRunner`, `AuthoringService`, `ExecutionJournal`, `AutomationRunner`, `GenerativeService`, `AttentionSurface` | Storage, Intelligence, Voice contracts | How data is stored; how a model works internally |
-| **Storage** | Read/write per-record JSON (type-agnostic); own the in-memory decrypted object store; watch files; encryption at rest | `StorageRepository`, the object store/cache, the file watcher, `CryptoBox` | File system / content URIs; the meta-schema shape only | Business rules, UI, AI |
+| **Storage** | Read/write per-record JSON (type-agnostic); own the in-memory decrypted object store; observe external changes where supported; encryption at rest | `StorageRepository`, the object store/cache, the reconcile event adapter, `CryptoBox` | File system / content URIs; the meta-schema shape only | Business rules, UI, AI |
 | **Intelligence** | NLU routing & extraction; cloud calls; type/skill authoring; the corrections corpus | `NluRouter`, `ClaudeClient`, the corpus store | Business Logic contracts (intent/type/skill schemas), the `CapabilityIndex` (read-only) | Storage internals, UI |
 | **Voice** | STT, TTS, push-to-talk / wake-word; signal a final transcript | `SpeechEngine` | Business Logic (delivers transcripts; receives text to speak) | Storage, UI, business rules |
 
@@ -97,7 +97,7 @@ A convention that runs through all of them: **fallible operations return a typed
 
 ### 3.1 Storage Layer — `StorageRepository`, `CryptoBox`
 
-The Storage layer is type-agnostic (Spec 01 §5): it persists and serves *records* whose only universal shape is the meta-schema kernel envelope (described below). It owns the in-memory decrypted object store — the spine every read is served from — and the file watcher.
+The Storage layer is type-agnostic (Spec 01 §5): it persists and serves *records* whose only universal shape is the meta-schema kernel envelope (described below). It owns the in-memory decrypted object store — the spine every read is served from — and the platform-capable reconciliation event adapter (§4.5).
 
 ```dart
 abstract class StorageRepository {
@@ -155,7 +155,9 @@ abstract class StorageRepository {
 
   /// A cold stream of file-change events observed on the synced folder, so
   /// the Business Logic layer can reconcile after external sync (§4.5,
-  /// Spec 01 §7.4). Debounced (§4.5). Never holds a caller reference.
+  /// Spec 01 §7.4). Debounced (§4.5). Never holds a caller reference. On a
+  /// platform without a supported native watcher this stream completes empty;
+  /// lack of watch support must never fail startup.
   Stream<FileChangeEvent> watch();
 }
 ```
@@ -656,7 +658,9 @@ The in-memory object store is owned by, and only mutated on, the UI isolate — 
 
 **Reads during partial hydration.** The store fills incrementally at launch (§7.1), so for a brief window it is not yet complete. Two read audiences are treated differently, and the distinction is a correctness requirement, not a nicety: *display* reads (the UI browsing records to render) tolerate a partial store and simply re-render as it fills; but the *dispatch pipeline* must never resolve a skill against a half-loaded store (a `read_many` that silently missed un-hydrated records would produce a wrong action plan). The gate is already in the startup sequence — the orchestrator does not accept turns, and the `AutomationRunner` does not fire, until hydration, registry cross-referencing, pending migrations, and execution-resume are complete (§7.1 steps 1–6, before step 7 "Ready"). So every read the interpreter issues is served from a complete store, while the UI can be interactive for browsing sooner.
 
-The one genuinely concurrent writer is **the outside world**: the OS's cloud-sync client (iCloud/OneDrive/Drive) rewrites files under the app at arbitrary times (research §8.1). `StorageRepository.watch()` surfaces those as a **debounced** `Stream<FileChangeEvent>` — debounced because sync clients often rewrite many files in a burst, and reacting per-file would thrash the registry and indexes. On a settled batch the Business Logic layer reconciles: re-hydrate changed records into the store, re-register changed type files (running any needed migration first, Spec 01 §7.4), incrementally patch the affected `CapabilityIndex` entries (Spec 01 §5.4), and — for a type-file *conflict* — surface the review UI rather than auto-merging (Spec 01 §7.5). A file change that arrives mid-turn does not mutate the turn's already-frozen inputs; it is reconciled into the store and caught, if relevant, by the execute-phase re-verify (Spec 02 §4.2).
+The one genuinely concurrent writer is **the outside world**: the OS's cloud-sync client (iCloud/OneDrive/Drive) rewrites files under the app at arbitrary times (research §8.1). Where the runtime supplies native directory events, `StorageRepository.watch()` surfaces those as a **debounced** `Stream<FileChangeEvent>` — debounced because sync clients often rewrite many files in a burst, and reacting per-file would thrash the registry and indexes. On a settled batch the Business Logic layer reconciles: re-hydrate changed records into the store, re-register changed type files (running any needed migration first, Spec 01 §7.4), incrementally patch the affected `CapabilityIndex` entries (Spec 01 §5.4), and — for a type-file *conflict* — surface the review UI rather than auto-merging (Spec 01 §7.5). A file change that arrives mid-turn does not mutate the turn's already-frozen inputs; it is reconciled into the store and caught, if relevant, by the execute-phase re-verify (Spec 02 §4.2).
+
+**Physical iOS limitation (measured 17 August 2026):** Dart's recursive `Directory.watch` reports “File system watching is not supported on this platform” on-device. The iOS repository therefore returns an empty event stream and relies on full reconciliation at cold open; a provider-side change made while Plenara remains open becomes visible after relaunch. This is a deliberate degraded mode, not a startup error and not permission failure. A future live iOS implementation needs a native document-provider coordination/event adapter behind this same seam; polling is not an acceptable substitute.
 
 ### 4.6 Backpressure and Rate Limits
 
@@ -696,7 +700,7 @@ An `onWrite` automation (Spec 01 §4.4) fires after a specified field is written
 The async model caches exactly one user-facing thing: the corpus **routing** decision (Spec 03 §5) — slot *shapes* and the route, never slot *values*, never a resolved plan, never a generative effect. Everything else is recomputed:
 - **Generative outputs are never cached** — regenerated every turn; their whole value is being current (Spec 05 §3.8).
 - **The plan cache is deferred** (Spec 02 §5.5) — resolution is re-run each turn (deterministic, cheap).
-- **The in-memory object store** (§3.1) is hydrated at startup (§7) and kept coherent by the file watcher (§4.5): a synced-in edit invalidates the cached object, so a read never serves a stale record.
+- **The in-memory object store** (§3.1) is hydrated at startup (§7) and, where native directory events exist, kept coherent by the file watcher (§4.5). Physical iOS currently guarantees freshness at cold open rather than live provider-side coherence; §4.5 owns that explicit degraded mode.
 
 Net: nothing user-facing is served stale. The one cache (routing shape) is correctness-neutral — a wrong shape merely re-routes, it never returns wrong data.
 
@@ -784,7 +788,7 @@ On launch, before the turn pipeline (§4.2) accepts any utterance, the app runs 
 3. Load the corrections corpus (Spec 03 §5.1 Lane 1) from the **synced** folder — a **single `corpus-learned.json` in v1; per-device files at P2** (Spec 06 §10.1, `G-36`); the plan cache (Lane 2, deferred) and the execution journal are the device-local stores.
 4. **Journal recovery** (§5.4): roll back or complete any `executing` `ExecutionRecord`; reap `done` entries past their window.
 5. **Pending migrations**: the per-record `schemaVersion` check (Spec 06 §8.1) queues and runs any needed migration batch — the migrate-on-read guard (Spec 06 §8.2) is what keeps this step cheap.
-6. Start the file watcher (§4.5) so external/synced edits keep the cache coherent thereafter.
+6. Start the file watcher where supported (§4.5). An unsupported watcher completes empty and cannot block Ready; physical iOS has cold-open reconciliation until a native provider adapter exists.
 7. **Ready** — the dispatch gate opens (§4.5); the conflict-copy sweep and GC (Spec 06 §6.5/§7) run after the gate, off the critical path.
 
-The **execution** journal and plan cache are device-local/encrypted (never synced — volatile execution state), so they load from app-support; the corrections corpus (Lane 1), the user's **journal entries**, and all records load from the possibly-syncing storage folder (journal entries sync too, `G-37`). A file that fails to parse during hydration is routed to the repair surface (§5.5) and **does not block startup** — the rest of the store loads, so one corrupt record never bricks the app. No startup step touches the network.
+The **execution** journal and plan cache are device-local/encrypted (never synced — volatile execution state), so they load from app-support; the corrections corpus (Lane 1), the user's **journal entries**, and all records load from the possibly-syncing storage folder (journal entries sync too, `G-37`). A file that fails to parse during hydration is routed to the repair surface (§5.5) and **does not block startup** — the rest of the store loads, so one corrupt record never bricks the app. A rejected custom type parks its dependent skills on that same repair surface; invalid user-authored capability closure never prevents unrelated skills from reaching Ready. No startup step touches the network.

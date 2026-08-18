@@ -165,6 +165,15 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - Local iPhone 17 Pro simulator real-engine verification reproduced failure and reached a live fresh Today after the native reset bridge. Six integration cases passed; Runner was about 467 MiB in the short sample and was terminated with the simulator. This is not a long-soak leak claim. No physical phone was used for testing.
 - Full precheck is green: 1,920 engine tests + 36 intentional skips; 158 Flutter tests + 3 development-channel skips; 94.7% deterministic / 90.1% product / 68.1% transport coverage; macOS build; six real-engine tests; external, secret, and 24/60 gates.
 
+## Phone-diagnostic startup correction
+
+- After Luis reported that **Start fresh** also failed, he explicitly authorized reading Plenara's phone logs. Only `Documents/plenara-logs` was copied from the app container; the phone was not launched, tested, probed, reset, or otherwise inspected.
+- The 16:57 device log proves reset itself succeeded and created timestamped backups. The restarted session then failed because physical iOS rejects Dart recursive `Directory.watch` with “File system watching is not supported on this platform.” The prior launch had a separate failure: custom `back_stretch_session.json` was rejected for missing `schemaVersion`, and its dependent `log_back_stretch` skill then aborted all startup validation.
+- `FileStorageRepository` now treats native watch support as a platform capability. Physical iOS returns an empty watch stream and continues to Ready; it reconciles provider changes at cold open until a native document-provider event adapter exists. Specs 01, 04, 06, research, and the implementation plan all state the same limitation; no polling timer was added.
+- Session startup now validates each skill before automations and parks only invalid skills as visible repair state. A rejected user-authored type/capability can no longer make unrelated planner capabilities unavailable, and the on-disk definitions remain available for repair.
+- Both regression tests were calibrated by disabling the new guard/parking behavior: the watch test timed out and the invalid-capability test reproduced the exact `ResolveError`; both pass restored. Full precheck is green: 1,922 engine tests + 36 skips, 158 Flutter tests + 3 development-channel skips, 94.7% / 90.5% / 68.1% coverage tiers, macOS build, six macOS real-engine tests, secret scan, and 24/60 ratchet.
+- A clean local iPhone 17 Pro simulator run passed the exact recovery flow. The production `main()` entrypoint then loaded 17 types / 82 active skills, built retrieval, and logged `reminders reconciled — READY` in 123 ms with neither device failure. Debug RSS stayed in the established bounded range. One run started against a stale already-booted simulator and stalled between animation tests while the Runner was idle and plateaued; after a simulator shutdown/boot, the same two-case boundary passed in 46 seconds. The simulator was shut down and no app/test process remains.
+
 ## Live commands
 
 - Keep awake: `pgrep -x caffeinate || nohup caffeinate -dimsu >/dev/null 2>&1 &`
@@ -191,7 +200,7 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Implementation queue
 
-- The eight-increment review plan and the post-deployment data-recovery correction are complete. Recovery revision `ecbd0ee` is installed on the authorized physical phone; no implementation or deployment work remains open.
+- The eight-increment review plan is complete. The phone-diagnostic startup correction is locally proved and awaiting the replacement deployment requested by Luis in this thread.
 
 ## Authoritative documents
 
