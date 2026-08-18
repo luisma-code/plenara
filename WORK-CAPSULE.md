@@ -19,7 +19,8 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
   - external writes no raw content, exposes no raw export, and purges raw `.log` files inherited from an internal installation;
   - no automatic uploader exists;
   - secrets are rejected before serialization in every channel;
-  - raw audio/interim transcripts remain forbidden;
+  - raw audio remains forbidden; internal recognizer hypotheses are retained under Spec 11 because
+    they are required to reconstruct native capture failures, while external captures none;
   - AppLog rotates at 30 days or 100 MB, oldest-first.
 - Production long-press glyph cycling, tuning, and dev harness are gated from external builds.
 - Import lint now fails every unclassified production file; `routines.dart` is classified.
@@ -175,6 +176,34 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 - Both regression tests were calibrated by disabling the new guard/parking behavior: the watch test timed out and the invalid-capability test reproduced the exact `ResolveError`; both pass restored. Full precheck is green: 1,922 engine tests + 36 skips, 158 Flutter tests + 3 development-channel skips, 94.7% / 90.5% / 68.1% coverage tiers, macOS build, six macOS real-engine tests, secret scan, and 24/60 ratchet.
 - A clean local iPhone 17 Pro simulator run passed the exact recovery flow. The production `main()` entrypoint then loaded 17 types / 82 active skills, built retrieval, and logged `reminders reconciled — READY` in 123 ms with neither device failure. Debug RSS stayed in the established bounded range. One run started against a stale already-booted simulator and stalled between animation tests while the Runner was idle and plateaued; after a simulator shutdown/boot, the same two-case boundary passed in 46 seconds. The simulator was shut down and no app/test process remains.
 
+## Phone task/voice incident
+
+- The 17:17 physical-phone diagnostic trace was copied read-only after Luis reported the failure; no
+  phone launch or test occurred. It shows that tapping the `pack clothes` row reached Today’s
+  background voice gesture, then Apple produced visible partial words followed by native `done`
+  without an engine-final result. There was no crash.
+- The entire task row now owns its completion gesture, not only the small leading circle. Completion
+  stays on Today, publishes the durable latest-change/undo surface, and cannot bubble into voice.
+- Recognition now retains the latest Apple partial alongside completed segments. Native `done`,
+  error, watchdog stop, and `stop()` completion converge on one idempotent finalization door; the
+  fixed 350 ms guess is removed. Any real words flush exactly once, while explicit cancel remains
+  the only discard path.
+- The focused 44-test speech/Today/widget set passes. Both new guards were calibrated: dropping the
+  Apple partial made the exact transcript test fail with no emissions; removing the row action left
+  the task in `today` and made the exact widget test fail. The real-render integration guard was
+  independently calibrated against the same removed row action and failed on the local simulator.
+- Final-tree precheck is green: 1,922 engine tests + 36 skips; 161 Flutter tests + 3 development
+  skips; 94.7% / 90.5% / 68.1% coverage tiers; macOS build; seven macOS real-engine cases; external,
+  secret, and 24/60 conformance gates. All seven cases also passed on the local iPhone 17 Pro
+  simulator, including the exact task-title interaction with completion feedback and zero speech
+  calls. One mid-run RSS sample was about 546 MiB; the run ended normally, the simulator was shut
+  down, and no app/test orphan remains. This is not a long-soak leak claim.
+- The diagnostic trace also proved the old cross-doc “interim transcripts are forbidden in every
+  channel” restatement was stale. Spec 11 v0.4 is the sole authority: internal dogfood may retain
+  recognizer hypotheses for post-hoc diagnosis; external captures none; raw audio and secrets stay
+  forbidden everywhere. Research, Voice, Security, the implementation plan, and this capsule now
+  point to that boundary. No corrected phone build has been installed yet.
+
 ## Live commands
 
 - Keep awake: `pgrep -x caffeinate || nohup caffeinate -dimsu >/dev/null 2>&1 &`
@@ -201,7 +230,10 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Implementation queue
 
-- The eight-increment review plan and phone-diagnostic startup correction are complete. Revision `472587a3c4c8` is installed on the authorized physical phone; no implementation or deployment work remains open.
+- The eight-increment review plan and phone-diagnostic startup correction are complete. The
+  task-row/Apple-partial correction is implemented and fully verified. Commit, signed internal
+  build inspection, and deployment-only phone installation remain in this active turn; the phone
+  will not be launched or tested.
 
 ## Authoritative documents
 

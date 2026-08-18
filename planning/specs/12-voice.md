@@ -13,8 +13,10 @@
 > Apple pending an on-device measurement). Watchdogs key off **speech activity**, not off recognizer
 > output, so thinking before you speak cannot be mistaken for silence. An auto-stop always sends and
 > always says so — never a silent discard. On the OS-engine path (Windows/Apple) the engine's own
-> finals are ACCUMULATED and only the stop tap emits the session final; forwarding engine finals
-> would have meant SAPI still endpointed and this change never reached that platform at all.
+> finals are ACCUMULATED and never forwarded as independent turns; a deliberate stop trigger (tap
+> or watchdog) or an unavoidable native session closure flushes the whole capture through one
+> idempotent finalization door. Forwarding each engine final would have meant SAPI still endpointed
+> and this change never reached that platform at all.
 
 **Status:** Draft v0.2 — July 2026 (Fable 5). v0.1 was the first full draft of the voice pipeline: capture model, STT/TTS engine selection per platform, the interim/final transcript contract, barge-in and latency targets, the voice-privacy statement, and the error/degrade surfaces. v0.2 reconciles the TTS half with shipped code: the `SpeechOutput` seam and the Windows on-device talk-back are live in the v0 app — two-way voice is real (§2.1, §6.5, D13).
 **A note on numbering:** Specs 03, 04, and 08 cite a "Spec 06 — Voice" that was never written — the research doc's spec charter (§12) never listed a voice spec, and slot 6 was taken by Data & Sync. This document is that missing spec, chartered as **Spec 12**. It is the referent every "Spec 06 — Voice" citation intends; retargeting those citations (and Spec 10's mis-pointed ownership line) is a suite-sync pass item recorded in §10, not something this spec edits in place.
@@ -201,7 +203,7 @@ At most one of `SpeechInput` capturing / `SpeechOutput` playing is active at any
 
 ### 4.1 Two kinds of event, two consumers, no exceptions
 
-- **Interim** transcripts (`isFinal: false`) are live, revisable hypotheses — words may be rewritten as the engine refines. They have **exactly one consumer**: the subtitle user-slot (Spec 07 §7.3), rendered dimmed-provisional. They are never dispatched (Spec 03 §10 MD10; Spec 04 §4.2: "only the final transcript enters the pipeline… so a turn starts exactly once per utterance"), never persisted, never written to the diagnostic log, never fed to NLU, and cease to exist when superseded (§8.2).
+- **Interim** transcripts (`isFinal: false`) are live, revisable hypotheses — words may be rewritten as the engine refines. Their only product consumer is the subtitle user-slot (Spec 07 §7.3), rendered dimmed-provisional. They are never dispatched (Spec 03 §10 MD10; Spec 04 §4.2: "only the final transcript enters the pipeline… so a turn starts exactly once per utterance"), never persisted as user records, and never fed to NLU. Internal diagnostic capture is the sole non-product observer and follows Spec 11's build-channel policy; external builds capture none.
 - **Final** transcripts (`isFinal: true`) are emitted **exactly once per capture session**, at finalization, and are the sole voice-side input to `DispatchOrchestrator.dispatch`. An **empty final** (silence, or nothing recognizable) produces **no turn**: the orb returns to idle, the subtitle slot clears, nothing is spoken and nothing enters the Stream — silence answered with silence (Spec 05 §11 E2 generalizes: an empty capture is abandoned quietly). The "didn't catch that" surface is reserved for the ASR floor (§4.6) — *speech happened but was unusable* — never for *no speech*.
 
 ### 4.2 Finalization triggers, per mode
@@ -212,7 +214,14 @@ At most one of `SpeechInput` capturing / `SpeechOutput` playing is active at any
 | `toggle` | second tap / stop affordance, **or** trailing silence ≥ `endpointSilence` (§3.2) |
 | `journal` | 60 s window, explicit stop, or the guarded stop word (§3.3) |
 
-One session, one `utteranceId`, one final. If the engine emits nothing on flush, the layer synthesizes the empty final itself — the Business Logic layer must never be left waiting on a session that quietly died (P2.8).
+One session, one `utteranceId`, one final. All completion signals — explicit stop, watchdog, native
+`done`/error, and stop-call completion — converge on one idempotent finalization door. A native
+engine `final` remains only a segment boundary. On Apple, a native session may instead end after
+showing only an interim hypothesis; in that case the latest visible interim is promoted to the
+session final rather than silently discarded. An explicit cancel is the only completion path that
+discards recognized text. If the engine emits nothing on flush, the layer synthesizes the empty
+final itself — the Business Logic layer must never be left waiting on a session that quietly died
+(P2.8).
 
 ### 4.3 The ownership line with Spec 07 §7.3, drawn once
 
@@ -409,7 +418,7 @@ Free-tier capability, offline operation, and subtitle behavior are untouched by 
 
 ### 9.4 Diagnostics
 
-Voice-event metadata records session mode, durations, finalization trigger, error kinds, and latency. Final turn transcripts follow Spec 11's channel policy; interim text, audio, and bias-list contents are forbidden in every channel. Internal raw export may contain final transcripts; external raw capture/export is disabled.
+Voice diagnostics follow Spec 11, the sole collection/export authority. Internal dogfood traces may contain final transcripts and interim recognizer hypotheses so a failed native capture can be reconstructed; external raw capture/export is disabled. Raw audio and bias-list contents are never logged.
 
 ### 9.5 Accessibility (hard requirements)
 

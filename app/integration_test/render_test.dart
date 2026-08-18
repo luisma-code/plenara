@@ -22,6 +22,7 @@ import 'package:plenara_app/glyphs.dart';
 import 'package:plenara_app/main.dart';
 import 'package:plenara_app/plena.dart';
 import 'package:plenara_app/seed_assets.dart';
+import 'package:plenara_app/speech.dart';
 
 class _NullCloud implements CloudClient {
   @override
@@ -38,6 +39,30 @@ class _NullCloud implements CloudClient {
   @override
   Future<CloudResult<String>> generate(String k, String c) async =>
       const CloudError(CloudErrorKind.noKey);
+}
+
+class _ListeningTrapSpeech implements SpeechRecognizer {
+  int listenCalls = 0;
+
+  @override
+  bool get available => true;
+  @override
+  Stream<double> get levels => const Stream<double>.empty();
+  @override
+  Future<void> init() async {}
+  @override
+  Future<void> listen({
+    required void Function(String text, bool isFinal) onResult,
+    required void Function() onDone,
+    void Function(SpeechNotice notice)? onNotice,
+  }) async {
+    listenCalls++;
+  }
+
+  @override
+  Future<void> stop() async {}
+  @override
+  void cancel() {}
 }
 
 Future<Session> _session() async {
@@ -215,6 +240,45 @@ void main() {
       ),
     );
     expect(find.text('Projects & areas'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a task-title tap completes on Today and never enters voice', (
+    tester,
+  ) async {
+    final session = await _session();
+    await session.init(retrieval: false);
+    await session.handle('add pack clothes to my list');
+    final task = session.store.values.singleWhere(
+      (record) => record['typeId'] == 'task',
+    );
+    expect(
+      (await session.editField('${task['id']}', 'status', 'today')).ok,
+      isTrue,
+    );
+    final speech = _ListeningTrapSpeech();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChatScreen(
+          session: session,
+          speech: speech,
+          retrieval: false,
+          forceAnimate: true,
+        ),
+      ),
+    );
+    await runFrames(tester, 35);
+    expect(find.text('pack clothes'), findsOneWidget);
+
+    await tester.tap(find.text('pack clothes'));
+    await runFrames(tester, 25);
+
+    expect(session.store['${task['id']}']!['status'], 'done');
+    expect(find.byKey(const Key('today-board')), findsOneWidget);
+    expect(find.text('Completed — pack clothes.'), findsOneWidget);
+    expect(session.todayProjection().latestChange, isNotNull);
+    expect(speech.listenCalls, 0);
     expect(tester.takeException(), isNull);
   });
 

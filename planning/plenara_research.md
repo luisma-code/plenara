@@ -1677,8 +1677,8 @@ robust diagnostic log detailed enough to post-debug the actual exchange.
 **Spec 11 is the sole authority for its build-channel policy:** development
 and single-user internal dogfood deliberately retain content-bearing traces
 and permit an explicit, plainly warned raw export; external builds capture no
-raw content and expose no raw export. Secrets, raw audio, and interim
-transcripts are forbidden in every channel. Nothing uploads automatically.
+raw content and expose no raw export. Secrets, raw audio, and the exact
+transcript-content boundary are governed by Spec 11. Nothing uploads automatically.
 
 ### 14.3 Ground Rules
 
@@ -1692,7 +1692,8 @@ transcripts are forbidden in every channel. Nothing uploads automatically.
 -   **Build-channel boundary.** Functional-gap payloads and any future
     > external diagnostic bundle are content-free by construction. An
     > internal raw export may contain user exchanges under the explicit
-    > Spec 11 warning. Secrets, raw audio, and interim transcripts never do.
+    > Spec 11 warning. Secrets and raw audio never do; transcript capture follows
+    > Spec 11's build-channel boundary.
 
 -   **Opt-in.** Feedback and diagnostics are off until the user chooses
     > to send, consistent with the local-first, private posture and the

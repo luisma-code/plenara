@@ -31,7 +31,8 @@ The boundary is:
 | Record/slot values needed to reproduce a failure | May appear in local raw trace | Shape/type only |
 | Exception messages and stacks | Kept in raw trace | Error kind + owned code location; content-bearing message removed |
 | API keys, auth headers, secure-store values | **Never logged or exported in any build** | **Never logged or exported in any build** |
-| Raw audio and interim transcripts | Never persisted | Never persisted |
+| Raw audio | Never persisted | Never persisted |
+| Interim recognizer hypotheses | Retained only in the content-bearing raw diagnostic trace under Spec 11 | Not captured |
 | Automatic upload | None | None unless separately designed and approved |
 | Export trigger | Explicit user action with a clear “contains your conversations” warning and file manifest | Explicit user action; safe typed bundle or logging disabled |
 

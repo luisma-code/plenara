@@ -563,10 +563,12 @@ class _PlannerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
+    button: onComplete != null,
     label:
         '${item.kind.name}: ${item.title}${item.detail == null ? '' : ', ${item.detail}'}',
     child: ListTile(
       key: Key('planner-${item.id}'),
+      onTap: onComplete,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       leading: onComplete == null
           ? Icon(_icon(item.kind), color: PlenaraTheme.amber)

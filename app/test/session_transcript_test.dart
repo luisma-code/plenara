@@ -65,4 +65,40 @@ void main() {
     expect(t.text, 'remind me to buy milk');
     expect(t.take(), 'remind me to buy milk', reason: 'only the flush sends');
   });
+
+  test(
+    'Apple partial followed by done flushes the visible words exactly once',
+    () {
+      final emissions = <({String text, bool finalResult})>[];
+      final capture = RecognitionSession(
+        (text, finalResult) =>
+            emissions.add((text: text, finalResult: finalResult)),
+      );
+
+      capture.addEngineResult('This', finalResult: false);
+      capture.addEngineResult('This work is complete', finalResult: false);
+      capture.finish(); // Apple's `done` can arrive without an engine final.
+      capture
+          .finish(); // stop() returning is a second completion signal: no duplicate.
+
+      expect(emissions, [
+        (text: 'This', finalResult: false),
+        (text: 'This work is complete', finalResult: false),
+        (text: 'This work is complete', finalResult: true),
+      ]);
+    },
+  );
+
+  test('cancel is the only completion path that discards an Apple partial', () {
+    final emissions = <({String text, bool finalResult})>[];
+    final capture = RecognitionSession(
+      (text, finalResult) =>
+          emissions.add((text: text, finalResult: finalResult)),
+    );
+
+    capture.addEngineResult('do not send this', finalResult: false);
+    capture.finish(discard: true);
+
+    expect(emissions, [(text: 'do not send this', finalResult: false)]);
+  });
 }

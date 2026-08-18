@@ -918,10 +918,10 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// Tap the void to START listening; the engine's end-of-utterance detection delivers the final
-  /// transcript in-session (~1s after speech ends) and we auto-send it — a complete hands-free
-  /// action. Tapping again ABORTS via cancel() (NOT stop(): a stop would flush the buffer and
-  /// auto-send a half-spoken command). onDone/catch always clear listening, so it can't get stuck.
+  /// Tap the void to START listening; tap again to STOP, flush the whole capture, and auto-send its
+  /// one session final. The explicit ✕ is the discard path. Native finals remain segment boundaries,
+  /// while native closure, errors, and watchdog stops converge on the recognizer's same idempotent
+  /// flush door. onDone/catch always clear listening, so the surface cannot stay stuck recording.
   Future<void> _toggleMic() async {
     final log = AppLog.instance;
     if (!(_speech?.available ?? false) || _busy) return;

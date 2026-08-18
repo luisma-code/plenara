@@ -69,23 +69,32 @@ class NoopSpeechRecognizer implements SpeechRecognizer {
 /// One capture session's accumulated transcript. Extracted so the invariant below is testable
 /// without a live speech engine.
 ///
-/// THE INVARIANT: real speech is never discarded. Engine finals are collected rather than sent (the
-/// user's stop tap decides when an utterance is over), so whatever ends the session — a stop tap, a
-/// watchdog, an engine error, the OS closing the mic — must FLUSH what was collected. Only an
+/// THE INVARIANT: real speech is never discarded. Engine results are collected rather than sent as
+/// independent turns, so whatever ends the session — a stop tap, a watchdog, an engine error, the
+/// OS closing the mic — must FLUSH every final segment plus the latest visible partial. Only an
 /// explicit cancel throws it away. Getting this wrong is silent: the user speaks and nothing at all
-/// happens, which is exactly how it shipped in build 13.
+/// happens, which is exactly how it shipped in build 18.
 class SessionTranscript {
   final List<String> _parts = [];
+  String _partial = '';
   bool _done = false;
 
+  void replacePartial(String words) {
+    if (_done) return;
+    _partial = words.trim();
+  }
+
   void addFinal(String words) {
+    if (_done) return;
     final w = words.trim();
     if (w.isNotEmpty) _parts.add(w);
+    _partial = '';
   }
 
   /// Everything heard so far, for display while still recording.
-  String get text => _parts.join(' ').trim();
-  bool get isEmpty => _parts.isEmpty;
+  String get text =>
+      [..._parts, _partial].where((part) => part.isNotEmpty).join(' ').trim();
+  bool get isEmpty => text.isEmpty;
 
   /// The session's transcript, exactly once. Null if already taken/discarded or empty.
   String? take() {
@@ -93,6 +102,7 @@ class SessionTranscript {
     _done = true;
     final t = text;
     _parts.clear();
+    _partial = '';
     return t.isEmpty ? null : t;
   }
 
@@ -100,6 +110,41 @@ class SessionTranscript {
   void discard() {
     _done = true;
     _parts.clear();
+    _partial = '';
+  }
+}
+
+/// One capture's engine-event reducer. Apple can report only partial results
+/// followed by `done`; those visible words are still real speech and become the
+/// session final. [finish] is the single, idempotent finalization door shared by
+/// native status/error, stop completion, watchdogs, and explicit cancellation.
+class RecognitionSession {
+  final void Function(String text, bool finalResult) _emit;
+  final SessionTranscript _transcript = SessionTranscript();
+  bool _done = false;
+
+  RecognitionSession(this._emit);
+
+  void addEngineResult(String words, {required bool finalResult}) {
+    if (_done) return;
+    if (finalResult) {
+      _transcript.addFinal(words);
+    } else {
+      _transcript.replacePartial(words);
+    }
+    final visible = _transcript.text;
+    if (visible.isNotEmpty) _emit(visible, false);
+  }
+
+  void finish({bool discard = false}) {
+    if (_done) return;
+    _done = true;
+    if (discard) {
+      _transcript.discard();
+      return;
+    }
+    final all = _transcript.take();
+    if (all != null) _emit(all, true);
   }
 }
 
@@ -185,11 +230,12 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
     }
   }
 
-  void _fireDone() {
+  void _fireDone({bool discard = false}) {
     // FLUSH FIRST. The session can end without a stop tap — the engine's own listenFor cap, an
     // error with cancelOnError, or the OS closing the mic all land here. Dropping the transcript on
     // those paths meant the user spoke and nothing happened at all.
-    _emitSessionFinal();
+    _clearTimers();
+    _capture?.finish(discard: discard);
     final cb = _onDone;
     _onDone = null;
     cb?.call();
@@ -203,13 +249,11 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
   bool _sawSpeech = false;
   void Function(SpeechNotice)? _onNotice;
 
-  /// Engine finals accumulated across the session. The OS engine still endpoints on ITS OWN
-  /// schedule (SAPI especially self-finalizes at the first end-of-utterance silence and cannot be
-  /// told not to). Forwarding those as the session final would mean this platform never got the
-  /// change at all — a thinking pause would still truncate and auto-send. So engine finals are
-  /// COLLECTED here, and only the user's stop tap emits the session final.
-  SessionTranscript _session = SessionTranscript();
-  void Function(String, bool)? _emit;
+  /// Engine results accumulated across the session. A native `final` is a segment boundary, not an
+  /// app turn boundary; forwarding it immediately would let SAPI truncate a thinking pause. A
+  /// deliberate stop trigger or unavoidable native session closure instead flushes the accumulated
+  /// finals plus the latest partial through one idempotent finalization door.
+  RecognitionSession? _capture;
 
   void _clearTimers() {
     _noSpeechTimer?.cancel();
@@ -249,9 +293,8 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
     }
     _onDone = onDone;
     _onNotice = onNotice;
-    _emit = onResult;
+    _capture = RecognitionSession(onResult);
     _sawSpeech = false;
-    _session = SessionTranscript();
     _minLevel = double.infinity;
     _maxLevel = double.negativeInfinity;
     _clearTimers();
@@ -302,19 +345,10 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
           _log("result: '${r.recognizedWords}' final=${r.finalResult}");
           final words = r.recognizedWords.trim();
           if (words.isNotEmpty) _bumpActivity();
-          if (r.finalResult) {
-            // An ENGINE final is a segment boundary, not the end of the utterance.
-            _session.addFinal(words);
-            onResult(
-              _session.text,
-              false,
-            ); // shown, never sent — no stop tap yet
-          } else {
-            onResult(
-              [_session.text, words].where((w) => w.isNotEmpty).join(' '),
-              false,
-            );
-          }
+          // An ENGINE final is only a segment boundary. RecognitionSession
+          // holds both completed segments and the latest Apple partial until
+          // the one session-finalization door decides to send or discard.
+          _capture?.addEngineResult(words, finalResult: r.finalResult);
         },
         // Streams words as recognized (Windows SAPI only delivers finals).
         // `pauseFor` remains absent: the user, not endpointing, ends the turn.
@@ -336,24 +370,18 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
     } catch (e) {
       _log('stop threw: $e');
     }
-    // Give the engine a moment to deliver a trailing final it had already decoded, so the last
-    // words before the tap are not lost, then emit the WHOLE session as one final.
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    _emitSessionFinal();
-  }
-
-  void _emitSessionFinal() {
-    final all = _session.take();
-    if (all != null) _emit?.call(all, true);
+    // stop() returning is itself a positive completion event. Apple commonly
+    // emits `done` first; both signals enter the same idempotent door.
+    _fireDone();
   }
 
   @override
   void cancel() {
-    _clearTimers();
-    _session.discard(); // a cancel DISCARDS: never emit what was said
+    // Discard before asking native code to cancel: cancel may synchronously
+    // emit `done`, which must not race a real transcript out through the door.
+    _fireDone(discard: true);
     try {
       _stt.cancel();
     } catch (_) {}
-    _fireDone();
   }
 }

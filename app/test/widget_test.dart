@@ -103,9 +103,9 @@ class _HoldingSpeech implements SpeechRecognizer {
     _onDone?.call();
   }
 
-  /// What a real engine would deliver when the user taps STOP: everything said this session, as
-  /// one final transcript. `stop()` emits it, `cancel()` throws it away — that asymmetry is the
-  /// whole contract of user-delimited capture, so the fake has to honour it.
+  /// Happy-path engine model: the user taps STOP and the engine delivers the complete session as a
+  /// final transcript. Apple's partial-then-done behavior is covered separately by
+  /// `RecognitionSession` tests; `cancel()` still throws pending speech away.
   String? pendingFinal;
 
   @override
@@ -247,6 +247,41 @@ void main() {
     ); // the reply, over the void
     expect(find.textContaining('buy milk'), findsWidgets);
   });
+
+  testWidgets(
+    'tapping a task title completes it without dismissing Today into voice mode',
+    (tester) async {
+      final session = _session();
+      await session.init(retrieval: false);
+      await session.handle('add pack clothes to my list');
+      final task = session.store.values.singleWhere(
+        (record) => record['typeId'] == 'task',
+      );
+      expect(
+        (await session.editField('${task['id']}', 'status', 'today')).ok,
+        isTrue,
+      );
+      final speech = _HoldingSpeech();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(session: session, speech: speech),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('pack clothes'));
+      await tester.pumpAndSettle();
+
+      expect(session.store[task['id']]!['status'], 'done');
+      expect(find.byKey(const Key('today-board')), findsOneWidget);
+      expect(find.byKey(const Key('latest-change')), findsOneWidget);
+      expect(
+        find.byKey(const Key('cancel-listen')),
+        findsNothing,
+        reason: 'the row action must win over Today\'s background voice tap',
+      );
+    },
+  );
 
   testWidgets('detached operation progress and result arrive without polling', (
     tester,
