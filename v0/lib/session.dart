@@ -679,11 +679,60 @@ class Session {
   /// refresh replaces its own parkings instead of appending duplicates forever.
   final Set<String> _refreshParkedIds = {};
 
-  /// Serializes public [handle] turns. Two concurrent handle() calls (voice +
-  /// typed, or a UI-triggered replay) would interleave awaits over the same
-  /// mutable turn state; the chain runs them one after another. Nothing inside a
-  /// turn ever awaits handle() itself, so the chain cannot deadlock.
-  Future<void> _turnQueue = Future.value();
+  /// Serializes every PUBLIC mutation entry point: [handle] turns and the
+  /// UI-driven mutations ([completeTask], [updateTaskPlans] and its wrappers,
+  /// [editField], [deleteRecord], [undoLast], [undoById], [applyPlanProposal],
+  /// [applyWeeklyReview]).
+  ///
+  /// They all mutate the SAME instance state — the `_out*` telemetry the
+  /// turnlog entry is built from, `_lastTurnExecutionId` (which the
+  /// conversation ledger stamps), the previous-turn correction snapshot
+  /// (`_lastTurnWrote`/`_lastDispatch`/`_lastTurnTemplate`), `_pendingFill`,
+  /// `_enumCtx` — so a task-row tap landing while a voice turn awaits the cloud
+  /// residual used to interleave with it and describe the wrong turn. The chain
+  /// runs them one after another instead.
+  ///
+  /// DEADLOCK RULE: a queued operation must never await another queued entry
+  /// point. Every internal caller therefore routes to the `*Unlocked` body (see
+  /// [_serialized]); nothing inside a turn awaits a public entry point.
+  Future<void> _opQueue = Future.value();
+
+  /// Public operations enqueued and not yet finished. [_turnInProgress] stays
+  /// true until this reaches zero, so a storage refresh deferred during a turn
+  /// drains once after the LAST queued operation rather than between two of them.
+  int _queuedOps = 0;
+
+  /// Run [op] as the next public operation on the serialization chain.
+  ///
+  /// Callers get the operation's own future (and its own errors) back; the
+  /// chain itself swallows errors so one failed operation cannot wedge every
+  /// later one. The `_turnInProgress` bookkeeping — and the deferred external
+  /// storage refresh it gates — is handled here, once, for every entry point.
+  Future<T> _serialized<T>(Future<T> Function() op) {
+    _queuedOps++;
+    _turnInProgress = true;
+    final result = _opQueue.then((_) => op()).then(
+      (value) async {
+        await _releaseOpSlot();
+        return value;
+      },
+      onError: (Object error, StackTrace stack) async {
+        await _releaseOpSlot();
+        Error.throwWithStackTrace(error, stack);
+      },
+    );
+    _opQueue = result.then((_) {}, onError: (_) {});
+    return result;
+  }
+
+  /// End-of-operation bookkeeping. While anything else is still queued the
+  /// session stays "in progress", so an external storage refresh cannot land
+  /// between two serialized mutations; the last one out drains it exactly once.
+  Future<void> _releaseOpSlot() async {
+    if (--_queuedOps > 0) return;
+    _turnInProgress = false;
+    if (_storageRefreshPending) await _refreshExternalStorage();
+  }
 
   /// Fires after an external provider/file event has been reconciled into the
   /// live in-memory store. The UI rebuilds planner surfaces from this event.
@@ -1684,7 +1733,12 @@ class Session {
     return dismissed;
   }
 
-  Future<ManualWrite> applyWeeklyReview() async {
+  /// Serialized (see [_serialized]); the body writes through
+  /// [_updateTaskPlansUnlocked] because it already holds the queue slot.
+  Future<ManualWrite> applyWeeklyReview() =>
+      _serialized(_applyWeeklyReviewUnlocked);
+
+  Future<ManualWrite> _applyWeeklyReviewUnlocked() async {
     final review = weeklyReviews.active;
     if (review == null || review.state != WeeklyReviewState.draft) {
       return const ManualWrite.fail(
@@ -1719,7 +1773,7 @@ class Session {
       return const ManualWrite.ok(
           'Reviewed the week — no task changes were needed.');
     }
-    final result = await updateTaskPlans(
+    final result = await _updateTaskPlansUnlocked(
       [
         for (final item in taskItems)
           TaskPlanPatch(
@@ -1895,7 +1949,13 @@ class Session {
     return dismissed;
   }
 
-  Future<ManualWrite> applyPlanProposal() async {
+  /// Serialized (see [_serialized]). The spoken "apply the proposal" path runs
+  /// INSIDE a turn, so it calls [_applyPlanProposalUnlocked] directly — going
+  /// through this wrapper would make the turn wait on its own queue slot.
+  Future<ManualWrite> applyPlanProposal() =>
+      _serialized(_applyPlanProposalUnlocked);
+
+  Future<ManualWrite> _applyPlanProposalUnlocked() async {
     final proposal = planProposals.active;
     if (proposal == null || proposal.state != PlanProposalState.draft) {
       return const ManualWrite.fail(
@@ -1921,7 +1981,7 @@ class Session {
         );
       }
     }
-    final result = await updateTaskPlans(
+    final result = await _updateTaskPlansUnlocked(
       [
         for (final item in selected)
           TaskPlanPatch(
@@ -1961,7 +2021,8 @@ class Session {
       return null;
     }
     if (_applyProposalRe.hasMatch(utterance)) {
-      final result = await applyPlanProposal();
+      // Already inside a serialized turn — the unlocked body, never the wrapper.
+      final result = await _applyPlanProposalUnlocked();
       _outSource = 'plan-proposal';
       _outSkill = 'apply-plan-proposal';
       _lastTurnWrote = result.ok;
@@ -2197,7 +2258,7 @@ class Session {
     if (defer != null) {
       final ids = _plannerTargetIds(defer.group(1)!);
       if (ids != null) {
-        return finish(deferTasks(ids), skill: 'defer-task');
+        return finish(_deferTasksUnlocked(ids), skill: 'defer-task');
       }
     }
 
@@ -2208,7 +2269,7 @@ class Session {
         var minutes = int.parse(estimate.group(2)!);
         if (estimate.group(3)!.toLowerCase().startsWith('h')) minutes *= 60;
         return finish(
-          updateTaskPlans([
+          _updateTaskPlansUnlocked([
             for (final id in ids)
               TaskPlanPatch(id: id, estimatedMinutes: minutes),
           ]),
@@ -2221,7 +2282,7 @@ class Session {
     if (complete != null) {
       final ids = _plannerTargetIds(complete.group(1)!);
       if (ids != null) {
-        return finish(completeTasks(ids), skill: 'complete-task');
+        return finish(_completeTasksUnlocked(ids), skill: 'complete-task');
       }
     }
 
@@ -2243,15 +2304,20 @@ class Session {
           _outSource = 'clarify';
           return 'I found the tasks, but not the time. Try “tomorrow at 10am.”';
         }
-        return finish(scheduleTasks(ids, start), skill: 'schedule-task');
+        return finish(_scheduleTasksUnlocked(ids, start),
+            skill: 'schedule-task');
       }
     }
     return null;
   }
 
   /// Direct planner completion. It shares the exact mutation/undo path used by
-  /// voice, without synthesizing an utterance inside UI code.
-  Future<ManualWrite> completeTask(String id) async {
+  /// voice, without synthesizing an utterance inside UI code. Serialized against
+  /// live turns — a tap fired mid-turn queues behind it (see [_serialized]).
+  Future<ManualWrite> completeTask(String id) =>
+      _serialized(() => _completeTaskUnlocked(id));
+
+  Future<ManualWrite> _completeTaskUnlocked(String id) async {
     final record = store[id];
     if (record == null || record['typeId'] != 'task') {
       return const ManualWrite.fail('That task no longer exists.');
@@ -2311,7 +2377,24 @@ class Session {
   /// Apply one or more structured planner edits as a single durable execution.
   /// Voice context and direct manipulation call this same method; UI code never
   /// synthesizes English and a multi-select change produces one targeted undo.
+  ///
+  /// Serialized (see [_serialized]). Turn-internal callers — the planner voice
+  /// commands, [applyPlanProposal], [applyWeeklyReview] — must use
+  /// [_updateTaskPlansUnlocked] instead: they already hold the queue slot.
   Future<ManualWrite> updateTaskPlans(
+    List<TaskPlanPatch> patches, {
+    String origin = 'planner-direct',
+    String? description,
+    Map<String, dynamic> frozenInputs = const {},
+  }) =>
+      _serialized(() => _updateTaskPlansUnlocked(
+            patches,
+            origin: origin,
+            description: description,
+            frozenInputs: frozenInputs,
+          ));
+
+  Future<ManualWrite> _updateTaskPlansUnlocked(
     List<TaskPlanPatch> patches, {
     String origin = 'planner-direct',
     String? description,
@@ -2453,7 +2536,12 @@ class Session {
     );
   }
 
-  Future<ManualWrite> scheduleTasks(List<String> ids, DateTime firstStart) {
+  // The batch helpers come in a public (serialized) and an `Unlocked` form. The
+  // patch-building is identical; only the entry point differs, so a turn-internal
+  // planner command can reuse the body without waiting on the queue slot it is
+  // already holding.
+
+  List<TaskPlanPatch> _schedulePatches(List<String> ids, DateTime firstStart) {
     var cursor = firstStart;
     final patches = <TaskPlanPatch>[];
     for (final id in ids) {
@@ -2463,22 +2551,41 @@ class Session {
               30;
       cursor = cursor.add(Duration(minutes: estimate.clamp(1, 24 * 60)));
     }
-    return updateTaskPlans(patches);
+    return patches;
   }
 
-  Future<ManualWrite> deferTasks(List<String> ids) => updateTaskPlans([
+  static List<TaskPlanPatch> _deferPatches(List<String> ids) => [
         for (final id in ids)
           TaskPlanPatch(id: id, clearSchedule: true, status: 'someday'),
-      ]);
+      ];
+
+  static List<TaskPlanPatch> _completePatches(List<String> ids) => [
+        for (final id in ids) TaskPlanPatch(id: id, complete: true),
+      ];
+
+  Future<ManualWrite> scheduleTasks(List<String> ids, DateTime firstStart) =>
+      updateTaskPlans(_schedulePatches(ids, firstStart));
+
+  Future<ManualWrite> _scheduleTasksUnlocked(
+          List<String> ids, DateTime firstStart) =>
+      _updateTaskPlansUnlocked(_schedulePatches(ids, firstStart));
+
+  Future<ManualWrite> deferTasks(List<String> ids) =>
+      updateTaskPlans(_deferPatches(ids));
+
+  Future<ManualWrite> _deferTasksUnlocked(List<String> ids) =>
+      _updateTaskPlansUnlocked(_deferPatches(ids));
 
   Future<ManualWrite> resizeTask(String id, int estimatedMinutes) =>
       updateTaskPlans([
         TaskPlanPatch(id: id, estimatedMinutes: estimatedMinutes),
       ]);
 
-  Future<ManualWrite> completeTasks(List<String> ids) => updateTaskPlans([
-        for (final id in ids) TaskPlanPatch(id: id, complete: true),
-      ]);
+  Future<ManualWrite> completeTasks(List<String> ids) =>
+      updateTaskPlans(_completePatches(ids));
+
+  Future<ManualWrite> _completeTasksUnlocked(List<String> ids) =>
+      _updateTaskPlansUnlocked(_completePatches(ids));
 
   /// Write one turnlog entry, containing a failure instead of propagating it.
   /// "Internal diagnostics must never make a completed action fail" — but a dead
@@ -2866,7 +2973,13 @@ class Session {
   /// Edit one schema-attribute value of a record in place (Spec 07 §5.5 tap-to-edit). Validates
   /// against the attribute's valueType, journals a before-image (undoable), persists, and keeps
   /// the reminder toast set + automations in sync — mirroring the F-15 correction path.
-  Future<ManualWrite> editField(String id, String field, Object? value) async {
+  /// Serialized against live turns (see [_serialized]); no turn-internal path
+  /// calls it, so there is no unlocked variant to route to.
+  Future<ManualWrite> editField(String id, String field, Object? value) =>
+      _serialized(() => _editFieldUnlocked(id, field, value));
+
+  Future<ManualWrite> _editFieldUnlocked(
+      String id, String field, Object? value) async {
     final rec = store[id];
     if (rec == null)
       return const ManualWrite.fail('That record no longer exists.');
@@ -2958,7 +3071,11 @@ class Session {
 
   /// Delete a record from the data view — journaled + a storage tombstone, so it's doubly
   /// reversible (the snackbar UNDO, or a later spoken "undo that").
-  Future<ManualWrite> deleteRecord(String id) async {
+  /// Serialized against live turns (see [_serialized]).
+  Future<ManualWrite> deleteRecord(String id) =>
+      _serialized(() => _deleteRecordUnlocked(id));
+
+  Future<ManualWrite> _deleteRecordUnlocked(String id) async {
     final rec = store[id];
     if (rec == null)
       return const ManualWrite.fail('That record no longer exists.');
@@ -3466,7 +3583,12 @@ class Session {
   }
 
   /// Reverse the most recent journaled write (powers a spoken "undo that" from outside a turn).
-  Future<String> undoLast() async {
+  /// Serialized against live turns (see [_serialized]). The SPOKEN "undo that"
+  /// runs inside a turn through the private [_undoLastInternal], which is a
+  /// different (already unlocked) path — this wrapper is the UI's.
+  Future<String> undoLast() => _serialized(_undoLastUnlocked);
+
+  Future<String> _undoLastUnlocked() async {
     if (_journal.isEmpty) return 'Nothing to undo.';
     final undone = _undoEntry(_journal.length - 1);
     // A UI-triggered undo invalidates "that" for spoken corrections, like every
@@ -3487,7 +3609,11 @@ class Session {
   /// Reverse a SPECIFIC journaled write by its id (the data-view snackbar UNDO). Targets that exact
   /// entry wherever it sits in the ring — so a later unrelated write doesn't make UNDO hit the wrong
   /// thing. No-op (with an honest message) if it already rolled off or was undone.
-  Future<String> undoById(int undoId) async {
+  /// Serialized against live turns (see [_serialized]).
+  Future<String> undoById(int undoId) =>
+      _serialized(() => _undoByIdUnlocked(undoId));
+
+  Future<String> _undoByIdUnlocked(int undoId) async {
     final i = _journal.indexWhere((e) => e.id == undoId);
     if (i < 0) return 'That change is no longer undoable here.';
     final undone = _undoEntry(i);
@@ -3568,18 +3694,13 @@ class Session {
   /// console. A crash becomes a visible, non-destructive message (no silent
   /// failure, P7) rather than a bricked input box.
   ///
-  /// Turns are SERIALIZED: a handle() entered while another turn is in flight
+  /// Turns are SERIALIZED with every other public mutation (see [_serialized]):
+  /// a handle() entered while another turn — or a task-row tap — is in flight
   /// queues behind it rather than interleaving awaits over shared turn state.
   /// Nothing inside a turn awaits handle() itself, so the chain cannot deadlock.
-  Future<String> handle(String u) {
-    final turn = _turnQueue.then((_) => _handleTurn(u));
-    // Keep the chain alive even if a turn somehow escaped its own catch-all.
-    _turnQueue = turn.then((_) {}, onError: (_) {});
-    return turn;
-  }
+  Future<String> handle(String u) => _serialized(() => _handleTurn(u));
 
   Future<String> _handleTurn(String u) async {
-    _turnInProgress = true;
     u = u.trim();
     _outSource = 'clarify';
     _outSkill = null;
@@ -3743,8 +3864,9 @@ class Session {
     } catch (_) {
       /* ledger failure is surfaced at next hydration, not as a lost reply */
     }
-    _turnInProgress = false;
-    if (_storageRefreshPending) await _refreshExternalStorage();
+    // _turnInProgress is cleared — and any deferred storage refresh drained —
+    // by _releaseOpSlot once the LAST queued operation finishes, not here: a tap
+    // queued behind this turn is still a mutation in flight.
     return resp;
   }
 

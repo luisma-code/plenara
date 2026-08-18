@@ -428,7 +428,8 @@ The hard question: Plenara *has* real views — archetype homes, the Stream, the
 
 Rules across the ladder: yield transitions are single composed movements (one-mover, Spec 07 §8.2 rule 2 — the part and the card entrance are choreographed as one); views themselves remain 100 % Spec 07's (this spec never restyles an archetype); and *nothing except the user or the turn* changes yield — the swarm never grabs the stage back on its own.
 
-**The shipped ladder (v0.4).** `main.dart` and the planner routes implement the ladder as follows:
+**The shipped ladder (v0.4).** `main.dart` (the widget tree), `app/lib/voice_turn_controller.dart`
+(turn/presence state), and the planner routes implement the ladder as follows:
 
 - **Y0 as shipped:** Plena full-screen over the warm near-black void; the only chrome is a small **mute control at bottom-left** and a quiet overflow menu. **Tap (or click) anywhere is the speak gesture** — the whole screen is the mic target (one utterance per tap, auto-sent on the final transcript; a second tap aborts; tapping while she speaks barges in). No orb widget, no input chrome in voice mode.
 - **Y1 as shipped — the corner-hover:** when a reply is list-shaped, Plena **eases to a corner** (~600 ms settle, remaining fully alive at small size) and the text hovers elegantly over the void beside her in a constrained reading column — the parting realized, for the dogfood, as making-room-by-withdrawing rather than parting-in-place. She returns full-screen when the exchange clears. The full Y1 parting choreography stands as the target for card-bearing surfaces.

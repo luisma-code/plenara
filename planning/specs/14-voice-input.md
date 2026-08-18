@@ -10,7 +10,8 @@ Status: **SHIPPED (v0) — two on-device engines live behind the seam; sherpa_on
 primary when its model is present, the OS engine is the fallback, typing is always the floor.**
 
 **Change note (2026-07-11, Fable 5):** synced to the shipped implementation (`app/lib/speech.dart`,
-`app/lib/sherpa_speech.dart`, `app/lib/main.dart`, wired per Spec 15's presence-primary home).
+`app/lib/sherpa_speech.dart`, `app/lib/voice_turn_controller.dart`, wired per Spec 15's
+presence-primary home).
 Three things moved since the draft: the seam grew from a one-shot `transcribe()` into a streaming
 `listen()` contract; the engine priority **inverted** (the fully-local sherpa path, the draft's
 "privacy-max alternative," is now the primary — matching the offline-first posture — with the
@@ -95,7 +96,8 @@ abstract class SpeechRecognizer {
   start of the *next* session); `listenFor` caps a session at 45 s; **no `pauseFor`** (it's a
   Dart-side timer reset by results — with no partials on Windows it would fire mid-sentence).
 
-**Shipped v0 capture path (`main.dart`):**
+**Shipped v0 capture path (`app/lib/voice_turn_controller.dart`, with the engine pick and the tap
+target in `app/lib/main.dart`):**
 
 1. **Engine pick at startup:** injected test recognizer wins; injected session ⇒ Noop; else
    sherpa if `~/.plenara/models/en-whisper` yields a working init; else the OS engine (whose own

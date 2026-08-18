@@ -88,9 +88,13 @@ class ValueCodec {
           throw ValueCodecError(
               'invalid_datetime', '$name expects an ISO 8601 datetime.');
         }
-        // Preserve the wall-clock/offset semantics supplied by the resolver.
-        // Converting an offset-less local reminder to UTC changes the user's
-        // intended hour before the notification scheduler sees it.
+        // An offset-LESS value keeps its wall clock: converting a local reminder
+        // to UTC here would change the user's intended hour before the
+        // notification scheduler ever saw it. A value that carries an explicit
+        // offset is a fully determined instant, and `DateTime.parse`
+        // canonicalizes it to UTC — so `10:00+02:00` is stored as `08:00Z`.
+        // Both round-trip to the same moment; only the offset-less case
+        // carries wall-clock intent, which is the case reminders rely on.
         return parsed.toIso8601String();
       case 'date':
         final value = raw is DateTime

@@ -1,25 +1,35 @@
-// Plenara v0 — Flutter desktop chat UI. A thin front-end over the v0 engine
+// Plenara — the presence-primary home. A thin front-end over the v0 engine
 // (package:plenara/session.dart): the interpreter, router, store, and cloud
-// client are the same code the console uses. Text-first for now; voice later.
+// client are the same code the console uses.
+//
+// This file owns the WIDGET TREE and the screen-level state around it (the
+// presence pins, glyphs, the colour demo, the planner tab, startup recovery).
+// The pieces with rules of their own live beside it:
+//
+//   bootstrap.dart             startup order + the production Session
+//   voice_turn_controller.dart the voice/turn state machine (mic, TTS, caption,
+//                              the delivery queue) — unit-tested on its own
+//   routine_player.dart        the Spec 16 step cadence
+//   reply_view.dart            the caption / list / prose reply registers
+//   dev_harness.dart           INTERNAL-ONLY sheets, gated by isExternalBuild
 import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/operation_center.dart';
 import 'package:plenara/reminders.dart';
 import 'package:plenara/session.dart';
-import 'package:plenara/storage_repository.dart';
 import 'package:plenara/planner.dart';
 
 import 'app_log.dart';
 import 'attention_view.dart';
+import 'bootstrap.dart';
 import 'build_channel.dart';
 import 'credential_store.dart';
 import 'data_location.dart';
 import 'data_view.dart';
+import 'dev_harness.dart';
 import 'glyphs.dart';
 import 'glyph_policy.dart';
 import 'library_home.dart';
@@ -27,177 +37,20 @@ import 'onboarding_view.dart';
 import 'plan_view.dart';
 import 'plena.dart';
 import 'plenara_theme.dart';
+import 'reply_view.dart';
+import 'routine_player.dart';
 import 'routine_view.dart';
-import 'seed_assets.dart';
 import 'settings_view.dart';
 import 'sherpa_speech.dart';
 import 'speech.dart';
 import 'speech_out.dart';
 import 'today_view.dart';
-import 'macos_scheduler.dart';
 import 'motion.dart';
-import 'windows_scheduler.dart';
+import 'voice_turn_controller.dart';
 
-// Dev fallback seed source. A SHIPPED build installs/upgrades from its BUNDLED assets instead —
-// main() extracts them each launch and sets _bundledSeedDir (see seed_assets.dart). A dev machine can
-// point PLENARA_SEED_DIR at the repo (e.g. macOS: export PLENARA_SEED_DIR="$HOME/code/plenara/v0/data").
-const sourceDataDir = r'Z:\code\plenara\v0\data';
-// Set by main() when it extracts the bundled seed assets; read by buildSession.
-String? _bundledSeedDir;
-
-/// Build the production Session from user config: the real (synced) data folder,
-/// installed/upgraded with bundled capabilities, the BYOK key, and the real
-/// Windows toast scheduler (reminders now fire as OS notifications, not just on-open
-/// nudges). The scheduler self-inits lazily on first schedule/cancel.
-/// Pick the OS notification backend for this platform. The single place `Platform.is*` decides a
-/// scheduler — add a backend here, not at the call site. A platform with no native backend gets the
-/// in-memory FakeScheduler (reminders still reconcile + surface as on-open nudges), logged so a
-/// silent downgrade is diagnosable.
-NotificationScheduler _platformScheduler() {
-  if (Platform.isWindows) return WindowsToastScheduler();
-  if (Platform.isMacOS) return MacToastScheduler();
-  AppLog.instance.log(
-    'sched: no native notification backend on this platform — in-app nudges only',
-  );
-  return FakeScheduler();
-}
-
-Session buildSession({NotificationScheduler? scheduler}) {
-  final cfg = loadAppConfig();
-  AppLog.instance.registerSecret(cfg.apiKey);
-  AppLog.instance.log(
-    'boot: data root = ${cfg.dataDir} '
-    '(${cfg.dataFolderSelected ? 'provider-selected' : 'device-local'})',
-  );
-  // loadConfig already derives the correct dataDir per platform (live Documents dir on mobile, where
-  // the container path is unstable; the user's folder on desktop) — one source of truth, so this and
-  // main()'s bundled-definition extraction agree.
-  final dataDir = cfg.dataDir;
-  // Seed source priority: explicit dev override > extracted bundled assets (shipped build) > dev
-  // path. ensureSeeded installs missing built-ins and only advances explicitly newer type schemas.
-  final seed =
-      Platform.environment['PLENARA_SEED_DIR'] ??
-      _bundledSeedDir ??
-      sourceDataDir;
-  ensureSeeded(dataDir, seed);
-  // Free mode runs offline-only: hand the Session an EXPLICIT offline client (empty key ->
-  // every cloud call returns noKey, zero Anthropic spend). Passing null would NOT work — the
-  // Session falls back to a default ClaudeClient() that picks the key up from the environment,
-  // so free mode has to inject a deliberately-keyless client. (A real release ships two binaries.)
-  final useCloud = cfg.apiKey != null && !cfg.freeTier;
-  // The storage repository is built HERE (not left to Session's default) so the
-  // channel gate reaches the turnlog: external builds pass enableTurnlog=false
-  // and logTurn is a complete no-op (Spec 11 — external captures no content).
-  // The live key is also registered with the turnlog's secret-rejection
-  // registry: secrets are Class S in EVERY channel, internal included.
-  final storage = FileStorageRepository(
-    dataDir,
-    deviceDir: defaultDeviceDir(),
-    enableTurnlog: !isExternalBuild,
-  );
-  final apiKey = cfg.apiKey;
-  if (apiKey != null) storage.registerTurnlogSecret(apiKey);
-  return Session(
-    dataDir,
-    cloud: useCloud
-        ? ClaudeClient(
-            apiKeyOverride: cfg.apiKey,
-            usagePath: '${defaultDeviceDir()}/cloud-usage.json',
-          )
-        : ClaudeClient(
-            apiKeyOverride: '',
-            usagePath: '${defaultDeviceDir()}/cloud-usage.json',
-          ),
-    storage: storage,
-    scheduler: scheduler,
-    deviceDir:
-        defaultDeviceDir(), // deviceId + turnlog stay device-local, off the synced folder
-  );
-}
-
-Future<void> main() async {
-  runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    // iOS/Android expose no HOME env var, so v0's `~/…` paths collapse to a non-writable `./…` — which
-    // white-screened the first iOS build (loadConfig tried to create `./.plenara`). Resolve the app's
-    // real per-user directory and inject it as the home base BEFORE any config OR log path is derived
-    // (so it must precede the first AppLog.instance access too). Documents is chosen so diagnostics
-    // are also Files-app-visible for cable-free retrieval.
-    if (Platform.isIOS || Platform.isAndroid) {
-      try {
-        homeOverride = (await getApplicationDocumentsDirectory()).path;
-      } catch (_) {
-        /* desktop never reaches here; on failure fall back to env/'.' */
-      }
-    }
-    // The first AppLog access must come AFTER the homeOverride resolution above
-    // (the log path derives from it on iOS), so no marker can precede it — the
-    // log's own creation timestamp is the home-override phase marker.
-    AppLog.instance.log('boot: phase home-override done');
-    if (Platform.isIOS) {
-      AppLog.instance.log('boot: phase restore-selection begin');
-      try {
-        final selected = await const DataFolderAccess().restoreSelection();
-        if (selected != null && selected.isNotEmpty) {
-          dataDirOverride = dataRootForSelection(selected);
-          AppLog.instance.log(
-            'boot: data-folder restore -> $dataDirOverride (provider-selected)',
-          );
-        } else {
-          AppLog.instance.log(
-            'boot: data-folder restore -> no stored selection (device-local)',
-          );
-        }
-      } catch (error, stack) {
-        // A stale provider grant must never prevent runApp from creating the
-        // recovery surface. Session startup will use the device-local root.
-        dataDirOverride = null;
-        AppLog.instance.log(
-          'boot: data-folder restore FAILED (falling back to the device-local root): $error\n$stack',
-        );
-        stdout.writeln('Plenara data-folder restore failed: $error');
-      }
-      AppLog.instance.log('boot: phase restore-selection done');
-    }
-    AppLog.instance.log('boot: phase credentials begin');
-    try {
-      await initializeAppCredentials();
-    } catch (error, stack) {
-      // A locked keychain / PlatformException / failed migration must never
-      // prevent runApp — a permanent blank screen with zero diagnostics is the
-      // exact failure this log exists to prevent. Settings handles a missing
-      // key; continue keyless.
-      AppLog.instance.log(
-        'boot: credential init FAILED (continuing keyless): $error\n$stack',
-      );
-    }
-    AppLog.instance.log('boot: phase credentials done');
-    final log = AppLog.instance;
-    log.registerSecret(loadAppConfig().apiKey);
-    // Print the diagnostics log path so a manual test that goes wrong is one file away.
-    stdout.writeln('Plenara diagnostics log: ${log.file.path}');
-    log('boot: main() starting');
-    // Extract the bundled definitions on every launch (unless a dev source is
-    // explicit). ensureSeeded adds missing built-ins and promotes newer type
-    // schemas without clobbering same-version edits; skipping extraction for a
-    // non-empty folder would strand older installs forever.
-    if (Platform.environment['PLENARA_SEED_DIR'] == null) {
-      try {
-        _bundledSeedDir = await extractSeedAssets();
-        log('boot: extracted bundled seed assets -> $_bundledSeedDir');
-      } catch (e, st) {
-        log(
-          'boot: seed asset extraction FAILED (falling back to dev path): $e\n$st',
-        );
-      }
-    }
-    FlutterError.onError = (details) {
-      log('FlutterError: ${details.exceptionAsString()}\n${details.stack}');
-      FlutterError.presentError(details);
-    };
-    runApp(const PlenaraApp());
-  }, (error, stack) => AppLog.instance.log('UNCAUGHT: $error\n$stack'));
-}
+/// The Dart entrypoint. Startup ORDER lives in `bootstrap.dart`
+/// ([bootstrapAndRun]); this file owns the widget tree it runs.
+Future<void> main() => bootstrapAndRun(const PlenaraApp());
 
 class PlenaraApp extends StatelessWidget {
   const PlenaraApp({super.key});
@@ -293,85 +146,69 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       // Backgrounding cancelled the routine cadence below; a live timed step
       // must resume counting when the app comes back, or the run silently
-      // stalls forever on that step. _syncStepTimer is idempotent and re-arms
+      // stalls forever on that step. syncStepTimer is idempotent and re-arms
       // (with a fresh clock) only when a timed, unpaused step is current.
-      _syncStepTimer();
+      _player.syncStepTimer();
       return;
     }
     // Backgrounding is an abandonment signal. Never keep a hot mic while hidden (Spec 12 §3.5's
     // mic-lifecycle invariant), and never let a watchdog stop-and-SEND a turn — with TTS answering
     // — while the user is in another app.
-    if (_listening) {
-      _cancelListening();
-      setState(
-        () => _caption =
-            'I stopped listening when Plenara went to the background — tap and say it again.',
-      );
-    }
-    _cancelStepTimer(); // a routine cadence must not tick (or speak) while hidden
+    _turn.abandonForBackground(
+      'I stopped listening when Plenara went to the background — tap and say it again.',
+    );
+    _player
+        .cancelStepTimer(); // a routine cadence must not tick (or speak) while hidden
   }
 
   // Held so we can run a launch-time toast self-test (production only). `late` so an
   // injected test session never constructs the native plugin.
   // Real OS toasts per platform; anything else reconciles reminders in memory via FakeScheduler
   // (on-open nudges still work). Constructed lazily (only in the real app, never under a test).
-  late final NotificationScheduler _scheduler = _platformScheduler();
+  late final NotificationScheduler _scheduler = platformScheduler();
   late final Session _session =
       widget.session ?? buildSession(scheduler: _scheduler);
-  // Chosen in _init(): on-device sherpa_onnx if its model is present, else the OS SAPI engine,
-  // else Noop. Tests inject their own. Null until _init picks one; the mic hides while null.
-  SpeechRecognizer? _speech;
-  SpeechOutput? _voice; // Plena's talk-back (Spec 12 §6); chosen in _init
+
+  /// The voice/turn state machine (voice_turn_controller.dart): mic epochs,
+  /// listen/stop/cancel, TTS orchestration, the caption + speak timers, the
+  /// delivery queue, and the busy/listening/transcribing/speaking rules that
+  /// relate them. This screen supplies the engine, the log, and the surfaces.
+  late final VoiceTurnController _turn = VoiceTurnController(
+    runTurn: _runTurn,
+    log: AppLog.instance.log,
+    logDebug: AppLog.instance.debug,
+    navCommand: _maybeNavCommand,
+    onTurnStarting: _cancelColorDemo,
+    onTurnPresented: _presentTurn,
+    syncRoutineCadence: () => _player.syncStepTimer(),
+    onCaptureResolved: () => _player.flushDeferredAdvance(),
+    // Same guard the mute pref uses: only touch the real config for the real app (or a test that
+    // injected a configPath). An injected session must never write the user's ~/.plenara.
+    persistMicHints: (shown) {
+      if (widget.session == null || widget.configPath != null) {
+        saveConfig(micHintsShown: shown, configPath: widget.configPath);
+      }
+    },
+    // Persist ONLY the pref — no dataDir, so a PLENARA_DATA env override isn't baked in.
+    persistMute: (muted) {
+      if (widget.session == null || widget.configPath != null) {
+        saveConfig(voiceMuted: muted, configPath: widget.configPath);
+      }
+    },
+  );
   StreamSubscription<OperationRecord>? _operationSub;
   StreamSubscription<void>? _storageSub;
   StreamSubscription<double>? _micLevelSub;
-  double _micLevel = 0;
-  bool _voiceMuted =
-      false; // mute silences her voice; captions still show (Spec 15 §7)
   bool _stillPresence = false;
-  int _noMatchStreak =
-      0; // consecutive tap-to-talks that heard nothing → surface a mic-permission hint
-  int _micEpoch =
-      0; // bumped on every tap/abort; a listen-start whose epoch went stale bails (race)
-  bool _aborting =
-      false; // a deliberate ✕/mute abort — its cancel's onDone must not count as no-audio
-  // Correlation id for the live capture session: prefixes recognizer log lines
-  // and becomes the turn id of the send its final transcript triggers, so the
-  // whole voice path shares one grep key. Null while no capture is live.
-  String? _captureId;
-  String?
-  _heard; // the finalized transcript, echoed as "I heard: X" (the listening font), briefly
-  Timer? _heardTimer;
-  // Capture is user-delimited now (tap to start, tap to stop). These support that:
-  bool _transcribing =
-      false; // stop tapped, final not back yet → presence shows thinking, not idle
-  bool _autoStopped =
-      false; // a watchdog ended the session, not a tap → say so on the "I heard" line
-  String?
-  _micPrompt; // the "tap when you're done" affordance line (decays; see _micHintSessions)
-  Timer? _hintTimer;
-  static const _micHintSessions =
-      5; // teach the gesture, then go quiet (Spec 07 P8)
-  int _micHintsShown =
-      0; // persisted, so the hint decays across launches rather than per-run
-  final _ctrl = TextEditingController();
-  bool _ready = false, _busy = false, _listening = false;
+  bool _ready = false;
   String? _startupError;
   String? _resetError;
   bool _resettingData = false;
-  // Plena's presence state (Spec 15): derived from the real turn/speech signals. No TTS yet,
-  // so "speaking" is a brief flourish while a reply lands; _lastCloud tints it cooler (D2).
-  bool _speaking = false, _lastCloud = false, _deepThink = false;
-  Timer? _speakTimer, _thinkTimer, _capTimer;
   // The tour's "colours" chapter drives a scripted presence-colour demo (idle → listening → thinking
   // → the cooler AI shade) while Plena narrates it. Timers held so a new turn / teardown cancels it.
   final List<Timer> _colorDemoTimers = [];
   bool _colorDemoActive =
       false; // true while the demo owns the _forceState/_forceDifficulty pins
-  String?
-  _caption; // the current exchange text, materialised over the void (Spec 15 §6.1 / §7.3)
-  bool _displayIsList =
-      false; // a list-shaped reply eases Plena to a corner (§6.3)
   int _plannerTab =
       0; // Today / Plan / Library, the three primary roots (Spec 17)
   // The glyph Plena should trace next, fired by bumping the nonce (Spec 15 §5A). apt-or-absent:
@@ -379,7 +216,6 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   GlyphDef? _glyph;
   int _glyphNonce = 0, _glyphPreview = 0;
   int _acknowledgementNonce = 0;
-  PresenceExpression _expression = PresenceExpression.neutral;
   late final GlyphRarityGate _glyphGate = GlyphRarityGate(
     path: widget.configPath == null
         ? '${defaultDeviceDir()}/glyph-budget.json'
@@ -452,27 +288,17 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
-  PresenceState get _presence =>
-      _forceState ?? // dev harness pin wins over the live signals
-      (_listening
-          ? PresenceState.listening
-          // Between the stop tap and the final transcript there is real work (flush + transcribe
-          // the trailing segment). Showing idle there would make the stop tap look like a dead beat.
-          : _busy || _transcribing
-          ? PresenceState.thinking
-          : _speaking
-          ? PresenceState.speaking
-          : PresenceState.idle);
-  // D1 while a turn is in flight; D2 once it's clearly working (a long/cloud turn), so Plena
-  // visibly "reaches" (Spec 15 §4.2). Speaking a cloud-derived answer keeps the cooler tint.
-  double get _difficulty =>
-      _forceDifficulty ??
-      (_busy ? (_deepThink ? 2 : 1) : (_speaking && _lastCloud ? 2 : 0));
+  // The dev-harness pins win over the live turn/speech signals the controller derives.
+  PresenceState get _presence => _forceState ?? _turn.presence;
+  double get _difficulty => _forceDifficulty ?? _turn.difficulty;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // The controller is the source of truth for the turn/voice state; the
+    // screen just repaints whenever it moves.
+    _turn.addListener(_turnChanged);
     _init();
   }
 
@@ -494,30 +320,30 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         if (mounted) setState(() {});
       });
       final restoredOperations = _session.operations.takeDeliveries();
-      _speech =
+      _turn.speech =
           await _pickSpeech(); // on-device sherpa if the model's present, else OS SAPI
-      _micLevelSub = _speech?.levels.listen((level) {
-        if (mounted && _listening) setState(() => _micLevel = level);
-      });
+      _micLevelSub = _turn.speech?.levels.listen(_turn.setMicLevel);
       // Talk-back: on-device TTS in production; a fake in tests; Noop under an injected session.
-      _voice =
+      _turn.voice =
           widget.voice ??
           (widget.session == null
               ? FlutterTtsSpeechOutput(onLog: (m) => log.debug('tts: $m'))
               : NoopSpeechOutput());
-      await _voice!.init();
+      await _turn.voice!.init();
       // Remembered mute pref (real app, or a test that injects a configPath). No first-run
       // audio-blast risk: the greeting is never spoken, so muted just defaults to false.
       if (widget.session == null || widget.configPath != null) {
         final cfg = loadConfig(configPath: widget.configPath);
-        _voiceMuted = cfg.voiceMuted ?? false;
+        _turn.restorePreferences(
+          voiceMuted: cfg.voiceMuted ?? false,
+          // the stop-gesture hint decays ACROSS launches
+          micHints: cfg.micHintsShown,
+        );
         _stillPresence = cfg.stillPresence;
-        _micHintsShown =
-            cfg.micHintsShown; // the stop-gesture hint decays ACROSS launches
         _session.confirmCloudSpend = cfg.confirmCloudSpend;
       }
       log(
-        'init: ready (stt=${_speech?.available ?? false}, tts=${_voice?.available ?? false})',
+        'init: ready (stt=${_turn.speech?.available ?? false}, tts=${_turn.voice?.available ?? false})',
       );
       if (!mounted) return; // torn down during init -> don't setState
       // Opt-in diagnostic: set PLENARA_SELFTEST=1 to fire an immediate "notifications are
@@ -531,13 +357,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         _scheduler.selfTest();
       }
       final nudges = _session.pendingNudges();
-      setState(() {
-        _ready = true;
-        _caption = restoredOperations.isEmpty
-            ? null
-            : _operationDeliveryText(restoredOperations);
-        _displayIsList = restoredOperations.isNotEmpty;
-      });
+      _turn.showRestoredDeliveries(restoredOperations);
+      setState(() => _ready = true);
       // A birthday today earns the candle; otherwise Plena acknowledges arrival.
       _fireGlyph(
         nudges.any((n) => n.toLowerCase().contains('birthday'))
@@ -551,21 +372,17 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         return; // torn down during a failing init -> don't setState after dispose
       }
       // no infinite spinner: surface the failure over the void
+      _turn.clearDisplay();
       setState(() {
         _ready = true;
         _startupError = '$e';
-        _caption = null;
-        _displayIsList = false;
       });
     }
   }
 
-  /// Operation deliveries drained mid-turn used to be presented immediately —
-  /// then the in-flight turn's completion overwrote the caption (and its speech),
-  /// so the delivery vanished; a delivery arriving while listening started TTS
-  /// against an open mic (see the barge-in barrier in [_toggleMic]). Queue them
-  /// instead and flush only when nothing else owns the stage.
-  final List<OperationRecord> _pendingDeliveries = [];
+  void _turnChanged() {
+    if (mounted) setState(() {});
+  }
 
   void _operationChanged(OperationRecord operation) {
     if (!mounted) return;
@@ -573,61 +390,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       setState(() {});
       return;
     }
-    _pendingDeliveries.addAll(_session.operations.takeDeliveries());
-    _maybeFlushDeliveries();
+    _turn.enqueueDeliveries(_session.operations.takeDeliveries());
   }
-
-  /// Present queued operation deliveries — but never mid-turn (the turn's
-  /// completion would clobber them) and never while the mic is open (TTS over a
-  /// hot mic). Re-invoked at turn completion and when a capture session ends.
-  void _maybeFlushDeliveries() {
-    if (!mounted || _pendingDeliveries.isEmpty) return;
-    if (_busy || _listening || _transcribing) return;
-    final deliveries = List<OperationRecord>.of(_pendingDeliveries);
-    _pendingDeliveries.clear();
-    _presentOperationDeliveries(deliveries);
-  }
-
-  void _presentOperationDeliveries(List<OperationRecord> deliveries) {
-    final text = _operationDeliveryText(deliveries);
-    setState(() {
-      _caption = text;
-      _displayIsList = true;
-      _speaking = true;
-    });
-    _speakTimer?.cancel();
-    _capTimer?.cancel();
-    void finish() {
-      if (!mounted) return;
-      _speakTimer?.cancel();
-      setState(() => _speaking = false);
-      _capTimer = Timer(const Duration(milliseconds: 1600), () {
-        if (mounted) setState(() => _caption = null);
-      });
-    }
-
-    if (!_voiceMuted && (_voice?.available ?? false)) {
-      _voice!.speak(text, onDone: finish);
-      final capMs = (3000 + text.length * 75).clamp(4000, 60000);
-      _speakTimer = Timer(Duration(milliseconds: capMs), finish);
-    } else {
-      final ms = (1400 + text.length * 22).clamp(1600, 4200);
-      _speakTimer = Timer(Duration(milliseconds: ms), finish);
-    }
-  }
-
-  String _operationDeliveryText(List<OperationRecord> deliveries) => deliveries
-      .map(
-        (operation) => switch (operation.state) {
-          OperationState.succeeded =>
-            '✨ ${operation.title} is ready\n${operation.result ?? ''}',
-          OperationState.interrupted =>
-            '⚠️ ${operation.title} was interrupted by the app closing. It was not retried or charged again.',
-          _ =>
-            '⚠️ ${operation.title} did not finish: ${operation.error ?? 'cancelled'}',
-        },
-      )
-      .join('\n\n');
 
   /// Pick the best available recognizer for the platform.
   ///
@@ -649,7 +413,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       // the AppLog `turn` lines and, approximately, the turnlog entry.
       final s = SystemSpeechRecognizer(
         onLog: (m) => log.debug(
-          'speech${_captureId == null ? '' : ' [$_captureId]'}: $m',
+          'speech${_turn.captureId == null ? '' : ' [${_turn.captureId}]'}: $m',
         ),
       );
       return s;
@@ -694,11 +458,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       _ => null,
     };
     if (plannerDestination != null) {
-      setState(() {
-        _plannerTab = plannerDestination;
-        _caption = null;
-        _displayIsList = false;
-      });
+      _turn.clearDisplay();
+      setState(() => _plannerTab = plannerDestination);
       return true;
     }
     if (RegExp(
@@ -707,11 +468,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (_) => _settingsView()));
-      setState(() => _caption = 'Opened settings.');
-      _capTimer?.cancel();
-      _capTimer = Timer(const Duration(milliseconds: 1600), () {
-        if (mounted) setState(() => _caption = null);
-      });
+      _turn.showTransientCaption('Opened settings.');
       return true;
     }
     return false;
@@ -860,41 +617,11 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  /// Run one turn. With no [utterance] the input box is the source (and is
-  /// cleared); an explicit [utterance] — voice finals, the routine player's
-  /// control words — bypasses `_ctrl` entirely, so a muted user's half-typed
-  /// draft is never clobbered and a bailed-out send leaves no ghost text.
-  Future<void> _send([String? utterance]) async {
-    final fromInputBox = utterance == null;
-    final t = (utterance ?? _ctrl.text).trim();
-    if (t.isEmpty || _busy) return;
-    if (fromInputBox) _ctrl.clear();
-    // Correlation id: stamped on this turn's AppLog lines (and inherited from
-    // the capture id when a voice final triggered the send) so recognizer
-    // lines, AppLog, and the turnlog entry — whose own `at` key is minted by
-    // Session.handle milliseconds later — line up from the log alone.
-    final turnId = _captureId ?? DateTime.now().toIso8601String();
-    _captureId = null;
-    _cancelColorDemo(); // a new turn ends any in-flight colours demo, releasing the pinned presence
-    if (_maybeNavCommand(t)) {
-      return; // "open settings" et al. open a window, not a turn
-    }
-    if (_voice?.speaking ?? false) {
-      unawaited(_voice!.stop()); // a new turn stops any in-flight reply
-    }
-    setState(() {
-      _busy = true;
-      _deepThink = false;
-      _caption = null;
-      _expression = PresenceExpression.neutral;
-    });
-    // after a beat, a still-running turn reads as "reaching" (D2) — long/cloud work
-    _thinkTimer?.cancel();
-    _thinkTimer = Timer(const Duration(milliseconds: 700), () {
-      if (mounted) setState(() => _deepThink = true);
-    });
+  /// Run one turn through the engine for [VoiceTurnController], and report
+  /// what it left behind. Returns null when the screen was torn down mid-turn —
+  /// nothing is drained and nothing is presented in that case.
+  Future<TurnOutcome?> _runTurn(String t) async {
     final log = AppLog.instance;
-    log('turn [$turnId]: "$t"');
     final reviewsBefore = _session.automations.pendingReview.length;
     String resp;
     try {
@@ -906,14 +633,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       resp = 'Something went wrong: $e';
     }
     if (!mounted) {
-      return; // widget torn down mid-turn -> don't setState after dispose
+      return null; // widget torn down mid-turn -> don't setState after dispose
     }
-    final usedCloud = _session.lastTurnUsedCloud;
-    log(
-      'turn [$turnId] -> [${_session.lastSource}${usedCloud ? ', cloud' : ', offline'}] '
-      '${resp.length > 140 ? '${resp.substring(0, 140)}…' : resp}',
-    );
-    // _busy is always cleared, so the input can never lock up
     // Surface any automation deliveries this turn produced (Spec 02 §7.5 read-only "deliver"),
     // draining them so they don't re-appear as on-open nudges next launch; and prompt on a NEW
     // held write so the user can approve/dismiss it (§7.5 "hold for review").
@@ -922,88 +643,32 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     final newReviews = review.length > reviewsBefore
         ? review.sublist(reviewsBefore)
         : const [];
-    // automation deliveries (✨) + newly-held writes (📋) join the reply over the void
-    final extras = <String>[
-      for (final d in deliveries) '✨ ${d.text}',
-      for (final p in newReviews)
-        '📋 ${p.description} — say "approve it" or "dismiss it".',
-    ];
-    final shown = extras.isEmpty ? resp : '$resp\n\n${extras.join('\n')}';
-    // Every reply is simultaneous text. Voice is a delivery channel, not the
-    // only durable representation of what happened.
-    final willSpeak = !_voiceMuted && (_voice?.available ?? false);
-    final display = shown;
-    setState(() {
-      _busy = false;
-      _deepThink = false;
-      _speaking = true; // Plena "speaks" the reply — a brief presence flourish
-      _lastCloud = usedCloud;
-      _caption = display;
-      // list-shaped (bullets / several lines) → Plena eases to a corner and it floats (§6.3)
-      _displayIsList =
-          display.contains('•') ||
-          display.split('\n').where((l) => l.trim().isNotEmpty).length > 2;
-      _expression = _session.lastSource == 'clarify'
-          ? PresenceExpression.clarification
-          : RegExp(
-              r"\b(?:couldn't|failed|something went wrong|can't)\b",
-              caseSensitive: false,
-            ).hasMatch(resp)
-          ? PresenceExpression.failure
-          : PresenceExpression.neutral;
-    });
-    _thinkTimer?.cancel();
-    _speakTimer?.cancel();
-    _capTimer?.cancel();
-    // The routine cadence follows the RUN, not the input method. Arming it only from the card's
-    // buttons meant a run started the flagship way — by voice — never auto-advanced at all, and a
-    // spoken "pause"/"next" left a timer ticking against the step it had already left.
-    _syncStepTimer();
-    // End of speaking: clear the flourish AND clear the caption a beat later. Called by the real
-    // TTS onDone (or the safety cap), so the caption follows actual speech, not a fixed timer.
-    void endSpeak() {
-      if (!mounted) return;
-      _speakTimer?.cancel();
-      setState(() => _speaking = false);
-      _capTimer?.cancel();
-      _capTimer = Timer(const Duration(milliseconds: 1600), () {
-        if (mounted) setState(() => _caption = null);
-      });
-      // The turn (and its speech) is over — a delivery queued mid-turn gets the
-      // stage now instead of having been silently overwritten.
-      _maybeFlushDeliveries();
-    }
+    return TurnOutcome(
+      response: resp,
+      // automation deliveries (✨) + newly-held writes (📋) join the reply over the void
+      extras: <String>[
+        for (final d in deliveries) '✨ ${d.text}',
+        for (final p in newReviews)
+          '📋 ${p.description} — say "approve it" or "dismiss it".',
+      ],
+      usedCloud: _session.lastTurnUsedCloud,
+      source: _session.lastSource,
+      skill: _session.lastSkill,
+      tourChapter: _session.lastTourChapter,
+    );
+  }
 
-    if (willSpeak) {
-      // Plena actually speaks; her "speaking" animation brackets the real audio (onDone ends it).
-      // Pass the RAW reply — speak() segments it on blank lines (a silent beat between topics) and
-      // speakifies each segment (track 2); the display keeps the original formatting.
-      _voice!.speak(
-        resp,
-        onStart: () {
-          if (mounted) setState(() => _speaking = true);
-        },
-        onDone: endSpeak,
-      );
-      // safety cap only — generous (real speech at rate 0.5 can run ~30 s) so it never fires
-      // before the audio actually ends and cuts her off mid-sentence.
-      final capMs = (3000 + resp.length * 75).clamp(4000, 60000);
-      _speakTimer = Timer(Duration(milliseconds: capMs), endSpeak);
-    } else {
-      // muted or no voice: a brief silent flourish, timed to the reply length
-      final ms = (1400 + resp.length * 22).clamp(1600, 4200);
-      _speakTimer = Timer(Duration(milliseconds: ms), endSpeak);
-    }
+  /// The presence flourishes a completed turn earns: an apt-or-absent glyph, an
+  /// acknowledgement when no glyph fired, and the tour's per-chapter gesture.
+  void _presentTurn(TurnOutcome outcome) {
     // apt-or-absent: an occasion-appropriate glyph, or nothing (most turns)
-    final marked = _fireGlyph(glyphForTurn(_session.lastSkill, resp));
-    if (!marked &&
-        _session.lastSkill != null &&
-        _session.lastSource != 'clarify') {
+    final marked = _fireGlyph(glyphForTurn(outcome.skill, outcome.response));
+    if (!marked && outcome.skill != null && outcome.source != 'clarify') {
       _acknowledge();
     }
     // Tour: each chapter opens with an apt gesture (force past the debounce), and the "colours"
     // capstone drives a live palette demo while Plena describes it.
-    final chapter = _session.lastTourChapter;
+    final chapter = outcome.tourChapter;
     if (chapter != null) {
       const chapterGlyph = {
         'reminders': 'bell',
@@ -1017,477 +682,41 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// Tap the void to START listening; tap again to STOP, flush the whole capture, and auto-send its
-  /// one session final. The explicit ✕ is the discard path. Native finals remain segment boundaries,
-  /// while native closure, errors, and watchdog stops converge on the recognizer's same idempotent
-  /// flush door. onDone/catch always clear listening, so the surface cannot stay stuck recording.
-  Future<void> _toggleMic() async {
-    final log = AppLog.instance;
-    if (!(_speech?.available ?? false) || _busy) return;
-    if (_listening) {
-      // THE STOP TAP. The user — not the engine — decides the utterance is over: finalize and send
-      // whatever was said. (This used to cancel; abort now lives on the ✕ control, because with
-      // no auto-endpointing the common second tap is "I'm done", not "forget it".)
-      log.debug('speech: tap -> stop and send');
-      _hintTimer?.cancel();
-      if (mounted) {
-        setState(() {
-          _listening = false;
-          _transcribing =
-              true; // the presence goes to thinking; the stop tap is never a dead beat
-          _micPrompt = null;
-        });
-      }
-      await _speech!.stop();
-      return;
-    }
-    // A fresh listen intent — captured so a rapid tap→abort→tap during the awaits below can't leave
-    // this (now superseded) call starting a second concurrent recognizer session (Fable review #5).
-    final epoch = ++_micEpoch;
-    _aborting = false;
-    _captureId = DateTime.now().toIso8601String();
-    // Set listening BEFORE the barge-in await, so a second tap during it hits the abort branch
-    // instead of starting a second recognizer session (reviewer d #2).
-    setState(() {
-      _listening = true;
-      _micLevel = 0;
-      _heard = null; // a new utterance supersedes the last "I heard: …"
-    });
-    _heardTimer?.cancel();
-    // Mid-conversation the last reply stays until the first spoken word replaces it.
-    if (_voice?.speaking ?? false) {
-      await _voice!
-          .stop(); // barge-in: cut Plena off the moment you start to speak (Spec 12 §7)
-      if (mounted) setState(() => _speaking = false);
-      // HARD BARRIER (macOS): AVSpeechSynthesizer (TTS) and Apple Speech's AVAudioEngine (STT)
-      // contend for the audio device. Starting capture immediately after TTS stops yields silent
-      // input (error_no_match) or a native audio crash. Let the output device fully release first.
-      await Future.delayed(const Duration(milliseconds: 300));
-      // Bail if aborted OR superseded by a newer tap during the settle (stale epoch) — never start a
-      // second concurrent recognizer session.
-      if (!mounted || !_listening || epoch != _micEpoch) return;
-    }
-    log.debug('speech: tap -> start');
-    // The learnable-affordance half of removing auto-endpointing: for the first few sessions the
-    // status line says HOW to finish. After that it decays to plain "listening…" (quiet by default).
-    if (mounted) {
-      setState(
-        () => _micPrompt = _micHintsShown < _micHintSessions
-            ? "tap anywhere when you're done"
-            : null,
-      );
-    }
-    if (_micHintsShown < _micHintSessions) {
-      _micHintsShown++;
-      // Same guard the mute pref uses: only touch the real config for the real app (or a test that
-      // injected a configPath). An injected session must never write the user's ~/.plenara.
-      if (widget.session == null || widget.configPath != null) {
-        saveConfig(
-          micHintsShown: _micHintsShown,
-          configPath: widget.configPath,
-        );
-      }
-    }
-    _autoStopped =
-        false; // never carry a previous session's "(stopped on my own)" label forward
-    var heard = false; // did this session get ANY audio it could transcribe?
-    try {
-      await _speech!.listen(
-        onNotice: (notice) {
-          if (!mounted) return;
-          switch (notice) {
-            case SpeechNotice.longPause:
-              // Exactly the moment the old system would have auto-sent — a habituated user is
-              // waiting for a send that will never come. Re-show the hint, keep recording.
-              setState(() => _micPrompt = "tap when you're done");
-            case SpeechNotice.autoCancelledNoSpeech:
-              setState(() {
-                _listening = false;
-                _micPrompt = null;
-                _caption = "I stopped listening — I didn't hear anything.";
-                _displayIsList = false;
-              });
-            case SpeechNotice.autoStopped:
-              // Stopped on its own after a very long pause, but SENT (never discard real speech).
-              // Say so, or an unexplained send is a silent failure.
-              _autoStopped = true;
-              setState(() => _micPrompt = null);
-          }
-        },
-        onResult: (text, isFinal) {
-          final t = text.trim();
-          if (!mounted || t.isEmpty) return;
-          heard = true;
-          _noMatchStreak = 0;
-          if (!isFinal) {
-            // Live transcript: materialise words as they're recognized so you can SEE the mic is
-            // hearing you (and watch it stall if it isn't). Windows delivers finals only, so this
-            // only streams on Apple Speech.
-            setState(() {
-              _caption = t;
-              _displayIsList = false;
-            });
-            return;
-          }
-          setState(() {
-            _listening = false;
-            _transcribing = false;
-            _micPrompt = null;
-            // Confirm what was captured, in the listening font, until the reply settles. When a
-            // watchdog ended the session rather than a tap, say that too (P2.8).
-            _heard = _autoStopped
-                ? '(stopped on my own after a long pause) $t'
-                : t;
-            _autoStopped = false;
-          });
-          _heardTimer?.cancel();
-          _heardTimer = Timer(const Duration(seconds: 5), () {
-            if (mounted) setState(() => _heard = null);
-          });
-          _speech!.cancel(); // one utterance per tap
-          if (!_busy) {
-            // sent directly — never through _ctrl, which may hold a typed draft
-            log.debug('speech: auto-send on final result');
-            _send(t);
-          }
-          // A step timer that elapsed mid-utterance deferred its advance; the
-          // transcript's turn is in flight now, so the 'next' queues behind it.
-          _flushDeferredAdvance();
-        },
-        onDone: () {
-          if (!mounted) return;
-          setState(() {
-            _listening = false;
-            _transcribing = false;
-            _micPrompt = null;
-          });
-          _captureId = null;
-          // Capture over: release anything that was waiting on the mic. The
-          // microtask lets a synchronously-nested onDone (cancel() inside the
-          // final-result handler) finish sending the transcript first.
-          scheduleMicrotask(() {
-            if (!mounted) return;
-            _flushDeferredAdvance();
-            _maybeFlushDeliveries();
-          });
-          if (_aborting) {
-            _aborting =
-                false; // a deliberate tap-to-abort ended this session — not a no-audio miss
-            return;
-          }
-          // No-silent-failure (principle #7): if tap-to-talk keeps hearing nothing, the mic is
-          // almost certainly blocked (macOS revokes it when a debug rebuild re-signs the app) —
-          // say so, actionably, instead of just doing nothing.
-          if (!heard) {
-            _noMatchStreak++;
-            if (_noMatchStreak >= 2 && !_busy) {
-              setState(() {
-                _displayIsList = false;
-                _caption =
-                    "I'm not hearing any audio. Check that Microphone and Speech "
-                    'Recognition are ON for Plenara in System Settings → Privacy & '
-                    'Security, then tap and talk again.';
-              });
-            }
-          }
-        },
-      );
-    } catch (e) {
-      log.debug('speech: listen failed: $e');
-      if (mounted) setState(() => _listening = false);
-    }
-  }
-
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _speech
-        ?.cancel(); // never leave the recognizer recording after teardown (privacy)
-    _voice?.stop(); // don't keep talking after teardown
+    // Stops the recognizer (privacy), stops any live speech, and kills the
+    // caption/speak/think/heard timers and the input controller.
+    _turn.removeListener(_turnChanged);
+    _turn.dispose();
     _operationSub?.cancel();
     _storageSub?.cancel();
     if (widget.session == null) unawaited(_session.dispose());
     _micLevelSub?.cancel();
-    _speakTimer?.cancel();
-    _thinkTimer?.cancel();
-    _capTimer?.cancel();
-    _stepTimer
-        ?.cancel(); // never leave a routine cadence ticking after teardown
-    _heardTimer?.cancel();
+    _player.dispose(); // never leave a routine cadence ticking after teardown
     for (final t in _colorDemoTimers) {
       t.cancel();
     }
-    _ctrl.dispose();
     super.dispose();
   }
 
-  /// A live tuning sheet for Plena — the mockup's knobs in the app, so the feel is dialed by eye
-  /// without a rebuild. Changes apply to _tuning immediately (Plena reads it every frame).
-  void _openTuning() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) {
-          Widget row(
-            String label,
-            double value,
-            double min,
-            double max,
-            PresenceTuning Function(double) apply,
-          ) => Row(
-            children: [
-              SizedBox(
-                width: 96,
-                child: Text(label, style: Theme.of(ctx).textTheme.bodyMedium),
-              ),
-              Expanded(
-                child: Slider(
-                  value: value.clamp(min, max),
-                  min: min,
-                  max: max,
-                  onChanged: (v) {
-                    setState(() => _tuning = apply(v));
-                    setSheet(() {});
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 48,
-                child: Text(
-                  value.toStringAsFixed(value >= 10 ? 0 : 2),
-                  textAlign: TextAlign.right,
-                ),
-              ),
-            ],
-          );
-          final t = _tuning;
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Tune Plena', style: Theme.of(ctx).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                row('Hue', t.hue, 0, 360, (v) => t.copyWith(hue: v)),
-                row('Vibrance', t.sat, .3, 1, (v) => t.copyWith(sat: v)),
-                row(
-                  'Brightness',
-                  t.bright,
-                  .4,
-                  1.9,
-                  (v) => t.copyWith(bright: v),
-                ),
-                row(
-                  'Breadth',
-                  t.breadth,
-                  .5,
-                  1.7,
-                  (v) => t.copyWith(breadth: v),
-                ),
-                row(
-                  'Gravity',
-                  t.gravity,
-                  .25,
-                  2,
-                  (v) => t.copyWith(gravity: v),
-                ),
-                row('Looseness', t.loose, .3, 2.6, (v) => t.copyWith(loose: v)),
-                row('Trail', t.trail, 0, 1, (v) => t.copyWith(trail: v)),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      setState(() => _tuning = const PresenceTuning());
-                      setSheet(() {});
-                    },
-                    child: const Text('Reset'),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  /// The Dev harness — drive the UI directly (states, difficulty, glyphs, display modes, voice)
-  /// without going through the engine, so you can exercise every visual by hand. The barrier is
-  /// transparent and the sheet half-height, so Plena stays lit and visible above it while you poke.
-  void _openHarness() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      barrierColor: Colors.transparent, // keep Plena visible while harnessing
-      backgroundColor: const Color(0xFF17130F).withValues(alpha: .96),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) {
-          final tt = Theme.of(ctx).textTheme;
-          void both(VoidCallback fn) {
-            setState(fn);
-            setSheet(() {});
-          }
-
-          Widget label(String s) => Padding(
-            padding: const EdgeInsets.only(top: 14, bottom: 6),
-            child: Text(
-              s.toUpperCase(),
-              style: tt.labelSmall?.copyWith(
-                letterSpacing: 1.4,
-                color: Colors.white54,
-              ),
-            ),
-          );
-          Widget pick(String text, bool on, VoidCallback onTap) => ChoiceChip(
-            label: Text(text),
-            selected: on,
-            onSelected: (_) => onTap(),
-          );
-
-          return SafeArea(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(ctx).size.height * .52,
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Dev harness', style: tt.titleMedium),
-                    Text(
-                      'Force the UI directly — no turn required.',
-                      style: tt.bodySmall?.copyWith(color: Colors.white54),
-                    ),
-
-                    label('Presence state'),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        pick(
-                          'Live',
-                          _forceState == null,
-                          () => both(() => _forceState = null),
-                        ),
-                        for (final s in PresenceState.values)
-                          pick(
-                            s.name,
-                            _forceState == s,
-                            () => both(() => _forceState = s),
-                          ),
-                      ],
-                    ),
-
-                    label('Difficulty (0 effortless → 4 can\'t)'),
-                    Row(
-                      children: [
-                        pick(
-                          'Live',
-                          _forceDifficulty == null,
-                          () => both(() => _forceDifficulty = null),
-                        ),
-                        Expanded(
-                          child: Slider(
-                            value: (_forceDifficulty ?? 0).clamp(0, 4),
-                            min: 0,
-                            max: 4,
-                            divisions: 4,
-                            label: (_forceDifficulty ?? 0).toStringAsFixed(0),
-                            onChanged: (v) => both(() => _forceDifficulty = v),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    label('Display over the void'),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        pick(
-                          'Clear',
-                          _caption == null,
-                          () => both(() {
-                            _caption = null;
-                            _displayIsList = false;
-                          }),
-                        ),
-                        pick(
-                          'Caption',
-                          _caption != null && !_displayIsList,
-                          () => both(() {
-                            _caption =
-                                'Logged dinner with Katherine — Rina got into UW.';
-                            _displayIsList = false;
-                          }),
-                        ),
-                        pick(
-                          'List (ease to corner)',
-                          _displayIsList,
-                          () => both(() {
-                            _caption =
-                                'Interactions with Katherine:\n  • dinner (Sun)\n'
-                                '  • coffee (Fri)\n  • call (Wed)';
-                            _displayIsList = true;
-                          }),
-                        ),
-                      ],
-                    ),
-
-                    label('Voice'),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilledButton.tonal(
-                          onPressed: (_voice?.available ?? false)
-                              ? () => _voice?.speak(
-                                  'This is Plena — testing, one two three.',
-                                )
-                              : null,
-                          child: const Text('Speak a test line'),
-                        ),
-                        OutlinedButton(
-                          onPressed: () => _voice?.stop(),
-                          child: const Text('Stop'),
-                        ),
-                        FilledButton.tonal(
-                          onPressed: () {
-                            Navigator.of(ctx).pop();
-                            _openTuning();
-                          },
-                          child: const Text('Tune Plena…'),
-                        ),
-                      ],
-                    ),
-
-                    label('Fire a gesture (${kGlyphs.length} glyphs)'),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        for (final e in kGlyphs.entries)
-                          ActionChip(
-                            label: Text(e.key),
-                            tooltip: e.value.occasion,
-                            onPressed: () => _fireGlyph(e.value, force: true),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+  /// How the INTERNAL-ONLY dev sheets (dev_harness.dart) reach this screen's
+  /// state. Only ever built inside a `!isExternalBuild` branch, so an external
+  /// AOT build drops this getter, the sheets, and their strings entirely.
+  DevHarnessBinding get _devHarnessBinding => DevHarnessBinding(
+    applyToScreen: setState,
+    readTuning: () => _tuning,
+    writeTuning: (value) => _tuning = value,
+    readForceState: () => _forceState,
+    writeForceState: (value) => _forceState = value,
+    readForceDifficulty: () => _forceDifficulty,
+    writeForceDifficulty: (value) => _forceDifficulty = value,
+    readCaption: () => _turn.caption,
+    readDisplayIsList: () => _turn.displayIsList,
+    writeDisplay: _turn.setDisplay,
+    readVoice: () => _turn.voice,
+    fireGlyph: (glyph) => _fireGlyph(glyph, force: true),
+  );
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -1525,19 +754,17 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   );
 
   // ---- the routine player (Spec 16) -----------------------------------------------------------
-  // The cadence is DEVICE-LOCAL and deterministic — no model, no cloud, so a run needs no network
-  // and you never have to LOOK at the phone. It is NOT, however, background-capable: this is a Dart
-  // timer in the widget tree plus foreground TTS, and the app declares no UIBackgroundModes, so
-  // locking an iPhone suspends it. Face-down-but-awake works; locked does not (Spec 16 §5).
-  // It lives outside the turn pipeline (the app speaks without a user turn, which the
-  // one-active-turn model doesn't cover) and is re-synced to the run after every turn.
-  Timer? _stepTimer;
-  DateTime? _stepStartedAt;
-  int? _stepSeconds;
-
-  /// Which step the armed timer belongs to, so an unrelated turn mid-hold doesn't restart the
-  /// clock and a stale tick can't advance a step the run has already left.
-  String? _timedStepId;
+  // The cadence itself lives in routine_player.dart; this screen supplies the
+  // run, the turn/capture state it must respect, and the surfaces it drives.
+  late final RoutinePlayer _player = RoutinePlayer(
+    activeRun: () => _session.activeRun,
+    alive: () => mounted,
+    turnInFlight: () => _turn.busy,
+    capturing: () => _turn.listening || _turn.transcribing,
+    sendControlWord: _turn.send,
+    showCaption: (message) => _turn.setDisplay(message, false),
+    onTick: () => setState(() {}),
+  );
 
   RoutineStepView? _routineStep() {
     final run = _session.activeRun;
@@ -1565,139 +792,34 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
 
   Widget _routineOverlay(BuildContext context) {
     final step = _routineStep()!;
-    final started = _stepStartedAt;
-    final secs = _stepSeconds;
+    final started = _player.stepStartedAt;
+    final secs = _player.stepSeconds;
     final progress = (started == null || secs == null || secs <= 0)
         ? null
         : DateTime.now().difference(started).inMilliseconds / (secs * 1000);
     return RoutineStepCard(
       step: step,
       progress: progress,
-      onNext: () => _sendRoutine('next'),
-      onStop: () => _sendRoutine('stop'),
+      onNext: () => _player.sendRoutine('next'),
+      onStop: () => _player.sendRoutine('stop'),
     );
   }
 
-  /// Drive the player from the card's buttons (and the step timer). The control word goes straight
-  /// to [_send] as an explicit utterance — never through `_ctrl`, which holds whatever the user may
-  /// be typing in muted mode; a Stop tap must not clobber a draft or leave ghost text.
-  Future<void> _sendRoutine(String word) async {
-    if (!mounted || _session.activeRun == null) return;
-    _cancelStepTimer();
-    if (_busy) {
-      // A turn is mid-flight. Wait for it rather than dropping a control the user physically
-      // pressed — losing a Stop is worse than a beat of latency.
-      await _turnSettled();
-      if (!mounted || _session.activeRun == null) return;
-      if (_busy) {
-        // Still busy after the bounded wait: say so instead of silently
-        // dropping the press (no-silent-failure).
-        setState(() {
-          _caption =
-              "I'm still finishing the last thing — tap that again in a moment.";
-          _displayIsList = false;
-        });
-        return;
-      }
-    }
-    await _send(word);
-  }
-
-  /// Wait (bounded) for the in-flight turn to finish.
-  Future<void> _turnSettled() async {
-    for (var i = 0; i < 100 && _busy; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    }
-  }
-
-  /// Arm or cancel the cadence to match the run's current state. Idempotent — safe to call after
-  /// every turn.
-  void _syncStepTimer() {
-    final run = _session.activeRun;
-    if (run == null || run.paused || run.currentSeconds == null) {
-      _cancelStepTimer();
-      return;
-    }
-    // Already counting this same step? Leave it alone, or every unrelated turn mid-hold (the run is
-    // sticky, so those happen) would silently restart the clock.
-    if (_stepTimer != null && _timedStepId == run.current?['id']) return;
-    _armStepTimer();
-  }
-
-  void _cancelStepTimer() {
-    _stepTimer?.cancel();
-    _stepTimer = null;
-    _stepStartedAt = null;
-    _stepSeconds = null;
-    _timedStepId = null;
-  }
-
-  /// Arm the auto-advance for a TIMED step. A rep-based step never auto-advances — it waits for
-  /// "next", because only the user knows when the reps are done.
-  void _armStepTimer() {
-    _cancelStepTimer();
-    final run = _session.activeRun;
-    if (run == null || run.paused) return;
-    final secs = run.currentSeconds;
-    if (secs == null || secs <= 0) return;
-    _stepStartedAt = DateTime.now();
-    _stepSeconds = secs;
-    _timedStepId = run.current?['id'] as String?;
-    // A 1s tick drives the progress bar; the advance fires once at the end.
-    _stepTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      final live = _session.activeRun;
-      // Stop counting if the run ended, was paused (by voice — the tick used to ignore that and
-      // complete the paused step), or moved on to a different step.
-      if (!mounted ||
-          live == null ||
-          live.paused ||
-          live.current?['id'] != _timedStepId) {
-        _cancelStepTimer();
-        return;
-      }
-      final elapsed = DateTime.now().difference(_stepStartedAt!).inSeconds;
-      if (elapsed >= secs) {
-        _cancelStepTimer();
-        if (_listening || _transcribing) {
-          // Mid-utterance: starting the 'next' turn now would set _busy, and the
-          // arriving final transcript is dropped at `if (!_busy)` — the user's
-          // speech would vanish. Defer the advance until the capture resolves.
-          _advanceAfterCapture = true;
-        } else {
-          _sendRoutine('next');
-        }
-      } else {
-        setState(() {}); // repaint the ring
-      }
-    });
-  }
-
-  /// A timed step elapsed while the mic was open; advance now that the capture
-  /// session has resolved. _sendRoutine itself queues behind any in-flight turn
-  /// (the transcript's), so the spoken words land before the step moves on.
-  bool _advanceAfterCapture = false;
-  void _flushDeferredAdvance() {
-    if (!_advanceAfterCapture) return;
-    _advanceAfterCapture = false;
-    unawaited(_sendRoutine('next'));
-  }
-
   // ---- the presence-primary home (Spec 15): only Plena + the current exchange over the void ----
-  static const _ink = Color(0xFFEAE2D8);
-
   Widget _presenceHome(BuildContext context) {
-    final hasStt = _speech?.available ?? false;
+    final hasStt = _turn.speech?.available ?? false;
     final showInput =
-        _voiceMuted ||
+        _turn.voiceMuted ||
         !hasStt; // keyboard path when muted, or when there's no mic
-    final hasContent = _caption != null && _caption!.trim().isNotEmpty;
+    final caption = _turn.caption;
+    final hasContent = caption != null && caption.trim().isNotEmpty;
     final listMode =
-        hasContent && _displayIsList; // a list eases Plena to a corner
+        hasContent && _turn.displayIsList; // a list eases Plena to a corner
     final showPlanner =
         !hasContent &&
-        !_listening &&
-        !_busy &&
-        !_transcribing &&
+        !_turn.listening &&
+        !_turn.busy &&
+        !_turn.transcribing &&
         _session.activeRun == null;
     final systemReducedMotion = MediaQuery.disableAnimationsOf(context);
     final crossfadeStaticPresence = _stillPresence || systemReducedMotion;
@@ -1705,7 +827,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         (widget.forceAnimate ?? (widget.session == null)) &&
         !_stillPresence &&
         !systemReducedMotion;
-    final presenceMode = _voiceMuted
+    final presenceMode = _turn.voiceMuted
         ? 'muted, text mode'
         : hasStt
         ? 'voice mode'
@@ -1717,7 +839,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
+            onTap: (hasStt && !_turn.voiceMuted && !_turn.busy)
+                ? _turn.toggleMic
+                : null,
             onLongPress:
                 !isExternalBuild && activeBuildChannel.allowsInternalTools
                 ? () {
@@ -1736,7 +860,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
             child: Semantics(
               container: true,
               label:
-                  'Plena — ${_presence.name}, $presenceMode, ${_expression.name}${hasContent ? '. ${_caption!}' : ''}',
+                  'Plena — ${_presence.name}, $presenceMode, ${_turn.expression.name}${hasContent ? '. $caption' : ''}',
               child: AnimatedSwitcher(
                 duration: PlenaraMotion.standard,
                 switchInCurve: PlenaraMotion.enter,
@@ -1745,13 +869,15 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                     FadeTransition(opacity: animation, child: child),
                 child: PresenceView(
                   key: crossfadeStaticPresence
-                      ? ValueKey('still-${_presence.name}-${_expression.name}')
+                      ? ValueKey(
+                          'still-${_presence.name}-${_turn.expression.name}',
+                        )
                       : const ValueKey('continuous-presence'),
                   state: _presence,
                   difficulty: _difficulty,
                   animate: animatePresence,
-                  expression: _expression,
-                  listeningLevel: _micLevel,
+                  expression: _turn.expression,
+                  listeningLevel: _turn.micLevel,
                   acknowledgementNonce: _acknowledgementNonce,
                   glyph: _glyph,
                   glyphNonce: _glyphNonce,
@@ -1770,11 +896,15 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
               1 => PlanBoard(
                 session: _session,
                 onChanged: () => setState(() {}),
-                onVoice: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
+                onVoice: (hasStt && !_turn.voiceMuted && !_turn.busy)
+                    ? _turn.toggleMic
+                    : null,
               ),
               2 => LibraryHome(
                 session: _session,
-                onVoice: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
+                onVoice: (hasStt && !_turn.voiceMuted && !_turn.busy)
+                    ? _turn.toggleMic
+                    : null,
                 onOpen: (title, typeIds) => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => DataView(
@@ -1788,7 +918,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
               _ => TodayBoard(
                 session: _session,
                 onChanged: () => setState(() {}),
-                onVoice: (hasStt && !_voiceMuted && !_busy) ? _toggleMic : null,
+                onVoice: (hasStt && !_turn.voiceMuted && !_turn.busy)
+                    ? _turn.toggleMic
+                    : null,
                 onOpenLibrary: () => setState(() => _plannerTab = 2),
                 onOpenAttention: () => Navigator.of(context).push(
                   MaterialPageRoute(
@@ -1861,10 +993,13 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                   FadeTransition(opacity: animation, child: child),
               child: hasContent
                   ? KeyedSubtree(
-                      key: ValueKey('caption-${_expression.name}-$_caption'),
-                      child: _voidText(
-                        _caption!,
+                      key: ValueKey(
+                        'caption-${_turn.expression.name}-$caption',
+                      ),
+                      child: voidText(
+                        caption,
                         list: listMode,
+                        tuning: _tuning,
                         bottomInset: showInput ? 168 : 0,
                       ),
                     )
@@ -1875,7 +1010,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         // The status line, in the italic "listening" font: "listening…" until your words appear
         // (then the live caption takes over, no overlap); once input ends, "I heard: <what you
         // said>" as a confirmation, until the reply settles.
-        if ((_listening && !hasContent) || _heard != null)
+        if ((_turn.listening && !hasContent) || _turn.heard != null)
           Positioned(
             bottom: 150,
             left: 0,
@@ -1888,11 +1023,11 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                     // While listening: "listening…", or the decaying/just-in-time affordance line
                     // that teaches the stop gesture. The presence already says THAT it's listening;
                     // only "how do I finish?" needs words.
-                    _heard != null
-                        ? 'I heard: $_heard'
-                        : (_micPrompt == null
+                    _turn.heard != null
+                        ? 'I heard: ${_turn.heard}'
+                        : (_turn.micPrompt == null
                               ? 'listening…'
-                              : 'listening — $_micPrompt'),
+                              : 'listening — ${_turn.micPrompt}'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Color(0x99EAE2D8),
@@ -1907,7 +1042,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         // ABORT, only while listening. The second tap now means "done, send it", so discarding needs
         // its own control — the mirror of the mute button, and deliberately a small corner target:
         // with numbered corrections and "undo that", a wrong SEND is cheap, so abort is the rare path.
-        if (_listening)
+        if (_turn.listening)
           Positioned(
             right: 14,
             bottom: 14 + MediaQuery.of(context).padding.bottom,
@@ -1940,196 +1075,6 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  // Heavy shadow under all void text — insurance against a stray mote drifting beneath the column.
-  static const _voidShadows = [
-    Shadow(blurRadius: 22, color: Colors.black),
-    Shadow(blurRadius: 8, color: Colors.black),
-  ];
-  static const _captionStyle = TextStyle(
-    color: _ink,
-    fontSize: 24,
-    height: 1.5,
-    fontWeight: FontWeight.w300,
-    shadows: _voidShadows,
-  );
-
-  /// The current exchange, in one of three registers (Fable's list redesign):
-  /// - **caption** (short reply): centered in the lower third — already reads well.
-  /// - **list / prose** ([list] true — Plena has eased to the upper-right): a left-hand reading
-  ///   column over the same void. Lists get "mote" marks in Plena's hue + hanging indent; prose is
-  ///   set as paragraphs. No opaque box — the Scaffold is the one ground.
-  Widget _voidText(String text, {required bool list, double bottomInset = 0}) {
-    if (!list) {
-      return Padding(
-        padding: EdgeInsets.only(bottom: bottomInset),
-        child: Align(
-          alignment: const Alignment(0, 0.5),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
-            child: Text(
-              text,
-              textAlign: TextAlign.center,
-              style: _captionStyle,
-            ),
-          ),
-        ),
-      );
-    }
-    return Padding(
-      padding: EdgeInsets.fromLTRB(64, 104, 64, 120 + bottomInset),
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: SingleChildScrollView(child: _replyBody(text)),
-        ),
-      ),
-    );
-  }
-
-  // Bullet lines: "•", "-", "–", or "1." / "1)" leaders (the engine emits "  • item").
-  static final _bulletRe = RegExp(r'^\s*([•\-–]|\d+[.)])\s+');
-
-  /// Compose the yielded reply body: prose as paragraphs, lists as lead-in + mote-marked items.
-  Widget _replyBody(String text) {
-    final lines = text.split('\n');
-    final hasList = lines.any(_bulletRe.hasMatch);
-    if (!hasList) {
-      final paras = text
-          .split(RegExp(r'\n\s*\n'))
-          .map((p) => p.trim())
-          .where((p) => p.isNotEmpty);
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final p in paras)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Text(
-                p,
-                style: const TextStyle(
-                  color: _ink,
-                  fontSize: 20,
-                  height: 1.55,
-                  fontWeight: FontWeight.w300,
-                  shadows: _voidShadows,
-                ),
-              ),
-            ),
-        ],
-      );
-    }
-    // Parse into a lead-in (non-bullet text before the first item), the items, and a footer
-    // (non-bullet text AFTER the items — e.g. help's "And 'undo that' reverses the last thing").
-    // Only INDENTED non-bullet lines fold into the previous item as wrapped continuations; a
-    // flush-left trailing line is a footer, not part of the last bullet (Fable review #8).
-    final leadIn = <String>[];
-    final items = <String>[];
-    final footer = <String>[];
-    var seenItem = false;
-    for (final l in lines) {
-      final m = _bulletRe.firstMatch(l);
-      if (m != null) {
-        seenItem = true;
-        items.add(l.substring(m.end).trim());
-      } else if (l.trim().isEmpty) {
-        continue;
-      } else if (!seenItem) {
-        leadIn.add(l.trim());
-      } else if (RegExp(r'^\s').hasMatch(l) && items.isNotEmpty) {
-        items[items.length - 1] +=
-            ' ${l.trim()}'; // an indented continuation of the last bullet
-      } else {
-        footer.add(
-          l.trim(),
-        ); // a flush-left line after the bullets → a footer paragraph
-      }
-    }
-    final marker = HSLColor.fromAHSL(
-      1,
-      _tuning.hue % 360,
-      _tuning.sat.clamp(0.0, 1.0),
-      .56,
-    ).toColor();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (leadIn.isNotEmpty) ...[
-          Text(
-            leadIn.join(' '),
-            style: const TextStyle(
-              color: Color(0x9EEAE2D8),
-              fontSize: 15,
-              letterSpacing: 0.3,
-              fontWeight: FontWeight.w400,
-              shadows: _voidShadows,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 10, bottom: 18),
-            child: Container(
-              width: 24,
-              height: 1,
-              color: marker.withValues(alpha: 0.25),
-            ),
-          ),
-        ],
-        for (var i = 0; i < items.length; i++)
-          Padding(
-            padding: EdgeInsets.only(bottom: i == items.length - 1 ? 0 : 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 24,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 9),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        width: 3.5,
-                        height: 3.5,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: marker.withValues(alpha: 0.55),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    items[i],
-                    style: const TextStyle(
-                      color: _ink,
-                      fontSize: 19,
-                      height: 1.38,
-                      fontWeight: FontWeight.w300,
-                      shadows: _voidShadows,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        if (footer.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: Text(
-              footer.join(' '),
-              style: const TextStyle(
-                color: Color(0xC8EAE2D8),
-                fontSize: 15,
-                height: 1.4,
-                fontWeight: FontWeight.w300,
-                shadows: _voidShadows,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
   Widget _inputBar(BuildContext context) => Material(
     color: Colors.transparent,
     child: Container(
@@ -2144,11 +1089,11 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         children: [
           Expanded(
             child: TextField(
-              controller: _ctrl,
+              controller: _turn.input,
               minLines: 1,
               maxLines: 2,
-              style: const TextStyle(color: _ink),
-              onSubmitted: (_) => _send(),
+              style: const TextStyle(color: voidInk),
+              onSubmitted: (_) => _turn.send(),
               decoration: InputDecoration(
                 hintText: 'Type to Plena…',
                 hintStyle: const TextStyle(color: Color(0x66EAE2D8)),
@@ -2163,7 +1108,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           ),
           const SizedBox(width: 10),
           FilledButton(
-            onPressed: _busy ? null : _send,
+            onPressed: _turn.busy ? null : _turn.send,
             child: const Text('Send'),
           ),
         ],
@@ -2178,61 +1123,21 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       key: const Key('cancel-listen'),
       icon: const Icon(Icons.close, color: Color(0x88FFFFFF)),
       tooltip: 'Cancel without sending',
-      onPressed: _cancelListening,
+      onPressed: _turn.cancelListening,
     ),
   );
-
-  /// Stop capturing and throw the audio away. Used by the ✕, by mute, and by backgrounding.
-  void _cancelListening() {
-    if (!_listening) return;
-    AppLog.instance.debug('speech: cancel (discard)');
-    _micEpoch++; // invalidate any in-flight listen-start awaiting the barge-in settle
-    _aborting = true; // this cancel's onDone is deliberate, not a no-audio miss
-    _hintTimer?.cancel();
-    if (mounted) {
-      setState(() {
-        _listening = false;
-        _transcribing = false;
-        _micPrompt = null;
-      });
-    }
-    _speech?.cancel();
-    _captureId = null;
-    // The mic is closed: release a deferred step advance and any queued
-    // operation deliveries that were waiting on it.
-    _flushDeferredAdvance();
-    _maybeFlushDeliveries();
-  }
 
   Widget _muteButton() => Material(
     color: Colors.transparent,
     child: IconButton(
       icon: Icon(
-        _voiceMuted ? Icons.volume_off : Icons.volume_up,
+        _turn.voiceMuted ? Icons.volume_off : Icons.volume_up,
         color: const Color(0x88FFFFFF),
       ),
-      tooltip: _voiceMuted
+      tooltip: _turn.voiceMuted
           ? 'Plena is muted — tap to unmute'
           : "Mute Plena's voice",
-      onPressed: () {
-        setState(() {
-          _voiceMuted = !_voiceMuted;
-        });
-        // remember the choice between launches (real app, or a test with an injected configPath).
-        // Persist ONLY the pref — no dataDir, so a PLENARA_DATA env override isn't baked in.
-        if (widget.session == null || widget.configPath != null) {
-          saveConfig(voiceMuted: _voiceMuted, configPath: widget.configPath);
-        }
-        if (_voiceMuted) {
-          if (_voice?.speaking ?? false) {
-            _voice!.stop();
-            setState(() => _speaking = false);
-          }
-          // muting = switch to text mode — don't leave a hot mic with no way to stop it, and no
-          // stray transcript to overwrite/auto-send what the user is about to type (reviewer d #1)
-          _cancelListening();
-        }
-      },
+      onPressed: _turn.toggleMute,
     ),
   );
 
@@ -2253,9 +1158,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
             context,
           ).push(MaterialPageRoute(builder: (_) => _settingsView()));
         } else if (!isExternalBuild && v == 'tune') {
-          _openTuning();
+          openTuningSheet(context, _devHarnessBinding);
         } else if (!isExternalBuild && v == 'harness') {
-          _openHarness();
+          openDevHarnessSheet(context, _devHarnessBinding);
         }
       },
       itemBuilder: (_) => isExternalBuild

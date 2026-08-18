@@ -340,7 +340,32 @@ TodayProjection buildTodayProjection(
     }
   }
 
-  current.sort(_itemOrder);
+  // Now answers "what am I doing right now", so slipped work informs it but
+  // must never crowd it out. Of the 3 slots, items scheduled today reserve
+  // min(count, 2); overdue items take the rest — so overdue keeps at least 1
+  // slot whenever any exists, at most 2 while anything is current, and the
+  // whole bucket only when nothing is current. Each side is ordered by
+  // _itemOrder (earliest first, id-stable) and overdue leads, so the item
+  // shown is the most overdue rather than an arbitrary slice of one merged
+  // sort that three-day-old leftovers would win outright.
+  const nowCapacity = 3;
+  final overdueNow = current
+      .where((item) => (item.at ?? now).isBefore(start))
+      .toList()
+    ..sort(_itemOrder);
+  final currentNow = current
+      .where((item) => !(item.at ?? now).isBefore(start))
+      .toList()
+    ..sort(_itemOrder);
+  final reservedForCurrent = currentNow.length < nowCapacity - 1
+      ? currentNow.length
+      : nowCapacity - 1;
+  final shownOverdue =
+      overdueNow.take(nowCapacity - reservedForCurrent).toList();
+  final nowItems = [
+    ...shownOverdue,
+    ...currentNow.take(nowCapacity - shownOverdue.length),
+  ];
   nextCandidates.sort((a, b) {
     final rank = a.rank.compareTo(b.rank);
     if (rank != 0) return rank;
@@ -353,7 +378,7 @@ TodayProjection buildTodayProjection(
 
   return TodayProjection(
     day: start,
-    now: List.unmodifiable(current.take(3)),
+    now: List.unmodifiable(nowItems),
     next: List.unmodifiable(nextCandidates.take(3).map((entry) => entry.item)),
     later: List.unmodifiable(laterCandidates.take(3)),
     relationshipNudge: _relationshipNudge(records, start, weekEnd),

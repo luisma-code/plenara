@@ -712,6 +712,88 @@ void main() {
     expect(item.detail, isNot(contains('Scheduled Overdue')));
   });
 
+  group('Now reserves capacity so slipped work cannot hide today', () {
+    Map<String, dynamic> scheduledTask(String id, String at) => {
+          'id': id,
+          'typeId': 'task',
+          'description': id,
+          'scheduledStartAt': at,
+          'status': 'scheduled',
+        };
+
+    Map<String, Map<String, dynamic>> records(
+      List<Map<String, dynamic>> defs, {
+      bool reversed = false,
+    }) {
+      final ordered = reversed ? defs.reversed.toList() : defs;
+      return {for (final def in ordered) '${def['id']}': def};
+    }
+
+    test('today keeps a place in Now when three older items have slipped', () {
+      final projection = buildTodayProjection(
+        records([
+          scheduledTask('slip-mon', '2026-08-10T09:00:00'),
+          scheduledTask('slip-tue', '2026-08-11T09:00:00'),
+          scheduledTask('slip-wed', '2026-08-12T09:00:00'),
+          scheduledTask('today-early', '2026-08-17T08:00:00'),
+          scheduledTask('today-late', '2026-08-17T08:30:00'),
+        ]),
+        now,
+      );
+      final ids = projection.now.map((item) => item.id).toList();
+      expect(ids, hasLength(3));
+      expect(ids.where((id) => id.startsWith('today-')), isNotEmpty,
+          reason: 'Now must answer "what am I doing right now"');
+      // Allocation: current keeps min(count, 2) of the 3 slots, overdue takes
+      // the remainder, and the leading overdue item is the most overdue.
+      expect(ids, ['slip-mon', 'today-early', 'today-late']);
+    });
+
+    test('overdue may still fill Now when nothing is scheduled today', () {
+      final projection = buildTodayProjection(
+        records([
+          scheduledTask('slip-mon', '2026-08-10T09:00:00'),
+          scheduledTask('slip-tue', '2026-08-11T09:00:00'),
+          scheduledTask('slip-wed', '2026-08-12T09:00:00'),
+          scheduledTask('slip-thu', '2026-08-13T09:00:00'),
+        ]),
+        now,
+      );
+      expect(projection.now.map((item) => item.id).toList(),
+          ['slip-mon', 'slip-tue', 'slip-wed']);
+    });
+
+    test('with no overdue items today fills Now in scheduled order', () {
+      final projection = buildTodayProjection(
+        records([
+          scheduledTask('today-a', '2026-08-17T07:00:00'),
+          scheduledTask('today-b', '2026-08-17T08:00:00'),
+          scheduledTask('today-c', '2026-08-17T08:45:00'),
+          scheduledTask('today-d', '2026-08-17T09:20:00'),
+        ]),
+        now,
+      );
+      expect(projection.now.map((item) => item.id).toList(),
+          ['today-a', 'today-b', 'today-c']);
+    });
+
+    test('Now is identical for any record insertion order', () {
+      final defs = [
+        scheduledTask('overdue-a', '2026-08-14T09:00:00'),
+        scheduledTask('overdue-b', '2026-08-14T09:00:00'),
+        scheduledTask('current-a', '2026-08-17T08:00:00'),
+        scheduledTask('current-b', '2026-08-17T08:00:00'),
+      ];
+      final forward = buildTodayProjection(records(defs), now);
+      final backward =
+          buildTodayProjection(records(defs, reversed: true), now);
+      expect(forward.now.map((item) => item.id).toList(),
+          backward.now.map((item) => item.id).toList());
+      expect(forward.now.map((item) => item.id).toList(),
+          ['overdue-a', 'current-a', 'current-b']);
+    });
+  });
+
   test('morning and relationship prep stay durable until explicitly resolved',
       () async {
     final data = makeTempDataDir();

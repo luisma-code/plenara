@@ -43,9 +43,35 @@ _Current working memory. Last updated 2026-08-18 after the full-tree code review
   90.0% product / 83.8% transport** (transport was 68.1%); macOS build; seven real-engine cases;
   external, secret, and 24/60 gates. No simulator or physical phone was used; no orphan process
   remains.
-- Explicitly deferred to the owner: `session.dart`/`main.dart` decomposition, `Session.handle`
-  reentrancy serialization, and whether past-scheduled items should keep evicting today's items from
-  the three-item Now cap.
+## Structural follow-up (2026-08-18)
+
+Luis rejected the three "owner decisions" above as deferrals — none met the bar of a genuine product
+call, a spend, an irreversible act, or missing credentials. All three were done:
+
+- **Turn serialization.** Every public entry point — `handle` and the UI mutations a task-row tap
+  uses (`completeTask`, `updateTaskPlans`, `scheduleTasks`, `deferTasks`, `resizeTask`,
+  `completeTasks`, `editField`, `deleteRecord`, `undoLast`, `undoById`, `applyWeeklyReview`,
+  `applyPlanProposal`) — now runs on ONE `_serialized` chain with `*Unlocked` bodies for every
+  internal caller, so a queued operation can never await another queued entry point. `_turnInProgress`
+  is owned by the chain, so a deferred storage refresh drains exactly once after the LAST operation
+  rather than between two of them. Four concurrency tests; two of them go red against unserialized
+  turns.
+- **`main.dart` decomposed**, 2,281 → 1,185 lines: `bootstrap.dart` (187), `voice_turn_controller.dart`
+  (670), `routine_player.dart` (166), `reply_view.dart` (201), `dev_harness.dart` (311). Behaviour
+  preserved — `ChatScreen`'s constructor and every widget `Key` are unchanged, so `widget_test.dart`
+  needed no edits. The extracted controller carries 8 new unit tests that were impossible before
+  (delivery queued while listening, delivery presented after a turn, TTS never over an open mic,
+  cancel as the only discard path), each calibrated against six deliberate breakages. The compiled
+  external gate was re-proven on a real release artifact, not assumed.
+- **Now-cap allocation.** Overdue work stays visible but can no longer take every slot: current items
+  reserve up to 2 of 3, overdue fills the remainder, and overdue may still fill the bucket when
+  nothing is current. Degrades to the old behaviour at both extremes.
+- Gate after the structural work: 2,042 engine tests + 36 skips; 183 Flutter tests + 4 skips;
+  95.7% / 90.0% / 83.8% coverage; macOS build; seven real-engine cases; external, secret, and 24/60
+  gates. No simulator or phone; no orphan process.
+- Still open, and genuinely structural rather than deferred work: `session.dart` remains ~5,000 lines.
+  Its seams are mapped (Tour ~350, planner facade ~950, reference-by-number ~320, Library facade
+  ~156, routines ~566, regex intent bank ~550) and it is the next decomposition.
 
 ## Product direction
 
