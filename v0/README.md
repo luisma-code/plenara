@@ -1,5 +1,13 @@
 # Plenara v0 — Walking Skeleton
 
+> **Historical milestone, not the current operating guide.** This document records the original
+> Windows walking skeleton and its then-current test counts. The engine and Flutter app have since
+> advanced substantially. Use [`../DOGFOOD.md`](../DOGFOOD.md) to run the current product,
+> [`../WORK-CAPSULE.md`](../WORK-CAPSULE.md) for current implementation state, and
+> [`../planning/specs/17-living-planner.md`](../planning/specs/17-living-planner.md) for the current
+> interaction model. Statements below about localhost retrieval, volatile undo, absent voice, and
+> future UI are preserved as milestone evidence and are not current requirements.
+
 The **real codebase** starts here (not a throwaway spike). A text-first Dart console app that runs a full turn through every layer, on Windows. Voice and the Flutter UI are later layers; this proves the *spine*.
 
 ## Run

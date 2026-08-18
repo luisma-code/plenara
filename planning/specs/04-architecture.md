@@ -20,6 +20,17 @@ It specifies four things the research doc (§9, §12) calls for:
 
 It does **not** re-specify subsystem internals: type-file format (Spec 01), primitive-operation semantics (Spec 02), routing and the corpus (Spec 03), STT/TTS (Spec 12 — Voice), sync-protocol conflict resolution (Spec 06 — Data & Sync), or view rendering (Spec 07 — UI). It defines the *contracts and control flow that bind them*, and it is the authority whenever two subsystem specs disagree about a seam.
 
+> **Implementation map (2026-08-17).** Sections 2–3 define architectural responsibilities and
+> destination interfaces; their type names are not a literal inventory of classes already present.
+> The current composition root builds one `Session`, which owns dispatch sequencing, the
+> `SkillInterpreter`, `Router`, `GenerativeService`, authoring flow, reminders, and automations.
+> `ExecutionCoordinator` is the sole mutation/journal/undo door, `OperationCenter` serializes
+> detached work, `FileStorageRepository` owns records and provider reconciliation, and Flutter's
+> `SpeechRecognizer`/`SpeechOutput` own voice. The merged `CapabilityIndex`, standalone
+> `DispatchOrchestrator`/`AuthoringService`, `CryptoBox`, and worker-isolate topology in this spec
+> remain extraction or hardening targets. A behavior is not shipped merely because an interface is
+> specified below.
+
 ---
 
 ## 1. Governing Principles
@@ -48,7 +59,7 @@ Five layers. The research doc §9.1 table is refined here with the concrete comp
 | **Business Logic** | Validate, transform, apply rules; run the interpreter; own the dispatch turn, automations, generation, and undo; drive migration and reconciliation | `DispatchOrchestrator`, `SkillInterpreter`, `SchemaRegistry`, `MigrationRunner`, `AuthoringService`, `ExecutionJournal`, `AutomationRunner`, `GenerativeService`, `AttentionSurface` | Storage, Intelligence, Voice contracts | How data is stored; how a model works internally |
 | **Storage** | Read/write per-record JSON (type-agnostic); own the in-memory decrypted object store; observe external changes where supported; encryption at rest | `StorageRepository`, the object store/cache, the reconcile event adapter, `CryptoBox` | File system / content URIs; the meta-schema shape only | Business rules, UI, AI |
 | **Intelligence** | NLU routing & extraction; cloud calls; type/skill authoring; the corrections corpus | `NluRouter`, `ClaudeClient`, the corpus store | Business Logic contracts (intent/type/skill schemas), the `CapabilityIndex` (read-only) | Storage internals, UI |
-| **Voice** | STT, TTS, push-to-talk / wake-word; signal a final transcript | `SpeechEngine` | Business Logic (delivers transcripts; receives text to speak) | Storage, UI, business rules |
+| **Voice** | STT, TTS, tap-toggle capture / future wake-word; signal one final transcript | `SpeechRecognizer` + `SpeechOutput` (the `SpeechEngine` target contract is historical) | Business Logic (delivers transcripts; receives text to speak) | Storage, UI, business rules |
 
 Two components sit across the Storage↔Business seam and deserve naming now, because Specs 01–03 all leaned on them: the **in-memory object store** (Storage owns it; it is the decrypted, hydrated spine every read is served from, Spec 01 §8.2) and the **`CapabilityIndex`** (a Storage/registry artifact, Spec 01 §5.4, that Intelligence queries read-only, §3.4 here).
 
@@ -180,7 +191,10 @@ abstract class CryptoBox {
 }
 ```
 
-The same `CryptoBox` seals the device-local encrypted stores of the other layers — the execution journal (Spec 02 §5.2) and the plan cache (Spec 03 §5.1 Lane 2) — so there is exactly one crypto surface and one key-availability check in the whole app. *(The corrections **corpus**, Lane 1, is a different case: it holds slot-*shapes* not values, so it **syncs** as plaintext per-device files, §5.1 / `G-36` — it is not one of the device-local encrypted stores.)*
+When at-rest encryption ships, the same `CryptoBox` boundary must seal sensitive record fields and
+the device-local execution journal. Today `CryptoBox` is a destination interface: records and the
+journal are plaintext, while the API key alone uses the platform secure store. The corrections
+corpus holds slot shapes and syncs as plaintext.
 
 ### 3.2 Business Logic — `SchemaRegistry`, `MigrationRunner` (restated)
 
@@ -274,13 +288,22 @@ abstract class ExecutionJournal {
 }
 ```
 
-`ExecutionRecord` is the Spec 02 §5.3 structure (`phase`, `frozenInputs`, `readSnapshot`, `branches`, `foreachProgress`, the compiled `actionPlan`, `skillSchemaVersion`, `compiledFormVersion`), extended by this spec with `beforeImages` (captured at `complete`, for undo) and an `origin` tag (`interactive` | `automation`, so the review feed and the automation TTL of §7.5 are distinguishable from an interactive pending confirmation). One file per execution at `[app-support]/plenara/executions/{executionId}.json`; a `done` file lingers only until its undo window closes.
+The destination `ExecutionRecord` below is richer than today's `DurableExecutionRecord`. The
+current record stores `phase`, `frozenInputs`, concrete `operations`, `nextOperation`, exact
+`before` images, `origin`, visibility, and description inside one bounded ledger. Per-execution
+files, branch/foreach resume, and a compiled-form version are targets, not current fields.
 
 ### 3.4 Intelligence — `NluRouter` (restated) and `CapabilityIndex` (new)
 
 `NluRouter` is defined in full in Spec 03 §2.6 and summarized here: `route(transcript, NluContext) → Intent` (pure w.r.t. storage — reads corpus/index/registry, writes nothing); `resolveFollowUp(pending, slotName, answer, ctx)` for a single missing slot; the two corpus write paths `recordCorrection(...)` / `recordConfirmation(..., {kind})` called *only* by the orchestrator after the user acts; and `testPair(...)`. `Intent` is the sealed hierarchy of Spec 03 §2.5/§2.6; `NluContext` is the read-only per-utterance snapshot the Business Logic layer assembles (frozen clock, `entityNames` resolver, `recentIntents`, `pendingConfirmation`, `tier`).
 
 The one contract this spec owns at this boundary is the **`CapabilityIndex`** — the embedding index Spec 01 §5.4 said the registry owns and NLU only consumes, leaving to the Architecture spec the choice of "whether that is one physical index or two behind a façade." **Decision (§9-AD3): one façade over two physically separate indexes plus a static generative-capability table (§3.10).**
+
+> **CURRENT REALIZATION (2026-08-17):** the merged façade below is not implemented. `Router`
+> currently builds one in-memory, skill-only multi-anchor table using
+> `InProcessEmbeddingBackend`'s deterministic feature hash. Generative requests are recognized by
+> rules/cloud residual, and type reconciliation does not query this index. The façade remains the
+> migration destination if a packaged sentence transformer clears its evidence gates.
 
 ```dart
 abstract class CapabilityIndex {
@@ -292,9 +315,16 @@ abstract class CapabilityIndex {
 // CapabilityHit: { id, kind ∈ {skill, type, generative}, score }
 ```
 
-The façade is one query surface returning `(id, kind, score)`; behind it sit two independently-rebuilt binaries — the type index (keyed on `displayName` + `description` + `examplePhrases`) and the skill index (keyed on the skill's `displayName` + `description` + input labels + its `reads`/`writes` types' phrases). They are *physically* separate because they have different owners and rebuild triggers (a type edit re-embeds one type; a skill edit re-embeds one skill). A **third** source sits behind the same façade: a small **static** table of the fixed built-in generative capabilities (`briefing`, `gift_ideas`, … — §3.10), embedded once from their shipped name + description + example phrases, with no rebuild trigger because the set never changes at runtime. NLU must not care which store a hit came from — it ranks all three kinds together and applies one threshold (Spec 03 §3.3), and each hit is `kind`-tagged so the orchestrator (§3.6) sends a `generative` top-hit to the `GenerativeService` rather than the interpreter. Both live device-local in `[app-support]` (Spec 03 §10 MD9), built with the dedicated ~80 MB retrieval model (Spec 01 §5.1, NLU MD1), never in the synced folder. Keeping them behind one façade means a future consolidation into a single physical index (or a re-split) is invisible to NLU.
+The **target** façade is one query surface returning `(id, kind, score)` over separate type and skill
+indexes plus a static generative table. A type edit would re-represent one type; a skill edit one
+skill. NLU would rank all three kinds together without knowing their physical homes. No persistent
+vector binary or packaged model exists in the current build; the active Router table is rebuilt in
+memory from synced definitions at startup.
 
-**Isolate residency (resolves §11 Q3).** `similarTo` is `Future`-returning because the in-memory vector table and the cosine scan live on the **inference isolate**, co-resident with the embedding model — not on the UI isolate. This is a deliberate call: the query must be embedded (an inference-isolate operation) and then scanned against the table, and a linear cosine scan over a few hundred–thousand vectors is exactly the kind of CPU-bound loop that would drop frames if run on the UI isolate. Co-locating the table with the model makes `similarTo` one inference-isolate round-trip (embed + scan → ranked `(id, kind, score)` list) with no large-payload marshaling of vectors across ports. The `SchemaRegistry`'s *type definitions* stay on the UI isolate for synchronous `lookup`; only the vector table and the scan sit with the model. This keeps Spec 01 §5.4's "registry owns the index" true at the ownership level (the registry drives rebuilds) while the *hot vector data* lives where the query is cheapest — the façade hides the split from both NLU and the registry's callers.
+**Target isolate residency (not implemented).** A future packaged model and large vector table belong
+on an inference isolate, with `similarTo` returning a future. The current feature-hash generation
+and cosine scan run in the main isolate over a small skill inventory; their `Future` API does not
+prove isolate movement. Measure frame cost before introducing the port/marshalling complexity.
 
 ### 3.5 Intelligence — `ClaudeClient` (new/formalized)
 
@@ -506,14 +536,24 @@ abstract class GenerativeService {
 
 `GenerativeOutcome` is `Produced(artifact)` or a `CloudError` surface (§5.2) — offline/no-key degrades to "needs internet and a key," and never to a fabricated local imitation (§6.2). Because generation is read-only and can take seconds, it always runs as a **detached operation** (§4.7): a user-initiated request (or a scheduled generative automation) returns immediately with a `Detached` handle and delivers through the operation center, so it never holds the turn lock. Results are never cached as procedural plans (the project's "never cache generative effects" rule; Spec 02 §5.5, Spec 03 §5.3).
 
-**Voice routing (resolved — Spec 03 §2.2a, closes Q6).** A user *saying* "give me a briefing" or "what should I get Sarah?" is now routed by the `generative_request` intent category (Spec 03 §2.2a): the built-in generative capabilities are indexed in the `CapabilityIndex` as a third `kind` (§3.4), the router ranks them like any candidate, and a `generative` top-hit above the act band yields a `generative_request` carrying a `generativeKind` + resolved `params`. The orchestrator (§3.6) dispatches it here, detached and read-only; `produce` assembles the cloud `GenerationRequest` DTO from records + those `params` (the DTO is deliberately distinct from Spec 03's `GenerativeRequest` *intent* — the intent is the spoken ask, the DTO is the assembled prompt job). All three entry paths now exist: **voice** (this), a **scheduled generative automation** (§3.9), and an explicit **UI affordance** ("✨ Briefing"). The earlier v0.2 deferral (reachable only by automation/UI) contradicted P2.1 — voice is uncompromising — for seven of the ten paid marquee tasks (Spec 05 §§15–22); reversing it is the flagship of this Spec 05-driven pass (Appendix C, MD-A10).
+**Current voice routing.** A user can ask for any implemented generative kind by voice. Binary
+rules cover common phrases, learned recognition templates absorb successful novel phrasing, and
+the cloud residual is closed-set validated. `Session` dispatches the recognized kind through
+`GenerativeService` and `OperationCenter`. Ranking generative kinds inside a merged
+`CapabilityIndex`, scheduled generation, and a dedicated result-card entry point remain targets;
+none is required for the current voice path to work.
 
 **Resolve-stage additions (`G-25`, `G-26`, `G-27`).**
 - **Addressable results for the generative→act chain (`G-25`).** A `GenerativeOutcome.artifact` carries, alongside its prose + card, a list of **structured, stably-handled items** (e.g. the five gift ideas each with an id). The orchestrator retains the last generative result's items in `recentIntents` (Spec 03 §2.6), so a *following* act-then-describe turn can reference "**the second one**" (P-14: → `write GiftIdea` → `create-reminder`). The generative call itself stays read-only; only the following act reads the structure.
-- **Assembly-time journal consent (`G-26`).** Journal text enters a generative prompt only by **re-assembling the prompt** with the journal included under a per-session consent — never by instructing the model to "use the journal." `pattern_insight` (P-11) rebuilds *with* journal on an opt-in; `monthly_reflection` (P-13) requires a mandatory consent card. Consent is per-session state on the assembler (Spec 08), not a model instruction — the privacy bound is at *assembly*, so a declined turn's prompt never contains journal text.
-- **`foresight` generativeKind (`G-27`).** Added to the fixed set (Spec 03 §2.2a). Grounded, forward-looking synthesis (P-17): it (1) gathers what's actually upcoming — optionally via an interactive "what's on next week?" step — then (2) looks back at how *similar past situations* moved the log, and (3) returns **evidence-linked, hedged** foresight. Contract: **never a confident fabrication** with no evidence (the honest line vs DP-05's refusal to fabricate the *past* — foresight reasons about the future, it does not invent history).
+- **Journal boundary (`G-26`).** Current assemblers never read journal entries, and tests enforce
+  that exclusion. Any future journal-based kind must rebuild its prompt under explicit per-session
+  consent; pattern insight does not currently offer that opt-in.
+- **Foresight (`G-27`, candidate only).** Grounded forward-looking synthesis remains a proposed
+  kind, not a registry member. Adding it requires the full Spec 08 registry/assembler/consent/test
+  change and must remain evidence-linked and hedged.
 
-**Cost note (`findings §10.1`):** the generative kinds default to **Haiku** (usable synthesis at ~$0.0007/briefing, 5–15× cheaper than Opus); Sonnet/Opus are reserved for the heaviest reasoning (`pattern_insight`, `monthly_reflection`).
+**Cost note:** implemented generative kinds currently use Haiku. Spec 08 owns model assignments and
+measured cost reporting; no unimplemented kind is included in the current envelope.
 
 ### 3.11 Undo & Reversal
 
@@ -580,9 +620,12 @@ abstract class ContentSearchIndex {
 }
 ```
 
-- **Device-local and encrypted at rest** (`[app-support]/plenara/search-index/`, never synced; encryption activates with Spec 01 §8.7 — v1 posture: plaintext device-local per §3.1, suite-sync CS-17): content embeddings are **invertible enough to leak meaning** — a journal embedding reconstructs approximate topics — so this is the mechanism behind Spec 05 §12 E4's "the embedding is not stored in the cloud." **Journal** content is embedded under the same never-synced rule as the journal itself (§3.10, `G-26`/`G-37`).
-- **Incremental, not rebuilt:** `upsert` on each record write; embedding every record ever written at startup is far heavier than the ~hundred capability descriptions in the `CapabilityIndex`. A cold index builds lazily in the background; search degrades to substring match until warm (a *named* temporary degrade, P2.8 — not silence).
-- **Reuses the retrieval embedder** (bge-small, §7.3.4/`G-38`) — no second model ships. Owner: a Storage-adjacent BL component; referenced by Spec 05 §12, Spec 01 §5.4.
+**Current realization.** `ContentSearchIndex` is an in-memory map rebuilt from record content during
+Session initialization and updated after writes. It uses the same deterministic feature-hash
+function as routing and persists no vectors, so there is no search-index file to encrypt or sync.
+The persistent/incremental packaged-model design below remains a target only if startup/search
+measurements justify it; any persisted content representation must be device-local and join the
+future CryptoBox boundary.
 
 ---
 
@@ -592,15 +635,22 @@ abstract class ContentSearchIndex {
 
 Dart's concurrency model is not shared-memory threading. A Dart program runs as one or more **isolates**, each with its own single-threaded event loop and its own heap; isolates share no mutable memory and communicate only by message-passing over ports. Within an isolate, `async`/`await` is cooperative concurrency on one thread — it interleaves tasks but never runs two Dart statements truly in parallel. This shapes every decision below: there are no data races to guard inside an isolate, but any *CPU-bound* work (model inference, embedding, crypto over a large payload, a big JSON parse) will freeze that isolate's event loop until it yields, so heavy work must be moved *off* the isolate that renders the UI.
 
-The topology is a small fixed set of isolates, created at the composition root (§2.3):
+The topology below is the **destination for measured CPU-heavy work**, not current process layout.
+Today Session, validation, feature hashing, cosine scans, and synchronous file repository methods
+run on the main isolate; Dart futures provide sequencing but do not move work to another isolate.
+No current spec may cite an inference/IO isolate as a shipped mitigation.
 
 | Isolate | Runs | Why separate |
 |---|---|---|
 | **UI isolate** (root) | Flutter rendering, widget tree, view models, the `DispatchOrchestrator`, the `SkillInterpreter`, the `SchemaRegistry`, the in-memory object store | Must stay responsive at 60–120 fps; holds the authoritative in-memory state |
-| **Inference isolate** | The retrieval-embedding model (~80 MB, Spec 01 §5.1) — query embedding for `similarTo` and record-content search — **plus the `CapabilityIndex` vector table and its cosine scan** (§3.4). *(After the `G-20` NO-GO, Spec 03 §7.3, there is no per-turn local generative model; if a local LLM is ever reinstated as the retrieval-bounded tie-breaker, it lives here.)* | An embedding pass and a cosine scan are CPU-bound loops that would drop frames on the UI isolate |
+| **Inference isolate (target)** | A future packaged retrieval model plus a large merged vector table | Use only after measured main-isolate frame cost justifies it; no such isolate exists today |
 | **IO/crypto worker(s)** | File reads/writes, encryption/decryption of large payloads, the startup folder scan, JSON (de)serialization of big batches | Bulk disk + crypto is CPU- and syscall-heavy; short one-off writes may stay inline (§4.5) |
 
-The Business Logic spine — orchestrator and interpreter — deliberately lives **on the UI isolate**. It is not CPU-bound (it awaits IO and inference, it does not compute for long stretches), and keeping it co-resident with the in-memory object store means reads are synchronous in-memory lookups (`StorageRepository.read`/`readMany` return values, not futures — §3.1) with no cross-isolate serialization on the hot path. The expensive, parallelizable work is exactly the model and bulk-IO work, and that is what moves off-isolate. The `SchemaRegistry` also lives on the UI isolate for synchronous `lookup`, but its `similarTo` alone delegates to the inference isolate (where the vectors are, §3.4) — which is why that one registry method is `Future`-returning while `lookup`/`all`/`contains` are synchronous.
+The current Business Logic spine, object store, schema registry, feature hashing, JSON parsing, and
+file writes all run on the main isolate. Reads are synchronous in-memory lookups. The destination
+keeps orchestration and authoritative state there but moves only measured CPU-heavy model/bulk-I/O
+work behind worker messages. No current `SchemaRegistry.similarTo` method or inference-isolate
+delegation exists.
 
 ### 4.2 The Turn Pipeline as Async Stages
 
@@ -622,12 +672,11 @@ One user turn is a sequence of awaited stages, sequenced by `DispatchOrchestrato
    │        └─ barge-in / cancel possible here (§4.3)
    │
 [BL] SkillInterpreter.resolve(skill, inputs, frozen) ──► ActionPlan  (UI isolate; reads = in-memory;
-   │                                                                   compile-on-first-use may hop
-   │                                                                   to a worker for a large skill)
+   │                                                                   current symbolic interpreter)
    │        (no approval pause here on the interactive path — act-then-describe, Spec 05 §3.1)
    │
 [BL] SkillInterpreter.execute(plan) ──► writes                       (UI isolate orchestrates;
-   │        each StorageRepository.write = file write on IO worker,   IO on WORKER isolate)
+   │        each StorageRepository.write is currently synchronous on the main isolate)
    │        in-memory store updated on UI isolate; before-images captured (§3.11)
    │
 [BL] exactly one corpus write-back (recordConfirmation|recordCorrection|neither)  (Spec 03 §2.7)
@@ -639,12 +688,14 @@ Two properties make this safe. First, **the frozen clock is captured once, at Nl
 
 ### 4.3 One Active Turn, Cancellation, and Barge-In
 
-Plenara is push-to-talk-first, single-user, voice-led. The interaction model is therefore **one active turn at a time**: the orchestrator holds at most one in-flight `dispatch`, and a new final transcript that arrives while a turn is mid-flight is handled by an explicit policy rather than by racing two turns:
+Plenara uses user-delimited tap-toggle capture and remains single-user and voice-led. The interaction model is therefore **one active turn at a time**: the orchestrator holds at most one in-flight `dispatch`, and a new final transcript that arrives while a turn is mid-flight is handled by an explicit policy rather than by racing two turns:
 
 - **Before any write (routing/resolve/awaiting confirmation):** a new utterance, or an explicit "cancel"/barge-in (the user pressing to talk again), **cancels the in-flight turn**. Cancellation is clean because nothing has been written — the resolve phase has no side effects (Spec 02 §4.1), and a discarded `awaiting_confirmation` journal entry is reaped (it expires at `resolvedAt + maxContextAgeSeconds` anyway, Spec 02 §5.3). No corpus write-back occurs on a cancel (Spec 03 §2.7).
 - **During execute (writes in flight):** execute is a short, serial sequence of atomic per-record writes (Spec 02 §4.2); it is **not interrupted** by a new utterance. The new transcript queues behind it. Because each write is idempotent on its minted id (Spec 02 §4.4), even an OS kill mid-execute resumes cleanly (§7) rather than corrupting; a mere new utterance simply waits the few milliseconds for the write group to finish.
 
-Cancellation propagates as a cooperative signal (a cancellation token threaded into `dispatch`), not a forced isolate kill: an in-flight inference on the inference isolate is allowed to complete and its result discarded, because a half-killed model call is not worth the complexity for a single-user app, and inference is short.
+Cancellation is cooperative; current tap-toggle stops recognition and `Session` ignores stale work
+through its turn/finalization guards. If a future inference isolate is added, cancellation may let a
+short inference finish and discard its result rather than killing the isolate mid-call.
 
 ### 4.4 The Serial-Execute Invariant
 
@@ -654,11 +705,15 @@ Cross-*device* concurrency is not an interpreter or orchestrator concern — it 
 
 ### 4.5 Storage Concurrency and the File Watcher
 
-The in-memory object store is owned by, and only mutated on, the UI isolate — so there is no intra-app race on it despite the IO happening on worker isolates: a `write` computes and encrypts on a worker, then the store mutation and the completion are applied back on the UI isolate's event loop. The ordering guarantee callers rely on: **a `write` future does not complete until the in-memory store reflects the write**, so a read issued after a completed `write` on the UI isolate always sees it (read-after-write consistency within the app). The file write and the store mutation are applied together before completion; a crash between them is caught by the store being rebuildable from files at next launch (§5.5). Reads never block on IO because they are served from the store (§3.1, §4.1).
+The in-memory object store is owned by and mutated on the main isolate. Current file persistence is
+synchronous: `ExecutionCoordinator` journals intent, applies each atomic file operation, checkpoints,
+and updates the store before returning, which supplies read-after-write ordering without worker
+handoff. Large-folder parsing or crypto may move to a worker only after an implemented message
+boundary preserves that completion contract.
 
 **Reads during partial hydration.** The store fills incrementally at launch (§7.1), so for a brief window it is not yet complete. Two read audiences are treated differently, and the distinction is a correctness requirement, not a nicety: *display* reads (the UI browsing records to render) tolerate a partial store and simply re-render as it fills; but the *dispatch pipeline* must never resolve a skill against a half-loaded store (a `read_many` that silently missed un-hydrated records would produce a wrong action plan). The gate is already in the startup sequence — the orchestrator does not accept turns, and the `AutomationRunner` does not fire, until hydration, registry cross-referencing, pending migrations, and execution-resume are complete (§7.1 steps 1–6, before step 7 "Ready"). So every read the interpreter issues is served from a complete store, while the UI can be interactive for browsing sooner.
 
-The one genuinely concurrent writer is **the outside world**: the OS's cloud-sync client (iCloud/OneDrive/Drive) rewrites files under the app at arbitrary times (research §8.1). Where the runtime supplies native directory events, `StorageRepository.watch()` surfaces those as a **debounced** `Stream<FileChangeEvent>` — debounced because sync clients often rewrite many files in a burst, and reacting per-file would thrash the registry and indexes. On a settled batch the Business Logic layer reconciles: re-hydrate changed records into the store, re-register changed type files (running any needed migration first, Spec 01 §7.4), incrementally patch the affected `CapabilityIndex` entries (Spec 01 §5.4), and — for a type-file *conflict* — surface the review UI rather than auto-merging (Spec 01 §7.5). A file change that arrives mid-turn does not mutate the turn's already-frozen inputs; it is reconciled into the store and caught, if relevant, by the execute-phase re-verify (Spec 02 §4.2).
+The one genuinely concurrent writer is **the outside world**: the OS's cloud-sync client (iCloud/OneDrive/Drive) rewrites files under the app at arbitrary times (research §8.1). Where the runtime supplies native directory events, `StorageRepository.watch()` emits positive file events. `Session` defers reconciliation while a durable turn is active, then reloads changed records, refreshes content search and reminders, and notifies the UI. Definition-conflict copies remain inert until the user chooses a version; active capability changes rebuild the current Router index rather than patching a nonexistent merged `CapabilityIndex`. A file change that arrives mid-turn does not mutate the turn's already-frozen inputs; execute/undo after-image checks refuse to overwrite a later edit.
 
 **Physical iOS limitation (measured 17 August 2026):** Dart's recursive `Directory.watch` reports “File system watching is not supported on this platform” on-device. The iOS repository therefore returns an empty event stream and relies on full reconciliation at cold open; a provider-side change made while Plenara remains open becomes visible after relaunch. This is a deliberate degraded mode, not a startup error and not permission failure. A future live iOS implementation needs a native document-provider coordination/event adapter behind this same seam; polling is not an acceptable substitute.
 
@@ -669,7 +724,9 @@ The only unbounded-cost resource is the cloud. Two limits, both enforced inside 
 - **Every Anthropic call** reserves admission inside `ClaudeClient` before HTTP: default 200 calls per local day and 30 per rolling ten minutes. The reservation ledger is device-local and persisted; corrupt or unwritable state fails closed with `CloudError(rateLimited)`, so no routing, authoring, routine, figure, or generative call site can bypass the bound.
 - **Authoring and generative calls** are user-initiated and naturally low-frequency, but still cross that same admission controller and the BYOK/`available` gate. Offline, keyless, and rate-limited calls return typed results the caller turns into a surface (§6.2), never a hung await.
 
-Local inference has no rate limit but is naturally serialized by the single inference isolate: concurrent `route` requests (rare, since turns are serial) queue on that isolate's port rather than spawning parallel model runs.
+Current local routing has no separate inference isolate: turns are serialized by `Session`, and the
+small deterministic feature-hash scan runs on the main isolate. A future packaged model must own
+its own measured serialization policy before the target inference-isolate row in §4.1 applies.
 
 ### 4.7 Detached Operations: Long Cloud Work Never Holds the Turn Lock
 
@@ -774,7 +831,11 @@ Each returns a typed `CloudError` the caller turns into a §5.2 surface.
 
 ### 6.3 Drafts and activation on reconnect (the connectivity/queue model)
 
-Offline/free-tier authoring accumulates **`pendingDrafts`** (§3.7) — inert, not registered capabilities. On reconnect with a key, the app does **not** auto-activate: it surfaces the drafts in the Review Feed for the user to activate, and each activation runs the deferred authoring call (validate → safety review §7.6 → register). Connectivity returning never silently changes the capability set — the user stays in control, and "AI authors, code executes" is preserved. There is deliberately **no automatic action-queue** for paid flows (a user may not want to wait, Spec 05 §13); the only "queue" is the explicit draft list plus any reminders the user opts into.
+The current app does not create provider-authored drafts while offline or keyless; it returns an
+honest unavailable surface. A successfully returned and validated online artifact persists as an
+inactive device-local preview until the user activates or cancels it. Reconnect never auto-starts
+spend and never auto-activates a capability. A future text-only request-draft queue would require a
+separate product contract; `pendingDrafts` is not a shipped collection today.
 
 ---
 
@@ -784,7 +845,7 @@ Offline/free-tier authoring accumulates **`pendingDrafts`** (§3.7) — inert, n
 
 On launch, before the turn pipeline (§4.2) accepts any utterance, the app runs a fixed, **fully offline** sequence (steps 1–6 are the dispatch gate §4.5 cites; Spec 06 §9.1 owns the storage mechanics inside steps 1 and 5):
 1. Open the storage folder; **hydrate the in-memory object store** (§3.1) via the bootstrap-cache fingerprint diff (Spec 06 §9.2) — re-parse only changed/new files.
-2. Build the `CapabilityIndex` (§3.4) from the registered type/skill definitions.
+2. Build the Router's current in-memory skill index; a merged `CapabilityIndex` remains the §3.4 target.
 3. Load the corrections corpus (Spec 03 §5.1 Lane 1) from the **synced** folder — a **single `corpus-learned.json` in v1; per-device files at P2** (Spec 06 §10.1, `G-36`); the plan cache (Lane 2, deferred) and the execution journal are the device-local stores.
 4. **Journal recovery** (§5.4): roll back or complete any `executing` `ExecutionRecord`; reap `done` entries past their window.
 5. **Pending migrations**: the per-record `schemaVersion` check (Spec 06 §8.1) queues and runs any needed migration batch — the migrate-on-read guard (Spec 06 §8.2) is what keeps this step cheap.

@@ -99,9 +99,15 @@ Name → key resolution is the whole game (§6.1), and it is layered exactly lik
 
 Case/whitespace-normalized match against `key`, `name`, `aliases` of the shipped dataset, then against the user's **learned aliases** (§3.4). Same tiering as `read_one`'s alias tier (Spec 02 §3, `G-24`). Expected to carry the large majority of steady-state traffic — food vocabulary per user is highly repetitive.
 
-### 3.2 Tier 1 — embedding nearest-neighbor (local, free)
+### 3.2 Tier 1 — local similarity lookup (free; target)
 
-The shipped retrieval embedder (bge-small class, Spec 01 §5.1) queries the device-local index over names + aliases. **Conservative by design:** accept only above a high similarity threshold with a clear margin over the runner-up (the retrieval-margin signal of Spec 03 §7.3.1); anything ambiguous is a miss, not a guess. A confidently wrong food mapping ("chicken salad" → "chicken, fried") is the failure mode this tier must not have — precision over recall, because Tier 2 and the honest-miss path both exist.
+The reference-data subsystem is not implemented yet. Its first local approximation should use the
+same in-process deterministic feature-hash similarity approach as the current skill router. A
+packaged sentence transformer may replace that implementation only if its held-out precision and
+device budget justify it (Spec 03 §7.3). **Conservative by design:** accept only above a high
+similarity threshold with a clear margin over the runner-up; anything ambiguous is a miss, not a
+guess. A confidently wrong food mapping ("chicken salad" → "chicken, fried") is the failure mode
+this tier must not have — precision over recall, because Tier 2 and the honest-miss path both exist.
 
 ### 3.3 Tier 2 — cloud normalize-and-cache (Haiku, once per phrase)
 

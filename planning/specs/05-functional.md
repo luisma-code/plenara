@@ -1,6 +1,6 @@
 # Spec 05 — Functional
 
-**Status:** v0.4 — July 2026 (Opus 4.8; v0.3 act-then-describe hardening → v0.4 generative-request routing + capability-name canonicalization. This pass closes the last open cross-spec seam — voice-invoked generative features (Spec 04 Q6) — so every marquee flow traces end-to-end through Specs 01–04. See Decision Record §26 D9 and Appendix B.)
+**Status:** v0.5 — amended 2026-08-17. This remains the behavior-flow catalog; Spec 17 supersedes its surface model. Six generative kinds are implemented, while event prep, meal suggestion, monthly reflection, and foresight remain explicitly candidate flows.
 **Depends on:** Spec 01 — Meta-Schema & Type System; Spec 02 — Skill DSL; Spec 03 — NLU / Intent; Spec 04 — Architecture
 **Blocks:** Spec 07 — UI & Design-Language; Spec 09 — Test
 **Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
@@ -185,9 +185,16 @@ Spec 02 §9's seed table is expanded to cover this union. Anything a free-tier f
 
 ### 3.8 Generative Requests (Paid, Voice-Invocable)
 
-Eight of the ten paid marquee tasks — the briefing (§15), gift ideas (§16), event prep (§17), reconnect coaching (§18), weekly review (§19), pattern insight (§20), meal suggestion (§21), and monthly reflection (§22) — are not writes at all. (A ninth kind, `foresight`, extends pattern insight forward in time — `G-27`, Spec 04 §3.10.) They ask Plenara to *synthesize* something over the user's records. These are **generative requests**, a first-class intent category (`generative_request`, Spec 03 §2.2a), **not** skills — a skill may not call a model at runtime (Spec 02 §8.4). This subsection states how a generative request behaves so the flows below need not each repeat it:
+Six paid synthesis requests are implemented: briefing (§15), gift ideas (§16), reconnect coaching
+(§18), weekly review (§19), pattern insight (§20), and message drafting. They are **generative
+requests**, not skills: a deterministic assembler selects declared record classes, then a fixed
+cloud prompt produces text. Event prep (§17), meal suggestion (§21), monthly reflection (§22), and
+foresight are retained below as candidate flows only; they are not runtime kinds until Spec 08's
+closed registry, assembler, consent surface, and tests add them.
 
-- **Voice-invocable (P2.1).** A generative request is reached by speaking, exactly like a capture — "give me a briefing," "what should I get Sarah?" The router recognizes it because the fixed built-in generative capabilities are ranked in the `CapabilityIndex` as their own `kind` (Spec 03 §2.2a, Spec 04 §3.4), and a top hit of that kind above the act band yields a `generative_request` carrying a `generativeKind` + resolved `params` (the target contact, a time window, a budget — extracted by the same slot machinery as any skill). Two non-voice entry points also exist for delivery that shouldn't wait on the user to ask: a **scheduled automation** (briefing §15, weekly review §19, nudges §23) and an explicit **UI affordance**. *(This closes what Spec 04 v0.2 had deferred as Q6 — generative features reachable only by automation/UI, which contradicted voice-first; see D9.)*
+- **Voice-invocable.** A generative request is reached by speaking, exactly like capture. Current
+  recognition uses binary-shipped rules, learned templates, and the closed-set residual; a future
+  merged `CapabilityIndex` may rank these kinds as data (Spec 03 §2.2a).
 - **Read-only — no act-then-describe write, and nothing to undo.** A generative request writes no records, so it has no `confirmationText` and no undo entry. The app presents the synthesized result (a spoken opener + an on-screen card). If the user then acts on it — "save the second one," "remind me to text Marco Friday" — that is a *separate, following* turn, an ordinary act-then-describe skill invocation (§3.1).
 - **Detached, so voice stays live.** Generation is a multi-second Claude call and always runs detached (Spec 04 §3.7/§4.7): the turn returns immediately, the app says it is working ("…one moment"), and the result is delivered through the operation center when ready — a slow generation never freezes the next utterance.
 - **Paid, and it says so when blocked.** Every generative kind needs a BYOK key; with none, the app gives the standard §3.6 response — never a silent no-op or a fabricated local imitation (Spec 04 §6.2).
@@ -462,7 +469,7 @@ A: "Your last call with Mum was 3 weeks ago, June 10th."
 
 ```
 U: "Start journal entry." (or "Today's journal.")
-[System: SpeechEngine enters continuous-recording mode; push-to-talk or a fixed 60-second window]
+[System: SpeechRecognizer enters journal capture after the user taps to start; a second tap or the 60-second cap stops it]
 [System: recording in progress — no cloud STT; on-device transcription only]
 U: (speaks freely for up to 60 seconds)
 U: "Done." (or the 60s window closes)
@@ -475,7 +482,9 @@ UI: Journal entry card with transcribed text
 
 - The audio recording is discarded immediately after transcription. It is never written to disk.
 - The transcribed text is stored as a private `journal_entry` record that **syncs** in the user's cloud folder as `journal/YYYY-MM-DD-<id>.json` — date-prefixed so it's navigable, but with a **unique id suffix** so two devices journaling the same day (or two entries in one day) don't mint the *same* file and collide (`storage-sync-assessment.md`; the date is also an `entryDate` field). This survives device loss (Spec 01 §12.3). The earlier "excluded from sync / never leaves the device" invariant is **dropped**: no provider offers a reliable per-subfolder sync exclusion (it was unimplementable, `G-37`), *and* device-local storage would lose the journal on device loss (the worse failure). Keeping journal content unreadable by the *cloud provider* is a json-privacy hardening **deferred to a later version** (at-rest encryption, Spec 01 §8.7, itself deferred); until then it is plaintext JSON in the user's own synced folder, protected by their provider-account security, and onboarding says so.
-- The transcribed text is never sent to the Claude API, not even for paid features, without explicit **per-session** opt-in — the assembly-time consent of `G-26` (Spec 04 §3.10): pattern insight asks per session; monthly reflection shows the mandatory consent card. The consent is not user-disablable (DP-07).
+- The transcribed text is never sent to Claude by any current assembler. A future journal-based
+  feature must add an explicit, non-persistent per-session opt-in at assembly time; pattern insight
+  and the other implemented kinds currently have no journal access at all.
 
 **Edge cases:**
 
@@ -572,7 +581,7 @@ Authoring is the one flow where the app presents a design before writing it to d
 ```
 U: "I want to track my daughter's mood and what preceded her good and bad days."
 [System: NLU raises define_type meta-intent; similarity search finds no match above 0.85]
-[System: AuthoringService dispatched as detached operation (Spec 04 §4.7)]
+[System: Session starts a durable capability_authoring operation (Spec 04 §4.7)]
 A: "Got it — designing a mood tracker for her. This takes a moment…"
 [System: ClaudeClient.author called (Spec 02 §6.2); pre-authoring reconciliation (Spec 01 §6.1); Claude produces ChildMoodLog type + log-child-mood skill + safety assessment]
 [System: validator runs — schema, type resolution, capability closure, variable closure (Spec 02 §6.3)]

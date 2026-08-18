@@ -1,6 +1,6 @@
 # Spec 03 — NLU / Intent
 
-**Status:** v0.7 — July 2026 (Sonnet skeleton v0.1 → Opus hardening v0.2 → Opus 4.8 design-level review v0.3 → act-then-describe reconciliation v0.4 → generative-request routing v0.5 → v0-implementation sync v0.6: closed slot-type vocabulary + directional dates (§5.4, §6.2), fixed-slot templates (§5.4, §6.4), compound decomposition as shipped (§2.7), learned-template guards (§5.2), slot sanitizer (§6.5) → **v0.7: generative recognition joins the cloud residual + learns recognition templates** (`G-46`; §2.2a, §2.6, §2.7, §5.2, §6.3, §7.3.2), from the "suggest a gift for Elena" dogfood miss — co-designed + spec-reviewed with Fable 2026-07-15; bones challenged, calls made and recorded — see Decision Record §11 and review-logs Appendix B/C/D/E)  
+**Status:** v0.8 — amended 2026-08-17. Current production routing is corpus/rules → Router-owned in-process feature-hash skill retrieval for calibrated lanes → closed-set Haiku residual → clarify. Learned generative recognition is implemented; a merged type/skill/generative `CapabilityIndex` and packaged transformer remain targets.
 **Depends on:** Spec 01 — Meta-Schema & Type System (§4.1, §5.4, §6, §8.2, §8.7); Spec 02 — Skill DSL (§2.2, §2.3, §4.4, §5.5, §7.1, §7.3)  
 **Blocks:** Architecture spec, UI spec
 **Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
@@ -115,9 +115,17 @@ Intents that ask Plenara to *synthesize* something over the user's records rathe
 }
 ```
 
-`generativeKind` is one of a **fixed, binary-shipped set** whose membership is owned by **Spec 08 §3.3's per-kind registry** (the single owner; suite-sync CS-09 — the set includes `draft_message`, P-20, alongside `briefing`, `gift_ideas`, `foresight` and the rest; this spec deliberately does not enumerate it) — closed like the primitive-op vocabulary, because each maps to a reviewed `GenerativeService` prompt assembler (Spec 04 §3.10), never to authored or fetched code. `params` carries whatever that kind needs — the target contact ("what should I get **Sarah**"), a temporal window ("the last two weeks"), a budget. **v0 param resolution (`G-46`):** the contact param is a **surface name**, not a pre-resolved id — the residual's bounded, quoted `knownContacts` clause makes Haiku echo the exact contact name, and the `GenerativeService`'s store-side resolver does the id lookup and owns the unknown-contact surface (§6.3). (Surface names, not slugs, are also what lets §5.2's mechanical fallback find the value verbatim to abstract into a `{e:contact}` recognition template.) A required param that is absent takes the normal missing-slot follow-up (§6.3) — "gift ideas for whom?" — and is never silently guessed (P2.8); per-kind required-param membership is owned by the generative-kind registry (Spec 08 §3.3) alongside the prompt assemblers (Spec 04 §3.10).
+`generativeKind` is one of the **fixed, binary-shipped set** owned and machine-checked by Spec 08
+§3.3. This spec deliberately does not restate the members. Each accepted kind maps to a reviewed
+`GenerativeService` prompt assembler, never authored or fetched code. `params` carries whatever
+that kind needs — a contact, temporal window, or budget. Current contact params are surface names;
+`GenerativeService` resolves them against the store and owns the unknown-contact surface. A missing
+required param takes the ordinary follow-up and is never guessed.
 
-**Recognition.** Generative capabilities are indexed in the `CapabilityIndex` as a third candidate kind (`kind: generative`, Spec 04 §3.4), embedded over the same human-readable surface a skill uses (name, description, example phrases). Routing ranks them alongside skills and types (§3.3–§3.4); when the top candidate is `kind: generative` and clears `θ_act` (or the moderate band, acted on with transparent routing like any other), the router emits a `generative_request`. The built-in set is small and fixed, so its example phrases ship in the binary and are strong retrieval anchors.
+**Recognition target.** A future merged `CapabilityIndex` may rank generative capabilities as a
+third candidate kind alongside skills and types. **Current recognition** is binary-shipped rules,
+learned recognition templates, and the closed-set cloud residual; the production feature-hash index
+is skill-only (Spec 04 §3.4). Both paths emit the same `generative_request` contract.
 
 > **v0 interim recognition posture (`G-44`).** In the v0 reference implementation, generative-request AND template/tracker-instantiation recognition is currently **deterministic regex in `session.dart`** (e.g. `_giftRe`/`_briefingRe`/`_reconnectRe`; the tracker-template keyword match), evaluated as an ordered pre-filter *before* the data-driven corpus — the same registry-code class as the system-command pre-filter (§2.3) and the Layer-1 safety floor (Spec 02 §7.6): honest, binary-shipped rule code, not a routing decision left to a model. This is acceptable for the small, fixed built-in set, but on its own it is a treadmill: a phrasing the regex misses ("suggest a gift for X") dead-ends at a false clarify, because the cloud residual (§7.3.2) was handed the *skill* inventory only and cannot route to a generative kind. **v0.7 step (shipped, `G-46`) — fill the residual's inventory gap.** The cloud residual (Haiku, already the sanctioned primary cold-start router, §7.3.4) now also carries the fixed **kind-tagged generative inventory** and may emit a `generative_request` — a distinct response shape `{"generativeKind","params"}`, closed-set validated (an invented kind is treated as abstain, exactly like an invented `skillId` — via §7.3.2's `none`/abstain filter), never overloading the `skillId` namespace. A novel phrasing the regexes miss is therefore recognized by the residual and **absorbed as a learned recognition template** through the ordinary §5.2 lifecycle (seeds-win, forgettable-on-`correct`, round-trip validated, no-learn-on-compound). The shipped regexes are consequently **frozen** — they are no longer grown per-miss (the miss path is now residual → learned template); they remain only as the zero-cost offline / free-tier recognition floor for the common phrasings. **End-state migration (unchanged):** move the recognition anchors into `kind`-tagged `CapabilityIndex` data (this §2.2a / Spec 04 §3.4) — a `generative/`+`templates/` def folder indexed like skills — so the recognizer ranks them via retrieval, retrieval sits *in front of* the residual without changing this contract, the frozen regexes retire into `examplePhrases`, and only the spec-sanctioned rule pre-filters (system commands, safety, deterministic date resolver) remain as code.
 
@@ -339,7 +347,9 @@ Each skill and each type has an embedding vector derived from its human-readable
 
 - The `SchemaRegistry` index over **types** stands as specified in Spec 01 §5.4.
 - A parallel **skill** index is owned by the skill-registry surface (the component that owns `skills/`, Spec 02 §2.2 / §6.1 — its formal interface is defined in the Architecture spec). It is built over the same fields the draft identified, and NLU queries it through the same `similarTo`-shaped call.
-- The router treats these as one logical **`CapabilityIndex`** with a single query returning a merged, kind-tagged ranked list `(id, kind ∈ {skill, type, generative}, score)` — the third kind covering the fixed built-in generative capabilities (§2.2a, Spec 04 §3.4). Whether that is one physical index or several behind a façade is an Architecture-spec implementation choice; the NLU contract is the merged query.
+- **Target contract:** a merged `CapabilityIndex` returns kind-tagged skill, type, and generative
+  hits. **Current contract:** Router owns a skill-only table; system/generative recognition happens
+  in Session rules, learned templates, or the cloud residual.
 
 This is a **[RECONCILE]** with Spec 01, not a new mechanism: it deletes an ownership conflict and adds the one genuinely missing piece (skills in the index).
 
@@ -350,7 +360,17 @@ This is a **[RECONCILE]** with Spec 01, not a new mechanism: it deletes an owner
 
 A skill is a verb; its types supply the domain nouns. Together they define the semantic region the skill occupies. (Note: the draft cited `nluHints.captureIntent` as an embedding source. That field is a snake_case *intent label*, not natural-language surface text — see §8.1 — so it is a poor embedding input and is not used here.)
 
-**Embedding model.** A single, **dedicated retrieval embedding model** is used for both indexing and query in v1 (§3.6; decided in §10 MD1) — a purpose-built sentence-transformer (default the `all-MiniLM-L6-v2` family, ~80 MB), **not** the 1–3B generation model's own embedding endpoint. Retrieval quality is the dominant driver of routing accuracy (§3.1), and a decoder-LLM's embeddings cluster short paraphrases worse; the small extra binary buys materially better routing. Integration is the Architecture spec's; NLU depends only on the `similarTo` contract, so the exact checkpoint can change (e.g. a multilingual model) without touching this spec.
+**Current retrieval representation.** Production uses `InProcessEmbeddingBackend`: a deterministic
+384-dimensional feature hash over word, adjacent-word, and character-trigram features with a small
+alias map. It has no model download, server, network request, or startup timeout. The accepted
+retrieval lane is deliberately bounded and candidate-specific; only held-out-calibrated high-margin
+matches may act.
+
+**Quality upgrade target.** A packaged sentence transformer (MiniLM/bge-small class) may replace
+the feature hash behind the same `EmbeddingBackend` only after its own held-out accuracy/margin,
+startup, bundle-size, and device-memory gates pass. The localhost `HttpEmbeddingBackend` is an
+experiment, never a production dependency. The measured-failed 1–3B generative router does not
+return in either design.
 
 **When the index is updated, storage, and format** are all owned by the registry layer, not by NLU — see Spec 01 §5.4 (types) and its skill-registry analogue (Architecture spec). Both indexes are device-local and not synced: each device may run a different embedding model, so the vectors are not portable and are cheaply re-derived on any device from the (synced) type/skill definition files. The registry rebuilds incrementally (only entries whose source `lastModified` is newer than the index `builtAt`) off the main thread; until a new entry is ready the previous vector is used. NLU inherits all of this by consuming the index rather than maintaining it.
 
@@ -360,8 +380,9 @@ A skill is a verb; its types supply the domain nouns. Together they define the s
 
 Given a normalized utterance transcript, the router:
 
-1. **Embeds the query.** Pass the normalized transcript through the embedding model. This is a single forward pass over a short input — the cheapest inference call in the system.
-2. **Query the `CapabilityIndex`** (§3.2) for the merged, kind-tagged ranked list of skill, type, and generative candidates by cosine similarity — via the registry's `similarTo` contract, not a hand-rolled scan inside NLU.
+1. **Represents the query.** Pass the normalized transcript through the active in-process backend (currently deterministic feature hashing; a packaged transformer is gated future work).
+2. **Current build:** query the Router-owned skill table. **Target build:** query the merged,
+   kind-tagged `CapabilityIndex` for skill, type, and generative candidates.
 3. **Retrieve the top-K skill candidates** above `θ_retrieval` (default K = 5). `θ_retrieval` is purely a **candidate-set membership floor** — it caps how many definitions the local model is shown, nothing more. It does **not** decide skill-vs-meta-intent; that decision is owned solely by `θ_meta` (§4.1), which is strictly higher, so a set that is non-empty at `θ_retrieval` but whose best skill is below `θ_meta` still routes to the meta-intent check. Collapsing these two into one gate (setting `θ_retrieval = θ_meta`) is a legitimate simplification and the recommended default until tuning shows a reason to separate them (§4.1).
 
 Cosine similarity is computed in pure Dart over the in-memory vector table. With N ≤ a few hundred skills (realistic ceiling for a personal app), a linear scan is fast enough; an HNSW index can be added later if the library reaches thousands.
@@ -504,7 +525,7 @@ Normalize utterance → template-match Lane 1 (§5.4)
     │ hit flagged requiresPreConfirm → clarify between contested candidates (evidence of ambiguity, §4.2)
     │ no match / trust < θ_corpus_drop
     ▼
-Embed query → query CapabilityIndex (§3.2) for top-K skill candidates
+Represent query → scan the current Router skill table (future: merged CapabilityIndex)
     │ top-1 skill ≥ θ_meta → proceed to local classification
     │ top-1 skill < θ_meta → meta-intent check (§2.2) → define_type or define_skill
     ▼
@@ -626,7 +647,7 @@ An entry whose skill is `sensitive` (or writes a `sensitive` type — e.g. the j
 
 ## 6. Slot Extraction & Resolution *(resolve-stage addition)*
 
-*Added by the Phase-3 resolve stage ([`../05b-gap-register.md`](../05b-gap-register.md)), resolving **G-12, G-14, G-15, G-16**. How the NLU layer fills the `source:"slot"` inputs a skill declares, and — the parts the traces proved were unspecified — how it resolves people and dates.*
+*Added by the Phase-3 resolve stage ([`05b-gap-register.md`](05b-gap-register.md)), resolving **G-12, G-14, G-15, G-16**. How the NLU layer fills the `source:"slot"` inputs a skill declares, and — the parts the traces proved were unspecified — how it resolves people and dates.*
 
 ### 6.1 Entity resolution & the resolve-or-create contract (`G-12`)
 `NluContext.entityNames.resolve(refType, token) → List<(id, displayName)>` (read-only, §2.6). For every person a skill references, the NLU layer:
@@ -687,7 +708,9 @@ Out-of-domain is decided **locally, by rule + retrieval — not the generative m
 The eval (findings §11) cut the generative model from the trusted path. Known-capability routing is now a **deterministic cascade**, no per-turn local LLM:
 
 1. **Corpus fast-path (§5)** — hash/slot-template hit → route directly, no inference. Owns high-frequency capture; offline; free.
-2. **Retrieval top-1-with-margin** — `CapabilityIndex` (the dedicated embedding model, not the generative one) ranks candidates; **accept top-1 iff it clears `θ_retrieval` AND beats top-2 by margin `τ`.** This is the escalation gate (§4.1), on *retrieval* signals only — never model confidence (dead for every model, findings §11).
+2. **Retrieval top-1-with-margin** — the current Router skill table uses deterministic feature
+   hashing; accept only a calibrated candidate-specific lane that clears both score and margin.
+   The future merged `CapabilityIndex` must preserve the same evidence gate.
 3. **Deterministic slot extraction** — dates/recurrence via the §6.2 resolver, entities via §6.1 `entityNames.resolve` (`G-24` aliases), quantities/durations by pattern, corpus recipes for known templates. Replaces the cut model's slot job (which even Haiku did at only 78% exact). A missing required slot → the §6.3 one-question follow-up.
 4. **Residual** — only when ≥2 candidates are close **and** phrasing is novel (steps 1–2 can't decide): **online + keyed → Haiku** (measured 86% routing / 96% on known-capability class A, ~$0.0006, ~0.8 s p50 — the reliable escalation, findings §11); **offline or free → clarify** (deterministic "did you mean X or Y?", the honest floor, P7).
 5. **Meta-intent (novel need → author) and OOD** stay **retrieval + rule owned** (§7.2) — small models scored 0% on meta-intent, so this was never theirs to do.

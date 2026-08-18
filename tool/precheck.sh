@@ -23,6 +23,9 @@ fi
 echo "== [pre] bundled seed assets in sync with v0/data =="
 bash "$ROOT/tool/sync_seed.sh" --check
 
+echo "== [docs] active documentation consistency =="
+( cd "$ROOT" && "$DART" run tool/doc_consistency.dart )
+
 echo "== [1/12] analyze v0 (lib bin test) =="
 ( cd "$ROOT/v0" && "$DART" analyze lib bin test )
 

@@ -1,5 +1,10 @@
 # Plenara — Session Handoff (pick up here)
 
+> **Archived point-in-time history.** Do not use this file for current setup, implementation
+> status, credentials, or open work. Use [`WORK-CAPSULE.md`](WORK-CAPSULE.md),
+> [`DOGFOOD.md`](DOGFOOD.md), and the active specs. Historical claims below intentionally remain as
+> they were observed.
+
 _Last updated: 2026-07-13 (overnight autonomous, on the Mac). Written to survive a Claude relaunch._
 
 > **Moving to macOS?** Read **`TRANSITION.md`** first — it's the Mac-specific companion (setup,

@@ -321,8 +321,9 @@ never a crippled demo.
     > "how long since I called Mum?" --- computed from the interaction
     > log.
 
--   **8. Keep a private 60-second daily voice journal.** Transcribed
-    > on-device, stored as one file per day, never leaves the device.
+-   **8. Keep a private 60-second daily voice journal.** Transcribed on-device and stored as a
+    > unique ordinary record. It syncs with the selected data folder so it survives device loss;
+    > current cloud assemblers never send journal text to Anthropic.
 
 -   **9. Find any past note or entry by meaning.** "Find that note about
     > the cabin trip" works via on-device semantic search, not
@@ -859,10 +860,14 @@ Early in the app's use with a new user, the threshold should be lower
 (ask more often, learn faster). As the corrections file grows, the
 threshold rises.
 
-### 6.2 Text Overlay for Quiet Mode
+### 6.2 Text and visible planning surfaces
 
-Rather than a separate keyboard-centric mode, quiet mode is an overlay
-on the existing voice UI:
+> **AMENDED August 2026 by Spec 17.** Voice and typed capture share one command pipeline, but the
+> product is no longer constrained to an overlay-only voice canvas. Today, Plan, Library, History,
+> record-detail editors, proposals, and repair surfaces visibly externalize persistent state.
+> Voice remains globally available and reaches the same core outcomes.
+
+Quiet capture still uses the shared pipeline:
 
 -   A text input field slides up from the bottom of the screen when the
     > user taps a microphone-off icon or the app detects via the OS that
@@ -875,8 +880,8 @@ on the existing voice UI:
 -   The text input path goes through the same NLU pipeline as voice
     > input --- it is not a separate command system.
 
--   The visual design of the main UI is never altered to accommodate
-    > text input. The overlay sits on top.
+-   Planner surfaces may use direct manipulation and structured editors where comparison,
+    > sequencing, or precision revision is clearer than a transient spoken exchange.
 
 ### 6.3 Speech-to-Text (STT) APIs
 
@@ -923,10 +928,10 @@ Windows
 
 ### 6.5 Interaction Model
 
--   **v1: Push-to-talk** --- simplest, battery-efficient, no always-on
-    > audio. Tap to speak, release to process.
+-   **Current: tap-toggle** --- tap once to start and once to stop. This is the only capture gesture
+    > on touch platforms; press-and-hold was dropped for accessibility and boundary clarity.
 
--   **v2: Wake word** --- "Hey Plenara" via Porcupine (covers iOS,
+-   **Future: Wake word** --- "Hey Plenara" via an evaluated on-device engine (covers iOS,
     > Android, macOS, Windows). low single-digit CPU overhead. The
     > corrections corpus feeds into a more accurate interpretation even
     > with wake-word.
@@ -946,7 +951,15 @@ reasoning-heavy, and therefore a Claude task.
 
 ### 7.1 The Local Model (95% of AI calls)
 
-> **⚠ AMENDED July 2026 (measured — Phase-3 findings §§11–12, gap register 05b).** The premise below — a 1–3B *generative* model as the NLU workhorse — is **measured-dead**: every candidate 1–3B checkpoint scored ≤49% routing against a 95% bar, 0% novel-need detection, dead confidence calibration (findings §11). The **spirit survives** (≈95%+ of turns still complete with *zero* cloud calls), but the **mechanism changed**: it is now **(1)** a **corpus fast-path** — deterministic hash/template match on *learned* phrasings, the primary router in steady state; **(2)** a dedicated **retrieval-embedding model** (~80 MB, e.g. bge-small-en-v1.5) that *generates candidates* — it is a weak router alone (40–47% top-1, findings §12); and **(3)** deterministic resolvers (dates, entities, recurrence), with **Haiku on the genuine residual**. A 1–3B generative model is retained only as an optional future *tie-breaker over retrieved candidates*, gated on a new eval. **Crucial caveat:** the ≈95%-local figure holds in *steady state* (after the corpus learns a user's phrasings). **Cold-start** — new user, novel phrasing, or offline — is *clarify-heavy* and is the design's central UX risk; the corpus-learning **rate** is the make-or-break metric (findings §12). The original vision is kept below as record.
+> **⚠ AMENDED August 2026 (current implementation).** The premise below — a 1–3B
+> *generative* model as the NLU workhorse — was measured dead in Phase 3. The current app uses
+> **(1)** exact and learned corpus templates, **(2)** an in-process deterministic feature-hash
+> similarity index over skill anchors, and **(3)** deterministic date/entity/recurrence resolvers;
+> Haiku handles the genuine keyed-and-online residual. No packaged transformer or companion
+> localhost server is required. A packaged sentence transformer remains a measured quality-upgrade
+> target only, gated by held-out routing accuracy and phone latency/memory. The ≈95%-local ambition
+> remains a steady-state target, not a measured current guarantee; cold-start and novel phrasing are
+> still the central UX risk. The original model vision below is retained as historical rationale.
 
 A small on-device model handles intent classification, entity
 extraction, and adaptive NLU. This is the workhorse of the Intelligence
@@ -1233,7 +1246,7 @@ well-defined layers rather than leaking across them.
   Business Logic   Validate/transform/apply rules; run the Skill Interpreter over the primitive vocabulary   Storage + Intelligence interfaces; Schema Registry   How data is stored or how AI works internally
   Storage          Read/write JSON (type-agnostic); in-memory cache; observe changes where supported         File system / content URIs; meta-schema              Business rules, UI, AI
   Intelligence     NLU, routing, Claude calls, type/skill authoring, corrections corpus                      BL contracts (intent types, entity + type schemas)   Storage internals, UI
-  Voice Pipeline   STT, TTS, push-to-talk / wake-word                                                        Intelligence layer                                   Storage, UI, business logic
+  Voice Pipeline   STT, TTS, tap-toggle / future wake-word                                                   Intelligence layer                                   Storage, UI, business logic
 
 ### 9.2 Interface Contracts
 

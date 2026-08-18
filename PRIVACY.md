@@ -41,10 +41,12 @@ Development and single-user internal builds keep content-bearing diagnostic logs
 the device so failures can be reproduced. Those logs can contain final conversation
 text, record values, exception details, and stacks. They are never uploaded
 automatically and leave the device only after the user opens a precise payload preview
-and chooses the operating system share sheet. Credentials, raw audio, and interim
-speech transcripts are excluded.
+and chooses the operating system share sheet. Credentials and raw audio are always excluded.
+Internal diagnostic traces may include interim recognizer hypotheses because they are needed to
+reconstruct a native capture that displayed words but never produced a final result.
 
-External builds do not create raw diagnostic logs or expose raw-log export. They also
+External builds do not capture interim hypotheses or other raw diagnostic content, create raw
+diagnostic logs, or expose raw-log export. They also
 remove raw logs left by an earlier internal build. Plenara has no automatic telemetry,
 remote crash-reporting service, or analytics endpoint.
 

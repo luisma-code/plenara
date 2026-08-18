@@ -3444,9 +3444,9 @@ class Session {
   /// cause instead of always blaming the user's phrasing (no silent degradation).
   static String cloudReason(CloudErrorKind k) => switch (k) {
         CloudErrorKind.noKey =>
-          "I don't have an API key set — add one in ~/.plenara/config.json.",
+          "I don't have an API key set — add one in Settings.",
         CloudErrorKind.badKey =>
-          "my API key was rejected — update it in ~/.plenara/config.json.",
+          "my API key was rejected — update it in Settings.",
         CloudErrorKind.insufficientCredits =>
           "your Anthropic account has no credits — add a payment method or credits at console.anthropic.com (Settings → Billing). Your key is fine.",
         CloudErrorKind.offline => "I'm offline right now.",

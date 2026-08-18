@@ -1,5 +1,14 @@
 # Plenara — multi-OS release foundation
 
+> **Historical 2026-07-12 release review, not the current release checklist.** It is retained for
+> the reasoning behind the platform seams. Several “must-do” items below have since shipped or
+> changed: iOS is primary, credentials use secure storage, folder access uses security-scoped
+> bookmarks, voice uses required on-device Apple recognition, and current app/version/test state is
+> recorded in [`WORK-CAPSULE.md`](WORK-CAPSULE.md). Run [`tool/precheck.sh`](tool/precheck.sh) for
+> repository verification, [`tool/external_release_gate.sh`](tool/external_release_gate.sh) for an
+> inspectable external artifact, and follow [`TESTFLIGHT.md`](TESTFLIGHT.md) for internal iOS
+> distribution. The remainder is milestone evidence, not an open-work list.
+
 _Synthesis of a 3-lens Fable review (2026-07-12) of the cross-platform abstractions, plus the
 ranked path to shipping on more than one OS. Companion to `TRANSITION.md` (Windows→macOS setup)._
 

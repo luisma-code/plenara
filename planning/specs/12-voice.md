@@ -18,7 +18,10 @@
 > idempotent finalization door. Forwarding each engine final would have meant SAPI still endpointed
 > and this change never reached that platform at all.
 
-**Status:** Draft v0.2 — July 2026 (Fable 5). v0.1 was the first full draft of the voice pipeline: capture model, STT/TTS engine selection per platform, the interim/final transcript contract, barge-in and latency targets, the voice-privacy statement, and the error/degrade surfaces. v0.2 reconciles the TTS half with shipped code: the `SpeechOutput` seam and the Windows on-device talk-back are live in the v0 app — two-way voice is real (§2.1, §6.5, D13).
+**Status:** v0.3 — amended 2026-08-17. Tap-to-start/tap-to-stop, native-final convergence,
+latest-partial recovery, on-device Apple recognition, transcript diagnostics by build channel, and
+the `SpeechRecognizer`/`SpeechOutput` implementation are wired. Long-form journal capture and wake
+word remain target behavior and are labeled below.
 **A note on numbering:** Specs 03, 04, and 08 cite a "Spec 06 — Voice" that was never written — the research doc's spec charter (§12) never listed a voice spec, and slot 6 was taken by Data & Sync. This document is that missing spec, chartered as **Spec 12**. It is the referent every "Spec 06 — Voice" citation intends; retargeting those citations (and Spec 10's mis-pointed ownership line) is a suite-sync pass item recorded in §10, not something this spec edits in place.
 **Depends on:** Research doc (§2.1–2.3, §6.1–6.5, §9.1–9.2, §11.2–11.5, §15.1); Spec 03 — NLU / Intent (§1 P2.5, §2.6–2.7, §5.4 normalization, §10 MD10 — final-transcript-only); Spec 04 — Architecture (§2.1–2.3 layer model, §3.6 `DispatchOrchestrator`, §3.8 `SpeechEngine`, §4.2 turn pipeline, §4.3 barge-in policy, §5 error model); Spec 05 — Functional (§3.2 ASR floor, §11 voice journal F8, §13 offline/subtitle F10); Spec 07 — UI (§7 quiet overlay & subtitle contract, §8.4 the orb); Spec 08 — AI Cost & Privacy (§5.2 routing payload, §5.5 master table, §5.6 consent tiers)
 **Blocks:** Spec 09 — Test (the `SpeechInput`/`SpeechOutput` seams marked **[GAP]** in §3.1 — the `SpeechOutput` half has since shipped, §2.1 — and the voice E2E tier of §6.2 O3); the v1.5 voice rung (Spec 07 §10 step 2 — the Stage, orb, and subtitle region arrive with this pipeline); Spec 08 §5.5's STT/TTS row (this spec is its normative source)
@@ -32,7 +35,7 @@ Plenara is voice-first (P2.1): free-form speech is the primary input, and the wh
 This document specifies:
 
 1. **The Voice layer's formal contract** — the `SpeechInput`/`SpeechOutput` seams behind Spec 04 §3.8's `SpeechEngine` summary, and the `Transcript` object that crosses the boundary (§2)
-2. **The capture model** — push-to-talk, the tap-to-toggle variant, the journal's continuous mode, the mic-lifecycle invariant, and the wake-word deferral (§3)
+2. **The capture model** — tap-to-start/tap-to-stop, watchdog/native-closure finalization, the journal's future continuous mode, the mic-lifecycle invariant, and the wake-word deferral (§3)
 3. **Interim vs. final transcript semantics** — who consumes each, the exactly-one-final rule, finalization triggers, and the ASR floor (§4)
 4. **STT engine selection** — the on-device mandate, the per-platform engine matrix (iOS/macOS, Windows, Android), and vocabulary biasing (§5)
 5. **TTS** — engine selection, what gets spoken, screen-reader deference, and the shipped v0 talk-back (§6)
@@ -87,8 +90,8 @@ abstract class SpeechInput {
   Future<void> startListening(CaptureMode mode);
 
   /// End the session and force finalization: the engine flushes and emits
-  /// exactly one final TranscriptEvent (possibly empty, §4.2). PTT release
-  /// and the journal's stop both land here.
+  /// exactly one final TranscriptEvent (possibly empty, §4.2). The user's
+  /// second tap and the journal's future stop both land here.
   Future<void> stopListening();
 
   /// Abort the session, discarding audio and emitting NO final transcript.
@@ -103,7 +106,7 @@ abstract class SpeechInput {
   Stream<double> get micLevel;
 }
 
-enum CaptureMode { pushToTalk, toggle, journal }   // §3
+enum CaptureMode { toggle, journal }   // §3; journal remains a target mode
 
 /// The synthesis seam — SHIPPED (v0, `app/lib/speech_out.dart`); §6.5 owns
 /// the utterance-lifecycle guarantees behind it.
@@ -163,18 +166,26 @@ The Voice layer is driven, never driving (Spec 04 §2.2 — leaves are not inter
 
 ## 3. The Capture Model
 
-### 3.1 Push-to-talk is primary (v1, locked)
+### 3.1 Tap-to-start / tap-to-stop is the only touch capture gesture
 
-**Press-and-hold the orb; speak; release.** Locked at research §15.1 ("push-to-talk first; wake word is later polish") and assumed by Spec 04 §4.3 ("push-to-talk-first, single-user, voice-led") and Spec 07 §8.4. Semantics:
+The first tap calls `startListening(toggle)`; the second calls `stopListening()` and sends. The
+explicit × or mute action calls `cancelListening()` and discards. The listening form appears only
+after capture has positively opened, so the visual state never lies about the microphone. No
+interaction depends on press-and-hold, and a pause in speech is never interpreted as the user's
+chosen end boundary.
 
-- Press → `startListening(pushToTalk)`; the orb snaps to *listening* (`m-instant`, Spec 07 §8.4) only after capture is actually open (§7.2 budget: ≤ 150 ms), so the visual state never lies about the mic.
-- Release → `stopListening()` → the engine flushes → exactly one final transcript (§4.2).
-- A press shorter than **250 ms with no speech detected** is treated as accidental: `cancelListening()`, no final, no surface. The first few such taps in PTT mode show a one-line "hold to talk" hint; after that, silence (quiet by default, Spec 07 P8).
-- Push-to-talk costs nothing at idle — no open mic, no always-on audio, no battery draw (research §6.5). The mic-lifecycle invariant (§3.5) falls out for free.
+### 3.2 Native segmentation and recovery stops
 
-### 3.2 Tap-to-toggle (setting; desktop default)
+Platform recognizers may emit several native finals inside one user-delimited capture. Plenara
+accumulates those segments and dispatches only once. A native session closure, error, watchdog, or
+explicit stop converges on one idempotent finalization door. The current recognizer retains the
+latest non-empty partial beside completed segments, so a native `done` callback that omits its final
+payload still flushes the words the user saw on screen exactly once.
 
-Press-and-hold is hostile to some motor abilities and awkward on a desktop with a mouse. **Tap-to-toggle** is the same session with different delimiters: tap → `startListening(toggle)`; the session ends on a second tap, on `stopListening` via the "cancel"/escape affordance, or on **silence endpointing** — a trailing silence of `endpointSilence` (default **1.2 s**, user-adjustable 0.8–3.0 s, §9.5) finalizes the utterance. It is a per-device setting; it is the **default on desktop** (the current dogfood platform — a held mouse button is nobody's preferred microphone) and an offered accessibility option everywhere. Keyboard parity on desktop: a hold-key binding behaves as §3.1, a tap of the same key as §3.2.
+Watchdogs recover abandoned sessions rather than infer conversational intent: 15 seconds with no
+speech cancels, 30 seconds of trailing silence stops and sends, and 120 seconds is the hard cap. An
+automatic stop is visible. These are safety/resource bounds; the ordinary boundary remains the
+second tap.
 
 ### 3.3 Journal continuous mode (Spec 05 §11)
 
@@ -195,7 +206,7 @@ The 60-second voice journal is the one long-form capture. `startListening(journa
 
 ### 3.6 Speak and listen are mutually exclusive (v1)
 
-At most one of `SpeechInput` capturing / `SpeechOutput` playing is active at any instant. A capture start while speech is playing is a **barge-in**: `SpeechOutput.stop()` completes (≤ 150 ms, §7.1) *before* the mic opens. This ordering means the mic never hears the app's own voice, which is why v1 needs no echo cancellation — a real simplification that push-to-talk buys and wake word will eventually spend (§3.4).
+At most one of `SpeechInput` capturing / `SpeechOutput` playing is active at any instant. A capture start while speech is playing is a **barge-in**: `SpeechOutput.stop()` completes (≤ 150 ms, §7.1) *before* the mic opens. This ordering means the mic never hears the app's own voice, which is why the current tap-toggle build needs no echo cancellation; wake word would eventually spend that simplification (§3.4).
 
 ---
 
@@ -211,7 +222,7 @@ At most one of `SpeechInput` capturing / `SpeechOutput` playing is active at any
 | Mode | Finalizes on |
 |---|---|
 | `pushToTalk` | release (`stopListening`) → engine flush |
-| `toggle` | second tap / stop affordance, **or** trailing silence ≥ `endpointSilence` (§3.2) |
+| `toggle` | second tap / stop affordance; native closure or a visible recovery watchdog also converges on finalization (§3.2) |
 | `journal` | 60 s window, explicit stop, or the guarded stop word (§3.3) |
 
 One session, one `utteranceId`, one final. All completion signals — explicit stop, watchdog, native
@@ -323,7 +334,7 @@ As of v0 (July 2026), the talk-back half of the loop is real: Plena speaks every
 
 Spec 04 §4.3 owns the turn-level policy (pre-write-barrier: cancel the live turn; post-barrier: queue). Spec 07 §7.4 owns the visual (soft fade, orb snap, `TurnCancelled` in the Stream). This layer owns the audio mechanics, in order:
 
-1. PTT press (or toggle tap) arrives while `SpeechOutput` is playing → `stop()` — playback halts within **≤ 150 ms** (perceived-instant; the fade Spec 07 describes lives inside this budget).
+1. Capture tap arrives while `SpeechOutput` is playing → `stop()` — playback halts within **≤ 150 ms** (perceived-instant; the fade Spec 07 describes lives inside this budget).
 2. Only after `stop()` completes does the mic open (§3.6 mutual exclusion — no self-hearing, no AEC needed in v1).
 3. The Business Logic layer signals the orchestrator's `cancel(turnId)` per Spec 04 §4.3; the Voice layer neither knows nor cares whether the turn was cancelled or queued.
 
@@ -340,7 +351,7 @@ Voice-first lives or dies on turn tempo — Spec 07 §8.2's beat rule ("a voice 
 | Orb press → mic open + *listening* state shown | 100 ms | 150 ms |
 | Speech onset → first interim in the subtitle | 350 ms | 700 ms |
 | Interim update cadence while speaking | ≤ 300 ms between revisions | — |
-| PTT release → final transcript delivered | 300 ms | 700 ms |
+| Stop tap → final transcript delivered | 300 ms | 700 ms |
 | `speak()` call → audible speech onset | 250 ms | 500 ms |
 | **End-to-end: release → spoken `Done` begins (corpus-hit turn)** | **1.0 s** | **2.0 s** |
 | Barge-in: press → playback silent | 100 ms | 150 ms |
@@ -422,7 +433,7 @@ Voice diagnostics follow Spec 11, the sole collection/export authority. Internal
 
 ### 9.5 Accessibility (hard requirements)
 
-- **Motor:** tap-to-toggle capture everywhere (§3.2); `endpointSilence` adjustable 0.8–3.0 s for slow or pause-heavy speech; no interaction anywhere requires press-and-hold (P1 of Spec 07 — and the orb's hold gesture always has the toggle alternative).
+- **Motor:** tap-to-toggle capture everywhere (§3.1); pauses do not endpoint ordinary speech, and no interaction anywhere requires press-and-hold.
 - **Hearing / deaf users:** the app is fully usable with TTS off or absent — subtitles are always on (Spec 07 §7.3) and text mode is complete (P2.2). No information is audio-only, ever (this is why notification sounds are Spec 04 §3.13's problem *with* visible counterparts).
 - **Speech and voice differences:** dysarthric, accented, or atypical speech will fare as the platform engine fares — the honest posture is: biasing (§4.5) helps proper nouns; the ASR-floor path offers text quickly rather than making the user fail repeatedly (§4.6's two-strike rule); and text mode is a first-class permanent choice, not a punishment. Plenara never requires voice.
 - **Screen readers:** §6.4's deference rule; all voice-state chrome (orb states, muted state, text-mode state) carries semantic labels.

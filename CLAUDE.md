@@ -50,28 +50,27 @@ All design specs live in [`planning/`](planning/). Read them before touching arc
 | File | Contents | Status |
 |------|----------|--------|
 | `planning/plenara_research.md` | Vision, principles, full tech baseline (v0.10) | Locked — do not edit unless Luis says so in-session |
-| `planning/specs/01-meta-schema-type-system.md` | Meta-schema kernel, type-def format, automations registry | v0.3 |
-| `planning/specs/02-skill-dsl.md` | Skill DSL — primitive vocab, resolve/execute split, execution journal | v0.4 |
-| `planning/specs/03-nlu-intent.md` | NLU/intent — routing, corpus, slot-template fast path | v0.5 |
-| `planning/specs/04-architecture.md` | Layer contracts, threading, error handling, offline | v0.4 |
-| `planning/specs/05-functional.md` | Marquee-task flows, interaction contract | v0.4 |
-| `planning/specs/05a-functional-examples.md` | 60 worked examples corpus for NLU model testing | v0.1 |
+| `planning/specs/01-06` | Schema, DSL, routing, architecture, functional behavior, storage/sync | Active subsystem authorities; each header states implementation status |
+| `planning/specs/07-16` | Visual language, AI/privacy, tests, security, diagnostics, voice, references, presence, routines | Active domain authorities; target-only sections are labeled in place |
+| `planning/specs/17-living-planner.md` | Today/Plan/Library/History product model and multimodal interaction | Current product authority; supersedes presence-only/overlay-only rules |
+| `planning/implementation-plan-2026-08-17.md` | Review remediation program and acceptance evidence | Increments 0–8 implemented; remaining gates are ordinary-use measurements |
+| `planning/specs/05a-*` | Worked examples, traces, gap register, and design reviews | Historical/evaluation evidence, not current-state handoff |
 
 ## Stack
 
 - **Framework:** Flutter / Dart
 - **Storage:** per-record JSON files in user-chosen folder (iCloud / OneDrive / Google Drive); no SQL on disk
 - **In-memory cache:** Dart object store, hydrated from JSON at startup
-- **Local NLU:** corpus fast-path + retrieval-embedding model (~80MB, e.g. bge-small-en-v1.5) + deterministic date/entity resolvers; Haiku for the genuine residual. *(The originally-planned llama.cpp 1B–3B generative router was measured-dead and cut — Phase-3 findings §11–12, Spec 03 §7.3. A small generative model survives only as an optional future tie-breaker.)*
-- **Storage caveat:** journal + `sensitive` content **sync** (durable across device loss). At-rest encryption / provider-privacy is **deferred to a later version** — early versions store content as plaintext JSON in the user's own synced folder (`G-37`).
-- **Cloud AI:** Claude Haiku 4.5 (most calls) + Sonnet for reasoning; BYOK model
+- **Local NLU:** corpus fast-path + a deterministic in-process feature-hash retrieval index + deterministic date/entity/quantity resolvers; Haiku handles the genuine residual. The measured-failed 1–3B generative router is cut. A packaged sentence transformer remains a measured future upgrade, not a runtime dependency.
+- **Storage caveat:** user records—including daily journal entries and fields marked `sensitive`—**sync** as plaintext JSON for durability until at-rest encryption ships (`G-37`). The execution/undo journal, conversation ledger, operations, and diagnostics are device-local and currently plaintext.
+- **Cloud AI:** Claude Haiku 4.5 for routing/generation/capability authoring; Sonnet 4.5 for routine composition/figure calls; BYOK model
 - **Platform targets:** P1 iPhone, P2 Windows desktop, P3 Android, P4 macOS
 
 ## Locked design principles
 
-These are settled. Do not relitigate them.
+These are the current defaults, not constraints on Luis. Spec 17 owns the product-model amendments.
 
-1. **Voice is uncompromising.** Free-form, adaptive. Text/subtitles are overlays — UI is never compromised for keyboard/touch.
+1. **Voice is first-class and uncompromising.** Free-form and adaptive, with outcome parity. Visible UI carries persistent state, comparison, planning, and precision editing; it is not restricted to overlays (Spec 17).
 2. **Act-then-describe.** An understood request executes immediately; the app describes what it did in one past-tense sentence. No pre-action "are you sure?" — reliable undo is the safety net. The one exception: non-undoable type/skill deletion (app-initiated confirm). Automation writes (unattended) go to the Review Feed.
 3. **Code over AI.** Deterministic code beats AI for repeatable tasks. AI fills gaps where code can't.
 4. **Capabilities are data, not code.** Skills are a declarative DSL (closed primitive vocabulary), NOT generated code. Apple 2.5.2 compliance requires this — interpreter ships in binary, skills are recombined data.
@@ -87,11 +86,11 @@ Take the option that gives the best experience and reliability, even at a small 
 
 ## Architecture in one paragraph
 
-Five layers: UI → DispatchOrchestrator (BL) → SkillInterpreter + CapabilityIndex → StorageRepository + ExecutionJournal → ClaudeClient. The orchestrator is the only component that touches NLU output and drives the turn pipeline (route → resolve → execute → write-back). One active turn at a time; serial execute queue; inference and bulk-IO move off the UI isolate. Cloud calls are all-or-nothing through one ClaudeClient returning typed CloudResult values (never exceptions); offline is a type-forced case, not an afterthought.
+Five conceptual layers remain: UI, Business Logic, Storage, Intelligence, and Voice. The current walking implementation consolidates dispatch and orchestration in `Session`; all production mutations converge on `ExecutionCoordinator`, durable device-local `ExecutionJournal`, and `StorageRepository`. Routing is corpus → accepted deterministic retrieval → cloud residual → clarification. Cloud calls cross `ClaudeClient` and return typed `CloudResult` values; offline is a typed case. Spec 04 marks richer destination interfaces as targets rather than claiming their classes already exist.
 
 ## Things NOT to do
 
-- Don't mock the database in tests — use real storage. The specs were written assuming integration-level correctness checks.
+- Storage correctness, migration, sync, and durability tests use real temporary files. Pure routing/business tests may inject in-memory seams when persistence is not the subject.
 - Don't add pre-action confirmation dialogs except for non-undoable deletions.
 - Don't put execution state (journal) in the synced storage folder — it's device-local and encrypted.
 - Don't fetch skills remotely or make the authored skill file non-human-readable (App Store compliance + auditability).

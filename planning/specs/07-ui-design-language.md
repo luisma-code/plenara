@@ -1,6 +1,6 @@
 # Spec 07 — UI & Design-Language
 
-**Status:** Draft v0.2 — 17 August 2026 (Fable 5 plus startup/data-location recovery). First full draft of the view-archetype set, the type→archetype mapping rules, the motion language, the quiet overlay, subtitle behavior, and recoverable data reset — the concrete realization of research §12 item 7 and Principle 2.3.
+**Status:** Draft v0.3 — amended 2026-08-17. Owns design tokens, archetypes, subtitles, and recovery surfaces; Spec 17 owns Today/Plan/Library/History composition and the adaptive Plena hierarchy. Voice and visible direct manipulation are peers, not an overlay-only constraint.
 **Depends on:** Research doc v0.10 (§2.1–2.3, §4.5, §6.2, §12.7, §15.1); Spec 01 — Meta-Schema & Type System (§3 value types, §4.1–4.3 presentation object, §4.5 owned/append, §12.3 seed types); Spec 02 — Skill DSL (§7.1 `confirmationText` via `format`); Spec 03 — NLU / Intent (§2.4, §2.7, §4.3 thresholds, §6.3); Spec 04 — Architecture (§3.6 TurnEvents, §3.6a ConfirmationView, §3.9 Review Feed, §3.10 GenerativeService, §3.11 undo window, §3.12 AttentionSurface, §4.7 detached operations); Spec 05 — Functional (§2 notation, §3 interaction contract, §13 subtitle overlay, §14 authoring preview, §24 deletion).
 **Blocks:** Spec 09 — Test (widget tests per archetype, Spec 04 §9.3-style UI coverage); the v1.2 "first view archetype" rung (research §11.3).
 **Builds on:** the existing v0 Flutter app (`app/lib/main.dart`) — the chat turn loop, the busy indicator, the log-path greeting, and the on-open nudges are the seed of the Conversation Stream defined in §2.2, not throwaway.
@@ -263,7 +263,9 @@ The single pre-action confirmation in the app (Spec 05 §24) and deliberately th
 
 - **ResidualOffer** (compound utterances, Spec 04 §3.6/`G-23`): the free fragment's `Done` line, then an offer line with Accept/Not-now chips ("…want me to create a custom one? [PAID]"). Declining leaves no debris (05a DF-09).
 - **Detached** (Spec 04 §4.7): a one-line acknowledgment in the Stream ("Working on your briefing…") whose card *becomes* the result in place when the operation completes — plus the Operation Center entry (§2.4). If the app is closed in between, delivery lands per Spec 04 §3.9 (notification) and the card is waiting at the top of the Stream on next open.
-- **Generative result cards** (briefing, gift ideas, event prep, coaching, review, insight, foresight, reflection — Spec 05 §§15–22): one shared card grammar so eight kinds don't need eight designs: a kind-glyph header, the spoken-opener paragraph, then kind-specific structure (ranked idea rows for gifts; keep/defer/drop groups for review; evidence-linked narrative for insight/foresight). Two hard rules: **provenance is always visible** — a quiet "synthesized by Claude" footer, and "from the web" labeling on any tier-2 augmentation content (05a Appendix A) — and **rows are referable**: idea rows are numbered so "save the second one" (05a P-14) has a visual anchor, and each row carries a save chip that dispatches the corresponding act turn. Generative cards show no undo chip (nothing was written; Spec 05 §3.8).
+- **Generative result cards (target).** Use one card grammar for implemented kinds; event prep,
+  foresight, and reflection are candidate examples, not current registry members. Provenance stays
+  visible, structured rows remain referable, and a read-only generation shows no undo affordance.
 - **`TurnError`**: the mapped actionable surface of Spec 04 §5.2 as a calm card — what failed, the action that fixes it (the three distinct paid-unavailable surfaces of Spec 05 §13 each keep their own wording). Never a toast; errors are content, not interruptions.
 
 ### 6.7 The AttentionSurface & Review Feed rendering
@@ -282,7 +284,7 @@ The Spec 05 §14 flow's `UI: Authoring preview card`: a live, honest **miniature
 
 There are two independent booleans, not four modes:
 
-- **Input modality** — voice (push-to-talk on the orb, v1 — research §6.5) or text (the overlay's field). Toggled by: the keyboard glyph beside the orb; the "text mode"/"voice mode" system commands (Spec 05 §13); automatically forced to text when STT is unavailable or mic permission is revoked (Spec 05 §13 E2 — with the spoken/shown notice). *(As shipped with the presence redesign: the speak gesture is **tap-anywhere** on Plena's home — no orb, no keyboard glyph — and the bottom-left mute control toggles the modes: muting switches to text and raises the input field, which also rises automatically when no recognizer is available. One control currently drives both booleans; the independent model here remains the target — Spec 15 §7.)*
+- **Input modality** — voice (tap to start, tap again to stop and send) or text. The explicit voice affordance is global on populated planner surfaces; tap-anywhere is limited to non-interactive presence space. Mute switches to text and raises the input field, which also rises automatically when no recognizer is available. Spec 17 owns the current surface hierarchy; Spec 12 owns capture semantics.
 - **Output audio** — TTS on or muted. "Quiet mode" mutes it; subtitles are unaffected because they are always on (next section).
 
 The "quiet overlay" toggles both at once (the meeting/library case, research §2.2); power users can mute TTS alone from settings. Both persist across launches (Spec 05 §13).
@@ -339,7 +341,7 @@ The signature move of the app: the **doorway** — a `Done` line, ambient card, 
 
 *(Superseded, 2026-07-11 — Spec 15 §6.3 / suite-sync X1: the orb is subsumed by **Plena**, the particle-swarm presence of Spec 15. The four states, the `m-instant` snap, and the visibly-muted rule carry over into the swarm unchanged; the shipped interaction is **tap-anywhere-to-speak** on the presence-primary home, not press-and-hold on an orb widget. This section stands as the seed it was.)*
 
-An organic, softly irregular form (not a perfect circle — §9.2) with four states: **idle** (`m-breathe`, low amplitude), **listening** (amplitude follows mic level — the user *sees* being heard), **thinking** (a slow internal drift; replaces every spinner in the app), **speaking** (gentle pulse synced to TTS cadence). State changes snap at `m-instant` — responsiveness is the one place quickness beats smoothness. Push-to-talk (v1) is press-and-hold on the orb; the orb is also the mic-permission and STT-availability status surface (a muted orb renders visibly muted, matching Spec 05 §13 E2).
+An organic, softly irregular form (not a perfect circle — §9.2) with four states: **idle** (`m-breathe`, low amplitude), **listening** (amplitude follows mic level — the user *sees* being heard), **thinking** (a slow internal drift; replaces every spinner in the app), **speaking** (gentle pulse synced to TTS cadence). State changes snap at `m-instant` — responsiveness is the one place quickness beats smoothness. This historical orb seed is superseded by Plena; the current tap-toggle gesture and availability/muted semantics are Spec 12 and Spec 17.
 
 ---
 
@@ -411,7 +413,7 @@ The invariant across all rungs: the archetype registry, the mapping pipeline (§
 
 - **Q1 — Grouped aggregation beyond one dimension.** `ledger` + `groupField` covers "monthly breakdown by category" (05a P-16), but a two-dimensional pivot ("by category *and* month, compared") has no archetype. Defer until an authored need hits the wall; the gap probe is P-16's Phase-3 trace.
 - **Q2 — The accent ramp and glyph set themselves.** Twelve hues and the glyph inventory are asserted, not designed. A dedicated visual-design pass (with real mockups, outside spec prose) must produce them before the v3 organic rung; §9.3's *mechanism* is decided regardless.
-- **Q3 — Wake-word ambient states.** The orb's state set assumes push-to-talk (v1). Wake-word (v2+) adds always-listening ambiguity — how "idle but armed" reads without feeling surveilled is unresolved and matters (research §6.5).
+- **Q3 — Wake-word ambient states.** Current tap-toggle opens the mic only for an explicit capture. Wake-word would add always-listening ambiguity — how "idle but armed" reads without feeling surveilled is unresolved and matters (research §6.5).
 - **Q4 — Karaoke subtitles.** v1 shows spoken lines whole (§7.3). Word-synced highlighting is deferred pending TTS engines exposing reliable word timings cross-platform.
 - **Q5 — Dashboard composition rules.** L3's selection logic ("most imminent, most alive") is named but not specified numerically; needs dogfood data before hard rules are worth writing.
 - **Q6 — Windows/desktop idioms.** The current dogfood platform is Windows; §9.4 and §7.2 give desktop accommodations, but the P1 target is iPhone and this spec is phone-first. A short desktop-adaptation appendix should follow once the phone design settles.

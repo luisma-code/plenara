@@ -1,6 +1,6 @@
 # Spec 02 — Skill DSL
 
-**Status:** Draft v0.5 — July 2026 (Sonnet skeleton v0.1 → Opus hardening v0.2 → Opus 4.8 review v0.3 → act-then-describe reconciliation v0.4 — see Appendix A → v0 interaction-suite/due-date convergence v0.5, §3 dialect refresh + §9.3)  
+**Status:** Draft v0.6 — amended 2026-08-17. The structured 13-op dialect, deterministic validation/resolve, capability closure, durable `ExecutionCoordinator` journal, targeted undo/recovery, automation review, and persisted inactive authoring preview are implemented. Numeric opcode compilation, plan caching, and authoring safety Layers 2–3 remain explicit targets.
 **Depends on:** Spec 01 — Meta-Schema & Type System (§2–§5, §8)  
 **Blocks:** NLU spec, Architecture spec, Data & Sync spec, UI spec
 **Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
@@ -237,21 +237,30 @@ The vocabulary is intentionally small. Each primitive maps directly to a safe, a
 
 A skill exists in two forms, and the DSL optimizes each for a different goal — this is the same source-vs-µop split the research doc's §4.9 ISA analogy points at.
 
-**Authored source** (`skills/*.json`, on disk, synced). Every step names its op with a **symbolic** string (`"op": "read_many"`) and its modifiers with symbolic keys, label names, enum literals, and `{variableName}` references. This form is deliberately human-readable and is **never executed directly**. Its readability is load-bearing, not cosmetic:
+**Current realization.** The validated structured JSON is interpreted directly by string-keyed
+switches in `Interpreter`; it is not compiled to numeric opcodes. Validation still rejects unknown
+ops/functions/conditions before activation/load, and resolve produces a literal `Plan` before
+`ExecutionCoordinator` performs writes. The numeric representation below is a performance target,
+not a claim about current runtime behavior.
+
+**Authored source** (`skills/*.json`, on disk, synced). Every step names its op with a **symbolic** string (`"op": "read_many"`) and its modifiers with symbolic keys, label names, enum literals, and `{variableName}` references. This form is deliberately human-readable. In the current implementation it is validated, then interpreted directly; in the target compiler it becomes the numeric form below. Its readability is load-bearing, not cosmetic:
 
 - **Platform compliance (§8.2).** The Apple 2.5.2 / Microsoft 10.2.6 argument is "skills are *data, not code*." Readable JSON visibly reads as configuration; a file of packed integer opcodes reads, to a reviewer, as downloadable bytecode — exactly the pattern those policies target.
 - **Auditability (§8.3) and safety.** A user (or Luis) can open the file and the paired safety assessment (§7.4) and cross-check them. A binary blob defeats this.
 - **Portability and sync (§10 Q1, Spec 01 §7.5).** Definition-file conflicts are resolved by human-reviewable diffs; that only works on text.
-- **Forward-compat is detectable.** A source skill using a newer primitive *fails to compile* on an older interpreter (unknown symbol → "needs a newer Plenara"), rather than silently mis-executing against a shifted opcode table.
+- **Forward-compat is detectable.** A source skill using a newer primitive fails validation on an
+  older interpreter (unknown symbol → "needs a newer Plenara") rather than silently executing it.
 
-**Compiled form** (in memory; and the persisted *action chain* in the execution journal, §5, and the deferred plan cache, §5.5). At registration/load — **once**, off the hot path — the interpreter compiles each skill into a typed, fully-numeric representation and optimizes it freely:
+**Target compiled form** (not implemented). At registration/load, a future interpreter may compile each validated skill into a typed, fully-numeric representation and optimize it freely:
 
 - `op` symbol → integer **opcode** (table below), dispatched by an integer `switch` (jump table), never string-matched or hashed at runtime.
 - Modifier keys → fixed struct slots; `enum` literals → ints; label names → step indices; `{variableName}` references → integer slot indices in a fixed-size context frame (array indexing, not map lookup).
 
 The compiled form needs no readability — it is derived deterministically from the source, regenerated on demand, and never fetched from anywhere. This is where all execution efficiency lives. Nothing on the execution path parses a string.
 
-**When compilation happens.** A skill is compiled **lazily** — on first invocation, or in a low-priority background pass after launch — never eagerly for the whole folder at startup, so a directory of hundreds of skills does not tax cold launch. The compiled form is held in an in-memory session cache and dropped when the skill is edited; it is cheap to regenerate and is **never persisted to disk**. Persisting a skill-wide compiled cache would reintroduce the "compiled bytecode at rest" surface §8.2 warns against; the one on-disk compiled artifact is the execution journal's per-execution action chain (§5.3), which is encrypted and device-local, not a skill library.
+**If compilation is introduced.** It must be derived lazily, held only in memory, invalidated on a
+skill edit, and never persisted. The current interpreter validates and directly walks the symbolic
+JSON; the durable journal stores concrete write/delete operations and before-images, not bytecode.
 
 **Opcode table (interpreter ISA).** Opcodes are part of the interpreter binary and versioned with it, exactly like the closed vocabulary. Assignment is **append-only**: a new primitive takes the next free integer and numbers are **never reused or renumbered** (syscall-number discipline), so a persisted action chain stays valid across interpreter updates.
 
@@ -269,7 +278,8 @@ The compiled form needs no readability — it is derived deterministically from 
 | 10 | `foreach` | control |
 | 11 | `read_reference` | read |
 
-The subsections below define each primitive by its symbolic source form (what an author and a reviewer read); the opcode is the compiled tag for the same primitive.
+The subsections below define each primitive by its symbolic source form. Parenthetical opcode
+numbers are reserved target tags only; the current runtime dispatches on the symbolic `op`.
 
 ### 3.1 Read Operations
 
@@ -358,7 +368,7 @@ Fetch records reachable from a record you already hold, along one of the two Spe
 Relation mode makes the graph edges Spec 01 promises ("independently queryable", §2.1) actually traversable from a skill — needed by the gift/contact marquee tasks (a `gift_idea` reaching its `forContact`). Ownership mode is unchanged from v0.1.
 
 #### `read_reference`
-Fetch an entry from a shipped, read-only reference dataset (Spec 13) — a lookup against the ReferenceStore, not the StorageRepository. Side-effect-free, so permitted in the resolve phase like all reads (§4.1). Appended to the vocabulary as opcode 11 under the §3.0 append-only discipline.
+Fetch an entry from a shipped, read-only reference dataset (Spec 13) — a lookup against the ReferenceStore, not the StorageRepository. Side-effect-free, so permitted in the resolve phase like all reads (§4.1). It reserves target opcode 11 under the §3.0 append-only discipline.
 
 ```json
 {
@@ -658,7 +668,12 @@ A skill can be suspended between resolve and execute — the user walks away mid
 
 **3. The re-verify diff ignores minted `id`s.** A minted `id` is an interpreter-generated surrogate the user never sees, so the §4.2 structural diff compares op, `typeId`, target `id` (for updates and deletes, which reference a *real* existing record) and resolved field values — but never the minted create-`id`. Otherwise every re-resolve would "differ" by fresh UUIDs and force endless re-approval. A genuine change in stored data still changes a field value or a target `id`, which the diff does catch.
 
-**4. The compiled chain stays decodable; the symbolic source is the fallback.** The action plan is persisted in the compiled numeric form (§3.0, §5.3), tagged with a `compiledFormVersion`. The append-only discipline (§3.0) covers not only opcodes but **operand encodings** — an existing op's packed layout is never changed; only new ops with new encodings are added — so a chain written by one interpreter version is always decodable by the same-or-newer version that resumes it (resume is same-device, and an installed app only moves forward). `compiledFormVersion` is thus a safety assertion, not a routine branch. In the should-never-happen case that a chain fails to decode, the fallback is phase-dependent: in `awaiting_confirmation` (nothing written yet) the execution is re-resolved fresh from the still-present symbolic source and re-approved — fresh minted `id`s are harmless because no records exist yet; in the brief `executing` phase (which does not realistically span an app update, since execute applies a handful of writes in sequence) an undecodable chain is surfaced for repair rather than guessed at. A `skillSchemaVersion` mismatch — the *definition* changed — invalidates the entry outright, since a changed definition cannot be mapped onto an old approval. The symbolic source on disk is the durable source of truth; the compiled chain is a fast-path cache of it.
+**4. The concrete operation list stays decodable.** The current coordinator journals an explicit
+list of `write`/`delete` operations, frozen inputs, before-images, phase, and the next operation
+index. Those JSON shapes are append-only and versioned at the journal boundary; an unknown shape
+is preserved for repair rather than guessed at. The symbolic skill remains the durable capability
+source. A future numeric compiler must add an explicit version/migration rule before any compiled
+form may be persisted; no such form exists today.
 
 **Executions are serial per device.** The interpreter runs one execution's execute phase at a time on a given device; a second invocation queues behind it. This is not a scaling limit for a single-user personal app, and it keeps the re-verify model sound — two concurrent execute phases could interleave writes that invalidate each other's `readSnapshot` mid-flight. Cross-*device* concurrency is a sync concern, not an interpreter one (§5.2, §10 Q1).
 
@@ -674,12 +689,14 @@ Two distinct mechanisms were conflated under one "flow table" in v0.1. They are 
 
 2. **Plan cache** (deferred). Reusing a previously-resolved plan across *different* invocations that share an (intent, type, slot-shape) signature — the research-doc §4.9 flow-table optimization — is a performance feature, not a correctness requirement. Per the locked project decision ("build the resolve/execute split now; defer the actual cache + invalidation until usage justifies"), the cache is **not built in v1**. §5.5 records the hook for it. Collapsing the two — as v0.1 did, with a `contextHash` "cache hit" that skipped resolve — shipped the deferred optimization by accident and, worse, cached user-data-bearing plans in a synced file. Both are undone here.
 
-### 5.2 Storage: Device-Local, Never Synced, Encrypted at Rest
+### 5.2 Storage: device-local and never synced; encryption is deferred
 
 The execution journal does **not** live in the skill file, and it does **not** live in the synced Plenara folder. It lives in **device-local application storage** (platform app-support directory), for three reasons:
 
 - **Sync correctness.** The storage model is per-record JSON files with whole-file, last-writer-wins sync (Spec 01 §8, §7.5) — there is no field-level JSON merge. v0.1's claim that two devices' concurrent journal entries would "merge as independent entries" is false under that model; concurrent writes to one shared file conflict. Keeping the journal device-local removes the conflict entirely: an execution is inherently tied to the device the user is interacting with, and resume is a same-device operation.
-- **Privacy.** A resolved action plan contains literal field values lifted from records — including values from `sensitive` attributes (a journal-entry body, private contact notes). The encryption model guarantees skill files are *always plaintext* (Spec 01 §8.2). Writing resolved user data into the skill file would leak sensitive content into a file that is never encrypted. The journal is instead **encrypted at rest** using the same platform key store as sensitive instance records (Spec 01 §8.2).
+- **Privacy.** A resolved action plan contains literal field values lifted from records. Keeping it
+  device-local prevents an additional sync-provider disclosure, but it is currently plaintext and
+  inherits only OS data protection. Future `CryptoBox` encryption activates with Spec 01 §8.7.
 - **Definition stability.** With execution state out of the skill file, the file changes only when the definition is edited, so `lastModified` stays meaningful and executions no longer generate sync churn (a rewrite of `log-meal.json` on every meal).
 
 Current walking-skeleton location: `[app-support]/execution-journal.json`, one atomically replaced, bounded device-local ledger. The richer per-execution-file layout remains the v1 destination when detached concurrent operations require it. Because the current coordinator is serial and the file never syncs, the single-file form has no cross-device merge path. Corrupt bytes are preserved as `execution-journal.json.corrupt` and surfaced for repair before a later atomic write replaces the active file.
@@ -692,33 +709,25 @@ An execution-journal entry records one in-flight execution:
 
 ```json
 {
-  "executionId": "exec_7f3a…",
-  "skillId": "add-contact-fact",
-  "skillSchemaVersion": 1,
-  "compiledFormVersion": 1,
+  "id": 42,
   "origin": "interactive",
-  "phase": "awaiting_confirmation",
+  "description": "Added Mia's allergy note.",
+  "visible": true,
+  "phase": "applying",
   "frozenInputs": { "now": "2026-07-05T20:15:00Z", "today": "2026-07-05", "userId": "u_1" },
-  "slots": { "subjectName": "Mia", "fact": "allergic to peanuts", "relatedToId": "cnt_sarah", "relationType": "daughter" },
-  "readSnapshot": [ { "id": "cnt_sarah", "lastModified": "2026-07-01T09:00:00Z" } ],
-  "branches": { "main": "create_subject" },
-  "foreachProgress": {},
-  "actionPlan": [ "‹compiled numeric writes: create cnt_mia, rel_x, fct_y›" ],
-  "beforeImages": [],
-  "createdAt": "2026-07-05T20:15:00Z",
-  "expiresAt": "2026-07-05T20:20:00Z"
+  "operations": [ { "kind": "write", "id": "fct_y", "record": { "typeId": "contact_fact" } } ],
+  "before": { "fct_y": null },
+  "nextOperation": 0,
+  "createdAt": "2026-07-05T20:15:00Z"
 }
 ```
 
 | Field | Purpose |
 |---|---|
-| `phase` | `awaiting_confirmation` \| `executing` \| `done` — drives resume (§4.2, Spec 04 §7). |
+| `phase` | `prepared` \| `applying` \| `applied` \| `reversing` \| `reversed` — drives resume/undo. |
 | `frozenInputs` | `now`/`today`/`userId` captured at first resolve (§4.4); reused on every re-resolve/resume. |
-| `slots` | The NLU slot fills that hydrated the context. |
-| `readSnapshot` | `(id, lastModified)` of every record read during resolve — the re-verify basis (§4.2). The snapshotted `lastModified` is the record's *derived* value (`max(stamps).ms`, Spec 06 §4.1 D5), captured at resolve time. |
-| `branches` / `foreachProgress` | Which label each `branch` took; how far each `foreach` got — so resume doesn't re-decide/re-iterate. |
-| `actionPlan` | The compiled numeric write chain (§3.0) — the source of the description and the writes. |
-| `beforeImages` | Captured at execute (Spec 04 §3.3); the basis for `undo`. Empty until `executing`→`done`. |
+| `operations` / `nextOperation` | Concrete write/delete list and the next checkpointed operation. |
+| `before` | Exact prior record or null-per-created-id; the basis for reversal. |
 | `origin` | `interactive` \| `automation` — the orchestrator uses this to decide whether an approval gate applies (§4.2, §7.5). |
 
 Each entry is stored inside the current bounded device-local ledger; a terminal entry lingers while it is among the most recent 25 executions. Time-window expiry and per-execution files remain destination behavior (Spec 04 §3.11), not a claim about the present walking skeleton.
@@ -734,7 +743,7 @@ Act-then-describe (Spec 05 §3.1) is only safe because undo is reliable, and und
 
 ### 5.5 The deferred plan cache (recorded, not built in v1)
 
-A resolved `actionPlan` (the numeric write chain, §3.0) could in principle be cached per `(skillId, slot-shape)` so a repeat invocation skips re-resolution. **This is deliberately deferred — not a v1 mechanism** (the `deferredPlanCache` references elsewhere resolve here):
+A resolved action plan could in principle be cached per `(skillId, slot-shape)` so a repeat invocation skips re-resolution. **This is deliberately deferred — not a current mechanism**:
 - Resolution is already deterministic and cheap (no model call), so the cache saves little.
 - A cached plan risks **staleness** — a type/skill edit or a changed record can invalidate it; the project's "never cache generative effects" discipline (§5.5-adjacent; Spec 03 §5.3) extends to "never cache a plan whose inputs may have shifted."
 - The expensive part — the *routing/inference* decision — is already cached by the corpus fast-path (Spec 03 §5), which stores slot *shapes* and the route, never the resolved plan or slot *values*.
@@ -745,10 +754,16 @@ So plan-caching is logged as a future option gated on evidence that resolution l
 
 ## 6. The Authoring Flow *(resolve-stage addition)*
 
-*Added by the Phase-3 resolve stage ([`05b-gap-register.md`](../05b-gap-register.md)), resolving **G-06, G-17, G-18**. How Claude produces a type/skill once, and how the deterministic validators gate it before it becomes data. Owned by `AuthoringService` (Spec 04 §3.7); reached from a `define_type`/`define_skill` meta-intent (Spec 03 §2.2).*
+*Added by the Phase-3 resolve stage ([`05b-gap-register.md`](05b-gap-register.md)), resolving **G-06, G-17, G-18**. How Claude produces a type/skill once, and how the deterministic validators gate it before it becomes data. Owned by `AuthoringService` (Spec 04 §3.7); reached from a `define_type`/`define_skill` meta-intent (Spec 03 §2.2).*
+
+> **Current realization.** `Session` owns this flow directly and detaches the provider call through
+> the durable `OperationCenter`; there is no standalone `AuthoringService` class yet. A validated
+> preview persists device-locally across relaunch and remains inactive until `activate`. Activation
+> writes the definition files, registers them, and rebuilds the current Router's skill index. The
+> richer service/merged-index names below are destination boundaries, not shipped components.
 
 ### 6.1 Trigger & tier gate
-A `define_type` (novel domain) or `define_skill` (existing type, missing operation) meta-intent reaches the orchestrator. Authoring is **BYOK-gated and detached** (Spec 04 §3.7): free tier → the §3.6 upgrade prompt, no call; offline → a **draft** (§6.5). Otherwise the orchestrator calls `AuthoringService.authorType`/`authorSkill`, which returns immediately with a `Detached` handle while the multi-second Claude call runs.
+A `define_type` (novel domain) or `define_skill` (existing type, missing operation) meta-intent reaches `Session`. Authoring is **BYOK-gated and detached** (Spec 04 §4.7): free tier → the §3.6 upgrade prompt, no call; offline → an honest unavailable surface. Otherwise `Session` starts one durable `capability_authoring` operation and returns immediately while the multi-second Claude call runs.
 
 ### 6.2 Pre-authoring reconciliation (`define_type` only)
 Before authoring a *type*, run the similarity search (Spec 01 §6.1): `similarTo(candidateDescription)` → any hit > 0.85 is surfaced to Claude, which reuses/extends rather than creating a near-duplicate; a strong hit triggers the one allowed clarify ("add to your existing X, or keep separate?"). `define_skill` against an existing type skips this (there is nothing to reconcile — the type is fixed).
@@ -771,7 +786,12 @@ The returned artifact is **never registered until it passes deterministic valida
 On failure → **one automatic re-author** with the structured error; a second failure → "I saved a draft — try again or refine" (draft stored inert; Spec 05 §14 E3). An invalid artifact is never half-registered.
 
 ### 6.5 Preview → refine → activate (`G-18`)
-A passing artifact is **previewed, not committed**: the app describes it and waits. The user **refines** across turns ("add a sleep field"); each refinement is a follow-up author call, and the **draft accumulates in memory (not on disk), up to five turns** (Spec 05 §14 E6). **Nothing is registered until the user says "activate."** On activate: the type/skill files are written, the safety assessment stored, and the capability is live — indexed in the `CapabilityIndex` (Spec 01 §5.4) so routing finds it exactly like a seed. This preview/commit boundary is *not* a fourth-wall break (Spec 05 §3.1) — it is a user-driven commit of a collaborative design. Offline or free-tier authoring produces a `Drafted` outcome queued for activation when a key/network is present (Spec 04 §6.3).
+A passing artifact is **previewed, not committed**: the app describes it and waits. The validated
+draft is persisted device-locally by the operation/preview store so relaunch does not lose it.
+**Nothing is registered until the user says "activate."** On activate, the type/skill files are
+written, registered, and the current Router index is rebuilt so the skill can be found like a seed.
+This preview/commit boundary is a user-driven commit of a collaborative design. Automatic offline
+authoring queues and the former five-turn in-memory refinement protocol are not implemented.
 
 ---
 
@@ -799,7 +819,12 @@ On a match → the app declines with a caring surface (Spec 05 §14 E2 shape), n
 
 **Layer 2 — The authoring model's `safetyAssessment` (the model gate).** Claude's author call returns `level: safe|caution|decline` (§6.3); a `decline` stops authoring and relays the model's caring message. Catches nuance the ruleset misses — but is **not trusted alone**.
 
-**Layer 3 — An independent safety review (second opinion, before activation).** After validation (§6.4) and before activation (§6.5), a **separate** cheap call (Haiku, or a pinned reliably-refusing model) reviews the *original request + the authored artifact* **independently of the authoring model**. This is exactly the DP-08 failure's antidote: when the authoring model both builds *and* self-clears a borderline capability (opus-4.6 did), a different reviewer that reliably declines provides the veto. **Disagreement → decline.** Cost is negligible (~$0.0003, only on authoring turns).
+**Layer 3 — independent safety review (required before broader release; not implemented).** After
+validation (§6.4) and before activation, a separate pinned reviewer should inspect the original
+request and artifact independently of the authoring model. The current dogfood build has the
+deterministic Layer-1 blocks and structural/semantic validation, but it does not make this second
+provider call. Spec 08 §3.2 and Spec 10 R-05 carry the same release gap; no current-state document
+may imply that the third layer already vetoes activation.
 
 **Composition with §6:** `Layer 1 (pre-filter)` → author (§6.3) → validate (§6.4) → `Layer 3 (independent review)` → preview → activate (§6.5).
 
@@ -815,7 +840,7 @@ Skills are **data, not code**: the closed vocabulary (§3) is interpreted, never
 
 ## 9. Seed Skills *(canonical — resolve-stage addition)*
 
-*Resolves **G-04, G-05, G-13**. The seed set is **defined as the union of the skills the free-tier flows require** (Spec 05 §3.7). Seed skills are `authoredBy:"system"`, `safetyAssessmentId:null`, `schemaVersion:1`. Full JSON for the vertical-set skills is in [`05a-traces.md`](../05a-traces.md); this section is the canonical index + the two shared idioms + the read/query skills.*
+*Resolves **G-04, G-05, G-13**. The seed set is **defined as the union of the skills the free-tier flows require** (Spec 05 §3.7). Seed skills are `authoredBy:"system"`, `safetyAssessmentId:null`, `schemaVersion:1`. Full JSON for the vertical-set skills is in [`05a-traces.md`](05a-traces.md); this section is the canonical index + the two shared idioms + the read/query skills.*
 
 ### 9.1 Idioms (every seed skill follows these)
 - **Confirmation idiom (`G-05`):** `compute` (build labels — `format_date`, `if`/`concat` for optional phrases) → `write_record`(s) → `format` (compose `confirmationText`). `format` never formats a date/number itself.
@@ -840,7 +865,11 @@ Skills are **data, not code**: the closed vocabulary (§3) is interpreted, never
 | `show-streak` | *(tracker type)* | — | compute current/longest streak (read + `compute`). |
 | `search-records` | *(all)* | — | system embedding search path, not a per-type skill (Spec 05 §12). |
 
-**`instantiate-template` and `search-records` are system meta-operations, not DSL skills.** The closed vocabulary (§3) writes *records of registered types*; it cannot register a type, bind skills, or run an embedding scan — those are `SchemaRegistry` / retrieval operations. Both entries appear in the seed table because they are **routing targets** (indexed in the `CapabilityIndex` and invoked by voice exactly like a skill), but the orchestrator dispatches them to the registry/search subsystem, not to the interpreter. The same holds for automation-config edits ("move my briefing to 6:30", P-19): editing an `automations/` file is a registry meta-operation the orchestrator performs directly (Spec 04 §3.9), never a `write_record`. Keeping this boundary explicit protects the P2.7 story: the interpreter's capability ceiling stays exactly the eleven primitives of the closed vocabulary (§3), and everything that mutates the *capability system itself* goes through the reviewed registry code paths with their own confirmation rules.
+**`instantiate-template` and `search-records` are system meta-operations, not DSL skills.** The closed
+vocabulary writes records; it cannot register a type or run a search index. Current `Session`
+recognizes and dispatches these meta-operations directly, outside the interpreter. A future merged
+`CapabilityIndex` may make them ordinary ranked routing targets. Automation-config edits follow the
+same registry/system boundary. This protects the interpreter's closed capability ceiling.
 
 Two read/query skills in full (they exercise `read_related` + the resolve-or-create person idiom for the query side):
 

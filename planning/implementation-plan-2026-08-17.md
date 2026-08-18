@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-17  
 **Inputs:** [specification and code review](../reviews/2026-08-17-spec-code-review.md), [art and animation review](../reviews/2026-08-17-art-animation-review.md), and [planner UX review](../reviews/2026-08-17-planner-ux-review.md)  
-**Status:** approved and in implementation. Increments 0–4 are implemented and repository-gated. Increment 4 passed a schema-v5 migration against a disposable copy of real dogfood data, the host gate, and the local iPhone 17 Pro simulator real-engine gate. Human glance-time, planning-speed, correction-rate, and retrieval-quality measurements wait for ordinary use of a usable deployment, never a test harness on Luis's phone.
+**Status:** implementation complete through Increments 0–8, including the post-plan reset/startup and task/voice dogfood corrections. The final repository gate covers durable mutation, planner/presence/routine behavior, relationship engagement, sync/recovery, and external-artifact hardening. Human glance-time, planning-speed, correction-rate, retrieval-quality, five-day engagement, and slow-leak measurements still require ordinary use or an explicit long soak; they are never inferred from a test harness on Luis's phone.
 **Planning rule:** dependencies and evidence gates determine order. There are no calendar deadlines, and a later increment does not begin merely because an earlier one has code—the earlier increment must pass its user-visible and failure-path gates.
 
 ## Executive decision
@@ -51,7 +51,8 @@ This changes the existing rule in [Spec 11](specs/11-feedback-diagnostics.md), r
 - rewrite Spec 11 §§1, 2.3, 3, 5–7, 9, and its decision record around build-channel policy;
 - replace research §14's “no PII, no user content, ever” restatement with a pointer to Spec 11;
 - retarget Spec 08's diagnostic registry row and Spec 10's diagnostic threat/Q-1 entries to Spec 11;
-- update Spec 12's final-transcript/export statements to point to the policy, while leaving the raw-audio and interim-transcript prohibitions unchanged;
+- update Spec 12's final-transcript/export statements to point to the policy: raw audio remains
+  forbidden everywhere; internal diagnostics may retain recognizer hypotheses; external captures none;
 - update `app_log.dart`, Settings copy, release scripts, precheck, and diagnostic tests;
 - preserve the three review reports as historical findings rather than rewriting their conclusions after the decision.
 

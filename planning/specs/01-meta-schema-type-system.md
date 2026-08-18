@@ -299,14 +299,23 @@ abstract class SchemaRegistry {
 }
 ```
 
-The concrete implementation — `LocalSchemaRegistry` — reads from `[plenara-root]/types/`, indexes `examplePhrases` and `description` via on-device embeddings, and holds the index in memory. The embedding model is a **dedicated retrieval model** (a compact sentence-transformer, ~80 MB), **not** the 1–3B generation model's embedding endpoint — retrieval quality drives NLU routing accuracy, and a purpose-built model clusters short phrases far better (decided in NLU spec §10 MD1; resolves §12 Q1). The extra bundled binary is a deliberate size-for-reliability trade.
+**Current implementation boundary.** `SchemaRegistry.hydrate` reads and validates type definitions,
+exposes synchronous lookup/all/contains, and records rejected/degraded issues. It does not implement
+`similarTo` or own vectors today. `Router.buildRetrievalIndex` owns the current skill-only,
+in-memory feature-hash index. The `LocalSchemaRegistry`/merged `CapabilityIndex` contract above is a
+destination seam, not a shipped class.
+
+A packaged sentence transformer may later move type and skill similarity behind that registry
+façade, but it is gated by held-out routing quality, bundle/startup/memory evidence, and a migration
+that removes the Router-owned duplicate. The current production backend has no model binary or
+network dependency (Spec 03 §7.3.4 implementation delta).
 
 ### 5.2 Startup Hydration
 
 1. Scan `types/` per the bootstrap-cache **fingerprint diff** (Spec 06 §9.2): a device-local per-file fingerprint map, compared file by file. Scan state is **device-local — never in `settings.json`** (suite-sync CS-10: a per-device cursor in a synced file self-conflicts under LWW, and a single `lastStartupScan` watermark misses synced-in files carrying older mtimes — Spec 06 D13, which amends this step).
 2. Parse and validate each modified `.json` file.
 3. For seed types, verify `isBuiltIn == true` and `schemaVersion` matches the app's expected version (hard-coded in the binary). Mismatched seed types trigger an in-app migration (§7).
-4. Build (or incrementally update) the embedding index over `examplePhrases` + `description` for each type.
+4. Current build: hand validated definitions to Session and build the Router's skill index; target build: incrementally update the merged type/skill index behind `CapabilityIndex`.
 5. Register all valid types. Invalid files are logged and surfaced to the user, but do not crash startup.
 6. After all types are registered, run the cross-reference pass: resolve every `refType` and `parentType`. Unresolved references degrade the referencing type (§5.3) but never block startup.
 7. Load the `automations/` registry: parse each automation and resolve its `targetType` and `skillId`. An automation with an unresolved `targetType` is inert and surfaced for repair; one with a missing skill is inert unless `pendingSkill` (§4.4).

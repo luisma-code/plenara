@@ -1,12 +1,12 @@
 # Spec 17 — Living Planner & Multimodal Product Model
 
-**Status:** v0.6 — 2026-08-17, active implementation authority. Today, phone/desktop Plan, purpose-built Library and person context, the durable conversation ledger, task schema v5, structured planner context, in-process retrieval, cloud admission, durable proposals/reviews/suggestions, detached operations, and the adaptive full-screen/collaborator/ember presence are wired.
+**Status:** v0.7 — 2026-08-17, active implementation authority. Increments 0–8 and the post-plan dogfood corrections are wired: Today/Plan/Library/History, durable mutation/undo, task schema v5, contextual local routing, proposals/reviews/suggestions, relationship planning, adaptive presence/routines, user-selected sync/recovery, and build-channel release hardening.
 **Supersedes:** research §2.2's overlay-only/no-touch rule; Spec 07 P1–P2 and its four-surface model; Spec 15 D1/D14 where they make full-screen presence or ephemeral exchange the steady-state product. Those documents remain design history and point here for current behavior.
 **Depends on:** Specs 01–06 for schema, skills, routing, orchestration, functional behavior, and storage; Spec 07 for visual language and generic archetypes; Spec 12 for voice; Spec 15 for Plena's renderer.
 
 ---
 
-## Current realization — Increment 6
+## Current realization — through Increment 8 and dogfood corrections
 
 - Opening the app renders the deterministic Today projection rather than an ephemeral greeting. It includes bounded Now/Next/Later sections, one relationship date, the latest durable execution with targeted undo, Inbox count, operational notices, and repair state.
 - Voice and typed capture continue through `Session.handle`; Today completion calls the typed `Session.completeTask` command directly. Both converge on `ExecutionCoordinator` and its durable device-local journal.
@@ -36,6 +36,15 @@ Increment 3's automated evidence gate is complete: 1,877 engine tests plus 36 de
 Increment 4's automated evidence gate is complete: 1,904 engine tests plus 36 declared skips, 123 Flutter tests plus the intentional external-channel skip, tier coverage of 94.2% deterministic core / 90.5% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, and the same five tests on the explicitly selected local iPhone 17 Pro simulator all pass. The proposal benchmark accepts 10/10 deterministic scenarios without immediate correction (gate ≥80%). A disposable-copy exercise migrated the real task to v5 with one backup, zero repair issues, and byte-identical source data. The simulator run reached roughly 504 MB RSS during its short sample, completed normally, was shut down, and left no app/test process; this is not a long-soak leak claim.
 
 Increment 6's automated evidence gate is complete: 1,907 engine tests plus 36 declared skips, 138 Flutter tests plus the intentional external-channel skip, tier coverage of 94.2% deterministic core / 90.8% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, external-channel isolation, secret scan, and the 24/60 conformance ratchet all pass. New relationship, signal, and durable-suggestion tests were calibrated against deliberate regressions before restoration. Five-day dogfood, perceived continuity, and dismissal-fatigue gates require ordinary use of an explicitly deployed build and are not inferred from automated verification.
+
+The latest final-tree gate after sync/recovery and phone-diagnostic corrections passes 1,922 engine
+tests plus 36 declared skips, 161 Flutter tests plus three intentional development-channel skips,
+94.7% deterministic-core / 90.5% product-logic / 68.1% transport coverage, macOS build, seven
+real-engine integration cases, external-channel isolation, secret scanning, and the 24/60
+conformance ratchet. The same seven interaction/render cases pass on a local iPhone 17 Pro
+simulator, including task body → detail editor, explicit circle → completion, and neither gesture →
+voice. Historical increment evidence above remains as the proof recorded at each boundary; this
+paragraph is the current aggregate.
 
 ## 0. Product decision
 

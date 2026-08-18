@@ -67,6 +67,8 @@ void main() {
       final s = await _session(dir, _ErrCloud(CloudErrorKind.badKey));
       final r = await s.handle(_miss);
       expect(r.toLowerCase(), contains('api key was rejected'));
+      expect(r, contains('Settings'));
+      expect(r, isNot(contains('config.json')));
       final last =
           jsonDecode(File('$dir/turnlog.jsonl').readAsLinesSync().last) as Map;
       expect(
@@ -90,6 +92,8 @@ void main() {
       final r =
           (await s.operations.wait(s.operations.records.first.id)).result!;
       expect(r.toLowerCase(), contains('api key'));
+      expect(r, contains('Settings'));
+      expect(r, isNot(contains('config.json')));
       expect(r.contains('offline or no key'), isFalse);
     });
 

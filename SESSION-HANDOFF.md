@@ -1,5 +1,9 @@
 # Session Handoff — Plenara
 
+> **Archived point-in-time history.** Current state lives in
+> [`WORK-CAPSULE.md`](WORK-CAPSULE.md); current operating steps live in [`DOGFOOD.md`](DOGFOOD.md).
+> Historical implementation claims below are preserved as evidence, not current instructions.
+
 _Written 2026-07-16 for the next session. Point-in-time snapshot; the continuously-updated
 working memory is [`WORK-CAPSULE.md`](WORK-CAPSULE.md) — read that too._
 

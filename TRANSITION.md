@@ -1,5 +1,9 @@
 # Plenara — Windows → macOS transition
 
+> **Archived bring-up record.** The transition is complete. Do not follow its old credential,
+> seed-path, test-count, or open-work instructions. Use [`DOGFOOD.md`](DOGFOOD.md),
+> [`WORK-CAPSULE.md`](WORK-CAPSULE.md), and [`RELEASING.md`](RELEASING.md) for current operations.
+
 _Written 2026-07-12 on the Windows machine, right before moving to Mac. Read this **plus**
 `HANDOFF.md` and `CLAUDE.md`, then continue. This doc is the Mac-specific companion; `HANDOFF.md`
 is the full session history (Windows-oriented) and `CLAUDE.md` is the working-mode + principles. For

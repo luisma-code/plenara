@@ -16,7 +16,7 @@ This spec is research §12 item 6: it extends the storage foundation of research
 4. **Conflict handling** — the state-CRDT per-record merge for instance records, and the escalate-on-ambiguity rule for type/skill files (Spec 01 §7.5) with the detection mechanics that make it implementable (§6)
 5. **Tombstones and garbage collection** (§7)
 6. The **migration runner over a synced folder** — per-record `schemaVersion`, the migrate-on-read guard, version skew between devices, and failed-migration repair (§8)
-7. The **startup-scan performance budget** and the bootstrap cache that keeps hydration off the voice-latency path (§9)
+7. The **startup-scan performance budget** and a target bootstrap cache (§9; not implemented)
 8. The **machine-owned hot files** — corpus, settings, turn log — which follow different rules than records (§10)
 
 It does **not** cover: the `StorageRepository` interface semantics (Spec 04 §3.1 owns the seam; this spec owns what is behind it), at-rest encryption (Spec 01 §8.7 — **deferred**; this spec stores plaintext and reserves the envelope slot, D16), the corpus's *content* and learning semantics (Spec 03 §5), or provider path acquisition per platform (research §8.5). Where this spec and the research doc's §8 sketch disagree, this spec is authoritative and the divergence is recorded (D3, D4, D13).
@@ -81,7 +81,7 @@ Plenara/                              ← the synced root; everything here syncs
   corpus.json                         ← the shipped seed corpus (read-only after seeding, §3.4)
   corpus-learned.json                 ← the learned corpus, Lane 1 (single file in v1 — §10.1)
   settings.json                       ← user preferences (whole-file LWW in v1, §10.2)
-  audit/{assessmentId}.json           ← stored safety assessments (research §13.2; written by AuthoringService)
+  audit/{assessmentId}.json           ← target home for independent safety assessments (not written today)
 ```
 
 **Records live in one flat `records/` folder, keyed by record id, with `typeId` inside the envelope** — the decision v0 actually made (`store.dart loadRecords`, `FileStorageRepository`), **superseding** research §8.2's per-type-folder sketch (`tasks/`, `meals/`, …). Rationale (D3): the storage layer is type-agnostic (P7) and should not encode schema into the directory tree; a type merge (Spec 01 §6.2) or rename would otherwise relocate thousands of files (churning sync, T1); and a single folder is one directory listing at scan time (§9.2). The per-type view research §8.2 wanted is an in-memory index over `typeId`, not a filesystem shape. What research §8.2 got right is kept: aggressive per-record granularity, `schemaVersion` on every file, and conflict isolation to one small file per record.
@@ -96,18 +96,22 @@ Never synced; everything here is rebuildable from the synced root or is volatile
 
 ```
 [app-support]/plenara/
-  device-id                           ← the per-install HLC deviceId (§4.3 — D6; landed, §11 V1)
-  executions/{executionId}.json       ← the execution journal (Spec 02 §5.2, Spec 04 §3.3)
-  index/                              ← CapabilityIndex binaries (Spec 01 §5.4, Spec 03 §10 MD9)
-  search-index/                       ← ContentSearchIndex (Spec 04 §3.14)
-  bootstrap/                          ← the hydration snapshot + fingerprint map (§9.2 — D13)
-  turnlog.jsonl                       ← per-turn diagnostics (research §14.2; landed, §11 V6)
-  nlu/plan-cache                      ← Lane 2, deferred (Spec 03 §5.1)
+  device-id                           ← the per-install HLC deviceId
+  execution-journal.json              ← bounded durable mutation/undo ledger
+  operations.json                     ← detached-operation queue/results
+  conversation-ledger.json            ← user-visible History ledger
+  pending-capability.json              ← inactive validated authoring preview
+  plan-proposal.json                   ← inactive planner proposal
+  weekly-review.json                   ← persisted review artifact
+  planning-artifacts.json              ← durable Today artifacts
+  cloud-usage.json                     ← persisted admission counters
+  sync-shadow/records/*.json           ← last observed provider states
+  turnlog.jsonl                        ← internal/development raw diagnostics only
 ```
 
 *(v0 packaging note: v0's concrete device-local home is the app-**injected** `deviceDir` — `~/.plenara`, `config.defaultDeviceDir`, the same non-synced home as the config/key, threaded `Session → FileStorageRepository` and defaulting to `dataDir` for CLI/tests (commit `d956390`). The `[app-support]/plenara/` path above is the v1 packaging of the same role.)*
 
-The dividing rule, restated from Spec 02 §5.2 / Spec 03 §5.1: **earned user data syncs; volatile execution state and rebuildable artifacts do not.** A binary index inside the synced root would force every sync engine to special-case an exclusion no provider reliably offers (`G-37`) — so nothing device-local ever sits under the synced root.
+The dividing rule, restated from Spec 02 §5.2 / Spec 03 §5.1: **earned user data syncs; device execution state, diagnostics, and rebuildable artifacts do not.** Current routing/content indexes exist only in memory, so no `index/` or `search-index/` binary is present. The bootstrap snapshot and plan cache described later are also unimplemented targets.
 
 ### 3.3 What ships in the binary vs. what is seeded into the folder
 
@@ -339,9 +343,15 @@ A completed migration that changed slot shapes emits the registry invalidation o
 
 ### 9.1 The hydration sequence
 
-Owned by Spec 04 §7.1 (the fixed, fully-offline cold-start sequence and the no-dispatch-until-hydrated gate, Spec 04 §4.5); this section specifies the storage steps inside it and their budget. Storage-side order: load bootstrap snapshot (§9.2) → fingerprint-diff the folder → parse changed/new files (records via `loadRecords` semantics: tombstones excluded, corrupt files reported-and-skipped, §5) → registry hydration + cross-reference (Spec 01 §5.2) → per-record version check (§8.1) → gate opens; conflict-copy sweep (§6.5) and GC (§7) run after the gate, off the critical path.
+Owned by Spec 04 §7.1. Current cold start performs a full folder hydration, registry validation,
+contiguous migration, shadow reconciliation, index rebuild, journal recovery, reminder reconciliation,
+and then opens Ready. The snapshot/diff sequence below is a performance target, not the current path.
 
 ### 9.2 The bootstrap cache
+
+> **Target only.** No bootstrap snapshot or fingerprint map is written by the current repository.
+> Full cold-open reconciliation is the correctness baseline; this cache may be introduced only with
+> invalidation/corruption tests proving that deleting it never changes user-visible truth.
 
 Research §8.4's amendment is binding: full-scan-every-launch does not scale — the storage-crdt spike measured ~230 files/s scan+parse (~22 s for 5,000 files) on a desktop SSD in Python, orders slower than the original estimate, before iOS dataless files make it worse (T6). A compiled-Dart implementation will beat that constant, but not the shape; the design must not re-read the world per launch.
 
@@ -359,14 +369,16 @@ Design ceiling: **10,000 records, 500 types, 200 skills** — a decade of heavy 
 
 | # | Path | Budget (desktop, 5k records) | Notes |
 |---|---|---|---|
-| B1 | Warm start → dispatch gate open (snapshot + diff, <1% changed) | ≤ 1.0 s p50 / 2.5 s p95 | The normal launch; sits directly in the voice-latency path |
-| B2 | Cold start, no snapshot (first run on a device / cache discarded) | ≤ 6 s, **with a visible progress surface** | Never silent (P5): "Reading your Plenara folder…" with a count, not a frozen mic |
+| B1 | Warm start → dispatch gate open (future snapshot + diff, <1% changed) | ≤ 1.0 s p50 / 2.5 s p95 | Target after a bootstrap cache exists |
+| B2 | Current full cold start / future cache miss | ≤ 6 s, **with a visible progress surface** | Never silent (P5) |
 | B3 | Registry hydration + cross-reference | ≤ 50 ms per 100 types | Spec 01 §5.2's figure, adopted |
 | B4 | Directory fingerprint listing, 10k entries | ≤ 300 ms | Metadata-only listing (§9.2) |
-| B5 | Single record persist (stamp + atomic write) | ≤ 10 ms typical | On the IO worker isolate (Spec 04 §4.1); never blocks a frame |
-| B6 | Watcher reconcile of a settled 100-file sync batch | ≤ 500 ms, off the UI isolate | Debounced (Spec 04 §4.5) |
+| B5 | Single record persist (stamp + atomic write) | ≤ 10 ms typical | Current synchronous path; measure frame impact before claiming isolation |
+| B6 | Watcher reconcile of a settled 100-file sync batch | ≤ 500 ms | Positive-event driven; current main-isolate path |
 
-Hydration parses run on the IO/crypto worker isolates (Spec 04 §4.1); the UI is interactive for browsing while the store fills, with only the dispatch pipeline gated (Spec 04 §4.5's two-audience rule).
+Hydration and reconciliation currently run on the main isolate before Ready. Worker isolates and a
+partially browsable hydration surface are performance targets only; they require measurement and an
+implemented handoff before this budget may cite them as mitigation.
 
 ### 9.4 If the budget blows
 
@@ -441,7 +453,8 @@ What the v0 implementation already got right, and the ordered list of deltas bet
 - **D10 — One atomic-write primitive (temp + rename, Windows move-aside) for records, tombstones, and definitions;** rename-atomicity guaranteed, last-write power-loss durability explicitly not (§5).
 - **D11 — Definition conflicts: Spec 01 §7.5's rule, detected via the device-local definition shadow + dirty flag and the conflict-copy sweep; registered version stays active while a conflict is pending; same-version divergence never auto-merges** (§6.3). Record-level concurrent-field conflicts, by contrast, auto-resolve by stamp and stash the loser visibly (§6.1) — capture never blocks on a modal.
 - **D12 — Migration over sync: batch at Spec 01 §7.4's triggers + a migrate-on-read guard; type-file-first ordering makes half-migrated folders (crash or mid-sync snapshot) a normal, self-healing state; future-versioned records park and auto-clear; failed records are excluded from typed reads and surfaced for repair** (§8; the exclusion extends Spec 01 §7.4).
-- **D13 — Hydration is snapshot + per-file fingerprint diff from a device-local bootstrap cache;** the scan cursor moves out of `settings.json` (amending Spec 01 §5.2 step 1); full-scan-per-launch is rejected on the spike's measurement (§9.2, research §8.4).
+- **D13 — target only:** if hydration measurements require a cache, use a device-local snapshot +
+  per-file fingerprint diff, never a synced cursor. Current hydration is a full scan.
 - **D14 — The performance budget table (§9.3) gates Spec 09 perf tests;** iOS numbers are owned by the D-1 spike with a defined escalation ladder ending in the bootstrap bundle, never in reopening the format (§9.4–9.5).
 - **D15 — Corpus: single synced file in v1 (Luis's call, Spec 03 §5.1), per-device single-writer files with retraction entries at P2** (§10.1); the assessment's "split now" is overridden on timing, not on shape. Turn log and all indexes/journals stay device-local (§10.3–10.4).
 - **D16 — No encryption in this spec's v1 scope** (Spec 01 §8.7 deferral, Spec 04 §3.1 posture note): all synced content including `sensitive` values is plaintext in the user's own folder; the envelope reserves `encryptedPayload` so §8.7 activates without a format break (§4.1).

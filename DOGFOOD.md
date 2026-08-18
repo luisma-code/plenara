@@ -1,84 +1,85 @@
-# Dogfooding Plenara (Windows, this box)
+# Dogfooding Plenara
 
-The goal of this phase: **actually use it daily**, so the make-or-break metrics
-(how fast it learns your phrasings, how often it clarifies, how emergent-types
-holds up) get measured against real data instead of fixtures.
+This is the current operator guide for ordinary internal use. Historical Windows and Mac bring-up
+notes live in `HANDOFF.md`, `SESSION-HANDOFF.md`, and `TRANSITION.md`; they are evidence, not setup
+authority.
 
-## One-time setup
+## Start the app
 
-1. **Build + launch** the desktop app:
-   ```
-   cd app
-   Z:/code/plenara/.tools/flutter/bin/flutter run -d windows
-   # or run the built exe: app/build/windows/x64/runner/Debug/plenara_app.exe
-   ```
-   The first launch scaffolds `C:\Users\<you>\.plenara\config.json`.
+Use a development build on the host, or an explicitly deployed internal build on the physical
+iPhone. Automated verification, debug probes, render checks, and integration tests use a local
+iPhone simulator only; the physical phone is deployment-only.
 
-2. **Edit that config** — point it at your synced folder and paste your key:
-   ```json
-   {
-     "dataDir": "C:/Users/<you>/OneDrive/Plenara",
-     "apiKey": "sk-ant-…"
-   }
-   ```
-   (Env `PLENARA_DATA` / `ANTHROPIC_API_KEY` override these if you prefer.)
+```sh
+cd app
+flutter run -d macos
+```
 
-3. **Re-launch.** On first run against an empty folder it copies the built-in
-   capabilities (types/skills/corpus) in. From then on your **records, learned
-   phrasings, and any capabilities you author live in that OneDrive folder** — they
-   sync and survive device loss.
+Windows remains supported with `flutter run -d windows`. Run the complete repository gate before a
+commit or deployment:
 
-Optional: the retrieval fallback wants a local embed server on `:8091`
-(`scripts/…` / a llama-server with bge-small). It degrades gracefully if absent —
-you just don't get cold-start "did you mean" suggestions.
+```sh
+bash tool/precheck.sh
+```
 
-## What to try (25 skills — ask **"what can you do"** any time)
+## Configure data and Claude
 
-- **Tasks:** "add call the plumber to my list" · "add pay rent due friday" · "list my
-  tasks" · "what's due" / "anything overdue" · "move pay rent to next week" · "mark
-  call the plumber done" · "delete call the plumber from my list".
-- **Reminders:** "remind me to call mom on thursday at 5pm" · "what are my reminders" ·
-  "snooze the reminder to call mom to friday at 9am" · "mark the reminder to call mom
-  done" · "cancel the reminder to call mom". Past-due ones and birthdays within a week
-  greet you as nudges on open.
-- **Running / mood:** "log a 3k run" · "how much have I run this week" · "I'm feeling
-  great" · "how have I been feeling".
-- **People:** "remember that Mia is Sarah Mitchell's daughter" · "what do I know about
-  Mia" · "forget that Mia likes chess" · "talked to Sam about the trip" · "when did I
-  last talk to Sam" · "what have I logged with Sam" · "who is Sarah related to".
-- **Birthdays:** "Sarah's birthday is july 16" · "when is Sarah's birthday" · "whose
-  birthday is coming up".
-- **System:** "undo that" · "no, I meant to …" · "start tracking my water intake"
-  (authors a brand-new capability). Partial names work — "what do I know about Sam"
-  finds "Sam Rivera", and asks which one if there are two.
+- Choose **Settings → Data location** to keep records device-local or move them to a user-selected
+  iCloud Drive, OneDrive, Google Drive, or other backed-up folder.
+- Enter the Anthropic API key in Settings. The Flutter app stores it through the platform secure
+  credential store; do not put it in `config.json`.
+- Development-only command-line tools may use `ANTHROPIC_API_KEY`. Internal/external app builds
+  ignore that environment variable and use only the secure store.
+- No key is required for Today, Plan, Library, History, deterministic skills, local retrieval,
+  storage, sync, or voice. A key enables residual routing, generative features, and authoring.
 
-## The instrument
+The production retrieval index is in-process and offline. The localhost HTTP embedding adapter is
+only a development experiment; ordinary dogfood never needs a companion server.
 
-Every turn appends to `<dataDir>/turnlog.jsonl`:
-`{at, utterance, source, skill, cloud?}` — `source` ∈ `corpus | cloud | undo |
-correction | authored | help | clarify | error`, and `cloud` records cloud health
-(`ok | offline | badKey | rateLimited | …`) whenever the cloud was consulted. Run
-**`cd v0 && <dart> run bin/turnlog_report.dart`** any time for the source mix, cloud
-health, top skills, and the make-or-break **clarify rate**.
+## What to exercise
 
-## Known rough edges (this phase, deliberately)
+- **Capture and plan:** add tasks, schedule them, select several in Plan, move/resize/defer them,
+  complete with the explicit circle, and use targeted undo.
+- **Inspect and revise:** tap a Today task body to open its detail editor; use Library for people,
+  goals, routines, trackers, journal, projects/areas, learned phrases, automations, and the complete
+  data browser.
+- **Relationships:** remember facts, log interactions, link commitments to people, and respond to
+  relationship-date suggestions with Keep, Tomorrow, or Dismiss.
+- **Voice:** tap to start, tap again to stop and send, or use ×/mute to discard. Interim text may
+  appear while listening, but dispatch happens once at finalization.
+- **Cloud:** request gift ideas, reconnect coaching, a briefing, weekly reflection, pattern insight,
+  or a message draft. Settings lists the record classes each implemented feature may send.
+- **Capabilities and routines:** ask to start tracking something new or create a movement routine;
+  inspect the persisted preview before activating a custom capability.
 
-- **Reminders fire in-app only for now** — past-due reminders surface as on-open
-  nudges; the real Windows toast is built + tested behind a fake, blocked on the ATL
-  install (see "Tonight"). Cloud-routed reminder times are normalized so a novel
-  phrasing can't arm a midnight reminder or silently drop one.
-- Undo is in-memory (dies on app restart); the persisted journal is deferred (Spec 04
-  §3.11's window is 5 min anyway — see the handoff).
-- Single-device only; the multi-device merge is P2.
+## Diagnostics and measurements
 
-## Tonight (after the reconfiguration window)
+Development/internal builds intentionally retain content-bearing local diagnostics during this
+single-user stabilization phase. Settings previews the exact raw files and size before invoking the
+share sheet. Nothing uploads automatically. External builds capture no raw content and expose no
+raw export; secrets and raw audio are forbidden in every channel. Spec 11 is the sole policy
+authority.
 
-1. **Rotate the two exposed credentials** (GitHub PAT + Anthropic BYOK key).
-2. **ATL → native toast:** in an ADMIN shell,
-   `& '…\Installer\setup.exe' modify --installPath '…\2019\BuildTools' --add Microsoft.VisualStudio.Component.VC.ATL --quiet --norestart`,
-   then re-add `flutter_local_notifications`, write the real `NotificationScheduler`
-   over it, inject it in `app/lib/main.dart` `buildSession()`, `flutter build windows`,
-   and smoke one real toast. All logic is already tested against `FakeScheduler`.
-3. **Voice spike** (Fable's top v1 lever, locked principle #1) — behind
-   `SpeechInput`/`SpeechOutput` seams; start with Windows STT to de-risk the
-   interaction model cheaply.
+The turn log is device-local at `<deviceDir>/turnlog.jsonl`, not in the synced records folder. Run:
+
+```sh
+cd v0
+dart run bin/turnlog_report.dart
+dart run bin/turnlog_report.dart --errors
+dart run bin/turnlog_report.dart --trace 25
+```
+
+The useful ordinary-use measures are clarification/correction rate, local routing source mix,
+planner glance and revision effort, suggestion decisions, and relationship follow-through.
+Impressions, screen time, and animation do not count as engagement.
+
+## Current limitations
+
+- Physical iOS cannot use Dart's recursive directory watcher. It reconciles the selected provider
+  folder at cold open; provider-side changes made while Plenara stays open appear after relaunch.
+- iOS currently has in-app reminder nudges but no native notification backend.
+- At-rest encryption is deferred. Synced records, including journal entries, are readable JSON in
+  the selected provider folder. Execution history and diagnostics are device-local but also
+  plaintext under the current pass-through crypto posture.
+- Five-day engagement, planner-speed, and slow memory-leak claims require ordinary use or an
+  explicit long soak; short automated runs do not establish them.

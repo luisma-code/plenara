@@ -44,18 +44,18 @@ Everything in this spec hangs off one architectural fact (Spec 04 §3.5, realize
 | Call | Purpose | Caller | Cloud tier |
 |---|---|---|---|
 | `routeResidual(utterance, skills)` | Residual intent routing — turn a novel phrasing the corpus/retrieval can't decide into a `{skillId, slots}` route, or an honest abstain (`Ok(null)`) | The dispatch orchestrator, only at step 4 of the routing cascade (Spec 03 §7.3) | Haiku |
-| `authorCapability(description, priorError?)` | Capability authoring — produce a declarative `{type, skill}` artifact from a described need, revalidated deterministically by the caller (Spec 02 §6.4) | `AuthoringService` (Spec 04 §3.7), after the Layer-1 pre-filter and tier gate | Haiku in v0; capable-model pin targeted (§3.2) |
+| `authorCapability(description, priorError?)` | Capability authoring — produce a declarative `{type, skill}` artifact from a described need, revalidated deterministically by the caller (Spec 02 §6.4) | `Session`'s detached authoring path, after the Layer-1 pre-filter and tier gate | Haiku in the current implementation; capable-model pin targeted (§3.2) |
 | `generate(kind, context)` | Grounded free-text synthesis for a fixed, binary-shipped set of generative kinds (Spec 03 §2.2a) | `GenerativeService` (Spec 04 §3.10), which assembles `context` deterministically from the user's own records | Haiku default; Sonnet/Opus reserved for the heaviest kinds |
 
 Properties of the seam, all load-bearing for this spec:
 
 - **Typed outcomes.** Every call returns `CloudOk<T>` or `CloudError(kind, detail)` with `kind ∈ {noKey, offline, timeout, badKey, rateLimited, serverError, malformed}` — the canonical `CloudErrorKind` set, owned by Spec 04 §5.1 (this spec and Spec 11 §2.1 cite it, they do not redefine it). `Ok(null)` from the router is a *real answer* (the model abstained — "not one of my capabilities"), distinct from any failure. The v0 client maps HTTP 401/403 → `badKey`, 429 → `rateLimited`, socket failures → `offline`, and bounds the whole exchange with a 30 s timeout — it **never throws** (`claude.dart`).
-- **One endpoint.** The client posts to `https://api.anthropic.com/v1/messages` with the `x-api-key` header. There is no telemetry endpoint, no analytics SDK, no Plenara-operated relay. Retrieval and semantic search embed text entirely in-process and make no network request; the HTTP embedding adapter exists only for explicit development experiments.
+- **One endpoint.** The client posts to `https://api.anthropic.com/v1/messages` with the `x-api-key` header. There is no telemetry endpoint, no analytics SDK, no Plenara-operated relay. Retrieval and semantic search derive deterministic feature-hash vectors entirely in-process and make no network request; the HTTP embedding adapter exists only for explicit development experiments. A packaged sentence transformer is a future quality upgrade, not a current dependency.
 - **Bounded outputs.** Every call carries an explicit `max_tokens` ceiling (v0: 200 for routing, 900 for authoring, 400 for generation), so a runaway response cannot run away with the user's credit.
 - **Injectable.** The seam is an interface so tests inject `ReplayCloud` (the record/replay cassette, `replay_cloud.dart`) — cloud-path tests are deterministic, free, and offline, while exercising *genuine recorded model outputs*. Note the cassette is a **test mechanism**, not a production cache: production never replays a routing decision from a recording; it learns it into the corpus (§4.1).
 - **Guards live inside.** The BYOK availability check and the per-session rate-limit cost guard (Spec 03 §3.5) are the client's responsibility, not each caller's, so `available` and a `rateLimited` result are the only things call sites reason about (Spec 04 §3.5).
 
-Everything *not* on this list runs on-device with zero marginal cost: the corpus fast-path router, retrieval over the local embedding model (~36–80 MB, bge-small class), the deterministic date/recurrence/entity resolvers, the skill interpreter, streaks/queries, semantic search over local embeddings, STT/TTS, and all storage and sync plumbing.
+Everything *not* on this list runs on-device with zero marginal cost: the corpus fast-path router, retrieval over the current deterministic feature-hash index, the deterministic date/recurrence/entity resolvers, the skill interpreter, streaks/queries, semantic search, STT/TTS, and all storage and sync plumbing.
 
 ---
 
@@ -74,7 +74,7 @@ The only per-turn cloud call that exists, and only on the residual: a novel phra
 
 Envelope scaling note: input cost grows linearly with the skill inventory (~20–30 tokens/skill). A power user with 60 authored capabilities pays roughly ~1,800 input tokens ≈ $0.002/residual call — still negligible per call, and §4.3 names the threshold where prompt caching starts paying for this prefix.
 
-The per-session cost guard caps this path (default 20 calls/hour, Spec 03 §3.5 — **flagged for resize**, see Q1: Haiku-as-cold-start-router means a new user's first hour is nearly all residuals). Even at the cap sustained for an hour, spend is ~$0.01.
+The persisted admission controller caps every cloud path at 200 calls per local day and 30 calls per rolling ten minutes (Spec 03 §3.5). It reserves before HTTP and fails closed on corrupt/unwritable state; Settings shows both counters.
 
 ### 3.2 Capability authoring — the one genuinely "expensive" call, by design rare
 
@@ -90,32 +90,40 @@ Pre-authoring reconciliation (`similarTo`, Spec 01 §6.1) runs on the **local** 
 
 **Worst-case authoring session** (complex skill, Opus-pinned, one retry, five refinements): still under **$0.50**. Typical (one clean authoring on the target pin): **~$0.05**. On v0's Haiku interim: **under a cent**. The v0-vs-target model divergence is D3 in the Decision Record. *(Suite-sync: Spec 04 §3.5's former "Sonnet" docstring and Spec 03's model mentions now cite this section — the authoring model is named here and nowhere else, so a repin is a one-file edit.)*
 
-### 3.3 Generative kinds — Haiku default, grounded context, output-capped
+### 3.3 Generative kinds — implemented registry and future candidates
 
-Every generative kind is one `generate(kind, context)` call. **The table below is the single owner of the closed `generativeKind` set** (suite-sync resolution of CS-09): membership is the union recorded here, including `draft_message` (a shipped P-20 feature, admitted by product decision); Spec 03 §2.2a and Spec 04 §3.10 cite this registry rather than enumerating their own lists. Each call is: a short kind-specific system prompt (~60–90 tokens, shipped in the binary — see `_genSys` in `claude.dart`), a deterministically assembled grounded context, and free text out capped at 400 tokens in v0. Per Spec 04 §3.10's cost note (findings §10.1): **default every kind to Haiku; reserve Sonnet/Opus for the heaviest reasoning** (`pattern_insight`, `monthly_reflection`). Measured anchors: briefing **$0.0007 / 1.9 s** on Haiku vs $0.005 / 8 s on Opus 4.8; gift ideas **$0.0015** vs $0.013.
+Every implemented generative kind is one `generate(kind, context)` call. The binary
+`generativeDataClasses` map in `v0/lib/generative.dart` is the executable closed registry; this
+spec is its user-facing and egress explanation.
+
+<!-- IMPLEMENTED_GENERATIVE_KINDS: briefing,draft_message,gift_ideas,pattern_insight,reconnect,weekly_review -->
+
+The implemented kinds are `briefing`, `draft_message`, `gift_ideas`, `pattern_insight`, `reconnect`,
+and `weekly_review`. Each has a prompt, deterministic assembler, declared data classes, Settings
+row, and tests. Earlier candidates `event_prep`, `meal_suggestion`, `monthly_reflection`, and
+`foresight` are **not runtime kinds**; they require a product decision plus a registry/assembler/
+prompt/consent/test change before any current-state document may call them implemented.
 
 | Kind | Model | Context envelope (input) | Output | ~Cost/call (Haiku) |
 |---|---|---|---|---|
 | `briefing` (daily) | Haiku | Date + open tasks + active reminders + upcoming birthdays: ~100–600 tok | ≤400 tok | **$0.0007** (measured) |
 | `gift_ideas` | Haiku | One contact's name, stored facts, birthday: ~80–400 tok | ≤400 tok | **$0.0015** (measured) |
-| `reconnect_coaching` | Haiku | Contact facts + last-interaction date: ~100–400 tok | ≤400 tok | ~$0.001 |
-| `event_prep` | Haiku | Attendee contacts' facts, last-met dates, open threads: ~300–1,200 tok | ≤400–600 tok | ~$0.002 |
+| `reconnect` | Haiku | Contact facts + last-interaction date: ~100–400 tok | ≤400 tok | ~$0.001 |
 | `weekly_review` | Haiku | A week of workouts/moods/interactions/completed tasks: ~200–1,500 tok | ≤400 tok | ~$0.002 |
 | `pattern_insight` | Haiku → **Sonnet if quality demands** | Full tracker series (multi-week): ~500–3,000 tok | ≤400 tok | ~$0.003 (Haiku) / ~$0.015 (Sonnet) |
-| `meal_suggestion` | Haiku | Logged meals + stated goals/preferences: ~200–1,000 tok | ≤400 tok | ~$0.002 |
-| `monthly_reflection` | **Sonnet/Opus** (synthesis quality is the product here) + mandatory journal consent (§5.4) | A month of journal excerpts + interactions: ~2,000–8,000 tok | ~500–1,000 tok | ~$0.02–0.06 (Sonnet) |
-| `foresight` (`G-27`) | Haiku | Upcoming events + similar past situations from the log: ~300–1,500 tok | ≤400 tok | ~$0.002 |
 | `draft_message` (P-20, v0 addition) | Haiku | Contact facts + last ~3 logged interactions: ~100–400 tok | ≤300 tok | ~$0.001 |
 
 Two deterministic **zero-spend gates** the v0 `GenerativeService` already implements, kept as spec: a generative call is *not made* when the grounding is empty or insufficient — an empty week yields an honest "nothing logged yet" with no cloud call (`weeklyReview`), and a pattern insight requires ≥2 series before spending anything (`patternInsight`). Honesty is cheaper than generation.
 
-### 3.4 The monthly envelope — what BYOK actually costs a real user
+### 3.4 Cost posture — show measured usage, not a fixed monthly promise
 
-Summing a *heavy* steady-state month on the defaults (daily briefing ×30, weekly review ×4, ~3 gift/reconnect/prep asks a week, one monthly reflection on Sonnet, ~150 residual routes while the corpus is still learning, one authored capability):
-
-> 30×$0.0007 + 4×$0.002 + 12×$0.0015 + $0.04 + 150×$0.0004 + $0.05 ≈ **$0.22/month**
-
-Even multiplying by 5 for pessimism, a **$5 minimum credit purchase at console.anthropic.com covers a year or more** of heavy Plenara use. This number belongs *in the onboarding copy* (§6.1): the adoption wall (research §15.2) is the account-creation friction, not the money, and saying so honestly ("a $5 credit will realistically last you a year") is both true and disarming. Steady state trends *cheaper* as the corpus learns residuals away (§4.1); the structural floor is the scheduled generatives (briefing ≈ **$0.02/month**).
+The implemented six kinds and residual routes are individually inexpensive at the measured prompt
+sizes, but a fixed monthly dollar promise is not a stable product contract: model prices, prompt
+sizes, authoring frequency, and usage vary. The old envelope also counted unimplemented event prep
+and monthly reflection as though they shipped. Settings therefore shows the persisted daily/burst
+admission counters and completed-operation token/cost diagnostics; onboarding explains BYOK without
+claiming that a particular credit purchase lasts a particular period. Any future cost example must
+be generated from the implemented registry and then-current provider prices.
 
 ---
 
@@ -173,7 +181,7 @@ For every cloud-touching path, the following run first, deterministically, on-de
 1. **The routing cascade's free tiers** (Spec 03 §7.3 steps 1–3): corpus match, retrieval candidate generation, deterministic slot resolution. Most turns end here; the cloud never learns those turns happened.
 2. **The Layer-1 safety pre-filter** (Spec 02 §7.6): the deterministic, binary-shipped ruleset hard-blocking known-harmful request *shapes* (covert surveillance, punitive self-harm/disordered-eating framing, medical diagnosis, financial transactions, third-party impersonation) — *before* an authoring call is constructed. The declined text never leaves the device.
 3. **The tier gate**: no key → the paid path is never entered; the router still *produces* the intent and the app surfaces the honest upgrade prompt (Spec 05 §3.6) — locally.
-4. **The cost guard**: the per-session rate limit inside the seam (Spec 03 §3.5); over the cap, the path degrades to a local clarify that *says* it is rate-limited.
+4. **The cost guard**: the persisted daily/burst admission controller inside the seam (Spec 03 §3.5); over the cap, the path degrades to a local clarify that *says* it is rate-limited.
 5. **The consent check for journal-bearing prompts** (§5.4): a declined consent means the prompt is assembled *without* journal content — the bound is at assembly (`G-26`), so a declined turn's request body never contained the text at all.
 
 ### 5.2 What the routing call sends — and the one disclosure it implies
@@ -187,16 +195,19 @@ What routing **never** sends: correction-corpus *values* (escalation context, wh
 
 ### 5.3 What the authoring call sends
 
-`authorCapability` transmits the **described need in the user's words** ("I want to track my daughter's mood and what preceded her good and bad days"), plus — on retry — the deterministic validator's structured error, plus reconciliation candidates (existing type *names/descriptions* judged similar, Spec 02 §6.2). Authoring prompts are assembled from schema and metadata, never from record content (Spec 02 §6.3): Claude designs the capability without ever seeing a record. The description itself can of course be deeply personal — that is inherent to describing a personal capability — and authoring is therefore an explicit, user-initiated, preview-gated act (Spec 02 §6.5), never fired by an automation. The Layer-3 safety review re-sends the same description + the authored artifact to the reviewer model — same data class, no new disclosure.
+`authorCapability` transmits the **described need in the user's words** ("I want to track my daughter's mood and what preceded her good and bad days"), plus — on retry — the deterministic validator's structured error. Authoring prompts are assembled from schema and metadata, never from record content (Spec 02 §6.3): Claude designs the capability without ever seeing a record. The description itself can of course be deeply personal — that is inherent to describing a personal capability — and authoring is therefore an explicit, user-initiated, preview-gated act (Spec 02 §6.5), never fired by an automation. The designed but unimplemented Layer-3 review would resend the same description + authored artifact; that future disclosure is not claimed as current behavior.
 
 ### 5.4 What generative calls send — grounded assembly, feature by feature
 
 Each generative kind's assembler (v0 `generative.dart`; the `GenerationRequest` DTO of Spec 04 §3.10) gathers **only the record classes that feature declares**, renders them as plain-text facts, and instructs the model to use *only* those. The assembly is deterministic and unit-testable; the table in §5.5 enumerates the exact classes per kind. Cross-cutting rules:
 
-- **Journal text is excluded from every assembler by default.** It enters a prompt only under an explicit **per-session** consent: `pattern_insight` re-assembles *with* journal on an opt-in; `monthly_reflection` requires the mandatory consent card (Spec 04 §3.10 `G-26`; Spec 05 §11). The consent is a state on the *assembler*, not an instruction to the model, and it is **not user-disablable into a standing "always allow"** (DP-07) — the ask recurs each session, deliberately.
+- **Journal text is excluded from every current assembler.** No implemented cloud feature reads it.
+  A future journal-grounded kind first requires an explicit per-session consent state, an
+  assembly-time include/exclude boundary, and canary tests; `monthly_reflection` remains the design
+  example, not a runtime feature.
 - **Contact ids are resolved to display names on-device** before assembly (`_contactName`), so the model sees the user's world ("Sarah"), and conversely no internal identifiers leak into prompts.
 - **Empty grounding → no call** (§3.3): the honest local response is also the private one.
-- **There is deliberately no blanket "skip `sensitive`-flagged fields" assembler rule (suite-sync CS-18).** The `sensitive` flag drives *at-rest encryption scope* (Spec 01 §8.1), not egress: several kinds' entire value is grounded in sensitive-flagged texts (`gift_ideas`/`event_prep`/`reconnect_coaching`/`draft_message` read `contact_fact` texts and interaction notes), sent under tier-b per their declared classes in §5.5. The two egress mechanisms are exactly the ones above — per-kind record-class scoping, and the journal's tier-c gate. Spec 05 §15 E5 formerly cited a field-level exclusion this spec never stated; it now cites the real contract.
+- **There is deliberately no blanket "skip `sensitive`-flagged fields" assembler rule (suite-sync CS-18).** The `sensitive` flag drives *at-rest encryption scope* (Spec 01 §8.1), not egress: several implemented kinds' value is grounded in `contact_fact` texts or interaction notes (`gift_ideas`, `reconnect`, `draft_message`), sent under tier-b per their declared classes in §5.5. The egress boundary is the per-kind record-class registry; journal remains excluded categorically until tier-c exists.
 - Detached execution (Spec 04 §4.7) changes latency, not payload: the same assembled context is sent whether the request came from voice, a scheduled automation, or the UI affordance (Spec 05 §3.8).
 
 ### 5.5 The master table: feature → model → when the cloud is hit → what leaves → consent
@@ -213,17 +224,13 @@ Consent tiers referenced below are defined in §5.6: **(a)** standing BYOK routi
 | STT / TTS (Spec 12 — Voice) | — (platform on-device engines) | **Never** (Plenara-side; platform-native engines are configured on-device per Spec 12 §5.1; voice-privacy statement: Spec 12 §8) | Nothing via Plenara | – |
 | All free-tier skills, queries, streaks, undo, semantic search, storage (Spec 04 §6.1) | — | **Never** | Nothing (sync goes to the *user's own* storage provider, not Claude — Spec 06) | – |
 | Residual routing (Spec 03 §7.3 step 4) | Haiku | Novel phrasing, online + keyed, corpus/retrieval undecided, under the rate cap | Live utterance verbatim + capability inventory (ids, display names, slot names — incl. authored capability names, §5.2). Never: slot values, corpus values, record content, sensitive-skill entries | a |
-| Capability authoring (Spec 02 §6) | v0: Haiku · target: Opus pin (§3.2) | User-initiated `define_*`, after Layer-1 pre-filter + tier gate; offline/free → local draft, no call | The described need in the user's words + validator errors on retry + similar-type names from reconciliation. Never: record content | b (explicit: user asked to build it; preview-gated activation) |
-| Layer-3 authoring safety review (Spec 02 §7.6) | Haiku | Immediately after a validated authoring, before activation | Same description + the authored artifact (schema/metadata only) | b (inherited from the authoring act) |
+| Capability authoring (Spec 02 §6) | current: Haiku · stronger pin targeted (§3.2) | User-initiated `define_*`, after Layer-1 pre-filter + tier gate; offline/free → explicit unavailable response, no call | The described need in the user's words + validator errors on retry. Never: record content | b (explicit: user asked to build it; preview-gated activation) |
+| Layer-3 authoring safety review (Spec 02 §7.6) | **Not implemented** | Future gate after validated authoring, before activation | Would resend the same description + authored artifact (schema/metadata only) | b; blocks authoring beyond dogfood |
 | `briefing` (Spec 05 §15) | Haiku | On ask, or — for the scheduled automation — at notification-tap or next app-open (Spec 04 §3.13; never batch, §4.4) | Date; open task descriptions; active reminder texts; upcoming-birthday nudge lines | b (invocation) / b-standing for the scheduled automation, granted when the user enables the briefing automation |
 | `gift_ideas` (Spec 05 §16) | Haiku | On ask | Target contact's display name, stored `contact_fact` texts, birthday | b |
-| `event_prep` (Spec 05 §17) | Haiku | On ask | Attendees' names, facts, last-met dates, open-thread notes | b |
-| `reconnect_coaching` (Spec 05 §18) | Haiku | On ask | Contact's name, facts, last-interaction date, today's date | b |
+| `reconnect` (Spec 05 §18) | Haiku | On ask | Contact's name, facts, last-interaction date, today's date | b |
 | `weekly_review` (Spec 05 §19) | Haiku | On ask, or weekly automation | The week's workouts, mood ratings, interaction entries (+notes), completed-task descriptions | b / b-standing (automation) |
 | `pattern_insight` (Spec 05 §20) | Haiku → Sonnet | On ask, ≥2 tracker series present | The compared tracker series (dates + values), interaction dates + names. Journal **only on per-session opt-in** | b, +c if journal included |
-| `meal_suggestion` (Spec 05 §21) | Haiku | On ask | Logged meals, stated goals/preferences | b |
-| `monthly_reflection` (Spec 05 §22) | Sonnet/Opus | On ask, only after the mandatory consent card | A month of journal excerpts + interaction log | b + **c mandatory** (no consent → no call) |
-| `foresight` (`G-27`) | Haiku | On ask | Upcoming events/reminders + similar past log entries | b |
 | `draft_message` (P-20) | Haiku | On ask | Contact's name, facts, last ~3 interaction entries. (A draft only — the app never sends messages, DP-03) | b |
 | Journal capture & search (Spec 05 §11–§12) | — | **Never** (on-device STT, local embeddings) | Nothing — journal content reaches Claude only via the two c-gated kinds above; it does sync as plaintext to the *user's own* provider (`G-37`, encryption deferred — Spec 01 §8.7), and onboarding says so | – (c for the two generative uses) |
 | Functional-gap feedback / diagnostics | — (no model; **Spec 11 is sole authority**) | per Spec 11 §§4–5 | internal raw traces may contain user content; external raw capture/export disabled; secrets forbidden in every channel | explicit share action; no automatic upload |
@@ -235,7 +242,7 @@ Standing summary of the "never leaves" set: records at rest, the journal (absent
 
 - **Tier (a) — standing routing consent, granted at key connection.** Adding an API key *is* the consent for the paid tier's ambient mechanics: residual utterances and the capability inventory may be sent to Anthropic on the user's own account when local routing can't decide. The onboarding flow states this in plain language at the moment the key is entered ("When Plenara can't understand a phrasing on its own, it will send that sentence — and only it — to Claude using your key"). No key → tier (a) does not exist → the app is fully local.
 - **Tier (b) — per-invocation feature consent.** Asking for a generative feature ("what should I get Sarah?") is the consent for that feature's declared record classes (the table above) to be assembled and sent, that one time. The feature catalog in Settings shows each kind's "what it sends" line — the table is user-facing, not just spec-facing. Enabling a scheduled automation (daily briefing, weekly review) is the standing form of (b) for that automation's declared classes, revocable by disabling it.
-- **Tier (c) — per-session journal consent, never standing.** Journal content is categorically excluded from (a) and (b). The two kinds that can use it ask per session; the mandatory card for `monthly_reflection` cannot be suppressed (DP-07). A "yes" expires with the session.
+- **Tier (c) — per-session journal consent, never standing (designed, not implemented).** Journal content is categorically excluded from current (a) and (b) assemblers. A future journal-grounded kind must ask per session; the consent cannot become a standing "always allow," and a "yes" expires with the session.
 
 These tiers are enforceable at the assembler level (a Spec 09 property: no prompt-assembly path can include a record class outside its feature's declared set; no path can include journal text without a live tier-c grant), which is what distinguishes them from a privacy-policy promise.
 
@@ -301,12 +308,12 @@ Two mechanisms, neither requiring a backend:
 ### Resolved
 
 - **D1 — One cloud seam, three calls.** All model traffic flows through `CloudClient.routeResidual` / `authorCapability` / `generate` against `api.anthropic.com` only; the BYOK gate and rate-limit cost guard live inside the seam. No other component may construct a network request to a model provider. *(Spec 04 §3.5; v0 `claude.dart`.)*
-- **D2 — Haiku is the default cloud model** for residual routing (~$0.0004/turn, 94% measured) and for every generative kind (briefing $0.0007 measured), with Sonnet/Opus reserved for `pattern_insight` escalation and `monthly_reflection`. *(Findings §10.1, §13; Spec 04 §3.10 cost note.)*
+- **D2 — Haiku is the default cloud model** for residual routing, capability authoring, and all six implemented generative kinds. Sonnet 4.5 is used through the separate `RoutineAuthor` interface for routine composition and figure calls. Any stronger-model generative kind is future work. *(Findings §10.1, §13; Spec 16.)*
 - **D3 — Authoring model: capable-model pin is the target; v0's Haiku is an accepted interim.** Spec 02 §6.3 (`G-29`) requires a pinned Opus 4.7/4.8 + JSON-schema-constrained output for complex-skill serialization discipline; v0 ships Haiku + the deterministic validate→retry gate, acceptable while dogfooding is dominated by simple logging skills. Cost impact of the pin: ~$0.05/authored capability — rare enough to be immaterial. *(This also supersedes Spec 04 §3.5's "Sonnet" docstring — reconcile there.)*
 - **D4 — The corpus ratchet is the cost cache; the plan cache stays deferred.** Learn-after-one-clean-use converts each recurring residual (~$0.0004) into a permanent free fast-path hit; post-NO-GO, plan resolution is already inference-free, so Lane 2 saves nothing material and remains unbuilt (locked, research §15.1). Never cache generative effects; the replay cassette is test-only. *(§4.1–§4.2, §4.5.)*
 - **D5 — No API-level prompt caching in v1** — v1 prompts sit far below Haiku's 4,096-token cacheable-prefix minimum, and the sub-cent calls don't need the discount. The prompt assemblers keep stable-prefix discipline (byte-stable system + sorted inventory first, volatile content last) so caching is a flag-flip at the recorded adoption trigger (~130+ skills or a large stable Sonnet-reflection prefix). This *amends research §7.2's* prompt-caching assumption with current API mechanics. *(§4.3.)*
 - **D6 — Batch API only for deadline-free work** (the weekly consolidation pass); the briefing generates at notification-tap or next app-open, never batch and never a background call (Spec 04 §3.13). *(Reaffirms research §7.2 amendment / Fable F-11; §4.4.)*
-- **D7 — Three-tier consent model**: (a) standing routing consent granted at key connection, worded plainly at onboarding; (b) per-invocation feature consent with each generative kind's "what it sends" declared in the user-facing catalog (automations = standing (b), revocable); (c) per-session journal consent, never standing, mandatory card for `monthly_reflection`, not user-disablable (DP-07). Enforced at prompt assembly, testable in Spec 09. *(§5.6.)*
+- **D7 — Consent model:** (a) standing routing consent granted at key connection; (b) per-invocation feature consent with each implemented kind's data classes declared in Settings; (c) per-session journal consent is the mandatory future prerequisite for any journal-grounded kind and is not yet present because no current assembler reads journal. *(§5.6.)*
 - **D8 — Minimization invariants**: routing sends utterance + capability metadata only (templates-only, sensitive-skill-excluded escalation context); authoring sends the described need + metadata, never record content; generative assemblers send only their declared record classes; the corpus persists slot shapes, never values (the `learn()` refusal rules); safety Layer 1, the tier gate, and the cost guard all run before any bytes leave. *(§5.1–§5.4.)*
 - **D9 — Key storage:** platform secure storage is implemented in the Flutter app, device-local, never synced, and never logged. Legacy migration is verified-before-delete; environment override is development-only. Pure-Dart operator tooling retains its explicit seam. *(§6.2.)*
 - **D10 — Key validation**: no scheduled validation; first-use 401/403 → the distinct `badKey` surface; plus a one-time ~1-token probe at key entry for immediate paste-error feedback, with `offline` never misreported as `badKey`. *(§6.3.)*
@@ -315,10 +322,12 @@ Two mechanisms, neither requiring a backend:
 
 ### Open
 
-- **Q1 — Rate-cap resize (`G-38` follow-on, owned jointly with Spec 03 §3.5).** The 20/hour escalation cap was sized for rare tie-breaks; Haiku-as-cold-start-router blows through it during onboarding (the worst hour to look limited). Re-derive from the measured ~$0.0004/turn — a per-day cap with a burst allowance is the likely shape — and validate against beta cold-start traffic. Do not ship 20/hour unchanged.
+- **Q1 — Rate-cap calibration.** The persisted 200/day + 30/rolling-ten-minute controller is implemented and visible. Recalibrate only from real dogfood/beta evidence; do not silently change it in a call site.
 - **Q2 — Final authoring pin + user-visible cost disclosure.** Confirm the Opus pin (or Sonnet, if structured outputs close the `G-29` gap at a third the price) once complex-skill authoring is exercised beyond the harness; decide whether the authoring preview shows an approximate cost line ("building this used ~$0.04 of your credit").
 - **Q3 — Local spend tally.** Accumulate per-call `usage` into a device-local monthly total surfaced in Settings (§6.6). Cheap and honest; needs the settings surface. Log `usage` from day one regardless.
 - **Q4 — Prompt-caching adoption trigger in practice.** Revisit D5 if beta users' authored inventories grow faster than expected, or when `monthly_reflection` lands on Sonnet with a multi-thousand-token stable prefix.
 - **Q5 — Anthropic-side data-handling copy.** Verify and plainly word, for onboarding, Anthropic's current API data terms (training defaults, retention windows) as they apply to a BYOK consumer key; keep the claim dated. Deeper provider-trust analysis belongs to Spec 10.
 - **Q6 — "Sensitive" capability flag for routing inventories.** Whether user-authored capabilities can be marked to be excluded from residual-routing inventories (accepting worse cold-start routing for those domains), extending the Spec 03 §5.6 sensitive-skill exclusion from corpus context to the inventory itself. Interacts with routing accuracy; needs a design pass with Spec 03.
-- **Q7 — Generative-kind registry drift (membership RESOLVED by suite-sync; prompts still open).** Membership is settled: this spec's §3.3 table is the single owner of the closed set, `draft_message` is admitted (shipped P-20 feature), and Spec 03 §2.2a / Spec 04 §3.10 now cite §3.3 instead of enumerating. Still open: ship a reviewed kind-specific prompt per member (v0 covers only `gift_ideas`, `briefing`, `reconnect`; normalize `reconnect` ↔ `reconnect_coaching` naming in code) — the set is only closed when membership, prompt, and routing anchor all exist for each kind (Spec 09 §6.2 item 2).
+- **Q7 — Generative-kind registry drift — resolved for the implemented six.** The Dart registry,
+  prompt map, router enum, Settings catalog, and this spec use the same six names. New membership is
+  incomplete until all five homes change together and the doc-consistency gate accepts the set.

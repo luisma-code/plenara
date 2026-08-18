@@ -215,6 +215,31 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
   forbidden everywhere. Research, Voice, Security, the implementation plan, and this capsule now
   point to that boundary. The corrected signed build was installed deployment-only at 17:36 PDT.
 
+## Code/spec/document consistency pass
+
+- Current behavior, destination design, and historical evidence are now explicitly separated.
+  Spec 17 owns the living-planner surface; current voice is tap-toggle; production retrieval is the
+  Router-owned in-process feature hash; the execution journal is durable, device-local, and
+  plaintext; content search is in-memory; and exactly six cloud synthesis kinds are implemented.
+- Specs 01–13/15/17, research, CLAUDE, DOGFOOD, privacy, implementation, release, and handoff docs
+  were reconciled. Historical walking-skeleton/transition/release docs have archive banners rather
+  than silently presenting old plaintext-key, localhost-retrieval, volatile-undo, or overlay-only
+  instructions as current.
+- Internal diagnostics remain content-bearing exactly as approved, including recognizer hypotheses;
+  external builds capture none. Raw audio and secrets remain forbidden everywhere. The public
+  privacy policy now matches Spec 11.
+- `Session.cloudReason` now directs missing/rejected-key users to Settings rather than legacy
+  plaintext config. The regression assertions failed against the old copy and pass restored.
+- `tool/doc_consistency.dart` is a calibrated precheck gate: 28 active docs, 18 resolved relative
+  links, 19 retired-claim guards, and six cloud kinds compared across engine, assembler, Settings,
+  and Spec 08. A deliberately restored push-to-talk heading made it fail before restoration.
+- Final precheck is green: 1,922 engine tests + 36 skips; 161 Flutter tests + 3 development skips;
+  94.7% / 90.5% / 68.1% coverage; macOS build; seven real-engine cases; external, secret, and
+  24/60 gates. No simulator or physical phone was used; no app/test process remains.
+- The review is `reviews/2026-08-17-code-spec-doc-consistency-review.md`. The only unresolved local
+  contradiction is untracked user-owned `AGENTS.md`, whose product-context section still describes
+  the retired overlay-only UI and packaged model. It was not edited or staged.
+
 ## Live commands
 
 - Keep awake: `pgrep -x caffeinate || nohup caffeinate -dimsu >/dev/null 2>&1 &`
@@ -241,12 +266,10 @@ _Current working memory. Last updated 2026-08-17 during approved implementation 
 
 ## Implementation queue
 
-- The eight-increment review plan, phone-diagnostic startup correction, and task-row/Apple-partial
-  correction are complete. The follow-up task-row clarity change is also implemented and verified:
-  body → shared detail editor, explicit circle → complete, neither → voice. The full gate and seven
-  local-iPhone-simulator cases pass; the old whole-row-completes behavior made both widget and
-  simulator guards fail as intended. Revision `c26560f7a149` remains on the deployment-only physical
-  phone; this follow-up has not been installed because Luis did not request another phone deployment.
+- The eight-increment review plan, phone-diagnostic corrections, task-row clarity change, and
+  code/spec/document consistency pass are complete. Revision `c26560f7a149` remains on the
+  deployment-only physical phone; this documentation/code-copy pass was not deployed because Luis
+  did not request a phone deployment.
 
 ## Authoritative documents
 

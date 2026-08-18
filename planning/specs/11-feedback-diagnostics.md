@@ -21,13 +21,13 @@ It does **not** cover: what leaves the device inside *model calls* (prompt paylo
 
 ## 1. Governing Principles
 
-**P11.1 — Everything is local by default; there is no telemetry endpoint.** The instruments write only to the user's own machine: the turnlog to the device-local `deviceDir` (`StorageRepository.logTurn` → `<deviceDir>/turnlog.jsonl`, `v0/lib/storage_repository.dart` — relocated from `<dataDir>`, commit `d956390`, §2.1), the AppLog to the OS temp folder (`%TEMP%/plenara-logs/`, `app/lib/app_log.dart`). No code path in the logging layer opens a socket. Submission, when the user chooses it, goes through the user's *own* mail client / OS share sheet (§4.3) — Plenara operates no server, consistent with the no-backend BYOK posture (research §15.1).
+**P11.1 — Everything is local by default; there is no telemetry endpoint.** The instruments write only to the user's own device: the turnlog to `<deviceDir>/turnlog.jsonl`; AppLog to the OS temp diagnostics directory on desktop and the app Documents diagnostics directory on iOS so an internal build can expose it through Files/share. No logging path opens a socket. Submission, when the user chooses it, goes through the OS share sheet—Plenara operates no server.
 
 **P11.2 — Three build channels, two export contracts.** `development` and `internal` may hold real utterances, interim recognizer hypotheses, replies, slot/record values, exception messages, and stacks, and may export those raw traces only through an explicit action labeled as containing conversations. Interim hypotheses are included because native speech engines may show words and then close without an engine-final event; preserving their sequence is what makes a silent capture failure diagnosable. `external` captures no raw content and exposes no raw export; a future external bundle is structurally content-free (§3.3). All channels reject Class S secrets before serialization, and no channel records raw audio. Build channel is compile-time policy, not a runtime preference.
 
 **P11.3 — Explicit, honest export; no automatic upload.** Nothing is transmitted silently. Internal raw export states that it contains conversation text, record values, and exception details, and includes a manifest of revision, build channel, platform, app/schema versions, and included files. External payload review remains manifest-equals-payload. The OS share sheet/user transport is the only outbound action.
 
-**P11.4 — Diagnose from the log, not by retrying.** A dogfood or beta failure must be attributable from the files on disk alone: the AppLog captures boot, every init phase, every turn, and every uncaught error, flushed line-by-line so even a hard hang leaves the last event on disk (`app/lib/app_log.dart`; `runZonedGuarded` + `FlutterError.onError` in `app/lib/main.dart`). The log path is printed to stdout at launch and shown in the app greeting so it is one file away. This was a hard requirement set by Luis during v0 bring-up and is now a spec-level invariant: **every layer transition, error, and turn outcome is reconstructable post-hoc.**
+**P11.4 — Diagnose from the log, not by retrying.** A dogfood failure must be attributable from the files on disk alone: AppLog captures boot, every init phase, every turn, recognizer lifecycle detail, and uncaught errors, flushed line-by-line. The path is printed to stdout and shown under Settings → Diagnostics; startup failure surfaces retain recovery access. This is a spec-level invariant: every relevant layer transition, error, and turn outcome is reconstructable post-hoc.
 
 **P11.5 — The instruments never break the product (P2.8 applied to itself).** A logging failure is swallowed, never thrown into a turn (`AppLog.log` catches all IO errors; the turnlog append sits after the turn's catch-all in `Session.handle`). No silent failure means the *user's request* never fails silently — it does not mean the telemetry gets to take the turn down with it.
 
@@ -46,35 +46,41 @@ One JSON line is appended per turn by `Session.handle` (`v0/lib/session.dart`), 
 | `at` | ISO-8601 timestamp | always | F |
 | `ms` | turn latency, int | always | F |
 | `utterance` | the user's exact words | always | **C** |
-| `source` | how the turn resolved: `corpus \| cloud \| correction \| undo \| help \| authored \| clarify \| out-of-domain \| error` | always | F |
+| `source` | current route/outcome label emitted by `Session` (corpus, retrieval, cloud, direct system/planner paths, clarify/error, and related labels) | always | F for built-in labels |
 | `skill` | dispatched skillId | when dispatched | F (built-in) / **Q** (authored) |
 | `template` | the corpus template matched | corpus routes | **Q** (normalized, but derived from user phrasing) |
 | `slots` | the slot values dispatched into the skill | when present | **C** |
-| `cloud` | cloud health this turn: `ok` or a `CloudErrorKind` name (`noKey \| offline \| timeout \| badKey \| rateLimited \| serverError \| malformed` — the canonical sealed set, owned by Spec 04 §5.1; shipped in `v0/lib/claude.dart`) | cloud-consulting turns | F |
+| `cloud` | `ok` or the canonical `CloudErrorKind` name (including `noKey`, `offline`, `timeout`, `badKey`, `insufficientCredits`, `rateLimited`, `serverError`, `malformed`) | cloud-consulting turns | F |
+| `cost` | per-turn input/output tokens and USD estimate, priced by actual model family | when tokens were spent | F |
+| `reads` | record classes/counts consulted by the turn | when recorded by a path | F/Q; never field values |
 | `writes` | record ops this turn: `{op, id, typeId}` | writing turns | F (opaque ids) / **Q** (authored typeIds) |
 | `response` | assistant reply, capped at 240 chars | always | **C** |
+| `diag` | path-specific diagnostic detail, including recognizer/finalization context | when present | **C** |
 | `error` | exception type + message + stack, error path only — never shown to the user | error turns | **C** (messages/stacks can embed values) |
+| `automations` | delivered/held/refused counts and refusal detail | when unattended work changed | F / possibly **C** in refusal detail |
 
 The reporting tool is `v0/bin/turnlog_report.dart`: a summary view (source mix, cloud health, top skills, and the clarify rate), `--errors` (full trace of every failed/clarify/OOD turn — the `isTroubleTurn` predicate in `v0/lib/turnlog.dart`), and `--trace N`. The summary aggregation (`summarizeTurns`/`formatSummary`) is the prototype of the submittable aggregate metrics in §8.
 
 **Continuity with Spec 03 (suite-sync CS-13 — the two-axis split).** The v0 `source` field conflates two axes: *how the route was derived* and *how the turn ended* (`undo`, `error`, `clarify` are outcomes, not routing sources). When the v1 router lands, the turnlog splits it into **two fields**: `routingSource` — Spec 03 §2.5's closed enum **verbatim**, including the reserved `local_model` member (`corpus_hit`, `retrieval`, `local_model`, `cloud_model`, `rule_match`, `anaphora`; membership owned by Spec 03) plus the retrieval margin — and `outcome` (`dispatched | clarified | corrected | undone | refused | error | out_of_domain`). Spec 09 §10.1's metric definitions then read off `outcome` (09 O8(a), resolved by this split). All Class F, all gap-report-eligible.
 
-### 2.2 The AppLog — `%TEMP%/plenara-logs/plenara-<timestamp>.log`
+### 2.2 The AppLog — device-local `plenara-logs/plenara-<timestamp>.log`
 
 A timestamped plain-text diagnostic log opened at boot (`app/lib/app_log.dart`), one file per run (newest file = latest run), each line flushed immediately. It captures, per `app/lib/main.dart`:
 
-- **Boot**: `boot: main() starting`, and the log path printed to stdout and repeated in the app greeting — so a failed manual test is one file away (P11.4).
+- **Boot**: `boot: main() starting`, with the log path printed to stdout and exposed in Settings → Diagnostics (P11.4).
 - **Every `Session.init` phase** with elapsed ms (the `onPhase` callback, `v0/lib/session.dart §init`): defs loaded, skills validated, in-process retrieval index built or skipped, reminders reconciled. A startup *hang* therefore shows the last phase that began; retrieval no longer depends on a localhost service.
 - **Every turn**: the utterance (`turn: "$t"`) and a 140-char response prefix — both Class C, local only.
 - **Every uncaught error**: `FlutterError.onError` and the `runZonedGuarded` handler write the full exception + stack.
 
-The AppLog is device-local by construction (OS temp folder, never the synced data folder) and is the *hang/crash* instrument, complementing the turnlog's *turn-outcome* instrument: the turnlog can only record a turn that completed its `handle` call; the AppLog catches the ones that never returned.
+The AppLog is device-local by construction (desktop OS temp; iOS app Documents for Files/share access; never the selected synced record root) and is the *hang/crash* instrument, complementing the turnlog's *turn-outcome* instrument: the turnlog can only record a turn that completed its `handle` call; AppLog catches the ones that never returned.
 
 ### 2.3 The delta between today's instruments and the outbound promise
 
 Both instruments contain user content in development/internal builds. That is deliberate: a content-free local log cannot diagnose a misroute. Internal builds may explicitly export these files as-is after the §5 warning and Class S boundary. External builds neither write them nor expose that action. Functional-gap reports and any future external diagnostic bundle remain derived, typed, and content-free.
 
-One placement correction (D9) — **✅ LANDED (commit `d956390`)**: the turnlog formerly lived in `<dataDir>` — the user's *synced* folder — which was fine for one dogfooding device but wrong at two (interleaved appends from two devices are a sync-conflict machine, and telemetry is per-device by nature). It now lives in the device-local `deviceDir` (`~/.plenara`), injected by the app and off the synced folder (same mechanism moved the HLC deviceId — Spec 06 §4.3; the v1 packaging target remains app-support, alongside the execution journal, Spec 04 §7.1; precedent `G-36`). Nothing about its content changed; rotation (D12) is still pending.
+One placement correction (D9) — **landed**: the turnlog formerly lived in synced `<dataDir>`. It
+now lives under the app-injected device-local directory, alongside the HLC device id and execution
+journal. AppLog retention is implemented at 30 days or 100 MB, oldest-first.
 
 ---
 
@@ -84,7 +90,9 @@ One placement correction (D9) — **✅ LANDED (commit `d956390`)**: the turnlog
 
 Every value the system might log falls into exactly one class:
 
-- **Class S — secrets.** The Anthropic API key and anything from `~/.plenara/config.json`. Never logged **anywhere**, local or outbound. A cloud auth failure logs `badKey` + HTTP status (`v0/lib/claude.dart` does exactly this), never the credential. Stricter than C: not even the local zone may hold it.
+- **Class S — secrets.** Active credentials, authorization/API-key headers, secure-store values,
+  legacy config `apiKey` values, and private-key material. Never logged anywhere. A cloud auth
+  failure records only `badKey` plus status, never the credential.
 - **Class C — user content.** Utterance text, slot values, record field values, response text, journal/free-text, contact names, exception messages, and stacks that may interpolate values. It may exist and be manually exported in development/internal builds under the explicit raw warning. It is never captured or raw-exported by an external build.
 - **Class Q — user-shaped metadata.** Data that is structurally metadata but carries user-chosen vocabulary: authored typeIds/skillIds and their displayNames (`water_intake` tells you what the user tracks), corpus templates (normalized, but the fixed words are the user's phrasing — and Spec 03 §5.4's own rule is slot *shapes*, never slot values), `examplePhrases`, file paths containing the username. Outbound **only in generalized form**: an opaque hash plus a closed-vocabulary area label (§3.2).
 - **Class F — functional facts.** The closed enums (`source`/`routingSource`, `CloudErrorKind`, the Spec 04 §5.1 sealed error *kinds*), **built-in** skill/type/template ids (they ship in the binary — they describe Plenara, not the user), timings, counts, confidence/margin numbers, op indices, schema/app versions, OS + platform, boolean flags, opaque record ids (random ids carry nothing), and **shape descriptors** of redacted values — `string[12]`, `number`, `date` (research §14.2). Freely includable outbound.
@@ -243,7 +251,7 @@ This is the division of labor: the **corpus** makes one install better; the **ga
 - **"Report that"** — a system meta-intent (extends Spec 03 §2.3's closed rule-matched set), scoped to the most recent trouble turn; composes a single-gap report (§4.3).
 - **Settings → Feedback & Diagnostics** — the gap list with per-item review/dismiss, "send gap report" (all unsent), and "send diagnostic trace" (§5); shows the local log locations and a one-tap "delete all diagnostics."
 - **The post-failure line** — one calm, rate-limited sentence after a trouble turn (§4.3 step 1); never a modal, never repeated within a session (P2.3's calm posture; the `AttentionSurface` of Spec 04 §3.12 is *not* used for this — a gap is not an inconsistency needing repair).
-- **The greeting/log-path line** — retained from v0 (`app/lib/main.dart`): the diagnostics-log path stays visible at startup and in init-failure messages. It has already paid for itself in dogfood.
+- **The diagnostics-path surface** — stdout for development and Settings → Diagnostics for the app; startup failure keeps a recovery path. It has already paid for itself in dogfood.
 
 ---
 
@@ -259,7 +267,8 @@ This is the division of labor: the **corpus** makes one install better; the **ga
 - **D6 — Authored capabilities travel as `authored:<hash8>` + a closed-vocabulary area label** assigned by the authoring Claude call (Spec 02 §6) and stored in the def — realizing research §14.1's "'nutrition' area" example without shipping user vocabulary. Route-misses report `area: unknown` + built-in candidates.
 - **D7 — Opt-in, user-initiated only.** No background transmission, no auto-prompts beyond one rate-limited post-failure line. Channels are off until used (research §14.3).
 - **D8 — The v0 instruments are formalized as-is.** The turnlog field set (§2.1, from `Session.handle`) and the AppLog boot/phase/turn/error trace (§2.2) are the specified local instruments; "diagnose from the log, not by retrying" is promoted from a dogfood convention to invariant P11.4.
-- **D9 — The turnlog is device-local — ✅ LANDED (commit `d956390`):** it now lives in the app-injected `deviceDir` (`~/.plenara`; v1 packaging target remains app-support, next to the execution journal — Spec 04 §7.1; precedent `G-36`). v0's original `<dataDir>/turnlog.jsonl` placement was single-device-acceptable; per-device telemetry in a synced folder is a conflict machine and a needless exposure of Class C to the sync provider beyond what `G-37` already accepts — which is why this landed ahead of any second device.
+- **D9 — The turnlog is device-local — landed:** it lives in app-injected `deviceDir`, next to the
+  execution journal, never under synced `dataDir`.
 - **D10 — The API key is Class S: never in any log, local or outbound.** Auth failures log `badKey`/HTTP status only (already true in `v0/lib/claude.dart`); enforced by the §6.1 canary battery.
 - **D11 — Raw export is internal-only.** Development/internal expose the plainly warned raw-log action; external never does.
 - **D12 — Retention:** AppLog 30 days or 100 MB, oldest-first; turnlog segmentation/cap remains separate work; gap ring 200; everything user-deletable.
