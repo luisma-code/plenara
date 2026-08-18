@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:plenara/config.dart';
 
+import 'app_log.dart';
 import 'build_channel.dart';
 
 /// The only app-layer home for spendable credentials. Production uses the
@@ -148,24 +150,68 @@ Future<void> initializeAppCredentials({
   final legacyKey = _nonEmpty(cfg.apiKey);
 
   if (secureKey != null) {
-    _activeApiKey = secureKey;
-    if (cfg.apiKeySource == ConfigValueSource.file) {
-      saveConfig(apiKey: '', configPath: configPath);
+    if (legacyKey != null &&
+        legacyKey != secureKey &&
+        cfg.apiKeySource == ConfigValueSource.file) {
+      // V9: a DIFFERENT key sitting in the plaintext config alongside a secure
+      // key is a deliberate user rotation (the file was edited by hand). Adopt
+      // the file key through the same verified-write ritual — silently erasing
+      // it (the old behavior) discarded the key the user just chose.
+      _activeApiKey = await _adoptPlaintextKey(
+        legacyKey,
+        configPath: configPath,
+        reason: 'rotated config-file key',
+      );
+    } else {
+      _activeApiKey = secureKey;
+      if (cfg.apiKeySource == ConfigValueSource.file) {
+        saveConfig(apiKey: '', configPath: configPath);
+      }
     }
   } else if (legacyKey != null && cfg.apiKeySource == ConfigValueSource.file) {
-    await _store.writeApiKey(legacyKey);
-    final verified = _nonEmpty(await _store.readApiKey());
-    if (verified != legacyKey) {
-      throw StateError('Secure credential write could not be verified.');
-    }
-    saveConfig(apiKey: '', configPath: configPath);
-    _activeApiKey = legacyKey;
+    _activeApiKey = await _adoptPlaintextKey(
+      legacyKey,
+      configPath: configPath,
+      reason: 'legacy plaintext key',
+    );
   } else {
     // Environment keys are a development-only, process-lifetime override. They
     // are never silently copied into persistent storage.
     _activeApiKey = legacyKey;
   }
   _initialized = true;
+}
+
+/// The verified-write ritual: the plaintext config value is cleared only after
+/// reading the same value back from secure storage. A failed or unverifiable
+/// write FALLS BACK to using the plaintext key for this process — it
+/// deliberately remains on disk for the next attempt — instead of throwing;
+/// a keychain hiccup at boot must never cost the key or the launch.
+Future<String> _adoptPlaintextKey(
+  String key, {
+  String? configPath,
+  required String reason,
+}) async {
+  try {
+    await _store.writeApiKey(key);
+    if (_nonEmpty(await _store.readApiKey()) == key) {
+      saveConfig(apiKey: '', configPath: configPath);
+      AppLog.instance.log(
+        'credentials: adopted $reason into secure storage (plaintext cleared after verified readback)',
+      );
+      return key;
+    }
+    AppLog.instance.log(
+      'credentials: secure write of $reason could not be verified — using the '
+      'plaintext key for this run; it remains on disk for the next attempt',
+    );
+  } catch (error) {
+    AppLog.instance.log(
+      'credentials: secure write of $reason failed ($error) — using the '
+      'plaintext key for this run; it remains on disk for the next attempt',
+    );
+  }
+  return key;
 }
 
 PlenaraConfig loadAppConfig({String? configPath}) {
@@ -218,6 +264,11 @@ String? _nonEmpty(String? value) {
   final trimmed = value?.trim();
   return trimmed == null || trimmed.isEmpty ? null : trimmed;
 }
+
+/// The credential this process is actually using, for tests that assert a
+/// degraded boot stayed usable rather than silently running keyless.
+@visibleForTesting
+String? get activeApiKeyForTest => _activeApiKey;
 
 void resetAppCredentialsForTest() {
   _store = PlatformCredentialStore();

@@ -39,6 +39,31 @@ Map<String, dynamic>? _ok(CloudResult<Map<String, dynamic>?> r) =>
 CloudErrorKind _errKind(CloudResult<Map<String, dynamic>?> r) =>
     (r as CloudError<Map<String, dynamic>?>).kind;
 
+/// An HttpClient whose first action throws [error] — for exercising the typed
+/// mapping of transport exceptions the loopback stub can't produce on demand
+/// (TLS handshake failures, connections dropped mid-exchange).
+class _ThrowingHttpClient implements HttpClient {
+  final Object error;
+  _ThrowingHttpClient(this.error);
+  @override
+  Duration? connectionTimeout;
+  @override
+  Future<HttpClientRequest> postUrl(Uri url) => Future<HttpClientRequest>.error(error);
+  @override
+  void close({bool force = false}) {}
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+Future<CloudErrorKind> _kindWhenTransportThrows(Object error) async {
+  final res = await HttpOverrides.runZoned(
+    () => ClaudeClient(apiKeyOverride: 'k', url: 'http://127.0.0.1:9/v1/messages')
+        .validateKey(),
+    createHttpClient: (_) => _ThrowingHttpClient(error),
+  );
+  return (res as CloudError<String>).kind;
+}
+
 void main() {
   test('200 good -> Ok(route) with slots', () async {
     final s = await _serve((r) => _reply(r, 200,
@@ -271,6 +296,112 @@ void main() {
     expect(_errKind(await _client(s).authorCapability('thing')),
         CloudErrorKind.malformed);
     await s.close(force: true);
+  });
+
+  test('admission: future-dated ledger entries still count and are never erased (clock rollback)',
+      () async {
+    final dir = Directory.systemTemp.createTempSync('plenara_admission_future_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final usagePath = '${dir.path}/cloud-usage.json';
+    // Two admissions stamped AFTER the current clock — a DST shift, NTP step, or
+    // manual rollback. Dropping them (and rewriting them out of the file, as the
+    // old filter did) would erase real spend history and fail the cap OPEN.
+    const future = ['2026-08-17T13:00:00.000', '2026-08-17T13:01:00.000'];
+    File(usagePath).writeAsStringSync(
+        jsonEncode({'version': 1, 'admittedAt': future}));
+    final c = CloudAdmissionController(
+      path: usagePath,
+      clock: () => DateTime.parse('2026-08-17T12:00:00'),
+      dailyLimit: 3,
+      burstLimit: 30,
+    );
+    expect(c.snapshot().dailyUsed, 2, reason: 'future entries count as spend');
+    expect(c.admit(), isTrue); // 2 + this one = 3, at the cap
+    expect(c.admit(), isFalse, reason: 'the cap holds despite the rollback');
+    final raw = File(usagePath).readAsStringSync();
+    for (final stamp in future) {
+      expect(raw, contains(stamp),
+          reason: 'a rewrite must never erase spend history');
+    }
+  });
+
+  test('admission: the burst window is a pure rolling 10 minutes across local midnight',
+      () async {
+    final dir = Directory.systemTemp.createTempSync('plenara_admission_burst_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final usagePath = '${dir.path}/cloud-usage.json';
+    // Three admissions just BEFORE midnight, clock now just after: all inside
+    // the rolling 10-minute window, but on yesterday's side of the day boundary.
+    // The old daily-then-burst filter reset the burst at midnight, allowing up
+    // to 2× burstLimit in the straddling window.
+    File(usagePath).writeAsStringSync(jsonEncode({
+      'version': 1,
+      'admittedAt': [
+        '2026-08-17T23:56:00.000',
+        '2026-08-17T23:58:00.000',
+        '2026-08-17T23:59:00.000',
+      ],
+    }));
+    var now = DateTime.parse('2026-08-18T00:04:00');
+    final c = CloudAdmissionController(
+      path: usagePath,
+      clock: () => now,
+      dailyLimit: 100,
+      burstLimit: 3,
+    );
+    expect(c.snapshot().burstUsed, 3);
+    expect(c.admit(), isFalse,
+        reason: 'midnight must not reset the burst window');
+    // Slide past the window: only the 23:59 admission is still inside it.
+    now = DateTime.parse('2026-08-18T00:08:30');
+    expect(c.snapshot().burstUsed, 1);
+    expect(c.admit(), isTrue, reason: 'the sliding window re-admits');
+  });
+
+  test('HandshakeException/TlsException/HttpException -> offline (transient network, not malformed)',
+      () async {
+    // A captive portal or MITM proxy breaks the TLS handshake; a dropped
+    // connection surfaces as HttpException. Both are connectivity stories with
+    // retry semantics — the old catch-all mapped them to malformed ("couldn't
+    // be parsed"), the wrong user story AND the wrong retry behavior.
+    expect(await _kindWhenTransportThrows(const HandshakeException('boom')),
+        CloudErrorKind.offline);
+    expect(await _kindWhenTransportThrows(const TlsException('cert invalid')),
+        CloudErrorKind.offline);
+    expect(
+        await _kindWhenTransportThrows(
+            const HttpException('connection closed before full header')),
+        CloudErrorKind.offline);
+    // and the neighbors keep their mappings
+    expect(
+        await _kindWhenTransportThrows(
+            const SocketException('network unreachable')),
+        CloudErrorKind.offline);
+    expect(await _kindWhenTransportThrows(const FormatException('bad')),
+        CloudErrorKind.malformed);
+  });
+
+  test('routeResidual serializes EVERY shipped skill + known contacts into the prompt (request-body guard)',
+      () async {
+    String? captured;
+    final s = await _serve((r) async {
+      captured = await utf8.decoder.bind(r).join();
+      _reply(r, 200, _text('{"skillId":"none"}'));
+    });
+    await _client(s).routeResidual('please do the thing', _skills,
+        knownContacts: {'Katherine Zinger'});
+    await s.close(force: true);
+    final body = jsonDecode(captured!) as Map<String, dynamic>;
+    final user = ((body['messages'] as List).first as Map)['content'] as String;
+    expect(_skills.keys, isNotEmpty, reason: 'sanity: shipped skills loaded');
+    for (final skillId in _skills.keys) {
+      expect(user, contains(skillId),
+          reason: 'the residual prompt must offer the FULL inventory ($skillId)');
+    }
+    expect(user, contains('"Katherine Zinger"'),
+        reason: 'known contacts steer entity resolution');
+    expect(user, contains('please do the thing'));
+    expect(body['system'], contains('intent router'));
   });
 
   test('connection refused -> CloudError.offline, no throw', () async {

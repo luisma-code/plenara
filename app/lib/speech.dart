@@ -236,6 +236,11 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
     // those paths meant the user spoke and nothing happened at all.
     _clearTimers();
     _capture?.finish(discard: discard);
+    // The session is over: drop the capture and the notice sink so a late
+    // engine result cannot re-arm watchdogs or raise a notice against a
+    // session that has already reported done.
+    _capture = null;
+    _onNotice = null;
     final cb = _onDone;
     _onDone = null;
     cb?.call();
@@ -266,6 +271,11 @@ class SystemSpeechRecognizer implements SpeechRecognizer {
   /// Any recognition activity (partial or final) means the speaker is still going — push the
   /// trailing-silence watchdog and the re-hint back out.
   void _bumpActivity() {
+    // Only a LIVE session may arm watchdogs. Apple can deliver its recognition
+    // task's own final shortly after the door already closed and flushed; that
+    // late word re-armed the timers into a dead session, producing a "tap when
+    // you're done" hint and an autoStopped notice while the app sat idle.
+    if (_capture == null) return;
     _sawSpeech = true;
     _noSpeechTimer?.cancel();
     _silenceTimer?.cancel();

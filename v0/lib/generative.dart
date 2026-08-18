@@ -34,6 +34,12 @@ class GenerativeService {
   /// recognition template is safe to learn (Spec 03 §2.7 "delivered", `G-46`).
   bool lastDelivered = false;
 
+  /// True iff the LAST delivered synthesis was cut off at the token budget
+  /// (CloudOk.truncated — stop_reason max_tokens). The Session resets it per
+  /// turn and routes it into the turnlog diag, so a mid-sentence briefing is
+  /// diagnosable post-hoc.
+  bool lastTruncated = false;
+
   String _declaredContext(String kind, String body) {
     final classes = generativeDataClasses[kind];
     if (classes == null) {
@@ -77,8 +83,9 @@ class GenerativeService {
       'gift_ideas',
       _declaredContext('gift_ideas', ctx.toString()),
     )) {
-      case CloudOk(:final value):
+      case CloudOk(:final value, :final truncated):
         lastDelivered = true;
+        lastTruncated = truncated;
         return value;
       case CloudError(:final kind):
         return _degrade('gift ideas', kind);
@@ -127,8 +134,9 @@ class GenerativeService {
       'reconnect',
       _declaredContext('reconnect', ctx.toString()),
     )) {
-      case CloudOk(:final value):
+      case CloudOk(:final value, :final truncated):
         lastDelivered = true;
+        lastTruncated = truncated;
         return value;
       case CloudError(:final kind):
         return _degrade('reconnect ideas', kind);
@@ -160,8 +168,9 @@ class GenerativeService {
       'briefing',
       _declaredContext('briefing', ctx.toString()),
     )) {
-      case CloudOk(:final value):
+      case CloudOk(:final value, :final truncated):
         lastDelivered = true;
+        lastTruncated = truncated;
         return value;
       case CloudError(:final kind):
         return _degrade('a briefing', kind);
@@ -192,9 +201,17 @@ class GenerativeService {
             (r) => r['typeId'] == 'interaction' && inWeek(r['at']?.toString()))
         .toList()
       ..sort((a, b) => '${a['at']}'.compareTo('${b['at']}'));
+    // Completed tasks are filtered to THIS week by completedAt, like every other
+    // series here — without it a review of a quiet week resurfaced every task
+    // ever finished (and a legacy completion with no completedAt is unplaceable
+    // in time, so it stays out rather than polluting every future review).
     final done = store.values
-        .where((r) => r['typeId'] == 'task' && r['completed'] == true)
-        .toList();
+        .where((r) =>
+            r['typeId'] == 'task' &&
+            r['completed'] == true &&
+            inWeek(r['completedAt']?.toString()))
+        .toList()
+      ..sort((a, b) => '${a['completedAt']}'.compareTo('${b['completedAt']}'));
 
     // Nothing logged at all -> honest, no generative call spent on an empty week.
     if (workouts.isEmpty &&
@@ -235,8 +252,9 @@ class GenerativeService {
       'weekly_review',
       _declaredContext('weekly_review', ctx.toString()),
     )) {
-      case CloudOk(:final value):
+      case CloudOk(:final value, :final truncated):
         lastDelivered = true;
+        lastTruncated = truncated;
         return value;
       case CloudError(:final kind):
         return _degrade('a weekly review', kind);
@@ -297,8 +315,9 @@ class GenerativeService {
       'pattern_insight',
       _declaredContext('pattern_insight', ctx.toString()),
     )) {
-      case CloudOk(:final value):
+      case CloudOk(:final value, :final truncated):
         lastDelivered = true;
+        lastTruncated = truncated;
         return value;
       case CloudError(:final kind):
         return _degrade('a pattern insight', kind);
@@ -355,8 +374,9 @@ class GenerativeService {
       'draft_message',
       _declaredContext('draft_message', ctx.toString()),
     )) {
-      case CloudOk(:final value):
+      case CloudOk(:final value, :final truncated):
         lastDelivered = true;
+        lastTruncated = truncated;
         return value;
       case CloudError(:final kind):
         return _degrade('a draft', kind);

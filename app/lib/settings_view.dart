@@ -120,13 +120,30 @@ class _SettingsViewState extends State<SettingsView> {
     }
   }
 
+  /// The device-local dir for the ledger + turnlog. Follows the [configPath]
+  /// test seam exactly like the usage section, so tests never touch the real
+  /// `~/.plenara`.
+  String get _deviceDirPath => widget.configPath == null
+      ? defaultDeviceDir()
+      : File(widget.configPath!).parent.path;
+
+  String get _usagePath => '$_deviceDirPath/cloud-usage.json';
+
+  /// The probe client shares the SAME persisted admission ledger as the
+  /// session's client (buildSession) — a Test-connection tap is a real Anthropic
+  /// HTTP call and must consume, and be limited by, the 200/day + 30-burst
+  /// ledger rather than bypassing it with a fresh in-memory controller.
   Future<CloudResult<String>> _defaultValidate(String key) =>
-      ClaudeClient(apiKeyOverride: key).validateKey();
+      ClaudeClient(apiKeyOverride: key, usagePath: _usagePath).validateKey();
 
   /// Persist a key + refresh state. Clears the field only if it still holds the SAME key we saved
   /// (so a key typed while a test was in flight isn't wiped — Fable review).
   Future<void> _persist(String key) async {
     await saveAppCredential(key, configPath: widget.configPath);
+    // A key pasted in Settings must be scrub-registered NOW — until relaunch
+    // this process keeps logging, and the boundary forbids secrets in every
+    // channel.
+    AppLog.instance.registerSecret(key);
     _cfg = loadAppConfig(configPath: widget.configPath);
     if (_keyCtrl.text.trim() == key) _keyCtrl.clear();
   }
@@ -349,13 +366,56 @@ class _SettingsViewState extends State<SettingsView> {
     _ => 'Unexpected response from Anthropic — try again in a moment.',
   };
 
-  /// Load the device-local turnlog (one JSON object per line); empty on any error.
-  List<Map<String, dynamic>> _loadTurns() {
+  // Usage stats state — read ONCE off build (initState), never re-parsed per
+  // frame. "No usage yet" and "the turnlog is unreadable" are different truths
+  // and the UI says which one it is.
+  List<Map<String, dynamic>> _turns = const [];
+  bool _turnlogUnreadable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTurns();
+  }
+
+  /// Tail-read the last ~2000 lines of the device-local turnlog (one JSON
+  /// object per line). The file is append-only and unbounded — parsing all of
+  /// it on every Settings open was O(history); a bounded byte tail keeps this
+  /// constant.
+  static List<String> _tailLines(
+    File file, {
+    int maxBytes = 1 << 20,
+    int maxLines = 2000,
+  }) {
+    final length = file.lengthSync();
+    final start = length > maxBytes ? length - maxBytes : 0;
+    final raf = file.openSync();
     try {
-      final f = File('${defaultDeviceDir()}/turnlog.jsonl');
-      if (!f.existsSync()) return const [];
-      return f
-          .readAsLinesSync()
+      raf.setPositionSync(start);
+      final bytes = raf.readSync(length - start);
+      var lines = const LineSplitter().convert(
+        utf8.decode(bytes, allowMalformed: true),
+      );
+      // a mid-file start position bisects a line — drop the partial first one
+      if (start > 0 && lines.isNotEmpty) lines = lines.sublist(1);
+      if (lines.length > maxLines) {
+        lines = lines.sublist(lines.length - maxLines);
+      }
+      return lines;
+    } finally {
+      raf.closeSync();
+    }
+  }
+
+  void _loadTurns() {
+    try {
+      final f = File('$_deviceDirPath/turnlog.jsonl');
+      if (!f.existsSync()) {
+        _turns = const [];
+        _turnlogUnreadable = false;
+        return;
+      }
+      _turns = _tailLines(f)
           .where((l) => l.trim().isNotEmpty)
           .map((l) {
             try {
@@ -366,13 +426,16 @@ class _SettingsViewState extends State<SettingsView> {
           })
           .where((m) => m.isNotEmpty)
           .toList();
+      _turnlogUnreadable = false;
     } catch (_) {
-      return const [];
+      // The file EXISTS but could not be read — that is not "no usage yet".
+      _turns = const [];
+      _turnlogUnreadable = true;
     }
   }
 
   Widget _usageSection(ColorScheme cs) {
-    final turns = _loadTurns();
+    final turns = _turns;
     Widget row(String a, String b) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 1),
       child: Row(
@@ -386,11 +449,7 @@ class _SettingsViewState extends State<SettingsView> {
         ],
       ),
     );
-    final admission = CloudAdmissionController(
-      path: widget.configPath == null
-          ? '${defaultDeviceDir()}/cloud-usage.json'
-          : '${File(widget.configPath!).parent.path}/cloud-usage.json',
-    ).snapshot();
+    final admission = CloudAdmissionController(path: _usagePath).snapshot();
     if (turns.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,7 +464,9 @@ class _SettingsViewState extends State<SettingsView> {
           ),
           const SizedBox(height: 6),
           Text(
-            'No usage recorded yet — cloud stats appear here after a few turns.',
+            _turnlogUnreadable
+                ? "The usage log on this device couldn't be read, so per-turn stats are unavailable."
+                : 'No usage recorded yet — cloud stats appear here after a few turns.',
             style: TextStyle(fontSize: 12, color: cs.outline),
           ),
         ],
@@ -484,10 +545,18 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
-  /// Bundle every diagnostics .log from this device into one .txt and hand it to the platform share
-  /// sheet — so a self-hosting user can email the file to themselves (and to me) with no cable. Caps
-  /// the export to the most recent ~1 MB so it stays email-friendly. [_context] gives iPad/macOS the
-  /// popover anchor the share sheet needs.
+  /// Bundle the device's diagnostics .log files AND the device-local turnlog
+  /// into one .txt and hand it to the platform share sheet — so a self-hosting
+  /// user can email the file with no cable. The export is capped to the most
+  /// recent ~1 MB of log text, and the preview names EXACTLY the files (and
+  /// byte ranges) that survive that truncation — the manifest never claims
+  /// content the payload does not carry. [ctx] gives iPad/macOS the popover
+  /// anchor the share sheet needs.
+  ///
+  /// The turnlog rides along deliberately: it is content-bearing internal
+  /// telemetry already covered by the dialog's conversation-content warning,
+  /// and on iOS the Files app hides the dot-directory it lives in, so this
+  /// share is its only cable-free exit.
   Future<void> _shareLogs(BuildContext ctx) async {
     final messenger = ScaffoldMessenger.of(ctx);
     final box = ctx.findRenderObject() as RenderBox?;
@@ -517,7 +586,63 @@ class _SettingsViewState extends State<SettingsView> {
         'PLENARA_REVISION',
         defaultValue: 'unversioned',
       );
-      final includedFiles = logs.map((f) => f.uri.pathSegments.last).join(', ');
+      // Every candidate section, oldest first; the turnlog is one more section.
+      final sources = <(String, File)>[
+        for (final f in logs) (f.uri.pathSegments.last, f),
+        if (File('$_deviceDirPath/turnlog.jsonl').existsSync())
+          ('turnlog.jsonl', File('$_deviceDirPath/turnlog.jsonl')),
+      ];
+      final blocks = <List<int>>[];
+      for (final (name, f) in sources) {
+        String content;
+        try {
+          content = f.readAsStringSync();
+        } catch (e) {
+          content = '(could not read: $e)';
+        }
+        blocks.add(utf8.encode('----- $name -----\n$content\n\n'));
+      }
+      // Truncate to the most recent [cap] BYTES of log text, newest sections
+      // last, and record precisely what survived — file by file, byte-exact.
+      const cap = 1024 * 1024;
+      final totalBytes = blocks.fold<int>(0, (sum, b) => sum + b.length);
+      final included = <String>[];
+      String trace;
+      if (totalBytes <= cap) {
+        for (final (name, _) in sources) {
+          included.add(name);
+        }
+        trace = blocks.map((b) => utf8.decode(b, allowMalformed: true)).join();
+      } else {
+        var remaining = cap;
+        final kept = <String>[];
+        for (var i = blocks.length - 1; i >= 0 && remaining > 0; i--) {
+          final block = blocks[i];
+          final name = sources[i].$1;
+          if (block.length <= remaining) {
+            kept.insert(0, utf8.decode(block, allowMalformed: true));
+            included.insert(0, name);
+            remaining -= block.length;
+          } else {
+            kept.insert(
+              0,
+              utf8.decode(
+                block.sublist(block.length - remaining),
+                allowMalformed: true,
+              ),
+            );
+            included.insert(
+              0,
+              '$name (last $remaining of ${block.length} bytes)',
+            );
+            remaining = 0;
+          }
+        }
+        trace =
+            '[earlier logs truncated — export capped at ${cap ~/ 1024} KB of log text]\n\n'
+            '${kept.join()}';
+      }
+      final includedFiles = included.join(', ');
       final schemaVersions = <String>[];
       final types = Directory('${_cfg.dataDir}${Platform.pathSeparator}types');
       if (types.existsSync()) {
@@ -558,30 +683,27 @@ class _SettingsViewState extends State<SettingsView> {
           'Schema versions: ${schemaVersions.isEmpty ? "none" : schemaVersions.join(", ")}',
         )
         ..writeln();
-      final body = StringBuffer();
-      for (final f in logs) {
-        body.writeln('----- ${f.uri.pathSegments.last} -----');
-        try {
-          body.writeln(f.readAsStringSync());
-        } catch (e) {
-          body.writeln('(could not read: $e)');
-        }
-        body.writeln();
-      }
-      var trace = body.toString();
-      const cap = 1024 * 1024; // keep the email small: most recent ~1 MB
-      if (trace.length > cap) {
-        trace =
-            '[earlier logs truncated — showing the most recent ${cap ~/ 1024} KB]\n\n'
-            '${trace.substring(trace.length - cap)}';
-      }
       final text = '${manifest.toString()}$trace';
+      final payloadBytes = utf8.encode(text).length;
       final ts = DateTime.now().toIso8601String().replaceAll(
         RegExp('[:.]'),
         '-',
       );
+      // A dedicated export dir: sweep leftovers from prior runs first (a share
+      // sheet cancelled at the OS layer can strand files), then stage this one.
+      final exportDir = Directory(
+        '${Directory.systemTemp.path}${Platform.pathSeparator}plenara-exports',
+      );
+      if (exportDir.existsSync()) {
+        for (final stale in exportDir.listSync().whereType<File>()) {
+          try {
+            stale.deleteSync();
+          } catch (_) {}
+        }
+      }
+      exportDir.createSync(recursive: true);
       final out = File(
-        '${Directory.systemTemp.path}${Platform.pathSeparator}plenara-diagnostics-$ts.txt',
+        '${exportDir.path}${Platform.pathSeparator}plenara-diagnostics-$ts.txt',
       );
       out.writeAsStringSync(text);
       if (!ctx.mounted) return;
@@ -593,7 +715,7 @@ class _SettingsViewState extends State<SettingsView> {
             child: Text(
               'This exact export contains conversation text, record values, and exception details.\n\n'
               'Files: ${includedFiles.isEmpty ? "none" : includedFiles}\n'
-              'Payload: ${text.length} characters (maximum 1 MB of log text)\n'
+              'Payload: $payloadBytes bytes (log text capped at 1 MB)\n'
               'Revision: $revision\n\n'
               'Nothing is uploaded automatically. Continuing opens the system share sheet.',
             ),
@@ -611,7 +733,13 @@ class _SettingsViewState extends State<SettingsView> {
           ],
         ),
       );
-      if (approved != true) return;
+      if (approved != true) {
+        // Declined: the staged temp file must not linger with raw content.
+        try {
+          out.deleteSync();
+        } catch (_) {}
+        return;
+      }
       await Share.shareXFiles(
         [XFile(out.path, mimeType: 'text/plain')],
         subject: 'Plenara diagnostics',

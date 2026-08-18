@@ -42,18 +42,29 @@ void main() {
       );
       final secure = MemoryCredentialStore(rejectWrites: true);
 
-      await expectLater(
-        initializeAppCredentials(
-          store: secure,
-          configPath: path,
-          environment: const {},
-          channel: BuildChannel.internal,
-        ),
-        throwsStateError,
+      // A secure store that cannot verify its own write must NOT take boot down
+      // (that threw a StateError out of main() before runApp, bricking the app
+      // with a blank screen). The honest degrade is: keep using the plaintext
+      // key for this run and leave it on disk for the next attempt.
+      await initializeAppCredentials(
+        store: secure,
+        configPath: path,
+        environment: const {},
+        channel: BuildChannel.internal,
       );
 
       final persisted = jsonDecode(File(path).readAsStringSync()) as Map;
-      expect(persisted['apiKey'], isNotEmpty);
+      expect(
+        persisted['apiKey'],
+        'fixture-legacy',
+        reason: 'an unverifiable secure write must never clear the only '
+            'surviving copy of the key',
+      );
+      expect(
+        activeApiKeyForTest,
+        'fixture-legacy',
+        reason: 'the process keeps a usable key rather than running keyless',
+      );
     },
   );
 

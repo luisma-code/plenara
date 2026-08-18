@@ -3,6 +3,7 @@
 /// into fake tasks.
 library;
 
+import 'dates.dart';
 import 'planning_artifact.dart';
 
 enum PlannerItemKind { task, reminder, routine, goal, relationship }
@@ -212,8 +213,10 @@ TodayProjection buildTodayProjection(
   PlannerChange? latestChange,
 }) {
   final start = DateTime(now.year, now.month, now.day);
-  final tomorrow = start.add(const Duration(days: 1));
-  final weekEnd = start.add(const Duration(days: 7));
+  // Component arithmetic, not Duration adds: a 23/25-hour DST day must not
+  // shift the day boundaries by an hour.
+  final tomorrow = DateTime(now.year, now.month, now.day + 1);
+  final weekEnd = DateTime(now.year, now.month, now.day + 7);
   final current = <PlannerItem>[];
   final nextCandidates = <({int rank, DateTime at, PlannerItem item})>[];
   final laterCandidates = <PlannerItem>[];
@@ -340,7 +343,11 @@ TodayProjection buildTodayProjection(
   current.sort(_itemOrder);
   nextCandidates.sort((a, b) {
     final rank = a.rank.compareTo(b.rank);
-    return rank != 0 ? rank : a.at.compareTo(b.at);
+    if (rank != 0) return rank;
+    final at = a.at.compareTo(b.at);
+    // trailing stable id compare: the capped selection must never depend on
+    // store/directory enumeration order
+    return at != 0 ? at : a.item.id.compareTo(b.item.id);
   });
   laterCandidates.sort(_itemOrder);
 
@@ -362,7 +369,8 @@ PlanProjection buildPlanProjection(
   int dailyCapacityMinutes = 8 * 60,
 }) {
   final selected = _day(selectedDay);
-  final weekStart = selected.subtract(Duration(days: selected.weekday - 1));
+  final weekStart = DateTime(
+      selected.year, selected.month, selected.day - (selected.weekday - 1));
   final activeTasks = records.values
       .where((record) =>
           record['typeId'] == 'task' &&
@@ -407,7 +415,8 @@ PlanProjection buildPlanProjection(
   final taskItems = activeTasks.map(taskItem).toList();
   final conflicts = <PlanConflict>[];
   for (var offset = 0; offset < 7; offset++) {
-    final day = weekStart.add(Duration(days: offset));
+    final day =
+        DateTime(weekStart.year, weekStart.month, weekStart.day + offset);
     final scheduled = taskItems
         .where((item) => _sameDay(item.scheduledStartAt, day))
         .where((item) => item.estimatedMinutes != null)
@@ -454,7 +463,10 @@ PlanProjection buildPlanProjection(
     );
   }
   agenda.addAll(_relationshipItemsForDay(records, selected));
-  agenda.sort((a, b) => a.scheduledStartAt!.compareTo(b.scheduledStartAt!));
+  agenda.sort((a, b) {
+    final at = a.scheduledStartAt!.compareTo(b.scheduledStartAt!);
+    return at != 0 ? at : a.id.compareTo(b.id); // stable under any load order
+  });
 
   final deadlines = taskItems
       .where((item) => _sameDay(item.dueAt, selected))
@@ -496,11 +508,15 @@ PlanProjection buildPlanProjection(
       );
     }
   }
-  rhythms.sort((a, b) => a.title.compareTo(b.title));
+  rhythms.sort((a, b) {
+    final title = a.title.compareTo(b.title);
+    return title != 0 ? title : a.id.compareTo(b.id);
+  });
 
   final days = <PlanDaySummary>[];
   for (var offset = 0; offset < 7; offset++) {
-    final day = weekStart.add(Duration(days: offset));
+    final day =
+        DateTime(weekStart.year, weekStart.month, weekStart.day + offset);
     final scheduled = taskItems
         .where((item) => _sameDay(item.scheduledStartAt, day))
         .toList();
@@ -543,6 +559,10 @@ List<PlannerSignal> buildPlannerSignals(
 }) {
   final signals = <PlannerSignal>[];
   final today = _day(now);
+  // Only today through the 7-day scan horizon: a slipped past day must never
+  // pin the signal ("overdue has 540 minutes against 480 available"), and days
+  // beyond the planning week are not actionable pressure yet.
+  final horizon = DateTime(today.year, today.month, today.day + 7);
   final load = <DateTime, ({int minutes, List<String> ids})>{};
   final stale = <String>[];
   for (final record in records.values) {
@@ -555,6 +575,7 @@ List<PlannerSignal> buildPlannerSignals(
     final estimate = _positiveMinutes(record['estimatedMinutes']) ?? 0;
     if (scheduled != null) {
       final day = _day(scheduled);
+      if (day.isBefore(today) || !day.isBefore(horizon)) continue;
       final prior = load[day];
       load[day] = (
         minutes: (prior?.minutes ?? 0) + estimate,
@@ -727,7 +748,9 @@ int _planRiskOrder(PlanTaskItem a, PlanTaskItem b) {
   final dueA = a.dueAt ?? DateTime(9999);
   final dueB = b.dueAt ?? DateTime(9999);
   final due = dueA.compareTo(dueB);
-  return due != 0 ? due : a.title.compareTo(b.title);
+  if (due != 0) return due;
+  final title = a.title.compareTo(b.title);
+  return title != 0 ? title : a.id.compareTo(b.id); // total order
 }
 
 DateTime _day(DateTime value) => DateTime(value.year, value.month, value.day);
@@ -737,11 +760,7 @@ PlannerItem? _relationshipNudge(
   DateTime start,
   DateTime weekEnd,
 ) {
-  final names = <String, String>{
-    for (final record in records.values)
-      if (record['typeId'] == 'contact')
-        '${record['id']}': '${record['displayName'] ?? 'Someone'}',
-  };
+  final names = _contactNames(records);
   final candidates = <PlannerItem>[];
   for (final record in records.values) {
     String? person;
@@ -757,12 +776,11 @@ PlannerItem? _relationshipNudge(
     }
     final date = _dateTime(rawDate);
     if (person == null || date == null) continue;
-    var occurrence = DateTime(start.year, date.month, date.day);
-    if (occurrence.isBefore(start)) {
-      occurrence = DateTime(start.year + 1, date.month, date.day);
-    }
+    // Shared annual authority (dates.dart): Feb-29 observed Feb 28 in common
+    // years, day counts by calendar components — same rule as reminders/nudges.
+    final occurrence = nextAnnual(date, start);
     if (!occurrence.isBefore(weekEnd)) continue;
-    final days = occurrence.difference(start).inDays;
+    final days = calendarDaysBetween(start, occurrence);
     candidates.add(PlannerItem(
       id: '${record['id']}',
       kind: PlannerItemKind.relationship,
@@ -819,7 +837,12 @@ List<PlanTaskItem> _relationshipItemsForDay(
     }
     final date = _dateTime(rawDate);
     if (person == null || date == null) continue;
-    if (date.month != selected.month || date.day != selected.day) continue;
+    // Shared annual authority (dates.dart): a Feb-29 date shows on the Feb 28
+    // agenda in common years instead of silently never appearing.
+    final occurrence = annualOccurrenceInYear(date, selected.year);
+    if (occurrence.month != selected.month || occurrence.day != selected.day) {
+      continue;
+    }
     items.add(
       PlanTaskItem(
         id: '${record['id']}',
@@ -850,7 +873,13 @@ String? _taskDetail(
   List<String> people,
 ) {
   final parts = <String>[];
-  if (scheduled != null) parts.add('Scheduled ${_timeLabel(scheduled, now)}');
+  if (scheduled != null) {
+    // A slipped scheduled time must read coherently ("Overdue — was scheduled
+    // Thu"), never the garbled "Scheduled Overdue".
+    parts.add(scheduled.isBefore(now)
+        ? 'Overdue — was scheduled ${_pastDayLabel(scheduled, now)}'
+        : 'Scheduled ${_timeLabel(scheduled, now)}');
+  }
   if (deadline != null) parts.add('Deadline ${_dayLabel(deadline, now)}');
   if (record['estimatedMinutes'] != null) {
     final estimate = num.tryParse('${record['estimatedMinutes']}')?.round();
@@ -869,15 +898,28 @@ String _timeLabel(DateTime at, DateTime now) {
   return '${_dayLabel(at, now)} · $h$minute ${at.hour < 12 ? 'AM' : 'PM'}';
 }
 
+const _weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const _monthNames = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
 String _dayLabel(DateTime at, DateTime now) {
-  final day = DateTime(at.year, at.month, at.day);
-  final today = DateTime(now.year, now.month, now.day);
-  final delta = day.difference(today).inDays;
+  final delta = calendarDaysBetween(now, at); // component-counted, DST-immune
   if (delta < 0) return 'overdue';
   if (delta == 0) return 'today';
   if (delta == 1) return 'tomorrow';
-  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  return weekdays[at.weekday - 1];
+  return _weekdayNames[at.weekday - 1];
+}
+
+/// A day label for a PAST moment ("was scheduled …"): today/yesterday, the
+/// weekday within the last week, else "Aug 12".
+String _pastDayLabel(DateTime at, DateTime now) {
+  final delta = calendarDaysBetween(now, at); // negative for past days
+  if (delta == 0) return 'today';
+  if (delta == -1) return 'yesterday';
+  if (delta > -7) return _weekdayNames[at.weekday - 1];
+  return '${_monthNames[at.month - 1]} ${at.day}';
 }
 
 DateTime? _dateTime(Object? value) {
@@ -894,5 +936,7 @@ bool _sameDay(DateTime? value, DateTime day) =>
 int _itemOrder(PlannerItem left, PlannerItem right) {
   if (left.overdue != right.overdue) return left.overdue ? -1 : 1;
   final at = (left.at ?? DateTime(9999)).compareTo(right.at ?? DateTime(9999));
-  return at != 0 ? at : left.title.compareTo(right.title);
+  if (at != 0) return at;
+  final title = left.title.compareTo(right.title);
+  return title != 0 ? title : left.id.compareTo(right.id); // total order
 }

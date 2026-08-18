@@ -103,6 +103,12 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
   // shared, un-identified engine handlers — and a stale event from a superseded utterance (gen !=
   // _gen) can never cross-fire a newer utterance's callbacks (reviewer d #4/#5).
   int _gen = 0;
+  // The generation that armed [_onStart]. The native start handler is shared and
+  // un-identified, so a superseded utterance's late `didStart` would otherwise
+  // fire the NEW call's onStart before its audio, and could leave [_speaking]
+  // stuck true after a stop() — which makes the next mic tap take the barge-in
+  // path (an extra stop + settle) for no reason.
+  int _startGen = -1;
   void Function()? _onStart;
   void Function()? _onDone; // the active call's onDone, so stop() can fire it exactly once
 
@@ -185,6 +191,8 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
       await _tts.awaitSpeakCompletion(true); // speak() resolves when THAT utterance ends/stops
       if (Platform.isIOS) await _selectBestVoice();
       _tts.setStartHandler(() {
+        // Only the utterance that currently owns state may report its onset.
+        if (_startGen != _gen) return;
         _speaking = true;
         final s = _onStart;
         _onStart = null;
@@ -227,6 +235,7 @@ class FlutterTtsSpeechOutput implements SpeechOutput {
     // onDone is dropped: the newer speak owns state) and a stop()/speak() arriving during our own
     // awaits below cleanly supersedes us. onDone is retained so stop() can fire it exactly once.
     final gen = ++_gen;
+    _startGen = gen;
     _onStart = onStart;
     _onDone = onDone;
     _speaking = true;

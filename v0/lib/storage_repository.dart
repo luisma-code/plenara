@@ -92,9 +92,18 @@ class FileStorageRepository implements StorageRepository {
   /// injects `~/.plenara` (see config.defaultDeviceDir); it defaults to [dataDir] so the
   /// CLI/tests are unchanged.
   final String deviceDir;
+
+  /// Channel gate for the content-bearing turnlog (Spec 11): internal/dev
+  /// builds keep it (Luis is the sole beta tester); EXTERNAL builds pass false
+  /// and [logTurn] then writes nothing at all — a complete no-op, not an
+  /// empty or scrubbed file.
+  final bool enableTurnlog;
   final fs.HlcDevice dev;
   FileStorageRepository(this.dataDir,
-      {String? deviceDir, fs.HlcDevice? device, bool? watchSupported})
+      {String? deviceDir,
+      fs.HlcDevice? device,
+      bool? watchSupported,
+      this.enableTurnlog = true})
       : deviceDir = deviceDir ?? dataDir,
         // dart:io recursive Directory.watch is unavailable on physical iOS.
         // Keep startup usable there; the store still reconciles on every open.
@@ -126,13 +135,16 @@ class FileStorageRepository implements StorageRepository {
     return id;
   }
 
-  /// Files that failed to parse during load (corrupt / half-synced), surfaced for repair
-  /// instead of silently dropped (P2.8). The Session logs these at startup.
+  /// Files that failed to load (corrupt / half-synced / shape-defective), surfaced for
+  /// repair instead of silently dropped (P2.8). The Session logs these at startup.
+  /// Each entry is `path: error` — the CAUSE rides along, so the startup log says
+  /// WHY a file was skipped, not just which one. Deduplicated per path.
   final List<String> corruptFiles = [];
+  final Set<String> _corruptPaths = {};
   final List<Map<String, dynamic>> recordConflicts = [];
   final List<DefinitionConflict> definitionConflicts = [];
-  void _sink(String path, Object _) {
-    if (!corruptFiles.contains(path)) corruptFiles.add(path);
+  void _sink(String path, Object error) {
+    if (_corruptPaths.add(path)) corruptFiles.add('$path: $error');
   }
 
   @override
@@ -144,9 +156,11 @@ class FileStorageRepository implements StorageRepository {
       if (!file.path.endsWith('.json')) continue;
       final document = _readDocument(file);
       final id = document?[key];
+      // Provider conflict copies, filename/id mismatches, and id-less files are
+      // never activated by directory enumeration order. They remain on disk for
+      // explicit repair — and they are SURFACED (not silently skipped) by
+      // _scanDefinitionConflicts, which runs on every loadRecords.
       if (id is! String) continue;
-      // Provider conflict copies and filename/id mismatches are never activated
-      // by directory enumeration order. They remain on disk for explicit repair.
       if (file.uri.pathSegments.last != '$id.json') continue;
       loaded[id] = document!;
     }
@@ -182,18 +196,49 @@ class FileStorageRepository implements StorageRepository {
 
   @override
   void persist(Map<String, dynamic> record) {
+    _recoverCanonicalFromShadow('${record['id']}');
     final document = fs.persist(record, '$dataDir/records', dev);
     _writeShadow('${record['id']}', document);
   }
 
   @override
   void remove(String id) {
+    _recoverCanonicalFromShadow(id);
     fs.tombstone(id, '$dataDir/records', dev);
     final file = File('$dataDir/records/$id.json');
     _writeShadow(
       id,
       jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
     );
+  }
+
+  /// The canonical record file is the prior envelope for persist/tombstone.
+  /// When it exists but cannot be parsed (a torn provider write), restore the
+  /// device-local shadow — this install's last observed envelope, kept for
+  /// exactly this — over it BEFORE rewriting. Without the fallback the rewrite
+  /// resets the version vector to {dev: 1}, a peer's copy then strictly
+  /// dominates it, and the user's edit (or delete) is silently discarded on
+  /// the next sync. The torn canonical is still surfaced via [corruptFiles].
+  void _recoverCanonicalFromShadow(String id) {
+    final file = File('$dataDir/records/$id.json');
+    if (!file.existsSync()) return;
+    Object error;
+    try {
+      jsonDecode(file.readAsStringSync());
+      return; // readable — the normal prior-envelope path handles it
+    } catch (e) {
+      error = e;
+    }
+    _sink(file.path, error);
+    try {
+      final shadow = File('${_shadowRecords.path}/$id.json');
+      final document =
+          jsonDecode(shadow.readAsStringSync()) as Map<String, dynamic>;
+      fs.writeRecordDocument(file, document);
+    } catch (_) {
+      // No usable shadow either: the rewrite restamps from scratch, which is
+      // the pre-existing (worst-case) behavior.
+    }
   }
 
   Directory get _shadowRecords => Directory('$deviceDir/sync-shadow/records');
@@ -224,15 +269,38 @@ class FileStorageRepository implements StorageRepository {
     final variants = <String, List<(File, Map<String, dynamic>)>>{};
     final shadows = <String, Map<String, dynamic>>{};
 
+    // Two passes: the OneDrive conflict pattern is only safe to recognize when
+    // its stem id exists canonically, so every readable document is gathered
+    // before any filename is classified.
+    final readable = <(File, Map<String, dynamic>, String)>[];
     for (final file in records.listSync().whereType<File>()) {
       if (!file.path.endsWith('.json')) continue;
       final document = _readDocument(file);
-      if (document == null || document['id'] is! String) continue;
-      final id = document['id'] as String;
-      final canonicalName = '$id.json';
-      if (file.uri.pathSegments.last == canonicalName) {
+      if (document == null) continue; // parse failure already surfaced
+      if (document['id'] is! String) {
+        // Shape defect: valid JSON, unusable envelope. Surfaced the same way
+        // loadRecords surfaces it, so reconcile never silently declines a file
+        // and then leaves it behind for a later reader to trip over.
+        _sink(
+          file.path,
+          StateError('Record id is missing or not a string.'),
+        );
+        continue;
+      }
+      readable.add((file, document, document['id'] as String));
+    }
+    final canonicalIds = {
+      for (final entry in readable)
+        if (entry.$1.uri.pathSegments.last == '${entry.$3}.json') entry.$3,
+    };
+    for (final (file, document, id) in readable) {
+      if (file.uri.pathSegments.last == '$id.json') {
         canonical[id] = document;
-      } else if (_isConflictCopy(file.uri.pathSegments.last, id)) {
+      } else if (_isConflictCopy(
+        file.uri.pathSegments.last,
+        id,
+        canonicalExists: canonicalIds.contains(id),
+      )) {
         (variants[id] ??= []).add((file, document));
       } else {
         _sink(
@@ -328,21 +396,62 @@ class FileStorageRepository implements StorageRepository {
     _scanDefinitionConflicts();
   }
 
-  bool _isConflictCopy(String filename, String id) {
-    final lower = filename.toLowerCase();
-    return lower.contains('conflicted copy') || filename == '$id 2.json';
+  /// Does [filename] look like a sync provider's conflict copy of record [id]?
+  /// [id] is the id the DOCUMENT declares for itself, so every pattern below is
+  /// anchored on the record's own id — a file about a different record can
+  /// never match. Known provider spellings:
+  ///   - Dropbox:   '<id> (<host>'s conflicted copy <date>).json'
+  ///   - iCloud:    '<id> N.json' for N >= 2 (iCloud numbers duplicates from 2)
+  ///   - Syncthing: '<id>.sync-conflict-<yyyymmdd>-<hhmmss>-<device>.json'
+  ///   - OneDrive:  '<id>-<ComputerName>.json'
+  /// The OneDrive shape is a bare hyphen suffix, which a legitimate hyphenated
+  /// record id could also produce ('task-1-old.json' is the canonical name of
+  /// id 'task-1-old'). It therefore matches ONLY when [canonicalExists] — the
+  /// stem id has a canonical '<id>.json' in this records directory — so an
+  /// orphaned hyphen-named file is surfaced for repair instead of deleted.
+  bool _isConflictCopy(
+    String filename,
+    String id, {
+    required bool canonicalExists,
+  }) {
+    if (filename.toLowerCase().contains('conflicted copy')) return true;
+    final stem = RegExp.escape(id);
+    if (RegExp('^$stem ([2-9]|[1-9][0-9]+)\\.json\$').hasMatch(filename)) {
+      return true;
+    }
+    if (RegExp('^$stem\\.sync-conflict-[0-9]{8}-[0-9]{6}-[A-Za-z0-9]+\\.json\$')
+        .hasMatch(filename)) {
+      return true;
+    }
+    return canonicalExists && RegExp('^$stem-.+\\.json\$').hasMatch(filename);
   }
 
   void _scanDefinitionConflicts() {
     definitionConflicts.clear();
-    for (final config in const [('types', 'typeId'), ('skills', 'skillId')]) {
+    // Every synced definition directory is scanned — templates and automations
+    // conflict in a provider folder exactly as often as types and skills do.
+    for (final config in const [
+      ('types', 'typeId'),
+      ('skills', 'skillId'),
+      ('templates', 'templateId'),
+      ('automations', 'automationId'),
+    ]) {
       final dir = Directory('$dataDir/${config.$1}');
       if (!dir.existsSync()) continue;
       for (final file in dir.listSync().whereType<File>()) {
         if (!file.path.endsWith('.json')) continue;
         final document = _readDocument(file);
-        final id = document?[config.$2];
-        if (id is! String) continue;
+        if (document == null) continue; // parse failure already surfaced
+        final id = document[config.$2];
+        if (id is! String) {
+          // Valid JSON with no usable id: loadDefs can never activate it, so
+          // it must be a visible repair item rather than a silent skip.
+          _sink(
+            file.path,
+            StateError('Definition lacks a string ${config.$2}.'),
+          );
+          continue;
+        }
         final canonical = File('${dir.path}/$id.json');
         if (file.absolute.path != canonical.absolute.path) {
           definitionConflicts.add(DefinitionConflict(
@@ -474,13 +583,66 @@ class FileStorageRepository implements StorageRepository {
     if (f.existsSync()) f.deleteSync();
   }
 
+  /// Secret strings registered for turnlog redaction (e.g. the live API key,
+  /// registered by the app at startup). Raw audio and SECRETS are forbidden in
+  /// EVERY diagnostic channel (Spec 11 Class S) — including the internal one.
+  final List<String> _turnlogSecrets = [];
+
+  /// Register a secret value that must never reach the turnlog bytes. Empty or
+  /// near-empty strings are ignored (replacing them would shred the log).
+  void registerTurnlogSecret(String secret) {
+    final value = secret.trim();
+    if (value.length >= 4 && !_turnlogSecrets.contains(value)) {
+      _turnlogSecrets.add(value);
+    }
+  }
+
+  /// Credential shapes that are Class S regardless of registration: Anthropic
+  /// keys, bearer tokens, x-api-key headers, and PEM private-key blocks.
+  static final List<RegExp> _turnlogSecretPatterns = [
+    RegExp(r'sk-ant-[A-Za-z0-9-]+'),
+    RegExp(r'bearer\s+\S+', caseSensitive: false),
+    RegExp(r'x-api-key\s*[:=]\s*\S+', caseSensitive: false),
+    // From BEGIN to the matching END inclusive; an unterminated block is
+    // redacted through to the end of the entry.
+    RegExp(r'-*BEGIN [A-Z ]*PRIVATE KEY[\s\S]*?(?:END [A-Z ]*PRIVATE KEY-*|$)'),
+  ];
+
+  /// The Class S boundary, applied BEFORE serialization: every string value in
+  /// the entry (recursively, keys included) is scrubbed, whatever code path
+  /// produced the entry. Redacting the serialized line instead would let a
+  /// whitespace-greedy pattern eat across JSON delimiters.
+  Object? _redactTurnlogValue(Object? value) {
+    if (value is String) {
+      var out = value;
+      for (final secret in _turnlogSecrets) {
+        out = out.replaceAll(secret, '[redacted]');
+      }
+      for (final pattern in _turnlogSecretPatterns) {
+        out = out.replaceAll(pattern, '[redacted]');
+      }
+      return out;
+    }
+    if (value is Map) {
+      return {
+        for (final entry in value.entries)
+          '${_redactTurnlogValue('${entry.key}')}':
+              _redactTurnlogValue(entry.value),
+      };
+    }
+    if (value is List) return value.map(_redactTurnlogValue).toList();
+    return value;
+  }
+
   @override
   void logTurn(Map<String, dynamic> entry) {
+    if (!enableTurnlog) return; // external build: the channel does not exist
     final f = File('$deviceDir/turnlog.jsonl');
     if (deviceDir != dataDir)
       f.parent.createSync(
           recursive: true); // the injected device-local dir may not exist yet
-    f.writeAsStringSync('${jsonEncode(entry)}\n', mode: FileMode.append);
+    f.writeAsStringSync('${jsonEncode(_redactTurnlogValue(entry))}\n',
+        mode: FileMode.append);
   }
 
   /// Schedule-automation lastFired state (autoId → time), DEVICE-LOCAL: it's per-install

@@ -8,7 +8,11 @@ import 'dart:io';
 import 'storage_repository.dart';
 import 'store.dart' as fs;
 
-enum ExecutionPhase { prepared, applying, completed, reversing, reversed }
+/// [conflict] is a terminal repair phase: a non-terminal record whose replay
+/// was refused (later durable writes diverged from its images) or whose
+/// replays kept failing. It is never replayed again and never pruned, so the
+/// exact bytes stay inspectable for repair.
+enum ExecutionPhase { prepared, applying, completed, reversing, reversed, conflict }
 
 enum ExecutionResultState {
   persisted,
@@ -57,6 +61,11 @@ class DurableExecutionRecord {
   final Map<String, Map<String, dynamic>?> before;
   ExecutionPhase phase;
   int nextOperation;
+
+  /// How many launch-time replays of this record have already failed. Bounded
+  /// by [ExecutionCoordinator.maxReplayAttempts]; a deterministic failure
+  /// escalates to [ExecutionPhase.conflict] instead of retrying forever.
+  int replayAttempts;
   final String createdAt;
 
   DurableExecutionRecord({
@@ -69,6 +78,7 @@ class DurableExecutionRecord {
     required this.before,
     required this.phase,
     required this.nextOperation,
+    this.replayAttempts = 0,
     required this.createdAt,
   });
 
@@ -83,6 +93,7 @@ class DurableExecutionRecord {
         'before': before,
         'phase': phase.name,
         'nextOperation': nextOperation,
+        if (replayAttempts > 0) 'replayAttempts': replayAttempts,
         'createdAt': createdAt,
       };
 
@@ -105,6 +116,7 @@ class DurableExecutionRecord {
       before: before,
       phase: ExecutionPhase.values.byName(json['phase'] as String),
       nextOperation: json['nextOperation'] as int,
+      replayAttempts: json['replayAttempts'] as int? ?? 0,
       createdAt: json['createdAt'] as String,
     );
   }
@@ -118,22 +130,62 @@ abstract interface class ExecutionJournal {
   void prune(int maxCompleted);
 }
 
-class FileExecutionJournal implements ExecutionJournal {
-  final File file;
-  final List<String> _issues = [];
+/// Shared entry bookkeeping for every journal backend: upsert-by-id, pruning
+/// that only ever removes completed/reversed records (conflict records are
+/// preserved for repair), and the id allocator. Backends only differ in how
+/// [_flush] makes the entries durable.
+abstract class _ExecutionJournalBase implements ExecutionJournal {
   final List<DurableExecutionRecord> _entries = [];
   // Keep durable ids in a separate range from the legacy in-session journal's
   // small positive counters while mutation origins are migrated incrementally.
   int _nextId = 1000000;
+
+  void _flush() {}
+
+  @override
+  List<DurableExecutionRecord> get entries => List.unmodifiable(_entries);
+
+  @override
+  int allocateId() => _nextId++;
+
+  @override
+  void put(DurableExecutionRecord record) {
+    final index = _entries.indexWhere((entry) => entry.id == record.id);
+    if (index < 0) {
+      _entries.add(record);
+    } else {
+      _entries[index] = record;
+    }
+    _flush();
+  }
+
+  @override
+  void prune(int maxCompleted) {
+    final terminal = _entries
+        .where(
+          (entry) =>
+              entry.phase == ExecutionPhase.completed ||
+              entry.phase == ExecutionPhase.reversed,
+        )
+        .toList()
+      ..sort((a, b) => a.id.compareTo(b.id));
+    while (terminal.length > maxCompleted) {
+      final oldest = terminal.removeAt(0);
+      _entries.removeWhere((entry) => entry.id == oldest.id);
+    }
+    _flush();
+  }
+}
+
+class FileExecutionJournal extends _ExecutionJournalBase {
+  final File file;
+  final List<String> _issues = [];
 
   FileExecutionJournal(String deviceDir)
       : file =
             File('$deviceDir${Platform.pathSeparator}execution-journal.json') {
     _load();
   }
-
-  @override
-  List<DurableExecutionRecord> get entries => List.unmodifiable(_entries);
 
   @override
   List<String> get issues => List.unmodifiable(_issues);
@@ -166,36 +218,6 @@ class FileExecutionJournal implements ExecutionJournal {
   }
 
   @override
-  int allocateId() => _nextId++;
-
-  @override
-  void put(DurableExecutionRecord record) {
-    final index = _entries.indexWhere((entry) => entry.id == record.id);
-    if (index < 0) {
-      _entries.add(record);
-    } else {
-      _entries[index] = record;
-    }
-    _flush();
-  }
-
-  @override
-  void prune(int maxCompleted) {
-    final terminal = _entries
-        .where(
-          (entry) =>
-              entry.phase == ExecutionPhase.completed ||
-              entry.phase == ExecutionPhase.reversed,
-        )
-        .toList()
-      ..sort((a, b) => a.id.compareTo(b.id));
-    while (terminal.length > maxCompleted) {
-      final oldest = terminal.removeAt(0);
-      _entries.removeWhere((entry) => entry.id == oldest.id);
-    }
-    _flush();
-  }
-
   void _flush() {
     file.parent.createSync(recursive: true);
     fs.writeJsonAtomic(file, {
@@ -205,44 +227,9 @@ class FileExecutionJournal implements ExecutionJournal {
   }
 }
 
-class MemoryExecutionJournal implements ExecutionJournal {
-  final List<DurableExecutionRecord> _entries = [];
-  int _nextId = 1000000;
-
-  @override
-  List<DurableExecutionRecord> get entries => List.unmodifiable(_entries);
-
+class MemoryExecutionJournal extends _ExecutionJournalBase {
   @override
   List<String> get issues => const [];
-
-  @override
-  int allocateId() => _nextId++;
-
-  @override
-  void put(DurableExecutionRecord record) {
-    final index = _entries.indexWhere((entry) => entry.id == record.id);
-    if (index < 0) {
-      _entries.add(record);
-    } else {
-      _entries[index] = record;
-    }
-  }
-
-  @override
-  void prune(int maxCompleted) {
-    final terminal = _entries
-        .where(
-          (entry) =>
-              entry.phase == ExecutionPhase.completed ||
-              entry.phase == ExecutionPhase.reversed,
-        )
-        .toList()
-      ..sort((a, b) => a.id.compareTo(b.id));
-    while (terminal.length > maxCompleted) {
-      final oldest = terminal.removeAt(0);
-      _entries.removeWhere((entry) => entry.id == oldest.id);
-    }
-  }
 }
 
 class ExecutionResult {
@@ -271,6 +258,11 @@ class ExecutionCoordinator {
   final void Function(DurableExecutionRecord record, int operationIndex)?
       afterPersist;
   static const maxCompleted = 25;
+
+  /// A stuck record whose replay has failed this many times stops retrying
+  /// and escalates to [ExecutionPhase.conflict] so a deterministic failure
+  /// cannot burn every launch forever. The bytes stay preserved for repair.
+  static const maxReplayAttempts = 3;
 
   ExecutionCoordinator({
     required this.repository,
@@ -348,12 +340,45 @@ class ExecutionCoordinator {
     for (final record in journal.entries.toList()) {
       if (record.phase == ExecutionPhase.prepared ||
           record.phase == ExecutionPhase.applying) {
-        outcomes.add(_continue(record, recovered: true));
+        // Replay is only honest while the durable state still looks like this
+        // record's own work (its before-images or its own after-images). If a
+        // later turn wrote past it, replaying would clobber the newer durable
+        // truth, so the record escalates to a visible conflict instead of
+        // being silently replayed or silently dropped.
+        if (!_imagesMatchBeforeOrAfter(record)) {
+          outcomes.add(_escalateToConflict(record));
+          continue;
+        }
+        if (record.replayAttempts >= maxReplayAttempts) {
+          outcomes.add(_escalateToConflict(record));
+          continue;
+        }
+        final outcome = _continue(record, recovered: true);
+        if (outcome.state == ExecutionResultState.appliedInMemory) {
+          // Count the failed replay durably (best effort: if the journal
+          // itself cannot be written, the next launch retries and recounts).
+          record.replayAttempts++;
+          try {
+            journal.put(record);
+          } catch (_) {}
+        }
+        outcomes.add(outcome);
       } else if (record.phase == ExecutionPhase.reversing) {
         outcomes.add(_continueUndo(record, recovered: true));
       }
     }
     return outcomes;
+  }
+
+  ExecutionResult _escalateToConflict(DurableExecutionRecord record) {
+    record.phase = ExecutionPhase.conflict;
+    try {
+      journal.put(record);
+    } catch (_) {
+      // The conflict outcome below stays visible even if the phase change
+      // cannot be persisted; the next launch re-derives the same decision.
+    }
+    return ExecutionResult(ExecutionResultState.conflict, record: record);
   }
 
   ExecutionResult undo(int id) {
@@ -363,8 +388,26 @@ class ExecutionCoordinator {
         record.phase == ExecutionPhase.reversed) {
       return const ExecutionResult(ExecutionResultState.failedBeforeWrite);
     }
+    if (record.phase == ExecutionPhase.conflict) {
+      // Already escalated for repair; undoing it would guess at state.
+      return ExecutionResult(ExecutionResultState.conflict, record: record);
+    }
     if (record.phase == ExecutionPhase.completed &&
         !_afterImagesStillMatch(record)) {
+      return ExecutionResult(
+        ExecutionResultState.conflict,
+        record: record,
+      );
+    }
+    // A prepared/applying record cannot promise which of its writes landed,
+    // so the honest divergence rule is per id: the current value must equal
+    // either the recorded before-image (this write never landed; restoring
+    // the before-image is a no-op) or the record's own after-image (it
+    // landed; restoring the before-image reverts exactly this record's
+    // work). Anything else is a later writer's state and undo must surface
+    // a conflict instead of silently reverting it.
+    if (record.phase != ExecutionPhase.completed &&
+        !_imagesMatchBeforeOrAfter(record)) {
       return ExecutionResult(
         ExecutionResultState.conflict,
         record: record,
@@ -482,6 +525,25 @@ class ExecutionCoordinator {
     for (final entry in expected.entries) {
       final actual = store[entry.key];
       if (!_deepEqual(actual, entry.value)) return false;
+    }
+    return true;
+  }
+
+  /// For each id a record touches, the current store value must deep-equal
+  /// either the recorded before-image or the record's own intended
+  /// after-image (write -> its record map, delete -> absent). Anything else
+  /// proves a later writer got there, and replay/undo must not clobber it.
+  bool _imagesMatchBeforeOrAfter(DurableExecutionRecord record) {
+    final after = <String, Map<String, dynamic>?>{};
+    for (final operation in record.operations) {
+      after[operation.id] =
+          operation.kind == 'write' ? operation.record : null;
+    }
+    for (final id in after.keys) {
+      final actual = store[id];
+      if (_deepEqual(actual, record.before[id])) continue;
+      if (_deepEqual(actual, after[id])) continue;
+      return false;
     }
     return true;
   }

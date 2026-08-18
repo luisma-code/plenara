@@ -4,6 +4,7 @@ import 'package:plenara/session.dart';
 import 'package:plenara/planner.dart' show taskRelationshipNames;
 
 import 'presence_shell.dart';
+import 'undo_feedback.dart';
 
 /// The generic-data portion of Library. Records are grouped by type and each
 /// type renders through an ARCHETYPE chosen from the type's STRUCTURE, not per-type code (Spec 07
@@ -117,19 +118,16 @@ Future<void> showRecordDetailSheet({
     final result = await session.deleteRecord(id);
     if (!context.mounted) return;
     onChanged();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.message),
-        action: result.undoId == null
-            ? null
-            : SnackBarAction(
-                label: 'UNDO',
-                onPressed: () async {
-                  await session.undoById(result.undoId!);
-                  onChanged();
-                },
-              ),
-      ),
+    showUndoableResult(
+      context,
+      message: result.message,
+      onUndo: result.undoId == null
+          ? null
+          : () async {
+              final outcome = await session.undoById(result.undoId!);
+              onChanged();
+              return outcome;
+            },
     );
   }
 
@@ -165,13 +163,35 @@ class _DataViewState extends State<DataView> {
   Session get session => widget.session;
   bool _busy = false;
 
-  /// Complete a task from the browse view — routes through the turn engine (so undo/journal
-  /// stay intact), then rebuilds. Read paths elsewhere stay untouched.
-  Future<void> _complete(String description) async {
+  /// Complete a task from the browse view — the ID-BASED durable completion
+  /// path (same as Today), so the tap can never mis-route through free-text
+  /// description matching, and the outcome is always surfaced with its UNDO.
+  /// Clarification or failure used to yield zero feedback here (the old
+  /// `session.handle('mark <description> done')` reply was discarded).
+  Future<void> _complete(String id) async {
     if (_busy) return;
     setState(() => _busy = true);
-    await session.handle('mark $description done');
-    if (mounted) setState(() => _busy = false);
+    try {
+      final result = await session.completeTask(id);
+      if (!mounted) return;
+      showUndoableResult(
+        context,
+        message: result.message,
+        onUndo: result.undoId == null
+            ? null
+            : () async {
+                final outcome = await session.undoById(result.undoId!);
+                _refresh();
+                return outcome;
+              },
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      } else {
+        _busy = false;
+      }
+    }
   }
 
   void _refresh() {
@@ -243,7 +263,7 @@ class _AutomationsCard extends StatelessWidget {
   IconData _icon(String state) => switch (state) {
     'active' => Icons.play_circle,
     'pending' => Icons.hourglass_empty,
-    _ => Icons.pause_circle_outline, // deferred / inert
+    _ => Icons.pause_circle_outline, // inert
   };
 
   @override
@@ -294,7 +314,7 @@ class _TypeSection extends StatelessWidget {
   final String typeId;
   final Map<String, dynamic> typeDef;
   final List<Map<String, dynamic>> records;
-  final Future<void> Function(String description)? onComplete;
+  final Future<void> Function(String id)? onComplete;
   final VoidCallback onChanged;
   const _TypeSection({
     required this.session,
@@ -354,7 +374,7 @@ class _TypeSection extends StatelessWidget {
                   tooltip: done ? 'Done' : 'Mark done',
                   onPressed: (done || onComplete == null)
                       ? null
-                      : () => onComplete!(desc),
+                      : () => onComplete!('${r['id']}'),
                 ),
                 title: Text(desc),
                 onTap: () => _showRecord(context, r),
@@ -846,19 +866,14 @@ class _LearnedPhrasesCardState extends State<_LearnedPhrasesCard> {
     final raw = widget.session.forgetLearnedFlow(f.template);
     setState(() {});
     if (raw != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            "Forgotten — Plena won't recognize that phrasing.",
-          ),
-          action: SnackBarAction(
-            label: 'UNDO',
-            onPressed: () {
-              widget.session.restoreLearnedFlow(raw);
-              if (mounted) setState(() {});
-            },
-          ),
-        ),
+      showUndoableResult(
+        context,
+        message: "Forgotten — Plena won't recognize that phrasing.",
+        onUndo: () async {
+          widget.session.restoreLearnedFlow(raw);
+          if (mounted) setState(() {});
+          return null;
+        },
       );
     }
   }

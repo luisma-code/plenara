@@ -135,6 +135,11 @@ class OperationCenter {
   Stream<OperationRecord> get changes => _changes.stream;
   Future<void> get whenIdle => _tail;
 
+  /// Cancellation handles still tracked for live work. Exists so tests can
+  /// prove no path leaks a handle after its operation reaches a terminal
+  /// state; production code has no reason to read it.
+  int get trackedCancellationCount => _cancellations.length;
+
   void _load() {
     if (path == null) return;
     final file = File(path!);
@@ -204,6 +209,9 @@ class OperationCenter {
   ) async {
     final queued = _byId(id);
     if (queued == null || queued.state == OperationState.cancelled) {
+      // This work never starts, so its cancellation handle must not outlive
+      // it; the finally below is unreachable from this early return.
+      _cancellations.remove(id);
       _completeWaiter(id);
       return;
     }
@@ -212,6 +220,15 @@ class OperationCenter {
       updatedAt: clock(),
       progress: 0.05,
     ));
+    final running = _byId(id);
+    if (running == null || running.state != OperationState.running) {
+      // The queued->running persist failed and _persistOrFail already marked
+      // the record failed (terminal, notified). Abort before spending
+      // provider money: finished work must never resurrect a terminal record.
+      _cancellations.remove(id);
+      _completeWaiter(id);
+      return;
+    }
     try {
       final result = await work(cancellation);
       final current = _byId(id)!;
@@ -278,7 +295,15 @@ class OperationCenter {
         notify: false,
       );
     }
-    _persist();
+    try {
+      _persist();
+    } catch (error) {
+      // Delivery to the user outranks the durable delivered mark. Keep the
+      // at-least-once posture: hand the results over now and surface the
+      // persist failure; if the mark never lands, relaunch redelivers.
+      // Never let the exception escape into a change listener mid-drain.
+      issues.add('Delivery state could not be saved: $error');
+    }
     return List.unmodifiable(pending);
   }
 
@@ -327,7 +352,33 @@ class OperationCenter {
     }
   }
 
+  /// Terminal-history bound, mirroring the execution journal's prune(25):
+  /// every state change rewrites the whole file, so retained results must not
+  /// grow forever.
+  static const maxTerminalRecords = 50;
+
+  /// Keeps at most [maxTerminalRecords] terminal records, pruning oldest
+  /// first. Queued/running records are never pruned, and a terminal
+  /// succeeded/failed/interrupted record whose result has not been delivered
+  /// yet survives until it is. Cancelled records never enter the delivery
+  /// ledger ([takeDeliveries] skips them), so they are prunable immediately.
+  void _prune() {
+    var excess =
+        _records.where((record) => record.terminal).length - maxTerminalRecords;
+    if (excess <= 0) return;
+    _records.removeWhere((record) {
+      if (excess <= 0) return false;
+      final prunable = record.terminal &&
+          (record.deliveredAt != null ||
+              record.state == OperationState.cancelled);
+      if (!prunable) return false;
+      excess--;
+      return true;
+    });
+  }
+
   void _persist() {
+    _prune();
     if (path == null) return;
     final file = File(path!);
     file.parent.createSync(recursive: true);

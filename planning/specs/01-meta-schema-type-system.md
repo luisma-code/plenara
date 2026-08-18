@@ -236,7 +236,7 @@ Automations bind a condition to a skill. They are **not** part of any type defin
 | `automationId` | string | yes | Globally unique. Filename is `{automationId}.json`. |
 | `targetType` | string | yes | `typeId` the automation observes. Must resolve in the registry. |
 | `condition.kind` | `"schedule"` \| `"onWrite"` | yes | How it fires. (`onQuery` is deferred — §12 Q6.) |
-| `condition.cronExpression` | string | if `kind == "schedule"` | Standard 5-field cron. Evaluated by the deterministic scheduler, not a model. |
+| `condition.cronExpression` | string | if `kind == "schedule"` | 5-field cron (`minute hour day-of-month month day-of-week`), evaluated by the deterministic scheduler, not a model. Two deliberate departures from crontab: day-of-month and day-of-week are **ANDed** (`0 9 13 * 5` fires only on a Friday the 13th, where crontab would fire on the 13th *or* any Friday), and only numeric values, `*`, ranges, lists, and `*/step` are accepted — month/day **names** (`MON`, `JAN`) and steps on ranges are rejected at registration, so an expression the evaluator cannot honor parks the automation as invalid instead of registering it active and silently never firing. |
 | `condition.afterField` | string | if `kind == "onWrite"` | Attribute name; fires after that field is written to a `targetType` instance. |
 | `skillId` | string | yes | References a skill in `skills/`. Must exist and be valid to fire — unless `pendingSkill` is true. |
 | `pendingSkill` | boolean | no | If true, the skill is not yet authored; the automation is registered but inert until it exists. Default false. |

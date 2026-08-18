@@ -1,6 +1,51 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-08-17 during approved implementation of the full review plan._
+_Current working memory. Last updated 2026-08-18 after the full-tree code review and its remediation._
+
+## Full code review and remediation (2026-08-18)
+
+- Nine read-only reviewers covered the whole tree; 63 defects found, every confirmed one fixed with a
+  calibrated test. Review: `reviews/2026-08-18-full-code-review-remediation.md`.
+- **Records could not be edited after a relaunch** for 13 of 17 shipped types: the loader injects the
+  envelope `createdAt`, updates carried it into the write, and the validator rejected it as an unknown
+  field. `createdAt` is now structural. Every test missed this by editing inside the creating session.
+- **Durable-execution data loss fixed**: recovery replayed a stale `applying` write over a newer
+  completed one, and undo skipped conflict detection for non-`completed` records. Both now compare
+  before/after images and escalate to a terminal `conflict` phase; replays are capped at three.
+- **The record merge was not associative** when a delete met two live branches, so replicas could
+  diverge permanently. It is now a true join-semilattice; the randomized property test generates
+  deletes, tombstones, vv dominance, stamp ties, and legacy stamp-less fields.
+- **The turnlog ignored the build channel.** `v0` had no channel awareness, so external builds would
+  have written utterances/responses/diagnostics, and the purge missed inherited turnlogs. The
+  repository now takes `enableTurnlog` (external constructs it false), inherited turnlogs are purged,
+  and a Class S rejection boundary runs before serialization in every channel. Internal
+  content-bearing diagnostics are unchanged and remain enabled as approved.
+- **DST recurrence fixed** (2nd Sunday firing Saturday; biweekly drifting an hour for a whole season),
+  verified by a 2025–2027 sweep. Feb-29 anniversaries had three different behaviors; `dates.dart` is
+  now the single authority (clamp to Feb 28 in common years).
+- Also fixed: Settings key-probe bypassing the persisted rate ledger; weekly review including every
+  task ever completed; corpus learning able to persist a private name verbatim; unbounded
+  `operations.json`; non-total sort comparators making the "deterministic" projection
+  filesystem-dependent; cron accepting expressions it silently never fires; shape-corrupt files
+  bricking cold start; OneDrive/Syncthing conflict copies never merged; missing fsync before rename;
+  routine cadence dying on backgrounding; a timed step discarding the user's in-flight speech;
+  operation deliveries lost mid-turn or spoken over a hot mic; unscrollable long replies; the
+  local-Whisper engine dropping a whole dictation on an audio error (it had zero tests); and a
+  credential-store throw that could brick boot before `runApp`.
+- Diagnosability: `ExecutionResult.error` and `CloudError.detail` were read by no call site anywhere
+  and now reach the trace; boot sub-phase markers, data-root logging, unreadable-file causes, turn
+  correlation ids, and storage-refresh counts added. Mid-run refresh parks failing records as repair
+  items instead of dropping them silently.
+- Three tests were found unable to fail and were strengthened (an async `returnsNormally` that
+  asserted nothing, a defer test that passed against the broken code, and a weekly-review test that
+  asserted the bug).
+- Gate: 2,034 engine tests + 36 skips; 175 Flutter tests + 4 channel skips; **95.7% deterministic /
+  90.0% product / 83.8% transport** (transport was 68.1%); macOS build; seven real-engine cases;
+  external, secret, and 24/60 gates. No simulator or physical phone was used; no orphan process
+  remains.
+- Explicitly deferred to the owner: `session.dart`/`main.dart` decomposition, `Session.handle`
+  reentrancy serialization, and whether past-scheduled items should keep evicting today's items from
+  the three-item Now cap.
 
 ## Product direction
 

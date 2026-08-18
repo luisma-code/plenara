@@ -61,19 +61,7 @@ class ReferenceStore {
     if (!f.existsSync()) return ReferenceStore._(name, {}, const []);
     try {
       final j = jsonDecode(f.readAsStringSync());
-      final byKey = <String, Map<String, dynamic>>{};
-      final keys = <String>[];
-      for (final e in (j['entries'] as List).cast<Map<String, dynamic>>()) {
-        final k = e['key'] as String;
-        keys.add(k);
-        final nk = normalize(k);
-        if (nk.isNotEmpty) byKey[nk] = e;
-        for (final a in (e['aliases'] as List? ?? const []).cast<String>()) {
-          final na = normalize(a);
-          if (na.isNotEmpty) byKey.putIfAbsent(na, () => e);
-        }
-      }
-      return ReferenceStore._(name, byKey, keys);
+      return _build(name, (j['entries'] as List).cast<Map<String, dynamic>>());
     } on Object {
       return ReferenceStore._(name, {}, const []);
     }
@@ -81,14 +69,29 @@ class ReferenceStore {
 
   /// Build directly from parsed entries (for tests).
   static ReferenceStore fromEntries(
-      String name, List<Map<String, dynamic>> entries) {
+          String name, List<Map<String, dynamic>> entries) =>
+      _build(name, entries);
+
+  /// Every canonical key that is REGISTERED must resolve back to its own entry
+  /// through [normalize] — tier-2 depends on that round trip. Two defect shapes
+  /// are therefore skipped deterministically, whole-entry, at build time:
+  ///   - a key normalizing to '' (it could never be resolved at all; leaving it
+  ///     in the tier-2 list made resolve() throw on a null-assert);
+  ///   - a later key colliding with an earlier canonical key after
+  ///     normalization (FIRST entry wins; keeping both let tier-2 return one
+  ///     entry's data under the other entry's name).
+  static ReferenceStore _build(
+      String name, Iterable<Map<String, dynamic>> entries) {
     final byKey = <String, Map<String, dynamic>>{};
     final keys = <String>[];
+    final canonical = <String>{};
     for (final e in entries) {
       final k = e['key'] as String;
-      keys.add(k);
       final nk = normalize(k);
-      if (nk.isNotEmpty) byKey[nk] = e;
+      if (nk.isEmpty) continue;
+      if (!canonical.add(nk)) continue; // collision: first entry wins
+      keys.add(k);
+      byKey[nk] = e; // a canonical key beats an earlier alias for this slot
       for (final a in (e['aliases'] as List? ?? const []).cast<String>()) {
         final na = normalize(a);
         if (na.isNotEmpty) byKey.putIfAbsent(na, () => e);
@@ -142,8 +145,11 @@ class ReferenceStore {
       }
     }
     if (best == null || bestSim < theta) return null;
-    return ReferenceEntry(
-        best, _byKey[normalize(best)]!, 'reference~'); // '~' = fuzzy provenance
+    // _build guarantees every registered key round-trips through normalize();
+    // stay defensive anyway — an honest null beats a throw in the food path.
+    final entry = _byKey[normalize(best)];
+    if (entry == null) return null;
+    return ReferenceEntry(best, entry, 'reference~'); // '~' = fuzzy provenance
   }
 }
 

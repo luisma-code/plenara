@@ -35,6 +35,10 @@ class Router {
   final DateTime now;
   final Set<String> _learnedTemplates =
       {}; // templates added by learn() / loaded as learned
+  // The learned entry OBJECTS (identity set), so forget() can remove exactly the
+  // learned copies and never a seed that happens to share a template string.
+  final Set<CorpusEntry> _learnedEntries = Set.identity();
+
   /// Corpus files that failed to parse (torn / half-synced), for the caller to surface (P2.8).
   final List<String> corruptFiles = [];
   Router(this.corpus, this.now);
@@ -53,25 +57,47 @@ class Router {
     } catch (_) {
       corrupt.add(path);
     }
+    final seedTemplates = entries.map((e) => e.template).toSet();
     final learned = <String>{};
+    final learnedEntries = <CorpusEntry>[];
     if (learnedPath != null && File(learnedPath).existsSync()) {
       // The learned corpus is device-written and rewritten whole on every learn/forget. A torn or
       // half-synced file must degrade to "nothing learned yet" — throwing here happens inside
       // init(), i.e. the app simply never opens, and stays that way until the file is deleted by
-      // hand. Losing learned phrasings is recoverable; a bricked launch is not.
+      // hand. Losing learned phrasings is recoverable; a bricked launch is not. Both failure
+      // shapes are surfaced via [corruptFiles] (P2.8), never silent.
       try {
         for (final e
             in jsonDecode(File(learnedPath).readAsStringSync()) as List) {
           if (e is! Map<String, dynamic>) continue;
           final t = e['template'];
           if (t is! String) continue; // a malformed entry is skipped, not fatal
-          entries.insert(0, _compile(e)); // learned tried first
+          // A learned entry duplicating a SEED template is stale residue (the
+          // write paths dedupe, but an old file can carry one). Loading it would
+          // mark the seed's template "learned" — and a later forget() would then
+          // strip a shipped phrasing. Skip it; the seed already routes it.
+          if (seedTemplates.contains(t) || learned.contains(t)) continue;
+          final CorpusEntry ce;
+          try {
+            ce = _compile(e); // learned tried first (insert below)
+          } catch (_) {
+            // ONE un-compilable entry must not abort the rest of the learned
+            // corpus — skip it, keep loading, and surface the file for repair.
+            if (!corrupt.contains(learnedPath)) corrupt.add(learnedPath);
+            continue;
+          }
+          entries.insert(0, ce);
+          learnedEntries.add(ce);
           learned.add(t);
         }
-      } catch (_) {/* unreadable -> seed corpus only */}
+      } catch (_) {
+        // unreadable/torn -> seed corpus only, surfaced for repair
+        if (!corrupt.contains(learnedPath)) corrupt.add(learnedPath);
+      }
     }
     return Router(entries, now)
       .._learnedTemplates.addAll(learned)
+      .._learnedEntries.addAll(learnedEntries)
       ..corruptFiles.addAll(corrupt);
   }
 
@@ -79,12 +105,49 @@ class Router {
 
   /// Forget a learned template (§5.2 NEGATIVE half): when a learned entry
   /// misroutes and the user corrects it, drop it so it can't misroute again.
-  /// Only removes LEARNED templates — a seed template is never forgotten this way.
+  /// Only removes LEARNED entries — a seed entry is never forgotten this way,
+  /// even one whose template string matches (identity-checked, defense in depth
+  /// on top of the load-time seed-duplicate skip).
   bool forget(String template) {
     if (!_learnedTemplates.contains(template)) return false;
-    corpus.removeWhere((c) => c.template == template);
+    corpus.removeWhere(
+        (c) => c.template == template && _learnedEntries.contains(c));
+    _learnedEntries.removeWhere((c) => c.template == template);
     _learnedTemplates.remove(template);
     return true;
+  }
+
+  // ---- shared slot-value abstraction guards ----
+  // ONE implementation for all three learn paths (learn / learnGenerative /
+  // learnSuggested), so no path can regress to a weaker guard independently.
+
+  /// A whole-token matcher for a slot value. "Ann" must never hit inside
+  /// "anniversary" — a mid-word abstraction corrupts the template AND persists
+  /// the surrounding fragment of the value verbatim into the synced corpus
+  /// ("store slot shapes, not values").
+  static RegExp _tokenMatcher(String value) =>
+      RegExp('\\b${RegExp.escape(value)}\\b', caseSensitive: false);
+
+  /// Replace the FIRST whole-token occurrence of [value] in [text] with
+  /// [placeholder]; null when the value never occurs at a token boundary.
+  static String? _abstractValue(String text, String value, String placeholder) {
+    final m = _tokenMatcher(value).firstMatch(text);
+    if (m == null) return null;
+    return '${text.substring(0, m.start)}$placeholder${text.substring(m.end)}';
+  }
+
+  /// True when any of [values] still appears as a whole token in the template's
+  /// LITERAL text (placeholders stripped). A value occurring twice in the
+  /// surface abstracts only once — the survivor would persist the value
+  /// verbatim into the synced corpus, so such a template must never be learned.
+  static bool _leaksSlotValue(String template, Iterable<Object?> values) {
+    final literal = template.replaceAll(RegExp(r'\{\w+:\w+\}'), ' ');
+    for (final v in values) {
+      final vs = v?.toString().trim() ?? '';
+      if (vs.isEmpty) continue;
+      if (_tokenMatcher(vs).hasMatch(literal)) return true;
+    }
+    return false;
   }
 
   /// Learn a phrasing (§5.2 write path): abstract the extracted slot values back
@@ -99,31 +162,36 @@ class Router {
     var abstracted = 0;
     for (final e in nonNull) {
       final vs = e.value.toString();
-      final idx = t.toLowerCase().indexOf(vs.toLowerCase());
-      if (idx >= 0) {
-        // A slot value that IS a known contact abstracts to `:contact`, never `:text` — otherwise
-        // a learned "what is {who:text} {q:text}" would defeat the :contact guard and hijack all
-        // "what is X …" world-knowledge (Fable review, critical). Preserves the guard across learns.
-        final type =
-            contacts.contains(vs.toLowerCase()) ? 'contact' : _inferType(vs);
-        t = '${t.substring(0, idx)}{${e.key}:$type}${t.substring(idx + vs.length)}';
+      // A slot value that IS a known contact abstracts to `:contact`, never `:text` — otherwise
+      // a learned "what is {who:text} {q:text}" would defeat the :contact guard and hijack all
+      // "what is X …" world-knowledge (Fable review, critical). Preserves the guard across learns.
+      final type =
+          contacts.contains(vs.toLowerCase()) ? 'contact' : _inferType(vs);
+      final next = _abstractValue(t, vs, '{${e.key}:$type}');
+      if (next != null) {
+        t = next;
         abstracted++;
       }
     }
     // Only learn a SAFE template (Fable review):
-    //  1. EVERY non-null slot must abstract. Otherwise the template is lossy (a
-    //     dropped slot — e.g. a cloud-resolved date not present in the surface)
-    //     AND it persists a private slot *value* verbatim into the synced corpus
-    //     (violates "store slot shapes, not values").
+    //  1. EVERY non-null slot must abstract, at a whole-token boundary. Otherwise
+    //     the template is lossy (a dropped slot — e.g. a cloud-resolved date not
+    //     present in the surface) AND it persists a private slot *value* verbatim
+    //     into the synced corpus (violates "store slot shapes, not values").
     //  2. At least one literal word must survive. Otherwise "call mom" ->
     //     "{description:text}" compiles to `^(.+?)$` which matches EVERY utterance
     //     and — inserted first + persisted — permanently hijacks all routing.
+    //  3. NO slot value may survive in the literal text (a twice-occurring value
+    //     abstracts only once; the survivor would persist verbatim).
     if (abstracted != nonNull.length) return null;
     if (!_hasStrongLiteral(t)) return null;
+    if (_leaksSlotValue(t, nonNull.map((e) => e.value))) return null;
     if (corpus.any((c) => c.template == t))
       return null; // dedupe: nothing new to persist
-    corpus.insert(0, _compile({'skillId': skillId, 'template': t}));
+    final entry = _compile({'skillId': skillId, 'template': t});
+    corpus.insert(0, entry);
     _learnedTemplates.add(t);
+    _learnedEntries.add(entry);
     return t;
   }
 
@@ -141,16 +209,12 @@ class Router {
     if (vs.isEmpty) return null;
     final asOf = clock ?? now;
     final t0 = utterance.trim();
-    // Find the contact as a WHOLE word/phrase, never a mid-word substring — "Ann" must not hit inside
-    // "anniversary" (which would corrupt the template AND persist the name verbatim, violating "store
-    // shapes not values"). The name is model-supplied, so a non-token match is realistic.
-    final boundary = RegExp('\\b${RegExp.escape(vs)}\\b', caseSensitive: false);
-    final m = boundary.firstMatch(t0);
-    if (m == null) return null;
-    final t =
-        '${t0.substring(0, m.start)}{contact:entity}${t0.substring(m.end)}';
-    if (boundary.hasMatch(t))
-      return null; // a second occurrence would leak the name verbatim
+    // Whole-token abstraction + leak rejection via the SHARED guards ("Ann" must
+    // not hit inside "anniversary"; a second occurrence would leak the name
+    // verbatim). The name is model-supplied, so a non-token match is realistic.
+    final t = _abstractValue(t0, vs, '{contact:entity}');
+    if (t == null) return null;
+    if (_leaksSlotValue(t, [vs])) return null;
     if (!_hasStrongLiteral(t)) return null;
     if (corpus.any((c) => c.template == t)) return null;
     // Round-trip like learnSuggested: compile, match THIS utterance, and re-extract the contact to the
@@ -167,6 +231,7 @@ class Router {
       return null;
     corpus.insert(0, e);
     _learnedTemplates.add(t);
+    _learnedEntries.add(e);
     return t;
   }
 
@@ -175,8 +240,10 @@ class Router {
   /// it's curated (shipped), so it routes the new tracker's phrasings immediately.
   void addLearned(String skillId, String template) {
     if (corpus.any((c) => c.template == template)) return; // already present
-    corpus.insert(0, _compile({'skillId': skillId, 'template': template}));
+    final entry = _compile({'skillId': skillId, 'template': template});
+    corpus.insert(0, entry);
     _learnedTemplates.add(template);
+    _learnedEntries.add(entry);
   }
 
   /// Re-insert a previously-forgotten learned entry (data-view forget→undo, G-49). Rebuilds from
@@ -185,8 +252,10 @@ class Router {
   void restore(Map<String, dynamic> raw) {
     final t = raw['template'] as String?;
     if (t == null || corpus.any((c) => c.template == t)) return;
-    corpus.insert(0, _compile(raw));
+    final entry = _compile(raw);
+    corpus.insert(0, entry);
     _learnedTemplates.add(t);
+    _learnedEntries.add(entry);
   }
 
   // A name/entity capture ({personName:entity}) must look like a name, not an article/pronoun —
@@ -564,8 +633,15 @@ class Router {
       if (dispatched[k]?.toString() != got[k]?.toString())
         return null; // resolved mismatch
     }
+    // 5. No dispatched slot VALUE may survive as a token in the template's
+    //    literal text. A cloud template can round-trip cleanly and still embed a
+    //    value — "remind {who:text} to call sam" for "remind sam to call sam" —
+    //    which would persist private data verbatim into the synced corpus
+    //    ("store slot shapes, not values"). Shared guard with learn/learnGenerative.
+    if (_leaksSlotValue(t, dispatched.values)) return null;
     corpus.insert(0, e);
     _learnedTemplates.add(t);
+    _learnedEntries.add(e);
     return t;
   }
 

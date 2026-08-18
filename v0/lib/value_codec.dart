@@ -232,7 +232,11 @@ class ValueCodec {
         if (raw is Map && raw['name'] is String)
           raw['name'] as String: Map<String, dynamic>.from(raw),
     };
-    const structural = {'id', 'typeId', '_schemaVersion', 'parentId'};
+    // `createdAt` is structural: store.loadRecords injects the envelope's
+    // write-once createdAt into every flat record, and persist routes it back
+    // to the envelope. Types may still declare it as an attribute (task does);
+    // the attribute loop below then coerces and overwrites the passthrough.
+    const structural = {'id', 'typeId', '_schemaVersion', 'parentId', 'createdAt'};
     for (final field in record.keys) {
       if (!structural.contains(field) && !attributes.containsKey(field)) {
         throw ValueCodecError(
@@ -245,6 +249,7 @@ class ValueCodec {
       if (record.containsKey('_schemaVersion'))
         '_schemaVersion': record['_schemaVersion'],
       if (record.containsKey('parentId')) 'parentId': record['parentId'],
+      if (record.containsKey('createdAt')) 'createdAt': record['createdAt'],
     };
     for (final entry in attributes.entries) {
       final attr = entry.value;

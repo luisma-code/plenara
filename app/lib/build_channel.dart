@@ -5,10 +5,31 @@ const String _declaredBuildChannel = String.fromEnvironment('PLENARA_CHANNEL');
 /// Compile-time release boundary. Keep security-sensitive call sites behind this
 /// constant as well as the typed policy: AOT can then remove internal-only code
 /// from an external binary instead of merely hiding its controls at runtime.
+///
+/// FAIL-CLOSED: only the explicitly recognized internal channel names (exact,
+/// lowercase — the values our build scripts pass) or an undeclared debug build
+/// compile the internal code in. Anything else — including an unknown or
+/// misspelled PLENARA_CHANNEL — gates as external, while [parseBuildChannel]
+/// still throws loudly at runtime so the misconfiguration cannot go unnoticed.
+/// (The old allow-list of external names inverted this: an unknown channel
+/// compiled the internal code in while the runtime parser threw.)
 const bool isExternalBuild =
-    _declaredBuildChannel == 'external' ||
-    _declaredBuildChannel == 'release' ||
-    (_declaredBuildChannel == '' && kReleaseMode);
+    !(_declaredBuildChannel == 'development' ||
+        _declaredBuildChannel == 'dev' ||
+        _declaredBuildChannel == 'internal' ||
+        _declaredBuildChannel == 'dogfood' ||
+        (_declaredBuildChannel == '' && !kReleaseMode));
+
+/// The same gate as a testable function. Keep in lockstep with
+/// [isExternalBuild] — the const cannot call a function, so the truth table
+/// lives twice and a test asserts they agree for the compiled channel.
+@visibleForTesting
+bool externalBuildGateFor(String raw, {required bool releaseMode}) =>
+    !(raw == 'development' ||
+        raw == 'dev' ||
+        raw == 'internal' ||
+        raw == 'dogfood' ||
+        (raw == '' && !releaseMode));
 
 /// One compile-time owner for product reachability. Internal/TestFlight builds deliberately retain
 /// content-bearing diagnostics and visual tuning tools; external builds fail closed.

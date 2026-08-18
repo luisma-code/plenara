@@ -11,6 +11,9 @@ typedef Embedder = Future<List<double>?> Function(String text);
 class ContentSearchIndex {
   final Embedder _embed;
   final Map<String, List<double>> _vecs = {}; // recordId -> content vector
+  // recordId -> FNV-1a hash of the content each vector was built from, so an
+  // EDITED record re-embeds instead of keeping its original vector forever.
+  final Map<String, int> _hashes = {};
   ContentSearchIndex({Embedder? embedder}) : _embed = embedder ?? embed;
 
   bool get isEmpty => _vecs.isEmpty;
@@ -30,15 +33,44 @@ class ContentSearchIndex {
   }
 
   /// Embed every searchable record. Skips records whose embed fails (backend unavailable -> the index
-  /// stays empty -> callers keyword-fall-back). Idempotent per id.
-  Future<void> build(Iterable<Map<String, dynamic>> records) async {
+  /// stays empty -> callers keyword-fall-back). Idempotent per (id, content): an
+  /// UNCHANGED record is never re-embedded, but an edited record is (its stored
+  /// content hash no longer matches), so search follows the current wording.
+  /// With [full] the passed records are the COMPLETE store: any indexed id not
+  /// among them was deleted, and its vector is evicted so a dead record can
+  /// never surface as a search hit. (Incremental callers pass a subset, so
+  /// eviction is opt-in.)
+  Future<void> build(Iterable<Map<String, dynamic>> records,
+      {bool full = false}) async {
+    final seen = full ? <String>{} : null;
     for (final r in records) {
       final id = r['id'] as String?;
       final c = contentOf(r);
-      if (id == null || c == null || _vecs.containsKey(id)) continue;
+      if (id == null || c == null) continue;
+      seen?.add(id);
+      final h = _fnv1a(c);
+      if (_hashes[id] == h && _vecs.containsKey(id)) continue;
       final v = await _embed(c);
-      if (v != null) _vecs[id] = v;
+      if (v != null) {
+        _vecs[id] = v;
+        _hashes[id] = h;
+      }
     }
+    if (seen != null) {
+      _vecs.removeWhere((id, _) => !seen.contains(id));
+      _hashes.removeWhere((id, _) => !seen.contains(id));
+    }
+  }
+
+  // Deterministic, allocation-free content fingerprint (FNV-1a over code units;
+  // NOT String.hashCode, whose stability across runs/isolates is unspecified).
+  static int _fnv1a(String s) {
+    var hash = 0x811c9dc5;
+    for (var i = 0; i < s.length; i++) {
+      hash ^= s.codeUnitAt(i);
+      hash = (hash * 0x01000193) & 0x7fffffffffffffff;
+    }
+    return hash;
   }
 
   /// Semantic ranking of indexed records by cosine similarity to [query]; returns record ids

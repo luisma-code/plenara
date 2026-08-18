@@ -60,7 +60,15 @@ sealed class CloudResult<T> {
 /// a real answer ("not one of my capabilities"), distinct from never hearing back.
 final class CloudOk<T> extends CloudResult<T> {
   final T value;
-  const CloudOk(this.value);
+
+  /// True when the model stopped because it hit its max_tokens budget
+  /// (stop_reason 'max_tokens'): [value] is a PREFIX of the answer, not the
+  /// whole answer. Set on the plain-text path so a caller can say "this was cut
+  /// off" instead of presenting a mid-sentence fragment as complete
+  /// (no-silent-failure). Defaults to false, so every existing construction
+  /// site keeps meaning "complete".
+  final bool truncated;
+  const CloudOk(this.value, {this.truncated = false});
 }
 
 /// A named failure. [detail] is for logs, never required for the user message.
@@ -126,11 +134,21 @@ class CloudAdmissionController {
     final burstStart = current.subtract(burstWindow);
     final stored = _read();
     if (stored == null) return false;
-    final entries = stored
-        .where((entry) => !entry.isBefore(start) && !entry.isAfter(current))
-        .toList();
+    // Two deliberate choices here (both fail-CLOSED):
+    //  - An entry stamped AFTER `current` (clock rollback, DST, NTP correction)
+    //    still COUNTS toward both windows and is never pruned. Dropping it —
+    //    and rewriting it out of the file — would erase real spend history and
+    //    let any backward clock step reopen the cap.
+    //  - The burst window is a pure rolling [burstWindow], independent of the
+    //    local-midnight boundary: an admission at 23:58 still counts at 00:03.
+    //    Filtering bursts through the daily window allowed up to 2× burst in
+    //    the window straddling midnight.
+    // Pruning removes only entries too old for EITHER window.
+    final keepFrom = burstStart.isBefore(start) ? burstStart : start;
+    final entries = stored.where((entry) => !entry.isBefore(keepFrom)).toList();
+    final daily = entries.where((entry) => !entry.isBefore(start)).length;
     final burst = entries.where((entry) => !entry.isBefore(burstStart)).length;
-    if (entries.length >= dailyLimit || burst >= burstLimit) return false;
+    if (daily >= dailyLimit || burst >= burstLimit) return false;
     entries.add(current);
     if (path == null) {
       _memory
@@ -168,13 +186,12 @@ class CloudAdmissionController {
         burstLimit: burstLimit,
       );
     }
-    final entries = stored
-        .where((entry) => !entry.isBefore(start) && !entry.isAfter(current))
-        .toList();
+    // Mirrors admit(): future-dated entries count, and the burst window rolls
+    // independently of the day boundary, so Settings never disagrees with the door.
     return CloudAdmissionSnapshot(
-      dailyUsed: entries.length,
+      dailyUsed: stored.where((entry) => !entry.isBefore(start)).length,
       dailyLimit: dailyLimit,
-      burstUsed: entries.where((entry) => !entry.isBefore(burstStart)).length,
+      burstUsed: stored.where((entry) => !entry.isBefore(burstStart)).length,
       burstLimit: burstLimit,
     );
   }
@@ -247,11 +264,17 @@ class ClaudeClient implements CloudClient, RoutineAuthor {
   final String? key;
   final String _url;
   final CloudAdmissionController admission;
+
+  /// When set, overrides EVERY per-call response deadline. A test seam: the
+  /// per-call deadlines are compile-time constants tuned per feature, and the
+  /// timeout branch is untestable without a short injected one.
+  final Duration? requestTimeout;
   ClaudeClient({
     String? apiKeyOverride,
     String? url,
     String? usagePath,
     CloudAdmissionController? admission,
+    this.requestTimeout,
   })  : key = apiKeyOverride ?? apiKey(),
         _url = url ?? 'https://api.anthropic.com/v1/messages',
         admission = admission ?? CloudAdmissionController(path: usagePath);
@@ -562,15 +585,32 @@ other — that overlap is what makes a lying figure unreadable.''';
         if (block == null)
           return const CloudError<String>(
               CloudErrorKind.malformed, 'no text block (refusal?)');
-        return CloudOk<String>((block['text'] as String).trim());
+        // stop_reason 'max_tokens' means the text was CUT OFF mid-answer by the
+        // token budget. Still a usable value (routing JSON usually survives; the
+        // extractor decides), but it must be flagged so no caller presents a
+        // mid-sentence fragment as a complete answer (no-silent-failure).
+        return CloudOk<String>((block['text'] as String).trim(),
+            truncated:
+                decoded is Map && decoded['stop_reason'] == 'max_tokens');
         // 30s bounds a router turn, which the user is waiting on. Authoring calls generate far
         // more tokens (a routine, or a set of drawn figures) and legitimately take longer — a
         // deadline tuned for a one-line route silently failed them, which is how the figure
         // fallback appeared to "return nothing" rather than "time out".
-      }).timeout(timeout ?? const Duration(seconds: 30));
+      }).timeout(requestTimeout ?? timeout ?? const Duration(seconds: 30));
     } on TimeoutException catch (_) {
       return const CloudError(CloudErrorKind.timeout);
     } on SocketException catch (e) {
+      return CloudError(CloudErrorKind.offline, e.message);
+    } on TlsException catch (e) {
+      // A failed TLS handshake (captive portal, MITM proxy, clock skew breaking
+      // cert validity) is a CONNECTIVITY story with retry semantics — mapping it
+      // to `malformed` ("couldn't be parsed") blamed the response and suppressed
+      // the retry-when-back-online path. HandshakeException/CertificateException
+      // both extend TlsException.
+      return CloudError(CloudErrorKind.offline, e.message);
+    } on HttpException catch (e) {
+      // A connection dropped mid-exchange ("connection closed before full
+      // header") — transient network, same offline story as SocketException.
       return CloudError(CloudErrorKind.offline, e.message);
     } catch (e) {
       return CloudError(CloudErrorKind.malformed, e.toString());
@@ -591,7 +631,7 @@ other — that overlap is what makes a lying figure unreadable.''';
         maxTokens: maxTokens, model: model, timeout: timeout)) {
       case CloudError(:final kind, :final detail):
         return CloudError(kind, detail);
-      case CloudOk(:final value):
+      case CloudOk(:final value, :final truncated):
         try {
           final jsonStr =
               RegExp(r'\{.*\}', dotAll: true).firstMatch(value)?.group(0);
@@ -603,7 +643,9 @@ other — that overlap is what makes a lying figure unreadable.''';
             return const CloudError(
                 CloudErrorKind.malformed, 'JSON was not an object');
           }
-          return CloudOk<Map<String, dynamic>>(obj);
+          // A max_tokens cut that still parsed as JSON is carried forward — the
+          // object may be missing trailing fields, and the caller should know.
+          return CloudOk<Map<String, dynamic>>(obj, truncated: truncated);
         } catch (e) {
           return CloudError(CloudErrorKind.malformed, e.toString());
         }
@@ -641,11 +683,18 @@ other — that overlap is what makes a lying figure unreadable.''';
   };
 
   @override
-  Future<CloudResult<String>> generate(String kind, String context) => _rawText(
-      _genSys[kind] ??
-          'You are a warm, grounded personal assistant. Use ONLY the facts given.',
-      context,
-      maxTokens: 400);
+  Future<CloudResult<String>> generate(String kind, String context) {
+    final sys = _genSys[kind];
+    // The generative-kind set is CLOSED (Spec 03 §2.2a / G-46) and every shipped
+    // kind has a reviewed system prompt above. An unknown kind is a programming
+    // error upstream — refuse with a typed error rather than silently generating
+    // under a generic, unreviewed prompt (and spending a paid call on it).
+    if (sys == null) {
+      return Future.value(CloudError<String>(
+          CloudErrorKind.malformed, 'unknown generative kind: $kind'));
+    }
+    return _rawText(sys, context, maxTokens: 400);
+  }
 
   static const _sentinels = {'none', 'null', ''};
   // The fixed, binary-shipped generative-kind set (Spec 03 §2.2a / §7.3.2, G-46). A kind outside

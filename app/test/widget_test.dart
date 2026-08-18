@@ -221,6 +221,50 @@ Session _session() => Session(
   cloud: _NullCloud(),
 );
 
+/// Seed a routine (one short TIMED step, then a rep step) straight into the
+/// store and start the run — the player state the step-timer items exercise.
+/// Call AFTER the ChatScreen has initialized the session; the next turn's
+/// rebuild shows the overlay and arms the cadence via _syncStepTimer.
+///
+/// The step duration is 2 REAL seconds: the cadence measures wall-clock
+/// elapsed (DateTime.now), so tests elapse it with a short [WidgetTester.runAsync]
+/// wait and then pump fake time so the periodic tick actually fires.
+void _seedTimedRun(Session session) {
+  session.store['routine-1'] = {
+    'id': 'routine-1',
+    'typeId': 'routine',
+    'title': 'Morning loosener',
+  };
+  session.store['step-1'] = {
+    'id': 'step-1',
+    'typeId': 'routine_step',
+    'routine': 'routine-1',
+    'order': 1,
+    'name': 'Cat-cow',
+    'instruction': 'Round your back up, then let it dip.',
+    'durationSeconds': 2,
+  };
+  session.store['step-2'] = {
+    'id': 'step-2',
+    'typeId': 'routine_step',
+    'routine': 'routine-1',
+    'order': 2,
+    'name': 'Push-ups',
+    'instruction': 'Lower under control, press back up.',
+    'reps': 5,
+  };
+  session.startRoutineRun('routine-1', DateTime.now());
+}
+
+/// Let the 2s timed step really elapse (wall clock), then pump enough fake
+/// time for the 1s periodic tick to fire and observe it.
+Future<void> _elapseTimedStep(WidgetTester tester) async {
+  await tester.runAsync(
+    () => Future<void>.delayed(const Duration(milliseconds: 2400)),
+  );
+  await tester.pump(const Duration(seconds: 3));
+}
+
 void main() {
   testWidgets('no mic → text mode: an input box, no mic button', (
     tester,
@@ -874,6 +918,245 @@ void main() {
       find.textContaining('Added'),
       findsNothing,
     ); // the pending transcript never reached the turn
+  });
+
+  testWidgets(
+    'returning from the background re-arms a live timed step cadence',
+    (tester) async {
+      final session = _session();
+      await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
+      await tester.pumpAndSettle();
+      _seedTimedRun(session);
+      // any turn rebuilds (showing the run) and arms the 45s cadence
+      await _send(tester, 'add buy milk to my list');
+      expect(session.activeRun!.position, 1);
+
+      // background mid-step (cancels the cadence), then come back
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      await _elapseTimedStep(tester);
+      await tester.pumpAndSettle();
+      expect(
+        session.activeRun!.position,
+        2,
+        reason:
+            'the timed step must auto-advance after resume — a cancelled-forever '
+            'cadence silently stalls the run',
+      );
+    },
+  );
+
+  testWidgets(
+    'an operation delivery landing mid-turn is presented after the turn, not lost',
+    (tester) async {
+      final gate = Completer<void>();
+      final session = Session(
+        _tempData(),
+        clock: DateTime.parse('2026-07-06T09:00:00'),
+        cloud: _GatedCloud(gate),
+      );
+      await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
+      await tester.pumpAndSettle();
+
+      // hold a turn in flight
+      await tester.enterText(
+        find.byType(TextField),
+        'something the corpus cannot match',
+      );
+      await tester.tap(find.text('Send'));
+      await tester.pump();
+
+      // a detached operation completes while the turn is still in flight
+      final began = Completer<void>();
+      final result = Completer<String>();
+      final operation = session.operations.start(
+        kind: 'test-analysis',
+        title: 'Background research',
+        run: (_) {
+          began.complete();
+          return result.future;
+        },
+      );
+      await began.future;
+      result.complete('The detached result');
+      await session.operations.wait(operation.id);
+      await tester.pump();
+
+      // now the turn completes — its reply owns the stage first…
+      gate.complete();
+      await tester.pump();
+      await tester.pump();
+      expect(find.textContaining("didn't catch"), findsOneWidget);
+
+      // …and the queued delivery follows instead of having been overwritten.
+      var presented = false;
+      for (var i = 0; i < 12 && !presented; i++) {
+        await tester.pump(const Duration(seconds: 1));
+        presented = tester.any(
+          find.textContaining('Background research is ready'),
+        );
+      }
+      expect(
+        presented,
+        isTrue,
+        reason:
+            'a delivery drained mid-turn must be presented once the turn ends, '
+            'not silently clobbered by the turn completion',
+      );
+      expect(find.textContaining('The detached result'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a step timer elapsing mid-capture defers: the transcript sends, then the step advances',
+    (tester) async {
+      final session = _session();
+      final speech = _HoldingSpeech();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChatScreen(session: session, speech: speech),
+        ),
+      );
+      await tester.pumpAndSettle();
+      _seedTimedRun(session);
+      // arm the cadence with a voice turn (voice mode has no input box)
+      await tester.tap(find.byKey(const Key('today-voice')));
+      await tester.pumpAndSettle();
+      speech.emitFinal('add buy milk to my list');
+      await tester.pumpAndSettle();
+      expect(session.activeRun!.position, 1);
+
+      // start a capture, then let the timed step elapse MID-utterance
+      await tester.tapAt(const Offset(300, 40)); // the void behind the card
+      await tester.pump();
+      expect(find.byKey(const Key('cancel-listen')), findsOneWidget);
+      await _elapseTimedStep(tester);
+
+      // The advance must WAIT: starting its turn here sets _busy, and the
+      // transcript still being spoken is then dropped at `if (!_busy)`.
+      expect(
+        session.activeRun!.position,
+        1,
+        reason:
+            'the elapsed step must not start its turn while the mic is open — '
+            'that is what silently ate the user\'s words',
+      );
+      expect(
+        find.byKey(const Key('cancel-listen')),
+        findsOneWidget,
+        reason: 'the capture session must survive the elapsed step',
+      );
+
+      // the user finishes speaking: the transcript must be sent…
+      speech.emitFinal('add call sam to my list');
+      await tester.pumpAndSettle();
+      expect(
+        session.store.values.any(
+          (r) => r['typeId'] == 'task' && '${r['description']}' == 'call sam',
+        ),
+        isTrue,
+        reason:
+            'the final transcript must not be dropped because the elapsed step '
+            'timer started a turn mid-utterance',
+      );
+      // …and the deferred advance still happens after it.
+      expect(session.activeRun!.position, 2);
+    },
+  );
+
+  testWidgets(
+    'a timer-driven routine word never clobbers a typed draft (muted mode)',
+    (tester) async {
+      final session = _session();
+      await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
+      await tester.pumpAndSettle();
+      _seedTimedRun(session);
+      await _send(tester, 'add buy milk to my list'); // rebuild + arm cadence
+
+      await tester.enterText(find.byType(TextField), 'half typed thought');
+      await _elapseTimedStep(tester); // step elapses → timer sends 'next'
+      await tester.pumpAndSettle();
+
+      expect(session.activeRun!.position, 2); // the advance went through
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'half typed thought',
+        reason:
+            'the routine control word must bypass the text controller — a '
+            'muted user\'s draft is not scratch space',
+      );
+    },
+  );
+
+  testWidgets('a long list reply scrolls by drag to reach the last item', (
+    tester,
+  ) async {
+    final session = _session();
+    await session.init(retrieval: false);
+    for (var i = 1; i <= 18; i++) {
+      await session.handle('add errand number $i to my list');
+    }
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
+    await tester.pumpAndSettle();
+    await _send(tester, 'list my tasks');
+
+    final scrollView = find.byType(SingleChildScrollView);
+    expect(scrollView, findsOneWidget); // the list-register reply column
+    final position = tester
+        .state<ScrollableState>(
+          find.descendant(of: scrollView, matching: find.byType(Scrollable)),
+        )
+        .position;
+    expect(
+      position.maxScrollExtent,
+      greaterThan(0),
+      reason: 'the reply must be taller than the viewport for this test',
+    );
+    await tester.drag(scrollView, const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(
+      position.pixels,
+      greaterThan(0),
+      reason:
+          'the reply column must receive drags — a long reply was unscrollable '
+          'behind the caption overlay\'s IgnorePointer',
+    );
+  });
+
+  testWidgets('session regeneration clears stale snackbars', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('plenara_regen_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final cfg = '${dir.path}/config.json';
+    File(cfg).writeAsStringSync('{"dataDir": "${dir.path}/data"}');
+    await tester.pumpWidget(
+      MaterialApp(home: Home(session: _session(), configPath: cfg)),
+    );
+    await tester.pumpAndSettle();
+
+    ScaffoldMessenger.of(
+      tester.element(find.byType(ChatScreen)),
+    ).showSnackBar(
+      const SnackBar(
+        content: Text('stale undo'),
+        duration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('stale undo'), findsOneWidget);
+
+    // the reset flow regenerates the session (ChatScreen is rebuilt with a new
+    // key); the queued UNDO closure would fire into a disposed session
+    tester.widget<ChatScreen>(find.byType(ChatScreen)).onDataReset!();
+    await tester.pumpAndSettle();
+    expect(
+      find.text('stale undo'),
+      findsNothing,
+      reason: 'stale UNDO snackbars must not outlive session regeneration',
+    );
   });
 
   testWidgets(

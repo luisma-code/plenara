@@ -26,9 +26,10 @@
 /// with a fixed clock (the reminders SEAM+FAKE pattern, minus even the fake —
 /// nothing here touches the OS).
 ///
-/// **Deferred:** `schedule`/cron conditions register as `deferred` (validated,
-/// `schedule`/cron conditions ARE armed via [tick] — a catch-up fired on app
-/// open (v0 has no background process, so a scheduled fire lands the next open
+/// **Schedules:** `schedule`/cron conditions are validated at registration
+/// (an expression the evaluator cannot honor is parked `inert`, never armed to
+/// silently not fire) and ARE armed via [tick] — a catch-up fired on app open
+/// (v0 has no background process, so a scheduled fire lands the next open
 /// after its cron time; a true background timer via NotificationScheduler,
 /// Spec 04 §3.13, is the follow-up). `onWrite` fires inline after a write.
 ///
@@ -49,10 +50,10 @@ import 'interpreter.dart';
 class AutomationStatus {
   final String automationId;
 
-  /// `active` — armed for onWrite; `pending` — pendingSkill, inert until the
-  /// skill is authored (then live, no re-registration needed); `deferred` —
-  /// schedule/cron, valid but not armed in v0; `inert` — invalid/unresolved,
-  /// surfaced for repair with [reason].
+  /// `active` — armed (onWrite fires inline; schedule fires via tick);
+  /// `pending` — pendingSkill, inert until the skill is authored (then live,
+  /// no re-registration needed); `inert` — invalid/unresolved, surfaced for
+  /// repair with [reason].
   final String state;
   final String? reason;
   const AutomationStatus(this.automationId, this.state, [this.reason]);
@@ -280,12 +281,20 @@ class AutomationRunner {
     }
   }
 
+  /// Last afterField value that fired, per (automationId, recordId) — the
+  /// transition dedupe below. In-memory (per process): a restart may re-fire a
+  /// record's current value once, but a session can never pile up re-fires
+  /// from unrelated edits re-saving the same value.
+  final Map<String, Object?> _lastFiredValue = {};
+
   /// The onWrite hook (Spec 04 §4.8): called after a turn's writes are applied
   /// and persisted, with the written records. Matches each write against the
   /// registered onWrite automations (`targetType == typeId` and the record
   /// carries a non-null `afterField` value — v0's "that field was written")
-  /// and fires each match. [depth] is the cascade depth of the triggering
-  /// write (user-origin = 0).
+  /// and fires each match ON A TRANSITION of that value only: the write path
+  /// has no before-image here, so the runner remembers the last value it fired
+  /// for per (automation, record) and skips re-saves of the same value.
+  /// [depth] is the cascade depth of the triggering write (user-origin = 0).
   void notifyWrites(Iterable<Map<String, dynamic>> written, {int depth = 0}) {
     for (final rec in List.of(written)) {
       for (final reg in _regs) {
@@ -293,7 +302,19 @@ class AutomationRunner {
         final cond = reg.def['condition'] as Map;
         if (cond['kind'] != 'onWrite') continue;
         if (reg.def['targetType'] != rec['typeId']) continue;
-        if (rec[cond['afterField']] == null) continue; // afterField not written
+        final value = rec[cond['afterField']];
+        if (value == null) continue; // afterField not written
+        // Dedupe only once a skill can actually fire — a pendingSkill no-op
+        // must not swallow the first real fire after the skill is authored.
+        if (reg.inlineSkill != null ||
+            skills.containsKey(reg.def['skillId'])) {
+          final key = '${reg.def['automationId']} ${rec['id']}';
+          if (_lastFiredValue.containsKey(key) &&
+              _deepEq(_lastFiredValue[key], value)) {
+            continue; // same value re-saved — not a transition
+          }
+          _lastFiredValue[key] = value;
+        }
         _fire(reg, rec, depth);
       }
     }
@@ -304,12 +325,28 @@ class AutomationRunner {
   /// background process, so a scheduled fire lands the next time the app opens after its time.
   /// A newly-seen automation is baselined to [now] (no back-fill of past occurrences) and fires
   /// from its NEXT cron time onward; each fire records lastFired so it never repeats.
+  ///
+  /// A `pending` (pendingSkill) automation is resolved here exactly as
+  /// [notifyWrites] resolves it: it goes live the moment its skill is authored
+  /// (Spec 01 §4.4). While the skill is still unauthored its baseline is kept
+  /// current, so authoring never back-fires the occurrences missed meanwhile.
   void tick(DateTime now) {
     for (final reg in _regs) {
-      if (reg.state != 'active') continue;
+      if (reg.state != 'active' && reg.state != 'pending') continue;
       final cond = reg.def['condition'] as Map;
       if (cond['kind'] != 'schedule') continue;
       final autoId = reg.def['automationId'] as String;
+      if (reg.state == 'pending' &&
+          reg.inlineSkill == null &&
+          !skills.containsKey(reg.def['skillId'])) {
+        // still unauthored — nothing can fire; roll the baseline forward so
+        // the moment of authoring starts a clean "from the next cron time" run
+        if (lastFired[autoId] != now) {
+          lastFired[autoId] = now;
+          onFired?.call(autoId, now);
+        }
+        continue;
+      }
       final since = lastFired[autoId];
       if (since == null) {
         lastFired[autoId] =

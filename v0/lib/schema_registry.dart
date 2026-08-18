@@ -140,9 +140,18 @@ class SchemaRegistry {
         reject('invalid_attributes', source, '$id.attributes must be a list.');
         continue;
       }
+      // Same boundary as attributes: a non-list `relations` (e.g. `{}` from a
+      // hand edit or a half-synced write) makes the definition invalid repair
+      // state — an unguarded cast here crashed hydrate, and startup, on every
+      // syncing device.
+      final rawRelations = type['relations'];
+      if (rawRelations != null && rawRelations is! List) {
+        reject('invalid_relations', source, '$id.relations must be a list.');
+        continue;
+      }
       final names = <String>{};
       var invalid = false;
-      final members = [...rawAttributes, ...?type['relations'] as List?];
+      final members = [...rawAttributes, ...?rawRelations as List?];
       for (final raw in members) {
         if (raw is! Map) {
           reject('invalid_attribute', source,

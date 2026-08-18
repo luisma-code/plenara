@@ -169,7 +169,8 @@ void main() {
       File('$dataDir/records/bad.json').writeAsStringSync('{ this is not json');
       final s = Session(dataDir, clock: _now, cloud: _NoCloud());
       await s.init(retrieval: false); // must NOT throw
-      expect(s.corruptFiles.any((p) => p.endsWith('bad.json')), isTrue);
+      // corruptFiles entries are 'path: error' (the cause rides along).
+      expect(s.corruptFiles.any((p) => p.contains('bad.json')), isTrue);
     });
     test(
         'a corrupt type def does not crash startup (loadDefs was an unguarded throw)',
@@ -178,7 +179,8 @@ void main() {
       File('$dataDir/types/bad.json').writeAsStringSync('not json at all');
       final s = Session(dataDir, clock: _now, cloud: _NoCloud());
       await s.init(retrieval: false); // previously threw and bricked startup
-      expect(s.corruptFiles.any((p) => p.endsWith('bad.json')), isTrue);
+      // corruptFiles entries are 'path: error' (the cause rides along).
+      expect(s.corruptFiles.any((p) => p.contains('bad.json')), isTrue);
     });
     test(
         'a skill whose rejected type is unavailable is parked instead of bricking startup',
@@ -2375,16 +2377,21 @@ void main() {
     });
 
     test(
-        'undo after a compound walks back one action at a time, most recent first',
+        'one "undo that" reverses BOTH halves of a compound (one batched execution)',
         () async {
+      // The compound rides the same single-execution batch mechanism as the
+      // cloud-multi path, so the user's mental model — "that" = the sentence I
+      // just said — matches what undo reverses. (Previously the split dispatched
+      // two executions and undo silently reversed only the second half.)
       final s = await _session();
       await s.handle('log a run and journal that I feel great');
-      await s.handle(
-          'undo that'); // reverses the journal entry (the most recent write)
+      expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
+      expect(s.store.values.where((x) => x['typeId'] == 'journal_entry').length,
+          1);
+      final undone = await s.handle('undo that');
+      expect(undone, contains('Undone'));
       expect(
           s.store.values.where((x) => x['typeId'] == 'journal_entry'), isEmpty);
-      expect(s.store.values.where((x) => x['typeId'] == 'workout').length, 1);
-      await s.handle('undo that'); // then the run
       expect(s.store.values.where((x) => x['typeId'] == 'workout'), isEmpty);
     });
 

@@ -500,6 +500,218 @@ void main() {
     expect(session.store[taskId]!['reviewDecision'], isNull);
   });
 
+  group('day windows and annual dates use calendar arithmetic (DST-immune)', () {
+    Map<String, Map<String, dynamic>> birthdayOnly(String birthday) => {
+          'mia': {
+            'id': 'mia',
+            'typeId': 'contact',
+            'displayName': 'Mia',
+            'birthday': birthday,
+          },
+        };
+
+    test('a birthday tomorrow across the spring-forward night reads Tomorrow',
+        () {
+      final projection = buildTodayProjection(
+          birthdayOnly('2014-03-08'), DateTime.parse('2026-03-07T09:00:00'));
+      expect(projection.relationshipNudge!.detail, 'Tomorrow');
+    });
+
+    test('the 7-day week window does not leak an extra hour past a transition',
+        () {
+      // 2026-03-15 is exactly 7 days after 2026-03-08; the old
+      // add(Duration(days: 7)) landed weekEnd at 01:00 on the 15th and let a
+      // midnight occurrence leak in.
+      final projection = buildTodayProjection(
+          birthdayOnly('2014-03-15'), DateTime.parse('2026-03-08T09:00:00'));
+      expect(projection.relationshipNudge, isNull);
+    });
+
+    test('a task due exactly 7 days out stays out of the week window', () {
+      final projection = buildTodayProjection({
+        'far': {
+          'id': 'far',
+          'typeId': 'task',
+          'description': 'Renew insurance',
+          'dueAt': '2026-03-15',
+          'status': 'scheduled',
+        },
+      }, DateTime.parse('2026-03-08T09:00:00'));
+      expect(projection.later, isEmpty);
+      expect(projection.next, isEmpty);
+    });
+
+    test('a reminder 2 days out across the transition is labeled Mon, not tomorrow',
+        () {
+      final projection = buildTodayProjection({
+        'rem': {
+          'id': 'rem',
+          'typeId': 'reminder',
+          'text': 'Water plants',
+          'remindAt': '2026-03-09T09:00:00',
+        },
+      }, DateTime.parse('2026-03-07T10:00:00'));
+      expect(projection.later.single.detail, contains('Mon'));
+      expect(projection.later.single.detail, isNot(contains('tomorrow')));
+    });
+
+    test('a Feb-29 birthday is observed on Feb 28 in common years everywhere',
+        () {
+      final records = birthdayOnly('2016-02-29');
+      final nudge = buildTodayProjection(
+              records, DateTime.parse('2026-02-27T09:00:00'))
+          .relationshipNudge!;
+      expect(nudge.detail, 'Tomorrow');
+      expect(nudge.at, DateTime(2026, 2, 28));
+
+      final commonAgenda = buildPlanProjection(records,
+              DateTime.parse('2026-02-27T09:00:00'),
+              selectedDay: DateTime.parse('2026-02-28'))
+          .agenda;
+      expect(commonAgenda.single.title, "Mia's birthday");
+
+      final leapAgenda = buildPlanProjection(records,
+              DateTime.parse('2028-02-27T09:00:00'),
+              selectedDay: DateTime.parse('2028-02-29'))
+          .agenda;
+      expect(leapAgenda.single.title, "Mia's birthday",
+          reason: 'a leap year keeps the real day');
+      final leapFeb28 = buildPlanProjection(records,
+              DateTime.parse('2028-02-27T09:00:00'),
+              selectedDay: DateTime.parse('2028-02-28'))
+          .agenda;
+      expect(leapFeb28, isEmpty,
+          reason: 'no double showing on Feb 28 in a leap year');
+    });
+  });
+
+  group('overload signal scans today through the horizon only', () {
+    Map<String, dynamic> task(String id, String? scheduledStartAt) => {
+          'id': id,
+          'typeId': 'task',
+          'description': id,
+          'status': 'scheduled',
+          if (scheduledStartAt != null) 'scheduledStartAt': scheduledStartAt,
+          'estimatedMinutes': 540,
+          'createdAt': '2026-08-10T09:00:00',
+        };
+
+    test('a slipped past day never pins the overload signal', () {
+      final signals = buildPlannerSignals(
+          {'slipped': task('slipped', '2026-08-16T09:00:00')}, now);
+      expect(signals.where((s) => s.kind == PlannerSignalKind.overload),
+          isEmpty);
+      expect(signals.map((s) => s.detail).join(),
+          isNot(contains('overdue has')));
+    });
+
+    test('an overload today or later this week still signals coherently', () {
+      final signals = buildPlannerSignals({
+        'slipped': task('slipped', '2026-08-16T09:00:00'),
+        'heavy': task('heavy', '2026-08-18T09:00:00'),
+      }, now);
+      final overload = signals
+          .singleWhere((s) => s.kind == PlannerSignalKind.overload);
+      expect(overload.detail, startsWith('tomorrow has'));
+      expect(overload.recordIds, ['heavy']);
+    });
+
+    test('overload beyond the 7-day scan horizon is not signaled', () {
+      final signals = buildPlannerSignals(
+          {'far': task('far', '2026-08-27T09:00:00')}, now);
+      expect(signals.where((s) => s.kind == PlannerSignalKind.overload),
+          isEmpty);
+    });
+  });
+
+  group('comparators are a total order (no filesystem-dependent ties)', () {
+    Map<String, Map<String, dynamic>> tieRecords(List<String> order) {
+      final defs = <String, Map<String, dynamic>>{
+        'routine-a': {
+          'id': 'routine-a',
+          'typeId': 'routine',
+          'title': 'Evening reset',
+          'status': 'active',
+        },
+        'routine-b': {
+          'id': 'routine-b',
+          'typeId': 'routine',
+          'title': 'Morning pages',
+          'status': 'active',
+        },
+        'goal-a': {
+          'id': 'goal-a',
+          'typeId': 'goal',
+          'description': 'Be present',
+        },
+        'goal-b': {
+          'id': 'goal-b',
+          'typeId': 'goal',
+          'description': 'Read more',
+        },
+      };
+      return {for (final id in order) id: defs[id]!};
+    }
+
+    test('Next/Later are identical for any record insertion order', () {
+      // `now` is a Monday, so goals qualify; two routines + two goals all tie
+      // on rank+time and only a stable id compare can order them.
+      final forward = buildTodayProjection(
+          tieRecords(['routine-a', 'routine-b', 'goal-a', 'goal-b']), now);
+      final reversed = buildTodayProjection(
+          tieRecords(['goal-b', 'goal-a', 'routine-b', 'routine-a']), now);
+      expect(forward.next.map((i) => i.id).toList(),
+          reversed.next.map((i) => i.id).toList());
+      expect(forward.later.map((i) => i.id).toList(),
+          reversed.later.map((i) => i.id).toList());
+      expect(forward.next.map((i) => i.id), ['routine-a', 'routine-b', 'goal-a']);
+    });
+
+    test('Plan agenda ties break deterministically by id', () {
+      Map<String, Map<String, dynamic>> reminders(List<String> order) {
+        final defs = <String, Map<String, dynamic>>{
+          'rem-a': {
+            'id': 'rem-a',
+            'typeId': 'reminder',
+            'text': 'First',
+            'remindAt': '2026-08-17T10:00:00',
+          },
+          'rem-b': {
+            'id': 'rem-b',
+            'typeId': 'reminder',
+            'text': 'Second',
+            'remindAt': '2026-08-17T10:00:00',
+          },
+        };
+        return {for (final id in order) id: defs[id]!};
+      }
+
+      final forward = buildPlanProjection(reminders(['rem-a', 'rem-b']), now,
+          selectedDay: now);
+      final reversed = buildPlanProjection(reminders(['rem-b', 'rem-a']), now,
+          selectedDay: now);
+      expect(forward.agenda.map((i) => i.id).toList(), ['rem-a', 'rem-b']);
+      expect(reversed.agenda.map((i) => i.id).toList(), ['rem-a', 'rem-b']);
+    });
+  });
+
+  test('a past-scheduled task stays in Now with a coherent overdue label', () {
+    // Kept behavior: a slipped scheduled task is still on your plate, so it
+    // qualifies for Now. The label must read as overdue, not "Scheduled Overdue".
+    final projection = buildTodayProjection({
+      'slip': {
+        'id': 'slip',
+        'typeId': 'task',
+        'description': 'Renew passport',
+        'scheduledStartAt': '2026-08-13T10:00:00', // the previous Thursday
+        'status': 'scheduled',
+      },
+    }, now);
+    final item = projection.now.single;
+    expect(item.detail, contains('Overdue — was scheduled Thu'));
+    expect(item.detail, isNot(contains('Scheduled Overdue')));
+  });
+
   test('morning and relationship prep stay durable until explicitly resolved',
       () async {
     final data = makeTempDataDir();

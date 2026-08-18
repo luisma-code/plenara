@@ -122,6 +122,8 @@ String reviewFingerprint(Map<String, dynamic> record) =>
         : jsonEncode({
             'id': record['id'],
             'typeId': record['typeId'],
+            // Cover whichever field the display uses (`title` with a `name`
+            // fallback) so a goal rename cannot slip past the stale check.
             'title': record['title'] ?? record['name'],
             'status': record['status'],
             'target': record['target'],

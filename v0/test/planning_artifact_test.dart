@@ -69,6 +69,44 @@ void main() {
         isNot(contains('Old thread')));
   });
 
+  test('relationship preps supersede per subject, never across people', () {
+    final dir = Directory.systemTemp.createTempSync('plenara_artifacts_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final path = '${dir.path}/artifacts.json';
+    final records = {
+      'alice': {'id': 'alice', 'typeId': 'contact', 'displayName': 'Alice'},
+      'bob': {'id': 'bob', 'typeId': 'contact', 'displayName': 'Bob'},
+    };
+    final store = PlanningArtifactStore(path: path);
+    final aliceOld = buildRelationshipPrepArtifact('Alice', records, now)!;
+    store.create(aliceOld);
+    final bobPrep = buildRelationshipPrepArtifact(
+        'Bob', records, now.add(const Duration(minutes: 1)))!;
+    store.create(bobPrep);
+
+    // Bob's prep must not kill Alice's still-open prep.
+    expect(
+      store.active.map((artifact) => artifact.id),
+      containsAll([aliceOld.id, bobPrep.id]),
+    );
+
+    final aliceNew = buildRelationshipPrepArtifact(
+        'Alice', records, now.add(const Duration(minutes: 2)))!;
+    store.create(aliceNew);
+
+    final reopened = PlanningArtifactStore(path: path);
+    expect(
+      reopened.active.map((artifact) => artifact.id),
+      containsAll([aliceNew.id, bobPrep.id]),
+    );
+    expect(
+      reopened.history
+          .firstWhere((artifact) => artifact.id == aliceOld.id)
+          .state,
+      PlanningArtifactState.superseded,
+    );
+  });
+
   test('artifact persists until resolved and a new one supersedes its peer',
       () {
     final dir = Directory.systemTemp.createTempSync('plenara_artifacts_');

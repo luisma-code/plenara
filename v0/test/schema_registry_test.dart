@@ -60,6 +60,34 @@ void main() {
         4);
   });
 
+  test('a non-list relations value is rejected as repair state, never a throw',
+      () {
+    // Regression: `...?type['relations'] as List?` was an unguarded cast, so a
+    // synced type file carrying `"relations": {}` crashed hydrate — and with it
+    // startup — on every device that received the file.
+    final result = SchemaRegistry.hydrate([
+      SchemaSource('good.json', type('good')),
+      SchemaSource(
+        'bad_relations.json',
+        {...type('bad_relations'), 'relations': <String, dynamic>{}},
+      ),
+      SchemaSource(
+        'bad_relations_two.json',
+        {...type('bad_relations_two'), 'relations': 'oops'},
+      ),
+    ]);
+
+    expect(result.all.keys, {'good'},
+        reason: 'the malformed definitions stay inert, the good one loads');
+    expect(
+        result.issues
+            .where((issue) =>
+                issue.code == 'invalid_relations' &&
+                issue.severity == SchemaIssueSeverity.rejected)
+            .length,
+        2);
+  });
+
   test('unresolved references and invalid presentation degrade visibly', () {
     final result = SchemaRegistry.hydrate([
       SchemaSource(

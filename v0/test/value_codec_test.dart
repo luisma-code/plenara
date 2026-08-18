@@ -160,4 +160,36 @@ void main() {
           .having((e) => e.code, 'code', 'required_null')),
     );
   });
+
+
+  test(
+      'a reloaded record carrying the envelope-injected createdAt still '
+      'validates for a type that does not declare the attribute, and the '
+      'value survives into the validated output', () {
+    // Regression: store.loadRecords injects the envelope `createdAt` as a
+    // top-level key of every flat record. 13 of the 17 shipped types declare
+    // no `createdAt` attribute, so before the fix every post-relaunch update
+    // of those records failed validation with unknown_field and every undo of
+    // a pre-relaunch write reported a false conflict.
+    final contactLike = {
+      'typeId': 'contact',
+      'attributes': [attr('name', 'text')],
+    };
+    final reloaded = {
+      'id': 'c-1',
+      'typeId': 'contact',
+      'createdAt': '2026-08-17T00:00:00.000Z',
+      'name': 'Sarah',
+    };
+    final out = codec.validateRecord(contactLike, reloaded);
+    expect(out['createdAt'], '2026-08-17T00:00:00.000Z',
+        reason: 'createdAt must survive validation so the in-memory record '
+            'keeps matching its persisted after-image (undo depends on it)');
+    expect(out['name'], 'Sarah');
+    // A record written before its first reload (no injected createdAt) must
+    // also keep validating, and must not grow a createdAt out of nowhere.
+    final fresh = {'id': 'c-2', 'typeId': 'contact', 'name': 'Maria'};
+    expect(codec.validateRecord(contactLike, fresh).containsKey('createdAt'),
+        isFalse);
+  });
 }

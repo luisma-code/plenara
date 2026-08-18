@@ -39,6 +39,43 @@ void main() {
     expect(await store.resolve('mystery food', embedder: (t) async => null), isNull);
   });
 
+  test('a canonical key that normalizes to nothing cannot crash tier-2 resolve',
+      () async {
+    // Regression: '!!!' normalizes to '' and so never lands in the alias map,
+    // but it DID land in the tier-2 key list — resolving to it then hit a
+    // null-assert (`_byKey[normalize(best)]!`) and threw.
+    final store = ReferenceStore.fromEntries('weird', [
+      {'key': '!!!', 'kcal': 1},
+      {'key': 'banana', 'kcal': 105},
+    ]);
+    Future<List<double>?> fake(String t) async =>
+        [t.contains('banana') ? 0.0 : 1.0, 0.0];
+    final entry = await store.resolve('mystery', embedder: fake, theta: 0.5);
+    expect(entry, isNull,
+        reason: 'the unresolvable key is skipped deterministically — an '
+            'honest miss, never a throw');
+  });
+
+  test(
+      'canonical keys that collide after normalization resolve to ONE entry, '
+      'first wins', () async {
+    // Regression: the second colliding entry overwrote the alias map while
+    // both keys stayed in the tier-2 list, so a fuzzy match on the first key
+    // returned the second entry's data under the first entry's name.
+    final store = ReferenceStore.fromEntries('collide', [
+      {'key': 'The Banana', 'kcal': 100},
+      {'key': 'banana!', 'kcal': 200}, // both normalize to 'banana'
+    ]);
+    expect(store.lookup('banana')!.kcal, 100,
+        reason: 'first entry wins the normalized slot, deterministically');
+    expect(store.size, 1,
+        reason: 'the colliding later entry is skipped, not half-registered');
+    final fuzzy = await store.resolve('banana-ish',
+        embedder: (t) async => [1.0], theta: 0.1);
+    expect(fuzzy!.kcal, 100,
+        reason: 'tier-2 can never pair one entry\'s key with another\'s data');
+  });
+
   test('a missing dataset file yields an empty store, not a crash', () {
     final empty = ReferenceStore.load('/nonexistent-dir', 'nutrition');
     expect(empty.isEmpty, isTrue);

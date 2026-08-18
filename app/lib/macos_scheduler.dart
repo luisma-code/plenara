@@ -14,7 +14,12 @@ import 'package:timezone/timezone.dart' as tz;
 import 'app_log.dart';
 
 class MacToastScheduler implements NotificationScheduler {
-  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  /// [plugin] is a test seam — shim-level tests inject a throwing fake to prove
+  /// the bookkeeping; production constructs the real plugin.
+  MacToastScheduler({FlutterLocalNotificationsPlugin? plugin})
+      : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+
+  final FlutterLocalNotificationsPlugin _plugin;
   final Map<String, DateTime> _armed = {};
   bool _ready = false;
   String? _unavailable; // permission denied / init failed -> surfaced via unavailableReason()
@@ -107,10 +112,13 @@ class MacToastScheduler implements NotificationScheduler {
     if (!await _ensureReady()) return;
     try {
       await _plugin.cancel(id: notificationId(ref));
+      _armed.remove(ref);
     } catch (e, st) {
-      AppLog.instance.log('sched(macos): cancel FAILED for "$ref": $e\n$st');
+      // Keep the ref in _armed: dropping it made reconcile believe the cancel
+      // succeeded, so it never retried and the deleted reminder ghost-fired.
+      AppLog.instance.log(
+          'sched(macos): cancel FAILED for "$ref" (kept armed for retry): $e\n$st');
     }
-    _armed.remove(ref);
   }
 
   @override

@@ -24,6 +24,78 @@ import 'speech.dart';
 /// [stop] joins the accumulated text with the flushed trailing segment and emits ONE final.
 /// If the model files are absent or init fails, [available] is false and the app falls back
 /// (SAPI, then typing).
+/// The engine-independent half of a sherpa capture: the segments transcribed so
+/// far, and the ONE door that ends the session.
+///
+/// Extracted from [SherpaSpeechRecognizer] so the invariants that matter — real
+/// speech is never discarded, `onDone` fires exactly once however the session
+/// ends — are unit-testable without a microphone, a model, or the native
+/// bindings. This is the same contract [RecognitionSession] holds for the
+/// system recognizer; sherpa carried its own copy of it, and the copy was the
+/// one that dropped a whole dictation when the audio stream errored.
+class SherpaCaptureSession {
+  final void Function(String text, bool finalResult) onResult;
+  final void Function() onDone;
+
+  /// Transcribe whatever is still buffered mid-segment when the session ends
+  /// (the stop tap's tail). Called only on a flushing end.
+  final List<String> Function() drainTail;
+
+  SherpaCaptureSession({
+    required this.onResult,
+    required this.onDone,
+    required this.drainTail,
+  });
+
+  final List<String> _segments = [];
+  bool _emitted = false;
+  bool _live = true;
+
+  bool get live => _live;
+  List<String> get segments => List.unmodifiable(_segments);
+
+  /// A closed VAD segment. Published as a NON-final result too, so the caption
+  /// shows words as they land instead of staying blank for the whole capture.
+  void addSegment(String text) {
+    if (!_live) return;
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    _segments.add(trimmed);
+    onResult(_segments.join(' ').trim(), false);
+  }
+
+  /// End the session. [flush] delivers everything heard — the stop tap, a
+  /// watchdog, the hard cap, an engine/device error. Only [cancel] discards.
+  ///
+  /// The liveness flag drops BEFORE the final result is emitted, so the host's
+  /// habit of answering a final by calling `cancel()` synchronously ("one
+  /// utterance per tap") re-enters a closed door instead of stealing `onDone`.
+  void finish({bool flush = false}) {
+    if (!_live) return;
+    _live = false;
+    if (flush && !_emitted) {
+      for (final tail in drainTail()) {
+        final trimmed = tail.trim();
+        if (trimmed.isNotEmpty) _segments.add(trimmed);
+      }
+      final full = _segments.join(' ').trim();
+      if (full.isNotEmpty) {
+        _emitted = true;
+        onResult(full, true); // ONE final for the session
+      }
+    }
+    onDone();
+  }
+
+  /// The explicit discard path — the ✕, or a watchdog that heard nothing.
+  void cancel() {
+    if (!_live) return;
+    _live = false;
+    _segments.clear();
+    onDone();
+  }
+}
+
 class SherpaSpeechRecognizer implements SpeechRecognizer {
   @override
   Stream<double> get levels => const Stream<double>.empty();
@@ -39,14 +111,14 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
   sherpa.VoiceActivityDetector? _vad;
   final AudioRecorder _recorder = AudioRecorder();
   StreamSubscription<Uint8List>? _audioSub;
-  void Function(String, bool)? _onResult;
-  void Function()? _onDone;
   void Function(SpeechNotice)? _onNotice;
-  bool _listening = false;
-  bool _emitted = false;
 
-  /// Transcribed text of every VAD segment closed so far this session, in order.
-  final List<String> _segments = [];
+  /// The live capture's accumulator and end-of-session door (null between
+  /// sessions). Every exit path goes through it, so it owns the flush and the
+  /// exactly-once `onDone`.
+  SherpaCaptureSession? _capture;
+  bool get _listening => _capture?.live ?? false;
+
   Timer? _noSpeechTimer, _silenceTimer, _hintTimer, _capTimer;
   bool _sawSpeech = false;
 
@@ -160,15 +232,15 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
       onDone();
       return;
     }
-    _onResult = onResult;
-    _onDone = onDone;
     _onNotice = onNotice;
-    _emitted = false;
     _sawSpeech = false;
     _segmentOpenedAt = null;
-    _segments.clear();
+    _capture = SherpaCaptureSession(
+      onResult: onResult,
+      onDone: onDone,
+      drainTail: _drainVadTail,
+    );
     vad.clear(); // drop any state from a prior session
-    _listening = true;
     _armWatchdogs();
     _log('listen: start');
     try {
@@ -183,10 +255,17 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
         _onAudio,
         onError: (e) {
           _log('audio error: $e');
-          _finalize();
+          // FLUSH. Whatever ends the session — including an engine/device error
+          // mid-capture — must deliver the words already transcribed (the seam
+          // contract in speech.dart, and what the system recognizer does). A
+          // bare _finalize() here silently ate every completed segment, so a
+          // long dictation interrupted by a device hiccup vanished whole.
+          _finalize(flush: true);
         },
       );
     } catch (e) {
+      // Nothing was captured yet (the stream never opened), so there is nothing
+      // to flush — but the session must still report that it ended.
       _log('startStream failed: $e');
       _finalize();
     }
@@ -197,12 +276,10 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     _noSpeechTimer = Timer(CaptureLimits.noSpeech, () {
       if (_sawSpeech || !_listening) return;
       _onNotice?.call(SpeechNotice.autoCancelledNoSpeech);
-      // Grab onDone BEFORE cancel(), which nulls it — otherwise this watchdog silently ends the
-      // session without ever telling the caller, and the seam's "onDone fires when listening ends
-      // for any reason" contract is broken.
-      final done = _onDone;
+      // cancel() reports the end itself (exactly once), so this watchdog no
+      // longer has to reach around it to honour the seam's "onDone fires when
+      // listening ends for any reason" contract.
       cancel(); // nothing said — nothing to send
-      done?.call();
     });
     _capTimer = Timer(CaptureLimits.session, () {
       if (!_listening) return;
@@ -264,7 +341,11 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
       final text = _transcribe(seg.samples).trim();
       _segmentOpenedAt = null; // this segment closed; the next one starts fresh
       if (text.isNotEmpty) {
-        _segments.add(text);
+        // addSegment also publishes the running transcript as a NON-final
+        // result (parity with the system recognizer): without it a long
+        // dictation gave no textual feedback at all on this engine, which
+        // reads as "it isn't hearing me".
+        _capture?.addSegment(text);
         _bumpActivity();
       }
     }
@@ -280,37 +361,37 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     return text;
   }
 
-  /// Stop capture, clean up, fire onDone. Idempotent. When [flush] (the user's stop tap, or a
-  /// watchdog), push the trailing buffered speech through the VAD, transcribe it, and emit the
-  /// WHOLE session — every accumulated segment joined with that tail — as one final result.
-  void _finalize({bool flush = false}) {
-    if (!_listening) return;
-    _listening = false;
+  /// Whatever is still mid-segment when the session ends is real speech: push
+  /// it through the VAD and transcribe it as the session's tail.
+  List<String> _drainVadTail() {
+    final vad = _vad;
+    if (vad == null) return const [];
+    final tail = <String>[];
+    vad.flush();
+    while (!vad.isEmpty()) {
+      final seg = vad.front();
+      vad.pop();
+      tail.add(_transcribe(seg.samples));
+    }
+    return tail;
+  }
+
+  /// Release the audio device. The transcript decision belongs to [_capture].
+  void _teardownAudio() {
     _clearTimers();
     _audioSub?.cancel();
     _audioSub = null;
     // ignore: discarded_futures
     _recorder.stop();
-    if (flush && !_emitted) {
-      if (_vad != null) {
-        _vad!
-            .flush(); // whatever is mid-segment when the user taps stop is still real speech
-        while (!_vad!.isEmpty()) {
-          final seg = _vad!.front();
-          _vad!.pop();
-          final text = _transcribe(seg.samples).trim();
-          if (text.isNotEmpty) _segments.add(text);
-        }
-      }
-      final full = _segments.join(' ').trim();
-      if (full.isNotEmpty) {
-        _emitted = true;
-        _onResult?.call(full, true); // ONE final for the session
-      }
-    }
-    final done = _onDone;
-    _onDone = null;
-    done?.call();
+  }
+
+  /// Stop capture, clean up, and end the session through the one door. When
+  /// [flush] (the user's stop tap, a watchdog, or an engine error), everything
+  /// heard this session is delivered as one final result.
+  void _finalize({bool flush = false}) {
+    if (!_listening) return;
+    _teardownAudio();
+    _capture?.finish(flush: flush);
   }
 
   /// The user's stop tap: finalize and deliver everything said this session.
@@ -319,16 +400,14 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
 
   @override
   void cancel() {
-    _listening = false;
-    _clearTimers();
-    _audioSub?.cancel();
-    _audioSub = null;
-    // ignore: discarded_futures
-    _recorder.stop();
+    _teardownAudio();
     _vad?.clear();
-    _segments
-        .clear(); // discard — a cancel must never leak into the next session's transcript
-    _onDone = null;
+    // Discard — a cancel must never leak into the next session's transcript —
+    // and report the end exactly once, like the system recognizer: the seam
+    // promises onDone fires when listening ends for ANY reason, and the host
+    // relies on it to release the mic state. A re-entrant cancel (host's
+    // final-result handler → cancel) finds the door already closed.
+    _capture?.cancel();
   }
 
   static Float32List _toFloat32(Uint8List bytes) {

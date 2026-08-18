@@ -9,6 +9,7 @@ import 'package:plenara/weekly_review.dart';
 import 'plenara_theme.dart';
 import 'motion.dart';
 import 'data_view.dart';
+import 'undo_feedback.dart';
 
 class TodayBoard extends StatelessWidget {
   final Session session;
@@ -151,19 +152,18 @@ class TodayBoard extends StatelessWidget {
                       final result = await session.applyWeeklyReview();
                       onChanged();
                       if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(result.message),
-                          action: result.undoId == null
-                              ? null
-                              : SnackBarAction(
-                                  label: 'UNDO',
-                                  onPressed: () async {
-                                    await session.undoById(result.undoId!);
-                                    onChanged();
-                                  },
-                                ),
-                        ),
+                      showUndoableResult(
+                        context,
+                        message: result.message,
+                        onUndo: result.undoId == null
+                            ? null
+                            : () async {
+                                final outcome = await session.undoById(
+                                  result.undoId!,
+                                );
+                                onChanged();
+                                return outcome;
+                              },
                       );
                     },
                   ),
@@ -542,19 +542,16 @@ class _Section extends StatelessWidget {
     final result = await session.completeTask(item.id);
     if (!context.mounted) return;
     onChanged();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.message),
-        action: result.undoId == null
-            ? null
-            : SnackBarAction(
-                label: 'UNDO',
-                onPressed: () async {
-                  await session.undoById(result.undoId!);
-                  onChanged();
-                },
-              ),
-      ),
+    showUndoableResult(
+      context,
+      message: result.message,
+      onUndo: result.undoId == null
+          ? null
+          : () async {
+              final outcome = await session.undoById(result.undoId!);
+              onChanged();
+              return outcome;
+            },
     );
   }
 

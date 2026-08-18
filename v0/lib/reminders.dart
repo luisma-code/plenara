@@ -16,6 +16,8 @@
 /// and re-opening the app re-derives the exact same set (idempotent, no dupes).
 library;
 
+import 'dates.dart';
+
 /// The type id of a reminder record. Reminder derivation keys on this + a
 /// parseable `remindAt` datetime field, so the projection is well-defined and a
 /// future `remindAt` on another type could opt in the same way.
@@ -150,10 +152,14 @@ Iterable<Reminder> allReminders(_Store store, DateTime now) sync* {
 }
 
 /// The next occurrence of [base]'s time-of-day strictly after [now] (today if still
-/// ahead, else tomorrow) — the daily-recurrence fire time.
+/// ahead, else tomorrow) — the daily-recurrence fire time. Day steps are calendar
+/// COMPONENT arithmetic (DST-safe: keeps the wall-clock time across a transition,
+/// unlike adding absolute 24h Durations).
 DateTime _nextDaily(DateTime base, DateTime now) {
   var c = DateTime(now.year, now.month, now.day, base.hour, base.minute, base.second);
-  if (!c.isAfter(now)) c = c.add(const Duration(days: 1));
+  if (!c.isAfter(now)) {
+    c = DateTime(now.year, now.month, now.day + 1, base.hour, base.minute, base.second);
+  }
   return c;
 }
 
@@ -171,25 +177,29 @@ int? _lookupWeekday(String name) {
 
 /// The next "[ordinal]th [dayName] of the month" at [base]'s time-of-day strictly after [now].
 /// [ordinal] is 1..4 (nth) or -1 (last). A month with no such occurrence (e.g. a 5th Tuesday) is
-/// skipped. Deterministic date math — the scheduler drives it, never a model.
+/// skipped. Deterministic date math — the scheduler drives it, never a model. All stepping is
+/// day-NUMBER arithmetic (DST-safe: a Duration walk across the November transition would land the
+/// "2nd Sunday" on a Saturday 23:00).
 DateTime _nextMonthlyOrdinal(DateTime base, int ordinal, String dayName, DateTime now) {
   final wd = _lookupWeekday(dayName);
   if (wd == null) return base; // graceful fallback — never crash the schedule
   DateTime? occurrenceIn(int year, int month) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+    int day;
     if (ordinal == -1) {
-      var d = DateTime(year, month + 1, 0); // last day of the month
-      while (d.weekday != wd) {
-        d = d.subtract(const Duration(days: 1));
+      day = lastDay;
+      while (DateTime(year, month, day).weekday != wd) {
+        day--;
       }
-      return DateTime(year, month, d.day, base.hour, base.minute);
+    } else {
+      day = 1;
+      while (DateTime(year, month, day).weekday != wd) {
+        day++; // first [wd] of the month
+      }
+      day += 7 * (ordinal - 1); // then the (ordinal-1)th week
+      if (day > lastDay) return null; // e.g. no 5th Tuesday this month
     }
-    var d = DateTime(year, month, 1);
-    while (d.weekday != wd) {
-      d = d.add(const Duration(days: 1)); // first [wd] of the month
-    }
-    d = d.add(Duration(days: 7 * (ordinal - 1))); // then the (ordinal-1)th week
-    if (d.month != month) return null; // e.g. no 5th Tuesday this month
-    return DateTime(year, month, d.day, base.hour, base.minute);
+    return DateTime(year, month, day, base.hour, base.minute);
   }
 
   var y = now.year, m = now.month;
@@ -206,29 +216,36 @@ DateTime _nextMonthlyOrdinal(DateTime base, int ordinal, String dayName, DateTim
 }
 
 /// From a biweekly [anchor] (a specific weekday+time), the next occurrence strictly after
-/// [now] stepping 14 days at a time — so it never lands on the off-week.
+/// [now] stepping 14 days at a time — so it never lands on the off-week. Steps are calendar
+/// COMPONENT arithmetic (DST-safe: a January 10am anchor advanced by absolute 14-day
+/// Durations would fire 11am all summer).
 DateTime _advanceBiweekly(DateTime anchor, DateTime now) {
-  var c = anchor;
-  if (c.isBefore(now)) {
-    final periods = (now.difference(c).inDays / 14).floor(); // jump most of the way
-    c = c.add(Duration(days: 14 * periods));
+  DateTime at(int periods) => DateTime(anchor.year, anchor.month,
+      anchor.day + 14 * periods, anchor.hour, anchor.minute, anchor.second);
+  var periods = 0;
+  if (anchor.isBefore(now)) {
+    // jump most of the way, counting calendar days (not elapsed hours)
+    periods = calendarDaysBetween(anchor, now) ~/ 14;
   }
+  var c = at(periods);
   while (!c.isAfter(now)) {
-    c = c.add(const Duration(days: 14));
+    c = at(++periods);
   }
   return c;
 }
 
 /// The next occurrence of [dayName] at [base]'s time-of-day strictly after [now]. An
-/// unrecognized day falls back to a one-off at [base] (graceful, never crashes).
+/// unrecognized day falls back to a one-off at [base] (graceful, never crashes). Day steps
+/// are calendar COMPONENT arithmetic (DST-safe, same rule as [_nextInWeekdaySet]).
 DateTime _nextWeekly(DateTime base, String dayName, DateTime now) {
   final target = _lookupWeekday(dayName);
   if (target == null) return base;
-  var c = DateTime(now.year, now.month, now.day, base.hour, base.minute, base.second);
-  var ahead = (target - c.weekday) % 7;
+  DateTime at(int daysAhead) => DateTime(now.year, now.month,
+      now.day + daysAhead, base.hour, base.minute, base.second);
+  var ahead = (target - at(0).weekday) % 7;
   if (ahead < 0) ahead += 7;
-  c = c.add(Duration(days: ahead));
-  if (!c.isAfter(now)) c = c.add(const Duration(days: 7)); // today's slot already passed
+  var c = at(ahead);
+  if (!c.isAfter(now)) c = at(ahead + 7); // today's slot already passed
   return c;
 }
 
@@ -267,14 +284,16 @@ DateTime _nextMonthlyDate(DateTime base, int dom, DateTime now) {
 }
 
 /// The next anniversary of [base]'s month+day at [base]'s time-of-day strictly after [now]
-/// — "every year on March 3". A Feb-29 base is clamped to Feb-28 in common years.
+/// — "every year on March 3". Routes through the shared annual authority (dates.dart), so
+/// the Feb-29 → Feb-28-in-common-years rule matches the planner and birthday nudges exactly.
 DateTime _nextYearly(DateTime base, DateTime now) {
-  for (var y = now.year; y <= now.year + 2; y++) {
-    final lastDay = DateTime(y, base.month + 1, 0).day;
-    final c = DateTime(y, base.month, base.day.clamp(1, lastDay), base.hour, base.minute, base.second);
-    if (c.isAfter(now)) return c;
-  }
-  return base;
+  DateTime withTime(DateTime day) => DateTime(
+      day.year, day.month, day.day, base.hour, base.minute, base.second);
+  final c = withTime(nextAnnual(base, now));
+  if (c.isAfter(now)) return c;
+  // today's occurrence already passed → the next one on/after tomorrow
+  return withTime(
+      nextAnnual(base, DateTime(now.year, now.month, now.day + 1)));
 }
 
 /// Reminders still in the future — the set that should be armed as OS notifications,

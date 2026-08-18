@@ -327,6 +327,45 @@ void main() {
       expect(r.deliveries, isEmpty);
     });
 
+    test(
+        'a cron with tokens the evaluator cannot honor is parked inert (no silent never-fire)',
+        () {
+      final r = _runner([
+        _auto('a1', inline: _summarySkill(), condition: {
+          'kind': 'schedule',
+          'cronExpression': '0 9 * * MON'
+        })
+      ]);
+      expect(_st(r, 'a1').state, 'inert');
+      expect(_st(r, 'a1').reason, contains('cronExpression'));
+    });
+
+    test(
+        'a pending schedule automation goes live via tick once its skill is authored, with no back-fired backlog',
+        () {
+      final store = {'workout-1': _workout('workout-1', '2026-07-06')};
+      final skills = <String, Map<String, dynamic>>{};
+      final r = _runner([
+        _auto('a1',
+            skillId: 'workout-summary',
+            pending: true,
+            condition: {'kind': 'schedule', 'cronExpression': '0 20 * * 0'})
+      ], skills: skills, store: store);
+      expect(_st(r, 'a1').state, 'pending');
+      r.tick(DateTime.parse('2026-07-11T09:00:00')); // Sat — first sight
+      r.tick(DateTime.parse(
+          '2026-07-13T09:00:00')); // Mon: Sunday 8pm passed while unauthored
+      expect(r.deliveries, isEmpty, reason: 'no skill yet — nothing can fire');
+      skills['workout-summary'] = _summarySkill(); // authored now
+      r.tick(DateTime.parse('2026-07-13T10:00:00'));
+      expect(r.deliveries, isEmpty,
+          reason: 'authoring must not back-fire the occurrence missed while unauthored');
+      r.tick(DateTime.parse(
+          '2026-07-20T09:00:00')); // next Sunday 8pm passed → live via tick
+      expect(r.deliveries.single.text, contains('workout'));
+      expect(r.refusals, isEmpty);
+    });
+
     test('a schedule automation without a cronExpression is inert', () {
       final r = _runner([
         _auto('a1', inline: _summarySkill(), condition: {'kind': 'schedule'})
@@ -492,6 +531,22 @@ void main() {
       expect(r.refusals.single, contains('failed to resolve'));
       expect(r.deliveries, isEmpty);
       expect(r.pendingReview, isEmpty);
+    });
+
+    test('re-saving the same afterField value does not re-fire (transition dedupe)',
+        () {
+      final store = {'workout-1': _workout('workout-1', '2026-07-06')};
+      final r = _runner([_auto('a1', inline: _summarySkill())], store: store);
+      r.notifyWrites([store['workout-1']!]);
+      r.notifyWrites(
+          [store['workout-1']!]); // an unrelated edit re-saved the same date
+      expect(r.deliveries, hasLength(1),
+          reason: 'same (automation, record, value) → no pile-up');
+      store['workout-1']!['date'] = '2026-07-07';
+      r.notifyWrites([store['workout-1']!]); // the field actually changed
+      expect(r.deliveries, hasLength(2));
+      r.notifyWrites([store['workout-1']!]); // and holds steady again
+      expect(r.deliveries, hasLength(2));
     });
 
     test('takeDeliveries drains the outbox', () {

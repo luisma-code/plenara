@@ -5,6 +5,7 @@ import 'package:plenara/session.dart';
 
 import 'plenara_theme.dart';
 import 'motion.dart';
+import 'undo_feedback.dart';
 
 class PlanBoard extends StatefulWidget {
   final Session session;
@@ -37,26 +38,45 @@ class _PlanBoardState extends State<PlanBoard> {
   Future<void> _run(Future<ManualWrite> operation) async {
     if (_busy) return;
     setState(() => _busy = true);
-    final result = await operation;
+    ManualWrite? result;
+    Object? failure;
+    try {
+      result = await operation;
+    } catch (error) {
+      // An unexpected throw must not strand the board busy (every control
+      // disabled forever) or vanish silently.
+      failure = error;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _selectedIds.removeWhere(
+            (id) => !widget.session.store.containsKey(id),
+          );
+        });
+      } else {
+        _busy = false;
+      }
+    }
     if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _selectedIds.removeWhere((id) => !widget.session.store.containsKey(id));
-    });
     widget.onChanged();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.message),
-        action: result.undoId == null
-            ? null
-            : SnackBarAction(
-                label: 'UNDO',
-                onPressed: () async {
-                  await widget.session.undoById(result.undoId!);
-                  _refresh();
-                },
-              ),
-      ),
+    if (failure != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Something went wrong: $failure')),
+      );
+      return;
+    }
+    final write = result!;
+    showUndoableResult(
+      context,
+      message: write.message,
+      onUndo: write.undoId == null
+          ? null
+          : () async {
+              final outcome = await widget.session.undoById(write.undoId!);
+              _refresh();
+              return outcome;
+            },
     );
   }
 

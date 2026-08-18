@@ -83,23 +83,31 @@ class InProcessEmbeddingBackend implements EmbeddingBackend {
 
 class HttpEmbeddingBackend implements EmbeddingBackend {
   final String url;
-  const HttpEmbeddingBackend({this.url = embedUrl});
+  final Duration timeout; // response-side deadline (connect has its own)
+  const HttpEmbeddingBackend(
+      {this.url = embedUrl, this.timeout = const Duration(seconds: 10)});
 
   @override
   Future<List<double>?> embed(String text) async {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
     try {
-      final req = await client.postUrl(Uri.parse(url));
-      req.headers.contentType = ContentType.json;
-      req.add(utf8.encode(jsonEncode({'input': text})));
-      final resp = await req.close();
-      final body = await resp.transform(utf8.decoder).join();
-      final data = (jsonDecode(body)['data'] as List)[0]['embedding'] as List;
-      return data.map((value) => (value as num).toDouble()).toList();
-    } on Exception {
+      return await Future(() async {
+        final req = await client.postUrl(Uri.parse(url));
+        req.headers.contentType = ContentType.json;
+        req.add(utf8.encode(jsonEncode({'input': text})));
+        final resp = await req.close();
+        final body = await resp.transform(utf8.decoder).join();
+        final data = (jsonDecode(body)['data'] as List)[0]['embedding'] as List;
+        return data.map((value) => (value as num).toDouble()).toList();
+      }).timeout(timeout);
+    } catch (_) {
+      // Catch-all, not `on Exception`: a response-shape mismatch throws
+      // TypeError, which is an Error and was escaping the old clause. This
+      // experiments-only adapter degrades any failure (shape, timeout, network)
+      // to null — the backend contract.
       return null;
     } finally {
-      client.close();
+      client.close(force: true);
     }
   }
 }

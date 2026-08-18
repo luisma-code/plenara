@@ -52,6 +52,52 @@ void main() {
     skip: !isExternalBuild,
   );
 
+  test(
+    'external startup purges an inherited turnlog and writes no new one',
+    () {
+      // Spec 11 P11.2/§5.2: the turnlog is content-bearing (utterance, slots,
+      // response, recognizer diag). An external build must neither write one
+      // nor keep carrying one an internal installation left behind.
+      final dir = Directory.systemTemp.createTempSync('plenara_external_tl_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final logs = Directory('${dir.path}/plenara-logs')..createSync();
+      final deviceDir = Directory('${dir.path}/device')..createSync();
+      final inherited = File('${deviceDir.path}/turnlog.jsonl')
+        ..writeAsStringSync(
+          '{"utterance":"remember the anniversary","response":"Noted."}\n',
+        );
+      File(
+        '${logs.path}/plenara-20260817-101500.log',
+      ).writeAsStringSync('turn: "remember the anniversary"\n');
+
+      AppLog.pruneForTest(
+        logs,
+        activeDiagnosticPolicy,
+        DateTime.now(),
+        deviceDir: deviceDir.path,
+      );
+
+      expect(
+        inherited.existsSync(),
+        isFalse,
+        reason: 'an inherited content-bearing turnlog must not survive the '
+            'switch to an external build',
+      );
+      expect(
+        logs.listSync().whereType<File>().where(
+          (f) => f.path.endsWith('.log'),
+        ),
+        isEmpty,
+      );
+      // The engine-side half of the boundary: external builds construct the
+      // repository with turnlog writing disabled outright.
+      expect(!isExternalBuild, isFalse);
+    },
+    skip: activeBuildChannel == BuildChannel.external
+        ? false
+        : 'run with --dart-define=PLENARA_CHANNEL=external',
+  );
+
   testWidgets(
     'external onboarding describes cloud egress and no raw diagnostics',
     (tester) async {

@@ -11,6 +11,7 @@ import 'package:plenara/config.dart';
 import 'package:plenara/operation_center.dart';
 import 'package:plenara/reminders.dart';
 import 'package:plenara/session.dart';
+import 'package:plenara/storage_repository.dart';
 import 'package:plenara/planner.dart';
 
 import 'app_log.dart';
@@ -64,6 +65,10 @@ NotificationScheduler _platformScheduler() {
 Session buildSession({NotificationScheduler? scheduler}) {
   final cfg = loadAppConfig();
   AppLog.instance.registerSecret(cfg.apiKey);
+  AppLog.instance.log(
+    'boot: data root = ${cfg.dataDir} '
+    '(${cfg.dataFolderSelected ? 'provider-selected' : 'device-local'})',
+  );
   // loadConfig already derives the correct dataDir per platform (live Documents dir on mobile, where
   // the container path is unstable; the user's folder on desktop) — one source of truth, so this and
   // main()'s bundled-definition extraction agree.
@@ -80,6 +85,18 @@ Session buildSession({NotificationScheduler? scheduler}) {
   // Session falls back to a default ClaudeClient() that picks the key up from the environment,
   // so free mode has to inject a deliberately-keyless client. (A real release ships two binaries.)
   final useCloud = cfg.apiKey != null && !cfg.freeTier;
+  // The storage repository is built HERE (not left to Session's default) so the
+  // channel gate reaches the turnlog: external builds pass enableTurnlog=false
+  // and logTurn is a complete no-op (Spec 11 — external captures no content).
+  // The live key is also registered with the turnlog's secret-rejection
+  // registry: secrets are Class S in EVERY channel, internal included.
+  final storage = FileStorageRepository(
+    dataDir,
+    deviceDir: defaultDeviceDir(),
+    enableTurnlog: !isExternalBuild,
+  );
+  final apiKey = cfg.apiKey;
+  if (apiKey != null) storage.registerTurnlogSecret(apiKey);
   return Session(
     dataDir,
     cloud: useCloud
@@ -91,6 +108,7 @@ Session buildSession({NotificationScheduler? scheduler}) {
             apiKeyOverride: '',
             usagePath: '${defaultDeviceDir()}/cloud-usage.json',
           ),
+    storage: storage,
     scheduler: scheduler,
     deviceDir:
         defaultDeviceDir(), // deviceId + turnlog stay device-local, off the synced folder
@@ -112,20 +130,48 @@ Future<void> main() async {
         /* desktop never reaches here; on failure fall back to env/'.' */
       }
     }
+    // The first AppLog access must come AFTER the homeOverride resolution above
+    // (the log path derives from it on iOS), so no marker can precede it — the
+    // log's own creation timestamp is the home-override phase marker.
+    AppLog.instance.log('boot: phase home-override done');
     if (Platform.isIOS) {
+      AppLog.instance.log('boot: phase restore-selection begin');
       try {
         final selected = await const DataFolderAccess().restoreSelection();
         if (selected != null && selected.isNotEmpty) {
           dataDirOverride = dataRootForSelection(selected);
+          AppLog.instance.log(
+            'boot: data-folder restore -> $dataDirOverride (provider-selected)',
+          );
+        } else {
+          AppLog.instance.log(
+            'boot: data-folder restore -> no stored selection (device-local)',
+          );
         }
-      } catch (error) {
+      } catch (error, stack) {
         // A stale provider grant must never prevent runApp from creating the
         // recovery surface. Session startup will use the device-local root.
         dataDirOverride = null;
+        AppLog.instance.log(
+          'boot: data-folder restore FAILED (falling back to the device-local root): $error\n$stack',
+        );
         stdout.writeln('Plenara data-folder restore failed: $error');
       }
+      AppLog.instance.log('boot: phase restore-selection done');
     }
-    await initializeAppCredentials();
+    AppLog.instance.log('boot: phase credentials begin');
+    try {
+      await initializeAppCredentials();
+    } catch (error, stack) {
+      // A locked keychain / PlatformException / failed migration must never
+      // prevent runApp — a permanent blank screen with zero diagnostics is the
+      // exact failure this log exists to prevent. Settings handles a missing
+      // key; continue keyless.
+      AppLog.instance.log(
+        'boot: credential init FAILED (continuing keyless): $error\n$stack',
+      );
+    }
+    AppLog.instance.log('boot: phase credentials done');
     final log = AppLog.instance;
     log.registerSecret(loadAppConfig().apiKey);
     // Print the diagnostics log path so a manual test that goes wrong is one file away.
@@ -182,7 +228,12 @@ class _HomeState extends State<Home> {
       loadAppConfig(configPath: widget.configPath).apiKey == null;
   int _sessionGeneration = 0;
 
-  void _restartAfterDataReset() => setState(() => _sessionGeneration++);
+  void _restartAfterDataReset() {
+    // Session regeneration invalidates every queued UNDO closure (each captures
+    // the old Session); a stale snackbar must not fire into a disposed session.
+    ScaffoldMessenger.of(context).clearSnackBars();
+    setState(() => _sessionGeneration++);
+  }
 
   @override
   Widget build(BuildContext context) => _onboarding
@@ -239,7 +290,14 @@ class ChatScreen extends StatefulWidget {
 class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) return;
+    if (state == AppLifecycleState.resumed) {
+      // Backgrounding cancelled the routine cadence below; a live timed step
+      // must resume counting when the app comes back, or the run silently
+      // stalls forever on that step. _syncStepTimer is idempotent and re-arms
+      // (with a fresh clock) only when a timed, unpaused step is current.
+      _syncStepTimer();
+      return;
+    }
     // Backgrounding is an abandonment signal. Never keep a hot mic while hidden (Spec 12 §3.5's
     // mic-lifecycle invariant), and never let a watchdog stop-and-SEND a turn — with TTS answering
     // — while the user is in another app.
@@ -277,6 +335,10 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       0; // bumped on every tap/abort; a listen-start whose epoch went stale bails (race)
   bool _aborting =
       false; // a deliberate ✕/mute abort — its cancel's onDone must not count as no-audio
+  // Correlation id for the live capture session: prefixes recognizer log lines
+  // and becomes the turn id of the send its final transcript triggers, so the
+  // whole voice path shares one grep key. Null while no capture is live.
+  String? _captureId;
   String?
   _heard; // the finalized transcript, echoed as "I heard: X" (the listening font), briefly
   Timer? _heardTimer;
@@ -498,14 +560,31 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Operation deliveries drained mid-turn used to be presented immediately —
+  /// then the in-flight turn's completion overwrote the caption (and its speech),
+  /// so the delivery vanished; a delivery arriving while listening started TTS
+  /// against an open mic (see the barge-in barrier in [_toggleMic]). Queue them
+  /// instead and flush only when nothing else owns the stage.
+  final List<OperationRecord> _pendingDeliveries = [];
+
   void _operationChanged(OperationRecord operation) {
     if (!mounted) return;
     if (!operation.terminal) {
       setState(() {});
       return;
     }
-    final deliveries = _session.operations.takeDeliveries();
-    if (deliveries.isEmpty) return;
+    _pendingDeliveries.addAll(_session.operations.takeDeliveries());
+    _maybeFlushDeliveries();
+  }
+
+  /// Present queued operation deliveries — but never mid-turn (the turn's
+  /// completion would clobber them) and never while the mic is open (TTS over a
+  /// hot mic). Re-invoked at turn completion and when a capture session ends.
+  void _maybeFlushDeliveries() {
+    if (!mounted || _pendingDeliveries.isEmpty) return;
+    if (_busy || _listening || _transcribing) return;
+    final deliveries = List<OperationRecord>.of(_pendingDeliveries);
+    _pendingDeliveries.clear();
     _presentOperationDeliveries(deliveries);
   }
 
@@ -566,7 +645,13 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     }
     if (widget.session != null) return NoopSpeechRecognizer();
     SpeechRecognizer sys() {
-      final s = SystemSpeechRecognizer(onLog: (m) => log.debug('speech: $m'));
+      // The capture correlation id (when a session is live) joins these lines to
+      // the AppLog `turn` lines and, approximately, the turnlog entry.
+      final s = SystemSpeechRecognizer(
+        onLog: (m) => log.debug(
+          'speech${_captureId == null ? '' : ' [$_captureId]'}: $m',
+        ),
+      );
       return s;
     }
 
@@ -775,10 +860,21 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _send() async {
-    final t = _ctrl.text.trim();
+  /// Run one turn. With no [utterance] the input box is the source (and is
+  /// cleared); an explicit [utterance] — voice finals, the routine player's
+  /// control words — bypasses `_ctrl` entirely, so a muted user's half-typed
+  /// draft is never clobbered and a bailed-out send leaves no ghost text.
+  Future<void> _send([String? utterance]) async {
+    final fromInputBox = utterance == null;
+    final t = (utterance ?? _ctrl.text).trim();
     if (t.isEmpty || _busy) return;
-    _ctrl.clear();
+    if (fromInputBox) _ctrl.clear();
+    // Correlation id: stamped on this turn's AppLog lines (and inherited from
+    // the capture id when a voice final triggered the send) so recognizer
+    // lines, AppLog, and the turnlog entry — whose own `at` key is minted by
+    // Session.handle milliseconds later — line up from the log alone.
+    final turnId = _captureId ?? DateTime.now().toIso8601String();
+    _captureId = null;
     _cancelColorDemo(); // a new turn ends any in-flight colours demo, releasing the pinned presence
     if (_maybeNavCommand(t)) {
       return; // "open settings" et al. open a window, not a turn
@@ -798,7 +894,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       if (mounted) setState(() => _deepThink = true);
     });
     final log = AppLog.instance;
-    log('turn: "$t"');
+    log('turn [$turnId]: "$t"');
     final reviewsBefore = _session.automations.pendingReview.length;
     String resp;
     try {
@@ -814,7 +910,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     }
     final usedCloud = _session.lastTurnUsedCloud;
     log(
-      'turn -> [${_session.lastSource}${usedCloud ? ', cloud' : ', offline'}] '
+      'turn [$turnId] -> [${_session.lastSource}${usedCloud ? ', cloud' : ', offline'}] '
       '${resp.length > 140 ? '${resp.substring(0, 140)}…' : resp}',
     );
     // _busy is always cleared, so the input can never lock up
@@ -873,6 +969,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       _capTimer = Timer(const Duration(milliseconds: 1600), () {
         if (mounted) setState(() => _caption = null);
       });
+      // The turn (and its speech) is over — a delivery queued mid-turn gets the
+      // stage now instead of having been silently overwritten.
+      _maybeFlushDeliveries();
     }
 
     if (willSpeak) {
@@ -946,6 +1045,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     // this (now superseded) call starting a second concurrent recognizer session (Fable review #5).
     final epoch = ++_micEpoch;
     _aborting = false;
+    _captureId = DateTime.now().toIso8601String();
     // Set listening BEFORE the barge-in await, so a second tap during it hits the abort branch
     // instead of starting a second recognizer session (reviewer d #2).
     setState(() {
@@ -1046,11 +1146,13 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           });
           _speech!.cancel(); // one utterance per tap
           if (!_busy) {
-            _ctrl.text =
-                t; // what we send — only written when we can actually send it (no ghost)
+            // sent directly — never through _ctrl, which may hold a typed draft
             log.debug('speech: auto-send on final result');
-            _send();
+            _send(t);
           }
+          // A step timer that elapsed mid-utterance deferred its advance; the
+          // transcript's turn is in flight now, so the 'next' queues behind it.
+          _flushDeferredAdvance();
         },
         onDone: () {
           if (!mounted) return;
@@ -1058,6 +1160,15 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
             _listening = false;
             _transcribing = false;
             _micPrompt = null;
+          });
+          _captureId = null;
+          // Capture over: release anything that was waiting on the mic. The
+          // microtask lets a synchronously-nested onDone (cancel() inside the
+          // final-result handler) finish sending the transcript first.
+          scheduleMicrotask(() {
+            if (!mounted) return;
+            _flushDeferredAdvance();
+            _maybeFlushDeliveries();
           });
           if (_aborting) {
             _aborting =
@@ -1467,10 +1578,9 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  /// Drive the player from the card's buttons. This deliberately does NOT go through the text
-  /// controller: `_ctrl` holds whatever the user may be typing in muted mode, and `_send` drops the
-  /// call outright while `_busy` — which silently swallowed a Stop tap and left "next" as ghost
-  /// text in the input box.
+  /// Drive the player from the card's buttons (and the step timer). The control word goes straight
+  /// to [_send] as an explicit utterance — never through `_ctrl`, which holds whatever the user may
+  /// be typing in muted mode; a Stop tap must not clobber a draft or leave ghost text.
   Future<void> _sendRoutine(String word) async {
     if (!mounted || _session.activeRun == null) return;
     _cancelStepTimer();
@@ -1479,9 +1589,18 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       // pressed — losing a Stop is worse than a beat of latency.
       await _turnSettled();
       if (!mounted || _session.activeRun == null) return;
+      if (_busy) {
+        // Still busy after the bounded wait: say so instead of silently
+        // dropping the press (no-silent-failure).
+        setState(() {
+          _caption =
+              "I'm still finishing the last thing — tap that again in a moment.";
+          _displayIsList = false;
+        });
+        return;
+      }
     }
-    _ctrl.text = word;
-    await _send();
+    await _send(word);
   }
 
   /// Wait (bounded) for the in-flight turn to finish.
@@ -1539,11 +1658,28 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       final elapsed = DateTime.now().difference(_stepStartedAt!).inSeconds;
       if (elapsed >= secs) {
         _cancelStepTimer();
-        _sendRoutine('next');
+        if (_listening || _transcribing) {
+          // Mid-utterance: starting the 'next' turn now would set _busy, and the
+          // arriving final transcript is dropped at `if (!_busy)` — the user's
+          // speech would vanish. Defer the advance until the capture resolves.
+          _advanceAfterCapture = true;
+        } else {
+          _sendRoutine('next');
+        }
       } else {
         setState(() {}); // repaint the ring
       }
     });
+  }
+
+  /// A timed step elapsed while the mic was open; advance now that the capture
+  /// session has resolved. _sendRoutine itself queues behind any in-flight turn
+  /// (the transcript's), so the spoken words land before the step moves on.
+  bool _advanceAfterCapture = false;
+  void _flushDeferredAdvance() {
+    if (!_advanceAfterCapture) return;
+    _advanceAfterCapture = false;
+    unawaited(_sendRoutine('next'));
   }
 
   // ---- the presence-primary home (Spec 15): only Plena + the current exchange over the void ----
@@ -1709,8 +1845,14 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         // The current exchange, materialising over the void. Keep this
         // transition mounted so clarification and failure text visibly arrives
         // and resolves instead of teleporting with an `if` branch.
+        // Short captions stay fully tap-through (the void behind is the voice
+        // target). A list/prose reply is a SingleChildScrollView that can be
+        // taller than the viewport, so it must receive drags — plain taps still
+        // fall through to the translucent voice-tap layer behind it, and taps
+        // outside the reply column are unaffected.
         Positioned.fill(
           child: IgnorePointer(
+            ignoring: !listMode,
             child: AnimatedSwitcher(
               duration: PlenaraMotion.deliberate,
               switchInCurve: PlenaraMotion.enter,
@@ -2055,6 +2197,11 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       });
     }
     _speech?.cancel();
+    _captureId = null;
+    // The mic is closed: release a deferred step advance and any queued
+    // operation deliveries that were waiting on it.
+    _flushDeferredAdvance();
+    _maybeFlushDeliveries();
   }
 
   Widget _muteButton() => Material(

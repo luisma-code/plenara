@@ -20,6 +20,29 @@ class AttentionView extends StatefulWidget {
 class _AttentionViewState extends State<AttentionView> {
   String? _message;
 
+  /// Definition-conflict file previews, loaded ONCE in [initState] — build()
+  /// must not do synchronous file reads + pretty-printing on every frame. The
+  /// conflict set only shrinks while this view is open (resolution), so the
+  /// cache never goes stale. Behavior is otherwise identical.
+  Map<String, String> _previews = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    _previews = _loadPreviews();
+  }
+
+  Map<String, String> _loadPreviews() {
+    final previews = <String, String>{};
+    for (final conflict in widget.session.definitionSyncConflicts) {
+      previews[conflict.canonicalPath] = _filePreview(conflict.canonicalPath);
+      previews[conflict.conflictingPath] = _filePreview(
+        conflict.conflictingPath,
+      );
+    }
+    return previews;
+  }
+
   String _value(Object? value) {
     if (value is Map || value is List) return jsonEncode(value);
     return value == null ? '(empty)' : '$value';
@@ -101,8 +124,12 @@ class _AttentionViewState extends State<AttentionView> {
               for (final conflict in definitions)
                 _DefinitionConflictCard(
                   conflict: conflict,
-                  current: _filePreview(conflict.canonicalPath),
-                  other: _filePreview(conflict.conflictingPath),
+                  current:
+                      _previews[conflict.canonicalPath] ??
+                      '(could not read this version)',
+                  other:
+                      _previews[conflict.conflictingPath] ??
+                      '(could not read this version)',
                   onKeep: () => _resolveDefinition(conflict, false),
                   onUseOther: () => _resolveDefinition(conflict, true),
                 ),

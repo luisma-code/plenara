@@ -45,4 +45,49 @@ void main() {
     expect(down.isEmpty, isTrue);
     expect(await down.search('anything'), isNull);
   });
+
+  // A two-axis embedder keyed on distinctive words, so ranking is deterministic.
+  Future<List<double>?> cabinKayak(String t) async {
+    final l = t.toLowerCase();
+    return [l.contains('cabin') ? 1.0 : 0.0, l.contains('kayak') ? 1.0 : 0.0];
+  }
+
+  test('an EDITED record re-embeds on rebuild — search follows the new wording', () async {
+    var embeds = 0;
+    final idx = ContentSearchIndex(embedder: (t) {
+      embeds++;
+      return cabinKayak(t);
+    });
+    final rec = {'id': 'e1', 'typeId': 'journal_entry', 'entry': 'the cabin weekend'};
+    await idx.build([rec]);
+    expect((await idx.search('cabin'))!, contains('e1'));
+    final builds = embeds;
+    await idx.build([rec]); // unchanged -> no re-embed (still cheap per build)
+    expect(embeds, builds, reason: 'an unchanged record must not re-embed');
+    rec['entry'] = 'the kayak trip'; // the user edits the journal entry
+    await idx.build([rec]);
+    // The old build() was idempotent per ID, so the record kept its original
+    // vector forever and its edits were unsearchable.
+    expect((await idx.search('kayak'))!, contains('e1'),
+        reason: 'found under the NEW wording');
+    expect((await idx.search('cabin'))!, isNot(contains('e1')),
+        reason: 'the stale vector is gone');
+  });
+
+  test('a DELETED record is evicted on a full rebuild; incremental builds keep it', () async {
+    final idx = ContentSearchIndex(embedder: cabinKayak);
+    final a = {'id': 'a', 'typeId': 'journal_entry', 'entry': 'cabin weekend'};
+    final b = {'id': 'b', 'typeId': 'journal_entry', 'entry': 'kayak trip'};
+    await idx.build([a, b]);
+    expect((await idx.search('cabin'))!, contains('a'));
+    // An incremental build over a SUBSET must not evict (callers index new
+    // records without passing the whole store).
+    await idx.build([b]);
+    expect((await idx.search('cabin'))!, contains('a'));
+    // A full rebuild declares [b] the complete store: 'a' was deleted, and its
+    // vector must go with it — a dead id must never surface as a search hit.
+    await idx.build([b], full: true);
+    expect((await idx.search('cabin'))!, isNot(contains('a')));
+    expect((await idx.search('kayak'))!, contains('b'));
+  });
 }

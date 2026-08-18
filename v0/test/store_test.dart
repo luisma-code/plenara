@@ -326,6 +326,29 @@ void main() {
       final store = loadRecords(dir);
       expect(store.keys, ['good']);
     });
+    test(
+        'a valid-JSON record with a corrupt envelope shape is skipped AND surfaced, not fatal',
+        () {
+      // Regression: the envelope reads (`rec['id'] as String`, fields cast) sat
+      // OUTSIDE the try/catch that only guarded jsonDecode, so one shape-defective
+      // file (numeric id, missing id, non-map fields) bricked every cold open.
+      final dir = _tmp();
+      persist({'id': 'good', 'typeId': 'task', 'description': 'x'}, dir,
+          HlcDevice('d'));
+      File('$dir/numeric-id.json')
+          .writeAsStringSync('{"id": 7, "typeId": "task", "fields": {}}');
+      File('$dir/no-id.json')
+          .writeAsStringSync('{"typeId": "task", "fields": {}}');
+      File('$dir/bad-fields.json').writeAsStringSync(
+          '{"id": "bad-fields", "typeId": "task", "fields": "oops"}');
+      final surfaced = <String>[];
+      final store =
+          loadRecords(dir, onCorrupt: (path, error) => surfaced.add(path));
+      expect(store.keys, ['good']);
+      expect(surfaced, contains('$dir/numeric-id.json'));
+      expect(surfaced, contains('$dir/no-id.json'));
+      expect(surfaced, contains('$dir/bad-fields.json'));
+    });
     test('tombstone() marks a record deleted; load skips it', () {
       final dir = _tmp();
       final dev = HlcDevice('d');

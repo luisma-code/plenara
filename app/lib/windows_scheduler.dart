@@ -17,7 +17,12 @@ import 'package:timezone/timezone.dart' as tz;
 import 'app_log.dart';
 
 class WindowsToastScheduler implements NotificationScheduler {
-  final FlutterLocalNotificationsWindows _plugin = FlutterLocalNotificationsWindows();
+  /// [plugin] is a test seam — shim-level tests inject a throwing fake to prove
+  /// the bookkeeping; production constructs the real plugin.
+  WindowsToastScheduler({FlutterLocalNotificationsWindows? plugin})
+      : _plugin = plugin ?? FlutterLocalNotificationsWindows();
+
+  final FlutterLocalNotificationsWindows _plugin;
   final Map<String, DateTime> _armed = {};
   bool _ready = false;
   String? _unavailable; // set when init fails -> surfaced via unavailableReason()
@@ -96,10 +101,13 @@ class WindowsToastScheduler implements NotificationScheduler {
       // NOTE: unpackaged (no MSIX identity) -> native cancel is a no-op; a scheduled toast
       // can't be recalled. In-memory state stays correct; MSIX packaging gives real cancel.
       await _plugin.cancel(id: notificationId(ref));
+      _armed.remove(ref);
     } catch (e, st) {
-      AppLog.instance.log('sched: cancel FAILED for "$ref": $e\n$st');
+      // Keep the ref in _armed: dropping it made reconcile believe the cancel
+      // succeeded, so it never retried and the deleted reminder ghost-fired.
+      AppLog.instance
+          .log('sched: cancel FAILED for "$ref" (kept armed for retry): $e\n$st');
     }
-    _armed.remove(ref);
   }
 
   @override

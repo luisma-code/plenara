@@ -361,7 +361,23 @@ void main() {
           'date': '2026-07-03'
         },
         {'typeId': 'mood', 'rating': 'great', 'loggedAt': '2026-07-04'},
-        {'typeId': 'task', 'description': 'buy milk', 'completed': true},
+        {
+          'typeId': 'task',
+          'description': 'buy milk',
+          'completed': true,
+          'completedAt': '2026-07-04T18:00:00'
+        },
+        // Completed long before this week — a WEEKLY review must not resurface
+        // it (the old `completed == true` filter had no week bound), and a
+        // legacy completion with no completedAt is unplaceable in time, so it
+        // stays out too rather than polluting every future review.
+        {
+          'typeId': 'task',
+          'description': 'ancient chore',
+          'completed': true,
+          'completedAt': '2026-01-15T10:00:00'
+        },
+        {'typeId': 'task', 'description': 'undated chore', 'completed': true},
       ]);
       final r = await g.weeklyReview(store, _now);
       expect(cloud.lastKind, 'weekly_review');
@@ -370,6 +386,8 @@ void main() {
       expect(cloud.lastContext,
           contains('Sarah on 2026-07-02 (caught up about the trip)'));
       expect(cloud.lastContext, contains('buy milk'));
+      expect(cloud.lastContext, isNot(contains('ancient chore')));
+      expect(cloud.lastContext, isNot(contains('undated chore')));
       expect(r, isNotEmpty);
     });
 
@@ -397,6 +415,33 @@ void main() {
       final r = await g.weeklyReview(_store([]), _now);
       expect(r.toLowerCase(), contains('nothing logged'));
       expect(cloud.lastKind, isNull);
+    });
+
+    test(
+        'a store with ONLY stale completions is an empty week — no cloud call spent',
+        () async {
+      final cloud = _GenCloud();
+      final g = GenerativeService(cloud);
+      // Everything here was finished months before the review week. The old
+      // unbounded `completed == true` filter counted these as "this week's
+      // activity" and spent a paid call re-reviewing them forever.
+      final store = _store([
+        {
+          'typeId': 'task',
+          'description': 'file taxes',
+          'completed': true,
+          'completedAt': '2026-03-01T09:00:00'
+        },
+        {
+          'typeId': 'task',
+          'description': 'book flights',
+          'completed': true,
+          'completedAt': '2026-04-12T09:00:00'
+        },
+      ]);
+      final r = await g.weeklyReview(store, _now);
+      expect(r.toLowerCase(), contains('nothing logged'));
+      expect(cloud.lastKind, isNull, reason: 'no paid call on a stale-only store');
     });
 
     test('offline -> honest degrade', () async {

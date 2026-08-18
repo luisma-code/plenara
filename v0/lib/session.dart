@@ -93,7 +93,9 @@ class _EnumItem {
 class _EnumCtx {
   final List<_EnumItem>
       items; // ordered exactly as spoken (1-based to the user)
-  final String skillId; // diagnostics only
+  // The skill that spoke the readback — surfaced into the ref-command turn's diag
+  // by [Session._refResolve], so a wrong-list reference is diagnosable post-hoc.
+  final String skillId;
   _EnumCtx(this.items, this.skillId);
 }
 
@@ -624,6 +626,11 @@ class Session {
   final List<String> skillRepairIssues = [];
   final List<String> executionRepairIssues = [];
   final List<String> externalStorageIssues = [];
+
+  /// Turnlog writes that failed (bounded). Diagnostics must never fail a completed
+  /// action, but a dead turnlog must also never be silent — these lines make it
+  /// visible through [repairIssues], the same surface init warnings use.
+  final List<String> turnlogIssues = [];
   late ConversationLedger conversationLedger;
   late OperationCenter operations;
   late CapabilityDraftStore capabilityDrafts;
@@ -649,7 +656,6 @@ class Session {
   /// The in-flight figure fill, if any — awaited by tests, ignored by the app (figures are
   /// presentation and arrive after the routine is already usable).
   Future<void>? pendingFigureFill;
-  String? _lastRoutineId;
 
   /// A live routine run, or null. Ephemeral like the Tour — losing it on app kill is acceptable.
   RoutineRun? _run;
@@ -668,6 +674,16 @@ class Session {
   bool _turnInProgress = false;
   bool _storageRefreshInProgress = false;
   bool _storageRefreshPending = false;
+
+  /// Record ids the LAST storage refresh parked as repair items — so a repeated
+  /// refresh replaces its own parkings instead of appending duplicates forever.
+  final Set<String> _refreshParkedIds = {};
+
+  /// Serializes public [handle] turns. Two concurrent handle() calls (voice +
+  /// typed, or a UI-triggered replay) would interleave awaits over the same
+  /// mutable turn state; the chain runs them one after another. Nothing inside a
+  /// turn ever awaits handle() itself, so the chain cannot deadlock.
+  Future<void> _turnQueue = Future.value();
 
   /// Fires after an external provider/file event has been reconciled into the
   /// live in-memory store. The UI rebuilds planner surfaces from this event.
@@ -721,6 +737,9 @@ class Session {
   String? get lastTourChapter => _enteredChapter;
   String?
       _cloudStatus; // telemetry: cloud health this turn ('ok' or a CloudErrorKind name)
+  // CloudError.detail (claude.dart: "for logs") for this turn's failed cloud call, truncated;
+  // routed into the turnlog diag map so a cloud failure is diagnosable post-hoc.
+  String? _cloudDetail;
   // Rich debug-trace fields (dogfood diagnosis: read the turnlog instead of retrying) —
   // reset each turn in handle(), populated as the turn resolves.
   String? _outTemplate; // the corpus template matched, if a corpus route
@@ -872,8 +891,13 @@ class Session {
             .map((_) => 'A capability definition needs repair.'),
         ...migrationRepairItems.map((_) => 'A record migration needs repair.'),
         ...executionRepairIssues.map((_) => 'A recent change needs repair.'),
-        ...externalStorageIssues
-            .map((_) => 'The selected data folder could not be refreshed.'),
+        ...turnlogIssues
+            .map((_) => 'Turn diagnostics could not be recorded.'),
+        // A 'refresh: …' line is a drop summary (records parked mid-session), not a
+        // failed refresh — say which, so the repair surface doesn't mislead.
+        ...externalStorageIssues.map((issue) => issue.startsWith('refresh:')
+            ? 'Some records in the data folder were set aside for repair.'
+            : 'The selected data folder could not be refreshed.'),
         ...conversationLedger.issues
             .map((_) => 'Conversation history needs repair.'),
         ...operations.issues.map((_) => 'Detached work history needs repair.'),
@@ -1198,16 +1222,81 @@ class Session {
           break;
         }
         final accepted = <String, Map<String, dynamic>>{};
+        // Parity with init: a record that fails migration, has an unknown type, or is
+        // future-versioned is PARKED as a repair item and counted — never silently
+        // dropped mid-session. A re-run replaces this refresh's own parkings.
+        migrationRepairItems
+            .removeWhere((item) => _refreshParkedIds.contains(item.recordId));
+        _refreshParkedIds.clear();
+        var dropped = 0;
         for (final entry in loaded.entries) {
           final type = types[entry.value['typeId']];
-          if (type == null || isFutureVersioned(entry.value, type)) continue;
-          final migrated = migrateRecord(
-            entry.value,
-            type,
-            records: loaded,
-            dataRoot: dataDir,
-          );
-          if (migrated.failure == null) accepted[entry.key] = migrated.record;
+          MigrationRepairItem? park;
+          if (type == null) {
+            park = MigrationRepairItem(
+              recordId: entry.key,
+              typeId: '${entry.value['typeId']}',
+              code: 'unknown_record_type',
+              message: 'The record type is not active in the schema registry.',
+              rawRecord: Map<String, dynamic>.from(entry.value),
+            );
+          } else if (isFutureVersioned(entry.value, type)) {
+            park = MigrationRepairItem(
+              recordId: entry.key,
+              typeId: '${entry.value['typeId']}',
+              code: 'version_too_new',
+              message:
+                  'This record needs schema version ${recordVersion(entry.value)}, '
+                  'but this app has version ${typeVersion(type)}.',
+              rawRecord: Map<String, dynamic>.from(entry.value),
+            );
+          } else {
+            final migrated = migrateRecord(
+              entry.value,
+              type,
+              records: loaded,
+              dataRoot: dataDir,
+            );
+            if (migrated.failure == null) {
+              accepted[entry.key] = migrated.record;
+            } else {
+              park = MigrationRepairItem(
+                recordId: entry.key,
+                typeId: '${entry.value['typeId']}',
+                code: migrated.failure!.code,
+                message: migrated.failure!.message,
+                rawRecord: Map<String, dynamic>.from(entry.value),
+              );
+            }
+          }
+          if (park != null) {
+            migrationRepairItems.add(park);
+            _refreshParkedIds.add(entry.key);
+            dropped++;
+          }
+        }
+        // Preserve unpersisted-but-applied writes: an execution in a non-terminal
+        // phase has applied to the in-memory store but not (fully) to disk, so the
+        // disk state for its ids is STALE — keep the in-memory version rather than
+        // clobbering an applied write with what the provider last managed to sync.
+        for (final exec in executions.journal.entries) {
+          if (exec.phase == ExecutionPhase.completed ||
+              exec.phase == ExecutionPhase.reversed) {
+            continue;
+          }
+          for (final op in exec.operations) {
+            final live = store[op.id];
+            if (live != null) {
+              accepted[op.id] = live;
+            } else {
+              accepted.remove(op.id); // an in-memory delete stays deleted
+            }
+          }
+        }
+        if (dropped > 0) {
+          externalStorageIssues.add(
+              'refresh: loaded ${loaded.length}, accepted ${accepted.length}, '
+              'dropped $dropped');
         }
         store
           ..clear()
@@ -1705,6 +1794,9 @@ class Session {
       PlanningArtifact(
         id: 'relationship-suggestion-${nudge.id}-$occurrence',
         kind: PlanningArtifactKind.relationshipSuggestion,
+        // Scope supersede per person: without a subject, one person's fresh
+        // suggestion would supersede every other person's (kind-wide).
+        subject: nudge.id,
         title: 'Prepare for ${nudge.title}',
         createdAt: now,
         updatedAt: now,
@@ -2180,9 +2272,20 @@ class Session {
     );
     if (result.state == ExecutionResultState.failedBeforeWrite ||
         result.record == null) {
+      _logTurnGuarded({
+        'source': 'planner-direct',
+        'op': 'complete',
+        'typeId': 'task',
+        'recordId': id,
+        'error': 'execution failed before write: ${result.error}',
+      });
       return const ManualWrite.fail(
           "Couldn't start that completion safely, so nothing changed.");
     }
+    // Like every sibling mutation: a UI completion invalidates "that" for spoken
+    // corrections — without this, "no, that was a walk" after a tap-complete
+    // undid the TASK COMPLETION instead of targeting the earlier log.
+    _clearSpokenCorrectionContext();
     await _reconcileReminders();
     try {
       automations.notifyWrites([updated]);
@@ -2190,16 +2293,13 @@ class Session {
       // Automation containment is part of the mutation boundary: the user's
       // completion remains durable even if an automation definition is bad.
     }
-    try {
-      repo.logTurn({
-        'source': 'planner-direct',
-        'op': 'complete',
-        'typeId': 'task',
-        'recordId': id,
-      });
-    } catch (_) {
-      // Internal diagnostics must never make a completed action fail.
-    }
+    _logTurnGuarded({
+      'source': 'planner-direct',
+      'op': 'complete',
+      'typeId': 'task',
+      'recordId': id,
+      if (result.error != null) 'error': '${result.error}',
+    });
     return ManualWrite.ok(
       result.state == ExecutionResultState.appliedInMemory
           ? "Completed here, but couldn't finish saving it. I'll recover it next launch."
@@ -2320,6 +2420,12 @@ class Session {
     );
     if (result.state == ExecutionResultState.failedBeforeWrite ||
         result.record == null) {
+      _logTurnGuarded({
+        'source': origin,
+        'op': 'update-plan',
+        'count': count,
+        'error': 'execution failed before write: ${result.error}',
+      });
       return const ManualWrite.fail(
         "Couldn't start that plan change safely, so nothing changed.",
       );
@@ -2330,16 +2436,13 @@ class Session {
     } catch (_) {
       // A planner edit remains durable even if an automation is malformed.
     }
-    try {
-      repo.logTurn({
-        'source': origin,
-        'op': 'update-plan',
-        'count': count,
-        'executionId': result.record!.id,
-      });
-    } catch (_) {
-      // Internal diagnostics never determine whether the user action succeeds.
-    }
+    _logTurnGuarded({
+      'source': origin,
+      'op': 'update-plan',
+      'count': count,
+      'executionId': result.record!.id,
+      if (result.error != null) 'error': '${result.error}',
+    });
     return ManualWrite.ok(
       result.state == ExecutionResultState.appliedInMemory
           ? "Updated here, but couldn't finish saving it. I'll recover it next launch."
@@ -2377,6 +2480,19 @@ class Session {
         for (final id in ids) TaskPlanPatch(id: id, complete: true),
       ]);
 
+  /// Write one turnlog entry, containing a failure instead of propagating it.
+  /// "Internal diagnostics must never make a completed action fail" — but a dead
+  /// turnlog must also be VISIBLE, so the failure lands in [turnlogIssues]
+  /// (bounded), which [repairIssues] surfaces like an init warning.
+  void _logTurnGuarded(Map<String, dynamic> entry) {
+    try {
+      repo.logTurn(entry);
+    } catch (error) {
+      if (turnlogIssues.length >= 8) turnlogIssues.removeAt(0);
+      turnlogIssues.add('turnlog write failed: $error');
+    }
+  }
+
   ExecutionResult _executeMutation({
     required List<Map<String, dynamic>> writes,
     required List<String> deletes,
@@ -2385,6 +2501,19 @@ class Session {
     Map<String, dynamic> frozenInputs = const {},
     bool visible = true,
   }) {
+    // Stamp createdAt on NEW records here, before the after-image is journaled.
+    // The storage envelope invents a createdAt at persist time and loadRecords
+    // injects it back into the flat record — so an after-image journaled WITHOUT
+    // it can never match the reloaded record, and "undo that" for a pre-restart
+    // write reported a false conflict. Stamping the flat record makes the
+    // envelope reuse this value and the after-image match across restarts.
+    // (Updates keep whatever they carry: a loaded record already has the
+    // envelope's createdAt injected.)
+    for (final write in writes) {
+      if (store[write['id']] == null && !write.containsKey('createdAt')) {
+        write['createdAt'] = now.toUtc().toIso8601String();
+      }
+    }
     final result = executions.execute(
       writes: writes,
       deletes: deletes,
@@ -2425,6 +2554,9 @@ class Session {
     String? fail
   }) _refResolve(int n) {
     final ctx = _enumCtx!;
+    // Which readback this reference resolved against — so a wrong-list bug is
+    // diagnosable from the turnlog alone (the only reader of _EnumCtx.skillId).
+    _outDiag = {'enumSkill': ctx.skillId, 'asked': n};
     final count = ctx.items.length;
     final idx = n < 0 ? count - 1 : n - 1;
     if (idx < 0 || idx >= count) {
@@ -2473,11 +2605,13 @@ class Session {
       frozenInputs: {'position': r.pos, 'recordId': id},
     );
     if (result.state == ExecutionResultState.failedBeforeWrite) {
+      _outError = 'ref-delete failed before write: ${result.error}';
       return "I couldn't start that delete safely, so nothing changed.";
     }
     _lastTurnWrote = true;
     _outSkill = 'ref-delete';
     if (result.state == ExecutionResultState.appliedInMemory) {
+      _outError = 'ref-delete applied in memory only: ${result.error}';
       return 'Deleted number ${r.pos} here, but could not finish saving it. '
           "I'll recover it next launch.";
     }
@@ -2511,11 +2645,13 @@ class Session {
       frozenInputs: {'position': r.pos, 'recordId': id},
     );
     if (result.state == ExecutionResultState.failedBeforeWrite) {
+      _outError = 'ref-complete failed before write: ${result.error}';
       return "I couldn't start that completion safely, so nothing changed.";
     }
     _lastTurnWrote = true;
     _outSkill = 'ref-complete';
     if (result.state == ExecutionResultState.appliedInMemory) {
+      _outError = 'ref-complete applied in memory only: ${result.error}';
       return 'Marked number ${r.pos} done here, but could not finish saving it. '
           "I'll recover it next launch.";
     }
@@ -2578,11 +2714,13 @@ class Session {
       frozenInputs: {'position': n, 'recordId': id, 'newValue': newText},
     );
     if (result.state == ExecutionResultState.failedBeforeWrite) {
+      _outError = 'ref-correct failed before write: ${result.error}';
       return "I couldn't start that correction safely, so nothing changed.";
     }
     _lastTurnWrote = true;
     _outSkill = 'ref-correct';
     if (result.state == ExecutionResultState.appliedInMemory) {
+      _outError = 'ref-correct applied in memory only: ${result.error}';
       return 'Changed number $n here, but could not finish saving it. '
           "I'll recover it next launch.";
     }
@@ -2622,24 +2760,93 @@ class Session {
   String _typeDisplayName(String typeId) =>
       (types[typeId]?['displayName'] as String?)?.toLowerCase() ?? typeId;
 
-  String _undoLastInternal() {
-    if (_journal.isEmpty) return 'Nothing to undo.';
-    final entry = _journal.last; // walk back the ring, most-recent first
-    final result = executions.undo(entry.id);
+  /// Undo the journal entry at [journalIndex]. The outcome is carried as STATE
+  /// (`reversed`), so callers that chain further work onto the undo — the F-14
+  /// re-classify and the "I meant" correction — branch on what actually happened,
+  /// never on a user-facing string prefix. A conflict caused solely by the
+  /// invisible figure-fill execution is repaired transparently (see
+  /// [_undoRoutineFillThenRetry]) — the fill is presentation the user never saw
+  /// as a separate change, so it must not block reversing the routine.
+  ({bool reversed, String message, Object? error}) _undoEntry(int journalIndex) {
+    final entry = _journal[journalIndex];
+    var result = executions.undo(entry.id);
     if (result.state == ExecutionResultState.conflict) {
-      return "I didn't undo that because the record changed afterward.";
+      final retried = _undoRoutineFillThenRetry(entry.id);
+      if (retried != null) result = retried;
+    }
+    if (result.state == ExecutionResultState.conflict) {
+      return (
+        reversed: false,
+        message: "I didn't undo that because the record changed afterward.",
+        error: result.error,
+      );
     }
     if (result.state == ExecutionResultState.failedBeforeWrite) {
-      return "I couldn't start that undo safely, so nothing changed.";
+      _outError ??= 'undo failed before write: ${result.error}';
+      return (
+        reversed: false,
+        message: "I couldn't start that undo safely, so nothing changed.",
+        error: result.error,
+      );
     }
-    _journal.removeLast();
+    _journal.removeAt(journalIndex);
     if (result.state == ExecutionResultState.appliedInMemory) {
-      return "I undid that here, but couldn't finish saving the undo. I'll recover it next launch.";
+      _outError ??= 'undo applied in memory only: ${result.error}';
+      return (
+        reversed: true,
+        message:
+            "I undid that here, but couldn't finish saving the undo. I'll recover it next launch.",
+        error: result.error,
+      );
     }
     // say WHAT was reversed — a silent "Undone." can't be trusted as the safety net
-    return entry.desc == null
-        ? 'Undone.'
-        : 'Undone — reversed: "${entry.desc}"';
+    return (
+      reversed: true,
+      message: entry.desc == null
+          ? 'Undone.'
+          : 'Undone — reversed: "${entry.desc}"',
+      error: null,
+    );
+  }
+
+  /// If undoing execution [execId] conflicted only because the invisible
+  /// routine-figure-fill execution later rewrote its steps, reverse the fill(s)
+  /// first and retry — so "undo that" for a routine creation succeeds after its
+  /// figures arrived, removing the routine INCLUDING its illustrations. Returns
+  /// the retried result, or null when this case doesn't apply (the original
+  /// conflict then stands: something the user did changed the records).
+  ExecutionResult? _undoRoutineFillThenRetry(int execId) {
+    final entries = executions.journal.entries;
+    final target = entries.where((e) => e.id == execId).firstOrNull;
+    final rid = target?.frozenInputs['routineId'];
+    if (target == null || target.origin != 'routine-authoring' || rid is! String) {
+      return null;
+    }
+    final fills = entries
+        .where((e) =>
+            !e.visible &&
+            e.origin == 'routine-figure-fill' &&
+            e.frozenInputs['routineId'] == rid &&
+            e.phase == ExecutionPhase.completed &&
+            e.id > execId)
+        .toList()
+      ..sort((a, b) => b.id.compareTo(a.id)); // newest fill first
+    if (fills.isEmpty) return null;
+    for (final fill in fills) {
+      final undone = executions.undo(fill.id);
+      if (undone.state != ExecutionResultState.reversed &&
+          undone.state != ExecutionResultState.appliedInMemory) {
+        // The steps changed beyond the fill (a user edit) — the honest conflict
+        // stands. A partially reversed fill only removes figures: presentation.
+        return null;
+      }
+    }
+    return executions.undo(execId);
+  }
+
+  String _undoLastInternal() {
+    if (_journal.isEmpty) return 'Nothing to undo.';
+    return _undoEntry(_journal.length - 1).message;
   }
 
   // ---- Manual Library facade (Spec 07 §5.5 — editable records, G-49) --------------------------
@@ -2716,6 +2923,13 @@ class Session {
     );
     if (result.state == ExecutionResultState.failedBeforeWrite ||
         result.record == null) {
+      _logTurnGuarded({
+        'source': 'manual-edit',
+        'op': 'edit',
+        'typeId': typeId,
+        'field': field,
+        'error': 'execution failed before write: ${result.error}',
+      });
       return const ManualWrite.fail(
           "Couldn't start that edit safely, so nothing changed.");
     }
@@ -2727,11 +2941,12 @@ class Session {
         updated
       ]); // a manual edit is a user-origin write, same as a spoken one
     } catch (_) {/* contained — an automation must never break an edit */}
-    repo.logTurn({
+    _logTurnGuarded({
       'source': 'manual-edit',
       'op': 'edit',
       'typeId': typeId,
-      'field': field
+      'field': field,
+      if (result.error != null) 'error': '${result.error}',
     });
     return ManualWrite.ok(
       result.state == ExecutionResultState.appliedInMemory
@@ -2758,13 +2973,24 @@ class Session {
     );
     if (result.state == ExecutionResultState.failedBeforeWrite ||
         result.record == null) {
+      _logTurnGuarded({
+        'source': 'manual-edit',
+        'op': 'delete',
+        'typeId': typeId,
+        'error': 'execution failed before write: ${result.error}',
+      });
       return const ManualWrite.fail(
           "Couldn't start that delete safely, so nothing changed.");
     }
     _clearSpokenCorrectionContext();
     final undoId = result.record!.id;
     await _reconcileReminders();
-    repo.logTurn({'source': 'manual-edit', 'op': 'delete', 'typeId': typeId});
+    _logTurnGuarded({
+      'source': 'manual-edit',
+      'op': 'delete',
+      'typeId': typeId,
+      if (result.error != null) 'error': '${result.error}',
+    });
     return ManualWrite.ok(
       result.state == ExecutionResultState.appliedInMemory
           ? "Deleted here, but couldn't finish saving it. I'll recover it next launch."
@@ -2903,7 +3129,9 @@ class Session {
       final res = await author.authorRoutine(utterance, cat,
           kind: kind, priorError: lastError);
       switch (res) {
-        case CloudError(:final kind):
+        case CloudError(:final kind, :final detail):
+          _cloudStatus = kind.name;
+          _recordCloudDetail(detail);
           return "I couldn't build that routine — ${cloudReason(kind)}";
         case CloudOk(:final value):
           try {
@@ -2916,20 +3144,27 @@ class Session {
     if (routine == null) {
       return "I couldn't put that together cleanly — try describing it a different way.";
     }
-    final line = _writeRoutine(routine, utterance, now);
+    final written = _writeRoutine(routine, utterance, now);
     // Figures LAST, separately, and NOT on the critical path. ~2/3 of catalogue exercises have no
     // illustration and a drawn figure beats nothing — but drawing six of them takes tens of
     // seconds, and making the user stare at nothing until it finishes is indistinguishable from a
     // hang. The routine is already written and usable; figures arrive when they arrive.
-    pendingFigureFill = _fillMissingFigures(author, _lastRoutineId!);
-    unawaited(pendingFigureFill!
-        .catchError((_) {/* presentation only — never surfaces */}));
-    return line;
+    // Started ONLY when THIS turn's routine write fully persisted, with the id passed
+    // explicitly — a failed write must not crash here or fill a PRIOR routine's steps.
+    final rid = written.routineId;
+    if (rid != null) {
+      pendingFigureFill = _fillMissingFigures(author, rid);
+      unawaited(pendingFigureFill!
+          .catchError((_) {/* presentation only — never surfaces */}));
+    }
+    return written.line;
   }
 
   /// Write a validated routine + its steps as ONE journaled turn, so "undo that" removes the whole
-  /// thing rather than leaving orphan steps behind.
-  String _writeRoutine(AuthoredRoutine r, String utterance, DateTime now) {
+  /// thing rather than leaving orphan steps behind. `routineId` is non-null only when the write
+  /// fully persisted — it is the explicit handle the figure fill targets.
+  ({String line, String? routineId}) _writeRoutine(
+      AuthoredRoutine r, String utterance, DateTime now) {
     // A pinned clock (tests, and the demo) makes microsecondsSinceEpoch repeat, which would
     // overwrite the first routine, graft its orphan steps onto the second, and make undo delete a
     // record its before-image claims never existed. Take the next free id instead.
@@ -2975,13 +3210,23 @@ class Session {
       frozenInputs: {'utterance': utterance, 'routineId': rid},
     );
     if (result.state == ExecutionResultState.failedBeforeWrite) {
-      return 'I built the routine draft, but could not start saving it safely, so nothing changed.';
+      _outError = 'routine write failed before write: ${result.error}';
+      return (
+        line:
+            'I built the routine draft, but could not start saving it safely, so nothing changed.',
+        routineId: null,
+      );
     }
     _lastTurnWrote = true;
-    _lastRoutineId = rid;
     if (result.state == ExecutionResultState.appliedInMemory) {
-      return 'I built "${r.title}" here, but could not finish saving it. '
-          "I'll recover it next launch — say \"undo that\" to drop it now.";
+      // No figure fill for an unpersisted routine: the fill's writes would pile more
+      // unpersisted state onto a store that is already ahead of disk.
+      _outError = 'routine write applied in memory only: ${result.error}';
+      return (
+        line: 'I built "${r.title}" here, but could not finish saving it. '
+            "I'll recover it next launch — say \"undo that\" to drop it now.",
+        routineId: null,
+      );
     }
     final illustrated = r.steps
         .where((s) =>
@@ -2989,9 +3234,13 @@ class Session {
             exercises.byKey[s.exerciseKey]?.image != null)
         .length;
     _outSkill = 'author-routine';
-    return 'Made "${r.title}" — ${r.steps.length} steps, about ${r.estMinutes} minutes'
-        '${illustrated < r.steps.length ? ' ($illustrated with pictures)' : ''}. '
-        'Say "let\'s do ${r.title}" when you\'re ready.';
+    return (
+      line:
+          'Made "${r.title}" — ${r.steps.length} steps, about ${r.estMinutes} minutes'
+          '${illustrated < r.steps.length ? ' ($illustrated with pictures)' : ''}. '
+          'Say "let\'s do ${r.title}" when you\'re ready.',
+      routineId: rid,
+    );
   }
 
   /// Draw stick figures for the steps the shipped catalogue couldn't illustrate (Spec 16 §2).
@@ -3005,6 +3254,10 @@ class Session {
     // starved of figures forever — while re-spending tokens redrawing the same rejected steps. It
     // also wrote figure fields onto OLD routines' steps inside this turn, outside its journal
     // entry, making those writes un-undoable.
+    // Capture only ids + names before the cloud await — never record snapshots.
+    // The await can span many seconds; the user may edit or delete a step while
+    // it runs, and writing back a pre-await snapshot would silently revert that
+    // edit, invisibly to undo. Each target is re-read from the store afterwards.
     final needy = store.values
         .where((r) =>
             r['typeId'] == 'routine_step' &&
@@ -3012,11 +3265,12 @@ class Session {
             r['figureA'] == null &&
             (r['exerciseKey'] == null ||
                 exercises.byKey['${r['exerciseKey']}']?.image == null))
+        .map((r) => (id: '${r['id']}', name: '${r['name']}'))
         .toList();
     if (needy.isEmpty) return;
     // De-duplicate by movement name: a routine that bookends with the same stretch should cost one
     // drawing, not two.
-    final names = <String>{for (final r in needy) '${r['name']}'}.toList();
+    final names = <String>{for (final n in needy) n.name}.toList();
     final res = await author.authorFigures(names);
     if (res is! CloudOk<Map<String, dynamic>>)
       return; // no figures this time; steps stay text-only
@@ -3028,10 +3282,22 @@ class Session {
     }
     if (byName.isEmpty) return;
     final writes = <Map<String, dynamic>>[];
-    for (final r in needy) {
-      final fig = byName['${r['name']}'.toLowerCase().trim()];
+    for (final n in needy) {
+      final fig = byName[n.name.toLowerCase().trim()];
       if (fig == null) continue;
-      writes.add(Map<String, dynamic>.from(r)
+      // Re-read after the await; skip anything whose relevant content changed since
+      // capture (deleted, renamed — the drawing no longer depicts it — or already
+      // illustrated). The fresh record is the base, so a concurrent edit to any
+      // other field survives the fill.
+      final fresh = store[n.id];
+      if (fresh == null ||
+          fresh['typeId'] != 'routine_step' ||
+          fresh['routine'] != routineId ||
+          fresh['figureA'] != null ||
+          '${fresh['name']}' != n.name) {
+        continue;
+      }
+      writes.add(Map<String, dynamic>.from(fresh)
         ..['figureA'] = fig.frameA
         ..['figureB'] = fig.frameB
         ..['figureTween'] = fig.tweenable);
@@ -3045,9 +3311,16 @@ class Session {
       frozenInputs: {'routineId': routineId},
       visible: false,
     );
-    if (result.state == ExecutionResultState.persisted) {
-      _outWrites.add({'op': 'figures', 'n': writes.length});
-    }
+    // The fill completes AFTER its originating turn — its telemetry goes to its own
+    // turnlog entry, never appended to whatever turn happens to be live now.
+    _logTurnGuarded({
+      'at': DateTime.now().toIso8601String(),
+      'source': 'routine-figure-fill',
+      'routineId': routineId,
+      'writes': writes.length,
+      'state': result.state.name,
+      if (result.error != null) 'error': '${result.error}',
+    });
   }
 
   /// Control words recognised while a run is live. Returns the reply, or null to let the utterance
@@ -3182,7 +3455,7 @@ class Session {
     _outWrites.clear();
     final msg = await _dispatch(skillId, slots, source, now);
     await _reconcileReminders();
-    repo.logTurn({
+    _logTurnGuarded({
       'source': source,
       'skill': skillId,
       'at': now.toIso8601String(),
@@ -3194,9 +3467,21 @@ class Session {
 
   /// Reverse the most recent journaled write (powers a spoken "undo that" from outside a turn).
   Future<String> undoLast() async {
-    final msg = _undoLastInternal();
+    if (_journal.isEmpty) return 'Nothing to undo.';
+    final undone = _undoEntry(_journal.length - 1);
+    // A UI-triggered undo invalidates "that" for spoken corrections, like every
+    // sibling mutation — otherwise a later "no, that was a walk" chains off state
+    // the user can no longer see.
+    if (undone.reversed) _clearSpokenCorrectionContext();
+    if (undone.error != null) {
+      _logTurnGuarded({
+        'source': 'manual-undo',
+        'op': 'undo-last',
+        'error': '${undone.error}',
+      });
+    }
     await _reconcileReminders();
-    return msg;
+    return undone.message;
   }
 
   /// Reverse a SPECIFIC journaled write by its id (the data-view snackbar UNDO). Targets that exact
@@ -3205,23 +3490,18 @@ class Session {
   Future<String> undoById(int undoId) async {
     final i = _journal.indexWhere((e) => e.id == undoId);
     if (i < 0) return 'That change is no longer undoable here.';
-    final entry = _journal[i];
-    final result = executions.undo(entry.id);
-    if (result.state == ExecutionResultState.conflict) {
-      return "I didn't undo that because the record changed afterward.";
-    }
-    if (result.state == ExecutionResultState.failedBeforeWrite) {
-      return "I couldn't start that undo safely, so nothing changed.";
-    }
-    _journal.removeAt(i);
-    if (result.state == ExecutionResultState.appliedInMemory) {
-      await _reconcileReminders();
-      return "I undid that here, but couldn't finish saving the undo. I'll recover it next launch.";
+    final undone = _undoEntry(i);
+    if (undone.reversed) _clearSpokenCorrectionContext();
+    if (undone.error != null) {
+      _logTurnGuarded({
+        'source': 'manual-undo',
+        'op': 'undo-by-id',
+        'undoId': undoId,
+        'error': '${undone.error}',
+      });
     }
     await _reconcileReminders();
-    return entry.desc == null
-        ? 'Undone.'
-        : 'Undone — reversed: "${entry.desc}"';
+    return undone.message;
   }
 
   /// The learned NLU flows, shaped for the "Learned phrases" showcase (most-recent first — learn()
@@ -3287,7 +3567,18 @@ class Session {
   /// TypeError/RangeError from model-shaped input) ever escapes into the UI or
   /// console. A crash becomes a visible, non-destructive message (no silent
   /// failure, P7) rather than a bricked input box.
-  Future<String> handle(String u) async {
+  ///
+  /// Turns are SERIALIZED: a handle() entered while another turn is in flight
+  /// queues behind it rather than interleaving awaits over shared turn state.
+  /// Nothing inside a turn awaits handle() itself, so the chain cannot deadlock.
+  Future<String> handle(String u) {
+    final turn = _turnQueue.then((_) => _handleTurn(u));
+    // Keep the chain alive even if a turn somehow escaped its own catch-all.
+    _turnQueue = turn.then((_) {}, onError: (_) {});
+    return turn;
+  }
+
+  Future<String> _handleTurn(String u) async {
     _turnInProgress = true;
     u = u.trim();
     _outSource = 'clarify';
@@ -3297,6 +3588,8 @@ class Session {
     _enteredChapter =
         null; // set by _enterChapter when THIS turn opens a tour chapter (UI reads it)
     _cloudStatus = null;
+    _cloudDetail = null;
+    _generative.lastTruncated = false; // per-turn; read into the diag below
     _outTemplate = null;
     _outSlots = null;
     _outWrites.clear();
@@ -3329,7 +3622,7 @@ class Session {
       _outError =
           '${e.runtimeType}: $e\n$st'; // full detail to the trace, never to the user
       resp =
-          "Sorry — something went wrong handling that, so I didn't do anything. ($e)";
+          "Sorry — something went wrong handling that, so I didn't do anything.";
     }
     // Tour teach-by-doing (post-turn). A tour is live and THIS turn wasn't tour-navigation:
     //  - In-domain WRITE (the user tried the example for real) → append the coda ONCE per chapter,
@@ -3366,6 +3659,12 @@ class Session {
       // else (no skill dispatched — clarify/undo/error/template — OR a reference-by-number action,
       // which is engagement with the list just read, like undo) → keep the tour alive.
     }
+    // A synthesis that hit its token budget stopped MID-THOUGHT (CloudOk.truncated).
+    // Say so briefly — a briefing that just trails off otherwise reads as a bug —
+    // and record it in the diag below for post-hoc diagnosis.
+    if (_generative.lastTruncated) {
+      resp = '$resp\n\n(That ran long and was cut off — ask again for the rest.)';
+    }
     // Did this turn actually spend cloud tokens? (drives the per-response cloud dot — accurate
     // even when a cloud/generative call failed to an offline reply, which spends nothing.)
     _lastTurnSpentCloud = c is ClaudeClient &&
@@ -3383,7 +3682,7 @@ class Session {
       // Rich per-turn trace (dogfood): summary telemetry (clarify/cloud/correction rates) PLUS
       // enough to DIAGNOSE a bad turn from the log alone — route path, matched template,
       // extracted slots, records written/deleted, the response, and any error + stack.
-      repo.logTurn({
+      _logTurnGuarded({
         'at': startedAt.toIso8601String(),
         'ms': DateTime.now().difference(startedAt).inMilliseconds,
         'utterance': u,
@@ -3409,7 +3708,16 @@ class Session {
         if (_outReads.isNotEmpty) 'reads': _outReads,
         if (_outWrites.isNotEmpty) 'writes': _outWrites,
         'response': resp.length > 240 ? '${resp.substring(0, 240)}…' : resp,
-        if (_outDiag != null) 'diag': _outDiag,
+        // CloudError.detail ("for logs") rides the diag map on any cloud-consulting
+        // turn that didn't come back ok — so a failed cloud call is diagnosable.
+        if (_outDiag != null ||
+            _cloudDetail != null ||
+            _generative.lastTruncated)
+          'diag': {
+            ...?_outDiag,
+            if (_cloudDetail != null) 'cloudDetail': _cloudDetail,
+            if (_generative.lastTruncated) 'cloudTruncated': true,
+          },
         if (_outError != null) 'error': _outError,
         if (automations.deliveries.length > autoDelivered0 ||
             automations.pendingReview.length > autoHeld0 ||
@@ -3438,6 +3746,12 @@ class Session {
     _turnInProgress = false;
     if (_storageRefreshPending) await _refreshExternalStorage();
     return resp;
+  }
+
+  /// Keep a failed cloud call's log-only detail for this turn's trace, truncated.
+  void _recordCloudDetail(String? detail) {
+    if (detail == null || detail.isEmpty) return;
+    _cloudDetail = detail.length > 300 ? detail.substring(0, 300) : detail;
   }
 
   /// A short, honest, user-facing reason a cloud call failed — so a miss names the
@@ -3779,11 +4093,13 @@ class Session {
             },
           );
           if (result.state == ExecutionResultState.failedBeforeWrite) {
+            _outError = 'automation approval failed before write: ${result.error}';
             return "I couldn't start that approval safely, so nothing changed.";
           }
           automations.completePreparedApproval(item.id, res.plan!.writes);
           _lastTurnWrote = true;
           if (result.state == ExecutionResultState.appliedInMemory) {
+            _outError = 'automation approval applied in memory only: ${result.error}';
             return "Applied it here, but couldn't finish saving it. I'll recover it next launch.";
           }
           return 'Done — applied "${item.description}".';
@@ -3935,8 +4251,11 @@ class Session {
       if (target != null &&
           _workoutSkills.contains(prevSkill) &&
           target != prevSkill) {
-        final undone = _undoLastInternal();
-        if (undone.startsWith("I couldn't")) return undone;
+        // Branch on the undo RESULT STATE, never on the reply's wording: a
+        // conflict ("the record changed afterward") is NOT success, and writing
+        // the replacement over it would duplicate while the old record survives.
+        final undone = _undoEntry(_journal.length - 1);
+        if (!undone.reversed) return undone.message;
         final redo = await _dispatch(
             target,
             Map<String, dynamic>.from(prevDispatch['slots'] as Map),
@@ -3969,15 +4288,18 @@ class Session {
             frozenInputs: {'recordId': id, 'field': field, 'value': value},
           );
           if (result.state == ExecutionResultState.failedBeforeWrite) {
+            _outError = 'slot correction failed before write: ${result.error}';
             return "I couldn't start that correction safely, so nothing changed.";
           }
           _lastTurnWrote = true;
           _lastDispatch =
               prevDispatch; // keep context so a further correction chains
           _outSource = 'correction';
-          return result.state == ExecutionResultState.appliedInMemory
-              ? "Updated here, but couldn't finish saving it. I'll recover it next launch."
-              : 'Updated — that ${rec['activity']} was $value ${field == 'duration' ? 'minutes' : 'km'}.';
+          if (result.state == ExecutionResultState.appliedInMemory) {
+            _outError = 'slot correction applied in memory only: ${result.error}';
+            return "Updated here, but couldn't finish saving it. I'll recover it next launch.";
+          }
+          return 'Updated — that ${rec['activity']} was $value ${field == 'duration' ? 'minutes' : 'km'}.';
         }
       }
     }
@@ -3991,10 +4313,13 @@ class Session {
       if (prevTemplate != null && router.forget(prevTemplate)) {
         repo.removeCorpusLearned(prevTemplate);
       }
-      // reverse the previous turn ONLY if it actually wrote — never an unrelated earlier write
+      // reverse the previous turn ONLY if it actually wrote — never an unrelated earlier write.
+      // Branch on the undo RESULT STATE (not the reply string): on a conflict the
+      // original record survives, so claiming "undid that" and re-dispatching would
+      // both lie and duplicate — stop with the honest reply instead.
       if (prevWrote && _journal.isNotEmpty) {
-        final undone = _undoLastInternal();
-        if (undone.startsWith("I couldn't")) return undone;
+        final undone = _undoEntry(_journal.length - 1);
+        if (!undone.reversed) return undone.message;
         pre = 'Got it — undid that. ';
       }
       final redo = await _handle(corr.group(1)!.trim());
@@ -4120,20 +4445,23 @@ class Session {
     if (routed == null) {
       final parts = _splitCompound(u, now);
       if (parts != null) {
-        final replies = <String>[];
+        // BOTH halves ride ONE reversible execution via the same batch mechanism
+        // as the cloud-multi path — so a single "undo that" reverses the whole
+        // compound instead of only its second half.
+        final actions = <Map<String, dynamic>>[];
         for (final p in parts) {
           final slots = (p['slots'] as Map).cast<String, dynamic>();
           slots.updateAll((k, v) => (v is String &&
                   const {'none', 'null'}.contains(v.trim().toLowerCase()))
               ? null
               : v);
-          replies.add(await _dispatch(
-              p['skillId'] as String, slots, 'compound-part', now,
-              template: p['template'] as String?));
+          actions.add({'skillId': p['skillId'], 'slots': slots});
         }
+        final batch = await _dispatchBatch(actions, 'compound', now);
+        _lastTurnWrote = batch.wrote;
         _outSource = 'compound'; // telemetry: one turn, two dispatches
         _outSkill = parts.map((p) => p['skillId']).join('+');
-        return replies.join(' ');
+        return batch.reply;
       }
     }
     // Out-of-domain boundary (§7.2, G-19): a clearly-external question with NO personal
@@ -4157,8 +4485,9 @@ class Session {
         case CloudOk(:final value):
           _cloudStatus = 'ok';
           routed = value; // may be null == the model abstained
-        case CloudError(:final kind):
+        case CloudError(:final kind, :final detail):
           _cloudStatus = kind.name;
+          _recordCloudDetail(detail);
           cloudErr = kind;
       }
     }
@@ -4363,7 +4692,14 @@ class Session {
       final learned = router.learnGenerative(u, kind, contact,
           contacts: _knownContactTokens());
       if (learned != null) {
-        repo.appendCorpusLearned({'generativeKind': kind, 'template': learned});
+        try {
+          repo.appendCorpusLearned(
+              {'generativeKind': kind, 'template': learned});
+        } catch (_) {
+          // Persisting a learned phrase is diagnostics-adjacent housekeeping —
+          // it must never fail a synthesis that was already delivered. The
+          // in-memory learn still routes future turns this session.
+        }
         _lastTurnTemplate = learned;
       }
     }
@@ -4484,7 +4820,14 @@ class Session {
         tmpl ??= router.learn(utterance, skillId, slots,
             contacts: _knownContactTokens());
         if (tmpl != null) {
-          repo.appendCorpusLearned({'skillId': skillId, 'template': tmpl});
+          try {
+            repo.appendCorpusLearned({'skillId': skillId, 'template': tmpl});
+          } catch (_) {
+            // This runs AFTER the user's write persisted. An IO failure here is
+            // housekeeping (the in-memory learn already routes this session) and
+            // must never surface as "…so I didn't do anything" for a turn that
+            // DID do something.
+          }
           // If the cloud misread this turn and we just LEARNED from it, a next-turn "no, I
           // meant…" must be able to forget that fresh template — else the bad pattern re-routes
           // future utterances. The matched-template branch at line ~1106 can't see it (the cloud

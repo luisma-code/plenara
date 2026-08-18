@@ -2,6 +2,9 @@
 /// hero-example phrasings + every date form + slot extraction, all deterministic
 /// and offline (no cloud). route() mutates nothing, so one shared Router is safe;
 /// learning tests use their own.
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:plenara/router.dart';
 import 'package:test/test.dart';
 
@@ -338,6 +341,19 @@ void main() {
           isNull);
     });
 
+    test('rejects a round-tripping template that still contains a dispatched slot value', () {
+      final r = fresh();
+      // "remind sam to call sam": the cloud abstracted only the FIRST occurrence.
+      // The template compiles, matches, and re-extracts to the exact dispatched
+      // slots — every old guard passes — yet "sam" survives verbatim in the
+      // literal text and would be persisted into the synced corpus.
+      final tmpl = r.learnSuggested('errand sam to call sam', 'create-task',
+          {'who': 'sam'}, 'errand {who:text} to call sam');
+      expect(tmpl, isNull);
+      expect(r.route('errand bob to call sam'), isNull,
+          reason: 'the leaking template must not be inserted either');
+    });
+
     test('a learned template can never shadow a seed (seed wins in pass 1)', () {
       final r = fresh();
       // Learn a broad-ish template, then confirm a seed phrasing still routes to its seed skill.
@@ -441,6 +457,30 @@ void main() {
       final r = Router.load('data/corpus.json', _now);
       expect(r.learn('jot down that I need to buy milk', 'create-task', {'description': 'buy milk'}), isNotNull);
       expect(r.learn('jot down that I need to sweep', 'create-task', {'description': 'sweep'}), isNull);
+    });
+    test('value-leak guard: a value present only MID-WORD refuses to learn ("Ann" in "anniversary")', () {
+      final r = Router.load('data/corpus.json', _now);
+      // The cloud resolved the contact to "Ann", but the surface only contains
+      // "anniversary". A bare indexOf abstraction produced the corrupt template
+      // "remind me about the {who:text}iversary dinner" — mid-word split AND the
+      // rest of the utterance persisted around it. Token-boundary matching finds
+      // no whole-word "Ann", so nothing abstracts and learning is refused.
+      expect(
+          r.learn('errand plan the anniversary dinner', 'create-task',
+              {'who': 'Ann'}),
+          isNull);
+      // routing is untouched — no corrupt template was inserted
+      expect(r.route('errand plan the anniversary dinner'), isNull);
+    });
+    test('value-leak guard: a twice-occurring value refuses to learn (second copy would persist verbatim)', () {
+      final r = Router.load('data/corpus.json', _now);
+      // Abstracting only the first "sam" would learn "errand {who:text} to call sam" —
+      // the user's name, verbatim, in the synced corpus ("store shapes, not values").
+      expect(
+          r.learn('errand sam to call sam', 'create-task', {'who': 'sam'}),
+          isNull);
+      expect(r.route('errand bob to call sam'), isNull,
+          reason: 'no leaking template was inserted');
     });
     test('negative half: forget removes a learned template; a seed template is never forgotten', () {
       final r = Router.load('data/corpus.json', _now);
@@ -641,6 +681,53 @@ void main() {
     test('a trailing "?" is stripped from the captured slot', () {
       final hit = _r.route('what is mia allergic to?', contacts: {'mia'});
       expect(hit?['slots']['query'], 'allergic to'); // not "allergic to?"
+    });
+  });
+
+  group('learned-corpus loading hazards (duplicate-of-seed + torn entries)', () {
+    String learnedFile(List<Map<String, dynamic>> entries) {
+      final dir = Directory.systemTemp.createTempSync('plenara_learned_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final path = '${dir.path}/corpus-learned.json';
+      File(path).writeAsStringSync(jsonEncode(entries));
+      return path;
+    }
+
+    test('a learned duplicate of a seed template cannot make forget() strip the seed', () {
+      // Stale residue: a learned file carrying a template identical to a shipped
+      // seed. Loading it used to mark the SEED's template "learned" — and one
+      // forget() then removed every copy, seed included, silently retiring a
+      // shipped phrasing despite the "a seed is never forgotten" contract.
+      const seedTmpl = 'add {description:text} to my {_:text}';
+      final lp = learnedFile([{'skillId': 'create-task', 'template': seedTmpl}]);
+      final r = Router.load('data/corpus.json', _now, learnedPath: lp);
+      expect(r.isLearned(seedTmpl), isFalse, reason: 'the duplicate is skipped at load');
+      expect(r.forget(seedTmpl), isFalse);
+      expect(r.route('add buy milk to my list')?['skillId'], 'create-task',
+          reason: 'the seed still routes');
+    });
+
+    test('one un-compilable learned entry is skipped, the rest still load, and the file is flagged', () {
+      final lp = learnedFile([
+        // duplicate named capture group -> RegExp throws at compile
+        {'skillId': 'broken', 'template': 'oops {a:text} then {a:text}'},
+        {'skillId': 'create-task', 'template': 'scribble a note to {description:text}'},
+      ]);
+      final r = Router.load('data/corpus.json', _now, learnedPath: lp);
+      final hit = r.route('scribble a note to buy milk');
+      expect(hit?['skillId'], 'create-task',
+          reason: 'entries after the bad one must still load');
+      expect(hit?['slots']['description'], 'buy milk');
+      expect(r.corruptFiles, contains(lp),
+          reason: 'the bad entry is surfaced for repair, never silent (P2.8)');
+    });
+
+    test('a torn learned file degrades to seeds-only AND is surfaced for repair', () {
+      final lp = learnedFile([]); // path exists...
+      File(lp).writeAsStringSync('[{"skillId":"create-task","templa'); // ...but torn
+      final r = Router.load('data/corpus.json', _now, learnedPath: lp);
+      expect(r.route('add buy milk to my list')?['skillId'], 'create-task');
+      expect(r.corruptFiles, contains(lp));
     });
   });
 }

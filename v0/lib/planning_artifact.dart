@@ -1,6 +1,11 @@
 /// Durable, explicitly resolved planning prompts that must not disappear as
 /// transient conversation text. Morning orientation and relationship/event
 /// preparation stay visible until accepted, dismissed, or superseded.
+///
+/// Supersede scope: a fresh morning plan supersedes any unresolved morning
+/// plan (there is only one "this morning"). The relationship kinds are
+/// per-subject: a new prep for one person supersedes only that person's
+/// unresolved prep, never another person's still-open one.
 library;
 
 import 'dart:convert';
@@ -48,6 +53,11 @@ class PlanningArtifact {
   final List<PlanningArtifactItem> items;
   final String summary;
 
+  /// The person/record id this artifact is about, for per-subject supersede.
+  /// Null means unscoped: it supersedes and is superseded only by other
+  /// unscoped artifacts of the same kind (the pre-subject behavior).
+  final String? subject;
+
   const PlanningArtifact({
     required this.id,
     required this.kind,
@@ -58,6 +68,7 @@ class PlanningArtifact {
     this.deferUntil,
     required this.items,
     required this.summary,
+    this.subject,
   });
 
   PlanningArtifact copyWith({
@@ -76,6 +87,7 @@ class PlanningArtifact {
         deferUntil: clearDeferUntil ? null : deferUntil ?? this.deferUntil,
         items: items,
         summary: summary,
+        subject: subject,
       );
 
   Map<String, dynamic> toJson() => {
@@ -88,6 +100,7 @@ class PlanningArtifact {
         if (deferUntil != null) 'deferUntil': deferUntil!.toIso8601String(),
         'items': items.map((item) => item.toJson()).toList(),
         'summary': summary,
+        if (subject != null) 'subject': subject,
       };
 
   static PlanningArtifact fromJson(Map<String, dynamic> raw) =>
@@ -107,6 +120,7 @@ class PlanningArtifact {
                 ))
             .toList(growable: false),
         summary: raw['summary'] as String,
+        subject: raw['subject'] as String?,
       );
 }
 
@@ -242,6 +256,7 @@ PlanningArtifact? buildRelationshipPrepArtifact(
   return PlanningArtifact(
     id: 'relationship-${now.microsecondsSinceEpoch}',
     kind: PlanningArtifactKind.relationshipPrep,
+    subject: contactId,
     title: 'Prepare for ${contact['displayName']}',
     createdAt: now,
     updatedAt: now,
@@ -296,7 +311,13 @@ class PlanningArtifactStore {
     if (_artifacts.any((existing) => existing.id == artifact.id)) return;
     for (var index = 0; index < _artifacts.length; index++) {
       final current = _artifacts[index];
+      // Morning plans supersede kind-wide (one "this morning"); the
+      // relationship kinds supersede only the same subject, so one person's
+      // fresh prep never kills another person's still-open one.
+      final sameScope = artifact.kind == PlanningArtifactKind.morning ||
+          current.subject == artifact.subject;
       if (current.kind == artifact.kind &&
+          sameScope &&
           (current.state == PlanningArtifactState.draft ||
               current.state == PlanningArtifactState.deferred)) {
         _artifacts[index] = current.copyWith(

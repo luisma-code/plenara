@@ -256,6 +256,89 @@ void main() {
     });
   });
 
+  group("compute('if') is lazy and arity-checked", () {
+    test('only the TAKEN branch is evaluated', () {
+      // The untaken branch is a nested `if` with bad arity — eager evaluation of
+      // both branches would throw before the condition was even consulted.
+      final poison = {
+        'fn': 'if',
+        'args': ['just one arg']
+      };
+      expect(
+          _i().compute('if', [
+            true,
+            'ok',
+            poison,
+          ], {}),
+          'ok');
+      expect(
+          _i().compute('if', [
+            false,
+            poison,
+            'fallback',
+          ], {}),
+          'fallback');
+    });
+    test('a non-3 arity is a proper ResolveError, not a RangeError', () {
+      expect(() => _i().compute('if', [true, 'only-then'], {}),
+          throwsA(isA<ResolveError>().having(
+              (e) => e.message, 'message', contains('3 arguments'))));
+      expect(() => _i().compute('if', [true], {}), throwsA(isA<ResolveError>()));
+      expect(() => _i().compute('if', [true, 'a', 'b', 'c'], {}),
+          throwsA(isA<ResolveError>()));
+    });
+    test('the ternary itself still works', () {
+      expect(_i().compute('if', [true, 'a', 'b'], {}), 'a');
+      expect(_i().compute('if', [false, 'a', 'b'], {}), 'b');
+      expect(_i().compute('if', [null, 'a', 'b'], {}), 'b',
+          reason: 'only literal true takes the then-branch');
+    });
+  });
+
+  group('foreach scopes its loop binding', () {
+    test('a same-named outer variable is restored after the loop', () {
+      final store = _store();
+      final skill = {
+        'skillId': 'x',
+        'steps': {
+          'main': [
+            {'op': 'set', 'var': 'item', 'value': 'outer-value'},
+            {
+              'op': 'foreach',
+              'list': ['a', 'b'],
+              'as': 'item',
+              'body': <Map<String, dynamic>>[],
+            },
+            {'op': 'format', 'template': '{item}', 'into': 'confirmationText'},
+          ]
+        },
+      };
+      final p = _i().resolve(skill, {}, store);
+      expect(p.confirmation, 'outer-value',
+          reason: 'the loop variable must not clobber the outer binding');
+    });
+    test('the loop variable does not leak into the env afterwards', () {
+      final store = _store();
+      final skill = {
+        'skillId': 'x',
+        'steps': {
+          'main': [
+            {
+              'op': 'foreach',
+              'list': ['a', 'b'],
+              'as': 'leaky',
+              'body': <Map<String, dynamic>>[],
+            },
+            {'op': 'format', 'template': '<{leaky}>', 'into': 'confirmationText'},
+          ]
+        },
+      };
+      final p = _i().resolve(skill, {}, store);
+      expect(p.confirmation, '<>',
+          reason: 'after the loop the binding must be gone, not "b"');
+    });
+  });
+
   group('compute (closed fn vocabulary)', () {
     test('now -> ISO datetime',
         () => expect(_i().compute('now', [], {}), '2026-07-06T09:00:00.000'));

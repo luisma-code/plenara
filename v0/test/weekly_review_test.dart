@@ -50,6 +50,28 @@ void main() {
     expect(review.items.every((item) => item.evidence.isNotEmpty), isTrue);
   });
 
+  test('renaming a name-carrying goal after drafting makes the item stale',
+      () {
+    // Goals may carry `name` instead of `title`; the fingerprint must cover
+    // whichever field the display uses, or a rename slips past the stale
+    // check at apply time.
+    final goal = {
+      'id': 'goal',
+      'typeId': 'goal',
+      'name': 'Be present',
+    };
+    final drafted = buildWeeklyReviewArtifact({'goal': goal}, now);
+    final item = drafted.items.single;
+    expect(item.title, 'Be present');
+    expect(reviewFingerprint(goal), item.baseFingerprint);
+
+    final renamed = Map<String, dynamic>.from(goal)
+      ..['name'] = 'Be more present';
+
+    expect(reviewFingerprint(renamed), isNot(item.baseFingerprint),
+        reason: 'a rename between draft and apply must read as stale');
+  });
+
   test('edited review persists across relaunch', () {
     final dir = Directory.systemTemp.createTempSync('plenara_weekly_review_');
     addTearDown(() => dir.deleteSync(recursive: true));

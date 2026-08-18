@@ -49,4 +49,34 @@ void main() {
     ).embed('hello');
     expect(result, isNull);
   });
+
+  test('a malformed response SHAPE degrades to null (TypeError is an Error, not an Exception)',
+      () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    server.listen((request) async {
+      await utf8.decoder.bind(request).join();
+      request.response
+        ..headers.contentType = ContentType.json
+        ..write(jsonEncode({'data': 'not a list'})); // shape mismatch -> TypeError
+      await request.response.close();
+    });
+    addTearDown(() => server.close(force: true));
+
+    final result = await HttpEmbeddingBackend(
+      url: 'http://127.0.0.1:${server.port}/v1/embeddings',
+    ).embed('hello');
+    expect(result, isNull); // the old `on Exception` clause let the TypeError escape
+  });
+
+  test('a hung embedding server times out to null (response-side deadline)', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    server.listen((request) {/* accept and never respond */});
+    addTearDown(() => server.close(force: true));
+
+    final result = await HttpEmbeddingBackend(
+      url: 'http://127.0.0.1:${server.port}/v1/embeddings',
+      timeout: const Duration(milliseconds: 200),
+    ).embed('hello');
+    expect(result, isNull);
+  });
 }

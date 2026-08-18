@@ -114,7 +114,9 @@ PlenaraConfig loadConfig(
           'Development env ANTHROPIC_API_KEY / PLENARA_DATA may override these.',
     };
     f.parent.createSync(recursive: true);
-    f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(cfg));
+    // Temp+rename+flush, like every other config write: a torn scaffold would
+    // silently degrade to defaults on the next load.
+    writeJsonAtomic(f, cfg);
   }
   // On mobile the container path is unstable (the iOS UUID rotates on reinstall), so NEVER trust a
   // persisted absolute dataDir — it goes dead and points at an inaccessible container. Always derive
@@ -218,6 +220,17 @@ bool isSeeded(String dataDir) {
   return types.existsSync() && types.listSync().whereType<File>().isNotEmpty;
 }
 
+/// Copy [source] to [targetPath] via temp+rename with a flush — never a plain
+/// copySync. A crash mid-copy used to leave a TORN built-in definition that the
+/// upgrade path then refused to touch forever (a malformed installed file is
+/// repair state, not upgradeable state); with the atomic copy a crash leaves no
+/// target at all, and the next launch simply copies it fresh.
+void _copyAtomic(File source, String targetPath) {
+  final temp = File('$targetPath.tmp');
+  temp.writeAsBytesSync(source.readAsBytesSync(), flush: true);
+  temp.renameSync(targetPath);
+}
+
 void ensureSeeded(String dataDir, String sourceDir) {
   // FAIL LOUDLY if the shipped seed data isn't where we expect — otherwise a mis-configured install
   // silently creates empty dirs and boots with ZERO capabilities (every utterance clarify-fails).
@@ -243,7 +256,7 @@ void ensureSeeded(String dataDir, String sourceDir) {
         final name = file.path.replaceAll('\\', '/').split('/').last;
         final target = File('${dst.path}/$name');
         if (!target.existsSync()) {
-          file.copySync(target.path);
+          _copyAtomic(file, target.path);
           continue;
         }
         if (sub != 'types') continue;
@@ -271,7 +284,7 @@ void ensureSeeded(String dataDir, String sourceDir) {
                   encodedInstalledVersion is! int) &&
               !backup.existsSync()) {
             backup.parent.createSync(recursive: true);
-            target.copySync(backup.path);
+            _copyAtomic(target, backup.path); // a torn rollback point is no rollback point
           }
           if (shippedVersion > installedVersion) {
             writeJsonAtomic(target, shipped);
@@ -289,7 +302,7 @@ void ensureSeeded(String dataDir, String sourceDir) {
   final corpus = File('$sourceDir/corpus.json');
   final installedCorpus = File('$dataDir/corpus.json');
   if (corpus.existsSync() && !installedCorpus.existsSync()) {
-    corpus.copySync(installedCorpus.path);
+    _copyAtomic(corpus, installedCorpus.path);
   }
   Directory('$dataDir/records').createSync(recursive: true);
 }

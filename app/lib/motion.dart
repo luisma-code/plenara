@@ -72,6 +72,32 @@ class _ContinuityColumnState<T> extends State<ContinuityColumn<T>> {
           _visible[current] = incoming;
         }
       }
+      // Surviving items whose RELATIVE order changed (a reschedule reordered a
+      // section) must actually move — updating them in place rendered stale
+      // ordering forever. A move is a remove+insert pair on the same timing
+      // token, so it reads as motion (and honors reduced-motion through the
+      // same _transition path), keeping _visible convergent with widget.items.
+      for (var index = 0;
+          index < widget.items.length && index < _visible.length;
+          index++) {
+        final targetId = widget.keyOf(widget.items[index]);
+        if (widget.keyOf(_visible[index]) == targetId) continue;
+        final from = _visible.indexWhere(
+          (item) => widget.keyOf(item) == targetId,
+        );
+        if (from < 0) continue;
+        final moved = _visible.removeAt(from);
+        _listKey.currentState?.removeItem(
+          from,
+          (context, animation) => _transition(context, moved, animation),
+          duration: PlenaraMotion.standard,
+        );
+        _visible.insert(index, moved);
+        _listKey.currentState?.insertItem(
+          index,
+          duration: PlenaraMotion.standard,
+        );
+      }
       if (mounted) setState(() {});
     });
   }

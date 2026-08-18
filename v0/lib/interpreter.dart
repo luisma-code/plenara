@@ -100,6 +100,18 @@ class Interpreter {
   }
 
   dynamic compute(String fn, List args, Map<String, dynamic> env) {
+    if (fn == 'if') {
+      // Lazily evaluate ONLY the taken branch: the untaken branch may be invalid
+      // for the current data (a null field, a failing nested fn) and must cost
+      // nothing. Arity is validated properly instead of RangeError-ing on 2 args.
+      if (args.length != 3) {
+        throw ResolveError(
+            "if needs exactly 3 arguments (condition, whenTrue, whenFalse); got ${args.length}");
+      }
+      return val(args[0], env) == true
+          ? val(args[1], env)
+          : val(args[2], env);
+    }
     final a = args.map((x) => val(x, env)).toList();
     switch (fn) {
       case 'now':
@@ -227,7 +239,6 @@ class Interpreter {
         final ns = _nums(a[0], a[1]);
         return ns.isEmpty ? null : ns.reduce((x, y) => x > y ? x : y);
       case 'if':
-        // ternary over a boolean value: if(flag, whenTrue, whenFalse)
         return a[0] == true ? a[1] : a[2];
       case 'concat':
         return a.map((x) => x?.toString() ?? '').join();
@@ -1163,9 +1174,20 @@ class Interpreter {
             store,
             plan);
       case 'foreach':
+        // The loop binding is scoped to the loop: save any same-named outer env
+        // entry and restore it after, so a foreach can never leak its variable or
+        // permanently clobber a slot/step value that shares the name.
+        final loopVar = step['as'] as String;
+        final hadOuter = env.containsKey(loopVar);
+        final outerValue = env[loopVar];
         for (final item in (val(step['list'], env) as List? ?? [])) {
-          env[step['as']] = item;
+          env[loopVar] = item;
           _run(step['body'] as List, env, store, plan);
+        }
+        if (hadOuter) {
+          env[loopVar] = outerValue;
+        } else {
+          env.remove(loopVar);
         }
       case 'enumerate':
         // One pass: build the numbered readback string AND the ordered {id,label} channel,

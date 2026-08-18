@@ -91,9 +91,12 @@ void main() {
       final label = u.length > 15 ? '${u.substring(0, 15)}…' : (u.isEmpty ? '<empty>' : u);
       test('handle("$label") does not throw and writes nothing', () async {
         final s = await _session();
-        late String resp;
-        expect(() async => resp = await s.handle(u), returnsNormally);
-        resp = await s.handle(u);
+        // The plain await IS the exercise: handle()'s contract is that it never
+        // throws (a thrown error would fail this test directly). The old
+        // `expect(() async => …, returnsNormally)` line was decorative — the
+        // async closure's Future was discarded unawaited — and ran handle()
+        // TWICE, corrupting the writes-nothing assertion below.
+        final resp = await s.handle(u);
         expect(s.store, isEmpty, reason: 'adversarial input must not write');
         expect(resp, isNotEmpty);
       });

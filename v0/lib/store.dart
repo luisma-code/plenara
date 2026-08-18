@@ -96,15 +96,18 @@ Map<String, int> _mergedVector(
   };
 }
 
-Object? _highestLiveStamp(Map<String, dynamic> document) {
-  final meta = (document['_meta'] as Map?) ?? const {};
-  final candidates = <Object?>[
-    ...((meta['stamps'] as Map?) ?? const {}).values,
-    ...((meta['fieldTombstones'] as Map?) ?? const {}).values,
-  ];
-  if (candidates.isEmpty) return null;
-  candidates.sort(compareHlc);
-  return candidates.last;
+/// Highest stamp among the given candidates, or null when none are stamped.
+/// Field-edit and field-tombstone stamps both count as "activity": either one
+/// proves the record was alive at that stamp.
+Object? _highestStamp(Iterable<Object?> candidates) {
+  Object? highest;
+  for (final candidate in candidates) {
+    if (candidate == null) continue;
+    if (highest == null || compareHlc(candidate, highest) > 0) {
+      highest = candidate;
+    }
+  }
+  return highest;
 }
 
 Map<String, dynamic> _copyDocument(Map<String, dynamic> source) =>
@@ -147,6 +150,15 @@ List<Map<String, dynamic>> _unresolvedConflicts(
 /// Pure state-CRDT merge for two versions of one record. It is deliberately
 /// independent of paths and providers so commutativity, associativity, and
 /// idempotence can be property-tested in memory.
+///
+/// The merge is a true join-semilattice on the carried state: fields, per-field
+/// stamps, field tombstones, version vectors, and the record-delete stamp are
+/// ALL unioned/joined regardless of deletion, and liveness (`_meta.deleted`) is
+/// DERIVED at the end by comparing the joined delete stamp against the highest
+/// activity stamp in the merged document. Resolving delete-vs-live by
+/// whole-record LWW before the field merge (the previous rule) made the merge
+/// non-associative: merge(merge(D,L1),L2) != merge(D,merge(L1,L2)), so
+/// replicas could diverge permanently.
 RecordMergeResult mergeRecordDocuments(
   Map<String, dynamic> left,
   Map<String, dynamic> right,
@@ -169,14 +181,8 @@ RecordMergeResult mergeRecordDocuments(
     ..._conflictsOf(right),
   ]);
   final vv = _mergedVector(left, right);
-  final leftDeleted = leftMeta['deleted'] == true;
-  final rightDeleted = rightMeta['deleted'] == true;
 
-  Map<String, dynamic> finish(
-    Map<String, dynamic> chosen, {
-    bool clearDeleted = false,
-    List<Map<String, dynamic>> added = const [],
-  }) {
+  Map<String, dynamic> finish(Map<String, dynamic> chosen) {
     final result = _copyDocument(chosen);
     final meta = Map<String, dynamic>.from(
       (result['_meta'] as Map?) ?? const {},
@@ -185,39 +191,9 @@ RecordMergeResult mergeRecordDocuments(
     final liveFields = Map<String, dynamic>.from(
       (result['fields'] as Map?) ?? const {},
     );
-    final conflicts = _unresolvedConflicts(
-      [...inherited, ...added],
-      liveFields,
-    );
-    meta['conflicts'] = conflicts;
-    if (clearDeleted) {
-      meta.remove('deleted');
-      meta.remove('deletedStamp');
-    }
+    meta['conflicts'] = _unresolvedConflicts(inherited, liveFields);
     result['_meta'] = meta;
     return result;
-  }
-
-  if (leftDeleted || rightDeleted) {
-    if (leftDeleted && rightDeleted) {
-      final chosen = compareHlc(
-                leftMeta['deletedStamp'],
-                rightMeta['deletedStamp'],
-              ) >=
-              0
-          ? left
-          : right;
-      return RecordMergeResult(finish(chosen), const []);
-    }
-    final deleted = leftDeleted ? left : right;
-    final live = leftDeleted ? right : left;
-    final deleteStamp =
-        ((deleted['_meta'] as Map?) ?? const {})['deletedStamp'];
-    final liveStamp = _highestLiveStamp(live);
-    if (compareHlc(deleteStamp, liveStamp) >= 0) {
-      return RecordMergeResult(finish(deleted), const []);
-    }
-    return RecordMergeResult(finish(live, clearDeleted: true), const []);
   }
 
   final leftVv = _versionVector(left), rightVv = _versionVector(right);
@@ -269,13 +245,24 @@ RecordMergeResult mergeRecordDocuments(
     if (leftHas && rightHas && _sameJson(leftFields[key], rightFields[key])) {
       final takeLeft = compareHlc(leftStamp, rightStamp) >= 0;
       fields[key] = takeLeft ? leftFields[key] : rightFields[key];
-      stamps[key] = takeLeft ? leftStamp : rightStamp;
+      final keptStamp = takeLeft ? leftStamp : rightStamp;
+      if (keptStamp != null) stamps[key] = keptStamp;
       continue;
     }
     var order = compareHlc(leftStamp, rightStamp);
-    if (order == 0 && leftHas && rightHas) {
-      order =
-          jsonEncode(leftFields[key]).compareTo(jsonEncode(rightFields[key]));
+    if (order == 0) {
+      if (leftHas != rightHas) {
+        // Exact stamp tie between presence and absence — which includes the
+        // legacy stamp-less field vs absence-without-tombstone case, where
+        // both stamps are null. The tiebreak must not depend on argument
+        // order: presence wins deterministically, so a legacy field survives
+        // the merge from either side instead of being kept or dropped by
+        // whichever operand happened to be on the left.
+        order = leftHas ? 1 : -1;
+      } else if (leftHas && rightHas) {
+        order =
+            jsonEncode(leftFields[key]).compareTo(jsonEncode(rightFields[key]));
+      }
     }
     final takeLeft = order >= 0;
     final winnerHas = takeLeft ? leftHas : rightHas;
@@ -286,7 +273,7 @@ RecordMergeResult mergeRecordDocuments(
     final loserStamp = takeLeft ? rightStamp : leftStamp;
     if (winnerHas) {
       fields[key] = winnerValue;
-      stamps[key] = winnerStamp;
+      if (winnerStamp != null) stamps[key] = winnerStamp;
     } else if (winnerStamp != null) {
       tombstones[key] = winnerStamp;
     }
@@ -301,6 +288,34 @@ RecordMergeResult mergeRecordDocuments(
       });
     }
   }
+
+  // Record deletion joins as DATA, never as a pre-emptive whole-record choice:
+  // carry the highest delete stamp from either side, then DERIVE liveness by
+  // comparing it against the highest activity stamp in the MERGED document.
+  // Delete wins an exact tie (deterministic in both orders). A deletion that
+  // loses is dropped from the output, which is safe: the outvoting activity
+  // stamp rides every future merge of this document, so a once-outvoted delete
+  // stamp can never win later — and dropping it keeps live documents on the
+  // exact on-disk shape persist() writes (no deleted/deletedStamp keys).
+  final leftDeleteStamp = leftMeta['deletedStamp'];
+  final rightDeleteStamp = rightMeta['deletedStamp'];
+  final deleteStamp = leftDeleteStamp == null
+      ? rightDeleteStamp
+      : rightDeleteStamp == null
+          ? leftDeleteStamp
+          : compareHlc(leftDeleteStamp, rightDeleteStamp) >= 0
+              ? leftDeleteStamp
+              : rightDeleteStamp;
+  // A legacy tombstone (deleted flag without a stamp) sits at the bottom of the
+  // stamp order: it holds only while the merged document has no stamped
+  // activity at all.
+  final legacyDeleted = deleteStamp == null &&
+      (leftMeta['deleted'] == true || rightMeta['deleted'] == true);
+  final highestActivity =
+      _highestStamp([...stamps.values, ...tombstones.values]);
+  final deleted = deleteStamp != null
+      ? compareHlc(deleteStamp, highestActivity) >= 0
+      : legacyDeleted && highestActivity == null;
 
   final result = <String, dynamic>{
     'id': left['id'],
@@ -320,6 +335,8 @@ RecordMergeResult mergeRecordDocuments(
       'stamps': stamps,
       'conflicts': _unresolvedConflicts([...inherited, ...added], fields),
       if (tombstones.isNotEmpty) 'fieldTombstones': tombstones,
+      if (deleted) 'deleted': true,
+      if (deleted && deleteStamp != null) 'deletedStamp': deleteStamp,
     },
   };
   return RecordMergeResult(result, List.unmodifiable(added));
@@ -335,6 +352,7 @@ Map<String, Map<String, dynamic>> loadDefs(String dir, String key,
   final d = Directory(dir);
   if (!d.existsSync())
     return out; // an optional subdir (e.g. templates) may be absent
+  _recoverBackups(d); // the Windows atomic-replace crash window (see _atomicWrite)
   for (final f in d.listSync().whereType<File>()) {
     if (!f.path.endsWith('.json')) continue;
     try {
@@ -363,31 +381,38 @@ Map<String, Map<String, dynamic>> loadRecords(String dir,
   final store = <String, Map<String, dynamic>>{};
   final d = Directory(dir);
   if (!d.existsSync()) return store;
+  _recoverBackups(d); // the Windows atomic-replace crash window (see _atomicWrite)
   for (final f in d.listSync().whereType<File>()) {
     if (!f.path.endsWith('.json')) continue;
-    Map<String, dynamic> rec;
+    // The whole per-file read — decode AND envelope shape — is guarded: a
+    // valid-JSON file with a numeric/missing id or non-map fields is exactly as
+    // expected from a half-synced provider folder as truncated JSON is, and
+    // must be skipped-and-surfaced (P2.8), never allowed to brick cold open.
     try {
-      rec = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
+      final rec = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
+      final meta = rec['_meta'];
+      if (meta is Map && meta['deleted'] == true)
+        continue; // tombstone -> not in the live store
+      final id = rec['id'];
+      if (id is! String || id.isEmpty) {
+        throw FormatException('Record id is missing or not a string.');
+      }
+      final fields = (rec['fields'] as Map?)?.cast<String, dynamic>() ??
+          <String, dynamic>{};
+      final schemaVersion = rec['schemaVersion'] ?? fields['_schemaVersion'];
+      store[id] = {
+        'id': id,
+        'typeId': rec['typeId'],
+        if (rec['createdAt'] != null && !fields.containsKey('createdAt'))
+          'createdAt': rec['createdAt'],
+        for (final entry in fields.entries)
+          if (entry.key != '_schemaVersion') entry.key: entry.value,
+        if (schemaVersion != null) '_schemaVersion': schemaVersion,
+      };
     } catch (e) {
       onCorrupt?.call(f.path,
           e); // surface it (P2.8), don't brick the whole load OR drop silently
-      continue;
     }
-    final meta = rec['_meta'];
-    if (meta is Map && meta['deleted'] == true)
-      continue; // tombstone -> not in the live store
-    final fields =
-        (rec['fields'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
-    final schemaVersion = rec['schemaVersion'] ?? fields['_schemaVersion'];
-    store[rec['id'] as String] = {
-      'id': rec['id'],
-      'typeId': rec['typeId'],
-      if (rec['createdAt'] != null && !fields.containsKey('createdAt'))
-        'createdAt': rec['createdAt'],
-      for (final entry in fields.entries)
-        if (entry.key != '_schemaVersion') entry.key: entry.value,
-      if (schemaVersion != null) '_schemaVersion': schemaVersion,
-    };
   }
   return store;
 }
@@ -564,21 +589,41 @@ void writeRecordDocument(File file, Map<String, dynamic> document) =>
     _atomicWrite(file, document);
 
 /// Write via a temp file + rename so a crash mid-write can't leave a half-written
-/// (corrupt) file — at worst the temp file is orphaned.
+/// (corrupt) file — at worst the temp file is orphaned. The temp write is
+/// FLUSHED before the rename: without the fsync, a power loss shortly after the
+/// rename can surface a zero-length or truncated "committed" file on journaled
+/// filesystems (rename ordering is not a durability barrier for data blocks).
 void _atomicWrite(File file, Object? json) {
   final tmp = File('${file.path}.tmp');
-  tmp.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(json));
+  tmp.writeAsStringSync(
+    const JsonEncoder.withIndent('  ').convert(json),
+    flush: true,
+  );
   try {
     // Atomic replace where the OS supports it (POSIX rename overwrites in one step).
     tmp.renameSync(file.path);
   } on FileSystemException {
     // Windows: rename fails if the destination exists. Move the current file ASIDE first
     // (not delete-then-rename) so a crash mid-replace leaves the data recoverable in the
-    // .bak or .tmp — never a window where the record is simply gone.
+    // .bak or .tmp — never a window where the record is simply gone. CRASH WINDOW: between
+    // the move-aside and the temp rename the real file is briefly absent with only the
+    // '.json.bak' on disk; [_recoverBackups] (run by loadRecords/loadDefs) restores it.
     final bak = File('${file.path}.bak');
     if (bak.existsSync()) bak.deleteSync();
     if (file.existsSync()) file.renameSync(bak.path);
     tmp.renameSync(file.path);
     if (bak.existsSync()) bak.deleteSync();
+  }
+}
+
+/// Loader-side recovery for the Windows fallback's crash window in
+/// [_atomicWrite]: a real file that is missing while its '.json.bak' exists is
+/// restored from the backup. A stale '.bak' next to a healthy file is left
+/// alone (the next write cleans it up).
+void _recoverBackups(Directory dir) {
+  for (final f in dir.listSync().whereType<File>()) {
+    if (!f.path.endsWith('.json.bak')) continue;
+    final real = File(f.path.substring(0, f.path.length - '.bak'.length));
+    if (!real.existsSync()) f.renameSync(real.path);
   }
 }

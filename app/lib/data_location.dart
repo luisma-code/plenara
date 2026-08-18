@@ -4,6 +4,8 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/services.dart';
 import 'package:plenara/config.dart';
 
+import 'app_log.dart';
+
 const _channel = MethodChannel('com.plenara/data-folder');
 
 String dataRootForSelection(String selectedPath) {
@@ -77,9 +79,12 @@ Future<DataResetResult> resetDataToDeviceLocal({
 
   try {
     await (clearSelection ?? const DataFolderAccess().clearSelection)();
-  } catch (_) {
+  } catch (error) {
     // The OS grant is still active, so restore the exact prior local root. This
     // keeps a failed reset from creating a half-switched state.
+    AppLog.instance.log(
+      'data: reset FAILED (provider grant not cleared; prior root restored): $error',
+    );
     if (local.existsSync()) local.deleteSync(recursive: true);
     backup?.renameSync(local.path);
     rethrow;
@@ -90,6 +95,10 @@ Future<DataResetResult> resetDataToDeviceLocal({
     dataDir: local.path,
     dataFolderSelected: false,
     configPath: configPath,
+  );
+  AppLog.instance.log(
+    'data: reset to device-local root ${local.path} '
+    '(backup=${backup?.path ?? 'none'})',
   );
   return DataResetResult(dataDir: local.path, backupDir: backup?.path);
 }
@@ -120,6 +129,9 @@ Future<DataFolderSwitchResult> switchDataFolder({
       configPath: configPath,
     );
     if (Platform.isIOS || Platform.isAndroid) dataDirOverride = target.path;
+    AppLog.instance.log(
+      'data: re-selected current root ${target.path} (no move)',
+    );
     return DataFolderSwitchResult(
       dataDir: target.path,
       copiedExistingData: false,
@@ -157,14 +169,25 @@ Future<DataFolderSwitchResult> switchDataFolder({
   }
 
   final probe = File('${target.path}${Platform.pathSeparator}.write-probe');
-  probe.writeAsStringSync('ok', flush: true);
-  probe.deleteSync();
+  try {
+    probe.writeAsStringSync('ok', flush: true);
+    probe.deleteSync();
+  } catch (error) {
+    AppLog.instance.log(
+      'data: switch ABORTED — write probe failed at ${target.path}: $error',
+    );
+    rethrow;
+  }
   saveConfig(
     dataDir: target.path,
     dataFolderSelected: true,
     configPath: configPath,
   );
   if (Platform.isIOS || Platform.isAndroid) dataDirOverride = target.path;
+  AppLog.instance.log(
+    'data: switched root ${current.path} -> ${target.path} '
+    '(copied=${!targetHasData}, adopted=$targetHasData)',
+  );
   return DataFolderSwitchResult(
     dataDir: target.path,
     copiedExistingData: !targetHasData,
