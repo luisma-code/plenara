@@ -1,6 +1,6 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-06 during the 0.13.0 deployment._
+_Current working memory. Last updated 2026-09-06 after the 0.13.0 deployment._
 
 ## 0.13.0 pre-deployment verification (2026-09-06)
 
@@ -268,6 +268,18 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
 
 ## Latest phone deployment
 
+- On 2026-09-06 at 16:42 PDT, signed internal-channel `0.13.0 (19)` from source revision
+  `a49a5e3b46e1841f0e54e5c86d4a1e012f086570` was installed on **Aluminum Monster** as
+  `com.plenara.plenaraApp` through CoreDevice, without launching it. The installed development-signed
+  AOT SHA-256 is `aaab89da11a1a59ffb8bcb83ea104cec22a16b729ee38d607cca9e2145fc721d`;
+  its signature, team `7V63BZ39HU`, provisioning through 2027-07-28, embedded revision, approved
+  internal-diagnostics canary, raw-diagnostics surface, and absence of an Anthropic API-key pattern
+  were verified before install. The corresponding App Store distribution IPA SHA-256 is
+  `c0f0edffb036ccb9d14c4b96e8c49f316cf27d836d3afa9e16840bb342a32a57` (AOT
+  `62a18601624a1ae1081753f686728849e7523f39f9e9c7d6dd8a9d7ea79234fd`); Apple validation and
+  upload succeeded under delivery UUID `d6a7afa9-b5e8-41a4-8dee-8ff72cafa410`, processing reached
+  `VALID`, and build 19 was distributed to the **Internal** TestFlight group. Deployment only—no
+  physical-phone launch, test, probe, log collection, or app inspection.
 - On 2026-08-17 at 17:36 PDT, the task-row/Apple-partial correction was installed on **Aluminum
   Monster**: signed internal-channel `0.12.0 (18)`, revision `c26560f7a149`, bundle
   `com.plenara.plenaraApp`. The verified AOT SHA-256 is
