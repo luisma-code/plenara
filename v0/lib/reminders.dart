@@ -16,6 +16,8 @@
 /// and re-opening the app re-derives the exact same set (idempotent, no dupes).
 library;
 
+import 'dart:convert';
+
 import 'dates.dart';
 
 /// The type id of a reminder record. Reminder derivation keys on this + a
@@ -30,6 +32,36 @@ class Reminder {
   final DateTime at;
   const Reminder(this.ref, this.body, this.at);
 }
+
+const recurringReminderHorizon = 16;
+const maxPendingNotifications = 64;
+const _notificationPayloadKind = 'plenara-reminder-v1';
+
+/// The payload is the durable identity bridge between Plenara records and the
+/// OS notification queue. Native schedulers recover this after process death;
+/// without it they cannot cancel a reminder deleted while the app was closed.
+String notificationPayload(String ref, DateTime when) => jsonEncode({
+      'kind': _notificationPayloadKind,
+      'ref': ref,
+      'when': when.toUtc().toIso8601String(),
+    });
+
+({String ref, DateTime when})? parseNotificationPayload(String? payload) {
+  if (payload == null || payload.isEmpty) return null;
+  try {
+    final value = jsonDecode(payload);
+    if (value is! Map || value['kind'] != _notificationPayloadKind) return null;
+    final ref = value['ref'];
+    final when = DateTime.tryParse('${value['when']}');
+    if (ref is! String || ref.isEmpty || when == null) return null;
+    return (ref: ref, when: when.toLocal());
+  } catch (_) {
+    return null;
+  }
+}
+
+String recurringOccurrenceRef(String recordId, DateTime at) =>
+    '$recordId@${at.toUtc().toIso8601String()}';
 
 /// A stable OS notification id for a reminder ref — the SAME id across restarts (so re-arming a
 /// reminder overwrites rather than duplicating) and across SDK versions (unlike `String.hashCode`,
@@ -57,9 +89,9 @@ abstract interface class NotificationScheduler {
   Future<void> cancel(String ref);
 
   /// The currently-armed set as ref -> the time it's armed for. The time lets reconcile detect a
-  /// RESCHEDULE (same reminder, new time) and re-arm it. NOTE: in-memory today (empty at process
-  /// start), so a cancel-while-the-app-was-closed can miss; hydrating from the OS's pending set is
-  /// a per-backend improvement.
+  /// RESCHEDULE (same reminder, new time) and re-arm it. Native adapters expose their local cache
+  /// here for diagnostics and tests; [PendingNotificationScheduler.pending] is the authoritative
+  /// process-restart boundary when the backend has an OS queue.
   Map<String, DateTime> armed();
 
   /// Fire an IMMEDIATE notification to prove display actually works — the "silently doesn't show"
@@ -74,13 +106,20 @@ abstract interface class NotificationScheduler {
   String? unavailableReason();
 }
 
+/// Native capability for reading the actual OS queue after process death. This is separate from
+/// [NotificationScheduler] so in-memory fakes cannot accidentally claim persistence they lack.
+abstract interface class PendingNotificationScheduler {
+  Future<Map<String, DateTime>> pending();
+}
+
 /// In-memory scheduler — the test double AND a safe production default (a no-op
 /// toast layer until the native impl is smoked). Records calls so product logic
 /// can be asserted with no OS and no network.
 class FakeScheduler implements NotificationScheduler {
   final Map<String, Reminder> scheduled = {};
   final List<String> canceled = [];
-  int scheduleCalls = 0; // total schedule() invocations (to prove dedupe/idempotence)
+  int scheduleCalls =
+      0; // total schedule() invocations (to prove dedupe/idempotence)
   bool selfTestCalled = false;
 
   @override
@@ -95,7 +134,8 @@ class FakeScheduler implements NotificationScheduler {
   }
 
   @override
-  Map<String, DateTime> armed() => {for (final e in scheduled.entries) e.key: e.value.at};
+  Map<String, DateTime> armed() =>
+      {for (final e in scheduled.entries) e.key: e.value.at};
 
   @override
   Future<bool> selfTest() async {
@@ -109,46 +149,88 @@ class FakeScheduler implements NotificationScheduler {
 
 typedef _Store = Map<String, Map<String, dynamic>>;
 
-/// Every not-done reminder record with a parseable `remindAt`, as a [Reminder]. For a
-/// RECURRING reminder (`recurrence: "daily"`) the effective time is the NEXT occurrence
-/// at or after [now] (regenerate-on-open, Spec 04 §3.13) — so it's always future-dated
-/// and never falls into the past-due bucket.
+/// Every not-done reminder record with a parseable `remindAt`, as concrete OS occurrences.
+/// One-off reminders yield once (including a past occurrence for the on-open nudge). Recognized
+/// recurring rules materialize the next [recurringReminderHorizon] future occurrences so the OS
+/// keeps firing while the app is closed; each occurrence has a stable distinct notification ref.
 Iterable<Reminder> allReminders(_Store store, DateTime now) sync* {
   for (final r in store.values) {
     if (r['typeId'] != reminderTypeId) continue;
     if (r['done'] == true) continue;
     final base = DateTime.tryParse(r['remindAt']?.toString() ?? '');
     if (base == null) continue;
+    final recordId = r['id'] as String;
+    final body = r['text']?.toString() ?? 'reminder';
     final rec = r['recurrence']?.toString();
-    final DateTime at;
-    if (rec == 'daily') {
-      at = _nextDaily(base, now);
-    } else if (rec != null && rec.startsWith('weekly:')) {
-      at = _nextWeekly(base, rec.substring('weekly:'.length), now);
-    } else if (rec != null && rec.startsWith('biweekly:')) {
-      // every-OTHER weekday: phase-anchored to the first matching weekday on/after the
-      // record's createdAt, then every 14 days — so "every other Tuesday" is deterministic.
-      final createdAt = DateTime.tryParse(r['createdAt']?.toString() ?? '') ?? base;
-      final anchor = _nextWeekly(base, rec.substring('biweekly:'.length), createdAt);
-      at = _advanceBiweekly(anchor, now);
-    } else if (rec != null && rec.startsWith('monthly:')) {
-      // Nth weekday of each month — "2nd Tuesday", "last Friday". Format: monthly:<ordinal>:<day>,
-      // ordinal 1..4 or -1 (last).
-      final parts = rec.substring('monthly:'.length).split(':');
-      at = _nextMonthlyOrdinal(base, int.tryParse(parts.first) ?? 1, parts.length > 1 ? parts[1] : '', now);
-    } else if (rec != null && rec.startsWith('days:')) {
-      // a set of weekdays — "every weekday" (days:1,2,3,4,5), "every weekend" (days:6,7)
-      final wanted = rec.substring('days:'.length).split(',').map(int.tryParse).whereType<int>().toSet();
-      at = _nextInWeekdaySet(base, wanted, now);
-    } else if (rec != null && rec.startsWith('monthlyday:')) {
-      at = _nextMonthlyDate(base, int.tryParse(rec.substring('monthlyday:'.length)) ?? 1, now);
-    } else if (rec == 'yearly') {
-      at = _nextYearly(base, now);
-    } else {
-      at = base;
+    if (!_recognizedRecurrence(rec)) {
+      yield Reminder(recordId, body, base);
+      continue;
     }
-    yield Reminder(r['id'] as String, r['text']?.toString() ?? 'reminder', at);
+    final createdAt =
+        DateTime.tryParse(r['createdAt']?.toString() ?? '') ?? base;
+    var cursor = now;
+    for (var i = 0; i < recurringReminderHorizon; i++) {
+      final at = _nextOccurrence(base, rec!, cursor, createdAt);
+      if (!at.isAfter(cursor)) break;
+      yield Reminder(recurringOccurrenceRef(recordId, at), body, at);
+      cursor = at;
+    }
   }
+}
+
+bool _recognizedRecurrence(String? recurrence) =>
+    recurrence == 'daily' ||
+    recurrence == 'yearly' ||
+    (recurrence?.startsWith('weekly:') ?? false) ||
+    (recurrence?.startsWith('biweekly:') ?? false) ||
+    (recurrence?.startsWith('monthly:') ?? false) ||
+    (recurrence?.startsWith('days:') ?? false) ||
+    (recurrence?.startsWith('monthlyday:') ?? false);
+
+DateTime _nextOccurrence(
+  DateTime base,
+  String recurrence,
+  DateTime after,
+  DateTime createdAt,
+) {
+  if (recurrence == 'daily') return _nextDaily(base, after);
+  if (recurrence.startsWith('weekly:')) {
+    return _nextWeekly(base, recurrence.substring('weekly:'.length), after);
+  }
+  if (recurrence.startsWith('biweekly:')) {
+    final anchor = _nextWeekly(
+      base,
+      recurrence.substring('biweekly:'.length),
+      createdAt,
+    );
+    return _advanceBiweekly(anchor, after);
+  }
+  if (recurrence.startsWith('monthly:')) {
+    final parts = recurrence.substring('monthly:'.length).split(':');
+    return _nextMonthlyOrdinal(
+      base,
+      int.tryParse(parts.first) ?? 1,
+      parts.length > 1 ? parts[1] : '',
+      after,
+    );
+  }
+  if (recurrence.startsWith('days:')) {
+    final wanted = recurrence
+        .substring('days:'.length)
+        .split(',')
+        .map(int.tryParse)
+        .whereType<int>()
+        .toSet();
+    return _nextInWeekdaySet(base, wanted, after);
+  }
+  if (recurrence.startsWith('monthlyday:')) {
+    return _nextMonthlyDate(
+      base,
+      int.tryParse(recurrence.substring('monthlyday:'.length)) ?? 1,
+      after,
+    );
+  }
+  return _nextYearly(base, after);
 }
 
 /// The next occurrence of [base]'s time-of-day strictly after [now] (today if still
@@ -156,23 +238,41 @@ Iterable<Reminder> allReminders(_Store store, DateTime now) sync* {
 /// COMPONENT arithmetic (DST-safe: keeps the wall-clock time across a transition,
 /// unlike adding absolute 24h Durations).
 DateTime _nextDaily(DateTime base, DateTime now) {
-  var c = DateTime(now.year, now.month, now.day, base.hour, base.minute, base.second);
+  var c = DateTime(
+      now.year, now.month, now.day, base.hour, base.minute, base.second);
   if (!c.isAfter(now)) {
-    c = DateTime(now.year, now.month, now.day + 1, base.hour, base.minute, base.second);
+    c = DateTime(
+        now.year, now.month, now.day + 1, base.hour, base.minute, base.second);
   }
   return c;
 }
 
 const _weekdays = {
-  'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7,
-  'mon': 1, 'tue': 2, 'tues': 2, 'wed': 3, 'thu': 4, 'thur': 4, 'thurs': 4, 'fri': 5, 'sat': 6, 'sun': 7,
+  'monday': 1,
+  'tuesday': 2,
+  'wednesday': 3,
+  'thursday': 4,
+  'friday': 5,
+  'saturday': 6,
+  'sunday': 7,
+  'mon': 1,
+  'tue': 2,
+  'tues': 2,
+  'wed': 3,
+  'thu': 4,
+  'thur': 4,
+  'thurs': 4,
+  'fri': 5,
+  'sat': 6,
+  'sun': 7,
 };
 
 /// Weekday name -> ISO number, tolerating a plural ("tuesdays") and surrounding
 /// whitespace/case. Returns null for anything unrecognized (callers fall back gracefully).
 int? _lookupWeekday(String name) {
   final n = name.toLowerCase().trim();
-  return _weekdays[n] ?? (n.endsWith('s') ? _weekdays[n.substring(0, n.length - 1)] : null);
+  return _weekdays[n] ??
+      (n.endsWith('s') ? _weekdays[n.substring(0, n.length - 1)] : null);
 }
 
 /// The next "[ordinal]th [dayName] of the month" at [base]'s time-of-day strictly after [now].
@@ -180,7 +280,8 @@ int? _lookupWeekday(String name) {
 /// skipped. Deterministic date math — the scheduler drives it, never a model. All stepping is
 /// day-NUMBER arithmetic (DST-safe: a Duration walk across the November transition would land the
 /// "2nd Sunday" on a Saturday 23:00).
-DateTime _nextMonthlyOrdinal(DateTime base, int ordinal, String dayName, DateTime now) {
+DateTime _nextMonthlyOrdinal(
+    DateTime base, int ordinal, String dayName, DateTime now) {
   final wd = _lookupWeekday(dayName);
   if (wd == null) return base; // graceful fallback — never crash the schedule
   DateTime? occurrenceIn(int year, int month) {
@@ -259,10 +360,12 @@ DateTime _nextInWeekdaySet(DateTime base, Set<int> wanted, DateTime now) {
   for (var i = 0; i < 8; i++) {
     // construct each candidate DAY (DST-safe: keeps base's wall-clock time-of-day across a
     // transition, unlike adding absolute 24h Durations).
-    final c = DateTime(now.year, now.month, now.day + i, base.hour, base.minute, base.second);
+    final c = DateTime(
+        now.year, now.month, now.day + i, base.hour, base.minute, base.second);
     if (valid.contains(c.weekday) && c.isAfter(now)) return c;
   }
-  return _nextDaily(base, now); // unreachable given a non-empty valid set, but never crash
+  return _nextDaily(
+      base, now); // unreachable given a non-empty valid set, but never crash
 }
 
 /// The next occurrence of day-of-month [dom] at [base]'s time-of-day strictly after [now]
@@ -271,8 +374,10 @@ DateTime _nextInWeekdaySet(DateTime base, Set<int> wanted, DateTime now) {
 DateTime _nextMonthlyDate(DateTime base, int dom, DateTime now) {
   var y = now.year, m = now.month;
   for (var i = 0; i < 24; i++) {
-    final lastDay = DateTime(y, m + 1, 0).day; // day 0 of next month = last of this
-    final c = DateTime(y, m, dom.clamp(1, lastDay), base.hour, base.minute, base.second);
+    final lastDay =
+        DateTime(y, m + 1, 0).day; // day 0 of next month = last of this
+    final c = DateTime(
+        y, m, dom.clamp(1, lastDay), base.hour, base.minute, base.second);
     if (c.isAfter(now)) return c;
     m++;
     if (m > 12) {
@@ -292,23 +397,34 @@ DateTime _nextYearly(DateTime base, DateTime now) {
   final c = withTime(nextAnnual(base, now));
   if (c.isAfter(now)) return c;
   // today's occurrence already passed → the next one on/after tomorrow
-  return withTime(
-      nextAnnual(base, DateTime(now.year, now.month, now.day + 1)));
+  return withTime(nextAnnual(base, DateTime(now.year, now.month, now.day + 1)));
 }
 
-/// Reminders still in the future — the set that should be armed as OS notifications,
-/// keyed by record id.
-Map<String, Reminder> desiredArmed(_Store store, DateTime now) => {
-      for (final rem in allReminders(store, now))
-        if (rem.at.isAfter(now)) rem.ref: rem
-    };
+/// Reminders still in the future — the set that should be armed as OS notifications. The earliest
+/// 64 win globally because iOS caps an app's pending queue at 64.
+Map<String, Reminder> desiredArmed(_Store store, DateTime now) {
+  final future = allReminders(store, now)
+      .where((reminder) => reminder.at.isAfter(now))
+      .toList()
+    ..sort((a, b) {
+      final byTime = a.at.compareTo(b.at);
+      return byTime != 0 ? byTime : a.ref.compareTo(b.ref);
+    });
+  return {
+    for (final reminder in future.take(maxPendingNotifications))
+      reminder.ref: reminder,
+  };
+}
 
 /// Past-due, not-done reminders — surfaced as on-open nudges (you can't schedule a
 /// toast in the past), soonest-missed first. (Recurring reminders are always future.)
 List<Reminder> dueReminders(_Store store, DateTime now) => [
       for (final rem in allReminders(store, now))
         if (!rem.at.isAfter(now)) rem
-    ]..sort((a, b) => a.at.compareTo(b.at));
+    ]..sort((a, b) {
+        final byTime = a.at.compareTo(b.at);
+        return byTime != 0 ? byTime : a.ref.compareTo(b.ref);
+      });
 
 /// Reconcile the OS scheduler to match the store: cancel anything armed that is no
 /// longer desired (undone/deleted/done/now-past), arm anything desired not yet
@@ -317,7 +433,9 @@ List<Reminder> dueReminders(_Store store, DateTime now) => [
 Future<void> reconcileReminders(
     NotificationScheduler sched, _Store store, DateTime now) async {
   final desired = desiredArmed(store, now);
-  final armed = sched.armed(); // ref -> armed time (snapshot)
+  final armed = sched is PendingNotificationScheduler
+      ? await (sched as PendingNotificationScheduler).pending()
+      : sched.armed();
   // Cancel anything armed that is no longer desired OR whose time changed (reschedule).
   for (final e in armed.entries) {
     final want = desired[e.key];
@@ -325,6 +443,8 @@ Future<void> reconcileReminders(
   }
   // (Re)arm anything desired that isn't already armed at the right time.
   for (final rem in desired.values) {
-    if (armed[rem.ref] != rem.at) await sched.schedule(rem.ref, rem.at, rem.body);
+    if (armed[rem.ref] != rem.at) {
+      await sched.schedule(rem.ref, rem.at, rem.body);
+    }
   }
 }

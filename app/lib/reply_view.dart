@@ -3,6 +3,7 @@
 // three registers (caption / list / prose) can be reasoned about and tested on
 // their own, apart from the turn machinery that decides what text to show.
 import 'package:flutter/material.dart';
+import 'package:plenara/content_search.dart';
 
 import 'plena.dart';
 
@@ -52,6 +53,90 @@ Widget voidText(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: SingleChildScrollView(child: replyBody(text, tuning)),
+      ),
+    ),
+  );
+}
+
+/// Ranked local-search results. Full record content is visible here, while the
+/// separate [spokenText] contains title/date only and is the string sent to TTS.
+Widget searchResultsView(
+  String spokenText,
+  List<ContentSearchResult> results, {
+  required PresenceTuning tuning,
+  required ValueChanged<String> onOpen,
+  double bottomInset = 0,
+}) {
+  final marker = HSLColor.fromAHSL(
+    1,
+    tuning.hue % 360,
+    tuning.sat.clamp(0.0, 1.0),
+    .56,
+  ).toColor();
+  return Padding(
+    padding: EdgeInsets.fromLTRB(28, 92, 28, 96 + bottomInset),
+    child: Align(
+      alignment: Alignment.topLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 680),
+        child: SingleChildScrollView(
+          key: const Key('search-results-card'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                spokenText.split('\n').first,
+                style: const TextStyle(
+                  color: Color(0xC8EAE2D8),
+                  fontSize: 16,
+                  shadows: voidShadows,
+                ),
+              ),
+              const SizedBox(height: 16),
+              for (final result in results)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Material(
+                    color: const Color(0xDD1C1814),
+                    borderRadius: BorderRadius.circular(18),
+                    child: InkWell(
+                      key: Key('search-result-${result.recordId}'),
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => onOpen(result.recordId),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              result.spokenLabel,
+                              style: TextStyle(
+                                color: marker,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              result.content,
+                              maxLines: 5,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: voidInk,
+                                fontSize: 18,
+                                height: 1.4,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     ),
   );

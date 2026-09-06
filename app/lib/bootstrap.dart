@@ -20,6 +20,7 @@ import 'build_channel.dart';
 import 'credential_store.dart';
 import 'data_location.dart';
 import 'macos_scheduler.dart';
+import 'ios_scheduler.dart';
 import 'seed_assets.dart';
 import 'windows_scheduler.dart';
 
@@ -39,6 +40,7 @@ String? _bundledSeedDir;
 /// in-memory FakeScheduler (reminders still reconcile + surface as on-open nudges), logged so a
 /// silent downgrade is diagnosable.
 NotificationScheduler platformScheduler() {
+  if (Platform.isIOS) return IosNotificationScheduler();
   if (Platform.isWindows) return WindowsToastScheduler();
   if (Platform.isMacOS) return MacToastScheduler();
   AppLog.instance.log(

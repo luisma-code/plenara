@@ -111,17 +111,30 @@ void main() {
       'The action plan is persisted in the compiled numeric form',
     ],
     'planning/specs/04-architecture.md': ['Plenara is push-to-talk-first'],
+    'planning/specs/05-functional.md': ['journal/YYYY-MM-DD-<id>.json'],
     'planning/specs/07-ui-design-language.md': ['assumes push-to-talk (v1)'],
     'planning/specs/10-security-privacy-threat-model.md': [
       'v0: in-memory ring only',
       'ten operations',
       'two-layer enforcement',
+      'not yet built',
     ],
     'planning/specs/11-feedback-diagnostics.md': [
       'repeated in the app greeting',
       'rotation (D12) is still pending',
     ],
     'planning/specs/12-voice.md': ['### 3.1 Push-to-talk is primary'],
+    'planning/specs/14-voice-input.md': [
+      'tap again to ABORT',
+      'v0 **consumes finals only**',
+      'engine, not the button, finalizes the utterance',
+    ],
+    'planning/specs/09-test.md': [
+      'O1 — Build the coverage instrumentation',
+      'Undo is in-memory in v0',
+      '`app/test/widget_test.dart` — 8 tests',
+    ],
+    'planning/specs/17-living-planner.md': ['passes 1,922 engine'],
     'planning/specs/06-data-sync.md': [
       'index/                              ← CapabilityIndex binaries',
       'Hydration parses run on the IO/crypto worker isolates',

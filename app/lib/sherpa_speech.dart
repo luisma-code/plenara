@@ -118,6 +118,7 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
   /// exactly-once `onDone`.
   SherpaCaptureSession? _capture;
   bool get _listening => _capture?.live ?? false;
+  Future<void>? _finalizing;
 
   Timer? _noSpeechTimer, _silenceTimer, _hintTimer, _capTimer;
   bool _sawSpeech = false;
@@ -260,14 +261,14 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
           // contract in speech.dart, and what the system recognizer does). A
           // bare _finalize() here silently ate every completed segment, so a
           // long dictation interrupted by a device hiccup vanished whole.
-          _finalize(flush: true);
+          unawaited(_finalize(flush: true));
         },
       );
     } catch (e) {
       // Nothing was captured yet (the stream never opened), so there is nothing
       // to flush — but the session must still report that it ended.
       _log('startStream failed: $e');
-      _finalize();
+      await _finalize();
     }
   }
 
@@ -284,7 +285,7 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     _capTimer = Timer(CaptureLimits.session, () {
       if (!_listening) return;
       _onNotice?.call(SpeechNotice.autoStopped);
-      _finalize(flush: true); // stop AND SEND at the hard cap
+      unawaited(_finalize(flush: true)); // stop AND SEND at the hard cap
     });
   }
 
@@ -301,7 +302,9 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     _silenceTimer = Timer(CaptureLimits.trailingSilence, () {
       if (!_listening) return;
       _onNotice?.call(SpeechNotice.autoStopped);
-      _finalize(flush: true); // stop AND SEND — never discard real speech
+      unawaited(
+        _finalize(flush: true),
+      ); // stop AND SEND — never discard real speech
     });
   }
 
@@ -376,38 +379,58 @@ class SherpaSpeechRecognizer implements SpeechRecognizer {
     return tail;
   }
 
-  /// Release the audio device. The transcript decision belongs to [_capture].
-  void _teardownAudio() {
+  /// Release the audio device and wait for the positive completion events. A
+  /// caller may not open the next capture until both the recorder and stream
+  /// subscription have actually closed.
+  Future<void> _teardownAudio() async {
     _clearTimers();
-    _audioSub?.cancel();
+    final subscription = _audioSub;
     _audioSub = null;
-    // ignore: discarded_futures
-    _recorder.stop();
+    try {
+      await _recorder.stop();
+    } catch (error) {
+      _log('recorder stop failed: $error');
+    }
+    try {
+      await subscription?.cancel();
+    } catch (error) {
+      _log('audio subscription cancel failed: $error');
+    }
   }
 
   /// Stop capture, clean up, and end the session through the one door. When
   /// [flush] (the user's stop tap, a watchdog, or an engine error), everything
   /// heard this session is delivered as one final result.
-  void _finalize({bool flush = false}) {
-    if (!_listening) return;
-    _teardownAudio();
-    _capture?.finish(flush: flush);
+  Future<void> _finalize({bool flush = false}) {
+    final inFlight = _finalizing;
+    if (inFlight != null) return inFlight;
+    final capture = _capture;
+    if (capture == null || !capture.live) return Future.value();
+    final closing = () async {
+      await _teardownAudio();
+      capture.finish(flush: flush);
+      if (identical(_capture, capture)) _capture = null;
+    }();
+    _finalizing = closing.whenComplete(() => _finalizing = null);
+    return _finalizing!;
   }
 
   /// The user's stop tap: finalize and deliver everything said this session.
   @override
-  Future<void> stop() async => _finalize(flush: true);
+  Future<void> stop() => _finalize(flush: true);
 
   @override
   void cancel() {
-    _teardownAudio();
+    final capture = _capture;
+    if (capture == null || !capture.live) return;
+    // Discard synchronously before native cancellation can report completion.
+    capture.cancel();
     _vad?.clear();
-    // Discard — a cancel must never leak into the next session's transcript —
-    // and report the end exactly once, like the system recognizer: the seam
-    // promises onDone fires when listening ends for ANY reason, and the host
-    // relies on it to release the mic state. A re-entrant cancel (host's
-    // final-result handler → cancel) finds the door already closed.
-    _capture?.cancel();
+    unawaited(
+      _teardownAudio().whenComplete(() {
+        if (identical(_capture, capture)) _capture = null;
+      }),
+    );
   }
 
   static Float32List _toFloat32(Uint8List bytes) {

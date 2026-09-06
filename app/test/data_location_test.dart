@@ -88,6 +88,112 @@ void main() {
   );
 
   test(
+    'selection is committed only after validation and then finalized',
+    () async {
+      final root = Directory.systemTemp.createTempSync('plenara_location_txn_');
+      final source = Directory('${root.path}/source')..createSync();
+      final record = File('${source.path}/records/task.json');
+      record.parent.createSync(recursive: true);
+      record.writeAsStringSync('{"id":"task"}');
+      Directory('${source.path}/types').createSync();
+      final selected = Directory('${root.path}/cloud')..createSync();
+      final events = <String>[];
+
+      final result = await switchDataFolder(
+        currentDataDir: source.path,
+        selectedPath: selected.path,
+        configPath: '${root.path}/config.json',
+        commitSelection: () async {
+          expect(
+            File('${selected.path}/Plenara/records/task.json').existsSync(),
+            isTrue,
+            reason:
+                'the target must be complete before the native grant commits',
+          );
+          events.add('commit');
+        },
+        finalizeSelection: () async => events.add('finalize'),
+        rollbackSelection: () async => events.add('rollback'),
+      );
+
+      expect(events, ['commit', 'finalize']);
+      expect(
+        loadConfig(
+          configPath: '${root.path}/config.json',
+          environment: const {},
+        ).dataDir,
+        result.dataDir,
+      );
+    },
+  );
+
+  test(
+    'invalid target rolls back the provisional selection without commit',
+    () async {
+      final root = Directory.systemTemp.createTempSync('plenara_location_txn_');
+      final source = Directory('${root.path}/source')..createSync();
+      final selected = Directory('${root.path}/cloud/Plenara')
+        ..createSync(recursive: true);
+      File('${selected.path}/partial.tmp').writeAsStringSync('partial');
+      final events = <String>[];
+
+      await expectLater(
+        switchDataFolder(
+          currentDataDir: source.path,
+          selectedPath: selected.parent.path,
+          configPath: '${root.path}/config.json',
+          commitSelection: () async => events.add('commit'),
+          finalizeSelection: () async => events.add('finalize'),
+          rollbackSelection: () async => events.add('rollback'),
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(events, ['rollback']);
+      expect(File('${root.path}/config.json').existsSync(), isFalse);
+    },
+  );
+
+  test(
+    'a finalize failure restores the prior configuration and grant',
+    () async {
+      final root = Directory.systemTemp.createTempSync('plenara_location_txn_');
+      final source = Directory('${root.path}/source')..createSync();
+      Directory('${source.path}/records').createSync();
+      Directory('${source.path}/types').createSync();
+      final selected = Directory('${root.path}/cloud')..createSync();
+      final config = '${root.path}/config.json';
+      saveConfig(
+        dataDir: source.path,
+        dataFolderSelected: true,
+        configPath: config,
+      );
+      final events = <String>[];
+
+      await expectLater(
+        switchDataFolder(
+          currentDataDir: source.path,
+          selectedPath: selected.path,
+          configPath: config,
+          currentDataFolderSelected: true,
+          commitSelection: () async => events.add('commit'),
+          finalizeSelection: () async {
+            events.add('finalize');
+            throw StateError('native finalize failed');
+          },
+          rollbackSelection: () async => events.add('rollback'),
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(events, ['commit', 'finalize', 'rollback']);
+      final restored = loadConfig(configPath: config, environment: const {});
+      expect(restored.dataDir, source.path);
+      expect(restored.dataFolderSelected, isTrue);
+    },
+  );
+
+  test(
     'start fresh preserves cloud data and moves old local bytes to a backup',
     () async {
       final root = Directory.systemTemp.createTempSync('plenara_reset_');

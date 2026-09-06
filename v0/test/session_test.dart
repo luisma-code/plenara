@@ -503,13 +503,17 @@ void main() {
       final s = await _session();
       await s.handle('journal that the cabin trip to the lake was so peaceful');
       final r = await s.handle('find that note about the cabin trip');
-      expect(r.toLowerCase(), contains('cabin'));
+      expect(r.toLowerCase(), isNot(contains('cabin')),
+          reason: 'spoken search results must not read private record content');
+      expect(r.toLowerCase(), contains("it's on screen"));
+      expect(s.searchResults.single.content.toLowerCase(), contains('cabin'));
     });
     test('"search my notes for X" also works', () async {
       final s = await _session();
       await s.handle('journal that I finally fixed the leaky kitchen faucet');
-      expect((await s.handle('search my notes for the faucet')).toLowerCase(),
-          contains('faucet'));
+      final r = await s.handle('search my notes for the faucet');
+      expect(r.toLowerCase(), isNot(contains('faucet')));
+      expect(s.searchResults.single.content.toLowerCase(), contains('faucet'));
     });
     test('a miss is honest, never a silent failure', () async {
       final s = await _session();
@@ -2059,6 +2063,8 @@ void main() {
       expect(r, contains('buy running shoes'));
       expect(s.store.values.where((r) => r['typeId'] == 'workout'), isEmpty);
       expect(s.store.values.where((r) => r['typeId'] == 'task').length, 1);
+      expect(s.conversationLedger.entries.last.outcome, 'corrected');
+      expect(s.conversationLedger.entries.last.affectedRecordIds, isNotEmpty);
     });
     test(
         'correction after a NON-WRITING turn does not reverse an earlier write (Fable#2 P0)',

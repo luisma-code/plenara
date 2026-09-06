@@ -1,6 +1,47 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-08-18 after the full-tree code review and its remediation._
+_Current working memory. Last updated 2026-09-06 during the 0.13.0 deployment._
+
+## 0.13.0 pre-deployment verification (2026-09-06)
+
+- Release metadata is `0.13.0+19`; the source includes the completed 2026-08-19 code/spec review
+  remediation described below.
+- The complete precheck is green: 2,046 engine tests + 36 skips; 189 Flutter tests + 4 skips;
+  95.7% / 89.8% / 83.8% coverage; macOS build; seven real-engine cases; external-channel,
+  secret-scan, and 24/60 conformance gates.
+- The production iOS notification integration passed twice on the explicitly selected local iPhone
+  17 Pro simulator. The real notification permission sheet was answered **Allow** through a
+  disposable XCUITest helper calibrated first against a deliberately nonexistent button. The run
+  scheduled, recovered, and cancelled the durable OS request. Runner RSS sampled 437 MiB, 367 MiB,
+  and 375 MiB during the short repeat and did not balloon; this is not a long-soak leak claim.
+  The app, helper, and simulator were terminated, disposable artifacts removed, and the physical
+  phone remained untouched during verification.
+
+## Full code/spec review and remediation (2026-08-19)
+
+- `main` was clean, fast-forward synced, and identical to `origin/main` at `205a02e`. Review:
+  `reviews/2026-08-19-full-code-spec-review.md`.
+- All nine confirmed findings are resolved. iOS now uses a real `UNUserNotificationCenter` adapter;
+  native adapters recover the durable OS queue from versioned payloads, clear legacy/untraceable
+  requests, materialize 16 recurring occurrences, and enforce the global iOS queue cap of 64.
+- iOS data-folder selection is provisional until Dart validates/copies/probes the destination, then
+  the native bookmark and config commit through explicit commit/finalize/rollback phases. Search
+  fully rebuilds before each query, evicts deleted ids, orders ties by id, keeps journal bodies off
+  speech, and renders full content only in ranked tappable cards.
+- Voice cannot re-enter while an asynchronous stop is flushing; recognizer callbacks are epoch
+  checked and Sherpa awaits recorder/subscription teardown. History now persists/renders outcome,
+  affected-record links, proposal/acceptance state, and safe failure/recovery state. Keep-current
+  conflict copy no longer promises an undo that does not exist.
+- Specs 04/05/06/09/10/14/17 were aligned with wired behavior. The documentation gate now has 36
+  retired-claim guards and was calibrated against a deliberately restored stale voice claim. Project
+  instructions and the simulator skill now require agents to keep the host unlocked, detect and
+  drive simulator permission dialogs, record the choice, and continue the run.
+- Final full precheck is green: 2,046 engine tests + 36 skips; 189 Flutter tests + 4 skips; 95.7% /
+  89.9% / 83.8% coverage; macOS build; seven real-engine cases; external, secret, and 24/60
+  conformance gates. The iOS simulator artifact also builds. The initial production-notification
+  smoke stopped at the iOS Allow sheet because the macOS host was locked; the complete permission,
+  schedule, recovery, and cancellation path was subsequently verified on 2026-09-06 as recorded
+  above. The simulator and every app/test process were terminated; the physical phone was untouched.
 
 ## Full code review and remediation (2026-08-18)
 
@@ -218,9 +259,12 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
 - External promotion uses `tool/external_release_gate.sh`, which builds and inspects macOS and unsigned iOS AOT artifacts and writes the clean revision's channel, artifact SHA-256, app version, schema versions, and migrations to `app/build/release/release-manifest.json`.
 - No physical phone was touched. No simulator was booted for this increment; all phone geometry used local widget render surfaces, and the unsigned iOS bundle was compiled but never installed or launched.
 
-## Owner action
+## Credential rotation
 
-- Rotate the Anthropic credential that appeared in a non-hermetic test failure before this increment. The repository/reports do not contain it, but the earlier tool transcript did. Credential rotation requires Luis's account authority.
+- Resolved 2026-09-06: Luis rotated the Anthropic credential that had appeared in an earlier tool
+  transcript. The replacement development key is stored in the macOS login Keychain under
+  `plenara-anthropic-dev`; `tool/devkey.sh check` confirmed the entry without exposing its value,
+  and a read-only, non-billed Anthropic models request authenticated successfully (HTTP 200).
 
 ## Latest phone deployment
 

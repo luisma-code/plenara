@@ -15,6 +15,10 @@ void main() {
       source: 'corpus',
       at: DateTime.parse('2026-08-17T09:00:00Z'),
       executionId: 42,
+      outcome: 'dispatched',
+      affectedRecordIds: const ['task-1'],
+      proposalState: 'accepted',
+      failureState: 'none',
     );
 
     final reopened = FileConversationLedger(root.path);
@@ -22,6 +26,25 @@ void main() {
     expect(reopened.entries.single.utterance, 'add milk');
     expect(reopened.entries.single.reply, 'Added milk.');
     expect(reopened.entries.single.executionId, 42);
+    expect(reopened.entries.single.outcome, 'dispatched');
+    expect(reopened.entries.single.affectedRecordIds, ['task-1']);
+    expect(reopened.entries.single.proposalState, 'accepted');
+    expect(reopened.entries.single.failureState, 'none');
+  });
+
+  test('legacy entries default their outcome to the recorded source', () {
+    final root = Directory.systemTemp.createTempSync('plenara_conversation_legacy_');
+    addTearDown(() => root.deleteSync(recursive: true));
+    File('${root.path}/conversation-ledger.json').writeAsStringSync(
+      '{"nextId":2,"entries":[{"id":1,"utterance":"list tasks",'
+      '"reply":"No tasks.","source":"corpus",'
+      '"at":"2026-08-17T09:00:00.000Z"}]}',
+    );
+
+    final entry = FileConversationLedger(root.path).entries.single;
+
+    expect(entry.outcome, 'corpus');
+    expect(entry.affectedRecordIds, isEmpty);
   });
 
   test('a corrupt ledger is visible and exact bytes are preserved', () {

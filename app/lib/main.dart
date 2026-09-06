@@ -813,8 +813,12 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         !hasStt; // keyboard path when muted, or when there's no mic
     final caption = _turn.caption;
     final hasContent = caption != null && caption.trim().isNotEmpty;
+    final searchResults = _session.searchResults;
+    final showSearchResults = hasContent && searchResults.isNotEmpty;
     final listMode =
-        hasContent && _turn.displayIsList; // a list eases Plena to a corner
+        hasContent &&
+        (_turn.displayIsList ||
+            showSearchResults); // a list/card eases Plena to a corner
     final showPlanner =
         !hasContent &&
         !_turn.listening &&
@@ -832,6 +836,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         : hasStt
         ? 'voice mode'
         : 'text mode, microphone unavailable';
+    final canUseVoice =
+        hasStt && !_turn.voiceMuted && !_turn.busy && !_turn.transcribing;
 
     return Stack(
       children: [
@@ -839,9 +845,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: (hasStt && !_turn.voiceMuted && !_turn.busy)
-                ? _turn.toggleMic
-                : null,
+            onTap: canUseVoice ? _turn.toggleMic : null,
             onLongPress:
                 !isExternalBuild && activeBuildChannel.allowsInternalTools
                 ? () {
@@ -896,15 +900,11 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
               1 => PlanBoard(
                 session: _session,
                 onChanged: () => setState(() {}),
-                onVoice: (hasStt && !_turn.voiceMuted && !_turn.busy)
-                    ? _turn.toggleMic
-                    : null,
+                onVoice: canUseVoice ? _turn.toggleMic : null,
               ),
               2 => LibraryHome(
                 session: _session,
-                onVoice: (hasStt && !_turn.voiceMuted && !_turn.busy)
-                    ? _turn.toggleMic
-                    : null,
+                onVoice: canUseVoice ? _turn.toggleMic : null,
                 onOpen: (title, typeIds) => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => DataView(
@@ -918,9 +918,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
               _ => TodayBoard(
                 session: _session,
                 onChanged: () => setState(() {}),
-                onVoice: (hasStt && !_turn.voiceMuted && !_turn.busy)
-                    ? _turn.toggleMic
-                    : null,
+                onVoice: canUseVoice ? _turn.toggleMic : null,
                 onOpenLibrary: () => setState(() => _plannerTab = 2),
                 onOpenAttention: () => Navigator.of(context).push(
                   MaterialPageRoute(
@@ -984,7 +982,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         // outside the reply column are unaffected.
         Positioned.fill(
           child: IgnorePointer(
-            ignoring: !listMode,
+            ignoring: !(listMode || showSearchResults),
             child: AnimatedSwitcher(
               duration: PlenaraMotion.deliberate,
               switchInCurve: PlenaraMotion.enter,
@@ -996,12 +994,27 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                       key: ValueKey(
                         'caption-${_turn.expression.name}-$caption',
                       ),
-                      child: voidText(
-                        caption,
-                        list: listMode,
-                        tuning: _tuning,
-                        bottomInset: showInput ? 168 : 0,
-                      ),
+                      child: showSearchResults
+                          ? searchResultsView(
+                              caption,
+                              searchResults,
+                              tuning: _tuning,
+                              bottomInset: showInput ? 168 : 0,
+                              onOpen: (recordId) => showRecordDetailSheet(
+                                context: context,
+                                session: _session,
+                                recordId: recordId,
+                                onChanged: () {
+                                  if (mounted) setState(() {});
+                                },
+                              ),
+                            )
+                          : voidText(
+                              caption,
+                              list: listMode,
+                              tuning: _tuning,
+                              bottomInset: showInput ? 168 : 0,
+                            ),
                     )
                   : const SizedBox.shrink(key: ValueKey('caption-empty')),
             ),

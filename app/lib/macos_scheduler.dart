@@ -13,21 +13,24 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'app_log.dart';
 
-class MacToastScheduler implements NotificationScheduler {
+class MacToastScheduler
+    implements NotificationScheduler, PendingNotificationScheduler {
   /// [plugin] is a test seam — shim-level tests inject a throwing fake to prove
   /// the bookkeeping; production constructs the real plugin.
   MacToastScheduler({FlutterLocalNotificationsPlugin? plugin})
-      : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+    : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   final FlutterLocalNotificationsPlugin _plugin;
   final Map<String, DateTime> _armed = {};
   bool _ready = false;
-  String? _unavailable; // permission denied / init failed -> surfaced via unavailableReason()
+  String?
+  _unavailable; // permission denied / init failed -> surfaced via unavailableReason()
 
   Future<bool> _ensureReady() async {
     if (_ready) return true;
     try {
-      tzdata.initializeTimeZones(); // tz.local defaults to UTC; only the absolute instant matters
+      tzdata
+          .initializeTimeZones(); // tz.local defaults to UTC; only the absolute instant matters
       // (do NOT use matchDateTimeComponents while tz.local is UTC; recurrence is Dart-side today.)
       await _plugin.initialize(
         settings: const InitializationSettings(
@@ -41,8 +44,11 @@ class MacToastScheduler implements NotificationScheduler {
       );
       // Prompt the first time; on later launches this returns the live status WITHOUT re-prompting,
       // so if the user denies then enables it in System Settings, the next reconcile self-heals.
-      final granted = await _plugin
-              .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>()
+      final granted =
+          await _plugin
+              .resolvePlatformSpecificImplementation<
+                MacOSFlutterLocalNotificationsPlugin
+              >()
               ?.requestPermissions(alert: true, sound: true) ??
           false;
       // KEY readiness on the grant — never claim armed if a toast can't display (the silent-lie bug).
@@ -50,8 +56,10 @@ class MacToastScheduler implements NotificationScheduler {
       _unavailable = granted
           ? null
           : "Reminders won't fire — enable notifications for Plenara in "
-              'System Settings › Notifications.';
-      AppLog.instance.log('sched(macos): initialized (permission granted=$granted)');
+                'System Settings › Notifications.';
+      AppLog.instance.log(
+        'sched(macos): initialized (permission granted=$granted)',
+      );
       return granted;
     } catch (e, st) {
       _unavailable = 'Notifications failed to initialize.';
@@ -65,7 +73,9 @@ class MacToastScheduler implements NotificationScheduler {
   @override
   Future<bool> selfTest() async {
     if (!await _ensureReady()) {
-      AppLog.instance.log('sched(macos): selfTest skipped — not ready ($_unavailable)');
+      AppLog.instance.log(
+        'sched(macos): selfTest skipped — not ready ($_unavailable)',
+      );
       return false;
     }
     try {
@@ -73,7 +83,9 @@ class MacToastScheduler implements NotificationScheduler {
         id: notificationId('__selftest__'),
         title: 'Plenara',
         body: 'Notifications are on ✓',
-        notificationDetails: const NotificationDetails(macOS: DarwinNotificationDetails()),
+        notificationDetails: const NotificationDetails(
+          macOS: DarwinNotificationDetails(),
+        ),
       );
       return true;
     } catch (e, st) {
@@ -86,7 +98,9 @@ class MacToastScheduler implements NotificationScheduler {
   Future<void> schedule(String ref, DateTime when, String body) async {
     if (!await _ensureReady()) return;
     if (!when.isAfter(DateTime.now())) {
-      AppLog.instance.log('sched(macos): skip past-due "$ref" @ $when (handled as in-app nudge)');
+      AppLog.instance.log(
+        'sched(macos): skip past-due "$ref" @ $when (handled as in-app nudge)',
+      );
       return;
     }
     try {
@@ -95,15 +109,21 @@ class MacToastScheduler implements NotificationScheduler {
         title: 'Plenara',
         body: body,
         scheduledDate: tz.TZDateTime.from(when, tz.local),
-        notificationDetails: const NotificationDetails(macOS: DarwinNotificationDetails()),
+        notificationDetails: const NotificationDetails(
+          macOS: DarwinNotificationDetails(),
+        ),
+        payload: notificationPayload(ref, when),
         // required by the API even on macOS (steers Android scheduling; ignored here):
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
       _armed[ref] = when;
       AppLog.instance.log(
-          'sched(macos): ARMED "$ref" @ $when (id=${notificationId(ref)}, in ${when.difference(DateTime.now()).inSeconds}s)');
+        'sched(macos): ARMED "$ref" @ $when (id=${notificationId(ref)}, in ${when.difference(DateTime.now()).inSeconds}s)',
+      );
     } catch (e, st) {
-      AppLog.instance.log('sched(macos): zonedSchedule FAILED for "$ref": $e\n$st');
+      AppLog.instance.log(
+        'sched(macos): zonedSchedule FAILED for "$ref": $e\n$st',
+      );
     }
   }
 
@@ -117,12 +137,36 @@ class MacToastScheduler implements NotificationScheduler {
       // Keep the ref in _armed: dropping it made reconcile believe the cancel
       // succeeded, so it never retried and the deleted reminder ghost-fired.
       AppLog.instance.log(
-          'sched(macos): cancel FAILED for "$ref" (kept armed for retry): $e\n$st');
+        'sched(macos): cancel FAILED for "$ref" (kept armed for retry): $e\n$st',
+      );
     }
   }
 
   @override
   Map<String, DateTime> armed() => Map.of(_armed);
+
+  @override
+  Future<Map<String, DateTime>> pending() async {
+    if (!await _ensureReady()) return const {};
+    try {
+      final recovered = <String, DateTime>{};
+      for (final request in await _plugin.pendingNotificationRequests()) {
+        final parsed = parseNotificationPayload(request.payload);
+        if (parsed == null || notificationId(parsed.ref) != request.id) {
+          await _plugin.cancel(id: request.id);
+          continue;
+        }
+        recovered[parsed.ref] = parsed.when;
+      }
+      _armed
+        ..clear()
+        ..addAll(recovered);
+      return Map.of(_armed);
+    } catch (e, st) {
+      AppLog.instance.log('sched(macos): pending query FAILED: $e\n$st');
+      return Map.of(_armed);
+    }
+  }
 
   @override
   String? unavailableReason() => _unavailable;

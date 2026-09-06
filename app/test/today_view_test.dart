@@ -107,6 +107,11 @@ void main() {
     expect(find.text('Conversation history'), findsOneWidget);
     expect(find.text('add call Dad to my list'), findsOneWidget);
     expect(find.textContaining('Added'), findsWidgets);
+    expect(find.text('corpus · dispatched'), findsOneWidget);
+    expect(
+      find.byKey(Key('history-record-${session.store.keys.single}')),
+      findsOneWidget,
+    );
     expect(find.text('Undo this action'), findsOneWidget);
 
     await tester.tap(find.text('Undo this action'));

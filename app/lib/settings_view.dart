@@ -31,6 +31,9 @@ class SettingsView extends StatefulWidget {
   final DiagnosticPolicy? diagnosticPolicy;
   final ValueChanged<bool>? onStillPresenceChanged;
   final Future<String?> Function()? chooseDataFolder;
+  final Future<void> Function()? commitDataFolderSelection;
+  final Future<void> Function()? finalizeDataFolderSelection;
+  final Future<void> Function()? rollbackDataFolderSelection;
   final Future<DataResetResult> Function()? resetData;
   final VoidCallback? onDataReset;
   const SettingsView({
@@ -41,6 +44,9 @@ class SettingsView extends StatefulWidget {
     this.diagnosticPolicy,
     this.onStillPresenceChanged,
     this.chooseDataFolder,
+    this.commitDataFolderSelection,
+    this.finalizeDataFolderSelection,
+    this.rollbackDataFolderSelection,
     this.resetData,
     this.onDataReset,
   });
@@ -250,6 +256,10 @@ class _SettingsViewState extends State<SettingsView> {
         currentDataDir: _cfg.dataDir,
         selectedPath: selected,
         configPath: widget.configPath,
+        currentDataFolderSelected: _cfg.dataFolderSelected,
+        commitSelection: widget.commitDataFolderSelection,
+        finalizeSelection: widget.finalizeDataFolderSelection,
+        rollbackSelection: widget.rollbackDataFolderSelection,
       );
       if (!mounted) return;
       setState(() {

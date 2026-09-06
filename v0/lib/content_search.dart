@@ -8,6 +8,28 @@ import 'embed.dart';
 
 typedef Embedder = Future<List<double>?> Function(String text);
 
+/// A ranked local-search result. [content] is for the visible tappable card;
+/// speech uses only [title] and [dateLabel], so private body text never leaks
+/// through TTS.
+class ContentSearchResult {
+  final String recordId;
+  final String typeId;
+  final String title;
+  final String? dateLabel;
+  final String content;
+
+  const ContentSearchResult({
+    required this.recordId,
+    required this.typeId,
+    required this.title,
+    required this.content,
+    this.dateLabel,
+  });
+
+  String get spokenLabel =>
+      dateLabel == null ? title : '$title from $dateLabel';
+}
+
 class ContentSearchIndex {
   final Embedder _embed;
   final Map<String, List<double>> _vecs = {}; // recordId -> content vector
@@ -85,7 +107,10 @@ class ContentSearchIndex {
         .map((e) => MapEntry(e.key, cosine(qv, e.value)))
         .where((e) => e.value >= theta)
         .toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((a, b) {
+        final byScore = b.value.compareTo(a.value);
+        return byScore != 0 ? byScore : a.key.compareTo(b.key);
+      });
     return scored.take(k).map((e) => e.key).toList();
   }
 
@@ -136,7 +161,10 @@ class ContentSearchIndex {
       final hits = terms.where(c.contains).length;
       if (hits > 0) scored.add(MapEntry(id, hits));
     }
-    scored.sort((a, b) => b.value.compareTo(a.value));
+    scored.sort((a, b) {
+      final byScore = b.value.compareTo(a.value);
+      return byScore != 0 ? byScore : a.key.compareTo(b.key);
+    });
     return scored.take(k).map((e) => e.key).toList();
   }
 }

@@ -39,10 +39,11 @@ void main() {
           'recurrence': 'yearly',
         },
       };
-      expect(allReminders(store, DateTime(2026, 2, 10, 12)).single.at,
+      expect(allReminders(store, DateTime(2026, 2, 10, 12)).first.at,
           DateTime(2026, 2, 28, 9));
-      expect(allReminders(store, DateTime(2028, 2, 10, 12)).single.at,
-          DateTime(2028, 2, 29, 9), reason: 'leap year keeps the real day');
+      expect(allReminders(store, DateTime(2028, 2, 10, 12)).first.at,
+          DateTime(2028, 2, 29, 9),
+          reason: 'leap year keeps the real day');
     });
 
     test('a Feb-29 birthday nudges on Feb 28 in a common year', () {
@@ -62,22 +63,25 @@ void main() {
   group('calendar-day windows are DST-immune', () {
     test('daysUntilAnnual across the spring-forward night is 1, not 0', () {
       // 2026-03-08 02:00 is the US spring-forward instant; the night is 23h.
-      expect(daysUntilAnnual(DateTime(2000, 3, 8), DateTime(2026, 3, 7, 12)), 1);
+      expect(
+          daysUntilAnnual(DateTime(2000, 3, 8), DateTime(2026, 3, 7, 12)), 1);
     });
 
     test('a 2-day window spanning the transition is 2, not 1', () {
       // Mar 7 → Mar 9 spans the 23h night: 47 elapsed hours, but exactly 2
       // calendar days. `.difference().inDays` truncated this to 1.
-      expect(daysUntilAnnual(DateTime(2000, 3, 9), DateTime(2026, 3, 7, 12)), 2);
+      expect(
+          daysUntilAnnual(DateTime(2000, 3, 9), DateTime(2026, 3, 7, 12)), 2);
     });
 
     test('daysUntilAnnual across the fall-back night', () {
-      expect(
-          daysUntilAnnual(DateTime(2000, 11, 3), DateTime(2026, 10, 31, 12)), 3);
+      expect(daysUntilAnnual(DateTime(2000, 11, 3), DateTime(2026, 10, 31, 12)),
+          3);
     });
 
     test('daysUntilAnnual today is 0', () {
-      expect(daysUntilAnnual(DateTime(2000, 7, 6), DateTime(2026, 7, 6, 15)), 0);
+      expect(
+          daysUntilAnnual(DateTime(2000, 7, 6), DateTime(2026, 7, 6, 15)), 0);
     });
   });
 }

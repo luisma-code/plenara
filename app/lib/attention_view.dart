@@ -66,7 +66,9 @@ class _AttentionViewState extends State<AttentionView> {
     );
     setState(() {
       _message = ok
-          ? 'Conflict resolved. The change is saved and undoable.'
+          ? restoreOther
+                ? 'Conflict resolved. The other value is restored and undoable.'
+                : 'Conflict resolved. Kept the current value.'
           : 'That conflict could not be resolved safely.';
     });
     widget.onChanged?.call();

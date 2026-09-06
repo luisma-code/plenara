@@ -16,16 +16,18 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'app_log.dart';
 
-class WindowsToastScheduler implements NotificationScheduler {
+class WindowsToastScheduler
+    implements NotificationScheduler, PendingNotificationScheduler {
   /// [plugin] is a test seam — shim-level tests inject a throwing fake to prove
   /// the bookkeeping; production constructs the real plugin.
   WindowsToastScheduler({FlutterLocalNotificationsWindows? plugin})
-      : _plugin = plugin ?? FlutterLocalNotificationsWindows();
+    : _plugin = plugin ?? FlutterLocalNotificationsWindows();
 
   final FlutterLocalNotificationsWindows _plugin;
   final Map<String, DateTime> _armed = {};
   bool _ready = false;
-  String? _unavailable; // set when init fails -> surfaced via unavailableReason()
+  String?
+  _unavailable; // set when init fails -> surfaced via unavailableReason()
 
   // A fixed COM activator GUID for Plenara (identifies our toast activator). Stable
   // across runs so scheduled toasts survive a restart.
@@ -34,7 +36,8 @@ class WindowsToastScheduler implements NotificationScheduler {
   Future<bool> _ensureReady() async {
     if (_ready) return true;
     try {
-      tzdata.initializeTimeZones(); // tz.local defaults to UTC; only the absolute instant matters
+      tzdata
+          .initializeTimeZones(); // tz.local defaults to UTC; only the absolute instant matters
       // (do NOT use matchDateTimeComponents while tz.local is UTC — components would be read as
       // UTC wall-clock; today's recurrence is Dart-side re-derivation, so this is safe.)
       final ok = await _plugin.initialize(
@@ -45,8 +48,12 @@ class WindowsToastScheduler implements NotificationScheduler {
         ),
       );
       _ready = ok;
-      _unavailable = ok ? null : 'Notifications are unavailable on this device.';
-      AppLog.instance.log('sched: plugin.initialize() -> $ok (aumid=Plenara.App)');
+      _unavailable = ok
+          ? null
+          : 'Notifications are unavailable on this device.';
+      AppLog.instance.log(
+        'sched: plugin.initialize() -> $ok (aumid=Plenara.App)',
+      );
       return ok;
     } catch (e, st) {
       _unavailable = 'Notifications failed to initialize.';
@@ -64,7 +71,11 @@ class WindowsToastScheduler implements NotificationScheduler {
       return false;
     }
     try {
-      await _plugin.show(id: 999999, title: 'Plenara', body: 'Notifications are on ✓');
+      await _plugin.show(
+        id: 999999,
+        title: 'Plenara',
+        body: 'Notifications are on ✓',
+      );
       AppLog.instance.log('sched: selfTest show() returned without error');
       return true;
     } catch (e, st) {
@@ -77,7 +88,9 @@ class WindowsToastScheduler implements NotificationScheduler {
   Future<void> schedule(String ref, DateTime when, String body) async {
     if (!await _ensureReady()) return;
     if (!when.isAfter(DateTime.now())) {
-      AppLog.instance.log('sched: skip past-due "$ref" @ $when (handled as in-app nudge)');
+      AppLog.instance.log(
+        'sched: skip past-due "$ref" @ $when (handled as in-app nudge)',
+      );
       return;
     }
     try {
@@ -86,9 +99,12 @@ class WindowsToastScheduler implements NotificationScheduler {
         title: 'Plenara',
         body: body,
         scheduledDate: tz.TZDateTime.from(when, tz.local),
+        payload: notificationPayload(ref, when),
       );
       _armed[ref] = when;
-      AppLog.instance.log('sched: ARMED "$ref" @ $when (id=${notificationId(ref)}, in ${when.difference(DateTime.now()).inSeconds}s)');
+      AppLog.instance.log(
+        'sched: ARMED "$ref" @ $when (id=${notificationId(ref)}, in ${when.difference(DateTime.now()).inSeconds}s)',
+      );
     } catch (e, st) {
       AppLog.instance.log('sched: zonedSchedule FAILED for "$ref": $e\n$st');
     }
@@ -105,13 +121,37 @@ class WindowsToastScheduler implements NotificationScheduler {
     } catch (e, st) {
       // Keep the ref in _armed: dropping it made reconcile believe the cancel
       // succeeded, so it never retried and the deleted reminder ghost-fired.
-      AppLog.instance
-          .log('sched: cancel FAILED for "$ref" (kept armed for retry): $e\n$st');
+      AppLog.instance.log(
+        'sched: cancel FAILED for "$ref" (kept armed for retry): $e\n$st',
+      );
     }
   }
 
   @override
   Map<String, DateTime> armed() => Map.of(_armed);
+
+  @override
+  Future<Map<String, DateTime>> pending() async {
+    if (!await _ensureReady()) return const {};
+    try {
+      final recovered = <String, DateTime>{};
+      for (final request in await _plugin.pendingNotificationRequests()) {
+        final parsed = parseNotificationPayload(request.payload);
+        if (parsed == null || notificationId(parsed.ref) != request.id) {
+          await _plugin.cancel(id: request.id);
+          continue;
+        }
+        recovered[parsed.ref] = parsed.when;
+      }
+      _armed
+        ..clear()
+        ..addAll(recovered);
+      return Map.of(_armed);
+    } catch (e, st) {
+      AppLog.instance.log('sched: pending query FAILED: $e\n$st');
+      return Map.of(_armed);
+    }
+  }
 
   @override
   String? unavailableReason() => _unavailable;

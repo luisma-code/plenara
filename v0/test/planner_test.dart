@@ -350,6 +350,7 @@ void main() {
 
     expect(preview, contains('without applying'));
     expect(session.activePlanProposal!.state, PlanProposalState.draft);
+    expect(session.conversationLedger.entries.last.proposalState, 'draft');
     expect(session.store[ids.first]!.containsKey('scheduledStartAt'), isFalse);
     final firstProposalId = session.activePlanProposal!.items.first.taskId;
     final secondProposalId = session.activePlanProposal!.items[1].taskId;
@@ -359,6 +360,8 @@ void main() {
         contains('Nothing has been applied'));
     final applied = await session.handle('apply the proposal');
     expect(applied, contains('Updated'));
+    expect(session.conversationLedger.entries.last.outcome, 'accepted');
+    expect(session.conversationLedger.entries.last.proposalState, 'accepted');
     expect(session.activePlanProposal!.state, PlanProposalState.applied);
     expect(session.store[firstProposalId]!['scheduledStartAt'],
         '2026-08-18T11:00:00.000');
@@ -500,7 +503,8 @@ void main() {
     expect(session.store[taskId]!['reviewDecision'], isNull);
   });
 
-  group('day windows and annual dates use calendar arithmetic (DST-immune)', () {
+  group('day windows and annual dates use calendar arithmetic (DST-immune)',
+      () {
     Map<String, Map<String, dynamic>> birthdayOnly(String birthday) => {
           'mia': {
             'id': 'mia',
@@ -541,7 +545,8 @@ void main() {
       expect(projection.next, isEmpty);
     });
 
-    test('a reminder 2 days out across the transition is labeled Mon, not tomorrow',
+    test(
+        'a reminder 2 days out across the transition is labeled Mon, not tomorrow',
         () {
       final projection = buildTodayProjection({
         'rem': {
@@ -558,26 +563,26 @@ void main() {
     test('a Feb-29 birthday is observed on Feb 28 in common years everywhere',
         () {
       final records = birthdayOnly('2016-02-29');
-      final nudge = buildTodayProjection(
-              records, DateTime.parse('2026-02-27T09:00:00'))
-          .relationshipNudge!;
+      final nudge =
+          buildTodayProjection(records, DateTime.parse('2026-02-27T09:00:00'))
+              .relationshipNudge!;
       expect(nudge.detail, 'Tomorrow');
       expect(nudge.at, DateTime(2026, 2, 28));
 
-      final commonAgenda = buildPlanProjection(records,
-              DateTime.parse('2026-02-27T09:00:00'),
+      final commonAgenda = buildPlanProjection(
+              records, DateTime.parse('2026-02-27T09:00:00'),
               selectedDay: DateTime.parse('2026-02-28'))
           .agenda;
       expect(commonAgenda.single.title, "Mia's birthday");
 
-      final leapAgenda = buildPlanProjection(records,
-              DateTime.parse('2028-02-27T09:00:00'),
+      final leapAgenda = buildPlanProjection(
+              records, DateTime.parse('2028-02-27T09:00:00'),
               selectedDay: DateTime.parse('2028-02-29'))
           .agenda;
       expect(leapAgenda.single.title, "Mia's birthday",
           reason: 'a leap year keeps the real day');
-      final leapFeb28 = buildPlanProjection(records,
-              DateTime.parse('2028-02-27T09:00:00'),
+      final leapFeb28 = buildPlanProjection(
+              records, DateTime.parse('2028-02-27T09:00:00'),
               selectedDay: DateTime.parse('2028-02-28'))
           .agenda;
       expect(leapFeb28, isEmpty,
@@ -599,10 +604,10 @@ void main() {
     test('a slipped past day never pins the overload signal', () {
       final signals = buildPlannerSignals(
           {'slipped': task('slipped', '2026-08-16T09:00:00')}, now);
-      expect(signals.where((s) => s.kind == PlannerSignalKind.overload),
-          isEmpty);
-      expect(signals.map((s) => s.detail).join(),
-          isNot(contains('overdue has')));
+      expect(
+          signals.where((s) => s.kind == PlannerSignalKind.overload), isEmpty);
+      expect(
+          signals.map((s) => s.detail).join(), isNot(contains('overdue has')));
     });
 
     test('an overload today or later this week still signals coherently', () {
@@ -610,17 +615,17 @@ void main() {
         'slipped': task('slipped', '2026-08-16T09:00:00'),
         'heavy': task('heavy', '2026-08-18T09:00:00'),
       }, now);
-      final overload = signals
-          .singleWhere((s) => s.kind == PlannerSignalKind.overload);
+      final overload =
+          signals.singleWhere((s) => s.kind == PlannerSignalKind.overload);
       expect(overload.detail, startsWith('tomorrow has'));
       expect(overload.recordIds, ['heavy']);
     });
 
     test('overload beyond the 7-day scan horizon is not signaled', () {
-      final signals = buildPlannerSignals(
-          {'far': task('far', '2026-08-27T09:00:00')}, now);
-      expect(signals.where((s) => s.kind == PlannerSignalKind.overload),
-          isEmpty);
+      final signals =
+          buildPlannerSignals({'far': task('far', '2026-08-27T09:00:00')}, now);
+      expect(
+          signals.where((s) => s.kind == PlannerSignalKind.overload), isEmpty);
     });
   });
 
@@ -664,7 +669,8 @@ void main() {
           reversed.next.map((i) => i.id).toList());
       expect(forward.later.map((i) => i.id).toList(),
           reversed.later.map((i) => i.id).toList());
-      expect(forward.next.map((i) => i.id), ['routine-a', 'routine-b', 'goal-a']);
+      expect(
+          forward.next.map((i) => i.id), ['routine-a', 'routine-b', 'goal-a']);
     });
 
     test('Plan agenda ties break deterministically by id', () {
@@ -785,8 +791,7 @@ void main() {
         scheduledTask('current-b', '2026-08-17T08:00:00'),
       ];
       final forward = buildTodayProjection(records(defs), now);
-      final backward =
-          buildTodayProjection(records(defs, reversed: true), now);
+      final backward = buildTodayProjection(records(defs, reversed: true), now);
       expect(forward.now.map((item) => item.id).toList(),
           backward.now.map((item) => item.id).toList());
       expect(forward.now.map((item) => item.id).toList(),

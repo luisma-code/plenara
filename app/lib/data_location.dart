@@ -35,6 +35,21 @@ class DataFolderAccess {
     return getDirectoryPath(confirmButtonText: 'Use this location');
   }
 
+  Future<void> commitSelection() async {
+    if (!Platform.isIOS) return;
+    await _channel.invokeMethod<void>('commit');
+  }
+
+  Future<void> finalizeSelection() async {
+    if (!Platform.isIOS) return;
+    await _channel.invokeMethod<void>('finalize');
+  }
+
+  Future<void> rollbackSelection() async {
+    if (!Platform.isIOS) return;
+    await _channel.invokeMethod<void>('rollback');
+  }
+
   Future<void> clearSelection() async {
     if (!Platform.isIOS) return;
     await _channel.invokeMethod<void>('reset');
@@ -119,19 +134,69 @@ Future<DataFolderSwitchResult> switchDataFolder({
   required String currentDataDir,
   required String selectedPath,
   String? configPath,
+  bool currentDataFolderSelected = false,
+  Future<void> Function()? commitSelection,
+  Future<void> Function()? finalizeSelection,
+  Future<void> Function()? rollbackSelection,
 }) async {
-  final current = Directory(currentDataDir).absolute;
-  final target = Directory(dataRootForSelection(selectedPath)).absolute;
-  if (target.path == current.path) {
+  final access = const DataFolderAccess();
+  final commit = commitSelection ?? access.commitSelection;
+  final finalize = finalizeSelection ?? access.finalizeSelection;
+  final rollback = rollbackSelection ?? access.rollbackSelection;
+  var committed = false;
+  try {
+    final result = _prepareDataFolder(
+      currentDataDir: currentDataDir,
+      selectedPath: selectedPath,
+    );
+    // The native picker grant is only provisional until the complete target has
+    // passed validation/copy/probe. This is the single commit door for both the
+    // security-scoped bookmark and Dart configuration.
+    await commit();
+    committed = true;
     saveConfig(
-      dataDir: target.path,
+      dataDir: result.dataDir,
       dataFolderSelected: true,
       configPath: configPath,
     );
-    if (Platform.isIOS || Platform.isAndroid) dataDirOverride = target.path;
+    if (Platform.isIOS || Platform.isAndroid) {
+      dataDirOverride = result.dataDir;
+    }
+    await finalize();
     AppLog.instance.log(
-      'data: re-selected current root ${target.path} (no move)',
+      'data: switched root $currentDataDir -> ${result.dataDir} '
+      '(copied=${result.copiedExistingData}, adopted=${result.adoptedExistingData})',
     );
+    return result;
+  } catch (error) {
+    try {
+      await rollback();
+    } catch (rollbackError) {
+      AppLog.instance.log(
+        'data: native selection rollback FAILED: $rollbackError',
+      );
+    }
+    if (committed) {
+      saveConfig(
+        dataDir: currentDataDir,
+        dataFolderSelected: currentDataFolderSelected,
+        configPath: configPath,
+      );
+      if (Platform.isIOS || Platform.isAndroid) {
+        dataDirOverride = currentDataFolderSelected ? currentDataDir : null;
+      }
+    }
+    rethrow;
+  }
+}
+
+DataFolderSwitchResult _prepareDataFolder({
+  required String currentDataDir,
+  required String selectedPath,
+}) {
+  final current = Directory(currentDataDir).absolute;
+  final target = Directory(dataRootForSelection(selectedPath)).absolute;
+  if (target.path == current.path) {
     return DataFolderSwitchResult(
       dataDir: target.path,
       copiedExistingData: false,
@@ -178,16 +243,6 @@ Future<DataFolderSwitchResult> switchDataFolder({
     );
     rethrow;
   }
-  saveConfig(
-    dataDir: target.path,
-    dataFolderSelected: true,
-    configPath: configPath,
-  );
-  if (Platform.isIOS || Platform.isAndroid) dataDirOverride = target.path;
-  AppLog.instance.log(
-    'data: switched root ${current.path} -> ${target.path} '
-    '(copied=${!targetHasData}, adopted=$targetHasData)',
-  );
   return DataFolderSwitchResult(
     dataDir: target.path,
     copiedExistingData: !targetHasData,

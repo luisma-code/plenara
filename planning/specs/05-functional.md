@@ -473,7 +473,7 @@ U: "Start journal entry." (or "Today's journal.")
 [System: recording in progress — no cloud STT; on-device transcription only]
 U: (speaks freely for up to 60 seconds)
 U: "Done." (or the 60s window closes)
-[System: transcription finalized on-device; written as a private journal_entry record that syncs — journal/YYYY-MM-DD-<id>.json (unique per entry; Spec 01 §12.3)]
+[System: transcription finalized on-device; written as an ordinary private journal_entry record that syncs — records/<date-prefixed-id>.json (unique per entry; Spec 01 §12.3 / Spec 06 §3.1)]
 A: "Entry saved — 47 seconds."
 UI: Journal entry card with transcribed text
 ```
@@ -481,7 +481,7 @@ UI: Journal entry card with transcribed text
 **Privacy invariants (stated explicitly, testable):**
 
 - The audio recording is discarded immediately after transcription. It is never written to disk.
-- The transcribed text is stored as a private `journal_entry` record that **syncs** in the user's cloud folder as `journal/YYYY-MM-DD-<id>.json` — date-prefixed so it's navigable, but with a **unique id suffix** so two devices journaling the same day (or two entries in one day) don't mint the *same* file and collide (`storage-sync-assessment.md`; the date is also an `entryDate` field). This survives device loss (Spec 01 §12.3). The earlier "excluded from sync / never leaves the device" invariant is **dropped**: no provider offers a reliable per-subfolder sync exclusion (it was unimplementable, `G-37`), *and* device-local storage would lose the journal on device loss (the worse failure). Keeping journal content unreadable by the *cloud provider* is a json-privacy hardening **deferred to a later version** (at-rest encryption, Spec 01 §8.7, itself deferred); until then it is plaintext JSON in the user's own synced folder, protected by their provider-account security, and onboarding says so.
+- The transcribed text is stored as an ordinary private `journal_entry` in the synced flat `records/` folder. Its globally unique id is date-prefixed, so `records/<date-prefixed-id>.json` remains chronologically navigable without creating the per-day filename collision that a separate `journal/` layout caused (Spec 06 §3.1 D4; the date is also an `entryDate` field). This survives device loss (Spec 01 §12.3). The earlier "excluded from sync / never leaves the device" invariant is **dropped**: no provider offers a reliable per-subfolder sync exclusion (it was unimplementable, `G-37`), *and* device-local storage would lose the journal on device loss (the worse failure). Keeping journal content unreadable by the *cloud provider* is a json-privacy hardening **deferred to a later version** (at-rest encryption, Spec 01 §8.7, itself deferred); until then it is plaintext JSON in the user's own synced folder, protected by their provider-account security, and onboarding says so.
 - The transcribed text is never sent to Claude by any current assembler. A future journal-based
   feature must add an explicit, non-persistent per-session opt-in at assembly time; pattern insight
   and the other implemented kinds currently have no journal access at all.

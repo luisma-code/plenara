@@ -16,7 +16,7 @@ Every other spec makes claims — "deterministic," "offline," "never silently fa
 4. The recorded NLU + authoring test pairs — the replay cassette, and when a re-record is forced (§5)
 5. The E2E critical paths — built and target (§6)
 6. The 05a conformance harness as the spec-completeness metric (§7)
-7. Code-coverage instrumentation with CI thresholds — research §9.3, currently the largest gap (§8)
+7. Code-coverage instrumentation with enforced per-tier thresholds (§8)
 8. Property/fuzz and adversarial robustness (§9)
 9. The dogfooding plan — what dogfooding measures, and what it is forbidden to validate (§10)
 
@@ -60,7 +60,7 @@ Strict layering (research §9.2, Spec 04 §2) is what makes a clean pyramid poss
 | **7. Integration — generative grounding** | A generative prompt is assembled from the user's *real records*, never invented, and tier/connectivity failures degrade honestly (Spec 04 §3.10). | `_GenCloud` — a fake that **echoes the assembled context** so grounding is assertable. | `v0/test/generative_test.dart` |
 | **8. Conformance — spec completeness** | Each of the 60 worked examples (Spec 05a) passes with its exact utterance, or carries an explicit skip-reason. The measured N/60. | Real offline `Session` + `_NoCloud`. | `v0/test/spec05a_test.dart` (§7) |
 | **9. Property / fuzz + adversarial** | Randomized inputs survive the whole pipeline; hostile input never crashes or mis-interpolates. | Seeded `Random`; injection-shaped/unicode/huge inputs. | `v0/test/pipeline_test.dart`, `robustness_test.dart` (§9) |
-| **10. UI — widget** | Each user-visible surface renders and reacts against a hermetic injected `Session` (research §9.3 "widget tests against mock state"). | `flutter_test` + `Session` on a temp dir + `_NullCloud`/`_GatedCloud`. | `app/test/widget_test.dart` — 8 tests (§6.3) |
+| **10. UI — widget** | Each user-visible surface renders and reacts against a hermetic injected `Session` (research §9.3 "widget tests against mock state"). | `flutter_test` + `Session` on a temp dir + `_NullCloud`/`_GatedCloud`. | Focused files across `app/test/` (§6.3); totals are generated |
 | **11. Platform smoke — one-time, razor-thin** | "Does the real OS actually render it" for a thin shim not proven by the host/unit harness. | Local simulator/emulator or the development Mac/Windows host. Luis's physical iPhone is deployment-only and is never a test target. | e.g. a local iPhone simulator notification/speech smoke or host Windows toast smoke |
 
 Two supporting instruments sit beside the pyramid: the **dogfood turnlog** (`turnlog.jsonl` + `bin/turnlog_report.dart`, unit-tested in `turnlog_test.dart`) — a *measurement* instrument, tier-10-adjacent but not a validator (§10) — and the **fixture recorder** (`bin/record_fixtures.dart`), the tool that refreshes tier 5's cassette (§5.3).
@@ -79,11 +79,15 @@ Every boundary where Plenara touches something non-deterministic (OS, network, c
 |---|---|---|---|---|
 | Storage | `StorageRepository` (`v0/lib/storage_repository.dart`) | in-memory map impl (`_MemStorage`, `session_test.dart`) | per-record JSON files (`store.dart`) | no — real impl is itself CI-tested on temp dirs (P9.7) |
 | Cloud AI | `CloudClient` (`v0/lib/claude.dart`) | the fake taxonomy, §3.2 + the cassette, §5 | `ClaudeClient` (live HTTP; wire-tested against a stub server in `claude_test.dart`) | no — recorder run doubles as the live smoke |
-| OS notifications | `NotificationScheduler` (`v0/lib/reminders.dart`) | `FakeScheduler` (in `lib/`, deliberately — it is also the safe production default until a platform shim is smoked) | `WindowsToastScheduler` | yes — one real toast, once |
+| OS notifications | `NotificationScheduler` + `PendingNotificationScheduler` (`v0/lib/reminders.dart`) | `FakeScheduler` plus restart-recovery fake | `IosNotificationScheduler`, `MacToastScheduler`, `WindowsToastScheduler` | yes — native adapter/display smoke on a local simulator/host |
 | Clock | constructor-injected `DateTime` on `Session`/`Interpreter`/`Router` | frozen `2026-07-06T09:00:00` | `DateTime.now()` at the composition root only | no |
 | Speech | `SpeechInput`/`SpeechOutput` | deterministic Flutter doubles | platform STT/TTS | yes — thin shim only, on the local simulator/host; never Luis's physical iPhone |
 
-The `NotificationScheduler` is the reference execution of the discipline and worth stating as the pattern (from `v0/lib/reminders.dart`): the OS shim is **three methods** (`schedule`/`cancel`/`armed`) mapping 1:1 to platform APIs; *everything worth testing* — which reminders arm, dedupe on re-open, cancel on undo, reschedule detection, past-due nudges — is pure reconciliation logic over the record store, derived (never imperatively tracked), and exhaustively CI-tested against `FakeScheduler` (`reminders_test.dart`, 30+ tests). The human owes the project exactly one smoke of the shim, ever.
+The notification seams are the reference execution of the discipline: `schedule`/`cancel`/`armed`
+map to platform APIs, while native adapters additionally expose the OS pending queue through
+`PendingNotificationScheduler` so restart reconciliation is authoritative. Everything else—which
+occurrences arm, the 16-occurrence horizon, the global 64 cap, payload identity, cancellation,
+reschedule, and past-due nudges—is deterministic and calibrated in `reminders_test.dart`.
 
 ### 3.2 The `CloudClient` fake taxonomy
 
@@ -115,7 +119,8 @@ The distinction between `_NoCloud` (throws — "this path must never get here") 
 
 Driving the interpreter with simulated NLU output (`{skillId, slots}`) rather than through `Session` is the layering payoff (P2.5): tier 1 needs no router, no storage backend, no cloud — so it is fast enough to run on every change and precise enough that a failure names the primitive at fault.
 
-**[GAP — measurement, not construction]:** "exhaustively" is asserted by review today, not measured. The §8 coverage gate turns it into a number: `interpreter.dart` is Tier-A code with a ≥90% line bar, and the per-op checklist becomes auditable from the lcov report.
+**Measured coverage.** `interpreter.dart` participates in Tier A's enforced ≥90% aggregate line bar,
+and the per-op checklist is auditable from the lcov report printed by every precheck.
 
 ---
 
@@ -155,23 +160,35 @@ Research §9.3: "End-to-end tests are narrow and high-value: the full voice → 
 
 ### 6.1 Built (and where)
 
-- **Utterance → intent → action → storage → reload → undo** — the core round-trip, minus voice (which does not exist yet; the transcript IS the current entry boundary). `pipeline_test.dart` runs route → resolve → execute → persist → **reload from disk** → undo per seed skill; `session_test.dart`'s `'multi-turn story (the full offline pipeline)'` and `'realistic day — broad cross-skill integration'` groups run long conversational sequences (capture, query, correction, undo, persistence across `Session` instances) — all under `_NoCloud`, so the whole path is proven offline.
+- **Voice/typed input → intent → action → storage → reload → undo** — `voice_turn_controller_test.dart` proves capture finalization, cancel-only discard, delayed-stop exclusion, and auto-send through the turn seam; `pipeline_test.dart` runs route → resolve → execute → persist → **reload from disk** → undo per seed skill; `session_test.dart`'s long conversational groups cover correction and restart persistence under `_NoCloud`.
 - **The capability-authoring round-trip** — research §9.3's "describe → type created → log against it" — is realized in `cloud_test.dart` against the cassette: `'"start tracking $desc" previews, then "activate" registers it'` and `'an authored capability previews, then "activate" registers + persists its files'`, with the authored capability's files landing on disk and the schema-drift guard implicit in replaying genuine authored JSON through the real validator.
 - **Novel phrasing → cloud route → execute → corpus learns → correction forgets** — the learning loop (Spec 03 §5.2, v0 binary ratchet `G-45`): `cloud_test.dart` asserts both the graduation into the fast path and that a correction removes the learned template.
 - **Reminder arming E2E** — utterance → record → `reconcileReminders` → armed toast set, plus dedupe on re-open, cancel on undo, reschedule re-arm, past-due nudges (`reminders_test.dart` against `FakeScheduler`).
 - **Failure-path E2E** — each `CloudErrorKind` from utterance to honest surface + turnlog (`cloud_result_test.dart`).
+- **Automation → Review Feed**, **restart-surviving undo**, and **multi-device merge/conflict review** are built against real temporary files, durable journals, and calibrated failure cases. The thin iOS notification adapter also has a local-simulator native-call smoke; physical phones remain deployment-only.
 
-### 6.2 Target paths not yet covered **[GAP]**
+### 6.2 Remaining coverage extensions
 
-1. **Voice round-trip.** Blocked on voice existing; the moment `SpeechInput`/`SpeechOutput` land (behind seams, §3.1), the critical path becomes *recorded-audio-or-fake-transcript → intent → action → storage* with the STT shim faked, and one human smoke of the real mic. The suite's current text entry point remains a permanent tier (it IS the deterministic core), not a placeholder.
-2. **Generative request routed from a spoken/typed turn.** `GenerativeService` kinds are built and grounded-tested (tier 7); session-level weekly review and pattern insight now detach through `OperationCenter`, while gift/reconnect/briefing/draft-message retain their grounded direct service paths. Each implemented assembler declares its allowed record classes, stamps explicit-invocation consent, and has a journal-content canary.
-3. **Automation → Review Feed.** `AutomationRunner` is unbuilt (Spec 04 §3.9); when built, the E2E is: automation fires (fake clock) → write held for review → approve/decline — with the *no act-then-describe for unattended writes* invariant asserted (CLAUDE.md locked principle).
-4. **Multi-device merge.** Deferred with the CRDT engine (P2, `G-36`); the store tier's HLC tests are the down payment.
-5. **Restart-surviving undo.** Undo is in-memory in v0 (DOGFOOD.md known edge); the persisted-journal path (Spec 04 §3.11) owes a kill-and-relaunch E2E when built.
+1. **Paid-tier exact-example conformance.** The existing grounded/session tests prove implemented
+   generative kinds, but P-01…P-20 still need the replay-backed exact-utterance variant in §7.
+2. **Real notification authorization/display.** Deterministic reconciliation, durable OS-payload
+   recovery, and native scheduling calls are automated. The local-simulator smoke must detect the
+   SpringBoard permission sheet and drive the intended Allow/Don't Allow choice through the host
+   Computer Use channel; a dialog is test state, not a reason to wait or bypass authorization.
+   Visible delivery remains an explicit simulator observation. The host must be unlocked before the
+   run so the driver can act; if it locks mid-run, the run is blocked and must be resumed after
+   unlock rather than counted as evidence.
+3. **Real-provider multi-device timing.** Merge and conflict semantics are covered with filesystem
+   branches; provider latency/dataless behavior remains the Spec 06 spike rather than a correctness
+   claim inferred from fakes.
 
-### 6.3 The widget tier **[GAP — thinnest surface, designated growth]**
+### 6.3 The widget tier
 
-`app/test/widget_test.dart` (8 tests) covers: greeting + a full turn, past-due-reminder and birthday nudge bubbles, empty-input no-op, undo from the UI, multi-turn list rendering, graceful unrecognized-input reply, and the in-flight busy state (via `_GatedCloud`). All hermetic — an injected `Session` on a temp dir. This is real product-level validation of the shell, but it is 8 tests against a growing UI; per research §9.3, the target is **each view archetype renders a representative type** once Spec 07 defines the archetype set, plus one widget test per user-visible failure surface (Spec 04 §5's mapping). Growth here is explicitly directed by P9.1 (HANDOFF: "thinnest-covered surface; grow these").
+The Flutter suite is distributed by surface rather than concentrated in `widget_test.dart`: Today,
+Plan, Library/data, routines, settings, onboarding, attention/conflict recovery, reply/search cards,
+voice lifecycle, presence/motion, accessibility, and development-channel isolation each have focused
+files under `app/test/`. All are hermetic with injected sessions or state, and persistence-sensitive
+cases use real temporary files. Exact totals are generated by precheck and never frozen here.
 
 ---
 
@@ -191,7 +208,7 @@ Research §9.3: "End-to-end tests are narrow and high-value: the full voice → 
 
 ---
 
-## 8. Code-Coverage Instrumentation & CI Thresholds **[GAP — the largest one]**
+## 8. Code-Coverage Instrumentation & CI Thresholds
 
 Research §9.3 is unambiguous: "Coverage is measured, not assumed. The project adopts standard code-coverage instrumentation (`flutter test --coverage` producing lcov) **from the first commit**, with a CI gate that fails the build below an agreed threshold and reports per-layer coverage… Generated code and platform glue are excluded from the denominator; the interpreter, business logic, and storage layers are held to the highest bar."
 
@@ -275,15 +292,12 @@ Consensus and code-realized decisions first, then what remains genuinely open.
 - **D6 — Integration-first storage; fakes prove seams only (P9.7).** Reconciles CLAUDE.md's "don't mock the database" with the seam discipline: the default harness is real temp-dir storage; the in-memory `StorageRepository` fake appears only in seam-proof tests. Realized (`session_test.dart`).
 - **D7 — Hermeticity mechanics are fixed:** `makeTempDataDir()` isolation, frozen `2026-07-06T09:00:00` clock, seeded fuzz (§1 P9.6). Realized (`v0/test/helpers.dart` et al.).
 - **D8 — The cassette is the v1 recorded-test-pair methodology of record;** the fuller Spec 03 §7 `TestPair`-with-`NluContext` harness lands with the context features it exercises, seeded from dogfood turnlog pairs (§5.4, §10.3).
-- **D9 — Coverage tiers and gate content are as §8.3/§8.4:** Tier A ≥90 / Tier B ≥80 / Tier C ≥60 / global ≥80, ratchet-only, §9.3's exclusions; the gate additionally runs analyze, both suites, import-lint layering, the debug build, and a ratchet-only conformance-count check. (Decision made here; construction is O1.)
+- **D9 — Coverage tiers and gate content are as §8.3/§8.4:** Tier A ≥90 / Tier B ≥80 / Tier C ≥60 / global ≥80, ratchet-only, §9.3's exclusions; the live gate additionally runs analyze, both suites, import-lint layering, the debug build, simulator/host integration checks, and a ratchet-only conformance-count check.
 
 ### 11.2 Open
 
-- **O1 — Build the coverage instrumentation + gate (§8).** The research §9.3 "from the first commit" commitment is ~1300 tests overdue; the biggest documented gap in this spec. Includes the import-lint gate and the local-pre-push-vs-hosted-CI bridge. Log in 05b.
 - **O2 — Paid-tier conformance harness variant (§7):** run P-01…P-20 against `ReplayCloud` so 20 of the 60 stop being skipped-by-definition; plus the generated (not hand-synced) tally and the skip-audit rule.
-- **O3 — Missing E2E paths (§6.2):** voice round-trip (blocked on the voice spike + `SpeechInput`/`SpeechOutput` seams), session-routed generative kinds, automation → Review Feed, restart-surviving undo, multi-device merge (P2). Each becomes a tier-4/10 harness the moment its feature lands — features and their E2E arrive together (P9.1).
-- **O4 — Widget-tier growth (§6.3):** from 8 tests to one-per-archetype (pending Spec 07) + one-per-failure-surface. The designated thinnest area.
 - **O5 — Turnlog → fixture promotion loop (§10.3):** the mechanism that converts dogfood reality into permanent regression pairs, under the slot-shapes-only privacy rule. Needs a beta's worth of data to be worth automating.
 - **O6 — Fuzz-corpus extension (§9):** people-graph and authored-shape sweeps.
-- **O7 — Threshold recalibration cadence:** first ratchet review after one quarter of measured coverage (per §8.3); ties to O1.
+- **O7 — Threshold recalibration cadence:** first ratchet review after one quarter of measured coverage (per §8.3).
 - **O8 — Cross-spec reconciliations for a later pass:** (a) ✅ **resolved (suite-sync CS-13):** the v1 turnlog carries two fields — `routingSource` (Spec 03 §2.5's enum verbatim, membership owned there) and `outcome` (`dispatched | clarified | corrected | undone | refused | error | out_of_domain`); Spec 11 §2.1 is the landing zone and §10.1's metrics read off `outcome`; (b) research §9.3's "mock StorageRepository and mock IntentClassifier" phrasing vs D6's integration-first rule — the research sentence should read as *seams exist*, not *mocks are the default*; (c) 05a-rig eval harnesses (`eval_routing.py`, `eval_retrieval.py`) sit outside this spec's pyramid — decide whether their datasets feed the §5 cassette inputs or stay research-only.

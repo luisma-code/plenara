@@ -6,6 +6,11 @@ private final class DataFolderBridge: NSObject, UIDocumentPickerDelegate {
   private static let bookmarkKey = "plenara.dataFolderBookmark"
   private var pendingResult: FlutterResult?
   private var activeURL: URL?
+  private var pendingURL: URL?
+  private var pendingBookmark: Data?
+  private var rollbackURL: URL?
+  private var rollbackBookmark: Data?
+  private var hasCommittedRollback = false
 
   func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
@@ -17,6 +22,7 @@ private final class DataFolderBridge: NSObject, UIDocumentPickerDelegate {
         return
       }
       pendingResult = result
+      discardPendingSelection()
       let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
       picker.allowsMultipleSelection = false
       picker.delegate = self
@@ -26,7 +32,34 @@ private final class DataFolderBridge: NSObject, UIDocumentPickerDelegate {
         return
       }
       presenter.present(picker, animated: true)
+    case "commit":
+      guard let url = pendingURL, let bookmark = pendingBookmark else {
+        result(FlutterError(code: "no_pending_selection", message: "No folder selection is waiting to be committed.", details: nil))
+        return
+      }
+      rollbackURL = activeURL
+      rollbackBookmark = UserDefaults.standard.data(forKey: Self.bookmarkKey)
+      hasCommittedRollback = true
+      activeURL = url
+      pendingURL = nil
+      pendingBookmark = nil
+      UserDefaults.standard.set(bookmark, forKey: Self.bookmarkKey)
+      result(nil)
+    case "finalize":
+      rollbackURL?.stopAccessingSecurityScopedResource()
+      rollbackURL = nil
+      rollbackBookmark = nil
+      hasCommittedRollback = false
+      result(nil)
+    case "rollback":
+      rollbackSelection()
+      result(nil)
     case "reset":
+      discardPendingSelection()
+      rollbackURL?.stopAccessingSecurityScopedResource()
+      rollbackURL = nil
+      rollbackBookmark = nil
+      hasCommittedRollback = false
       activeURL?.stopAccessingSecurityScopedResource()
       activeURL = nil
       UserDefaults.standard.removeObject(forKey: Self.bookmarkKey)
@@ -42,15 +75,15 @@ private final class DataFolderBridge: NSObject, UIDocumentPickerDelegate {
       return
     }
     do {
-      activeURL?.stopAccessingSecurityScopedResource()
       guard url.startAccessingSecurityScopedResource() else {
         throw NSError(domain: "PlenaraDataFolder", code: 1, userInfo: [NSLocalizedDescriptionKey: "The selected folder did not grant access."])
       }
+      pendingURL = url
       let bookmark = try url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
-      UserDefaults.standard.set(bookmark, forKey: Self.bookmarkKey)
-      activeURL = url
+      pendingBookmark = bookmark
       finish(url.path)
     } catch {
+      discardPendingSelection()
       finish(FlutterError(code: "bookmark_failed", message: error.localizedDescription, details: nil))
     }
   }
@@ -81,6 +114,27 @@ private final class DataFolderBridge: NSObject, UIDocumentPickerDelegate {
     let result = pendingResult
     pendingResult = nil
     result?(value)
+  }
+
+  private func discardPendingSelection() {
+    pendingURL?.stopAccessingSecurityScopedResource()
+    pendingURL = nil
+    pendingBookmark = nil
+  }
+
+  private func rollbackSelection() {
+    discardPendingSelection()
+    guard hasCommittedRollback else { return }
+    activeURL?.stopAccessingSecurityScopedResource()
+    activeURL = rollbackURL
+    rollbackURL = nil
+    if let bookmark = rollbackBookmark {
+      UserDefaults.standard.set(bookmark, forKey: Self.bookmarkKey)
+    } else {
+      UserDefaults.standard.removeObject(forKey: Self.bookmarkKey)
+    }
+    rollbackBookmark = nil
+    hasCommittedRollback = false
   }
 
   private static var presenter: UIViewController? {

@@ -649,6 +649,9 @@ class Session {
   /// [AutomationRunner.pendingReview] for the user's approval (Spec 02 §7.5).
   late AutomationRunner automations;
   late Router router;
+  final List<ContentSearchResult> _searchResults = [];
+  List<ContentSearchResult> get searchResults =>
+      List.unmodifiable(_searchResults);
 
   /// The shipped exercise catalogue that grounds routine authoring (Spec 16).
   late ExerciseCatalogue exercises;
@@ -940,8 +943,7 @@ class Session {
             .map((_) => 'A capability definition needs repair.'),
         ...migrationRepairItems.map((_) => 'A record migration needs repair.'),
         ...executionRepairIssues.map((_) => 'A recent change needs repair.'),
-        ...turnlogIssues
-            .map((_) => 'Turn diagnostics could not be recorded.'),
+        ...turnlogIssues.map((_) => 'Turn diagnostics could not be recorded.'),
         // A 'refresh: …' line is a drop summary (records parked mid-session), not a
         // failed refresh — say which, so the repair surface doesn't mislead.
         ...externalStorageIssues.map((issue) => issue.startsWith('refresh:')
@@ -1226,7 +1228,9 @@ class Session {
       await router.buildRetrievalIndex(skills);
       _contentIndex = ContentSearchIndex();
       await _contentIndex!.build(
-          store.values); // semantic content search (F-12); no-op if server down
+        store.values,
+        full: true,
+      ); // semantic content search (F-12); no-op if server down
       phase('retrieval index built');
     } else {
       phase('retrieval disabled');
@@ -1350,7 +1354,7 @@ class Session {
         store
           ..clear()
           ..addAll(accepted);
-        await _contentIndex?.build(store.values);
+        await _contentIndex?.build(store.values, full: true);
         await _reconcileReminders();
         if (!_storageChanges.isClosed) _storageChanges.add(null);
       }
@@ -2874,7 +2878,8 @@ class Session {
   /// invisible figure-fill execution is repaired transparently (see
   /// [_undoRoutineFillThenRetry]) — the fill is presentation the user never saw
   /// as a separate change, so it must not block reversing the routine.
-  ({bool reversed, String message, Object? error}) _undoEntry(int journalIndex) {
+  ({bool reversed, String message, Object? error}) _undoEntry(
+      int journalIndex) {
     final entry = _journal[journalIndex];
     var result = executions.undo(entry.id);
     if (result.state == ExecutionResultState.conflict) {
@@ -2909,9 +2914,8 @@ class Session {
     // say WHAT was reversed — a silent "Undone." can't be trusted as the safety net
     return (
       reversed: true,
-      message: entry.desc == null
-          ? 'Undone.'
-          : 'Undone — reversed: "${entry.desc}"',
+      message:
+          entry.desc == null ? 'Undone.' : 'Undone — reversed: "${entry.desc}"',
       error: null,
     );
   }
@@ -2926,7 +2930,9 @@ class Session {
     final entries = executions.journal.entries;
     final target = entries.where((e) => e.id == execId).firstOrNull;
     final rid = target?.frozenInputs['routineId'];
-    if (target == null || target.origin != 'routine-authoring' || rid is! String) {
+    if (target == null ||
+        target.origin != 'routine-authoring' ||
+        rid is! String) {
       return null;
     }
     final fills = entries
@@ -3702,6 +3708,7 @@ class Session {
 
   Future<String> _handleTurn(String u) async {
     u = u.trim();
+    _searchResults.clear();
     _outSource = 'clarify';
     _outSkill = null;
     _tourSpokeThisTurn =
@@ -3784,7 +3791,8 @@ class Session {
     // Say so briefly — a briefing that just trails off otherwise reads as a bug —
     // and record it in the diag below for post-hoc diagnosis.
     if (_generative.lastTruncated) {
-      resp = '$resp\n\n(That ran long and was cut off — ask again for the rest.)';
+      resp =
+          '$resp\n\n(That ran long and was cut off — ask again for the rest.)';
     }
     // Did this turn actually spend cloud tokens? (drives the per-response cloud dot — accurate
     // even when a cloud/generative call failed to an offline reply, which spends nothing.)
@@ -3854,12 +3862,57 @@ class Session {
       });
     } catch (_) {/* housekeeping/logging failure must not break the turn */}
     try {
+      final execution = _lastTurnExecutionId == null
+          ? null
+          : executions.journal.entries
+              .where((entry) => entry.id == _lastTurnExecutionId)
+              .firstOrNull;
+      final affectedRecordIds = <String>{
+        ..._outWrites
+            .map((write) => write['id'])
+            .whereType<String>()
+            .where((id) => id.isNotEmpty),
+        ...?execution?.operations.map((operation) => operation.id),
+      }.toList()
+        ..sort();
+      final outcome = switch (_outSource) {
+        'error' => 'error',
+        'clarify' || 'provide-slot' => 'clarified',
+        'correction' => 'corrected',
+        'out-of-domain' => 'out_of_domain',
+        'refused' || 'out-of-scope' => 'refused',
+        'undo' => 'undone',
+        'plan-proposal' => switch (_outSkill) {
+            'apply-plan-proposal' => 'accepted',
+            'dismiss-plan-proposal' => 'dismissed',
+            _ => 'proposed',
+          },
+        _ when _outError != null => 'error',
+        _ when affectedRecordIds.isNotEmpty => 'dispatched',
+        _ => 'read',
+      };
+      final proposalState = _outSource == 'plan-proposal'
+          ? switch (_outSkill) {
+              'apply-plan-proposal' => 'accepted',
+              'dismiss-plan-proposal' => 'dismissed',
+              _ => planProposals.active?.state.name ?? 'proposed',
+            }
+          : null;
+      final failureState = _outError == null
+          ? null
+          : execution?.phase == ExecutionPhase.applying
+              ? 'Recovery is pending for the interrupted write.'
+              : 'The turn failed safely; no additional action was applied.';
       conversationLedger.append(
         utterance: u,
         reply: resp,
         source: _outSource,
+        outcome: outcome,
         at: startedAt,
         executionId: _lastTurnExecutionId,
+        affectedRecordIds: affectedRecordIds,
+        proposalState: proposalState,
+        failureState: failureState,
       );
     } catch (_) {
       /* ledger failure is surfaced at next hydration, not as a lost reply */
@@ -4215,13 +4268,15 @@ class Session {
             },
           );
           if (result.state == ExecutionResultState.failedBeforeWrite) {
-            _outError = 'automation approval failed before write: ${result.error}';
+            _outError =
+                'automation approval failed before write: ${result.error}';
             return "I couldn't start that approval safely, so nothing changed.";
           }
           automations.completePreparedApproval(item.id, res.plan!.writes);
           _lastTurnWrote = true;
           if (result.state == ExecutionResultState.appliedInMemory) {
-            _outError = 'automation approval applied in memory only: ${result.error}';
+            _outError =
+                'automation approval applied in memory only: ${result.error}';
             return "Applied it here, but couldn't finish saving it. I'll recover it next launch.";
           }
           return 'Done — applied "${item.description}".';
@@ -4418,7 +4473,8 @@ class Session {
               prevDispatch; // keep context so a further correction chains
           _outSource = 'correction';
           if (result.state == ExecutionResultState.appliedInMemory) {
-            _outError = 'slot correction applied in memory only: ${result.error}';
+            _outError =
+                'slot correction applied in memory only: ${result.error}';
             return "Updated here, but couldn't finish saving it. I'll recover it next launch.";
           }
           return 'Updated — that ${rec['activity']} was $value ${field == 'duration' ? 'minutes' : 'km'}.';
@@ -5134,21 +5190,73 @@ class Session {
     final query = rawQuery.trim();
     _outSource = 'search';
     if (query.isEmpty) return 'What should I search your notes for?';
+    // Search is the one read door, so it refreshes from the complete live store
+    // immediately before querying. This covers spoken writes, touch edits, and
+    // provider deletions without relying on every mutation producer to remember
+    // an index side effect.
+    await _contentIndex?.build(store.values, full: true);
     var ids = await _contentIndex?.search(query) ?? const <String>[];
-    if (ids.isEmpty)
+    if (ids.isEmpty) {
       ids = ContentSearchIndex.keywordSearch(query, store.values);
+    }
     if (ids.isEmpty) return 'I couldn\'t find anything about "$query".';
     final byId = {for (final r in store.values) r['id']: r};
-    final lines = <String>[];
+    final results = <ContentSearchResult>[];
     for (final id in ids) {
       final r = byId[id];
       final c = r == null ? null : ContentSearchIndex.contentOf(r);
-      if (c != null) lines.add('• $c');
+      if (r == null || c == null) continue;
+      final typeId = '${r['typeId']}';
+      final title =
+          '${types[typeId]?['displayName'] ?? _humanizeTypeId(typeId)}';
+      results.add(ContentSearchResult(
+        recordId: id,
+        typeId: typeId,
+        title: title,
+        dateLabel: _searchDateLabel(r),
+        content: c,
+      ));
     }
-    if (lines.isEmpty) return 'I couldn\'t find anything about "$query".';
-    final head =
-        lines.length == 1 ? 'Found 1 match:' : 'Found ${lines.length} matches:';
-    return '$head\n${lines.join('\n')}';
+    if (results.isEmpty) return 'I couldn\'t find anything about "$query".';
+    _searchResults.addAll(results);
+    if (results.length == 1) {
+      return 'Found it — ${results.single.spokenLabel}. It\'s on screen.';
+    }
+    return 'Found ${results.length} matches.\n'
+        '${results.map((result) => '• ${result.spokenLabel}').join('\n')}\n'
+        'Tap one to open it.';
+  }
+
+  String _humanizeTypeId(String typeId) => typeId
+      .split('_')
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
+
+  String? _searchDateLabel(Map<String, dynamic> record) {
+    final raw = record['entryDate'] ??
+        record['loggedAt'] ??
+        record['at'] ??
+        record['remindAt'] ??
+        record['dueAt'] ??
+        record['createdAt'];
+    final date = DateTime.tryParse('${raw ?? ''}');
+    if (date == null) return null;
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   /// Lowercase set of every stored contact's display name + aliases — the vocabulary a router

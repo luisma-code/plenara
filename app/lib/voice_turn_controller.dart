@@ -434,8 +434,9 @@ class VoiceTurnController extends ChangeNotifier {
   /// while native closure, errors, and watchdog stops converge on the recognizer's same idempotent
   /// flush door. onDone/catch always clear listening, so the surface cannot stay stuck recording.
   Future<void> toggleMic() async {
-    if (!(speech?.available ?? false) || _busy) return;
+    if (!(speech?.available ?? false) || _busy || _transcribing) return;
     if (_listening) {
+      final stopEpoch = _micEpoch;
       // THE STOP TAP. The user — not the engine — decides the utterance is over: finalize and send
       // whatever was said. (This used to cancel; abort now lives on the ✕ control, because with
       // no auto-endpointing the common second tap is "I'm done", not "forget it".)
@@ -448,7 +449,16 @@ class VoiceTurnController extends ChangeNotifier {
         _micPrompt = null;
         _notify();
       }
-      await speech!.stop();
+      try {
+        await speech!.stop();
+      } catch (error) {
+        logDebug('speech: stop failed: $error');
+        if (!_disposed && stopEpoch == _micEpoch) {
+          _transcribing = false;
+          _notify();
+          onCaptureResolved();
+        }
+      }
       return;
     }
     // A fresh listen intent — captured so a rapid tap→abort→tap during the awaits below can't leave
@@ -498,7 +508,7 @@ class VoiceTurnController extends ChangeNotifier {
     try {
       await speech!.listen(
         onNotice: (notice) {
-          if (_disposed) return;
+          if (_disposed || epoch != _micEpoch) return;
           switch (notice) {
             case SpeechNotice.longPause:
               // Exactly the moment the old system would have auto-sent — a habituated user is
@@ -521,7 +531,7 @@ class VoiceTurnController extends ChangeNotifier {
         },
         onResult: (text, isFinal) {
           final t = text.trim();
-          if (_disposed || t.isEmpty) return;
+          if (_disposed || epoch != _micEpoch || t.isEmpty) return;
           heard = true;
           _noMatchStreak = 0;
           if (!isFinal) {
@@ -560,7 +570,7 @@ class VoiceTurnController extends ChangeNotifier {
           onCaptureResolved();
         },
         onDone: () {
-          if (_disposed) return;
+          if (_disposed || epoch != _micEpoch) return;
           _listening = false;
           _transcribing = false;
           _micPrompt = null;
@@ -597,7 +607,7 @@ class VoiceTurnController extends ChangeNotifier {
       );
     } catch (e) {
       logDebug('speech: listen failed: $e');
-      if (!_disposed) {
+      if (!_disposed && epoch == _micEpoch) {
         _listening = false;
         _notify();
       }

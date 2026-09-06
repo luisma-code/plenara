@@ -26,6 +26,8 @@ class _HoldingSpeech implements SpeechRecognizer {
   void Function()? _onDone;
   bool _active = false;
   int cancels = 0;
+  int listenCalls = 0;
+  Completer<void>? stopGate;
 
   /// What the engine would hand back on a stop tap.
   String? pendingFinal;
@@ -41,6 +43,7 @@ class _HoldingSpeech implements SpeechRecognizer {
     required void Function() onDone,
     void Function(SpeechNotice)? onNotice,
   }) async {
+    listenCalls++;
     _onResult = onResult;
     _onDone = onDone;
     _onNotice = onNotice;
@@ -59,6 +62,8 @@ class _HoldingSpeech implements SpeechRecognizer {
   @override
   Future<void> stop() async {
     if (!_active) return;
+    final gate = stopGate;
+    if (gate != null) await gate.future;
     final t = pendingFinal;
     if (t != null && t.isNotEmpty) _onResult?.call(t, true);
     _finish();
@@ -262,6 +267,31 @@ void main() {
       expect(turns.utterances, ['add buy bread to my list']);
       expect(controller.heard, 'add buy bread to my list');
     });
+
+    test(
+      'a second tap cannot reopen the mic while stop is still flushing',
+      () async {
+        speech.pendingFinal = 'add buy bread to my list';
+        speech.stopGate = Completer<void>();
+        await controller.toggleMic();
+
+        final stopping = controller.toggleMic();
+        expect(controller.transcribing, isTrue);
+        await controller.toggleMic();
+
+        expect(
+          speech.listenCalls,
+          1,
+          reason: 'the in-flight stop owns the recognizer until finalization',
+        );
+        expect(controller.listening, isFalse);
+
+        speech.stopGate!.complete();
+        await stopping;
+        await Future<void>.delayed(Duration.zero);
+        expect(turns.utterances, ['add buy bread to my list']);
+      },
+    );
 
     test(
       'a watchdog auto-stop sends, and says it stopped on its own',

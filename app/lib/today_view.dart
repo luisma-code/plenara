@@ -722,11 +722,46 @@ class _ConversationCard extends StatelessWidget {
           Text(entry.reply),
           const SizedBox(height: 9),
           Text(
-            entry.source,
+            '${entry.source} · ${entry.outcome}',
             style: Theme.of(
               context,
             ).textTheme.labelSmall?.copyWith(color: PlenaraTheme.amber),
           ),
+          if (entry.proposalState != null) ...[
+            const SizedBox(height: 5),
+            Text('Proposal: ${entry.proposalState}'),
+          ],
+          if (entry.failureState != null) ...[
+            const SizedBox(height: 5),
+            Text(
+              entry.failureState!,
+              style: const TextStyle(color: Color(0xFFE9A58B)),
+            ),
+          ],
+          if (entry.affectedRecordIds.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                for (final recordId in entry.affectedRecordIds)
+                  if (session.store.containsKey(recordId))
+                    TextButton.icon(
+                      key: Key('history-record-$recordId'),
+                      onPressed: () => showRecordDetailSheet(
+                        context: context,
+                        session: session,
+                        recordId: recordId,
+                        onChanged: onChanged,
+                      ),
+                      icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                      label: Text(
+                        '${session.types['${session.store[recordId]?['typeId']}']?['displayName'] ?? 'Record'}',
+                      ),
+                    ),
+              ],
+            ),
+          ],
           if (entry.executionId != null) ...[
             const SizedBox(height: 6),
             Align(

@@ -62,7 +62,11 @@ void main() {
         d.year < 2028;
         d = DateTime(d.year, d.month, d.day + 1)) {
       final now = DateTime(d.year, d.month, d.day, 12, 0); // noon, past 9am
-      final at = {for (final r in allReminders(store, now)) r.ref: r.at};
+      final at = <String, DateTime>{};
+      for (final reminder in allReminders(store, now)) {
+        final recordId = reminder.ref.split('@').first;
+        at.putIfAbsent(recordId, () => reminder.at);
+      }
       String why(String ref) => '$ref with now=$now gave ${at[ref]}';
 
       for (final ref in store.keys) {
@@ -74,7 +78,8 @@ void main() {
 
       expect(_calDays(now, at['r-daily']!), 1, reason: why('r-daily'));
 
-      expect(at['r-weekly']!.weekday, DateTime.tuesday, reason: why('r-weekly'));
+      expect(at['r-weekly']!.weekday, DateTime.tuesday,
+          reason: why('r-weekly'));
       expect(_calDays(now, at['r-weekly']!), inInclusiveRange(1, 7),
           reason: why('r-weekly'));
 
@@ -113,11 +118,13 @@ void main() {
     final store = <String, Map<String, dynamic>>{
       'r': _rec('r', 'monthlyday:31')
     };
-    DateTime at(DateTime now) => allReminders(store, now).single.at;
-    expect(at(DateTime(2026, 2, 10, 12)), DateTime(2026, 2, 28, 9)); // common Feb
+    DateTime at(DateTime now) => allReminders(store, now).first.at;
+    expect(
+        at(DateTime(2026, 2, 10, 12)), DateTime(2026, 2, 28, 9)); // common Feb
     expect(at(DateTime(2028, 2, 10, 12)), DateTime(2028, 2, 29, 9)); // leap Feb
     expect(at(DateTime(2026, 4, 5, 12)), DateTime(2026, 4, 30, 9)); // April
     expect(at(DateTime(2026, 4, 30, 12)), DateTime(2026, 5, 31, 9),
-        reason: "the 30th's 9am already passed → May 31, not another April day");
+        reason:
+            "the 30th's 9am already passed → May 31, not another April day");
   });
 }

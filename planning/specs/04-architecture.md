@@ -608,6 +608,16 @@ abstract class NotificationScheduler {
 - **On every app open** the scheduler re-derives and refreshes the next N occurrences of every active RRULE — since it cannot roll them forward in the background, drift is bounded to "one app-open behind."
 - **Scheduled generation is NOT a background Claude call.** The 7 AM briefing (Spec 05 §15) is an OS-fired local notification whose **tap** triggers generation (detached, §4.7); if untapped, generation runs on next app-open. This is why Spec 05 §15's promise reads "waiting for you at 7 AM," not "spoken at 7 AM." Arming is fully offline; only tap-time *content* needs connectivity (degrades per §6.2). Layer: BL component; the OS calls cross to the platform channel. This is pre-v0 (even the walking skeleton's "local reminder" hits it).
 
+**Current realization.** iOS, macOS, and Windows have native
+`flutter_local_notifications` adapters; the composition root selects the iOS adapter on the P1
+target. Every managed request carries a versioned payload containing its stable record/occurrence
+identity and scheduled instant. Native adapters read the OS pending queue on reconciliation, so a
+fresh process can cancel notifications for records deleted while it was closed. Recognized recurring
+rules materialize 16 distinct future occurrence ids, and the globally earliest 64 requests win the
+iOS-sized queue. One-off reminders retain their record id. The deterministic projection,
+restart-recovery, global-cap, reschedule, undo, and payload behavior are calibrated against fakes;
+the thin iOS adapter has a local-simulator native-call smoke.
+
 ### 3.14 Business Logic — `ContentSearchIndex` (new: record/journal content search, `G-34`)
 
 `search-records` (Spec 05 §12) needs a semantic index over record and journal **content** — a different artifact from the `CapabilityIndex` (§3.4), which embeds type/skill/generative *metadata* only (Fable F-8).
@@ -620,9 +630,12 @@ abstract class ContentSearchIndex {
 }
 ```
 
-**Current realization.** `ContentSearchIndex` is an in-memory map rebuilt from record content during
-Session initialization and updated after writes. It uses the same deterministic feature-hash
-function as routing and persists no vectors, so there is no search-index file to encrypt or sync.
+**Current realization.** `ContentSearchIndex` is an in-memory map rebuilt from the complete record
+store during Session initialization, after provider reconciliation, and immediately before every
+search. Full rebuilds evict deleted ids; edited content is re-embedded; equal scores use record id as
+a stable tie-break. It uses the same deterministic feature-hash function as routing and persists no
+vectors, so there is no search-index file to encrypt or sync. Search returns ranked tappable cards
+containing the visible record text; TTS receives title/type and date only, never the record body.
 The persistent/incremental packaged-model design below remains a target only if startup/search
 measurements justify it; any persisted content representation must be device-local and join the
 future CryptoBox boundary.

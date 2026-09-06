@@ -147,9 +147,12 @@ void main() {
         () async {
       final s = await _s();
       await s.handle('journal that the cabin trip to the lake was wonderful');
-      expect(
-          (await s.handle('find that note about the cabin trip')).toLowerCase(),
-          contains('cabin'));
+      final spoken =
+          (await s.handle('find that note about the cabin trip')).toLowerCase();
+      expect(spoken, isNot(contains('cabin')),
+          reason: 'private journal text stays off the spoken channel');
+      expect(s.searchResults.single.content.toLowerCase(), contains('cabin'),
+          reason: 'the complete matching record remains inspectable on screen');
     }); // ContentSearchIndex: semantic when the embed server is up, keyword fallback here (offline)
 
     test('F-13 two trackers in one turn: "Track my mood and my energy."',

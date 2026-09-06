@@ -11,7 +11,7 @@
 - Opening the app renders the deterministic Today projection rather than an ephemeral greeting. It includes bounded Now/Next/Later sections, one relationship date, the latest durable execution with targeted undo, Inbox count, operational notices, and repair state.
 - Voice and typed capture continue through `Session.handle`; Today completion calls the typed `Session.completeTask` command directly. Both converge on `ExecutionCoordinator` and its durable device-local journal.
 - Today task rows separate navigation from mutation: tapping the task body opens the shared type-driven detail editor; only the explicit leading circle completes it. Both consume their gesture before the background voice target, and a trailing chevron makes the row's navigation role visible.
-- The device-local conversation ledger retains the final utterance, full reply, routing source, time, and execution link for 250 turns. It is a user-facing product history distinct from content-bearing internal diagnostic logs. History-linked writes expose targeted undo.
+- The device-local conversation ledger retains the final utterance, full reply, routing source, derived outcome, affected record ids, proposal/acceptance state, failure state, time, and execution link for 250 turns. It is a user-facing product history distinct from content-bearing internal diagnostic logs. History renders affected records as tappable links and exposes targeted undo for linked executions.
 - Task schema v3 introduced `status`, `scheduledStartAt`, `estimatedMinutes`, `priority`, `projectRef`, `areaRef`, `contactRefs`, `notes`, and `completedAt`; v4 added dependency/energy/context/recurrence semantics and v5 added `reviewDecision`. `dueAt` remains deadline-only. Project and area are registered record types.
 - Plena remains full-bleed during conversation and yields within the same canvas when Today is visible. The populated surface has an explicit accessible voice target; tap-anywhere remains active only on non-interactive space.
 - Onboarding uses the same warm presence and palette, pins both decisions outside its scrollable story area, and states the internal-dogfood diagnostic policy. Platform icons are generated from a deterministic Plena particle mark for iOS, macOS, and Windows.
@@ -37,14 +37,12 @@ Increment 4's automated evidence gate is complete: 1,904 engine tests plus 36 de
 
 Increment 6's automated evidence gate is complete: 1,907 engine tests plus 36 declared skips, 138 Flutter tests plus the intentional external-channel skip, tier coverage of 94.2% deterministic core / 90.8% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, external-channel isolation, secret scan, and the 24/60 conformance ratchet all pass. New relationship, signal, and durable-suggestion tests were calibrated against deliberate regressions before restoration. Five-day dogfood, perceived continuity, and dismissal-fatigue gates require ordinary use of an explicitly deployed build and are not inferred from automated verification.
 
-The latest final-tree gate after sync/recovery and phone-diagnostic corrections passes 1,922 engine
-tests plus 36 declared skips, 161 Flutter tests plus three intentional development-channel skips,
-94.7% deterministic-core / 90.5% product-logic / 68.1% transport coverage, macOS build, seven
-real-engine integration cases, external-channel isolation, secret scanning, and the 24/60
-conformance ratchet. The same seven interaction/render cases pass on a local iPhone 17 Pro
-simulator, including task body → detail editor, explicit circle → completion, and neither gesture →
-voice. Historical increment evidence above remains as the proof recorded at each boundary; this
-paragraph is the current aggregate.
+The latest final-tree gate after the 2026-08-19 review remediation passes 2,046 engine tests plus 36
+declared skips, 189 Flutter tests plus four intentional skips, 95.7% deterministic-core / 89.9%
+product-logic / 83.8% transport coverage, macOS build, seven real-engine integration cases,
+external-channel isolation, secret scanning, and the 24/60 conformance ratchet. An iOS simulator
+artifact with the native notification adapter also builds. Historical increment evidence above
+remains proof recorded at each boundary; this paragraph is the current aggregate.
 
 ## 0. Product decision
 
