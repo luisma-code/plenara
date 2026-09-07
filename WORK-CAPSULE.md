@@ -314,6 +314,14 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
 
 ## Latest phone deployment
 
+- On 2026-09-07 at 08:32 PDT, signed internal-channel `0.13.0 (19)` from source revision
+  `7210b9bf2603c323b59114dcc4e446b258a9dba3` was installed on **Aluminum Monster** as
+  `com.plenara.plenaraApp` through CoreDevice, without launching it. The installed
+  development-signed AOT SHA-256 is
+  `0d633806a8e06430b1cdc5dcbe0733f6bea256219c397823be4932a5adb89263`; its signature,
+  team `7V63BZ39HU`, provisioning through 2027-07-28, embedded revision, approved internal raw-
+  diagnostics surface, and absence of an Anthropic API-key pattern were verified before install.
+  Deployment only—no physical-phone launch, test, probe, log collection, or app inspection.
 - On 2026-09-06 at 16:42 PDT, signed internal-channel `0.13.0 (19)` from source revision
   `a49a5e3b46e1841f0e54e5c86d4a1e012f086570` was installed on **Aluminum Monster** as
   `com.plenara.plenaraApp` through CoreDevice, without launching it. The installed development-signed
