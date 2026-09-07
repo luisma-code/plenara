@@ -23,6 +23,7 @@ class TodayBoard extends StatelessWidget {
   final ValueChanged<PlannerSignal>? onOpenPlannerSignal;
   final VoidCallback? onAddTodo;
   final VoidCallback? onOpenAttention;
+  final Widget? menuAction;
 
   const TodayBoard({
     super.key,
@@ -35,6 +36,7 @@ class TodayBoard extends StatelessWidget {
     this.onOpenPlannerSignal,
     this.onAddTodo,
     this.onOpenAttention,
+    this.menuAction,
     this.onVoice,
   });
 
@@ -121,6 +123,7 @@ class TodayBoard extends StatelessWidget {
                       },
                       icon: const Icon(Icons.fact_check_outlined),
                     ),
+                    ?menuAction,
                   ],
                 ),
                 const SizedBox(height: 28),

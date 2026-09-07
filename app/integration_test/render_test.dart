@@ -284,9 +284,33 @@ void main() {
       await runFrames(tester, 25);
       expect(find.byKey(const Key('relationships-view')), findsOneWidget);
       expect(find.text('Sam'), findsWidgets);
+      final addPerson = find.byKey(const Key('relationships-add-person'));
+      final globalMenu = find.byKey(const Key('global-menu'));
+      expect(
+        tester.getRect(addPerson).overlaps(tester.getRect(globalMenu)),
+        isFalse,
+        reason: 'Relationships actions must not share the More hit target',
+      );
       if (const bool.fromEnvironment('PLENARA_CAPTURE_SCREENSHOT')) {
-        await binding.takeScreenshot('relationships-three-pillars');
+        await binding.takeScreenshot('relationships-header-actions');
       }
+      await tester.tap(addPerson);
+      await runFrames(tester, 10);
+      expect(find.text('Add a person'), findsOneWidget);
+      await tester.enterText(find.byType(TextField).last, 'Alex');
+      await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+      await runFrames(tester, 20);
+      expect(find.byType(SnackBar), findsOneWidget);
+      if (const bool.fromEnvironment('PLENARA_CAPTURE_SCREENSHOT')) {
+        await binding.takeScreenshot('relationships-change-notification');
+      }
+      await tester.pump(const Duration(seconds: 6));
+      await runFrames(tester, 20);
+      expect(
+        find.byType(SnackBar),
+        findsNothing,
+        reason: 'the change notification should auto-dismiss',
+      );
       await tester.tap(find.byKey(Key('relationship-person-$samId')));
       await runFrames(tester, 25);
       expect(find.byKey(const Key('person-relationship-view')), findsOneWidget);

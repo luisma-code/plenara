@@ -1,6 +1,6 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-06 for the three-pillar product rework._
+_Current working memory. Last updated 2026-09-07 for the primary-header interaction correction._
 
 ## Relationships / Todos / Habits rework (2026-09-06)
 
@@ -43,7 +43,19 @@ _Current working memory. Last updated 2026-09-06 for the three-pillar product re
   `app/build/simulator-check/todo-relationship-signal-person.png`. The short screenshot run yielded
   one Runner RSS sample at 678 MiB, so it supports no plateau or long-soak claim; the app and
   simulator were terminated and the physical phone was untouched.
-- Final full precheck is green: 2,056 engine tests + 36 intentional skips; 197 Flutter tests + 4
+- Primary-root header controls now share one layout instead of placing the global More menu in a
+  later-painted overlay. The 393-point phone regression measured the shipped Relationships overlap
+  (Add person `x=345–393`, More `x=343–383`) and the corrected disjoint targets (Add person
+  `x=297–345`, More `x=349–389`), then also checked Habits and Todos. Shared manual-write/UNDO
+  notifications explicitly dismiss after five seconds; their prior action-bearing snackbar was
+  persistent under Flutter 3.44. Both checks went red against the real old behavior and green after
+  restoration. The corrected real-engine journey passed on macOS and twice on the selected local
+  iPhone 17 Pro simulator, including an actual Add person write and notification absence at six
+  seconds. Captures are `app/build/simulator-check/relationships-header-actions.png` and
+  `app/build/simulator-check/relationships-change-notification.png`. The repeated simulator run had
+  one Runner RSS sample at 655 MiB and supports no plateau or long-soak claim; the app and simulator
+  were terminated and the physical phone was untouched.
+- Final full precheck is green: 2,056 engine tests + 36 intentional skips; 199 Flutter tests + 4
   channel skips; 95.7% deterministic-core, 89.1% product-logic, and 83.8% transport coverage;
   analyzers, seed sync, documentation consistency, import layering, render guards, external-channel
   checks, macOS build, eight real-engine cases, secret scan, and the 24/60 conformance ratchet.

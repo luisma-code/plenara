@@ -13,6 +13,7 @@ class RelationshipsView extends StatefulWidget {
   final PhoneContactsSource? contactsSource;
   final RelationshipLauncher? launcher;
   final VoidCallback? onVoice;
+  final Widget? menuAction;
 
   const RelationshipsView({
     super.key,
@@ -20,6 +21,7 @@ class RelationshipsView extends StatefulWidget {
     this.contactsSource,
     this.launcher,
     this.onVoice,
+    this.menuAction,
   });
 
   @override
@@ -171,6 +173,7 @@ class _RelationshipsViewState extends State<RelationshipsView> {
             onPressed: _addPerson,
             icon: const Icon(Icons.person_add_alt_1_outlined),
           ),
+          ?widget.menuAction,
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(

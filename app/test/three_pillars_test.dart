@@ -53,6 +53,62 @@ Future<Session> _session() async {
 }
 
 void main() {
+  testWidgets(
+    'primary header actions do not overlap the global menu on a phone',
+    (tester) async {
+      tester.view.physicalSize = const Size(393, 852);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final session = await _session();
+      await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Relationships'));
+      await tester.pumpAndSettle();
+
+      final addPerson = find.byKey(const Key('relationships-add-person'));
+      final globalMenu = find.byTooltip('More');
+      final addRect = tester.getRect(addPerson);
+      final menuRect = tester.getRect(globalMenu);
+      debugPrint('relationship add=$addRect global menu=$menuRect');
+      expect(
+        addRect.overlaps(menuRect),
+        isFalse,
+        reason: 'Add person and More must have separate phone hit targets',
+      );
+
+      await tester.tap(addPerson);
+      await tester.pumpAndSettle();
+      expect(find.text('Add a person'), findsOneWidget);
+      expect(find.text('Settings'), findsNothing);
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Habits').last);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .getRect(find.byKey(const Key('habits-add')))
+            .overlaps(tester.getRect(find.byTooltip('More'))),
+        isFalse,
+        reason: 'Add habit and More must have separate phone hit targets',
+      );
+
+      await tester.tap(find.text('Todos').last);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .getRect(find.byKey(const Key('today-weekly-review')))
+            .overlaps(tester.getRect(find.byTooltip('More'))),
+        isFalse,
+        reason:
+            'Review this week and More must have separate phone hit targets',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('primary navigation is Relationships, Todos, and Habits', (
     tester,
   ) async {

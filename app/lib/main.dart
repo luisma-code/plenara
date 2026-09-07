@@ -1013,10 +1013,12 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
               0 => RelationshipsView(
                 session: _session,
                 onVoice: canUseVoice ? _turn.toggleMic : null,
+                menuAction: _menuButton(context),
               ),
               2 => HabitsView(
                 session: _session,
                 onVoice: canUseVoice ? _turn.toggleMic : null,
+                menuAction: _menuButton(context),
               ),
               _ => TodayBoard(
                 session: _session,
@@ -1039,6 +1041,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                     ),
                   ),
                 ),
+                menuAction: _menuButton(context),
               ),
             },
           ),
@@ -1188,11 +1191,12 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
               (showPlanner ? 84 : 14) + MediaQuery.of(context).padding.bottom,
           child: _muteButton(),
         ),
-        Positioned(
-          right: 6,
-          top: 6 + MediaQuery.of(context).padding.top,
-          child: _menuButton(context),
-        ),
+        if (!showPlanner)
+          Positioned(
+            right: 6,
+            top: 6 + MediaQuery.of(context).padding.top,
+            child: _menuButton(context),
+          ),
       ],
     );
   }
@@ -1268,6 +1272,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       context,
     ).copyWith(iconTheme: const IconThemeData(color: Color(0x66FFFFFF))),
     child: PopupMenuButton<String>(
+      key: const Key('global-menu'),
       tooltip: 'More',
       icon: const Icon(Icons.more_horiz),
       onSelected: (v) {

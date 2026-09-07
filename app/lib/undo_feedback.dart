@@ -21,6 +21,11 @@ void showUndoableResult(
   messenger.showSnackBar(
     SnackBar(
       content: Text(message),
+      duration: const Duration(seconds: 5),
+      // Flutter 3.44 defaults action-bearing snackbars to persistent. These are
+      // transient change confirmations: Undo stays available for the readable
+      // interval, then the surface gets out of the user's way.
+      persist: false,
       action: onUndo == null
           ? null
           : SnackBarAction(

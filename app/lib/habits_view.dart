@@ -9,8 +9,14 @@ import 'undo_feedback.dart';
 class HabitsView extends StatefulWidget {
   final Session session;
   final VoidCallback? onVoice;
+  final Widget? menuAction;
 
-  const HabitsView({super.key, required this.session, this.onVoice});
+  const HabitsView({
+    super.key,
+    required this.session,
+    this.onVoice,
+    this.menuAction,
+  });
 
   @override
   State<HabitsView> createState() => _HabitsViewState();
@@ -138,6 +144,7 @@ class _HabitsViewState extends State<HabitsView> {
             onPressed: _addHabit,
             icon: const Icon(Icons.add_rounded),
           ),
+          ?widget.menuAction,
         ],
       ),
       body: Stack(
