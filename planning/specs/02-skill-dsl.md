@@ -1,6 +1,6 @@
 # Spec 02 — Skill DSL
 
-**Status:** Draft v0.6 — amended 2026-08-17. The structured 13-op dialect, deterministic validation/resolve, capability closure, durable `ExecutionCoordinator` journal, targeted undo/recovery, automation review, and persisted inactive authoring preview are implemented. Numeric opcode compilation, plan caching, and authoring safety Layers 2–3 remain explicit targets.
+**Status:** Draft v0.7 — amended 2026-09-06. The structured 13-op dialect, deterministic validation/resolve, capability closure, durable `ExecutionCoordinator` journal, targeted undo/recovery, automation review, persisted inactive authoring preview, typed relationship capture, and first-class habit workflows are implemented. Numeric opcode compilation, plan caching, and authoring safety Layers 2–3 remain explicit targets.
 **Depends on:** Spec 01 — Meta-Schema & Type System (§2–§5, §8)  
 **Blocks:** NLU spec, Architecture spec, Data & Sync spec, UI spec
 **Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
@@ -336,9 +336,10 @@ Fetch records reachable from a record you already hold, along one of the two Spe
 ```json
 {
   "op": "read_related",
-  "typeId": "contact_interaction",
-  "parentId": "{contact.id}",
-  "orderBy": "occurredAt",
+  "typeId": "interaction",
+  "via": "subject",
+  "from": {"ref":"contact"},
+  "orderBy": "at",
   "orderDir": "desc",
   "limit": 10,
   "into": "recentInteractions"
@@ -849,7 +850,7 @@ Skills are **data, not code**: the closed vocabulary (§3) is interpreted, never
 
 ### 9.2 Canonical seed skills
 
-**The counting rule (suite-sync CS-19).** This table is the canonical *index* of seed-skill shapes, not a headcount: the `log-<tracker>`/`show-streak` rows expand per shipped tracker template (§12.4 lists ten), and the set's membership rule remains "the union the free-tier flows require" (Spec 05 §3.7) — so the concrete skill count varies by snapshot (v0 ships 36 files in `v0/data/skills/` at time of writing). Any spec citing a *number* of seed skills must cite it as test-enumerated against this rule (Spec 09 §4 does), never as a constant of this section.
+**The counting rule (suite-sync CS-19).** This table is the canonical *index* of seed-skill shapes, not a headcount: the `log-<tracker>`/`show-streak` rows expand per shipped tracker template (§12.4 lists ten), and the set's membership rule remains "the union the free-tier flows require" (Spec 05 §3.7) — so the concrete skill count varies by snapshot (v0 ships 86 files in `v0/data/skills/` at time of writing). Any spec citing a *number* of seed skills must cite it as test-enumerated against this rule (Spec 09 §4 does), never as a constant of this section.
 
 | skillId | reads | writes | shape |
 |---|---|---|---|
@@ -858,8 +859,12 @@ Skills are **data, not code**: the closed vocabulary (§3) is interpreted, never
 | `create-recurring-reminder` | — | `task` | writes a `recurrence` RRULE (recurrence parsed by the resolver). |
 | `add-contact-fact` | `contact` | `contact`,`contact_fact`,`contact_relationship` | multi-write people fact (F-07; full JSON in 05a-traces §2A). v0 id `remember-person-fact`; fixed write order, de-collision, relationship gating — §9.3. |
 | `recall-contact-fact` | `contact`,`contact_fact` | — | read a stored fact (below). |
-| `log-interaction` | `contact` | `contact`,`contact_interaction` | dated note on a person (F-02; resolve-or-create person). v0: stores the interaction `kind`; `at` is past-intent, defaulting to today — §9.3. |
-| `query-last-interaction` | `contact`,`contact_interaction` | — | "when did I last…" (below). v0 ships the query side as two skills, `last-interaction` + `list-interactions`, both `kind`-aware — §9.3. |
+| `log-interaction` | `contact` | `contact`,`interaction` | dated, typed contact with a person (F-02; resolve-or-create person). Stores required `medium`, optional `kind`, and past-intent `at` defaulting to today — §9.3. |
+| `query-last-interaction` | `contact`,`interaction` | — | “when did I last…” (below). Runtime ships the query side as `last-interaction` plus `list-interactions`; both tolerate legacy missing media — §9.3. |
+| `create-habit` | `habit` | `habit` | starts a repeated practice with a bounded 1–7/week target; defaults to daily. |
+| `log-habit` | `habit`,`habit_checkin` | `habit_checkin` | records today's completion and refuses a duplicate same-day check-in. |
+| `list-habits` | `habit` | — | lists active habits and their weekly targets. |
+| `habit-progress` | `habit`,`habit_checkin` | — | reports week-to-date count, target, and current daily streak. |
 | `instantiate-template` | — | *(system meta-op)* | register a built-in tracker type + bind its bundled skills locally (Spec 05 §6). **Not interpreter-expressible** — see note below. |
 | `log-<tracker>` | — | *(tracker type)* | template-bundled log skill (e.g. `log-run`, `log-meal`). |
 | `show-streak` | *(tracker type)* | — | compute current/longest streak (read + `compute`). |
@@ -891,13 +896,13 @@ Two read/query skills in full (they exercise `read_related` + the resolve-or-cre
 { "skillId":"query-last-interaction","displayName":"When Did I Last…",
   "inputs":[{"name":"contactId","valueType":"entityRef","source":"slot","required":false},
             {"name":"contactName","valueType":"text","source":"slot","required":true},
-            {"name":"medium","valueType":"enum","enumValues":["phone","text","in_person","email","note"],"source":"slot","required":false}],
-  "reads":["contact","contact_interaction"],"writes":[],
+            {"name":"medium","valueType":"enum","enumValues":["in_person","facetime","phone","text","email"],"source":"slot","required":false}],
+  "reads":["contact","interaction"],"writes":[],
   "steps":{"main":[
     {"op":"read_one","typeId":"contact","match":{"id":"{contactId}"},"into":"c"},
-    {"op":"read_related","typeId":"contact_interaction","parentId":"{c.id}","filter":{"medium":"{medium}"},"orderBy":"occurredAt","orderDir":"desc","limit":1,"into":"last"},
-    {"op":"compute","expr":"days_between({last.0.occurredAt}, today())","into":"daysAgo"},
-    {"op":"compute","expr":"format_date({last.0.occurredAt}, 'MMMM d')","into":"lastLabel"},
+    {"op":"read_related","typeId":"interaction","via":"subject","from":{"ref":"c"},"filter":{"medium":"{medium}"},"orderBy":"at","orderDir":"desc","limit":1,"into":"last"},
+    {"op":"compute","expr":"days_between({last.0.at}, today())","into":"daysAgo"},
+    {"op":"compute","expr":"format_date({last.0.at}, 'MMMM d')","into":"lastLabel"},
     {"op":"format","template":"You last saw {c.displayName} on {lastLabel} — {daysAgo} days ago.","into":"confirmationText"} ]},
   "dangerLevel":"safe" }
 ```
@@ -905,9 +910,9 @@ Two read/query skills in full (they exercise `read_related` + the resolve-or-cre
 
 ### 9.3 The interaction suite and due-date phrasing — v0 convergence (2026-07)
 
-*The shipped v0 skill files (`v0/data/skills/`) converged the interaction, people-fact, and task seed shapes on the behaviors below. v0 naming diverges from this section's design ids: the interaction type is `interaction` (this spec's `contact_interaction`), the query side of `query-last-interaction` ships as two skills (`last-interaction`, `list-interactions`), and `add-contact-fact` ships as `remember-person-fact`. The behaviors, not the ids, are the normative part; the id reconciliation rides the next seed-table pass.*
+*The shipped skill files (`v0/data/skills/`) own the runtime ids used below: the interaction type is `interaction`, the query side ships as `last-interaction` plus `list-interactions`, and `add-contact-fact` ships as `remember-person-fact`. Older examples in this suite use the design id `contact_interaction`; active behavior and new implementation use `interaction`.*
 
-**Interactions carry a `kind`.** An interaction records what *sort* of contact it was — `dinner`, `lunch`, `coffee`, `call`, `text`, `visit`, `catch-up`, `hangout`, `video call`, … — as an optional `kind` field alongside the note and date. (The attribute itself is a Spec 01 type-definition fact; what follows is the skill contract over it.) `log-interaction` takes an optional `kind` slot and stores it verbatim. `list-interactions` renders it per line — `• 2026-07-05 (Sunday) — dinner — <note>` — omitting the segment when absent, exactly as it omits an absent note. `last-interaction` names the most recent interaction's kind ("Your last dinner with Mia was on 2026-07-05 (Sunday).") and falls back to the generic "You last talked to Mia on …" when that interaction has no kind. All three degrade by omission, never by leaking an empty placeholder (the §3 `format` null rule).
+**Interactions separate required `medium` from optional `kind`.** The medium is the communication channel: `in_person`, `facetime`, `phone`, `text`, or `email`. New direct and voice capture always stores one. Explicit language is inferred deterministically; ambiguous language such as “talked to Mia” asks the focused follow-up “How did you connect?” instead of guessing. `kind` remains optional activity context such as `dinner`, `coffee`, `walk`, or `catch-up`; it never substitutes for medium. Existing version-1 interactions without a medium remain readable and do not acquire invented history. Queries and timelines degrade by omission, never by leaking an empty placeholder (the §3 `format` null rule).
 
 **`log-interaction.at` is a past-event date.** The `at` input is a **past-intent** day slot (`pastday` — slot-type mechanics live in Spec 03): a bare weekday resolves *backward*, so "I had dinner with Mia on Tuesday" lands on the most recent Tuesday — a past interaction never gets a future date. When the slot is omitted, the skill defaults `at` to `{today}` with an explicit `branch isNull → set`: the default is visible in the skill definition, not resolver magic.
 

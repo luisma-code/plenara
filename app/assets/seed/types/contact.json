@@ -1,10 +1,23 @@
 {
   "typeId": "contact",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "displayName": "Contact",
   "attributes": [
     { "name": "displayName", "valueType": "text", "required": true },
     { "name": "birthday", "valueType": "date", "required": false },
-    { "name": "aliases", "valueType": "text", "required": false }
+    { "name": "aliases", "valueType": "text", "required": false },
+    { "name": "notes", "valueType": "text", "required": false },
+    { "name": "primaryPhone", "valueType": "text", "required": false },
+    { "name": "primaryEmail", "valueType": "text", "required": false },
+    { "name": "systemContactId", "valueType": "text", "required": false },
+    { "name": "relationshipGoal", "valueType": "enum", "enumValues": ["none", "close", "connected", "light"], "required": false, "default": "none" },
+    { "name": "contactFrequencyDays", "valueType": "number", "required": false }
+  ],
+  "migrations": [
+    {
+      "fromVersion": 1,
+      "toVersion": 2,
+      "fieldDefaults": { "relationshipGoal": "none" }
+    }
   ]
 }

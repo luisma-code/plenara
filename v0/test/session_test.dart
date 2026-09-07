@@ -750,7 +750,7 @@ void main() {
       final dir = makeTempDataDir();
       final s = Session(dir, clock: _now, cloud: _NoCloud());
       await s.init(retrieval: false);
-      await s.handle('talked to Sam Rivera');
+      await s.handle('called Sam Rivera');
       await s.handle(
           'when did i last talk to Sam'); // resolves "Sam" -> "Sam Rivera"
       final reads = lastTurn(dir)['reads'] as List;
@@ -1028,7 +1028,7 @@ void main() {
       // seed a contact via the corpus path (no cloud)
       final seed = Session(dir, clock: _now, cloud: _NoCloud());
       await seed.init(retrieval: false);
-      await seed.handle('talked to Katherine Zinger');
+      await seed.handle('called Katherine Zinger');
       // now a residual (cloud) turn — capture what the router receives
       final cap = _CapturingCloud({
         'skillId': 'log-mood',
@@ -1362,7 +1362,7 @@ void main() {
       await s.handle("remember that Mia is Sarah Mitchell's daughter");
       expect(await s.handle('who is Mia related to'),
           contains('daughter of Sarah Mitchell'));
-      await s.handle('talked to Sam about the trip');
+      await s.handle('called Sam about the trip');
       expect(await s.handle('when did i last talk to Sam'),
           contains('2026-07-06'));
 
@@ -1619,7 +1619,7 @@ void main() {
     test('"how is Marco doing" routes to last-interaction (dogfood coverage)',
         () async {
       final s = await _session();
-      await s.handle('i talked to Marco about the trip');
+      await s.handle('i called Marco about the trip');
       expect(await s.handle('how is Marco doing'), contains('Marco'));
     });
 
@@ -1627,7 +1627,7 @@ void main() {
         'F-10: "how long since I called Mum" resolves via alias to last-interaction',
         () async {
       final s = await _session();
-      await s.handle('i talked to Sarah about the trip');
+      await s.handle('i called Sarah about the trip');
       await s.handle("Sarah's nickname is Mum");
       final r = await s.handle('how long since i called Mum');
       expect(r, isNot(contains("don't have")));
@@ -1673,13 +1673,13 @@ void main() {
   group('aliases (G-24) — resolve a person by a nickname/role', () {
     test('set an alias, then reach the contact through it', () async {
       final s = await _session();
-      await s.handle('i talked to Sarah about the cabin trip');
+      await s.handle('i called Sarah about the cabin trip');
       final ack = await s.handle("Sarah's nickname is Mum");
       expect(ack, contains('Mum'));
       final r = await s.handle(
           'when did i last talk to Mum'); // "Mum" only resolves via alias
       expect(r, isNot(contains("don't have")));
-      expect(r, contains('last talked to Mum'));
+      expect(r.toLowerCase(), contains('last call'));
     });
   });
 
@@ -2427,10 +2427,10 @@ void main() {
       expect(tasks.single['description'], 'buy milk and eggs');
     });
 
-    test('control: "talked to Sam and Jo about the trip" is ONE interaction',
+    test('control: "called Sam and Jo about the trip" is ONE interaction',
         () async {
       final s = await _session();
-      await s.handle('talked to Sam and Jo about the trip');
+      await s.handle('called Sam and Jo about the trip');
       expect(
           s.store.values.where((x) => x['typeId'] == 'interaction').length, 1);
       // the compound NAME stays intact — nothing was split into two dispatches

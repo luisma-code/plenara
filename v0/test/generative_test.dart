@@ -295,8 +295,7 @@ void main() {
       final cloud = _GenCloud();
       final s = await _s(cloud);
       await s.handle('remember that Sam loves jazz');
-      await s
-          .handle('i talked to Sam about the concert'); // logs an interaction
+      await s.handle('i called Sam about the concert'); // logs an interaction
       final r = await s.handle('help me reconnect with Sam');
       expect(cloud.lastKind, 'reconnect');
       expect(cloud.lastContext, contains('jazz'));
@@ -441,7 +440,8 @@ void main() {
       ]);
       final r = await g.weeklyReview(store, _now);
       expect(r.toLowerCase(), contains('nothing logged'));
-      expect(cloud.lastKind, isNull, reason: 'no paid call on a stale-only store');
+      expect(cloud.lastKind, isNull,
+          reason: 'no paid call on a stale-only store');
     });
 
     test('offline -> honest degrade', () async {

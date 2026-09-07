@@ -4,6 +4,7 @@
 library;
 
 import 'dates.dart';
+import 'people.dart';
 import 'planning_artifact.dart';
 
 enum PlannerItemKind { task, reminder, routine, goal, relationship }
@@ -357,9 +358,8 @@ TodayProjection buildTodayProjection(
       .where((item) => !(item.at ?? now).isBefore(start))
       .toList()
     ..sort(_itemOrder);
-  final reservedForCurrent = currentNow.length < nowCapacity - 1
-      ? currentNow.length
-      : nowCapacity - 1;
+  final reservedForCurrent =
+      currentNow.length < nowCapacity - 1 ? currentNow.length : nowCapacity - 1;
   final shownOverdue =
       overdueNow.take(nowCapacity - reservedForCurrent).toList();
   final nowItems = [
@@ -641,31 +641,19 @@ List<PlannerSignal> buildPlannerSignals(
     );
   }
 
-  final names = _contactNames(records);
-  final latest = <String, DateTime>{};
-  for (final record in records.values) {
-    if (record['typeId'] != 'interaction' || record['planned'] == true)
-      continue;
-    final at = _dateTime(record['at']);
-    final subject = '${record['subject']}';
-    if (at == null || at.isAfter(now) || !names.containsKey(subject)) continue;
-    if (latest[subject] == null || at.isAfter(latest[subject]!)) {
-      latest[subject] = at;
-    }
-  }
-  final neglected = latest.entries
-      .where((entry) => now.difference(entry.value).inDays >= 30)
-      .toList()
-    ..sort((a, b) => a.value.compareTo(b.value));
-  if (neglected.isNotEmpty) {
-    final first = neglected.first;
-    final days = today.difference(_day(first.value)).inDays;
+  final dueContact = suggestedContacts(records, now, limit: 1).firstOrNull;
+  if (dueContact != null) {
+    final last = dueContact.lastInteractionAt;
+    final cadence = dueContact.targetDays;
     signals.add(
       PlannerSignal(
         kind: PlannerSignalKind.relationshipNeglect,
-        title: 'A relationship may need attention',
-        detail: '${names[first.key]} has no logged interaction in $days days.',
-        recordIds: [first.key],
+        title: '${dueContact.displayName} is due for contact',
+        detail: last == null
+            ? 'No interaction is logged yet; the goal is every $cadence days.'
+            : '${today.difference(_day(last)).inDays} days since the last '
+                '${dueContact.lastMedium ?? 'interaction'}; the goal is every $cadence days.',
+        recordIds: [dueContact.contactId],
       ),
     );
   }
@@ -818,6 +806,18 @@ PlannerItem? _relationshipNudge(
       at: occurrence,
     ));
   }
+  for (final status in suggestedContacts(records, start, limit: 3)) {
+    candidates.add(PlannerItem(
+      id: status.contactId,
+      kind: PlannerItemKind.relationship,
+      title: 'Reach out to ${status.displayName}',
+      detail: status.lastInteractionAt == null
+          ? 'No interaction logged · goal every ${status.targetDays} days'
+          : '${start.difference(_day(status.lastInteractionAt!)).inDays} days since '
+              '${status.lastMedium ?? 'last contact'} · goal every ${status.targetDays} days',
+      at: start,
+    ));
+  }
   candidates.sort(_itemOrder);
   return candidates.firstOrNull;
 }
@@ -925,8 +925,18 @@ String _timeLabel(DateTime at, DateTime now) {
 
 const _weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const _monthNames = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 String _dayLabel(DateTime at, DateTime now) {

@@ -101,7 +101,13 @@ void main() {
     await tester.pumpWidget(_board(session));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('latest-change')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('conversation-history')));
+    final history = find.byKey(const Key('conversation-history'));
+    await tester.scrollUntilVisible(
+      history,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(history);
     await tester.pumpAndSettle();
 
     expect(find.text('Conversation history'), findsOneWidget);
@@ -178,7 +184,11 @@ void main() {
     await tester.pumpAndSettle();
 
     final trigger = find.byKey(const Key('today-morning-plan'));
-    await tester.ensureVisible(trigger);
+    await tester.scrollUntilVisible(
+      trigger,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(trigger);
     await tester.pumpAndSettle();
 

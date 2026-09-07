@@ -1,6 +1,6 @@
 # Spec 17 — Living Planner & Multimodal Product Model
 
-**Status:** v0.7 — 2026-08-17, active implementation authority. Increments 0–8 and the post-plan dogfood corrections are wired: Today/Plan/Library/History, durable mutation/undo, task schema v5, contextual local routing, proposals/reviews/suggestions, relationship planning, adaptive presence/routines, user-selected sync/recovery, and build-channel release hardening.
+**Status:** v0.9 — 2026-09-06, active implementation authority. Relationships, one-off Todos, and tracked Habits are the three primary product roots. Plan, the generic Library, and History remain reachable secondary tools. The earlier planner increments, durable mutation/undo, contextual local routing, relationship assistance, adaptive presence/routines, user-selected sync/recovery, and build-channel hardening remain wired.
 **Supersedes:** research §2.2's overlay-only/no-touch rule; Spec 07 P1–P2 and its four-surface model; Spec 15 D1/D14 where they make full-screen presence or ephemeral exchange the steady-state product. Those documents remain design history and point here for current behavior.
 **Depends on:** Specs 01–06 for schema, skills, routing, orchestration, functional behavior, and storage; Spec 07 for visual language and generic archetypes; Spec 12 for voice; Spec 15 for Plena's renderer.
 
@@ -8,28 +8,32 @@
 
 ## Current realization — through Increment 8 and dogfood corrections
 
-- Opening the app renders the deterministic Today projection rather than an ephemeral greeting. It includes bounded Now/Next/Later sections, one relationship date, the latest durable execution with targeted undo, Inbox count, operational notices, and repair state.
-- Voice and typed capture continue through `Session.handle`; Today completion calls the typed `Session.completeTask` command directly. Both converge on `ExecutionCoordinator` and its durable device-local journal.
-- Today task rows separate navigation from mutation: tapping the task body opens the shared type-driven detail editor; only the explicit leading circle completes it. Both consume their gesture before the background voice target, and a trailing chevron makes the row's navigation role visible.
+- Opening the app lands on Todos, the focused one-off-commitment projection derived from the earlier Today board. Relationships and Habits are peer primary roots. Plan, Library, History, settings, diagnostics, and repair remain secondary destinations rather than competing navigation pillars.
+- Voice and typed capture continue through `Session.handle`; Todos completion calls the typed `Session.completeTask` command directly. Both converge on `ExecutionCoordinator` and its durable device-local journal.
+- Todos task rows separate navigation from mutation: tapping the task body opens the shared type-driven detail editor; only the explicit leading circle completes it. Both consume their gesture before the background voice target, and a trailing chevron makes the row's navigation role visible.
 - The device-local conversation ledger retains the final utterance, full reply, routing source, derived outcome, affected record ids, proposal/acceptance state, failure state, time, and execution link for 250 turns. It is a user-facing product history distinct from content-bearing internal diagnostic logs. History renders affected records as tappable links and exposes targeted undo for linked executions.
 - Task schema v3 introduced `status`, `scheduledStartAt`, `estimatedMinutes`, `priority`, `projectRef`, `areaRef`, `contactRefs`, `notes`, and `completedAt`; v4 added dependency/energy/context/recurrence semantics and v5 added `reviewDecision`. `dueAt` remains deadline-only. Project and area are registered record types.
-- Plena remains full-bleed during conversation and yields within the same canvas when Today is visible. The populated surface has an explicit accessible voice target; tap-anywhere remains active only on non-interactive space.
+- Plena remains full-bleed during conversation and yields within the same canvas when a primary workflow is visible. Populated surfaces have an explicit accessible voice target; tap-anywhere remains active only on non-interactive space.
 - Onboarding uses the same warm presence and palette, pins both decisions outside its scrollable story area, and states the internal-dogfood diagnostic policy. Platform icons are generated from a deterministic Plena particle mark for iOS, macOS, and Windows.
 - Phone Plan now has a week strip, selected-day agenda, deadlines, unscheduled queue, load, conflict state, direct schedule/defer/resize/complete actions, and multi-select. Desktop expands the same semantics into a week/queue workspace with drag-to-day scheduling.
-- Library now exposes purpose-built People, Goals, Routines, Trackers, Journal, Projects & areas, Learned phrases, and Automations summaries while preserving the complete editable data browser.
+- Library now exposes purpose-built People, Habits, Goals, Routines, Trackers, Journal, Projects & areas, Learned phrases, and Automations summaries while preserving the complete editable data browser. People opens a Relationships workspace where contacts, contact details, facts, and contact history are visible and mutable rather than anonymous schema rows.
 - Task schema v4 represents dependencies, blocked reason, energy, contexts, and recurrence. Existing folders receive missing built-ins and newer versioned types without clobbering authored or same-version definitions; exact definition and record backups precede migration.
-- Plan and Today publish structured visible dates, ordered objects, and selection ids. Contextual commands such as “move these to tomorrow at 10am” and “make the first one 45 minutes” resolve against those ids and enter the same durable execution/undo path as touch and pointer actions.
+- Plan and Todos publish structured visible dates, ordered objects, and selection ids. Contextual commands such as “move these to tomorrow at 10am” and “make the first one 45 minutes” resolve against those ids and enter the same durable execution/undo path as touch and pointer actions.
 - Production routing now builds an in-process deterministic feature-hash index and orders common work as corpus → bounded accepted retrieval with deterministic slot extraction → cloud residual → visible clarification. Localhost embeddings remain an explicit development experiment, not a runtime dependency.
 - Every Anthropic request crosses one persisted admission controller before HTTP: 200 calls per local day and 30 per rolling ten minutes. Corrupt or unwritable usage state fails closed, and Settings shows both counters.
 - Task schema v5 adds the explicit weekly-review decision (`keep`, `defer`, or `drop`) through a contiguous 4→5 migration. A structured weekly review persists evidence and editable decisions, revalidates record fingerprints before apply, and commits selected task changes through one durable execution and undo.
 - `PlanProposal` is a durable no-write preview with selected items, proposed times, estimates, rationale, conflict delta, and explicit omission reasons. It respects represented capacity, deadlines, dependencies, and blocked state. Voice can move or exclude numbered proposal items; apply revalidates every task fingerprint and commits once.
-- Long weekly/pattern synthesis and custom-capability authoring enter one persistent serial `OperationCenter`. The initiating turn returns immediately, Today renders progress/cancel state, terminal delivery is exactly once, and relaunch marks uncertain in-flight work interrupted rather than risking duplicate provider spend.
+- Long weekly/pattern synthesis and custom-capability authoring enter one persistent serial `OperationCenter`. The initiating turn returns immediately, Todos renders progress/cancel state, terminal delivery is exactly once, and relaunch marks uncertain in-flight work interrupted rather than risking duplicate provider spend.
 - A validated authored-capability preview is persisted device-locally until activation, cancellation, or an unrelated move-on turn. Only activation promotes it to the live type/skill registry.
-- Morning plans and relationship/event-preparation cards are deterministic durable artifacts on Today. A draft remains until accepted, dismissed, or superseded; relationship preparation uses only saved facts, dates, and the latest logged interaction.
+- Morning plans and relationship/event-preparation cards are deterministic durable artifacts on Todos. A draft remains until accepted, dismissed, or superseded; relationship preparation uses only saved facts, dates, and the latest logged interaction.
 - Generative prompt assembly stamps its declared record classes and explicit-invocation consent into every implemented request. The same declarations are visible in Settings; journal is excluded from all current assemblers.
-- People-linked task commitments keep their relationship identity in Today, Plan, weekly proposals/reviews, and person detail. Planned interactions and recurring relationship dates appear in the selected Plan day; goals and active routines remain visible as planning rhythms.
+- People-linked task commitments keep their relationship identity in Todos, Plan, weekly proposals/reviews, and person detail. Planned interactions and recurring relationship dates appear in the selected Plan day; goals and active routines remain visible as planning rhythms.
 - Upcoming relationship dates produce one durable proactive suggestion with explicit Keep, Dismiss, and Tomorrow outcomes. Deferral survives relaunch and returns when due; a resolved suggestion does not respawn unchanged.
-- Deterministic overload, stale-queue, and relationship-neglect signals run before AI and are capped at two on Today. Engagement counts explicit suggestion decisions and relationship follow-through, never impressions, opens, animation, or screen time.
+- Each person may opt into a human-facing relationship rhythm: close/every week, connected/every three weeks, light/every two months, or a positive exact-day override. Completed typed interactions — in person, FaceTime, phone, text, or email — drive one shared deterministic health projection. Planned interactions and launch-button taps do not pretend that contact happened.
+- The Relationships workspace ranks genuinely due people, and Todos links relationship signals back to that actionable workspace. Deterministic overload, stale-queue, and relationship signals run before AI and are capped at two on Todos. Engagement counts explicit suggestion decisions and relationship follow-through, never impressions, opens, animation, or screen time.
+- On iOS, the user may grant Contacts permission, select which visible entries to import, and refresh an existing match without cloning it. Imported name, primary phone, primary email, and the opaque system contact id sync as ordinary plaintext contact fields under the current storage model. Call, FaceTime, and email actions launch the corresponding system handler; launching is never logged as a completed interaction.
+- Habits are first-class records with a weekly target and active/paused lifecycle. A check-in is a dated child record, limited to one per habit per local day by both typed UI and voice paths. The Habits root shows weekly progress, the last seven days, and a current daily streak; Todos surfaces due habit check-ins without turning them into tasks.
+- Relationship follow-ups bridge into Todos as ordinary contact-linked, undoable tasks. Todos likewise links due relationship guidance back to Relationships and due repeated practices back to Habits, preserving each domain's identity while making the combined day actionable.
 
 Increment 3's automated evidence gate is complete: 1,877 engine tests plus 36 declared skips, 118 Flutter tests plus the intentional internal-build external-channel skip, tier coverage of 94.2% deterministic core / 90.3% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, and the same five tests on a local iPhone 17 Pro simulator all pass. A disposable-copy exercise migrated the real task to v4 with one backup, zero repair issues, and byte-identical source data. Human glance-time, compare/sequence speed, correction rate, and local retrieval quality require ordinary use of an explicitly deployed build; automated harnesses never target Luis's physical phone.
 
@@ -46,11 +50,12 @@ remains proof recorded at each boundary; this paragraph is the current aggregate
 
 ## 0. Product decision
 
-Plenara is a **living planner with a relational assistant**, not a voice demo with data behind it and not a conventional task manager with a mascot attached.
+Plenara is a focused personal follow-through system organized around three things Luis returns to most: people, one-off commitments, and repeated practices.
 
-- **Today** answers what matters now without requiring a query.
-- **Plan** externalizes and manipulates time, workload, deadlines, and unscheduled work.
-- **Library** holds durable domains: people, goals, routines, trackers, journal, projects/areas, learned phrases, automations, and generic data.
+- **Relationships** remembers people, relationship rhythms, facts, and actual contact, then suggests an actionable next connection.
+- **Todos** holds one-off commitments and the focused current-day view; its secondary Plan surface externalizes time, workload, deadlines, and unscheduled work.
+- **Habits** holds repeated practices, weekly targets, dated check-ins, and progress over time.
+- **Library** remains the secondary complete browser for goals, guided routines, trackers, journal, projects/areas, learned phrases, automations, and generic data.
 - **The conversation/action ledger** preserves how current truth was reached.
 - **Plena is global and adaptive:** full-screen at rest or in deep conversation, compact beside planning work, and a quiet ember on detail surfaces.
 - **Voice is first-class and global.** It is not forced to carry persistent state, comparison, sequencing, or precision editing alone.
@@ -73,7 +78,7 @@ Planning objects carry the user's commitments, constraints, and progress. Plena 
 
 ### P17.3 — Current truth and history are separate
 
-Today and Plan show current truth. The ledger shows the utterance/action, result, failures, and undo that produced it. Neither replaces the other, and neither is ephemeral.
+Relationships, Todos, Habits, and Plan show current truth. The ledger shows the utterance/action, result, failures, and undo that produced it. Neither replaces the other, and neither is ephemeral.
 
 ### P17.4 — Atomic actions act; planning proposals are inspectable
 
@@ -97,39 +102,33 @@ Plenara does not claim capacity, dependency, conflict, energy, or recurrence rea
 
 ## 2. Information architecture
 
-### 2.1 Today
+### 2.1 Relationships
 
-Today is the default populated state. In order:
+Relationships provides:
 
-1. **Now** — the active or immediately due commitment, if any.
-2. **Next** — at most three meaningful objects, ordered by scheduled time and risk rather than record type.
-3. **Later** — a compact rest-of-day/week outlook and load signal.
-4. **Relationship nudge** — at most one genuinely timely person-oriented prompt.
-5. **Latest change** — the most recent durable action and its targeted undo while available.
+- creation, editing, and undoable deletion of people, with dependent facts/interactions/relationship edges removed atomically and task references unlinked;
+- visible, editable facts inside their person rather than anonymous child rows;
+- a typed interaction timeline whose medium is one of in person, FaceTime, phone, text, or email, plus optional activity context/note and a past date;
+- per-person relationship rhythms and deterministic “who to contact next” ranking shared with Todos;
+- selective iOS Contacts import and external phone, FaceTime, and email launch actions.
 
-Tasks, reminders, routines, goals, and relationship nudges retain their semantic identity even when projected together. A reminder is not silently converted into a task.
+Adding a follow-up emits an ordinary contact-linked task into Todos. Opening a system communication app does not fabricate an interaction; the user logs the completed connection explicitly.
 
-Empty Today is a legitimate full-screen Plena/rest state with a clear global voice affordance. Populated Today makes Plena compact enough that the plan is identifiable in a five-second glance.
+### 2.2 Todos
 
-### 2.2 Plan
+Todos is the default root for one-off commitments. It retains the bounded Now/Next/Later task projection, direct completion, latest targeted undo, operational/repair state, relationship signals, and fast capture. Repeated work does not masquerade as a recurring task: due habits appear in a clearly labeled Habits card with a direct check-in and doorway to the Habits root.
 
-Phone Plan contains:
+The secondary Plan workspace retains its phone day strip, selected-day agenda, load/capacity, unscheduled queue, deadlines, conflict treatment, direct scheduling/resizing/completion, and multi-select. Tablet/desktop expands those semantics into week columns and a queue.
 
-- a day strip;
-- selected-day agenda;
-- visible load/capacity;
-- unscheduled queue;
-- deadlines separated from scheduled blocks;
-- calm conflict and overdue treatment;
-- direct schedule, reschedule, duration, completion, defer, and inline-edit actions.
+### 2.3 Habits
 
-Tablet/desktop Plan expands to week columns, unscheduled queue, drag/drop/resize, and a Plena/conversation rail. Responsive layouts preserve semantics; they do not merely stretch phone cards.
+Habits owns practices intended to repeat. Each habit carries a title, an active/paused state, and a target of one to seven completions per week. Each completion is a dated `habit_checkin`. The UI exposes creation, correction, pause/resume, undoable deletion, one-tap daily check-in, weekly progress, a seven-day history, and the current consecutive-day streak. At most one check-in per local day counts.
 
-### 2.3 Library
+Guided movement routines and quantitative trackers remain distinct secondary capabilities. A routine is a reusable sequence Plena can walk through; a tracker records a measure such as water or weight; neither is silently relabeled a habit.
 
-Library provides purpose-built summaries for People, Goals, Routines, Trackers, Journal, Projects/Areas, learned phrases, and Automations, plus a generic data browser. Planner projections are allowed to be product-specific binary UI. Generic archetypes remain the fallback for emergent user-authored data.
+### 2.4 Secondary tools and the conversation/action ledger
 
-### 2.4 Conversation/action ledger
+Plan remains the precise task scheduling workspace. Library remains the complete browser for goals, guided routines, quantitative trackers, journal, projects/areas, learned phrases, automations, and all generic data. Generic archetypes remain the fallback for emergent user-authored data.
 
 Each entry carries:
 
@@ -145,7 +144,7 @@ The current spoken reply is always visible as text during speech and remains dis
 
 ### 2.5 Global navigation and voice
 
-Primary navigation is `Today / Plan / Library`. The ledger is reached from the latest-change/history affordance and by voice. Plena's voice target remains globally reachable and accessible, but tap-anywhere applies only where it cannot collide with plan objects or controls.
+Primary navigation is `Relationships / Todos / Habits`. Plan and Library are secondary actions from Todos and remain directly voice-reachable. The ledger is reached from the latest-change/history affordance and by voice. Plena's voice target remains global and accessible, but tap-anywhere applies only where it cannot collide with interactive objects or controls. Natural navigation phrases use product words (“show my habits,” “open relationships,” “go to todos”), while domain actions route to skills rather than navigation.
 
 ---
 
@@ -154,8 +153,8 @@ Primary navigation is `Today / Plan / Library`. The ledger is reached from the l
 | Context | Form | Role |
 |---|---|---|
 | Empty/rest/deep conversation | Full-screen | relationship, state, listening/speaking focus |
-| Today/Plan with active content | Compact collaborator | system state and contextual guidance beside user state |
-| Library/detail/edit | Ember | continuity and global voice access without owning hierarchy |
+| Todos/Plan with active content | Compact collaborator | system state and contextual guidance beside user state |
+| Relationships/Habits/Library/detail/edit | Ember | continuity and global voice access without owning hierarchy |
 | Reduced motion/still preference | Static per-state form | same meaning, no tracing or continuous motion |
 
 Plena never despawns conceptually, but may become visually quiet enough to cease competing. Presence gestures and glyphs are decoration/affect layered on explicit text and state. The extended glyph vocabulary is internally available but routine firing is conservative, semantically fenced, and user-disableable with the still-presence setting.
@@ -197,7 +196,7 @@ The NLU context includes the visible date range, selected day, selected records,
 
 ### 5.2 Direct manipulation
 
-Complete, schedule, reschedule, resize, defer, and inline edit emit typed commands. On Today, the
+Complete, schedule, reschedule, resize, defer, and inline edit emit typed commands. On Todos, the
 task body's row tap is navigation to its shared detail editor; completion belongs only to the
 explicit leading circle. A trailing chevron and accessibility hint communicate the row action.
 Both controls consume their gestures before the background voice target. Gesture completion waits
@@ -219,7 +218,7 @@ Every failure has an address:
 ## 6. Accessibility and engagement
 
 - Dynamic Type may reflow cards and navigation; the product does not preserve a composition by clipping information.
-- Screen readers receive ordered Today/Plan semantics and explicit Plena state, never particle descriptions as the sole meaning.
+- Screen readers receive ordered Relationships/Todos/Habits/Plan semantics and explicit Plena state, never particle descriptions as the sole meaning.
 - Reduced motion and independent still-presence preferences are first-class.
 - Quiet text meets WCAG AA contrast on its actual rendered ground.
 - Engagement is measured by useful return behavior, plan revisitation, successful capture-to-plan placement, reduced corrective turns, and trusted undo—not glyph frequency or time staring at animation.
@@ -228,12 +227,12 @@ Every failure has an address:
 
 ## 7. Evidence gates
 
-1. Across scripted Today states, next commitment, overdue risk, and latest undoability are identified in five seconds in at least 9/10 cases.
+1. Across scripted Todos states, next commitment, overdue risk, and latest undoability are identified in five seconds in at least 9/10 cases.
 2. Mixed voice captures land in the intended semantic place without increasing median capture time by more than 10%.
 3. Compare/sequence benchmark scenarios are at least 30% faster than the enriched Today-only baseline and require fewer corrective turns.
 4. Every mutation origin reaches the same execution journal and undo ledger.
 5. Every spoken result appears as simultaneous text and survives relaunch in the ledger.
-6. Today and Plan remain usable at large text, reduced motion, muted mode, offline, and without microphone permission.
+6. Relationships, Todos, Habits, and Plan remain usable at large text, reduced motion, muted mode, offline, and without microphone permission.
 7. Phone safe areas, tablet split layouts, and desktop week layouts pass rendered-output review, not widget-tree inspection alone.
 
 ---
@@ -241,9 +240,13 @@ Every failure has an address:
 ## 8. Decision record
 
 - **D17.1:** Living planner is the product model; presence-only home is a historical implementation stage.
-- **D17.2:** Today/Plan/Library are primary; the ledger is durable history.
+- **D17.2:** Relationships/Todos/Habits are primary. Plan, Library, and the durable ledger remain directly reachable secondary tools.
 - **D17.3:** Voice is global and first-class, not UI-exclusive.
 - **D17.4:** Planner UI may be purpose-built; generic archetypes remain for emergent data.
 - **D17.5:** Atomic reversible actions act-then-describe; planning proposals are inspectable artifacts.
 - **D17.6:** Plena scales full-screen → collaborator → ember according to information needs.
 - **D17.7:** Current truth is never made ephemeral to preserve visual minimalism.
+- **D17.8:** First-party domain workspaces may compose built-in types and actions; the no-per-type rule continues to govern emergent authored data, and the generic browser remains the complete fallback.
+- **D17.9:** Relationship health follows an explicit per-person rhythm and completed typed interactions. Launching a communication app or planning contact is not evidence that contact occurred.
+- **D17.10:** Habits are first-class repeated practices with weekly targets and dated check-ins. They are distinct from one-off tasks, guided routines, and quantitative trackers.
+- **D17.11:** Cross-domain integration creates typed links and doorways, not category collapse: relationship follow-ups become contact-linked todos; due habits remain habit check-ins surfaced from Todos.

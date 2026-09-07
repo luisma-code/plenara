@@ -179,6 +179,14 @@ List<_LibraryGroup> _groups(Session session) {
       typeIds: people,
     ),
     _LibraryGroup(
+      id: 'habits',
+      title: 'Habits',
+      description: 'Repeated practices, weekly targets, and check-in history',
+      icon: Icons.repeat_rounded,
+      count: count(const {'habit', 'habit_checkin'}),
+      typeIds: const {'habit', 'habit_checkin'},
+    ),
+    _LibraryGroup(
       id: 'goals',
       title: 'Goals',
       description: 'Longer arcs and the progress connected to them',

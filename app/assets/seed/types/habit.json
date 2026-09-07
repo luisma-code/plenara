@@ -1,0 +1,11 @@
+{
+  "typeId": "habit",
+  "schemaVersion": 1,
+  "displayName": "Habit",
+  "attributes": [
+    {"name": "title", "valueType": "text", "required": true},
+    {"name": "targetPerWeek", "valueType": "number", "required": false, "default": 7},
+    {"name": "status", "valueType": "enum", "enumValues": ["active", "paused", "archived"], "required": false, "default": "active"},
+    {"name": "createdAt", "valueType": "datetime", "required": true}
+  ]
+}

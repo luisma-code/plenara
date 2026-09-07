@@ -1,0 +1,15 @@
+{
+  "skillId": "list-habits",
+  "displayName": "Show tracked habits",
+  "reads": ["habit"],
+  "writes": [],
+  "inputs": [],
+  "steps": {
+    "main": [
+      {"op": "read_many", "typeId": "habit", "filter": {"field": "status", "op": "eq", "value": "active"}, "orderBy": "createdAt", "orderDir": "asc", "into": "habits"},
+      {"op": "enumerate", "list": {"var": "habits"}, "label": "title", "line": "{title} — {targetPerWeek}x/week", "into": "lines"},
+      {"op": "compute", "fn": "count", "args": [{"var": "habits"}], "into": "n"},
+      {"op": "format", "template": "You're tracking {n} habit(s):{lines}", "into": "confirmationText"}
+    ]
+  }
+}

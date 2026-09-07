@@ -1,0 +1,30 @@
+{
+  "skillId": "log-habit",
+  "displayName": "Check in a habit",
+  "reads": ["habit", "habit_checkin"],
+  "writes": ["habit_checkin"],
+  "inputs": [{"name": "title", "required": true}],
+  "steps": {
+    "main": [
+      {"op": "read_one", "typeId": "habit", "match": {"title": {"var": "title"}}, "partial": true, "into": "habit"},
+      {"op": "branch", "cond": {"isNull": "habit"}, "then": [
+        {"op": "format", "template": "I couldn't find a habit called {title}.", "into": "confirmationText"}
+      ], "else": [
+        {"op": "compute", "fn": "today", "into": "today"},
+        {"op": "read_related", "typeId": "habit_checkin", "via": "habit", "from": {"ref": "habit"}, "into": "checkins"},
+        {"op": "set", "var": "already", "value": false},
+        {"op": "foreach", "list": {"var": "checkins"}, "as": "checkin", "body": [
+          {"op": "branch", "cond": {"eq": [{"field": ["checkin", "date"]}, {"var": "today"}]}, "then": [
+            {"op": "set", "var": "already", "value": true}
+          ]}
+        ]},
+        {"op": "branch", "cond": {"eq": [{"var": "already"}, true]}, "then": [
+          {"op": "format", "template": "{title} is already checked in for today.", "into": "confirmationText"}
+        ], "else": [
+          {"op": "write_record", "typeId": "habit_checkin", "fields": {"habit": {"ref": "habit"}, "date": {"var": "today"}}, "into": "checkin"},
+          {"op": "format", "template": "Checked in {title} for today.", "into": "confirmationText"}
+        ]}
+      ]}
+    ]
+  }
+}

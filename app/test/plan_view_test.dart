@@ -128,13 +128,20 @@ void main() {
 
     expect(find.byKey(const Key('library-home')), findsOneWidget);
     expect(find.text('People'), findsOneWidget);
+    expect(find.text('Habits'), findsOneWidget);
     expect(find.text('Projects & areas'), findsOneWidget);
     expect(find.text('Learned phrases'), findsOneWidget);
-    expect(find.text('All data'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('library-people')));
     expect(opened, 'People');
     expect(filter, contains('contact'));
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('library-all')),
+      260,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('All data'), findsOneWidget);
   });
 
   testWidgets(

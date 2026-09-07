@@ -1,13 +1,17 @@
 {
   "typeId": "interaction",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "displayName": "Interaction",
   "parentType": "contact",
   "attributes": [
     { "name": "subject", "valueType": "entityRef", "refType": "contact", "required": true },
     { "name": "note", "valueType": "text", "required": false },
     { "name": "kind", "valueType": "text", "required": false },
+    { "name": "medium", "valueType": "enum", "enumValues": ["in_person", "facetime", "phone", "text", "email"], "required": false },
     { "name": "at", "valueType": "date", "required": true },
     { "name": "planned", "valueType": "boolean", "required": false }
+  ],
+  "migrations": [
+    { "fromVersion": 1, "toVersion": 2 }
   ]
 }

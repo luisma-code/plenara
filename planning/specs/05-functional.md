@@ -1,6 +1,6 @@
 # Spec 05 — Functional
 
-**Status:** v0.5 — amended 2026-08-17. This remains the behavior-flow catalog; Spec 17 supersedes its surface model. Six generative kinds are implemented, while event prep, meal suggestion, monthly reflection, and foresight remain explicitly candidate flows.
+**Status:** v0.6 — amended 2026-09-06. This remains the behavior-flow catalog; Spec 17 supersedes its surface model and makes Relationships, one-off Todos, and tracked Habits the three primary roots. Six generative kinds are implemented, while event prep, meal suggestion, monthly reflection, and foresight remain explicitly candidate flows.
 **Depends on:** Spec 01 — Meta-Schema & Type System; Spec 02 — Skill DSL; Spec 03 — NLU / Intent; Spec 04 — Architecture
 **Blocks:** Spec 07 — UI & Design-Language; Spec 09 — Test
 **Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
@@ -163,7 +163,7 @@ The free tier must work end to end with **no Claude call and no authoring**, bec
 
 **The free-tier capability surface = seed types + built-in templates + the skills bound to them, all shipped in the binary.** Concretely:
 
-- **Seed types** (Spec 01 §12, always present): `task`, `contact`, `contact_fact`, `contact_relationship`, `contact_interaction`, `journal_entry`, plus the `goal` seed (Spec 01 §12.4, `G-32`). The people-knowledge flows (§9) depend on `contact_fact`/`contact_relationship` specifically — a facts capture that only had `contact` would have nowhere to put "Mia is Sarah's daughter."
+- **Seed types** (Spec 01 §12, always present): `task`, `contact`, `contact_fact`, `contact_relationship`, `interaction`, `habit`, `habit_checkin`, `journal_entry`, plus the `goal` seed (Spec 01 §12.4, `G-32`). The people-knowledge flows (§9) depend on `contact_fact`/`contact_relationship` specifically — a facts capture that only had `contact` would have nowhere to put "Mia is Sarah's daughter." Habit progress likewise depends on keeping the repeated practice and its dated completions as separate parent/child records.
 - **Built-in tracker templates** (§6): Run, Walk, Water, Reading, Mood, Sleep, Weight, Meals, Habit, Medication. Instantiating one registers its type locally with no cloud call.
 - **Seed skills** (Spec 02 §9): the capture, log, query, streak, and recall skills that operate over the above. A template is not shipped as a bare type — it ships **bundled with its skills** (a log skill and, where relevant, a streak/summary skill), so that the moment a tracker exists the user can log against it and query it by voice. A type with no skill is inert; the free tier ships neither.
 
@@ -216,9 +216,9 @@ A: "Done — task added: call the plumber, Thursday."
 ```
 
 ```
-U: "Note that Ana starts her new job Monday."
-[System: NLU routes to `log-interaction` (Spec 02 §9) — a dated note on a contact; resolves Contact=Ana (creates the contact record if absent); slots: contactId=Ana's id, note="starts new job", date=next Monday; execute write_record → `contact_interaction`]
-A: "Got it — noted on Ana: starts new job, Monday."
+U: "I FaceTimed Ana about her new job Monday."
+[System: NLU routes to `log-interaction` (Spec 02 §9); resolves Contact=Ana (creates the contact record if absent); slots: personName=Ana, medium=facetime, note="her new job", at=the most recent Monday; execute write_record → `interaction`]
+A: "Logged FaceTime with Ana — her new job."
 ```
 
 **Edge cases:**
@@ -349,11 +349,30 @@ The app logs what it understood and makes it explicit: "Logged — 5 miles." The
 
 ---
 
-## 8. Free-Tier Task F5: Habit Streaks and Gentle Nudges
+## 8. Free-Tier Task F5: First-Class Habits, Tracker Streaks, and Gentle Nudges
 
-**Summary:** Streaks and gaps are computed from logged entries; time-based nudges are scheduled deterministically. No cloud call.
+**Summary:** A habit is a repeated practice with a weekly target and dated check-ins. It is distinct from a quantitative tracker such as water or running, and from a reusable guided routine. Weekly progress, streaks, and gaps are computed locally; no cloud call.
 
-**Streak view flow:**
+**First-class habit flow:**
+
+```
+U: "Track strength training three times a week."
+[System: NLU routes to `create-habit`; creates habit {title:"strength training", targetPerWeek:3, status:"active"}; execute]
+A: "Started tracking strength training — 3 times a week."
+UI: Habits root shows 0 of 3 this week and a seven-day check-in strip.
+
+U: "I did my strength training habit."
+[System: NLU routes to `log-habit`; writes one habit_checkin for today; execute]
+A: "Checked in strength training for today."
+
+U: "How is my strength training habit going?"
+[System: NLU routes to `habit-progress`; computes week-to-date count and current streak]
+A: "Strength training: 1 of 3 this week, with a 1-day streak."
+```
+
+The Habits UI provides the same create, check-in, progress, edit, pause/resume, delete, and targeted-undo outcomes without voice. Todos may surface a due habit with a one-tap check-in, but it remains a habit check-in rather than being copied into the task list.
+
+**Quantitative tracker streak flow:**
 
 ```
 U: "How's my running streak?"
@@ -376,13 +395,19 @@ When the `AutomationRunner` detects that a tracker has not had a new entry withi
 
 **Edge cases:**
 
-*E1 — No entries yet.*
-> A: "No runs logged yet. Say 'ran 5k' to start your streak."
+*E1 — No habit check-ins yet.*
+> A: "Meditation: 0 of 7 this week, with a 0-day streak."
 
-*E2 — Streak broken.*
+*E2 — Duplicate habit check-in today.*
+> A: "Meditation is already checked in for today."
+
+*E3 — Requested habit target is outside 1–7 per week.*
+> A: "Choose a weekly target from 1 to 7 for meditation."
+
+*E4 — Tracker streak broken.*
 > A: "Your running streak ended yesterday — you had 4 days going. Want to log today's run?"
 
-*E3 — Multiple trackers, ambiguous.*
+*E5 — Multiple trackers, ambiguous.*
 > U: "What's my streak?" (no type mentioned)
 > A: "Which one — running, water, or reading?"
 
@@ -433,14 +458,14 @@ UI: Contact card for Mia with allergy field highlighted
 
 ```
 U: "When did I last see Marco?"
-[System: NLU routes to `query-last-interaction`; slot: contact=Marco; reads `contact_interaction` records for Marco, orders by date descending, takes first]
+[System: NLU routes to `last-interaction`; slot: contact=Marco; reads `interaction` records for Marco, orders by date descending, takes first]
 A: "You last saw Marco on June 12th, 11 days ago."
 UI: Timeline of recent Marco interactions (last 3 entries)
 ```
 
 ```
 U: "How long since I called Mum?"
-[System: reads `contact_interaction` records for Mum, filtered by medium=phone, orders by date, takes first]
+[System: reads `interaction` records for Mum, filtered by medium=phone, orders by date, takes first]
 A: "Your last call with Mum was 3 weeks ago, June 10th."
 ```
 
@@ -858,6 +883,6 @@ A: "Done — removed the Mood tracker. Your 87 entries are kept as read-only his
 **Skill deletion** is lighter — a skill is behavior, not data: deleting it removes the capability and its corpus entries but touches no records, and it is re-authorable (paid). Still confirmed ("Delete the X skill? This removes the capability; your records stay."), because it isn't record-undoable and may break an automation.
 
 **Guards:**
-- **Seeds cannot be deleted** — the six seed types, built-in tracker templates, and seed skills (Spec 01 §12, Spec 02 §9) are binary, not user data. A delete against a seed → "That's built-in — I can't remove it, but I can stop suggesting it."
+- **Seeds cannot be deleted** — seed type definitions, built-in tracker templates, and seed skills (Spec 01 §12, Spec 02 §9) are binary, not user data. A delete against a seed definition → "That's built-in — I can't remove it, but I can stop suggesting it." Individual user records—including contacts, facts, interactions, habits, and check-ins—remain undoably editable/deletable through their workspaces.
 - **Dependency check** — if an automation or another skill references the target, the impact summary names it ("the 'weekly mood review' automation uses this") so nothing breaks silently (P7).
 - **Never automation-initiated** — deletion is a `system_command` only; an unattended automation has no path to this confirm and can never delete a capability (Review Feed writes can't lower undoability, CLAUDE.md).

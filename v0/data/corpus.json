@@ -605,6 +605,31 @@
  },
  {
   "skillId": "log-interaction",
+  "template": "called {personName:entity} about {note:text}",
+  "slots": { "kind": "call" }
+ },
+ {
+  "skillId": "log-interaction",
+  "template": "i called {personName:entity} about {note:text}",
+  "slots": { "kind": "call" }
+ },
+ {
+  "skillId": "log-interaction",
+  "template": "facetimed {personName:entity} about {note:text}",
+  "slots": { "kind": "video call" }
+ },
+ {
+  "skillId": "log-interaction",
+  "template": "emailed {personName:entity} about {note:text}",
+  "slots": { "kind": "email" }
+ },
+ {
+  "skillId": "log-interaction",
+  "template": "emailed {personName:entity}",
+  "slots": { "kind": "email" }
+ },
+ {
+  "skillId": "log-interaction",
   "template": "talked to {personName:entity}"
  },
  {
@@ -3895,5 +3920,65 @@
  {
   "skillId": "routine-streak",
   "template": "what is my {routineName:text} streak"
+ },
+ {
+  "skillId": "create-habit",
+  "template": "start a habit to {title:text}"
+ },
+ {
+  "skillId": "create-habit",
+  "template": "track {title:text} as a habit"
+ },
+ {
+  "skillId": "create-habit",
+  "template": "i want to make {title:text} a habit"
+ },
+ {
+  "skillId": "create-habit",
+  "template": "track {title:text} {targetPerWeek:quantity} times a week"
+ },
+ {
+  "skillId": "create-habit",
+  "template": "make {title:text} a {targetPerWeek:quantity} times a week habit"
+ },
+ {
+  "skillId": "log-habit",
+  "template": "check in my {title:text} habit"
+ },
+ {
+  "skillId": "log-habit",
+  "template": "i did my {title:text} habit"
+ },
+ {
+  "skillId": "log-habit",
+  "template": "log {title:text} as done today"
+ },
+ {
+  "skillId": "log-habit",
+  "template": "mark my {title:text} habit done"
+ },
+ {
+  "skillId": "list-habits",
+  "template": "show my habits"
+ },
+ {
+  "skillId": "list-habits",
+  "template": "what habits am i tracking"
+ },
+ {
+  "skillId": "list-habits",
+  "template": "how are my habits"
+ },
+ {
+  "skillId": "habit-progress",
+  "template": "how is my {title:text} habit going"
+ },
+ {
+  "skillId": "habit-progress",
+  "template": "what is my {title:text} habit streak"
+ },
+ {
+  "skillId": "habit-progress",
+  "template": "how many times have i done {title:text} this week"
  }
 ]

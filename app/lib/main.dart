@@ -32,12 +32,14 @@ import 'data_view.dart';
 import 'dev_harness.dart';
 import 'glyphs.dart';
 import 'glyph_policy.dart';
+import 'habits_view.dart';
 import 'library_home.dart';
 import 'onboarding_view.dart';
 import 'plan_view.dart';
 import 'plena.dart';
 import 'plenara_theme.dart';
 import 'reply_view.dart';
+import 'relationships_view.dart';
 import 'routine_player.dart';
 import 'routine_view.dart';
 import 'settings_view.dart';
@@ -45,6 +47,7 @@ import 'sherpa_speech.dart';
 import 'speech.dart';
 import 'speech_out.dart';
 import 'today_view.dart';
+import 'todo_capture.dart';
 import 'motion.dart';
 import 'voice_turn_controller.dart';
 
@@ -210,7 +213,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _colorDemoActive =
       false; // true while the demo owns the _forceState/_forceDifficulty pins
   int _plannerTab =
-      0; // Today / Plan / Library, the three primary roots (Spec 17)
+      1; // Relationships / Todos / Habits, the three primary roots (Spec 17)
   // The glyph Plena should trace next, fired by bumping the nonce (Spec 15 §5A). apt-or-absent:
   // most turns fire none. The persistent rarity gate keeps the register scarce across relaunches.
   GlyphDef? _glyph;
@@ -452,14 +455,42 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _maybeNavCommand(String t) {
     final s = t.toLowerCase().trim().replaceAll(RegExp(r'[.!?]+$'), '');
     final plannerDestination = switch (s) {
-      'today' || 'open today' || 'show today' || 'go to today' => 0,
-      'plan' || 'open plan' || 'show plan' || 'go to plan' => 1,
-      'library' || 'open library' || 'show library' || 'go to library' => 2,
+      'relationships' ||
+      'open relationships' ||
+      'show relationships' ||
+      'go to relationships' ||
+      'people' ||
+      'open people' ||
+      'show people' => 0,
+      'today' ||
+      'open today' ||
+      'show today' ||
+      'go to today' ||
+      'todos' ||
+      'open todos' ||
+      'show todos' ||
+      'tasks' ||
+      'open tasks' => 1,
+      'habits' || 'open habits' || 'show habits' || 'go to habits' => 2,
       _ => null,
     };
     if (plannerDestination != null) {
       _turn.clearDisplay();
       setState(() => _plannerTab = plannerDestination);
+      return true;
+    }
+    if (RegExp(
+      r'^(?:(?:open|show|go to|take me to|open up)\s+)?(?:the\s+)?plan$',
+    ).hasMatch(s)) {
+      _openPlan();
+      _turn.showTransientCaption('Opened the plan.');
+      return true;
+    }
+    if (RegExp(
+      r'^(?:(?:open|show|go to|take me to|open up)\s+)?(?:the\s+)?library$',
+    ).hasMatch(s)) {
+      _openLibrary();
+      _turn.showTransientCaption('Opened the library.');
       return true;
     }
     if (RegExp(
@@ -472,6 +503,43 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       return true;
     }
     return false;
+  }
+
+  void _openPlan() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Plan')),
+          body: PlanBoard(
+            session: _session,
+            onChanged: () {
+              if (mounted) setState(() {});
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openLibrary() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Library')),
+          body: LibraryHome(session: _session, onOpen: _openLibraryGroup),
+        ),
+      ),
+    );
+  }
+
+  void _openLibraryGroup(String title, Set<String>? typeIds) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => title == 'People'
+            ? RelationshipsView(session: _session)
+            : DataView(session: _session, title: title, typeIds: typeIds),
+      ),
+    );
   }
 
   SettingsView _settingsView() => SettingsView(
@@ -897,29 +965,24 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         if (showPlanner)
           Positioned.fill(
             child: switch (_plannerTab) {
-              1 => PlanBoard(
+              0 => RelationshipsView(
                 session: _session,
-                onChanged: () => setState(() {}),
                 onVoice: canUseVoice ? _turn.toggleMic : null,
               ),
-              2 => LibraryHome(
+              2 => HabitsView(
                 session: _session,
                 onVoice: canUseVoice ? _turn.toggleMic : null,
-                onOpen: (title, typeIds) => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => DataView(
-                      session: _session,
-                      title: title,
-                      typeIds: typeIds,
-                    ),
-                  ),
-                ),
               ),
               _ => TodayBoard(
                 session: _session,
                 onChanged: () => setState(() {}),
                 onVoice: canUseVoice ? _turn.toggleMic : null,
-                onOpenLibrary: () => setState(() => _plannerTab = 2),
+                onAddTodo: () =>
+                    addTodoFromUi(context, _session, () => setState(() {})),
+                onOpenPlan: _openPlan,
+                onOpenLibrary: _openLibrary,
+                onOpenRelationships: () => setState(() => _plannerTab = 0),
+                onOpenHabits: () => setState(() => _plannerTab = 2),
                 onOpenAttention: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => AttentionView(
@@ -948,25 +1011,25 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                 indicatorColor: const Color(0x33E9A58B),
                 onDestinationSelected: (index) => setState(() {
                   _plannerTab = index;
-                  if (index == 2) {
+                  if (index != 1) {
                     _session.setPlannerContext(const PlannerContext());
                   }
                 }),
                 destinations: const [
                   NavigationDestination(
-                    icon: Icon(Icons.today_outlined),
-                    selectedIcon: Icon(Icons.today_rounded),
-                    label: 'Today',
+                    icon: Icon(Icons.people_outline_rounded),
+                    selectedIcon: Icon(Icons.people_rounded),
+                    label: 'Relationships',
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.calendar_view_week_outlined),
-                    selectedIcon: Icon(Icons.calendar_view_week_rounded),
-                    label: 'Plan',
+                    icon: Icon(Icons.check_circle_outline_rounded),
+                    selectedIcon: Icon(Icons.check_circle_rounded),
+                    label: 'Todos',
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.grid_view_outlined),
-                    selectedIcon: Icon(Icons.grid_view_rounded),
-                    label: 'Library',
+                    icon: Icon(Icons.repeat_rounded),
+                    selectedIcon: Icon(Icons.autorenew_rounded),
+                    label: 'Habits',
                   ),
                 ],
               ),

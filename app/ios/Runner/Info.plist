@@ -32,6 +32,8 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Plena listens when you tap anywhere to talk.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Plenara imports the people you choose so you can remember contact details and relationship rhythms.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Plena turns your speech into text to understand what you say.</string>
 	<key>UIApplicationSceneManifest</key>

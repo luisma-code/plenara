@@ -8,7 +8,7 @@
 
 > **⚠ PRODUCT ROLE AMENDED 2026-08-17 (Spec 17).** Plena remains the global living presence, but
 > no longer owns hierarchy whenever user planning state exists. She is full-screen at rest or in
-> deep conversation, compact beside Today/Plan, and an ember on detail surfaces. The ephemeral-
+> deep conversation, compact beside Todos/Plan, and an ember on Relationships, Habits, and detail surfaces. The ephemeral-
 > exchange and presence-primary steady-state decisions are implementation history, not current law.
 
 **Status:** Draft v0.3 — July 2026 (Fable 5). First full draft (v0.1, early July) of the voice-first visual experience: the presence as the app's primary surface — the substrate, the presence state machine, the signal→visual expressive mapping, the disembodied personality rules, text materialization and yielding choreography, muted-mode visuals, the presence motion tokens, render tiers and perf budgets, and the accessibility constraints a permanently-moving surface must satisfy.
@@ -33,7 +33,7 @@ passes the same perceptual and memory gates; no per-frame `toImageSync` workarou
 
 ## 0. Purpose & Scope
 
-Spec 07 built the design language for Plenara's *views* and gave the voice loop a single listening presence. This spec grows that seed into an entity the user is talking with. That entity is **Plena**; the substrate keeps its working name, *the murmuration*, and "the presence" remains the neutral term of art. At empty rest or in deep conversation the screen may be the presence: an ethereal field that responds to speech, effort, and rare earned glyphs. On Today, Plan, Library, and detail surfaces, durable user state is the medium and Plena yields to compact-collaborator or ember scale under Spec 17 §3. When muted, she keeps speaking visually while captions carry the words.
+Spec 07 built the design language for Plenara's *views* and gave the voice loop a single listening presence. This spec grows that seed into an entity the user is talking with. That entity is **Plena**; the substrate keeps its working name, *the murmuration*, and "the presence" remains the neutral term of art. At empty rest or in deep conversation the screen may be the presence: an ethereal field that responds to speech, effort, and rare earned glyphs. Beside populated Todos content she is compact; on Relationships, Habits, Plan, Library, and detail surfaces she yields to ember scale under Spec 17 §3. When muted, she keeps speaking visually while captions carry the words.
 
 This document specifies:
 
@@ -576,7 +576,7 @@ Aligned to Spec 07 §10's rungs (structure lands final early; expression is stag
 - **D11 — Accessibility clamps live in the director**, not the renderers: calm-band contrast ≥ 4.5:1, ≤ 2 Hz full-field luminance modulation (cadence goes to motion, not light), no presence-only information, vestibular caps — all frame-stream-testable. *(§10)*
 - **D12 — Chartered as Spec 15**, not 07a: lettered docs in this suite are working artifacts; normative specs take top-level numbers (Spec 12 precedent). All 07 touchpoints recorded as X1–X5 rather than edited in place. *(header, §11)*
 - **D13 — The symbolic glyph vocabulary (v0.2, curated v0.4).** Glyphs are a figurative register distinct from the five gestures, governed by **apt-or-absent**: a glyph fires only when semantically apt to the app's actual action (a heart for closeness logged, never for a todo added), and most turns fire none. Data-defined line-figures (ordered strokes + dots in normalized presence-space) run on `p-glyph`, one per turn, ≥ 90 s apart, 3/day, signal-traced always. The 52 authored forms remain an internal sketchbook; 12 recognizable consequential marks form the active production register. AI selects or composes within the schema; code executes; never the sole carrier of meaning; stills-or-skips under reduced motion; the kitsch fence is tightened, not loosened ("would a considered hand sketch it in one or two strokes?"). *(§5A)* Formation uses the comet-trail mechanic — Plena flies the path and sheds her tail, §5A.4 — with ~600 sparse faint deposits and most of the body in flight; selection ships as `glyphForTurn` and admission as the persisted `GlyphRarityGate`.
-- **D14 — Plena, shipped (v0.3, 2026-07-11; product role superseded 2026-08-17).** The entity name, renderer, comet-trail glyph mechanic, and state expression remain current. The presence-only home, tap-anywhere over interactive content, and ephemeral exchange were a dogfood stage; Spec 17 replaces them with Today/Plan/Library, durable ledger history, and adaptive full-screen/collaborator/ember scale. The tuning sheet remains internal-only. *(§0, §2.1, §5A.1, §5A.4; Spec 17 §§2–3.)*
+- **D14 — Plena, shipped (v0.3, 2026-07-11; product role superseded 2026-08-17 and navigation amended 2026-09-06).** The entity name, renderer, comet-trail glyph mechanic, and state expression remain current. The presence-only home, tap-anywhere over interactive content, and ephemeral exchange were a dogfood stage; Spec 17 now places Plena across Relationships/Todos/Habits, secondary Plan/Library/History, and an adaptive full-screen/collaborator/ember scale. The tuning sheet remains internal-only. *(§0, §2.1, §5A.1, §5A.4; Spec 17 §§2–3.)*
 
 ### Open
 

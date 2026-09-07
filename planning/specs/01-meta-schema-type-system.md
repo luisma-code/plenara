@@ -251,7 +251,7 @@ The old entity/record split is replaced by two orthogonal, optional properties o
 - **Owned** — the type declares a top-level `parentType` (the `typeId` of its owner). Every instance then carries a structural `parentId` (the owner's UUID), stored in the instance's plaintext metadata (§8.2) so instances index under their parent without decryption. `parentId` is not an author-declared attribute; the StorageRepository requires and validates it on every write. A type without `parentType` is top-level.
 - **Append-only** — the type declares `append: true`. Its instances form an event log: written once, never edited inline, indexed by parent/time. A type without `append` is normal read-write.
 
-The two are independent. `contact_interaction` is both owned (by `contact`) and append-only — the classic "record." But a top-level append-only audit log (owned by nothing) and an owned-but-editable sub-object (e.g. an editable `address` owned by a `contact`) are both expressible now, which the old binary could not represent.
+The two are independent. A tracker log may be both owned and append-only — the classic “record.” The shipped `interaction` is owned by a contact but remains correctable. A top-level append-only audit log (owned by nothing) and an owned-but-editable sub-object are both expressible, which the old binary could not represent.
 
 `parentType` is the single privileged owning edge. A type may still declare ordinary `relations` to *other* entities (e.g. an interaction that also references a `place`); those are associations, not ownership.
 
@@ -509,7 +509,7 @@ Certain built-in types carry a hard-coded sensitivity mapping the app applies re
 
 - `journal_entry` — every attribute sensitive; the whole payload is encrypted.
 - `contact` — private notes and relationship details are sensitive; the display name and the fields the person_card needs (e.g. `relationshipType`, last-contact date) stay plaintext so the card renders and is searchable without decryption.
-- `contact_interaction` — the interaction body is sensitive; its `parentId` and timestamp metadata are not.
+- `interaction` — the current runtime stores medium, date, optional activity context, and optional note as plaintext synced JSON; `subject` links it to the person.
 
 ### 8.2 Encryption Boundary
 
@@ -626,14 +626,20 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
     {"name":"recurrence","valueType":"text","required":false}],
   "presentation":{"archetype":"checklist","primaryField":"description","timestampField":"dueAt"} }
 
-// contact — a person the user knows
+// contact — a person the user knows (runtime schema v2)
 { "typeId":"contact","displayName":"Contact","displayNamePlural":"Contacts",
   "description":"A person the user knows.",
   "examplePhrases":["add a contact","who is Marco","note about Sarah"],
   "attributes":[
     {"name":"displayName","valueType":"text","required":true},
     {"name":"birthday","valueType":"date","required":false},
-    {"name":"notes","valueType":"text","required":false,"sensitive":true}],
+    {"name":"aliases","valueType":"text","required":false},
+    {"name":"notes","valueType":"text","required":false},
+    {"name":"primaryPhone","valueType":"text","required":false},
+    {"name":"primaryEmail","valueType":"text","required":false},
+    {"name":"systemContactId","valueType":"text","required":false},
+    {"name":"relationshipGoal","valueType":"enum","enumValues":["none","close","connected","light"],"required":false,"default":"none"},
+    {"name":"contactFrequencyDays","valueType":"number","required":false}],
   "presentation":{"archetype":"person_card","primaryField":"displayName"} }
 
 // contact_fact — an arbitrary fact about a contact (G-10)
@@ -656,16 +662,37 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
     {"name":"toContact","valueType":"entityRef","refType":"contact","required":true,"cardinality":"one"}],
   "presentation":{"archetype":"edge","primaryField":"relationType"} }
 
-// contact_interaction — a dated note/log of contact with a person (owned, append-only)
-{ "typeId":"contact_interaction","displayName":"Interaction","displayNamePlural":"Interactions",
-  "description":"A dated interaction with a contact (call, text, in-person, note).",
-  "parentType":"contact","append":true,
-  "examplePhrases":["called Mum","had lunch with Marco","note that Ana starts her job Monday"],
+// interaction — a dated, typed contact with a person (runtime schema v2; owned)
+{ "typeId":"interaction","displayName":"Interaction","displayNamePlural":"Interactions",
+  "description":"A dated interaction with a contact.",
+  "parentType":"contact",
+  "examplePhrases":["called Mum","FaceTimed Marco","had lunch with Ana"],
   "attributes":[
-    {"name":"medium","valueType":"enum","enumValues":["phone","text","in_person","email","note"],"required":false},
-    {"name":"note","valueType":"text","required":false,"sensitive":true},
-    {"name":"occurredAt","valueType":"datetime","required":true,"defaultToNow":true}],
-  "presentation":{"archetype":"timeline","primaryField":"note","timestampField":"occurredAt"} }
+    {"name":"subject","valueType":"entityRef","refType":"contact","required":true},
+    {"name":"note","valueType":"text","required":false},
+    {"name":"kind","valueType":"text","required":false},
+    {"name":"medium","valueType":"enum","enumValues":["in_person","facetime","phone","text","email"],"required":false},
+    {"name":"at","valueType":"date","required":true},
+    {"name":"planned","valueType":"boolean","required":false}],
+  "presentation":{"archetype":"timeline","primaryField":"note","timestampField":"at"} }
+
+// habit — a repeated practice with a weekly relationship-health-style cadence
+{ "typeId":"habit","displayName":"Habit","displayNamePlural":"Habits",
+  "description":"A repeated practice tracked against a weekly target.",
+  "examplePhrases":["track meditation as a habit","strength training three times a week"],
+  "attributes":[
+    {"name":"title","valueType":"text","required":true},
+    {"name":"targetPerWeek","valueType":"number","required":false,"default":7},
+    {"name":"status","valueType":"enum","enumValues":["active","paused","archived"],"required":false,"default":"active"},
+    {"name":"createdAt","valueType":"datetime","required":true}] }
+
+// habit_checkin — one dated completion of a habit (owned)
+{ "typeId":"habit_checkin","displayName":"Habit Check-in","displayNamePlural":"Habit Check-ins",
+  "description":"A dated completion of a habit.","parentType":"habit",
+  "attributes":[
+    {"name":"habit","valueType":"entityRef","refType":"habit","required":true},
+    {"name":"date","valueType":"date","required":true},
+    {"name":"note","valueType":"text","required":false}] }
 
 // journal_entry — private daily journal (fully sensitive; SYNCS for durability; provider-privacy deferred to a later encryption-based version, §8.7)
 { "typeId":"journal_entry","displayName":"Journal Entry","displayNamePlural":"Journal Entries",
@@ -677,7 +704,7 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
   "presentation":{"archetype":"journal","primaryField":"body","timestampField":"entryDate"} }
 ```
 
-**Notes.** `contact_fact` and `contact_interaction` are **owned** (`parentType:"contact"`) so they index under their person without decryption (§4.5/§8.2). `journal_entry` **syncs like any other record** (in the user's cloud folder) so a journal survives device loss. Two earlier positions are both **dropped**: a "sync-excluded subfolder inside the synced folder" is not implementable (no provider offers app-settable per-subfolder exclusion — `G-37`), and making the journal **device-local** would trade a privacy leak for **data loss if the device is lost** (Luis's call — the worse failure of the two). The remaining question — keeping journal content unreadable by the cloud *provider* — is a **json-privacy problem deferred to a later version** (via the at-rest encryption of §8.7, itself deferred); until then journal content is plaintext JSON in the user's own synced folder, protected by their provider-account security, and the onboarding/consent surface states this plainly. These six + the built-in tracker templates (Spec 05 §6) are the free-tier type surface; the seed **skills** over them are canonicalized in Spec 02 §9.
+**Notes.** `contact_fact` and `interaction` are **owned** (`parentType:"contact"`), and `habit_checkin` is owned by `habit`; deleting either parent cascades to its children and one undo restores the full group. The runtime `interaction.subject` is the explicit person reference. `medium` is optional in the schema only for migration compatibility; every new capture requires one of the five enumerated values. New habit targets are constrained by the UI and seed skill to 1–7 completions per week, and duplicate same-local-day check-ins are rejected by both typed UI and voice paths. Contact details, opaque system-contact ids, relationship goals, facts, interaction notes, habits, and check-ins currently sync as plaintext JSON under the product's existing storage disclosure. `journal_entry` **syncs like any other record** (in the user's cloud folder) so a journal survives device loss. Two earlier positions are both **dropped**: a "sync-excluded subfolder inside the synced folder" is not implementable (no provider offers app-settable per-subfolder exclusion — `G-37`), and making the journal **device-local** would trade a privacy leak for **data loss if the device is lost** (Luis's call — the worse failure of the two). The remaining question — keeping journal content unreadable by the cloud *provider* — is a **json-privacy problem deferred to a later version** (via the at-rest encryption of §8.7, itself deferred); until then journal content is plaintext JSON in the user's own synced folder, protected by their provider-account security, and the onboarding/consent surface states this plainly.
 
 ### 12.4 Corpus resolve additions (`G-22`, `G-24`, `G-32`)
 - **Contact aliases (`G-24`).** `contact` gains `{"name":"aliases","label":"Also known as","valueType":"tag","required":false}` (nicknames/roles: "Mum", "the boss"). `entityNames.resolve` (Spec 03 §6.1) matches `displayName` **or** any alias; common role words map via aliases or a small role table. A **group** name ("the Garcias") resolves to a *set* of contacts (for `event_prep`, P-08).

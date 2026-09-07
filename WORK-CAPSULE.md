@@ -1,6 +1,43 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-06 after the 0.13.0 deployment._
+_Current working memory. Last updated 2026-09-06 for the three-pillar product rework._
+
+## Relationships / Todos / Habits rework (2026-09-06)
+
+- The primary navigation is now **Relationships / Todos / Habits**, opening on Todos. Plan, Library,
+  History, Settings, diagnostics, and repair remain reachable secondary tools; natural voice phrases
+  can navigate to each primary root and to Plan/Library.
+- Relationships is a purpose-built workspace: add, import from iOS Contacts, edit, and undoably
+  remove people; edit/remove facts; log interactions as in-person, FaceTime, phone, text, or email;
+  set Close (7-day), Connected (21-day), Light-touch (60-day), or custom contact rhythms; act on
+  due-contact suggestions; start phone/FaceTime/email actions; and create a contact-linked follow-up
+  Todo. Only completed interactions count toward relationship health.
+- Todos is the focused one-off commitment workspace. Fast capture can leave an item undated or put it
+  today/tomorrow/on a chosen day; only task/reminder records populate Now/Next/Later. Due relationship
+  guidance and habit check-ins appear as explicit cross-workflow cards rather than being recast as
+  todos.
+- Habits is a first-class repeated-practice workspace, distinct from routines and quantitative
+  trackers. Habits have a 1–7/week target, active/paused lifecycle, one check-in per local day,
+  weekly progress, a seven-day strip, and a daily streak. Voice can create, list, check in, and report
+  progress using the same records and rules as the UI.
+- Contact and interaction schemas are v2. Contact details, relationship goals, habits, and their
+  histories follow the existing plaintext JSON sync disclosure. Parent deletion cascades through
+  relationship/habit child records, and one targeted undo restores the group.
+- The new relationship-health, habit projection, three-pillar navigation, and native Contacts
+  checks were calibrated against deliberately broken implementations before passing. An explicitly
+  selected local iPhone 17 Pro simulator passed the production-theme Relationships → person detail
+  → Habits → Todos → Plan → voice-opened Library journey. The Contacts method-channel check failed
+  against a deliberately wrong channel and passed after restoring the real Swift bridge with
+  Contacts permission pre-authorized (the permission decision itself was not under test). Phone
+  captures are `app/build/simulator-check/relationships-three-pillars.png` and
+  `app/build/simulator-check/relationship-detail-actions.png`. A longer stress attempt sampled
+  Runner RSS at 448 MiB, 489 MiB, and 488 MiB; the final capture run completed too quickly for a
+  multi-sample claim. This is not a long-soak leak claim. The selected simulator and every app/test
+  process were terminated; the physical phone was untouched.
+- Final full precheck is green: 2,056 engine tests + 36 intentional skips; 195 Flutter tests + 4
+  channel skips; 95.7% deterministic-core, 89.2% product-logic, and 83.8% transport coverage;
+  analyzers, seed sync, documentation consistency, import layering, render guards, external-channel
+  checks, macOS build, eight real-engine cases, secret scan, and the 24/60 conformance ratchet.
 
 ## 0.13.0 pre-deployment verification (2026-09-06)
 
@@ -116,9 +153,9 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
 
 ## Product direction
 
-- Spec 17 now owns the product model: **Today / Plan / Library + durable conversation/action ledger + global Plena**.
+- Spec 17 now owns the product model: **Relationships / Todos / Habits + secondary Plan/Library/History + global Plena**.
 - Voice remains free-form, global, and capable of every core outcome. It is no longer forced to carry persistent planner state, comparison, sequencing, or precision editing alone.
-- Plena scales full-screen at empty rest/deep conversation, compact beside Today/Plan, and ember-sized on detail surfaces.
+- Plena scales full-screen at empty rest/deep conversation, compact beside populated Todos, and ember-sized on Relationships/Habits/detail and secondary-tool surfaces.
 - Atomic reversible actions act/show/describe. Exploratory or multi-record planning creates an inspectable proposal.
 - Current truth is never made ephemeral to preserve visual minimalism.
 

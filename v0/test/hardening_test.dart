@@ -214,7 +214,7 @@ void main() {
     test('a genuine (even backdated) log is NOT treated as fabrication',
         () async {
       final s = await _session(_ScriptCloud());
-      final r = await s.handle('i talked to Sam about the project');
+      final r = await s.handle('i called Sam about the project');
       expect(r.toLowerCase(), isNot(contains("didn't happen")));
     });
   });

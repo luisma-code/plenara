@@ -62,7 +62,7 @@ Session _session() {
 
 void main() {
   group(
-    'archetypeFor — structural inference (Spec 07 §4, no per-type UI code)',
+    'archetypeFor — structural inference for the generic fallback (Spec 07 §4)',
     () {
       Map<String, dynamic> t(List<Map<String, dynamic>> attrs) => {
         'attributes': attrs,

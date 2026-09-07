@@ -1,0 +1,28 @@
+{
+  "skillId": "habit-progress",
+  "displayName": "Show habit progress",
+  "reads": ["habit", "habit_checkin"],
+  "writes": [],
+  "inputs": [{"name": "title", "required": true}],
+  "steps": {
+    "main": [
+      {"op": "read_one", "typeId": "habit", "match": {"title": {"var": "title"}}, "partial": true, "into": "habit"},
+      {"op": "branch", "cond": {"isNull": "habit"}, "then": [
+        {"op": "format", "template": "I couldn't find a habit called {title}.", "into": "confirmationText"}
+      ], "else": [
+        {"op": "compute", "fn": "today", "into": "today"},
+        {"op": "compute", "fn": "start_of_week", "args": [{"var": "today"}], "into": "weekStart"},
+        {"op": "read_related", "typeId": "habit_checkin", "via": "habit", "from": {"ref": "habit"}, "into": "checkins"},
+        {"op": "compute", "fn": "round", "args": [{"field": ["habit", "targetPerWeek"]}], "into": "target"},
+        {"op": "set", "var": "weekCount", "value": 0},
+        {"op": "foreach", "list": {"var": "checkins"}, "as": "checkin", "body": [
+          {"op": "branch", "cond": {"gte": [{"field": ["checkin", "date"]}, {"var": "weekStart"}]}, "then": [
+            {"op": "compute", "fn": "add", "args": [{"var": "weekCount"}, 1], "into": "weekCount"}
+          ]}
+        ]},
+        {"op": "compute", "fn": "current_streak", "args": [{"var": "checkins"}, "date"], "into": "streak"},
+        {"op": "format", "template": "{title}: {weekCount} of {target} this week, with a {streak}-day streak.", "into": "confirmationText"}
+      ]}
+    ]
+  }
+}

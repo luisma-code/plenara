@@ -123,8 +123,8 @@ void main() {
 
     test('F-09 last interaction: "When did I last see Marco?"', () async {
       final s = await _s();
-      await s.handle(
-          'i talked to Marco about the project'); // set up an interaction
+      await s
+          .handle('i called Marco about the project'); // set up an interaction
       final r = await s.handle('when did i last see Marco');
       expect(r, contains('Marco'));
       expect(r.toLowerCase(), anyOf(contains('last talked'), contains('last')));
@@ -132,7 +132,7 @@ void main() {
 
     test('F-10 time-since via alias: "How long since I called Mum?"', () async {
       final s = await _s();
-      await s.handle('i talked to Sarah about the trip');
+      await s.handle('i called Sarah about the trip');
       await s.handle("Sarah's nickname is Mum");
       final r = await s.handle(
           'how long since i called Mum'); // alias + "how long since" phrasing, offline

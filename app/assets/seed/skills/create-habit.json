@@ -1,0 +1,38 @@
+{
+  "skillId": "create-habit",
+  "displayName": "Start tracking a habit",
+  "reads": ["habit"],
+  "writes": ["habit"],
+  "inputs": [
+    {"name": "title", "required": true},
+    {"name": "targetPerWeek", "required": false}
+  ],
+  "steps": {
+    "main": [
+      {"op": "read_one", "typeId": "habit", "match": {"title": {"var": "title"}}, "partial": true, "into": "existing"},
+      {"op": "branch", "cond": {"notNull": "existing"}, "then": [
+        {"op": "format", "template": "You're already tracking {title} as a habit.", "into": "confirmationText"}
+      ], "else": [
+        {"op": "branch", "cond": {"isNull": "targetPerWeek"}, "then": [
+          {"op": "set", "var": "targetPerWeek", "value": 7}
+        ]},
+        {"op": "branch", "cond": {"gte": [{"var": "targetPerWeek"}, 8]}, "then": [
+          {"op": "format", "template": "Choose a weekly target from 1 to 7 for {title}.", "into": "confirmationText"}
+        ], "else": [
+          {"op": "branch", "cond": {"gte": [{"var": "targetPerWeek"}, 1]}, "then": [
+            {"op": "compute", "fn": "now", "into": "createdAt"},
+            {"op": "write_record", "typeId": "habit", "fields": {
+              "title": {"var": "title"},
+              "targetPerWeek": {"var": "targetPerWeek"},
+              "status": "active",
+              "createdAt": {"var": "createdAt"}
+            }, "into": "habit"},
+            {"op": "format", "template": "Started tracking {title} — {targetPerWeek} time(s) a week.", "into": "confirmationText"}
+          ], "else": [
+            {"op": "format", "template": "Choose a weekly target from 1 to 7 for {title}.", "into": "confirmationText"}
+          ]}
+        ]}
+      ]}
+    ]
+  }
+}

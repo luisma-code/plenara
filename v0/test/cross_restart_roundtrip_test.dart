@@ -94,8 +94,8 @@ Future<Session> _open(String dataDir, String deviceDir) async {
   return (dataDir, deviceDir);
 }
 
-String _idOf(Session s, String typeId) => s.store.values
-    .firstWhere((r) => r['typeId'] == typeId)['id'] as String;
+String _idOf(Session s, String typeId) =>
+    s.store.values.firstWhere((r) => r['typeId'] == typeId)['id'] as String;
 
 /// Undo everything in the ring, newest first, asserting EVERY undo succeeds.
 /// The LIFO walk crosses the restart boundary into the pre-restart writes —
@@ -188,7 +188,7 @@ void main() {
     expect(await s1.handle('log my mood as great'),
         isNot(contains("didn't catch")));
     expect(await s1.handle('log a 3k run'), isNot(contains("didn't catch")));
-    expect(await s1.handle('talked to Sarah about the garden'),
+    expect(await s1.handle('called Sarah about the garden'),
         isNot(contains("didn't catch"))); // contact + interaction
     expect(await s1.handle('create a stretching routine for my low back'),
         contains('Restart loosener')); // routine + routine_step records

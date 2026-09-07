@@ -165,7 +165,12 @@ void main() {
     ]);
     expect(
       buildPlannerSignals({
-        'mia': {'id': 'mia', 'typeId': 'contact', 'displayName': 'Mia'},
+        'mia': {
+          'id': 'mia',
+          'typeId': 'contact',
+          'displayName': 'Mia',
+          'relationshipGoal': 'close',
+        },
         'old': {
           'id': 'old',
           'typeId': 'interaction',

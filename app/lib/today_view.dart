@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:plenara/conversation_ledger.dart';
+import 'package:plenara/habits.dart';
 import 'package:plenara/operation_center.dart';
 import 'package:plenara/planning_artifact.dart';
 import 'package:plenara/planner.dart';
@@ -16,6 +17,10 @@ class TodayBoard extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback? onVoice;
   final VoidCallback onOpenLibrary;
+  final VoidCallback? onOpenRelationships;
+  final VoidCallback? onOpenHabits;
+  final VoidCallback? onOpenPlan;
+  final VoidCallback? onAddTodo;
   final VoidCallback? onOpenAttention;
 
   const TodayBoard({
@@ -23,6 +28,10 @@ class TodayBoard extends StatelessWidget {
     required this.session,
     required this.onChanged,
     required this.onOpenLibrary,
+    this.onOpenRelationships,
+    this.onOpenHabits,
+    this.onOpenPlan,
+    this.onAddTodo,
     this.onOpenAttention,
     this.onVoice,
   });
@@ -32,6 +41,7 @@ class TodayBoard extends StatelessWidget {
     final projection = session.todayProjection();
     final notices = session.plannerNotices();
     final signals = session.plannerSignals();
+    final dueHabits = habitsDueToday(session.store, session.now);
     final day = projection.day;
     final visibleIds = <String>[];
     final seen = <String>{};
@@ -71,7 +81,7 @@ class TodayBoard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'TODAY',
+                            'TODOS',
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
                                   color: PlenaraTheme.amber,
@@ -95,6 +105,12 @@ class TodayBoard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     IconButton(
+                      key: const Key('todo-add'),
+                      tooltip: 'Add one-off todo',
+                      onPressed: onAddTodo,
+                      icon: const Icon(Icons.add_task_rounded),
+                    ),
+                    IconButton(
                       key: const Key('today-weekly-review'),
                       tooltip: 'Review this week',
                       onPressed: () {
@@ -103,13 +119,6 @@ class TodayBoard extends StatelessWidget {
                       },
                       icon: const Icon(Icons.fact_check_outlined),
                     ),
-                    IconButton(
-                      key: const Key('today-library'),
-                      tooltip: 'Open Library',
-                      onPressed: onOpenLibrary,
-                      icon: const Icon(Icons.grid_view_rounded),
-                    ),
-                    const SizedBox(width: 42),
                   ],
                 ),
                 const SizedBox(height: 28),
@@ -192,7 +201,7 @@ class TodayBoard extends StatelessWidget {
                 _Section(
                   title: 'Now',
                   empty: 'Nothing is underway.',
-                  items: projection.now,
+                  items: _todoItems(projection.now),
                   session: session,
                   onChanged: onChanged,
                 ),
@@ -226,10 +235,10 @@ class TodayBoard extends StatelessWidget {
                   ),
                 _Section(
                   title: 'Next',
-                  empty: projection.now.isEmpty
+                  empty: _todoItems(projection.now).isEmpty
                       ? 'Nothing pressing. Capture anything on your mind.'
                       : 'The rest of today is clear.',
-                  items: projection.next,
+                  items: _todoItems(projection.next),
                   session: session,
                   onChanged: onChanged,
                 ),
@@ -243,12 +252,40 @@ class TodayBoard extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (dueHabits.isNotEmpty)
+                  _HabitsDueCard(
+                    habits: dueHabits,
+                    onOpen: onOpenHabits,
+                    onCheckIn: (habit) async {
+                      final result = await session.recordHabitCheckIn(habit.id);
+                      onChanged();
+                      if (!context.mounted) return;
+                      showUndoableResult(
+                        context,
+                        message: result.message,
+                        onUndo: result.undoId == null
+                            ? null
+                            : () async {
+                                final message = await session.undoById(
+                                  result.undoId!,
+                                );
+                                onChanged();
+                                return message;
+                              },
+                      );
+                    },
+                  ),
                 for (final signal in signals)
-                  _PlannerSignalCard(signal: signal),
+                  _PlannerSignalCard(
+                    signal: signal,
+                    onTap: signal.kind == PlannerSignalKind.relationshipNeglect
+                        ? onOpenRelationships
+                        : null,
+                  ),
                 _Section(
                   title: 'Later this week',
                   empty: 'Nothing waiting later this week.',
-                  items: projection.later,
+                  items: _todoItems(projection.later),
                   session: session,
                   onChanged: onChanged,
                 ),
@@ -267,37 +304,55 @@ class TodayBoard extends StatelessWidget {
                     },
                   ),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ActionChip(
-                      avatar: const Icon(Icons.inbox_outlined, size: 18),
-                      label: Text('${projection.inboxCount} in Inbox'),
-                      onPressed: onOpenLibrary,
-                    ),
-                    ActionChip(
-                      key: const Key('today-morning-plan'),
-                      avatar: const Icon(Icons.wb_sunny_outlined, size: 18),
-                      label: const Text('Plan morning'),
-                      onPressed: () {
-                        session.createMorningPlan();
-                        onChanged();
-                      },
-                    ),
-                    ActionChip(
-                      key: const Key('conversation-history'),
-                      avatar: const Icon(Icons.history_rounded, size: 18),
-                      label: const Text('History'),
-                      onPressed: () async {
-                        final changed = await showConversationLedger(
-                          context,
-                          session,
-                        );
-                        if (changed && context.mounted) onChanged();
-                      },
-                    ),
-                  ],
+                Material(
+                  color: Colors.transparent,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ActionChip(
+                        key: const Key('today-morning-plan'),
+                        avatar: const Icon(Icons.wb_sunny_outlined, size: 18),
+                        label: const Text('Plan morning'),
+                        onPressed: () {
+                          session.createMorningPlan();
+                          onChanged();
+                        },
+                      ),
+                      ActionChip(
+                        key: const Key('conversation-history'),
+                        avatar: const Icon(Icons.history_rounded, size: 18),
+                        label: const Text('History'),
+                        onPressed: () async {
+                          final changed = await showConversationLedger(
+                            context,
+                            session,
+                          );
+                          if (changed && context.mounted) onChanged();
+                        },
+                      ),
+                      ActionChip(
+                        avatar: const Icon(Icons.inbox_outlined, size: 18),
+                        label: Text('${projection.inboxCount} in Inbox'),
+                        onPressed: onOpenLibrary,
+                      ),
+                      ActionChip(
+                        key: const Key('todos-plan'),
+                        avatar: const Icon(
+                          Icons.calendar_view_week_outlined,
+                          size: 18,
+                        ),
+                        label: const Text('Plan'),
+                        onPressed: onOpenPlan,
+                      ),
+                      ActionChip(
+                        key: const Key('today-library'),
+                        avatar: const Icon(Icons.grid_view_outlined, size: 18),
+                        label: const Text('Library'),
+                        onPressed: onOpenLibrary,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -610,7 +665,8 @@ class _PlannerRow extends StatelessWidget {
 
 class _PlannerSignalCard extends StatelessWidget {
   final PlannerSignal signal;
-  const _PlannerSignalCard({required this.signal});
+  final VoidCallback? onTap;
+  const _PlannerSignalCard({required this.signal, this.onTap});
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -626,6 +682,72 @@ class _PlannerSignalCard extends StatelessWidget {
         }, color: PlenaraTheme.amber),
         title: Text(signal.title),
         subtitle: Text(signal.detail),
+        trailing: onTap == null
+            ? null
+            : const Icon(Icons.chevron_right_rounded, size: 20),
+        onTap: onTap,
+      ),
+    ),
+  );
+}
+
+List<PlannerItem> _todoItems(List<PlannerItem> items) => items
+    .where(
+      (item) =>
+          item.kind == PlannerItemKind.task ||
+          item.kind == PlannerItemKind.reminder,
+    )
+    .toList(growable: false);
+
+class _HabitsDueCard extends StatelessWidget {
+  final List<HabitStatus> habits;
+  final VoidCallback? onOpen;
+  final Future<void> Function(HabitStatus habit) onCheckIn;
+
+  const _HabitsDueCard({
+    required this.habits,
+    required this.onCheckIn,
+    this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) => Card(
+    key: const Key('todos-habits-due'),
+    margin: const EdgeInsets.only(bottom: 10),
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 8, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.repeat_rounded, color: PlenaraTheme.amber),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Habits for today',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              if (onOpen != null)
+                TextButton(onPressed: onOpen, child: const Text('Open habits')),
+            ],
+          ),
+          for (final habit in habits.take(3))
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(habit.title),
+              subtitle: Text(
+                '${habit.completedThisWeek} of ${habit.targetPerWeek} this week',
+              ),
+              trailing: FilledButton.tonal(
+                key: Key('todo-habit-check-${habit.id}'),
+                onPressed: () => onCheckIn(habit),
+                child: const Text('Check in'),
+              ),
+            ),
+        ],
       ),
     ),
   );

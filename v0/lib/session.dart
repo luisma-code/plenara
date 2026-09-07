@@ -4,6 +4,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math';
 
 import 'automations.dart';
 import 'capability_draft_store.dart';
@@ -192,7 +193,8 @@ class _TourChapter {
       this.followOn, this.coda, this.domainKeywords, this.aliases);
 }
 
-// Curated order: reminders → tasks → people → tracking. Journal/mood/birthdays fold into essences.
+// Curated order: reminders → tasks → people → habits. Journal, trackers,
+// movement, and birthdays remain available as secondary capabilities.
 const _tourChapters = <_TourChapter>[
   _TourChapter(
     'reminders',
@@ -243,33 +245,13 @@ const _tourChapters = <_TourChapter>[
   ),
   _TourChapter(
     'tracking',
-    ['log-run'],
-    "I come with runs, moods, meals, and a journal — and if I don't track something yet, say \"start tracking my water intake\" and I'll build it.",
-    'You could say — "log a 3k run."',
-    'That one\'s free to try — I\'ll undo it after if you like. Or say "next" for one last thing: how to read me.',
-    "Logged — and I'll total it up whenever you ask. \"Undo that\" clears it.",
-    [
-      'run',
-      'walk',
-      'mood',
-      'journal',
-      'meal',
-      'goal',
-      'streak',
-      'track',
-      'water',
-      'step'
-    ],
-    [
-      'track',
-      'tracking',
-      'run',
-      'running',
-      'mood',
-      'journal',
-      'habit',
-      'habits'
-    ],
+    ['create-habit', 'log-habit'],
+    "Habits are the things you want to repeat and notice over time. Tell me the practice and its weekly rhythm; I'll keep one-off work separate in Todos.",
+    'You could say — "track meditation as a habit."',
+    'Try one of your own — or say "next" for guided movement routines.',
+    "It's being tracked now. Say \"I did my meditation habit\" to check it in, and \"undo that\" if you were only trying it.",
+    ['habit', 'streak', 'checkin', 'check-in'],
+    ['track', 'tracking', 'habit', 'habits'],
   ),
   _TourChapter(
     'movement',
@@ -614,6 +596,7 @@ class LearnedFlow {
 class Session {
   final String dataDir;
   final DateTime? _fixedClock;
+  final Random _manualIdRandom = Random.secure();
 
   /// The clock, read live per access so a long-open app never freezes at launch
   /// time (Spec 03 §4 wants a per-turn snapshot). Tests/the demo pin it via the
@@ -1451,7 +1434,7 @@ class Session {
       'reminders': 'reminders',
       'tasks': 'tasks',
       'people': 'the people you care about',
-      'tracking': 'anything you want to track',
+      'tracking': 'habits you want to keep',
     };
     final names = menuable.map((c) => label[c.id] ?? c.id).toList();
     final territory = names.length <= 1
@@ -1462,9 +1445,9 @@ class Session {
     // default; the only thing that leaves is a smart feature calling the user's OWN AI account.
     final privacy = prior ==
             null // only on a brand-new tour, never on a repeat while one is live
-        ? 'First, so you know: everything you tell me stays on your phone — it\'s yours. Nothing goes '
-            'to any server unless a smart feature needs the AI, and even then it goes to your own '
-            'private account, never to me.'
+        ? 'First, so you know: your records stay in the device-local or sync folder you chose — '
+            'they are yours. A smart feature sends only its declared context to the AI account '
+            'you connected; ordinary tasks, habits, and relationship tracking stay local.'
         : null;
     final intro = "I remember things so you don't have to — $territory. "
         'Pick one and I\'ll show you, or say "give me the tour."';
@@ -1505,6 +1488,8 @@ class Session {
     final lines = <String>[
       if (has('create-task'))
         '• Tasks — "add call the plumber to my list", "list my tasks", "what\'s due", "move X to friday", "mark X done", "delete X"',
+      if (has('create-habit'))
+        '• Habits — "track meditation as a habit", "track strength training 3 times a week", "I did my meditation habit", "how is my meditation habit going?", "show my habits"',
       if (has('set-reminder'))
         '• Reminders — "remind me to call mom on thursday at 5pm", "remind me every day at 9am to take my meds", "what are my reminders", "snooze the reminder to X to friday at 9am", "cancel the reminder to X"',
       if (has('log-run'))
@@ -1517,7 +1502,7 @@ class Session {
         '• Movement — "create a stretching routine for my low back", then "let\'s do low back" '
             'and I\'ll walk you through it',
       if (has('remember-person-fact'))
-        '• People — "remember that Mia is Sarah\'s daughter", "what do I know about Mia", "talked to Sam about the trip", "when did I last talk to Sam"',
+        '• People — "remember that Mia is Sarah\'s daughter", "what do I know about Mia", "FaceTimed Sam about the trip", "when did I last talk to Sam"',
       if (has('set-birthday'))
         '• Birthdays — "Sarah\'s birthday is july 16", "whose birthday is coming up"',
       if (has('set-alias'))
@@ -1551,6 +1536,11 @@ class Session {
       return 'With tasks you can say: "add call the plumber to my list", "add milk, eggs, and bread to my list", '
           '"list my tasks", "what\'s due tomorrow", "move X to friday", "mark X done", "delete the first task".';
     }
+    if (m(['habit', 'habits']) && has('create-habit')) {
+      return 'With habits you can say: "track meditation as a habit", '
+          '"track strength training 3 times a week", "I did my meditation habit", '
+          '"how is my meditation habit going?", or "show my habits". One-off work stays in Todos; a habit keeps a weekly rhythm and check-in history.';
+    }
     if (m(['run', 'jog', 'exercise', 'workout']) && has('log-run')) {
       return 'For running: "log a 3k run", "how much have I run this week", "how far have I run", "what\'s my running streak".';
     }
@@ -1564,7 +1554,7 @@ class Session {
     if (m(['people', 'contact', 'friend', 'relationship']) &&
         has('remember-person-fact')) {
       return 'For people: "remember that Mia is Sarah\'s daughter", "what do I know about Mia", '
-          '"talked to Sam yesterday", "how old is Sarah", "when did I last talk to Sam".';
+          '"FaceTimed Sam yesterday", "how old is Sarah", "when did I last talk to Sam".';
     }
     if (m(['birthday', 'bday']) && has('set-birthday')) {
       return 'For birthdays: "Sarah\'s birthday is july 16", "when is Sarah\'s birthday", "whose birthday is coming up".';
@@ -1628,6 +1618,29 @@ class Session {
     if (t.isEmpty || t.toLowerCase() == 'none' || t.toLowerCase() == 'null')
       return null;
     return v;
+  }
+
+  void _supplyInteractionMedium(
+      String skillId, Map<String, dynamic> slots, String utterance) {
+    if (skillId != 'log-interaction' || slots['medium'] != null) return;
+    final kind = '${slots['kind'] ?? ''}'.toLowerCase();
+    final words = utterance.toLowerCase();
+    if (kind == 'text' ||
+        RegExp(r'\b(text|texted|message|messaged)\b').hasMatch(words)) {
+      slots['medium'] = 'text';
+    } else if (kind == 'video call' ||
+        RegExp(r'\b(face ?time(?:d)?|video call)\b').hasMatch(words)) {
+      slots['medium'] = 'facetime';
+    } else if (RegExp(r'\b(e-?mail|emailed)\b').hasMatch(words)) {
+      slots['medium'] = 'email';
+    } else if (kind == 'call' ||
+        RegExp(r'\b(call|called|phoned|phone call)\b').hasMatch(words)) {
+      slots['medium'] = 'phone';
+    } else if ({'dinner', 'lunch', 'coffee'}.contains(kind) ||
+        RegExp(r'\b(in person|saw|met|dinner|lunch|coffee|hung out|ran into)\b')
+            .hasMatch(words)) {
+      slots['medium'] = 'in_person';
+    }
   }
 
   /// On-open nudge lines (the UI shows these on launch). Two derived sources, so
@@ -1848,6 +1861,7 @@ class Session {
     final day = nudge.at!;
     final occurrence =
         '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+    final contactGoalNudge = nudge.title.startsWith('Reach out to ');
     planningArtifacts.create(
       PlanningArtifact(
         id: 'relationship-suggestion-${nudge.id}-$occurrence',
@@ -1855,7 +1869,9 @@ class Session {
         // Scope supersede per person: without a subject, one person's fresh
         // suggestion would supersede every other person's (kind-wide).
         subject: nudge.id,
-        title: 'Prepare for ${nudge.title}',
+        title: contactGoalNudge
+            ? nudge.title.replaceFirst('Reach out to ', 'Reconnect with ')
+            : 'Prepare for ${nudge.title}',
         createdAt: now,
         updatedAt: now,
         state: PlanningArtifactState.draft,
@@ -1866,8 +1882,9 @@ class Session {
             evidence: nudge.detail ?? 'Coming up',
           ),
         ],
-        summary:
-            'A timely suggestion based only on a date you saved. Keep it, dismiss it, or move it to tomorrow.',
+        summary: contactGoalNudge
+            ? 'A contact suggestion based only on the rhythm you chose and completed interactions you logged. Keep it, dismiss it, or move it to tomorrow.'
+            : 'A timely suggestion based only on a date you saved. Keep it, dismiss it, or move it to tomorrow.',
       ),
     );
   }
@@ -2976,6 +2993,205 @@ class Session {
     return (rec['displayName'] ?? rec['description'] ?? rec['id'])?.toString();
   }
 
+  String _mintManualId(String typeId) {
+    final bytes = List<int>.generate(16, (_) => _manualIdRandom.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex = bytes.map((x) => x.toRadixString(16).padLeft(2, '0')).join();
+    return '$typeId-${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+        '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+  }
+
+  /// Create a record from a product UI without synthesizing an English command.
+  /// The type definition remains the validator and the write uses the same
+  /// durable execution journal as voice, editing, deletion, and undo.
+  Future<ManualWrite> createRecord(
+    String typeId,
+    Map<String, Object?> fields, {
+    String? description,
+  }) =>
+      _serialized(() =>
+          _createRecordUnlocked(typeId, fields, description: description));
+
+  Future<ManualWrite> _createRecordUnlocked(
+    String typeId,
+    Map<String, Object?> fields, {
+    String? description,
+  }) async {
+    final type = types[typeId];
+    if (type == null)
+      return ManualWrite.fail('The $typeId type is unavailable.');
+    Map<String, dynamic> record;
+    try {
+      record = const ValueCodec().validateRecord(
+        type,
+        <String, dynamic>{
+          'id': _mintManualId(typeId),
+          'typeId': typeId,
+          '_schemaVersion': typeVersion(type),
+          ...fields,
+        },
+        records: store,
+        dataRoot: dataDir,
+      );
+    } on ValueCodecError catch (error) {
+      return ManualWrite.fail(error.message);
+    }
+    final summary = _oneLineSummary(record) ?? _typeDisplayName(typeId);
+    final result = _executeMutation(
+      writes: [record],
+      deletes: const [],
+      origin: 'manual-create',
+      description: description ?? 'added $summary',
+      frozenInputs: {'typeId': typeId, 'recordId': record['id']},
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite ||
+        result.record == null) {
+      return const ManualWrite.fail(
+        "Couldn't start that addition safely, so nothing changed.",
+      );
+    }
+    _clearSpokenCorrectionContext();
+    try {
+      automations.notifyWrites([record]);
+    } catch (_) {/* a malformed automation cannot break a user write */}
+    return ManualWrite.ok(
+      result.state == ExecutionResultState.appliedInMemory
+          ? "Added here, but couldn't finish saving it. I'll recover it next launch."
+          : 'Added — $summary.',
+      undoId: result.record!.id,
+    );
+  }
+
+  /// Check a habit in once for the current local day. Voice and the Habits
+  /// button share the same habit_checkin record shape; repeat taps are honest
+  /// no-ops rather than inflated progress.
+  Future<ManualWrite> recordHabitCheckIn(String habitId) =>
+      _serialized(() => _recordHabitCheckInUnlocked(habitId));
+
+  Future<ManualWrite> _recordHabitCheckInUnlocked(String habitId) async {
+    final habit = store[habitId];
+    if (habit == null || habit['typeId'] != 'habit') {
+      return const ManualWrite.fail('That habit no longer exists.');
+    }
+    if ('${habit['status'] ?? 'active'}' != 'active') {
+      return const ManualWrite.fail('That habit is paused.');
+    }
+    final today = now.toIso8601String().split('T').first;
+    final already = store.values.any(
+      (record) =>
+          record['typeId'] == 'habit_checkin' &&
+          '${record['habit']}' == habitId &&
+          '${record['date']}' == today,
+    );
+    if (already) {
+      return ManualWrite.fail('${habit['title']} is already done today.');
+    }
+    final result = await _createRecordUnlocked(
+      'habit_checkin',
+      {'habit': habitId, 'date': today},
+      description: 'checked in ${habit['title']}',
+    );
+    if (!result.ok) return result;
+    return ManualWrite.ok('Checked in — ${habit['title']}.',
+        undoId: result.undoId);
+  }
+
+  /// Merge contacts selected from the OS address book as one reversible
+  /// execution. Identity matches first, then an exact normalized display name,
+  /// so importing again refreshes phone/email instead of cloning everyone.
+  Future<ManualWrite> importContacts(List<Map<String, Object?>> contacts) =>
+      _serialized(() => _importContactsUnlocked(contacts));
+
+  Future<ManualWrite> _importContactsUnlocked(
+      List<Map<String, Object?>> contacts) async {
+    final type = types['contact'];
+    if (type == null)
+      return const ManualWrite.fail('Contacts are unavailable.');
+    final writes = <Map<String, dynamic>>[];
+    for (final incoming in contacts) {
+      final name = '${incoming['displayName'] ?? ''}'.trim();
+      if (name.isEmpty) continue;
+      final systemId = '${incoming['systemContactId'] ?? ''}'.trim();
+      Map<String, dynamic>? existing;
+      for (final candidate
+          in store.values.where((r) => r['typeId'] == 'contact')) {
+        if ((systemId.isNotEmpty &&
+                '${candidate['systemContactId'] ?? ''}' == systemId) ||
+            '${candidate['displayName'] ?? ''}'.trim().toLowerCase() ==
+                name.toLowerCase()) {
+          existing = candidate;
+          break;
+        }
+      }
+      final raw = <String, dynamic>{
+        if (existing != null) ...existing,
+        'id': existing?['id'] ?? _mintManualId('contact'),
+        'typeId': 'contact',
+        '_schemaVersion': typeVersion(type),
+        'displayName': name,
+      };
+      for (final field in const [
+        'primaryPhone',
+        'primaryEmail',
+        'systemContactId',
+      ]) {
+        final value = '${incoming[field] ?? ''}'.trim();
+        if (value.isNotEmpty) raw[field] = value;
+      }
+      raw.putIfAbsent('relationshipGoal', () => 'none');
+      try {
+        final validated = const ValueCodec().validateRecord(
+          type,
+          raw,
+          records: store,
+          dataRoot: dataDir,
+        );
+        if (existing == null || !_sameRecordFields(existing, validated)) {
+          writes.add(validated);
+        }
+      } on ValueCodecError catch (error) {
+        return ManualWrite.fail('Could not import $name: ${error.message}');
+      }
+    }
+    if (writes.isEmpty) {
+      return const ManualWrite.ok('Those contacts are already up to date.');
+    }
+    final result = _executeMutation(
+      writes: writes,
+      deletes: const [],
+      origin: 'contacts-import',
+      description:
+          'imported ${writes.length} contact${writes.length == 1 ? '' : 's'}',
+      frozenInputs: {'recordIds': writes.map((r) => r['id']).toList()},
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite ||
+        result.record == null) {
+      return const ManualWrite.fail(
+        "Couldn't start that import safely, so nothing changed.",
+      );
+    }
+    _clearSpokenCorrectionContext();
+    try {
+      automations.notifyWrites(writes);
+    } catch (_) {/* contained */}
+    return ManualWrite.ok(
+      result.state == ExecutionResultState.appliedInMemory
+          ? "Imported here, but couldn't finish saving it. I'll recover it next launch."
+          : 'Imported ${writes.length} contact${writes.length == 1 ? '' : 's'}.',
+      undoId: result.record!.id,
+    );
+  }
+
+  static bool _sameRecordFields(
+      Map<String, dynamic> a, Map<String, dynamic> b) {
+    final keys = {...a.keys, ...b.keys}..remove('createdAt');
+    for (final key in keys) {
+      if ('${a[key]}' != '${b[key]}') return false;
+    }
+    return true;
+  }
+
   /// Edit one schema-attribute value of a record in place (Spec 07 §5.5 tap-to-edit). Validates
   /// against the attribute's valueType, journals a before-image (undoable), persists, and keeps
   /// the reminder toast set + automations in sync — mirroring the F-15 correction path.
@@ -2983,6 +3199,89 @@ class Session {
   /// calls it, so there is no unlocked variant to route to.
   Future<ManualWrite> editField(String id, String field, Object? value) =>
       _serialized(() => _editFieldUnlocked(id, field, value));
+
+  /// Edit several fields of one record as one visible, reversible action. This
+  /// is used by product controls whose meaning spans fields (for example a
+  /// relationship preset clears a prior custom day override).
+  Future<ManualWrite> editFields(String id, Map<String, Object?> values) =>
+      _serialized(() => _editFieldsUnlocked(id, values));
+
+  Future<ManualWrite> _editFieldsUnlocked(
+      String id, Map<String, Object?> values) async {
+    final rec = store[id];
+    if (rec == null)
+      return const ManualWrite.fail('That record no longer exists.');
+    final typeId = '${rec['typeId']}';
+    final type = types[typeId];
+    if (type == null)
+      return ManualWrite.fail('The $typeId type is unavailable.');
+    final updated = Map<String, dynamic>.from(rec);
+    for (final entry in values.entries) {
+      final attr = _attributeOf(typeId, entry.key);
+      if (attr == null) {
+        return ManualWrite.fail(
+          '"${entry.key}" isn\'t an editable field of a ${_typeDisplayName(typeId)}.',
+        );
+      }
+      Object? coerced;
+      try {
+        coerced = const ValueCodec().coerce(
+          attr,
+          entry.value,
+          records: store,
+          dataRoot: dataDir,
+        );
+      } on ValueCodecError catch (error) {
+        return ManualWrite.fail(error.message);
+      }
+      final empty = coerced == null ||
+          (coerced is String && coerced.trim().isEmpty) ||
+          (coerced is List && coerced.isEmpty);
+      if (attr['required'] == true && empty) {
+        return ManualWrite.fail(
+          '"${entry.key}" is required for a ${_typeDisplayName(typeId)}.',
+        );
+      }
+      if (empty) {
+        updated.remove(entry.key);
+      } else {
+        updated[entry.key] = coerced;
+      }
+    }
+    try {
+      const ValueCodec().validateRecord(
+        type,
+        updated,
+        records: store,
+        dataRoot: dataDir,
+      );
+    } on ValueCodecError catch (error) {
+      return ManualWrite.fail(error.message);
+    }
+    final result = _executeMutation(
+      writes: [updated],
+      deletes: const [],
+      origin: 'manual-edit',
+      description: 'edited ${_typeDisplayName(typeId)}',
+      frozenInputs: {'recordId': id, 'fields': values.keys.toList()},
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite ||
+        result.record == null) {
+      return const ManualWrite.fail(
+        "Couldn't start that edit safely, so nothing changed.",
+      );
+    }
+    _clearSpokenCorrectionContext();
+    try {
+      automations.notifyWrites([updated]);
+    } catch (_) {/* contained */}
+    return ManualWrite.ok(
+      result.state == ExecutionResultState.appliedInMemory
+          ? "Updated here, but couldn't finish saving it. I'll recover it next launch."
+          : 'Updated.',
+      undoId: result.record!.id,
+    );
+  }
 
   Future<ManualWrite> _editFieldUnlocked(
       String id, String field, Object? value) async {
@@ -3087,12 +3386,45 @@ class Session {
       return const ManualWrite.fail('That record no longer exists.');
     final summary = _oneLineSummary(rec) ?? 'that record';
     final typeId = rec['typeId']; // read before the store entry goes
+    final writes = <Map<String, dynamic>>[];
+    final deletes = <String>[id];
+    if (typeId == 'contact') {
+      for (final candidate in store.values) {
+        if ('${candidate['subject'] ?? ''}' == id ||
+            (candidate['typeId'] == 'contact_relationship' &&
+                ('${candidate['from'] ?? ''}' == id ||
+                    '${candidate['to'] ?? ''}' == id))) {
+          deletes.add('${candidate['id']}');
+        }
+        if (candidate['typeId'] == 'task' && candidate['contactRefs'] is List) {
+          final refs = List<Object?>.from(candidate['contactRefs'] as List);
+          if (refs.any((ref) => '$ref' == id)) {
+            final updated = Map<String, dynamic>.from(candidate);
+            final kept = refs.where((ref) => '$ref' != id).toList();
+            if (kept.isEmpty) {
+              updated.remove('contactRefs');
+            } else {
+              updated['contactRefs'] = kept;
+            }
+            writes.add(updated);
+          }
+        }
+      }
+    }
+    if (typeId == 'habit') {
+      for (final candidate in store.values) {
+        if (candidate['typeId'] == 'habit_checkin' &&
+            '${candidate['habit'] ?? ''}' == id) {
+          deletes.add('${candidate['id']}');
+        }
+      }
+    }
     final result = _executeMutation(
-      writes: const [],
-      deletes: [id],
+      writes: writes,
+      deletes: deletes.toSet().toList(),
       origin: 'manual-edit',
       description: 'deleted "$summary"',
-      frozenInputs: {'recordId': id},
+      frozenInputs: {'recordId': id, 'cascadeCount': deletes.length - 1},
     );
     if (result.state == ExecutionResultState.failedBeforeWrite ||
         result.record == null) {
@@ -4795,6 +5127,7 @@ class Session {
     }
     final skillId = routed['skillId'] as String;
     final slots = (routed['slots'] as Map).cast<String, dynamic>();
+    _supplyInteractionMedium(skillId, slots, u);
     // ProvideSlot (§6.3): if a REQUIRED input the router couldn't fill is missing, pause
     // and ask for it (resumable next turn) instead of dispatching a half-filled skill.
     final missing = _missingRequired(skills[skillId], slots);
@@ -5605,6 +5938,17 @@ class Session {
         orElse: () => null);
     final type = input is Map ? input['type'] : null;
     final r = raw.trim();
+    if (slotName == 'medium') {
+      final normalized = r.toLowerCase().replaceAll('-', ' ');
+      if (RegExp(r'face\s*time|video').hasMatch(normalized)) return 'facetime';
+      if (RegExp(r'phone|call').hasMatch(normalized)) return 'phone';
+      if (RegExp(r'text|message').hasMatch(normalized)) return 'text';
+      if (RegExp(r'e\s*mail').hasMatch(normalized)) return 'email';
+      if (RegExp(r'in\s*person|hung out|saw|met').hasMatch(normalized)) {
+        return 'in_person';
+      }
+      return null;
+    }
     if (type == 'datetime') return router.resolveDateTime(r, now);
     if (type == 'date') return router.resolveDate(r, now);
     return r;

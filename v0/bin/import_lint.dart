@@ -18,7 +18,7 @@ const kRank = <String, int>{
   'claude': 1, 'router': 1, 'embed': 1, 'replay_cloud': 1, 'reference': 1,
   'content_search': 1,
   // business logic + orchestration
-  'interpreter': 2, 'reminders': 2, 'people': 2, 'generative': 2,
+  'interpreter': 2, 'reminders': 2, 'people': 2, 'habits': 2, 'generative': 2,
   'automations': 2, 'config': 2, 'turnlog': 2, 'migration': 2, 'routines': 2,
   'execution_coordinator': 2, 'schema_registry': 2, 'value_codec': 2,
   'conversation_ledger': 2, 'planner': 2, 'plan_proposal': 2,

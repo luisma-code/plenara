@@ -1,0 +1,11 @@
+{
+  "typeId": "habit_checkin",
+  "schemaVersion": 1,
+  "displayName": "Habit Check-in",
+  "parentType": "habit",
+  "attributes": [
+    {"name": "habit", "valueType": "entityRef", "refType": "habit", "required": true},
+    {"name": "date", "valueType": "date", "required": true},
+    {"name": "note", "valueType": "text", "required": false}
+  ]
+}

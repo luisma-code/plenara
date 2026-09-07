@@ -1,4 +1,5 @@
 import Flutter
+import Contacts
 import UIKit
 import UniformTypeIdentifiers
 
@@ -147,9 +148,69 @@ private final class DataFolderBridge: NSObject, UIDocumentPickerDelegate {
   }
 }
 
+private final class ContactsBridge {
+  private let store = CNContactStore()
+
+  func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard call.method == "fetch" else {
+      result(FlutterMethodNotImplemented)
+      return
+    }
+    store.requestAccess(for: .contacts) { [weak self] granted, error in
+      guard granted else {
+        DispatchQueue.main.async {
+          result(FlutterError(
+            code: "contacts_denied",
+            message: error?.localizedDescription ?? "Contacts access was not allowed.",
+            details: nil
+          ))
+        }
+        return
+      }
+      do {
+        let keys: [CNKeyDescriptor] = [
+          CNContactIdentifierKey as CNKeyDescriptor,
+          CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+          CNContactPhoneNumbersKey as CNKeyDescriptor,
+          CNContactEmailAddressesKey as CNKeyDescriptor,
+        ]
+        let request = CNContactFetchRequest(keysToFetch: keys)
+        request.sortOrder = .userDefault
+        var contacts: [[String: Any]] = []
+        try self?.store.enumerateContacts(with: request) { contact, _ in
+          let name = CNContactFormatter.string(from: contact, style: .fullName)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+          guard !name.isEmpty else { return }
+          var item: [String: Any] = [
+            "identifier": contact.identifier,
+            "displayName": name,
+          ]
+          if let phone = contact.phoneNumbers.first?.value.stringValue,
+             !phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            item["phone"] = phone
+          }
+          if let emailValue = contact.emailAddresses.first?.value {
+            let email = emailValue as String
+            if !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            item["email"] = email
+            }
+          }
+          contacts.append(item)
+        }
+        DispatchQueue.main.async { result(contacts) }
+      } catch {
+        DispatchQueue.main.async {
+          result(FlutterError(code: "contacts_read_failed", message: error.localizedDescription, details: nil))
+        }
+      }
+    }
+  }
+}
+
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private let dataFolderBridge = DataFolderBridge()
+  private let contactsBridge = ContactsBridge()
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -165,6 +226,13 @@ private final class DataFolderBridge: NSObject, UIDocumentPickerDelegate {
     )
     channel.setMethodCallHandler { [weak self] call, result in
       self?.dataFolderBridge.handle(call, result: result)
+    }
+    let contactsChannel = FlutterMethodChannel(
+      name: "com.plenara/contacts",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    contactsChannel.setMethodCallHandler { [weak self] call, result in
+      self?.contactsBridge.handle(call, result: result)
     }
   }
 }

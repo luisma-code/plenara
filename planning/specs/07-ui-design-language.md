@@ -1,11 +1,11 @@
 # Spec 07 — UI & Design-Language
 
-**Status:** Draft v0.3 — amended 2026-08-17. Owns design tokens, archetypes, subtitles, and recovery surfaces; Spec 17 owns Today/Plan/Library/History composition and the adaptive Plena hierarchy. Voice and visible direct manipulation are peers, not an overlay-only constraint.
+**Status:** Draft v0.4 — amended 2026-09-06. Owns design tokens, archetypes, subtitles, and recovery surfaces; Spec 17 owns Relationships/Todos/Habits composition, secondary Plan/Library/History tools, first-party domain workspaces, and the adaptive Plena hierarchy. Voice and visible direct manipulation are peers, not an overlay-only constraint.
 **Depends on:** Research doc v0.10 (§2.1–2.3, §4.5, §6.2, §12.7, §15.1); Spec 01 — Meta-Schema & Type System (§3 value types, §4.1–4.3 presentation object, §4.5 owned/append, §12.3 seed types); Spec 02 — Skill DSL (§7.1 `confirmationText` via `format`); Spec 03 — NLU / Intent (§2.4, §2.7, §4.3 thresholds, §6.3); Spec 04 — Architecture (§3.6 TurnEvents, §3.6a ConfirmationView, §3.9 Review Feed, §3.10 GenerativeService, §3.11 undo window, §3.12 AttentionSurface, §4.7 detached operations); Spec 05 — Functional (§2 notation, §3 interaction contract, §13 subtitle overlay, §14 authoring preview, §24 deletion).
 **Blocks:** Spec 09 — Test (widget tests per archetype, Spec 04 §9.3-style UI coverage); the v1.2 "first view archetype" rung (research §11.3).
 **Builds on:** the existing v0 Flutter app (`app/lib/main.dart`) — the chat turn loop, the busy indicator, the log-path greeting, and the on-open nudges are the seed of the Conversation Stream defined in §2.2, not throwaway.
 **Presence sync (2026-07-11 — Spec 15 v0.3):** dated notes in §2.1, §2.2, §7.1–§7.2, §8.4, §10, and D11 reconcile this spec with the shipped presence-primary home: the orb is subsumed by **Plena** (Spec 15), the v0 chat scrollback is retired (history is ephemeral on the home — only the current exchange shows), tap-anywhere is the speak gesture, and the bottom-left mute control raises the text input. Everything else stands as written.
-**Living-planner sync (2026-08-17 — Spec 17):** Spec 17 supersedes the overlay-only/no-touch rule and the four-surface/presence-primary steady state. This document remains authoritative for visual language, value treatments, and generic archetypes; Spec 17 owns Today/Plan/Library, durable history, multimodal interaction, planner projections, and Plena's adaptive scale.
+**Product-model sync (2026-09-06 — Spec 17 v0.9):** Spec 17 supersedes the overlay-only/no-touch rule, the four-surface/presence-primary steady state, and the interim Today/Plan/Library primary navigation. This document remains authoritative for visual language, value treatments, and generic archetypes; Spec 17 owns Relationships/Todos/Habits, secondary Plan/Library/History tools, multimodal interaction, planner projections, and Plena's adaptive scale.
 
 ---
 
@@ -17,7 +17,7 @@ This document covers:
 
 1. **The surface anatomy** — the small set of top-level surfaces the whole app is composed of, and how the existing v0 chat UI grows into them (§2).
 2. **The view-archetype set** — the finite, closed set of presentation archetypes; their anatomy, their required presentation hints, and which seed types map to which (§3).
-3. **Type→archetype mapping** — how a type lands in an archetype from its structure and presentation hints alone, deterministically, with no per-type UI code; the eligibility validator and the fallback inference function (§4).
+3. **Type→archetype mapping** — how an emergent or otherwise unrecognized type lands in an archetype from its structure and presentation hints alone, deterministically, with no per-type UI code; the eligibility validator and the fallback inference function (§4). First-party domain workspaces may compose several built-in types under Spec 17.
 4. **Value-type render treatments** — one canonical treatment for each of the twelve value types of Spec 01 §3, plus composites, locked (encrypted-but-keyless) values, and dangling references (§5).
 5. **The turn UX** — the visual realization of act-then-describe, clarification, the undo affordance, the one pre-action confirmation, residual offers, and detached/generative results (§6).
 6. **The quiet overlay and subtitle behavior** — the text-parity surface of research §2.2/§6.2 and Spec 05 §13 (§7).
@@ -38,7 +38,7 @@ Restated from the research doc and upstream specs, with their UI-specific conseq
 
 **P3 — Beautiful, organic, quiet (research §2.3).** Fluid animation, organic shape, generous whitespace, typography-led hierarchy, curated context-sensitive display — "more like a well-designed magazine than a productivity dashboard." Concretely enforced in this spec as: no full CRUD list views (§3), the one-mover motion rule (§8.2), the shape language (§9.2), and the ban on raw forms (§4.4). The organic visual layer is an explicit v1+ goal; §10 stages it so v1 ships functional-and-clean on the same skeleton.
 
-**P4 — No per-type UI code (research §2.6/§2.7, UI corollary).** A new type must render beautifully the moment it is registered, with zero code change. Therefore: the archetype set is closed and shipped in the binary; a type selects into it via data (its structure + presentation hints); and the mapping function (§4) is deterministic, testable code. This is the UI-side of "AI authors, code executes" — Claude may *choose* an archetype for a new type; it can never *invent* one.
+**P4 — Generic coverage without forbidding first-party workspaces (amended by Spec 17 D17.4/D17.8).** A new authored type must render well the moment it is registered, with zero code change. Therefore the generic archetype set is closed and shipped in the binary, a type selects into it via data, and the mapping function (§4) is deterministic, testable code. Built-in product domains may additionally have purpose-built binary UI when the outcome spans several types or benefits from domain actions. That UI must emit typed business commands through the same mutation door and preserve the generic browser as a complete fallback. Claude may choose a generic archetype for a new type; it cannot invent executable UI.
 
 **P5 — The UI renders state and emits events; nothing else (research §2.5, Spec 04 §2.2).** The UI's entire inbound vocabulary is the sealed `TurnEvent` stream plus view-model projections (`AttentionSurface`, collection queries); its outbound vocabulary is `dispatch(transcript)` and `respond(promptId, TurnResponse)` (Spec 04 §3.6). No widget queries the registry, storage, or a model directly. The archetype renderer consumes a **view model** assembled in the Business Logic layer, never a raw record.
 
@@ -52,13 +52,13 @@ Restated from the research doc and upstream specs, with their UI-specific conseq
 
 ## 2. Surface Anatomy
 
-**Superseded as top-level information architecture by Spec 17 §2.** The current primary surfaces are Today, Plan, and Library, with a durable conversation/action ledger and global Plena. The historical Stage/Stream/Collections/Operation-Center anatomy below continues to inform component and transition design where Spec 17 reuses it.
+**Superseded as top-level information architecture by Spec 17 §2.** The current primary surfaces are Relationships, Todos, and Habits, with secondary Plan/Library/History tools and global Plena. The historical Stage/Stream/Collections/Operation-Center anatomy below continues to inform component and transition design where Spec 17 reuses it.
 
 ### 2.1 The Stage (home)
 
 The default, ambient surface. Anatomy, top to bottom:
 
-- **The presence** — Plena is full-screen in empty/rest/deep-conversation states, a compact collaborator beside Today/Plan content, and an ember on detail surfaces (Spec 17 §3). Tap-anywhere speaks only where it cannot collide with interactive plan objects; populated surfaces expose an explicit accessible voice target.
+- **The presence** — Plena is full-screen in empty/rest/deep-conversation states, a compact collaborator beside Todos/Plan content, and an ember on Relationships/Habits/detail surfaces (Spec 17 §3). Tap-anywhere speaks only where it cannot collide with interactive objects; populated surfaces expose an explicit accessible voice target.
 - **The subtitle region** — the two-slot caption area of §7.3. Always present, mostly empty.
 - **The ambient field** — a curated, context-sensitive selection of at most three cards: the most imminent item (next reminder/task due), the most alive tracker (today's streak state), and — only when non-empty — the AttentionSurface summary chip ("2 things need a look"). Which cards appear is a Business Logic projection, not user configuration, and *empty is a valid and common state*: an empty Stage with a resting orb is the design working, not a bug.
 - **The threshold to the Stream** — the most recent turn's `Done` line lingers at the bottom of the Stage (with its undo chip, §6.2) and can be pulled up to reveal the full Conversation Stream.
@@ -102,7 +102,7 @@ Every archetype defines: its **anatomy**, its **eligibility** (the structural fa
 
 ### 3.1 Home archetypes
 
-**A1 — `timeline`.** The chronological log: entries as organic, low-chrome rows flowing down a soft time spine, day-grouped, newest first; sparse metadata right-aligned; infinite scroll windowed by month. The default home of every append-only record type. *Eligibility:* a resolvable `timestampField` of valueType `datetime` or `date`. *Hints:* `primaryField` (required), `secondaryField`, `timestampField` (required). *Canonical:* `contact_interaction`, `meal` (Spec 01 §4.1), every tracker template's log.
+**A1 — `timeline`.** The chronological log: entries as organic, low-chrome rows flowing down a soft time spine, day-grouped, newest first; sparse metadata right-aligned; infinite scroll windowed by month. The default home of every append-only record type. *Eligibility:* a resolvable `timestampField` of valueType `datetime` or `date`. *Hints:* `primaryField` (required), `secondaryField`, `timestampField` (required). *Canonical:* `interaction`, `meal` (Spec 01 §4.1), every tracker template's log.
 
 **A2 — `checklist`.** Actionable items with a completion state: open items grouped by due horizon (overdue / today / this week / later), completed items folding away into a collapsed "done" seam rather than cluttering the live list. The check interaction is a single organic tick (§8.1 `m-instant`), voice-parallel ("done with the plumber call"). *Eligibility:* a `boolean` attribute with `default: false` (the done-flag; by convention `completed`) and a text `primaryField`. *Hints:* `primaryField` (required), `timestampField` (the due field, optional). *Canonical:* `task`.
 

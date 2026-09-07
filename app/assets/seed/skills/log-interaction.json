@@ -12,6 +12,7 @@
     { "name": "personName", "required": true },
     { "name": "note", "required": false },
     { "name": "kind", "required": false },
+    { "name": "medium", "required": true, "prompt": "How did you connect — in person, FaceTime, phone call, text, or email?" },
     { "name": "at", "required": false, "type": "pastday" }
   ],
   "steps": {
@@ -52,6 +53,7 @@
           "subject": { "ref": "person" },
           "note": { "var": "note" },
           "kind": { "var": "kind" },
+          "medium": { "var": "medium" },
           "at": { "var": "at" }
         },
         "into": "newInteraction"

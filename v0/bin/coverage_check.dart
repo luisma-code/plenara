@@ -18,6 +18,7 @@ const fileTiers = <String, CoverageTier>{
   'dates.dart': CoverageTier.deterministicCore,
   'session.dart': CoverageTier.productLogic,
   'people.dart': CoverageTier.productLogic,
+  'habits.dart': CoverageTier.productLogic,
   'generative.dart': CoverageTier.productLogic,
   'storage_repository.dart': CoverageTier.productLogic,
   'turnlog.dart': CoverageTier.productLogic,
