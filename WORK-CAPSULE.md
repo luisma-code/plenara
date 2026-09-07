@@ -367,6 +367,15 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
   This authorizes installation only—never launch, testing, probes, container inspection, log access,
   reset, uninstall, or TestFlight/App Store distribution. Documentation-only revisions do not
   trigger a redundant build/install.
+- On 2026-09-07 at 09:57 PDT, the repeatable Contacts-import correction was installed on **Aluminum
+  Monster** as signed internal-channel `0.13.0 (19)`, bundle `com.plenara.plenaraApp`, from pushed
+  source revision `2f44b737d31f5ab36e5e20a214a8cabe974180db`. The development-signed AOT SHA-256
+  is `27ffbd1000f55f7cf43e8e9debf5e157fd031c31082459f2153aa483b3bdb5d4`; its signature,
+  embedded revision, approved internal raw-diagnostics surface, absence of an Anthropic API-key
+  pattern, team `7V63BZ39HU`, and provisioning profile
+  `9700a183-07f9-4d2b-936c-3176f893ef68` through 2027-07-28 were verified before the single
+  CoreDevice install. Deployment only—the physical app was not launched, tested, probed, or
+  inspected.
 - On 2026-09-07 at 09:08 PDT, signed internal-channel `0.13.0 (19)` from source revision
   `c5ce27a8c548269eb0d1e419feb978ebf9f32a23` was installed on **Aluminum Monster** as
   `com.plenara.plenaraApp` through CoreDevice, without launching it. The installed
