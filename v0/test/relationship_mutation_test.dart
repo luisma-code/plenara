@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:plenara/claude.dart';
 import 'package:plenara/session.dart';
+import 'package:plenara/people.dart';
 import 'package:test/test.dart';
 
 import 'helpers.dart';
@@ -91,6 +92,10 @@ void main() {
       'createdAt': '2026-09-06T10:00:00',
       'contactRefs': [id],
     });
+    await session.createRecord('contact', {
+      'displayName': 'Sam',
+      'introducedBy': id,
+    });
 
     final removed = await session.deleteRecord(id);
     expect(removed.ok, isTrue);
@@ -99,6 +104,11 @@ void main() {
     expect(
         session.store.values
             .singleWhere((r) => r['typeId'] == 'task')['contactRefs'],
+        isNull);
+    expect(
+        session.store.values.singleWhere(
+          (r) => r['typeId'] == 'contact' && r['displayName'] == 'Sam',
+        )['introducedBy'],
         isNull);
 
     expect(await session.undoById(removed.undoId!), contains('Undone'));
@@ -109,6 +119,11 @@ void main() {
         session.store.values
             .singleWhere((r) => r['typeId'] == 'task')['contactRefs'],
         [id]);
+    expect(
+        session.store.values.singleWhere(
+          (r) => r['typeId'] == 'contact' && r['displayName'] == 'Sam',
+        )['introducedBy'],
+        id);
   });
 
   test('reimport refreshes one matching contact instead of cloning it',
@@ -150,5 +165,76 @@ void main() {
     final interaction =
         session.store.values.singleWhere((r) => r['typeId'] == 'interaction');
     expect(interaction['medium'], 'facetime');
+    expect(interaction['connectionDepth'], 'meaningful');
+  });
+
+  test('contact import defaults safely and never overwrites an existing plan',
+      () async {
+    final session = await _session();
+    await session.importContacts([
+      {'systemContactId': 'ios-1', 'displayName': 'Mia'},
+    ]);
+    final id =
+        '${session.store.values.singleWhere((r) => r['typeId'] == 'contact')['id']}';
+    expect(session.store[id]?['relationshipCircle'], 'context');
+    await session.setRelationshipPreset(
+      id,
+      RelationshipPreset.closeRemoteFriend,
+    );
+    await session.importContacts([
+      {
+        'systemContactId': 'ios-1',
+        'displayName': 'Mia',
+        'relationshipCircle': 'warm',
+        'primaryPhone': '+15551212',
+      },
+    ]);
+    expect(session.store[id]?['relationshipCircle'], 'close');
+    expect(session.store[id]?['proximity'], 'remote');
+    expect(session.store[id]?['primaryPhone'], '+15551212');
+  });
+
+  test('voice assigns relationship categories, pauses, and reports due people',
+      () async {
+    final session = await _session();
+    await session.createRecord('contact', {'displayName': 'Mia'});
+    final id =
+        '${session.store.values.singleWhere((r) => r['typeId'] == 'contact')['id']}';
+    expect(
+      await session.handle('categorize Mia as close remote friend'),
+      contains('Close remote friend'),
+    );
+    expect(session.store[id]?['relationshipCircle'], 'close');
+    expect(session.store[id]?['proximity'], 'remote');
+    expect(
+      await session.handle(
+        'set meaningful connection goal for Mia every 45 days',
+      ),
+      contains('45 days'),
+    );
+    expect(session.store[id]?['meaningfulFrequencyDays'], 45);
+    expect(await session.handle('who should I reach out to'), contains('Mia'));
+    expect(
+      await session.handle('pause reminders for Mia'),
+      contains('Paused'),
+    );
+    expect(suggestedContacts(session.store, session.now), isEmpty);
+  });
+
+  test('voice respects an explicit meaningful text interaction', () async {
+    final session = await _session();
+    expect(
+      await session.handle('texted Mia, it was meaningful'),
+      contains('Logged'),
+    );
+    final interaction =
+        session.store.values.singleWhere((r) => r['typeId'] == 'interaction');
+    expect(interaction['medium'], 'text');
+    expect(interaction['connectionDepth'], 'meaningful');
+    expect(await session.handle('called Mia, quick'), contains('Logged'));
+    final phone = session.store.values.singleWhere(
+      (r) => r['typeId'] == 'interaction' && r['medium'] == 'phone',
+    );
+    expect(phone['connectionDepth'], 'quick');
   });
 }

@@ -63,7 +63,7 @@ class _RelationshipsViewState extends State<RelationshipsView> {
     _showResult(
       await widget.session.createRecord('contact', {
         'displayName': name.trim(),
-        'relationshipGoal': 'none',
+        ...relationshipPresetFields(RelationshipPreset.contextOnly),
       }, description: 'added ${name.trim()}'),
     );
   }
@@ -75,9 +75,23 @@ class _RelationshipsViewState extends State<RelationshipsView> {
       final chosen = await _contacts.select();
       if (!mounted) return;
       if (chosen.isEmpty) return;
+      final preset = await showModalBottomSheet<RelationshipPreset>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => _ImportOrganizer(count: chosen.length),
+      );
+      if (!mounted || preset == null) return;
       _showResult(
         await widget.session.importContacts(
-          chosen.map((contact) => contact.toRecordFields()).toList(),
+          chosen
+              .map(
+                (contact) => <String, Object?>{
+                  ...contact.toRecordFields(),
+                  ...relationshipPresetFields(preset),
+                },
+              )
+              .toList(),
         ),
       );
     } on PlatformException catch (error) {
@@ -135,6 +149,12 @@ class _RelationshipsViewState extends State<RelationshipsView> {
       widget.session.store,
       widget.session.now,
     );
+    final grouped = <RelationshipCircle, List<Map<String, dynamic>>>{
+      for (final circle in RelationshipCircle.values) circle: [],
+    };
+    for (final contact in contacts) {
+      grouped[relationshipCircleOf(contact)]!.add(contact);
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Relationships'),
@@ -196,20 +216,6 @@ class _RelationshipsViewState extends State<RelationshipsView> {
                   suggestions: suggestions,
                   onOpen: _openPerson,
                 ),
-              Row(
-                children: [
-                  Text(
-                    'People',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const Spacer(),
-                  Text(
-                    '${contacts.length}',
-                    style: const TextStyle(color: PlenaraTheme.quietInk),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
               if (contacts.isEmpty)
                 Card(
                   child: Padding(
@@ -230,20 +236,44 @@ class _RelationshipsViewState extends State<RelationshipsView> {
                     ),
                   ),
                 )
-              else
-                for (final contact in contacts)
-                  Card(
-                    child: ListTile(
-                      key: Key('relationship-person-${contact['id']}'),
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.person_outline),
+              else ...[
+                for (final circle in RelationshipCircle.values)
+                  if (grouped[circle]!.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 5),
+                      child: Row(
+                        children: [
+                          Text(
+                            relationshipCircleLabel(circle),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${grouped[circle]!.length}',
+                            style: const TextStyle(
+                              color: PlenaraTheme.quietInk,
+                            ),
+                          ),
+                        ],
                       ),
-                      title: Text('${contact['displayName']}'),
-                      subtitle: Text(_statusLine(statuses['${contact['id']}'])),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () => _openPerson('${contact['id']}'),
                     ),
-                  ),
+                    for (final contact in grouped[circle]!)
+                      Card(
+                        child: ListTile(
+                          key: Key('relationship-person-${contact['id']}'),
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.person_outline),
+                          ),
+                          title: Text('${contact['displayName']}'),
+                          subtitle: Text(
+                            _statusLine(statuses['${contact['id']}']),
+                          ),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () => _openPerson('${contact['id']}'),
+                        ),
+                      ),
+                  ],
+              ],
             ],
           ),
           const PlenaEmber(mode: 'Relationship library.'),
@@ -274,7 +304,7 @@ class _NextContactsCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           const Text(
-            'Based on the rhythms you chose—not generic engagement scores.',
+            'Based on your touch and meaningful-connection goals.',
             style: TextStyle(color: PlenaraTheme.quietInk),
           ),
           const Divider(height: 22),
@@ -283,7 +313,7 @@ class _NextContactsCard extends StatelessWidget {
               key: Key('next-contact-${status.contactId}'),
               contentPadding: EdgeInsets.zero,
               title: Text(status.displayName),
-              subtitle: Text(_statusLine(status)),
+              subtitle: Text(_suggestionLine(status)),
               trailing: TextButton(
                 child: const Text('Open'),
                 onPressed: () => onOpen(status.contactId),
@@ -333,34 +363,139 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
     );
   }
 
-  Future<void> _setGoal(RelationshipGoal goal) async {
+  Future<void> _setPreset(RelationshipPreset preset) async {
     _showResult(
-      await widget.session.editFields(widget.contactId, {
-        'relationshipGoal': goal.name,
-        'contactFrequencyDays': null,
-      }),
+      await widget.session.setRelationshipPreset(widget.contactId, preset),
     );
   }
 
-  Future<void> _customGoal() async {
+  Future<void> _setCircle(RelationshipCircle circle) async {
+    _showResult(
+      await widget.session.setRelationshipCircle(widget.contactId, circle),
+    );
+  }
+
+  Future<void> _customGoal({required bool meaningful}) async {
     final status = relationshipStatuses(
       widget.session.store,
       widget.session.now,
     ).firstWhere((s) => s.contactId == widget.contactId);
     final raw = await _askForText(
       context,
-      title: 'Custom contact rhythm',
-      label: 'Days between contacts',
-      initial: '${status.targetDays ?? 30}',
-      action: 'Set rhythm',
+      title: meaningful ? 'Meaningful connection goal' : 'Contact goal',
+      label: meaningful
+          ? 'Days between meaningful connections'
+          : 'Days between any contact',
+      initial:
+          '${meaningful ? status.meaningfulTargetDays ?? 30 : status.touchTargetDays ?? 14}',
+      action: 'Set goal',
       number: true,
     );
     final days = int.tryParse(raw ?? '');
     if (days == null || days < 1) return;
     _showResult(
       await widget.session.editFields(widget.contactId, {
-        'relationshipGoal': 'connected',
-        'contactFrequencyDays': days,
+        meaningful ? 'trackMeaningful' : 'trackTouch': true,
+        meaningful ? 'meaningfulFrequencyDays' : 'touchFrequencyDays': days,
+      }),
+    );
+  }
+
+  Future<void> _toggleGoal({required bool meaningful, required bool on}) async {
+    final status = relationshipStatuses(
+      widget.session.store,
+      widget.session.now,
+    ).firstWhere((value) => value.contactId == widget.contactId);
+    final target = meaningful
+        ? status.meaningfulTargetDays
+        : status.touchTargetDays;
+    _showResult(
+      await widget.session.editFields(widget.contactId, {
+        meaningful ? 'trackMeaningful' : 'trackTouch': on,
+        if (on && target == null)
+          meaningful ? 'meaningfulFrequencyDays' : 'touchFrequencyDays': 30,
+      }),
+    );
+  }
+
+  Future<void> _setProximity(String value) async {
+    _showResult(
+      await widget.session.editField(widget.contactId, 'proximity', value),
+    );
+  }
+
+  Future<void> _setEngagement(RelationshipEngagement value) async {
+    _showResult(
+      await widget.session.editField(
+        widget.contactId,
+        'relationshipStatus',
+        value.name,
+      ),
+    );
+  }
+
+  Future<void> _editRoles() async {
+    final roles =
+        (_contact?['relationshipRoles'] as List?)
+            ?.map((value) => '$value')
+            .join(', ') ??
+        '';
+    final value = await _askForText(
+      context,
+      title: 'Relationship roles',
+      label: 'Family, Friend, Neighbor, Work…',
+      initial: roles,
+      action: 'Save roles',
+    );
+    if (value == null) return;
+    final parsed = value
+        .split(',')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toSet()
+        .toList();
+    _showResult(
+      await widget.session.editField(
+        widget.contactId,
+        'relationshipRoles',
+        parsed,
+      ),
+    );
+  }
+
+  Future<void> _chooseIntroducedBy() async {
+    final people =
+        widget.session.store.values
+            .where(
+              (record) =>
+                  record['typeId'] == 'contact' &&
+                  '${record['id']}' != widget.contactId,
+            )
+            .toList()
+          ..sort(
+            (a, b) => '${a['displayName']}'.compareTo('${b['displayName']}'),
+          );
+    final value = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Introduced by'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, ''),
+            child: const Text('No one / clear'),
+          ),
+          for (final person in people)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, '${person['id']}'),
+              child: Text('${person['displayName']}'),
+            ),
+        ],
+      ),
+    );
+    if (value == null) return;
+    _showResult(
+      await widget.session.editFields(widget.contactId, {
+        'introducedBy': value.isEmpty ? null : value,
       }),
     );
   }
@@ -424,12 +559,32 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
         {
           'subject': widget.contactId,
           'medium': draft.medium,
+          'connectionDepth': draft.depth.name,
           'at': _isoDate(draft.at),
           if (draft.note.trim().isNotEmpty) 'note': draft.note.trim(),
         },
         description:
             'logged ${_mediumLabel(draft.medium)} with ${_contact?['displayName']}',
       ),
+    );
+  }
+
+  Future<void> _editInteraction(Map<String, dynamic> interaction) async {
+    final draft = await showModalBottomSheet<_InteractionDraft>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) =>
+          _InteractionEditor(now: widget.session.now, initial: interaction),
+    );
+    if (draft == null) return;
+    _showResult(
+      await widget.session.editFields('${interaction['id']}', {
+        'medium': draft.medium,
+        'connectionDepth': draft.depth.name,
+        'at': _isoDate(draft.at),
+        'note': draft.note.trim().isEmpty ? null : draft.note.trim(),
+      }),
     );
   }
 
@@ -521,6 +676,7 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
     final phone = '${contact['primaryPhone'] ?? ''}'.trim();
     final email = '${contact['primaryEmail'] ?? ''}'.trim();
     final facetime = phone.isNotEmpty ? phone : email;
+    final introducedBy = widget.session.store['${contact['introducedBy']}'];
     return Scaffold(
       appBar: AppBar(
         title: Text('${contact['displayName']}'),
@@ -599,48 +755,72 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
               ),
               const SizedBox(height: 20),
               _Section(
-                title: 'Relationship rhythm',
+                title: 'Relationship plan',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'How close do you want to keep this relationship?',
+                      'Start with a category. You can tune any part afterward.',
                     ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 7,
                       runSpacing: 7,
                       children: [
-                        _goalChip(
-                          'Not tracking',
-                          RelationshipGoal.none,
-                          status.goal,
-                        ),
-                        _goalChip(
-                          'Close · weekly',
-                          RelationshipGoal.close,
-                          status.goal,
-                        ),
-                        _goalChip(
-                          'Connected · 3 weeks',
-                          RelationshipGoal.connected,
-                          status.goal,
-                        ),
-                        _goalChip(
-                          'Light touch · 2 months',
-                          RelationshipGoal.light,
-                          status.goal,
-                        ),
-                        ActionChip(
-                          key: const Key('relationship-custom-goal'),
-                          label: Text(
-                            contact['contactFrequencyDays'] == null
-                                ? 'Custom rhythm'
-                                : 'Custom · ${status.targetDays} days',
+                        for (final preset in RelationshipPreset.values)
+                          ActionChip(
+                            key: Key('relationship-preset-${preset.name}'),
+                            label: Text(relationshipPresetLabel(preset)),
+                            onPressed: () => _setPreset(preset),
                           ),
-                          onPressed: _customGoal,
-                        ),
                       ],
+                    ),
+                    const Divider(height: 26),
+                    const Text('Circle'),
+                    const SizedBox(height: 7),
+                    Wrap(
+                      spacing: 7,
+                      children: [
+                        for (final circle in RelationshipCircle.values)
+                          ChoiceChip(
+                            key: Key('relationship-circle-${circle.name}'),
+                            label: Text(relationshipCircleLabel(circle)),
+                            selected: status.circle == circle,
+                            onSelected: (_) => _setCircle(circle),
+                          ),
+                      ],
+                    ),
+                    const Divider(height: 26),
+                    _goalRow(status, meaningful: false),
+                    const SizedBox(height: 10),
+                    _goalRow(status, meaningful: true),
+                    const Divider(height: 26),
+                    _descriptorRow(
+                      'Roles',
+                      ((contact['relationshipRoles'] as List?) ?? const [])
+                              .isEmpty
+                          ? 'Not set'
+                          : (contact['relationshipRoles'] as List).join(', '),
+                      _editRoles,
+                    ),
+                    _descriptorRow(
+                      'Proximity',
+                      _titleCase('${contact['proximity'] ?? 'unknown'}'),
+                      () => _chooseProximity(
+                        '${contact['proximity'] ?? 'unknown'}',
+                      ),
+                    ),
+                    _descriptorRow(
+                      'Reminders',
+                      _engagementLabel(status.engagement),
+                      () => _chooseEngagement(status.engagement),
+                    ),
+                    _descriptorRow(
+                      'Introduced by',
+                      introducedBy == null
+                          ? 'Not set'
+                          : '${introducedBy['displayName']}',
+                      _chooseIntroducedBy,
                     ),
                   ],
                 ),
@@ -716,9 +896,7 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
                                 color: PlenaraTheme.amber,
                               ),
                               title: Text(
-                                _mediumLabel(
-                                  '${interaction['medium'] ?? interaction['kind'] ?? 'interaction'}',
-                                ),
+                                '${_mediumLabel('${interaction['medium'] ?? interaction['kind'] ?? 'interaction'}')} · ${connectionDepthOf(interaction) == ConnectionDepth.meaningful ? 'Meaningful' : 'Quick touch'}',
                               ),
                               subtitle: Text(
                                 [
@@ -729,6 +907,7 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
                                     '${interaction['note']}',
                                 ].join(' · '),
                               ),
+                              onTap: () => _editInteraction(interaction),
                               trailing: IconButton(
                                 tooltip: 'Delete interaction',
                                 onPressed: () => _deleteRecord(interaction),
@@ -749,16 +928,115 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
     );
   }
 
-  Widget _goalChip(
+  Widget _goalRow(RelationshipStatus status, {required bool meaningful}) {
+    final target = meaningful
+        ? status.meaningfulTargetDays
+        : status.touchTargetDays;
+    final tracked = meaningful
+        ? (_contact?['trackMeaningful'] != false && target != null)
+        : (_contact?['trackTouch'] != false && target != null);
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(meaningful ? 'Meaningful connection' : 'Any contact'),
+              Text(
+                tracked ? 'Goal every $target days' : 'Not tracked',
+                style: const TextStyle(color: PlenaraTheme.quietInk),
+              ),
+            ],
+          ),
+        ),
+        TextButton(
+          key: Key(meaningful ? 'meaningful-goal-edit' : 'touch-goal-edit'),
+          onPressed: () => _customGoal(meaningful: meaningful),
+          child: Text(tracked ? 'Change' : 'Set'),
+        ),
+        Switch(
+          key: Key(meaningful ? 'meaningful-goal-toggle' : 'touch-goal-toggle'),
+          value: tracked,
+          onChanged: (value) => _toggleGoal(meaningful: meaningful, on: value),
+        ),
+      ],
+    );
+  }
+
+  Widget _descriptorRow(
     String label,
-    RelationshipGoal value,
-    RelationshipGoal selected,
-  ) => ChoiceChip(
-    key: Key('relationship-goal-${value.name}'),
-    label: Text(label),
-    selected: value == selected && _contact?['contactFrequencyDays'] == null,
-    onSelected: (_) => _setGoal(value),
+    String value,
+    Future<void> Function() onTap,
+  ) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    title: Text(label),
+    subtitle: Text(value),
+    trailing: const Icon(Icons.edit_outlined, size: 19),
+    onTap: onTap,
   );
+
+  Future<void> _chooseProximity(String selected) async {
+    final value = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Proximity'),
+        children: [
+          RadioGroup<String>(
+            groupValue: selected,
+            onChanged: (choice) => Navigator.pop(context, choice),
+            child: Column(
+              children: [
+                for (final value in const [
+                  'household',
+                  'local',
+                  'remote',
+                  'unknown',
+                ])
+                  RadioListTile<String>(
+                    value: value,
+                    title: Text(_titleCase(value)),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (value != null) await _setProximity(value);
+  }
+
+  Future<void> _chooseEngagement(RelationshipEngagement selected) async {
+    final value = await showDialog<RelationshipEngagement>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Reminder status'),
+        children: [
+          RadioGroup<RelationshipEngagement>(
+            groupValue: selected,
+            onChanged: (choice) => Navigator.pop(context, choice),
+            child: Column(
+              children: [
+                for (final engagement in RelationshipEngagement.values)
+                  RadioListTile<RelationshipEngagement>(
+                    value: engagement,
+                    title: Text(_engagementLabel(engagement)),
+                    subtitle: Text(switch (engagement) {
+                      RelationshipEngagement.active =>
+                        'Goals drive suggestions',
+                      RelationshipEngagement.seasonal =>
+                        'Keep history; hide goals for now',
+                      RelationshipEngagement.paused => 'Pause suggestions',
+                      RelationshipEngagement.archived => 'History only',
+                    }),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (value != null) await _setEngagement(value);
+  }
 
   Widget _editableRow(String label, String value, String field) => ListTile(
     contentPadding: EdgeInsets.zero,
@@ -805,23 +1083,38 @@ class _Section extends StatelessWidget {
 
 class _InteractionDraft {
   final String medium;
+  final ConnectionDepth depth;
   final DateTime at;
   final String note;
-  const _InteractionDraft(this.medium, this.at, this.note);
+  const _InteractionDraft(this.medium, this.depth, this.at, this.note);
 }
 
 class _InteractionEditor extends StatefulWidget {
   final DateTime now;
-  const _InteractionEditor({required this.now});
+  final Map<String, dynamic>? initial;
+  const _InteractionEditor({required this.now, this.initial});
 
   @override
   State<_InteractionEditor> createState() => _InteractionEditorState();
 }
 
 class _InteractionEditorState extends State<_InteractionEditor> {
-  String _medium = 'in_person';
-  late DateTime _date = widget.now;
-  final _note = TextEditingController();
+  late String _medium;
+  late ConnectionDepth _depth;
+  late DateTime _date;
+  late final TextEditingController _note;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    _medium = '${initial?['medium'] ?? 'in_person'}';
+    _depth = initial == null
+        ? ConnectionDepth.meaningful
+        : connectionDepthOf(initial);
+    _date = DateTime.tryParse('${initial?['at'] ?? ''}') ?? widget.now;
+    _note = TextEditingController(text: '${initial?['note'] ?? ''}');
+  }
 
   @override
   void dispose() {
@@ -844,7 +1137,9 @@ class _InteractionEditorState extends State<_InteractionEditor> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Log an interaction',
+              widget.initial == null
+                  ? 'Log an interaction'
+                  : 'Edit interaction',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 14),
@@ -864,9 +1159,47 @@ class _InteractionEditorState extends State<_InteractionEditor> {
                     label: Text(_mediumLabel(medium)),
                     avatar: Icon(_mediumIcon(medium), size: 17),
                     selected: _medium == medium,
-                    onSelected: (_) => setState(() => _medium = medium),
+                    onSelected: (_) => setState(() {
+                      _medium = medium;
+                      _depth =
+                          const {
+                            'in_person',
+                            'facetime',
+                            'phone',
+                          }.contains(medium)
+                          ? ConnectionDepth.meaningful
+                          : ConnectionDepth.quick;
+                    }),
                   ),
               ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'What kind of connection was it?',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 7),
+            SegmentedButton<ConnectionDepth>(
+              segments: const [
+                ButtonSegment(
+                  value: ConnectionDepth.quick,
+                  icon: Icon(Icons.bolt_outlined),
+                  label: Text('Quick touch'),
+                ),
+                ButtonSegment(
+                  value: ConnectionDepth.meaningful,
+                  icon: Icon(Icons.favorite_outline),
+                  label: Text('Meaningful'),
+                ),
+              ],
+              selected: {_depth},
+              onSelectionChanged: (values) =>
+                  setState(() => _depth = values.single),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Meaningful means a reciprocal, attentive exchange or shared experience that left you more current or connected.',
+              style: TextStyle(color: PlenaraTheme.quietInk),
             ),
             const SizedBox(height: 12),
             ListTile(
@@ -898,9 +1231,81 @@ class _InteractionEditorState extends State<_InteractionEditor> {
                 key: const Key('interaction-save'),
                 onPressed: () => Navigator.pop(
                   context,
-                  _InteractionDraft(_medium, _date, _note.text),
+                  _InteractionDraft(_medium, _depth, _date, _note.text),
                 ),
-                child: const Text('Log interaction'),
+                child: Text(
+                  widget.initial == null
+                      ? 'Log interaction'
+                      : 'Save interaction',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _ImportOrganizer extends StatefulWidget {
+  final int count;
+  const _ImportOrganizer({required this.count});
+
+  @override
+  State<_ImportOrganizer> createState() => _ImportOrganizerState();
+}
+
+class _ImportOrganizerState extends State<_ImportOrganizer> {
+  RelationshipPreset _preset = RelationshipPreset.contextOnly;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Organize ${widget.count == 1 ? 'this person' : '${widget.count} people'}',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Choose how Plenara should treat new people. Existing people keep their current plan when contact details refresh.',
+              style: TextStyle(color: PlenaraTheme.quietInk),
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<RelationshipPreset>(
+              key: const Key('import-preset-picker'),
+              initialValue: _preset,
+              decoration: const InputDecoration(labelText: 'Category'),
+              items: [
+                for (final preset in RelationshipPreset.values)
+                  DropdownMenuItem(
+                    value: preset,
+                    child: Text(relationshipPresetLabel(preset)),
+                  ),
+              ],
+              onChanged: (value) => setState(() => _preset = value!),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _presetDescription(_preset),
+              style: const TextStyle(color: PlenaraTheme.quietInk),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                key: const Key('import-organize-save'),
+                onPressed: () => Navigator.pop(context, _preset),
+                child: Text(
+                  widget.count == 1
+                      ? 'Import person'
+                      : 'Import ${widget.count} people',
+                ),
               ),
             ),
           ],
@@ -992,24 +1397,57 @@ class _TextPromptState extends State<_TextPrompt> {
 
 String _statusLine(RelationshipStatus? status) {
   if (status == null || status.health == RelationshipHealth.untracked) {
-    return 'No contact rhythm set';
+    return status?.engagement == RelationshipEngagement.active
+        ? 'History only · no contact goals'
+        : '${_engagementLabel(status?.engagement ?? RelationshipEngagement.active)} · history only';
   }
-  if (status.lastInteractionAt == null) {
-    return 'No interaction logged · goal every ${status.targetDays} days';
+  if (status.lastTouchAt == null) {
+    return 'No interaction logged · ${_goalSummary(status)}';
   }
-  final last = _friendlyDate(_isoDate(status.lastInteractionAt!));
-  final medium = _mediumLabel(status.lastMedium ?? 'interaction');
+  final last = _friendlyDate(_isoDate(status.lastTouchAt!));
+  final medium = _mediumLabel(status.lastTouchMedium ?? 'interaction');
   return '$medium · $last · ${_healthTitle(status)}';
 }
 
-String _healthTitle(RelationshipStatus status) => switch (status.health) {
-  RelationshipHealth.untracked => 'Choose a relationship rhythm',
-  RelationshipHealth.noHistory => 'Ready for a first check-in',
-  RelationshipHealth.onTrack => 'On track',
-  RelationshipHealth.dueSoon => 'Coming due',
-  RelationshipHealth.due => 'Due today',
-  RelationshipHealth.overdue => 'Ready to reconnect',
-};
+String _suggestionLine(RelationshipStatus status) {
+  final need = status.need == RelationshipNeed.meaningful
+      ? 'Meaningful connection due'
+      : 'Touch due';
+  final contact = switch (status.proximity) {
+    'household' || 'local' => 'Make time in person',
+    'remote' => 'Try FaceTime or a call',
+    _ => 'Open for contact options',
+  };
+  return '$need · $contact';
+}
+
+String _goalSummary(RelationshipStatus status) {
+  final goals = <String>[
+    if (status.touchTargetDays != null)
+      'touch every ${status.touchTargetDays} days',
+    if (status.meaningfulTargetDays != null)
+      'meaningful every ${status.meaningfulTargetDays} days',
+  ];
+  return goals.isEmpty ? 'history only' : goals.join(' · ');
+}
+
+String _healthTitle(RelationshipStatus status) {
+  final meaningful = status.need == RelationshipNeed.meaningful;
+  return switch (status.health) {
+    RelationshipHealth.untracked => 'History without reminders',
+    RelationshipHealth.noHistory =>
+      meaningful
+          ? 'Ready for a meaningful connection'
+          : 'Ready for a first check-in',
+    RelationshipHealth.onTrack => 'On track',
+    RelationshipHealth.dueSoon =>
+      meaningful ? 'Meaningful connection coming due' : 'Contact coming due',
+    RelationshipHealth.due =>
+      meaningful ? 'Meaningful connection due today' : 'Contact due today',
+    RelationshipHealth.overdue =>
+      meaningful ? 'Ready for a meaningful connection' : 'Ready to reconnect',
+  };
+}
 
 String _mediumLabel(String medium) => switch (medium) {
   'in_person' => 'In person',
@@ -1021,6 +1459,35 @@ String _mediumLabel(String medium) => switch (medium) {
     medium.isEmpty
         ? 'Interaction'
         : '${medium[0].toUpperCase()}${medium.substring(1)}',
+};
+
+String _titleCase(String value) => value
+    .split('_')
+    .map(
+      (part) =>
+          part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}',
+    )
+    .join(' ');
+
+String _engagementLabel(RelationshipEngagement engagement) =>
+    switch (engagement) {
+      RelationshipEngagement.active => 'Active',
+      RelationshipEngagement.seasonal => 'Seasonal',
+      RelationshipEngagement.paused => 'Paused',
+      RelationshipEngagement.archived => 'Archived',
+    };
+
+String _presetDescription(RelationshipPreset preset) => switch (preset) {
+  RelationshipPreset.closeFamily => 'Core · touch 7d · meaningful 14d',
+  RelationshipPreset.closeLocalFriend => 'Close · local · 14d / 30d',
+  RelationshipPreset.closeRemoteFriend => 'Close · remote · 14d / 30d',
+  RelationshipPreset.connectedFriend => 'Keep connected · 30d / 60d',
+  RelationshipPreset.oldRemoteFriend => 'Keep warm · remote · touch 90d',
+  RelationshipPreset.neighbor => 'Local context · no reminders',
+  RelationshipPreset.community => 'Local community · no reminders',
+  RelationshipPreset.secondDegree => 'Second-degree · no reminders',
+  RelationshipPreset.household => 'Core context · no reminders',
+  RelationshipPreset.contextOnly => 'Remember details · no reminders',
 };
 
 IconData _mediumIcon(String medium) => switch (medium) {

@@ -626,7 +626,7 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
     {"name":"recurrence","valueType":"text","required":false}],
   "presentation":{"archetype":"checklist","primaryField":"description","timestampField":"dueAt"} }
 
-// contact — a person the user knows (runtime schema v2)
+// contact — a person the user knows (runtime schema v3)
 { "typeId":"contact","displayName":"Contact","displayNamePlural":"Contacts",
   "description":"A person the user knows.",
   "examplePhrases":["add a contact","who is Marco","note about Sarah"],
@@ -638,6 +638,15 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
     {"name":"primaryPhone","valueType":"text","required":false},
     {"name":"primaryEmail","valueType":"text","required":false},
     {"name":"systemContactId","valueType":"text","required":false},
+    {"name":"relationshipCircle","valueType":"enum","enumValues":["core","close","connected","warm","context"],"required":false},
+    {"name":"relationshipRoles","valueType":"tag","required":false},
+    {"name":"proximity","valueType":"enum","enumValues":["household","local","remote","unknown"],"required":false,"default":"unknown"},
+    {"name":"relationshipStatus","valueType":"enum","enumValues":["active","seasonal","paused","archived"],"required":false,"default":"active"},
+    {"name":"trackTouch","valueType":"boolean","required":false},
+    {"name":"trackMeaningful","valueType":"boolean","required":false},
+    {"name":"touchFrequencyDays","valueType":"number","required":false},
+    {"name":"meaningfulFrequencyDays","valueType":"number","required":false},
+    {"name":"introducedBy","valueType":"entityRef","refType":"contact","required":false},
     {"name":"relationshipGoal","valueType":"enum","enumValues":["none","close","connected","light"],"required":false,"default":"none"},
     {"name":"contactFrequencyDays","valueType":"number","required":false}],
   "presentation":{"archetype":"person_card","primaryField":"displayName"} }
@@ -662,7 +671,7 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
     {"name":"toContact","valueType":"entityRef","refType":"contact","required":true,"cardinality":"one"}],
   "presentation":{"archetype":"edge","primaryField":"relationType"} }
 
-// interaction — a dated, typed contact with a person (runtime schema v2; owned)
+// interaction — a dated, typed contact with a person (runtime schema v3; owned)
 { "typeId":"interaction","displayName":"Interaction","displayNamePlural":"Interactions",
   "description":"A dated interaction with a contact.",
   "parentType":"contact",
@@ -672,6 +681,7 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
     {"name":"note","valueType":"text","required":false},
     {"name":"kind","valueType":"text","required":false},
     {"name":"medium","valueType":"enum","enumValues":["in_person","facetime","phone","text","email"],"required":false},
+    {"name":"connectionDepth","valueType":"enum","enumValues":["quick","meaningful"],"required":false},
     {"name":"at","valueType":"date","required":true},
     {"name":"planned","valueType":"boolean","required":false}],
   "presentation":{"archetype":"timeline","primaryField":"note","timestampField":"at"} }
@@ -704,7 +714,7 @@ Always present at first launch (`isBuiltIn:true`, `authoredBy:"system"`, `safety
   "presentation":{"archetype":"journal","primaryField":"body","timestampField":"entryDate"} }
 ```
 
-**Notes.** `contact_fact` and `interaction` are **owned** (`parentType:"contact"`), and `habit_checkin` is owned by `habit`; deleting either parent cascades to its children and one undo restores the full group. The runtime `interaction.subject` is the explicit person reference. `medium` is optional in the schema only for migration compatibility; every new capture requires one of the five enumerated values. New habit targets are constrained by the UI and seed skill to 1–7 completions per week, and duplicate same-local-day check-ins are rejected by both typed UI and voice paths. Contact details, opaque system-contact ids, relationship goals, facts, interaction notes, habits, and check-ins currently sync as plaintext JSON under the product's existing storage disclosure. `journal_entry` **syncs like any other record** (in the user's cloud folder) so a journal survives device loss. Two earlier positions are both **dropped**: a "sync-excluded subfolder inside the synced folder" is not implementable (no provider offers app-settable per-subfolder exclusion — `G-37`), and making the journal **device-local** would trade a privacy leak for **data loss if the device is lost** (Luis's call — the worse failure of the two). The remaining question — keeping journal content unreadable by the cloud *provider* — is a **json-privacy problem deferred to a later version** (via the at-rest encryption of §8.7, itself deferred); until then journal content is plaintext JSON in the user's own synced folder, protected by their provider-account security, and the onboarding/consent surface states this plainly.
+**Notes.** `contact_fact` and `interaction` are **owned** (`parentType:"contact"`), and `habit_checkin` is owned by `habit`; deleting either parent cascades to its children and one undo restores the full group. Deleting a contact also clears non-owning `task.contactRefs` and `contact.introducedBy` references. The runtime `interaction.subject` is the explicit person reference. `medium` is optional in the schema only for migration compatibility; every new capture requires one of the five enumerated values. `connectionDepth` is optional so existing history remains valid; missing values derive from medium at projection time. The v2 `relationshipGoal` and `contactFrequencyDays` attributes remain only for compatibility: migrated records retain their exact 7/21/60 or custom cadence and do not gain a meaningful-connection goal until a v3 circle is explicitly assigned. New habit targets are constrained by the UI and seed skill to 1–7 completions per week, and duplicate same-local-day check-ins are rejected by both typed UI and voice paths. Contact details, opaque system-contact ids, relationship circles/roles/proximity/lifecycle/goals, facts, interaction medium/depth/notes, habits, and check-ins currently sync as plaintext JSON under the product's existing storage disclosure. `journal_entry` **syncs like any other record** (in the user's cloud folder) so a journal survives device loss. Two earlier positions are both **dropped**: a "sync-excluded subfolder inside the synced folder" is not implementable (no provider offers app-settable per-subfolder exclusion — `G-37`), and making the journal **device-local** would trade a privacy leak for **data loss if the device is lost** (Luis's call — the worse failure of the two). The remaining question — keeping journal content unreadable by the cloud *provider* — is a **json-privacy problem deferred to a later version** (via the at-rest encryption of §8.7, itself deferred); until then journal content is plaintext JSON in the user's own synced folder, protected by their provider-account security, and the onboarding/consent surface states this plainly.
 
 ### 12.4 Corpus resolve additions (`G-22`, `G-24`, `G-32`)
 - **Contact aliases (`G-24`).** `contact` gains `{"name":"aliases","label":"Also known as","valueType":"tag","required":false}` (nicknames/roles: "Mum", "the boss"). `entityNames.resolve` (Spec 03 §6.1) matches `displayName` **or** any alias; common role words map via aliases or a small role table. A **group** name ("the Garcias") resolves to a *set* of contacts (for `event_prep`, P-08).

@@ -1,6 +1,41 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-07 for repeatable Contacts import._
+_Current working memory. Last updated 2026-09-07 for relationship circles and two-clock health._
+
+## Relationship circles and meaningful connection (2026-09-07)
+
+- Relationships now uses one primary intention circle — Core, Close, Keep connected, Keep warm,
+  or Context only — while role tags, Household/Local/Remote proximity, and
+  Active/Seasonal/Paused/Archived lifecycle remain independent descriptors. The built-in category
+  shortcuts set those fields and inherited contact goals atomically, after which any value can be
+  tuned per person.
+- Circle defaults are two clocks: Core 7-day touch / 14-day meaningful, Close 14/30, Keep connected
+  30/60, Keep warm 90/off, and Context only off/off. Every interaction stores a medium and Quick or
+  Meaningful depth. In-person, FaceTime, and phone default meaningful; text and email default quick;
+  explicit UI or voice choice wins. The due projection, Todos relationship signal, and voice query
+  state which clock needs attention and suggest in-person for local people or phone/FaceTime for
+  remote people.
+- Existing v2 relationship records migrate to contact v3 without an assigned new circle. Their exact
+  former 7/21/60 or custom touch cadence remains authoritative and they gain no meaningful clock
+  until explicitly recategorized. Legacy interactions migrate to v3 without rewrites and derive
+  depth from medium when projected.
+- The Relationships home is grouped by circle. Person detail exposes categories, circle, both goals,
+  roles, proximity, lifecycle, introducer, facts, contact actions, and depth-aware interaction
+  history. Contacts import includes a compact organization step, defaults new people to Context
+  only, and never overwrites an existing relationship plan while refreshing contact details.
+- Voice can categorize a named person, pause/resume their suggestions, set either goal to an exact
+  number of days, ask who is due, and suffix ordinary interaction language with Quick or Meaningful.
+- Domain cadence, import-preservation, voice-depth, schema-migration, interaction UI, and import UI
+  checks each failed against a deliberate shipping-code regression and passed after restoration.
+- Final full precheck is green: 2,063 engine tests + 36 intentional skips; 201 Flutter tests + 4
+  channel skips; 95.7% deterministic-core, 89.4% product-logic, and 83.8% transport coverage;
+  analyzers, seed sync, documentation consistency, import layering, render guards, external-channel
+  checks, macOS build, eight real-engine cases, secret scan, and the 24/60 conformance ratchet. A
+  production-theme iPhone 17 Pro Max simulator then passed the focused Relationships journey and
+  produced `relationships-header-actions.png`, `relationships-change-notification.png`, and
+  `relationship-detail-actions.png`. Its app RSS fell from about 326 MiB to the normal post-test
+  exit; the simulator was shut down and no app/test process remained. The physical phone was not
+  used for verification.
 
 ## Repeatable Contacts import correction (2026-09-07)
 

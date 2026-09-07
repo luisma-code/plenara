@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:plenara/session.dart';
+import 'package:plenara/people.dart';
 import 'package:test/test.dart';
 
 Directory copySeed() {
@@ -119,5 +120,33 @@ void main() {
         jsonDecode(File('${records.path}/bad.json').readAsStringSync())[
             'schemaVersion'],
         1);
+  });
+
+  test(
+      'relationship v2 migration preserves its old rhythm and adds no new clock',
+      () async {
+    final root = copySeed();
+    addTearDown(() => root.deleteSync(recursive: true));
+    final records = Directory('${root.path}/records')..createSync();
+    File('${records.path}/mia.json').writeAsStringSync(jsonEncode({
+      'id': 'mia',
+      'typeId': 'contact',
+      'schemaVersion': 2,
+      'fields': {
+        'displayName': 'Mia',
+        'relationshipGoal': 'connected',
+        'contactFrequencyDays': 23,
+      },
+      '_meta': {'stamps': {}}
+    }));
+
+    final session = Session(root.path);
+    await session.init(retrieval: false);
+
+    final contact = session.store['mia']!;
+    expect(contact['_schemaVersion'], 3);
+    expect(contact['relationshipCircle'], isNull);
+    expect(relationshipTouchTargetDays(contact), 23);
+    expect(relationshipMeaningfulTargetDays(contact), isNull);
   });
 }

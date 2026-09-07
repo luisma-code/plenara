@@ -643,16 +643,21 @@ List<PlannerSignal> buildPlannerSignals(
 
   final dueContact = suggestedContacts(records, now, limit: 1).firstOrNull;
   if (dueContact != null) {
-    final last = dueContact.lastInteractionAt;
-    final cadence = dueContact.targetDays;
+    final meaningful = dueContact.need == RelationshipNeed.meaningful;
+    final last =
+        meaningful ? dueContact.lastMeaningfulAt : dueContact.lastTouchAt;
+    final cadence = meaningful
+        ? dueContact.meaningfulTargetDays
+        : dueContact.touchTargetDays;
+    final connection = meaningful ? 'meaningful connection' : 'contact';
     signals.add(
       PlannerSignal(
         kind: PlannerSignalKind.relationshipNeglect,
-        title: '${dueContact.displayName} is due for contact',
+        title: '${dueContact.displayName} is due for $connection',
         detail: last == null
-            ? 'No interaction is logged yet; the goal is every $cadence days.'
-            : '${today.difference(_day(last)).inDays} days since the last '
-                '${dueContact.lastMedium ?? 'interaction'}; the goal is every $cadence days.',
+            ? 'No $connection is logged yet; the goal is every $cadence days.'
+            : '${today.difference(_day(last)).inDays} days since the last $connection; '
+                'the goal is every $cadence days.',
         recordIds: [dueContact.contactId],
       ),
     );
@@ -807,14 +812,19 @@ PlannerItem? _relationshipNudge(
     ));
   }
   for (final status in suggestedContacts(records, start, limit: 3)) {
+    final meaningful = status.need == RelationshipNeed.meaningful;
+    final last = meaningful ? status.lastMeaningfulAt : status.lastTouchAt;
+    final target =
+        meaningful ? status.meaningfulTargetDays : status.touchTargetDays;
+    final connection = meaningful ? 'meaningful connection' : 'contact';
     candidates.add(PlannerItem(
       id: status.contactId,
       kind: PlannerItemKind.relationship,
       title: 'Reach out to ${status.displayName}',
-      detail: status.lastInteractionAt == null
-          ? 'No interaction logged · goal every ${status.targetDays} days'
-          : '${start.difference(_day(status.lastInteractionAt!)).inDays} days since '
-              '${status.lastMedium ?? 'last contact'} · goal every ${status.targetDays} days',
+      detail: last == null
+          ? 'No $connection logged · goal every $target days'
+          : '${start.difference(_day(last)).inDays} days since $connection · '
+              'goal every $target days',
       at: start,
     ));
   }

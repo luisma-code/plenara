@@ -76,6 +76,22 @@ final _relationshipPrepRe = RegExp(
   r'^(?:help me\s+)?prepare(?: me)? for (?:(?:seeing|meeting|talking to|a call with|dinner with|lunch with|coffee with)\s+)?(.+?)[.!]?$',
   caseSensitive: false,
 );
+final _relationshipCategoryRe = RegExp(
+  r'^(?:categorize|classify|organize|set)\s+(.+?)\s+as\s+(close family|close local friend|close remote friend|friend to keep connected|connected friend|old remote friend|neighbor|local community|community|second[- ]degree connection|household|context only)[.!]?$',
+  caseSensitive: false,
+);
+final _relationshipPauseRe = RegExp(
+  r'^(pause|resume)\s+(?:contact\s+)?reminders\s+for\s+(.+?)[.!]?$',
+  caseSensitive: false,
+);
+final _relationshipDueRe = RegExp(
+  r'^(?:who should i (?:contact|reach out to|connect with)|who needs (?:a )?(?:check[- ]?in|meaningful connection))[?!.]?$',
+  caseSensitive: false,
+);
+final _relationshipGoalRe = RegExp(
+  r'^(?:set|change)\s+(?:the\s+)?(touch|contact|meaningful(?: connection)?)\s+goal\s+(?:for|with)\s+(.+?)\s+(?:to\s+)?(?:every\s+)?(\d+)\s+days?[.!]?$',
+  caseSensitive: false,
+);
 
 // ---- Numbered-list corrections (reference-by-number over the last spoken readback) ----------
 // The ordered list Plena last read back, captured from the interpreter's `enumerate` channel.
@@ -1643,6 +1659,126 @@ class Session {
     }
   }
 
+  void _supplyInteractionDepth(
+      String skillId, Map<String, dynamic> slots, String utterance) {
+    if (skillId != 'log-interaction' || slots['connectionDepth'] != null) {
+      return;
+    }
+    if (slots['medium'] == null) return;
+    final words = utterance.toLowerCase();
+    if (RegExp(r'\b(quick|brief|just a|short)\b').hasMatch(words)) {
+      slots['connectionDepth'] = 'quick';
+      return;
+    }
+    if (RegExp(r'\b(meaningful|deep|quality time|really connected|caught up)\b')
+        .hasMatch(words)) {
+      slots['connectionDepth'] = 'meaningful';
+      return;
+    }
+    slots['connectionDepth'] = const {'in_person', 'facetime', 'phone'}
+            .contains('${slots['medium'] ?? ''}')
+        ? 'meaningful'
+        : 'quick';
+  }
+
+  Map<String, dynamic>? _findContactNamed(String name) {
+    final needle = name.trim().toLowerCase();
+    final contacts = store.values.where((r) => r['typeId'] == 'contact');
+    for (final contact in contacts) {
+      if ('${contact['displayName'] ?? ''}'.trim().toLowerCase() == needle) {
+        return contact;
+      }
+    }
+    final partial = contacts.where((contact) {
+      final display = '${contact['displayName'] ?? ''}'.trim().toLowerCase();
+      return display.contains(needle) || needle.contains(display);
+    }).toList();
+    return partial.length == 1 ? partial.single : null;
+  }
+
+  RelationshipPreset? _relationshipPresetFromPhrase(String phrase) =>
+      switch (phrase.toLowerCase().replaceAll('-', ' ').trim()) {
+        'close family' => RelationshipPreset.closeFamily,
+        'close local friend' => RelationshipPreset.closeLocalFriend,
+        'close remote friend' => RelationshipPreset.closeRemoteFriend,
+        'friend to keep connected' ||
+        'connected friend' =>
+          RelationshipPreset.connectedFriend,
+        'old remote friend' => RelationshipPreset.oldRemoteFriend,
+        'neighbor' => RelationshipPreset.neighbor,
+        'local community' || 'community' => RelationshipPreset.community,
+        'second degree connection' => RelationshipPreset.secondDegree,
+        'household' => RelationshipPreset.household,
+        'context only' => RelationshipPreset.contextOnly,
+        _ => null,
+      };
+
+  Future<String?> _handleRelationshipCommand(String utterance) async {
+    if (_relationshipDueRe.hasMatch(utterance)) {
+      _outSource = 'relationship';
+      _outSkill = 'suggest-relationship-contact';
+      final due = suggestedContacts(store, now, limit: 5);
+      if (due.isEmpty) return 'No one is due based on your relationship goals.';
+      return due.map((status) {
+        final reason = status.need == RelationshipNeed.meaningful
+            ? 'meaningful connection'
+            : 'touch';
+        final mode = switch (status.proximity) {
+          'household' || 'local' => 'in person',
+          'remote' => 'by phone or FaceTime',
+          _ => 'using whichever channel feels natural',
+        };
+        return '${status.displayName} — $reason, ideally $mode';
+      }).join('\n');
+    }
+    final category = _relationshipCategoryRe.firstMatch(utterance);
+    final pause = _relationshipPauseRe.firstMatch(utterance);
+    final goal = _relationshipGoalRe.firstMatch(utterance);
+    if (category == null && pause == null && goal == null) return null;
+    final personName =
+        (category?.group(1) ?? pause?.group(2) ?? goal!.group(2)!).trim();
+    final contact = _findContactNamed(personName);
+    if (contact == null) {
+      _outSource = 'clarify';
+      _outSkill = 'edit-relationship-plan';
+      return "I couldn't find exactly one person named $personName.";
+    }
+    late final Map<String, Object?> fields;
+    late final String confirmation;
+    if (category != null) {
+      final preset = _relationshipPresetFromPhrase(category.group(2)!);
+      if (preset == null) return null;
+      fields = relationshipPresetFields(preset);
+      confirmation =
+          'Set ${contact['displayName']} as ${relationshipPresetLabel(preset)}.';
+    } else if (pause != null) {
+      final resume = pause.group(1)!.toLowerCase() == 'resume';
+      fields = {
+        'relationshipStatus': resume
+            ? RelationshipEngagement.active.name
+            : RelationshipEngagement.paused.name,
+      };
+      confirmation = resume
+          ? 'Resumed relationship reminders for ${contact['displayName']}.'
+          : 'Paused relationship reminders for ${contact['displayName']}.';
+    } else {
+      final meaningful = goal!.group(1)!.toLowerCase().startsWith('meaningful');
+      final days = int.parse(goal.group(3)!);
+      fields = {
+        meaningful ? 'trackMeaningful' : 'trackTouch': true,
+        meaningful ? 'meaningfulFrequencyDays' : 'touchFrequencyDays': days,
+      };
+      confirmation = meaningful
+          ? 'Set a meaningful-connection goal with ${contact['displayName']} every $days days.'
+          : 'Set a contact goal with ${contact['displayName']} every $days days.';
+    }
+    final result = await _editFieldsUnlocked('${contact['id']}', fields);
+    _outSource = 'relationship';
+    _outSkill = 'edit-relationship-plan';
+    _lastTurnWrote = result.undoId != null;
+    return result.undoId == null ? result.message : confirmation;
+  }
+
   /// On-open nudge lines (the UI shows these on launch). Two derived sources, so
   /// each drops out the moment its record changes: past-due reminders (you can't
   /// schedule a toast in the past) and birthdays coming up within a week. Each line
@@ -3139,6 +3275,28 @@ class Session {
         final value = '${incoming[field] ?? ''}'.trim();
         if (value.isNotEmpty) raw[field] = value;
       }
+      if (existing == null) {
+        for (final entry in relationshipPresetFields(
+          RelationshipPreset.contextOnly,
+        ).entries) {
+          raw[entry.key] = incoming.containsKey(entry.key)
+              ? incoming[entry.key]
+              : entry.value;
+        }
+        for (final field in const [
+          'relationshipCircle',
+          'relationshipRoles',
+          'proximity',
+          'relationshipStatus',
+          'trackTouch',
+          'trackMeaningful',
+          'touchFrequencyDays',
+          'meaningfulFrequencyDays',
+          'introducedBy',
+        ]) {
+          if (incoming.containsKey(field)) raw[field] = incoming[field];
+        }
+      }
       raw.putIfAbsent('relationshipGoal', () => 'none');
       try {
         final validated = const ValueCodec().validateRecord(
@@ -3205,6 +3363,14 @@ class Session {
   /// relationship preset clears a prior custom day override).
   Future<ManualWrite> editFields(String id, Map<String, Object?> values) =>
       _serialized(() => _editFieldsUnlocked(id, values));
+
+  Future<ManualWrite> setRelationshipPreset(
+          String id, RelationshipPreset preset) =>
+      editFields(id, relationshipPresetFields(preset));
+
+  Future<ManualWrite> setRelationshipCircle(
+          String id, RelationshipCircle circle) =>
+      editFields(id, relationshipCircleFields(circle));
 
   Future<ManualWrite> _editFieldsUnlocked(
       String id, Map<String, Object?> values) async {
@@ -3409,6 +3575,12 @@ class Session {
             writes.add(updated);
           }
         }
+        if (candidate['typeId'] == 'contact' &&
+            '${candidate['introducedBy'] ?? ''}' == id) {
+          final updated = Map<String, dynamic>.from(candidate)
+            ..remove('introducedBy');
+          writes.add(updated);
+        }
       }
     }
     if (typeId == 'habit') {
@@ -3496,6 +3668,10 @@ class Session {
       _routineNextRe.hasMatch(u) ||
       _routineSkipRe.hasMatch(u) ||
       _routineStopRe.hasMatch(u) ||
+      _relationshipCategoryRe.hasMatch(u) ||
+      _relationshipPauseRe.hasMatch(u) ||
+      _relationshipDueRe.hasMatch(u) ||
+      _relationshipGoalRe.hasMatch(u) ||
       _looksLikeRefCommand(u);
 
   /// Find a routine by (partial, case-insensitive) title — how "do my low back routine" resolves.
@@ -4486,6 +4662,7 @@ class Session {
             _outSource = 'clarify';
             return _askForSlot(skill, stillMissing.first);
           }
+          _supplyInteractionDepth(skillId, slots, u);
           _outSource = 'provide-slot';
           _outSkill = skillId;
           return _dispatch(skillId, slots, 'corpus', now);
@@ -4837,6 +5014,9 @@ class Session {
       return '$pre$redo';
     }
 
+    final relationshipCommand = await _handleRelationshipCommand(u);
+    if (relationshipCommand != null) return relationshipCommand;
+
     // Generative requests (§3.10): grounded, paid synthesis over the user's own records.
     final gift = _giftRe.firstMatch(u);
     if (gift != null) {
@@ -4937,13 +5117,23 @@ class Session {
     final searchM = _searchNoteRe.firstMatch(u) ?? _searchForRe.firstMatch(u);
     if (searchM != null) return _searchContent(searchM.group(1) ?? '');
 
-    var routed = router.route(u, clock: now, contacts: _knownContactTokens());
+    final routingU = u
+        .replaceFirst(
+          RegExp(
+            r'\s*[,—-]?\s*(?:it was\s+)?(?:a\s+)?(?:meaningful connection|meaningful|quick touch|quick)[.!]?$',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .trim();
+    var routed =
+        router.route(routingU, clock: now, contacts: _knownContactTokens());
     // The production cold-start order is corpus → in-process retrieval → cloud.
     // Retrieval may act only when both its candidate margin and a deterministic
     // slot extractor succeed; otherwise it has made no decision and cloud keeps
     // responsibility for the genuine residual.
     if (routed == null && _retrievalEnabled) {
-      routed = await router.retrievalRoute(u);
+      routed = await router.retrievalRoute(routingU);
     }
     // Compound utterance (F-13): two independent commands joined by "and" — "log a run
     // and journal that I feel great" — execute BOTH and compose the confirmations.
@@ -4990,7 +5180,7 @@ class Session {
     }
     CloudErrorKind? cloudErr;
     if (routed == null) {
-      switch (await claude.routeResidual(u, skills,
+      switch (await claude.routeResidual(routingU, skills,
           knownContacts: _knownContactNames())) {
         case CloudOk(:final value):
           _cloudStatus = 'ok';
@@ -5128,6 +5318,7 @@ class Session {
     final skillId = routed['skillId'] as String;
     final slots = (routed['slots'] as Map).cast<String, dynamic>();
     _supplyInteractionMedium(skillId, slots, u);
+    _supplyInteractionDepth(skillId, slots, u);
     // ProvideSlot (§6.3): if a REQUIRED input the router couldn't fill is missing, pause
     // and ask for it (resumable next turn) instead of dispatching a half-filled skill.
     final missing = _missingRequired(skills[skillId], slots);

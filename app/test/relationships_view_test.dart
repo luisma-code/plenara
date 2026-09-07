@@ -131,15 +131,22 @@ void main() {
     expect(followUp['description'], 'Reach out to Mia');
     expect(followUp['contactRefs'], [contact['id']]);
 
-    await tester.tap(find.byKey(const Key('relationship-goal-connected')));
+    await tester.tap(
+      find.byKey(const Key('relationship-preset-connectedFriend')),
+    );
     await tester.pumpAndSettle();
-    expect(session.store['${contact['id']}']?['relationshipGoal'], 'connected');
+    expect(
+      session.store['${contact['id']}']?['relationshipCircle'],
+      'connected',
+    );
 
     await tester.scrollUntilVisible(
       find.byKey(const Key('fact-add')),
       250,
       scrollable: find.byType(Scrollable).last,
     );
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -120));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('fact-add')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'loves dahlias');
@@ -147,14 +154,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('loves dahlias'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('log-interaction')),
-      -300,
-      scrollable: find.byType(Scrollable).last,
-    );
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, 2000));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('log-interaction')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('interaction-medium-facetime')));
+    await tester.tap(find.text('Quick touch'));
     await tester.enterText(find.byType(TextField), 'Talked about school');
     await tester.tap(find.byKey(const Key('interaction-save')));
     await tester.pumpAndSettle();
@@ -167,7 +172,29 @@ void main() {
           ),
       isTrue,
     );
+    expect(
+      session.store.values
+          .where((r) => r['typeId'] == 'interaction')
+          .last['connectionDepth'],
+      'quick',
+    );
+    final logged = session.store.values.singleWhere(
+      (r) => r['typeId'] == 'interaction' && r['note'] == 'Talked about school',
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(Key('interaction-${logged['id']}')),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.byKey(Key('interaction-${logged['id']}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Meaningful'));
+    await tester.tap(find.text('Save interaction'));
+    await tester.pumpAndSettle();
+    expect(session.store['${logged['id']}']?['connectionDepth'], 'meaningful');
 
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, 2000));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(OutlinedButton, 'Call'));
     await tester.tap(find.widgetWithText(OutlinedButton, 'FaceTime'));
     await tester.tap(find.widgetWithText(OutlinedButton, 'Email'));
@@ -188,6 +215,16 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('relationships-import')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Organize this person'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('import-preset-picker')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Close remote friend').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const Key('import-organize-save')));
     await tester.pumpAndSettle();
 
     var people = session.store.values
@@ -198,9 +235,20 @@ void main() {
     expect(people.single['displayName'], 'Bob Rivera');
     expect(people.single['primaryPhone'], '+15551212');
     expect(people.single['primaryEmail'], 'bob@example.com');
+    expect(people.single['relationshipCircle'], 'close');
+    expect(people.single['proximity'], 'remote');
     final originalId = people.single['id'];
 
     await tester.tap(find.byKey(const Key('relationships-import')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(const Key('import-preset-picker')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Context only').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const Key('import-organize-save')));
     await tester.pumpAndSettle();
 
     people = session.store.values
@@ -210,6 +258,7 @@ void main() {
     expect(people, hasLength(1));
     expect(people.single['id'], originalId);
     expect(people.single['primaryPhone'], '+15559999');
+    expect(people.single['relationshipCircle'], 'close');
     expect(find.text('Import people'), findsNothing);
     final bob = session.store.values.singleWhere(
       (r) => r['typeId'] == 'contact',
@@ -217,7 +266,7 @@ void main() {
     expect(bob['displayName'], 'Bob Rivera');
     expect(bob['primaryPhone'], '+15559999');
     expect(bob['primaryEmail'], 'bob@example.com');
-    expect(find.text('Bob Rivera'), findsOneWidget);
+    expect(find.text('Bob Rivera'), findsWidgets);
   });
 
   testWidgets('Today relationship signal opens the actionable workspace', (

@@ -13,6 +13,7 @@
     { "name": "note", "required": false },
     { "name": "kind", "required": false },
     { "name": "medium", "required": true, "prompt": "How did you connect — in person, FaceTime, phone call, text, or email?" },
+    { "name": "connectionDepth", "required": false },
     { "name": "at", "required": false, "type": "pastday" }
   ],
   "steps": {
@@ -54,6 +55,7 @@
           "note": { "var": "note" },
           "kind": { "var": "kind" },
           "medium": { "var": "medium" },
+          "connectionDepth": { "var": "connectionDepth" },
           "at": { "var": "at" }
         },
         "into": "newInteraction"

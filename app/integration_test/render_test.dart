@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
+import 'package:plenara/people.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara_app/credential_store.dart';
 import 'package:plenara_app/data_location.dart';
@@ -183,7 +184,7 @@ void main() {
       await session.handle('add call Sam to my list');
       await session.createRecord('contact', {
         'displayName': 'Sam',
-        'relationshipGoal': 'close',
+        ...relationshipPresetFields(RelationshipPreset.closeFamily),
         'primaryPhone': '+1 415 555 0100',
         'primaryEmail': 'sam@example.com',
       });
@@ -314,7 +315,8 @@ void main() {
       await tester.tap(find.byKey(Key('relationship-person-$samId')));
       await runFrames(tester, 25);
       expect(find.byKey(const Key('person-relationship-view')), findsOneWidget);
-      expect(find.text('Close · weekly'), findsOneWidget);
+      expect(find.text('Core'), findsOneWidget);
+      expect(find.text('Relationship plan'), findsOneWidget);
       expect(find.text('Call'), findsOneWidget);
       expect(find.text('FaceTime'), findsOneWidget);
       expect(find.text('Email'), findsWidgets);

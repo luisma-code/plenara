@@ -1,6 +1,6 @@
 {
   "typeId": "contact",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "displayName": "Contact",
   "attributes": [
     { "name": "displayName", "valueType": "text", "required": true },
@@ -10,6 +10,15 @@
     { "name": "primaryPhone", "valueType": "text", "required": false },
     { "name": "primaryEmail", "valueType": "text", "required": false },
     { "name": "systemContactId", "valueType": "text", "required": false },
+    { "name": "relationshipCircle", "valueType": "enum", "enumValues": ["core", "close", "connected", "warm", "context"], "required": false },
+    { "name": "relationshipRoles", "valueType": "tag", "required": false },
+    { "name": "proximity", "valueType": "enum", "enumValues": ["household", "local", "remote", "unknown"], "required": false, "default": "unknown" },
+    { "name": "relationshipStatus", "valueType": "enum", "enumValues": ["active", "seasonal", "paused", "archived"], "required": false, "default": "active" },
+    { "name": "trackTouch", "valueType": "boolean", "required": false },
+    { "name": "trackMeaningful", "valueType": "boolean", "required": false },
+    { "name": "touchFrequencyDays", "valueType": "number", "required": false },
+    { "name": "meaningfulFrequencyDays", "valueType": "number", "required": false },
+    { "name": "introducedBy", "valueType": "entityRef", "refType": "contact", "required": false },
     { "name": "relationshipGoal", "valueType": "enum", "enumValues": ["none", "close", "connected", "light"], "required": false, "default": "none" },
     { "name": "contactFrequencyDays", "valueType": "number", "required": false }
   ],
@@ -18,6 +27,11 @@
       "fromVersion": 1,
       "toVersion": 2,
       "fieldDefaults": { "relationshipGoal": "none" }
+    },
+    {
+      "fromVersion": 2,
+      "toVersion": 3,
+      "fieldDefaults": { "proximity": "unknown", "relationshipStatus": "active" }
     }
   ]
 }
