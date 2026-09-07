@@ -6,6 +6,7 @@ import 'package:plenara/claude.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara_app/habits_view.dart';
 import 'package:plenara_app/main.dart';
+import 'package:plenara_app/plan_view.dart';
 import 'package:plenara_app/relationships_view.dart';
 
 class _NoCloud implements CloudClient {
@@ -127,4 +128,62 @@ void main() {
       hasLength(1),
     );
   });
+
+  testWidgets('stale-work signal opens Plan with its tasks selected', (
+    tester,
+  ) async {
+    final session = await _session();
+    await session.createRecord('task', {
+      'description': 'Renew the passport',
+      'createdAt': '2026-08-01T09:00:00',
+      'status': 'inbox',
+    });
+    await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
+    await tester.pumpAndSettle();
+
+    final signal = find.byKey(const Key('planner-signal-staleQueue'));
+    await tester.scrollUntilVisible(
+      signal,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -160));
+    await tester.pumpAndSettle();
+    await tester.tap(signal);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PlanBoard), findsOneWidget);
+    expect(find.text('1 selected'), findsOneWidget);
+    expect(find.text('Renew the passport'), findsOneWidget);
+  });
+
+  testWidgets(
+    'relationship signal opens the named person, not a generic list',
+    (tester) async {
+      final session = await _session();
+      await session.createRecord('contact', {
+        'displayName': 'Alana',
+        'relationshipGoal': 'close',
+      });
+      await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
+      await tester.pumpAndSettle();
+
+      final signal = find.byKey(
+        const Key('planner-signal-relationshipNeglect'),
+      );
+      await tester.scrollUntilVisible(
+        signal,
+        240,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -160));
+      await tester.pumpAndSettle();
+      await tester.tap(signal);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PersonRelationshipView), findsOneWidget);
+      expect(find.text('Alana'), findsWidgets);
+      expect(find.byKey(const Key('log-interaction')), findsOneWidget);
+    },
+  );
 }

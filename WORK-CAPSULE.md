@@ -15,7 +15,8 @@ _Current working memory. Last updated 2026-09-06 for the three-pillar product re
 - Todos is the focused one-off commitment workspace. Fast capture can leave an item undated or put it
   today/tomorrow/on a chosen day; only task/reminder records populate Now/Next/Later. Due relationship
   guidance and habit check-ins appear as explicit cross-workflow cards rather than being recast as
-  todos.
+  todos. Relationship signals open the named person directly; stale-queue and capacity signals open
+  Plan with the affected tasks selected for immediate scheduling or deferral.
 - Habits is a first-class repeated-practice workspace, distinct from routines and quantitative
   trackers. Habits have a 1–7/week target, active/paused lifecycle, one check-in per local day,
   weekly progress, a seven-day strip, and a daily streak. Voice can create, list, check in, and report
@@ -34,8 +35,16 @@ _Current working memory. Last updated 2026-09-06 for the three-pillar product re
   Runner RSS at 448 MiB, 489 MiB, and 488 MiB; the final capture run completed too quickly for a
   multi-sample claim. This is not a long-soak leak claim. The selected simulator and every app/test
   process were terminated; the physical phone was untouched.
-- Final full precheck is green: 2,056 engine tests + 36 intentional skips; 195 Flutter tests + 4
-  channel skips; 95.7% deterministic-core, 89.2% product-logic, and 83.8% transport coverage;
+- Todo planner-signal routing was calibrated red/green at both widget and real-engine boundaries.
+  On the selected local iPhone 17 Pro simulator, the stale-work signal opened Plan with its task
+  selected and the Unscheduled queue in view, while the relationship signal opened the exact person
+  with Log interaction and contact actions available. Captures are
+  `app/build/simulator-check/todo-stale-signal-plan.png` and
+  `app/build/simulator-check/todo-relationship-signal-person.png`. The short screenshot run yielded
+  one Runner RSS sample at 678 MiB, so it supports no plateau or long-soak claim; the app and
+  simulator were terminated and the physical phone was untouched.
+- Final full precheck is green: 2,056 engine tests + 36 intentional skips; 197 Flutter tests + 4
+  channel skips; 95.7% deterministic-core, 89.1% product-logic, and 83.8% transport coverage;
   analyzers, seed sync, documentation consistency, import layering, render guards, external-channel
   checks, macOS build, eight real-engine cases, secret scan, and the 24/60 conformance ratchet.
 

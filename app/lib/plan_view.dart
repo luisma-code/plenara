@@ -11,12 +11,16 @@ class PlanBoard extends StatefulWidget {
   final Session session;
   final VoidCallback onChanged;
   final VoidCallback? onVoice;
+  final List<String> initialSelectedRecordIds;
+  final bool focusUnscheduled;
 
   const PlanBoard({
     super.key,
     required this.session,
     required this.onChanged,
     this.onVoice,
+    this.initialSelectedRecordIds = const [],
+    this.focusUnscheduled = false,
   });
 
   @override
@@ -25,8 +29,24 @@ class PlanBoard extends StatefulWidget {
 
 class _PlanBoardState extends State<PlanBoard> {
   late DateTime _selectedDay = _day(widget.session.now);
-  final Set<String> _selectedIds = {};
+  late final Set<String> _selectedIds;
+  final _unscheduledKey = GlobalKey();
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIds = widget.initialSelectedRecordIds
+        .where(widget.session.store.containsKey)
+        .toSet();
+    if (widget.focusUnscheduled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _unscheduledKey.currentContext;
+        if (!mounted || target == null) return;
+        Scrollable.ensureVisible(target, alignment: 0.02);
+      });
+    }
+  }
 
   PlanProjection get _projection => widget.session.planProjection(_selectedDay);
 
@@ -61,9 +81,9 @@ class _PlanBoardState extends State<PlanBoard> {
     if (!mounted) return;
     widget.onChanged();
     if (failure != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Something went wrong: $failure')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Something went wrong: $failure')));
       return;
     }
     final write = result!;
@@ -324,6 +344,7 @@ class _PlanBoardState extends State<PlanBoard> {
                     child: wide
                         ? _WidePlan(
                             projection: projection,
+                            unscheduledKey: _unscheduledKey,
                             selectedIds: _selectedIds,
                             onToggle: _toggle,
                             onComplete: _complete,
@@ -335,6 +356,7 @@ class _PlanBoardState extends State<PlanBoard> {
                           )
                         : _PhonePlan(
                             projection: projection,
+                            unscheduledKey: _unscheduledKey,
                             selectedIds: _selectedIds,
                             onToggle: _toggle,
                             onComplete: _complete,
@@ -559,6 +581,7 @@ class _WeekSelector extends StatelessWidget {
 
 class _PhonePlan extends StatelessWidget {
   final PlanProjection projection;
+  final GlobalKey unscheduledKey;
   final Set<String> selectedIds;
   final ValueChanged<String> onToggle;
   final ValueChanged<String> onComplete;
@@ -569,6 +592,7 @@ class _PhonePlan extends StatelessWidget {
 
   const _PhonePlan({
     required this.projection,
+    required this.unscheduledKey,
     required this.selectedIds,
     required this.onToggle,
     required this.onComplete,
@@ -610,6 +634,7 @@ class _PhonePlan extends StatelessWidget {
         onRename: onRename,
       ),
       _PlanSection(
+        key: unscheduledKey,
         title: 'Unscheduled',
         empty: 'The queue is clear.',
         items: projection.unscheduled,
@@ -639,6 +664,7 @@ class _PhonePlan extends StatelessWidget {
 
 class _WidePlan extends StatelessWidget {
   final PlanProjection projection;
+  final GlobalKey unscheduledKey;
   final Set<String> selectedIds;
   final ValueChanged<String> onToggle;
   final ValueChanged<String> onComplete;
@@ -649,6 +675,7 @@ class _WidePlan extends StatelessWidget {
 
   const _WidePlan({
     required this.projection,
+    required this.unscheduledKey,
     required this.selectedIds,
     required this.onToggle,
     required this.onComplete,
@@ -705,6 +732,7 @@ class _WidePlan extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(10, 18, 20, 130),
           children: [
             _PlanSection(
+              key: unscheduledKey,
               title: 'Unscheduled queue',
               empty: 'The queue is clear.',
               items: projection.unscheduled,
@@ -750,6 +778,7 @@ class _PlanSection extends StatelessWidget {
   final bool draggable;
 
   const _PlanSection({
+    super.key,
     required this.title,
     required this.empty,
     required this.items,

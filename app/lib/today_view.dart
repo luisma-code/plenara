@@ -20,6 +20,7 @@ class TodayBoard extends StatelessWidget {
   final VoidCallback? onOpenRelationships;
   final VoidCallback? onOpenHabits;
   final VoidCallback? onOpenPlan;
+  final ValueChanged<PlannerSignal>? onOpenPlannerSignal;
   final VoidCallback? onAddTodo;
   final VoidCallback? onOpenAttention;
 
@@ -31,6 +32,7 @@ class TodayBoard extends StatelessWidget {
     this.onOpenRelationships,
     this.onOpenHabits,
     this.onOpenPlan,
+    this.onOpenPlannerSignal,
     this.onAddTodo,
     this.onOpenAttention,
     this.onVoice,
@@ -278,9 +280,7 @@ class TodayBoard extends StatelessWidget {
                 for (final signal in signals)
                   _PlannerSignalCard(
                     signal: signal,
-                    onTap: signal.kind == PlannerSignalKind.relationshipNeglect
-                        ? onOpenRelationships
-                        : null,
+                    onTap: _signalAction(signal),
                   ),
                 _Section(
                   title: 'Later this week',
@@ -360,6 +360,16 @@ class TodayBoard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  VoidCallback? _signalAction(PlannerSignal signal) {
+    if (onOpenPlannerSignal != null) {
+      return () => onOpenPlannerSignal!(signal);
+    }
+    return switch (signal.kind) {
+      PlannerSignalKind.relationshipNeglect => onOpenRelationships,
+      PlannerSignalKind.overload || PlannerSignalKind.staleQueue => onOpenPlan,
+    };
   }
 }
 

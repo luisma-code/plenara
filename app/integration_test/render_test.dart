@@ -20,9 +20,11 @@ import 'package:plenara_app/credential_store.dart';
 import 'package:plenara_app/data_location.dart';
 import 'package:plenara_app/glyphs.dart';
 import 'package:plenara_app/main.dart';
+import 'package:plenara_app/plan_view.dart';
 import 'package:plenara_app/plena.dart';
 import 'package:plenara_app/plenara_theme.dart';
 import 'package:plenara_app/relationship_contacts.dart';
+import 'package:plenara_app/relationships_view.dart';
 import 'package:plenara_app/seed_assets.dart';
 import 'package:plenara_app/speech.dart';
 
@@ -197,6 +199,11 @@ void main() {
         'at': '2026-06-28',
         'note': 'Caught up about summer plans.',
       });
+      await session.createRecord('task', {
+        'description': 'Renew the passport',
+        'createdAt': '2026-06-01T09:00:00',
+        'status': 'inbox',
+      });
       await session.handle('track meditation as a habit');
       final taskIds = session.store.values
           .where((record) => record['typeId'] == 'task')
@@ -227,6 +234,52 @@ void main() {
       );
       expect(find.byKey(const Key('weekly-review-card')), findsOneWidget);
 
+      final todosScroll = find
+          .descendant(
+            of: find.byKey(const Key('today-board')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final staleSignal = find.byKey(const Key('planner-signal-staleQueue'));
+      await tester.scrollUntilVisible(
+        staleSignal,
+        300,
+        scrollable: todosScroll,
+      );
+      await tester.drag(todosScroll, const Offset(0, -140));
+      await runFrames(tester, 3);
+      await tester.tap(staleSignal);
+      await runFrames(tester, 30);
+      expect(find.byType(PlanBoard), findsOneWidget);
+      expect(find.text('1 selected'), findsOneWidget);
+      expect(find.text('Renew the passport'), findsOneWidget);
+      if (const bool.fromEnvironment('PLENARA_CAPTURE_SCREENSHOT')) {
+        await binding.takeScreenshot('todo-stale-signal-plan');
+      }
+      await tester.tap(find.byTooltip('Back'));
+      await runFrames(tester, 20);
+
+      final relationshipSignal = find.byKey(
+        const Key('planner-signal-relationshipNeglect'),
+      );
+      await tester.scrollUntilVisible(
+        relationshipSignal,
+        300,
+        scrollable: todosScroll,
+      );
+      await tester.drag(todosScroll, const Offset(0, -140));
+      await runFrames(tester, 3);
+      await tester.tap(relationshipSignal);
+      await runFrames(tester, 25);
+      expect(find.byType(PersonRelationshipView), findsOneWidget);
+      expect(find.text('Sam'), findsWidgets);
+      expect(find.byKey(const Key('log-interaction')), findsOneWidget);
+      if (const bool.fromEnvironment('PLENARA_CAPTURE_SCREENSHOT')) {
+        await binding.takeScreenshot('todo-relationship-signal-person');
+      }
+      await tester.tap(find.byTooltip('Back'));
+      await runFrames(tester, 20);
+
       await tester.tap(find.text('Relationships').last);
       await runFrames(tester, 25);
       expect(find.byKey(const Key('relationships-view')), findsOneWidget);
@@ -255,7 +308,7 @@ void main() {
 
       await tester.tap(find.text('Todos').last);
       await runFrames(tester, 25);
-      final todosScroll = find
+      final todosPlanScroll = find
           .descendant(
             of: find.byKey(const Key('today-board')),
             matching: find.byType(Scrollable),
@@ -264,11 +317,11 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(const Key('todos-plan')),
         300,
-        scrollable: todosScroll,
+        scrollable: todosPlanScroll,
       );
       // On compact phones the chip can technically be visible while its center
       // is still beneath the persistent bottom navigation hit region.
-      await tester.drag(todosScroll, const Offset(0, -140));
+      await tester.drag(todosPlanScroll, const Offset(0, -140));
       await runFrames(tester, 3);
       await tester.tap(find.byKey(const Key('todos-plan')));
       await runFrames(tester, 35);

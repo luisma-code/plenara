@@ -48,6 +48,7 @@ import 'speech.dart';
 import 'speech_out.dart';
 import 'today_view.dart';
 import 'todo_capture.dart';
+import 'undo_feedback.dart';
 import 'motion.dart';
 import 'voice_turn_controller.dart';
 
@@ -505,19 +506,63 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     return false;
   }
 
-  void _openPlan() {
+  void _openPlan({
+    List<String> initialSelectedRecordIds = const [],
+    bool focusUnscheduled = false,
+  }) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Scaffold(
           appBar: AppBar(title: const Text('Plan')),
           body: PlanBoard(
             session: _session,
+            initialSelectedRecordIds: initialSelectedRecordIds,
+            focusUnscheduled: focusUnscheduled,
             onChanged: () {
               if (mounted) setState(() {});
             },
           ),
         ),
       ),
+    );
+  }
+
+  void _openPlannerSignal(PlannerSignal signal) {
+    if (signal.kind == PlannerSignalKind.relationshipNeglect) {
+      if (signal.recordIds.isEmpty ||
+          _session.store[signal.recordIds.first]?['typeId'] != 'contact') {
+        setState(() => _plannerTab = 0);
+        return;
+      }
+      unawaited(_openPersonRelationship(signal.recordIds.first));
+      return;
+    }
+    _openPlan(
+      initialSelectedRecordIds: signal.recordIds,
+      focusUnscheduled: signal.kind == PlannerSignalKind.staleQueue,
+    );
+  }
+
+  Future<void> _openPersonRelationship(String contactId) async {
+    final result = await Navigator.of(context).push<ManualWrite>(
+      MaterialPageRoute(
+        builder: (_) =>
+            PersonRelationshipView(session: _session, contactId: contactId),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {});
+    if (result == null) return;
+    showUndoableResult(
+      context,
+      message: result.message,
+      onUndo: result.undoId == null
+          ? null
+          : () async {
+              final message = await _session.undoById(result.undoId!);
+              if (mounted) setState(() {});
+              return message;
+            },
     );
   }
 
@@ -979,7 +1024,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                 onVoice: canUseVoice ? _turn.toggleMic : null,
                 onAddTodo: () =>
                     addTodoFromUi(context, _session, () => setState(() {})),
-                onOpenPlan: _openPlan,
+                onOpenPlan: () => _openPlan(),
+                onOpenPlannerSignal: _openPlannerSignal,
                 onOpenLibrary: _openLibrary,
                 onOpenRelationships: () => setState(() => _plannerTab = 0),
                 onOpenHabits: () => setState(() => _plannerTab = 2),
