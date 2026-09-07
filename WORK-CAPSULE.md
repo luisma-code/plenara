@@ -331,6 +331,15 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
   This authorizes installation only—never launch, testing, probes, container inspection, log access,
   reset, uninstall, or TestFlight/App Store distribution. Documentation-only revisions do not
   trigger a redundant build/install.
+- On 2026-09-07 at 09:08 PDT, signed internal-channel `0.13.0 (19)` from source revision
+  `c5ce27a8c548269eb0d1e419feb978ebf9f32a23` was installed on **Aluminum Monster** as
+  `com.plenara.plenaraApp` through CoreDevice, without launching it. The installed
+  development-signed AOT SHA-256 is
+  `c50056b533e183dcd8fb0e9ed30b969199b73cdb8e6595c4566462e2ed753048`; its signature,
+  team `7V63BZ39HU`, provisioning profile `9700a183-07f9-4d2b-936c-3176f893ef68` through
+  2027-07-28, embedded revision, approved internal raw-diagnostics surface, and absence of an
+  Anthropic API-key pattern were verified before install. Deployment only—no physical-phone
+  launch, test, probe, log collection, or app inspection.
 - On 2026-09-07 at 08:32 PDT, signed internal-channel `0.13.0 (19)` from source revision
   `7210b9bf2603c323b59114dcc4e446b258a9dba3` was installed on **Aluminum Monster** as
   `com.plenara.plenaraApp` through CoreDevice, without launching it. The installed
