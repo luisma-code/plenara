@@ -1175,6 +1175,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
           ),
         // Muted / no-mic → the two-line input box rises from the bottom
         AnimatedPositioned(
+          key: const Key('planner-input-bar'),
           duration: PlenaraMotion.standard,
           curve: PlenaraMotion.enter,
           left: 0,

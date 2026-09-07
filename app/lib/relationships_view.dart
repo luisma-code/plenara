@@ -72,20 +72,9 @@ class _RelationshipsViewState extends State<RelationshipsView> {
     if (_importing) return;
     setState(() => _importing = true);
     try {
-      final available = await _contacts.fetch();
+      final chosen = await _contacts.select();
       if (!mounted) return;
-      if (available.isEmpty) {
-        _message('No contacts with names were found on this device.');
-        return;
-      }
-      // The native read is finished; do not leave an indeterminate spinner
-      // animating behind the user's selection dialog.
-      setState(() => _importing = false);
-      final chosen = await showDialog<List<PhoneContact>>(
-        context: context,
-        builder: (context) => _ContactPicker(contacts: available),
-      );
-      if (chosen == null || chosen.isEmpty) return;
+      if (chosen.isEmpty) return;
       _showResult(
         await widget.session.importContacts(
           chosen.map((contact) => contact.toRecordFields()).toList(),
@@ -811,69 +800,6 @@ class _Section extends StatelessWidget {
         ],
       ),
     ),
-  );
-}
-
-class _ContactPicker extends StatefulWidget {
-  final List<PhoneContact> contacts;
-  const _ContactPicker({required this.contacts});
-
-  @override
-  State<_ContactPicker> createState() => _ContactPickerState();
-}
-
-class _ContactPickerState extends State<_ContactPicker> {
-  final Set<String> _selected = {};
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Import people'),
-    content: SizedBox(
-      width: 420,
-      height: 420,
-      child: ListView.builder(
-        itemCount: widget.contacts.length,
-        itemBuilder: (_, index) {
-          final contact = widget.contacts[index];
-          final selected = _selected.contains(contact.systemContactId);
-          return CheckboxListTile(
-            value: selected,
-            title: Text(contact.displayName),
-            subtitle: Text(
-              contact.primaryPhone ??
-                  contact.primaryEmail ??
-                  'No phone or email',
-            ),
-            onChanged: (value) => setState(() {
-              if (value == true) {
-                _selected.add(contact.systemContactId);
-              } else {
-                _selected.remove(contact.systemContactId);
-              }
-            }),
-          );
-        },
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
-      FilledButton(
-        onPressed: _selected.isEmpty
-            ? null
-            : () => Navigator.pop(
-                context,
-                widget.contacts
-                    .where(
-                      (contact) => _selected.contains(contact.systemContactId),
-                    )
-                    .toList(),
-              ),
-        child: Text('Import ${_selected.length}'),
-      ),
-    ],
   );
 }
 

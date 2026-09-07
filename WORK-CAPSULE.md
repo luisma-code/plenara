@@ -1,6 +1,42 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-07 for the primary-header interaction correction._
+_Current working memory. Last updated 2026-09-07 for repeatable Contacts import._
+
+## Repeatable Contacts import correction (2026-09-07)
+
+- The 09:12 physical-phone diagnostic log was copied read-only after Luis explicitly requested use
+  of the detailed logs. It contained no Contacts events at all, proving the native bridge was an
+  uninstrumented boundary: denied, limited, cancelled, empty, and failed reads were
+  indistinguishable. No app launch, test, probe, reset, or data mutation occurred on the phone.
+- iOS import now uses Apple's `CNContactPickerViewController`, which provides one-time snapshots of
+  the people the user selects regardless of Plenara's Contacts authorization status. Plenara no
+  longer requests ongoing whole-address-book permission, and the redundant second in-app picker is
+  gone. A second import can select more people or refresh an existing system-id match without a
+  clone.
+- Internal diagnostics now record `contacts: picker begin` and a privacy-safe authorization,
+  selected-count, cancellation, or error-code outcome. They never duplicate names, phone numbers,
+  email addresses, or identifiers into that trace. The Dart logging/decoding and two-import widget
+  checks failed against deliberately restored regressions and passed after restoration. Two
+  iOS-hosted tests on the local iPhone 17 Pro simulator proved the native picker can finish and open
+  again and that selected contact snapshots cross the bridge; the repeat-open test also failed when
+  completed picker state was deliberately retained, then passed after restoration.
+- The raw Xcode test command exposed ambient provider credential values in its initial verbose
+  scheme environment. `tool/safe-xcodebuild.sh` now clears all three provider-key variables and runs
+  Xcode quietly; precheck calibrates that boundary with canaries, and release/test scripts clear the
+  same environment. The affected provider credentials require rotation in their account consoles;
+  their values are never repeated in project artifacts or this capsule.
+- The first complete gate also caught a verifier defect in the Relationships → Habits → Todos →
+  Plan journey: on text-only hosts the persistent input bar starts above bottom navigation, but the
+  test treated navigation as the only obstruction. The old check reproduced the missed tap. The
+  corrected check identifies both persistent surfaces, scrolls the Plan action wholly above the
+  earlier one, and the focused real-engine journey then passed.
+- Final full precheck is green: 2,056 engine tests + 36 intentional skips; 201 Flutter tests + 4
+  channel skips; 95.7% deterministic-core, 89.1% product-logic, and 83.8% transport coverage;
+  analyzers, seed sync, documentation consistency, import layering, render guards, external-channel
+  checks, macOS build, eight real-engine cases, secret scan, and the 24/60 conformance ratchet. The
+  two iOS-hosted Contacts tests also passed again on the local iPhone 17 Pro simulator. That
+  simulator was shut down, no app/test process remained, the read-only temporary phone-log copy was
+  deleted, and the physical phone was never launched or used for verification.
 
 ## Relationships / Todos / Habits rework (2026-09-06)
 

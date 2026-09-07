@@ -52,15 +52,20 @@ Future<Session> _session() async {
 }
 
 class _Contacts implements PhoneContactsSource {
+  int calls = 0;
+
   @override
-  Future<List<PhoneContact>> fetch() async => const [
-    PhoneContact(
-      systemContactId: 'ios-bob',
-      displayName: 'Bob Rivera',
-      primaryPhone: '+15551212',
-      primaryEmail: 'bob@example.com',
-    ),
-  ];
+  Future<List<PhoneContact>> select() async {
+    calls++;
+    return [
+      PhoneContact(
+        systemContactId: 'ios-bob',
+        displayName: 'Bob Rivera',
+        primaryPhone: calls == 1 ? '+15551212' : '+15559999',
+        primaryEmail: 'bob@example.com',
+      ),
+    ];
+  }
 }
 
 class _Launcher implements RelationshipLauncher {
@@ -170,30 +175,47 @@ void main() {
     expect((launcher.calls, launcher.faceTimes, launcher.emails), (1, 1, 1));
   });
 
-  testWidgets('Contacts import lets the user choose and persists phone/email', (
+  testWidgets('Contacts picker reopens and refreshes without cloning', (
     tester,
   ) async {
     final session = await _session();
+    final contacts = _Contacts();
     await tester.pumpWidget(
       MaterialApp(
-        home: RelationshipsView(session: session, contactsSource: _Contacts()),
+        home: RelationshipsView(session: session, contactsSource: contacts),
       ),
     );
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('relationships-import')));
     await tester.pumpAndSettle();
-    expect(find.text('Bob Rivera'), findsOneWidget);
-    await tester.tap(find.byType(CheckboxListTile));
-    await tester.pump();
-    await tester.tap(find.text('Import 1'));
+
+    var people = session.store.values
+        .where((record) => record['typeId'] == 'contact')
+        .toList();
+    expect(contacts.calls, 1);
+    expect(people, hasLength(1));
+    expect(people.single['displayName'], 'Bob Rivera');
+    expect(people.single['primaryPhone'], '+15551212');
+    expect(people.single['primaryEmail'], 'bob@example.com');
+    final originalId = people.single['id'];
+
+    await tester.tap(find.byKey(const Key('relationships-import')));
     await tester.pumpAndSettle();
 
+    people = session.store.values
+        .where((record) => record['typeId'] == 'contact')
+        .toList();
+    expect(contacts.calls, 2);
+    expect(people, hasLength(1));
+    expect(people.single['id'], originalId);
+    expect(people.single['primaryPhone'], '+15559999');
+    expect(find.text('Import people'), findsNothing);
     final bob = session.store.values.singleWhere(
       (r) => r['typeId'] == 'contact',
     );
     expect(bob['displayName'], 'Bob Rivera');
-    expect(bob['primaryPhone'], '+15551212');
+    expect(bob['primaryPhone'], '+15559999');
     expect(bob['primaryEmail'], 'bob@example.com');
     expect(find.text('Bob Rivera'), findsOneWidget);
   });

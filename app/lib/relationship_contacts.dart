@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'app_log.dart';
+
 class PhoneContact {
   final String systemContactId;
   final String displayName;
@@ -23,25 +25,59 @@ class PhoneContact {
 }
 
 abstract interface class PhoneContactsSource {
-  Future<List<PhoneContact>> fetch();
+  Future<List<PhoneContact>> select();
 }
 
 class NativePhoneContactsSource implements PhoneContactsSource {
-  static const _channel = MethodChannel('com.plenara/contacts');
+  static const _defaultChannel = MethodChannel('com.plenara/contacts');
+  final MethodChannel _channel;
+  final void Function(String) _log;
+
+  NativePhoneContactsSource({
+    MethodChannel? channel,
+    void Function(String)? log,
+  }) : _channel = channel ?? _defaultChannel,
+       _log = log ?? AppLog.instance.log;
 
   @override
-  Future<List<PhoneContact>> fetch() async {
-    final raw = await _channel.invokeListMethod<Object?>('fetch');
-    return [
-      for (final value in raw ?? const [])
-        if (value is Map && '${value['displayName'] ?? ''}'.trim().isNotEmpty)
-          PhoneContact(
-            systemContactId: '${value['identifier'] ?? ''}',
-            displayName: '${value['displayName']}'.trim(),
-            primaryPhone: _nonEmpty(value['phone']),
-            primaryEmail: _nonEmpty(value['email']),
-          ),
-    ];
+  Future<List<PhoneContact>> select() async {
+    _log('contacts: picker begin');
+    try {
+      final response = await _channel.invokeMapMethod<String, Object?>(
+        'select',
+      );
+      final authorization = '${response?['authorizationStatus'] ?? 'unknown'}';
+      final cancelled = response?['cancelled'] == true;
+      final raw = response?['contacts'];
+      final contacts = [
+        for (final value in raw is List ? raw : const <Object?>[])
+          if (value is Map && '${value['displayName'] ?? ''}'.trim().isNotEmpty)
+            PhoneContact(
+              systemContactId: '${value['identifier'] ?? ''}',
+              displayName: '${value['displayName']}'.trim(),
+              primaryPhone: _nonEmpty(value['phone']),
+              primaryEmail: _nonEmpty(value['email']),
+            ),
+      ];
+      _log(
+        cancelled
+            ? 'contacts: picker cancelled (authorization=$authorization)'
+            : 'contacts: picker finished '
+                  '(authorization=$authorization, selected=${contacts.length})',
+      );
+      return contacts;
+    } on PlatformException catch (error) {
+      _log('contacts: picker FAILED (code=${error.code})');
+      rethrow;
+    } catch (_) {
+      _log('contacts: picker FAILED (code=invalid_response)');
+      rethrow;
+    }
+  }
+
+  Future<String> authorizationStatus() async {
+    final response = await _channel.invokeMapMethod<String, Object?>('status');
+    return '${response?['authorizationStatus'] ?? 'unknown'}';
   }
 
   static String? _nonEmpty(Object? value) {

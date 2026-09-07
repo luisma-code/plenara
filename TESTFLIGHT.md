@@ -42,6 +42,7 @@ internal beta group **Internal** (`23726f32-…`) with Luis as tester.
 # bump version: in app/pubspec.yaml first — +BUILD must strictly increase
 cd app
 revision=$(git rev-parse --short HEAD)
+unset ANTHROPIC_API_KEY CARTESIA_API_KEY ELEVENLABS_API_KEY PLENARA_DATA PLENARA_FREE
 flutter build ipa --release \
   --dart-define=PLENARA_CHANNEL=internal \
   --dart-define=PLENARA_REVISION="$revision"   # internal dogfood diagnostics/tools

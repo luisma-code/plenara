@@ -71,6 +71,10 @@ A timestamped plain-text diagnostic log opened at boot (`app/lib/app_log.dart`),
 - **Every `Session.init` phase** with elapsed ms (the `onPhase` callback, `v0/lib/session.dart §init`): defs loaded, skills validated, in-process retrieval index built or skipped, reminders reconciled. A startup *hang* therefore shows the last phase that began; retrieval no longer depends on a localhost service.
 - **Every turn**: the utterance (`turn: "$t"`) and a 140-char response prefix — both Class C, local only.
 - **Every uncaught error**: `FlutterError.onError` and the `runZonedGuarded` handler write the full exception + stack.
+- **Every Contacts import attempt**: picker begin, authorization status, selected count, cancellation,
+  or a closed native error code. Contact names, phone numbers, emails, and identifiers are not copied
+  into this bridge trace; the event is sufficient to distinguish denied/limited/cancelled/empty and
+  failed paths from a successful selection.
 
 The AppLog is device-local by construction (desktop OS temp; iOS app Documents for Files/share access; never the selected synced record root) and is the *hang/crash* instrument, complementing the turnlog's *turn-outcome* instrument: the turnlog can only record a turn that completed its `handle` call; AppLog catches the ones that never returned.
 

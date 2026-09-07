@@ -13,6 +13,7 @@
 #   ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 #   ASC_KEY_PATH=/absolute/path/to/AuthKey_XXXXXXXXXX.p8
 set -euo pipefail
+unset ANTHROPIC_API_KEY CARTESIA_API_KEY ELEVENLABS_API_KEY PLENARA_DATA PLENARA_FREE || true
 ROOT="$(git rev-parse --show-toplevel)"
 ENV_FILE="$ROOT/tool/.testflight.env"
 [ -f "$ENV_FILE" ] && set -a && . "$ENV_FILE" && set +a
@@ -33,7 +34,7 @@ mkdir -p "$KEYDIR"
 cp "$ASC_KEY_PATH" "$KEYDIR/AuthKey_${ASC_KEY_ID}.p8"
 
 echo "== exporting a signed App Store IPA (auto-creates the distribution cert + profile on first run) =="
-xcodebuild -exportArchive \
+bash "$ROOT/tool/safe-xcodebuild.sh" -exportArchive \
   -archivePath "$ARCHIVE" \
   -exportPath "$OUT" \
   -exportOptionsPlist "$ROOT/tool/ExportOptions.plist" \

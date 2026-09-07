@@ -1,5 +1,6 @@
 import Flutter
 import Contacts
+import ContactsUI
 import UIKit
 import UniformTypeIdentifiers
 
@@ -148,62 +149,105 @@ private final class DataFolderBridge: NSObject, UIDocumentPickerDelegate {
   }
 }
 
-private final class ContactsBridge {
-  private let store = CNContactStore()
+final class ContactsBridge: NSObject, CNContactPickerDelegate {
+  typealias PresentPicker = (CNContactPickerViewController) -> Bool
+
+  private var pendingResult: FlutterResult?
+  private let presentPicker: PresentPicker?
+
+  init(presentPicker: PresentPicker? = nil) {
+    self.presentPicker = presentPicker
+  }
 
   func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    guard call.method == "fetch" else {
+    if call.method == "status" {
+      result(["authorizationStatus": Self.authorizationStatusName])
+      return
+    }
+    guard call.method == "select" else {
       result(FlutterMethodNotImplemented)
       return
     }
-    store.requestAccess(for: .contacts) { [weak self] granted, error in
-      guard granted else {
-        DispatchQueue.main.async {
-          result(FlutterError(
-            code: "contacts_denied",
-            message: error?.localizedDescription ?? "Contacts access was not allowed.",
-            details: nil
-          ))
-        }
+    guard pendingResult == nil else {
+      result(FlutterError(code: "picker_busy", message: "The contact picker is already open.", details: nil))
+      return
+    }
+    let picker = CNContactPickerViewController()
+    picker.delegate = self
+    if let presentPicker {
+      guard presentPicker(picker) else {
+        result(FlutterError(code: "no_presenter", message: "The contact picker could not open.", details: nil))
         return
       }
-      do {
-        let keys: [CNKeyDescriptor] = [
-          CNContactIdentifierKey as CNKeyDescriptor,
-          CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
-          CNContactPhoneNumbersKey as CNKeyDescriptor,
-          CNContactEmailAddressesKey as CNKeyDescriptor,
-        ]
-        let request = CNContactFetchRequest(keysToFetch: keys)
-        request.sortOrder = .userDefault
-        var contacts: [[String: Any]] = []
-        try self?.store.enumerateContacts(with: request) { contact, _ in
-          let name = CNContactFormatter.string(from: contact, style: .fullName)?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-          guard !name.isEmpty else { return }
-          var item: [String: Any] = [
-            "identifier": contact.identifier,
-            "displayName": name,
-          ]
-          if let phone = contact.phoneNumbers.first?.value.stringValue,
-             !phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            item["phone"] = phone
-          }
-          if let emailValue = contact.emailAddresses.first?.value {
-            let email = emailValue as String
-            if !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            item["email"] = email
-            }
-          }
-          contacts.append(item)
-        }
-        DispatchQueue.main.async { result(contacts) }
-      } catch {
-        DispatchQueue.main.async {
-          result(FlutterError(code: "contacts_read_failed", message: error.localizedDescription, details: nil))
-        }
+    } else if let presenter = Self.presenter {
+      presenter.present(picker, animated: true)
+    } else {
+      result(FlutterError(code: "no_presenter", message: "The contact picker could not open.", details: nil))
+      return
+    }
+    pendingResult = result
+  }
+
+  func contactPicker(_ picker: CNContactPickerViewController, didSelect contacts: [CNContact]) {
+    finish(contacts.compactMap(Self.serialize), cancelled: false)
+  }
+
+  func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
+    finish([], cancelled: true)
+  }
+
+  private func finish(_ contacts: [[String: Any]], cancelled: Bool) {
+    let result = pendingResult
+    pendingResult = nil
+    result?([
+      "authorizationStatus": Self.authorizationStatusName,
+      "cancelled": cancelled,
+      "contacts": contacts,
+    ])
+  }
+
+  private static func serialize(_ contact: CNContact) -> [String: Any]? {
+    let name = CNContactFormatter.string(from: contact, style: .fullName)?
+      .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    guard !name.isEmpty else { return nil }
+    var item: [String: Any] = [
+      "identifier": contact.identifier,
+      "displayName": name,
+    ]
+    if contact.isKeyAvailable(CNContactPhoneNumbersKey),
+       let phone = contact.phoneNumbers.first?.value.stringValue,
+       !phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      item["phone"] = phone
+    }
+    if contact.isKeyAvailable(CNContactEmailAddressesKey),
+       let emailValue = contact.emailAddresses.first?.value {
+      let email = emailValue as String
+      if !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        item["email"] = email
       }
     }
+    return item
+  }
+
+  private static var authorizationStatusName: String {
+    let status = CNContactStore.authorizationStatus(for: .contacts)
+    switch status {
+    case .notDetermined: return "notDetermined"
+    case .restricted: return "restricted"
+    case .denied: return "denied"
+    case .authorized: return "authorized"
+    case .limited: return "limited"
+    @unknown default: return "unknown"
+    }
+  }
+
+  private static var presenter: UIViewController? {
+    let scene = UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .first { $0.activationState == .foregroundActive }
+    var controller = scene?.windows.first(where: { $0.isKeyWindow })?.rootViewController
+    while let presented = controller?.presentedViewController { controller = presented }
+    return controller
   }
 }
 

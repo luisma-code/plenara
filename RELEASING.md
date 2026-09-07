@@ -7,7 +7,10 @@
 > recorded in [`WORK-CAPSULE.md`](WORK-CAPSULE.md). Run [`tool/precheck.sh`](tool/precheck.sh) for
 > repository verification, [`tool/external_release_gate.sh`](tool/external_release_gate.sh) for an
 > inspectable external artifact, and follow [`TESTFLIGHT.md`](TESTFLIGHT.md) for internal iOS
-> distribution. The remainder is milestone evidence, not an open-work list.
+> distribution. Run any direct Xcode build/test through
+> [`tool/safe-xcodebuild.sh`](tool/safe-xcodebuild.sh), which clears ambient provider credentials
+> before Xcode can dump its scheme environment. The remainder is milestone evidence, not an
+> open-work list.
 
 _Synthesis of a 3-lens Fable review (2026-07-12) of the cross-platform abstractions, plus the
 ranked path to shipping on more than one OS. Companion to `TRANSITION.md` (Windows→macOS setup)._

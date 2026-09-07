@@ -13,6 +13,7 @@ not create a new phone build and do not trigger installation.
 Read [`TESTFLIGHT.md`](../../../TESTFLIGHT.md), [`RELEASING.md`](../../../RELEASING.md), and the latest deployment facts in [`WORK-CAPSULE.md`](../../../WORK-CAPSULE.md). Use the current internal-channel signing and deployment path rather than reconstructing commands from memory.
 
 - Finish all known code, simulator verification, signing checks, embedded-revision checks, and secret/channel scans before the single manual deployment cycle.
+- Clear `ANTHROPIC_API_KEY`, `CARTESIA_API_KEY`, and `ELEVENLABS_API_KEY` before any Flutter/Xcode build; route raw Xcode commands through `tool/safe-xcodebuild.sh` so scheme output cannot expose them.
 - Compare against the latest deployment record and install each ready revision at most once.
 - Resolve the exact paired device and bundle identifier read-only before installation.
 - Install the verified usable artifact. Do not launch it, run tests, automate it, inspect its container, collect logs, uninstall it, or reset its data.

@@ -343,11 +343,29 @@ void main() {
         300,
         scrollable: todosPlanScroll,
       );
-      // On compact phones the chip can technically be visible while its center
-      // is still beneath the persistent bottom navigation hit region.
-      await tester.drag(todosPlanScroll, const Offset(0, -140));
-      await runFrames(tester, 3);
-      await tester.tap(find.byKey(const Key('todos-plan')));
+      final todosPlan = find.byKey(const Key('todos-plan'));
+      final navigation = find.byKey(const Key('planner-navigation'));
+      final inputBar = find.byKey(const Key('planner-input-bar'));
+      // A partially visible chip is not actionable when either persistent
+      // bottom surface paints above its center. On hosts without speech the
+      // text input sits above navigation, so it is the earlier obstruction.
+      final obstructionTop = [
+        tester.getRect(navigation).top,
+        if (inputBar.evaluate().isNotEmpty) tester.getRect(inputBar).top,
+      ].reduce((a, b) => a < b ? a : b);
+      for (var attempt = 0; attempt < 5; attempt++) {
+        if (tester.getRect(todosPlan).bottom < obstructionTop - 8) {
+          break;
+        }
+        await tester.drag(todosPlanScroll, const Offset(0, -80));
+        await runFrames(tester, 2);
+      }
+      expect(
+        tester.getRect(todosPlan).bottom,
+        lessThan(obstructionTop - 8),
+        reason: 'Plan must be wholly above persistent bottom surfaces',
+      );
+      await tester.tap(todosPlan);
       await runFrames(tester, 35);
       expect(
         find.byKey(const Key('phone-plan')).evaluate().isNotEmpty ||
@@ -512,13 +530,22 @@ void main() {
       expect(await store.readApiKey(), isNull);
     });
 
-    testWidgets('the iOS Contacts bridge returns an authorized contact list', (
+    testWidgets('the iOS Contacts bridge reports status repeatedly', (
       tester,
     ) async {
       if (!Platform.isIOS) return;
 
-      final contacts = await NativePhoneContactsSource().fetch();
-      expect(contacts, isA<List<PhoneContact>>());
+      final source = NativePhoneContactsSource();
+      const statuses = {
+        'notDetermined',
+        'restricted',
+        'denied',
+        'authorized',
+        'limited',
+        'unknown',
+      };
+      expect(statuses, contains(await source.authorizationStatus()));
+      expect(statuses, contains(await source.authorizationStatus()));
     });
 
     testWidgets('startup data failure resets and reaches a live fresh Today', (

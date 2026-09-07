@@ -8,9 +8,12 @@ set -euo pipefail
 # The quality gate is hermetic. In particular, never let a developer's live BYOK key reach a test
 # matcher: an assertion failure prints its unexpected actual value. Config precedence itself is
 # covered with an injected environment map in config_test.dart.
-unset ANTHROPIC_API_KEY PLENARA_DATA PLENARA_FREE || true
+unset ANTHROPIC_API_KEY CARTESIA_API_KEY ELEVENLABS_API_KEY PLENARA_DATA PLENARA_FREE || true
 
 ROOT="$(git rev-parse --show-toplevel)"
+env ANTHROPIC_API_KEY=guard-anthropic CARTESIA_API_KEY=guard-cartesia \
+  ELEVENLABS_API_KEY=guard-elevenlabs \
+  bash "$ROOT/tool/safe-xcodebuild.sh" --check-environment >/dev/null
 # Prefer the vendored Windows toolchain if present; else fall back to PATH (macOS / Linux / CI).
 if [ -x "$ROOT/.tools/dart-sdk/bin/dart.exe" ]; then
   DART="$ROOT/.tools/dart-sdk/bin/dart.exe"

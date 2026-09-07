@@ -4,7 +4,7 @@
 # without this gate and its generated revision-bound manifest.
 set -euo pipefail
 
-unset ANTHROPIC_API_KEY PLENARA_DATA PLENARA_FREE || true
+unset ANTHROPIC_API_KEY CARTESIA_API_KEY ELEVENLABS_API_KEY PLENARA_DATA PLENARA_FREE || true
 ROOT="$(git rev-parse --show-toplevel)"
 ALLOW_DIRTY=()
 if [ "${1:-}" = "--allow-dirty" ]; then
