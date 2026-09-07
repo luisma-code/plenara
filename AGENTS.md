@@ -47,7 +47,7 @@ The research document and worked examples preserve rationale and evaluation hist
 
 ## Non-negotiable operational boundaries
 
-- The physical iPhone is deployment-only. Never run tests, probes, experimental builds, log collection, layout checks, or automated launches on it. Touch it only when Luis explicitly requests a usable deployment. All verification uses local simulators, widget/render surfaces, or macOS.
+- The physical iPhone is deployment-only. Never run tests, probes, experimental builds, log collection, layout checks, or automated launches on it. Under Luis's permanent standing authorization of 2026-09-07, every new phone build that is complete, simulator-verified, committed, and pushed is installed on his configured iPhone without another prompt; install it only and never launch it. All verification uses local simulators, widget/render surfaces, or macOS.
 - A separate explicit request to read device logs authorizes only that read; it does not turn the phone into a test target.
 - When launching an app locally, sample memory, kill a ballooning process immediately, terminate every instance started, and check for orphan processes. A short plateau is not a leak-free claim.
 - Permission sheets and other simulator system dialogs are part of the test harness, not a reason to leave a run stalled. Before a run that needs desktop interaction, confirm the host session is unlocked. Detect dialogs from the simulator surface, drive the intended allow/deny choice explicitly, and continue the same test. Pre-authorize with simulator tooling only when the permission decision itself is not under test; otherwise click the sheet so the production permission path is exercised. Record which choice was made, and never apply this permission-driving rule to the physical iPhone.
@@ -60,7 +60,7 @@ The research document and worked examples preserve rationale and evaluation hist
 - Run `bash tool/precheck.sh` before reporting an implementation complete. Use focused checks while iterating, but the final claim is based on the full gate.
 - A new or changed test/verifier must be calibrated: show it the real broken state, observe failure, restore the implementation, and observe success.
 - Update code, owning specification, user-facing copy, tests, and operational docs together when a rule changes. `dart run tool/doc_consistency.dart` guards known drift but does not replace prose review.
-- Use the repo skill `plenara-simulator-verification` for app launches, voice/UI integration, rendering, or motion checks; `plenara-doc-alignment` for rule/spec/document changes; and `plenara-phone-deploy` only after an explicit deployment request.
+- Use the repo skill `plenara-simulator-verification` for app launches, voice/UI integration, rendering, or motion checks; `plenara-doc-alignment` for rule/spec/document changes; and `plenara-phone-deploy` for an explicit deployment request or the standing completed-build installation above.
 
 ## Project agent definitions
 

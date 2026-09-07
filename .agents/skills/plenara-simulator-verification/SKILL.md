@@ -8,7 +8,7 @@ description: Verify Plenara UI, voice, animation, integration, or runtime behavi
 Read the relevant owning spec and [`WORK-CAPSULE.md`](../../../WORK-CAPSULE.md) before choosing the verification surface.
 
 - Use widget/render tests for deterministic layout and interaction, a local iPhone simulator for iOS integration, and macOS only for behavior its platform can represent.
-- Never install, launch, inspect, probe, or run a harness on Luis's physical iPhone. A phone deployment is a different workflow and requires his explicit request.
+- Never install, launch, inspect, probe, or run a harness on Luis's physical iPhone. Installation is a separate `plenara-phone-deploy` workflow, triggered by an explicit request or by the permanent standing authorization for a completed, simulator-verified, committed, and pushed phone build.
 - Drive the production entry point or real interaction boundary. Confirm the run actually reached the state under test.
 - Treat simulator permission sheets and other system dialogs as harness state: confirm the host session is unlocked before a run that needs desktop interaction, inspect the visible surface, explicitly choose the intended response, and continue the run. Prefer simulator pre-authorization only when the permission decision itself is not under test. Never leave a test waiting behind a dialog, and never transfer this automation to the physical iPhone.
 - For any new or changed test, screenshot gate, motion strip, log check, or threshold, restore the real broken behavior long enough to see the verifier fail; then restore the fix and see it pass.

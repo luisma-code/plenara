@@ -326,6 +326,11 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
 
 ## Latest phone deployment
 
+- Permanent owner authorization, 2026-09-07: every new phone build is installed on **Aluminum
+  Monster** after it is complete, simulator-verified, committed, and pushed, without asking again.
+  This authorizes installation only—never launch, testing, probes, container inspection, log access,
+  reset, uninstall, or TestFlight/App Store distribution. Documentation-only revisions do not
+  trigger a redundant build/install.
 - On 2026-09-07 at 08:32 PDT, signed internal-channel `0.13.0 (19)` from source revision
   `7210b9bf2603c323b59114dcc4e446b258a9dba3` was installed on **Aluminum Monster** as
   `com.plenara.plenaraApp` through CoreDevice, without launching it. The installed
@@ -443,7 +448,7 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
   grant, Windows paths, and retired llama commands were machine policy rather than portable project
   guidance.
 - Repo-scoped Codex skills live under `.agents/skills/`: simulator verification, documentation
-  alignment, and explicit physical-phone deployment. Project agent definitions under
+  alignment, and standing-authorized physical-phone deployment. Project agent definitions under
   `.codex/agents/` cover spec/code review, product/art/motion review, and simulator verification.
   Agent roles do not grant permission to delegate, deploy, or take external actions.
 - The instruction guard checks all three skills, requires each project agent to route through
@@ -470,7 +475,7 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
 - Contact-sheet verifier: `python3 -m unittest app/tool/test_gesture_contact_sheet.py`
 - TestFlight internal builds must use `--dart-define=PLENARA_CHANNEL=internal`; external/release builds use `external` or the release fail-closed default.
 - iPhone: Aluminum Monster, `00008140-000645442862201C`, bundle `com.plenara.plenaraApp`, team `7V63BZ39HU`.
-- **Never run tests on the physical iPhone.** All automated, layout, render, motion, and integration verification uses local iPhone simulators. The physical phone is deployment-only, and only for a usable build Luis asked to receive.
+- **Never run tests on the physical iPhone.** All automated, layout, render, motion, and integration verification uses local iPhone simulators. The physical phone is deployment-only; ready phone builds install automatically under the standing authorization recorded above and are never auto-launched.
 - Release environment: `eval "$(/opt/homebrew/bin/brew shellenv)"; export LANG=en_US.UTF-8; export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`
 
 ## Hard-won platform facts
@@ -485,10 +490,10 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
 
 ## Implementation queue
 
-- The eight-increment review plan, phone-diagnostic corrections, task-row clarity change, and
-  code/spec/document consistency and instruction-package passes are complete. Revision
-  `c26560f7a149` remains on the deployment-only physical phone; the documentation/instruction work
-  was not deployed because it does not change the app binary.
+- The eight-increment review plan, phone-diagnostic corrections, task-row clarity change,
+  three-pillar rework, and header-action correction are complete. The current installed revision is
+  recorded under **Latest phone deployment**; future ready phone builds follow the standing
+  installation rule above.
 
 ## Authoritative documents
 

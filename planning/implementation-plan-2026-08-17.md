@@ -100,7 +100,7 @@ Rules for the destination:
 4. **Deliver a usable Today vertical slice before completing every backend ambition.** Local routing, full Week, sync, and illustration curation do not block the first durable planner surface.
 5. **Use output-level gates.** A passing widget test does not prove a readable iPhone layout; an execution-unit test does not prove restart recovery.
 6. **One rule, one home.** Each increment names the specs and restatements it changes; stale prose is fixed in the same change.
-7. **Keep verification off Luis's phone.** Automated layout, motion, voice, memory, and log checks run on local iPhone simulators. The physical iPhone is used only to deploy a usable build Luis explicitly asked to receive; ordinary implementation gates never install or run test harnesses there.
+7. **Keep verification off Luis's phone.** Automated layout, motion, voice, memory, and log checks run on local iPhone simulators. The physical iPhone is used only to install a usable completed build under Luis's standing deployment authorization; ordinary implementation gates never run or install test harnesses there, and deployment never launches the app.
 
 ## Increment 0 — make the development loop safe and honest
 
