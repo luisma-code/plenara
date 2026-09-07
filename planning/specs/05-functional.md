@@ -175,7 +175,8 @@ conflict checks. What it covers:
 
 Spoken undo targets the latest eligible execution; UI Snackbar/History actions can target a
 specific execution. The durable journal retains at most 25 terminal executions. The five-second UI
-Snackbar is only the transient affordance lifetime, not journal expiry.
+Snackbar is only the transient affordance lifetime, not journal expiry; Spec 07 owns the rule that
+a newer completed action replaces older transient feedback instead of queuing behind it.
 
 What undo does not cover:
 - Generative outputs (briefing text, gift suggestions, coaching) — these have no persistent side effects to reverse; the content simply vanishes from the response surface.

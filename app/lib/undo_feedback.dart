@@ -18,6 +18,10 @@ void showUndoableResult(
   Future<String?> Function()? onUndo,
 }) {
   final messenger = ScaffoldMessenger.of(context);
+  // A newer completed action is the relevant one. Do not make its feedback
+  // wait behind an older five-second confirmation when several records are
+  // being organized in quick succession.
+  messenger.hideCurrentSnackBar();
   messenger.showSnackBar(
     SnackBar(
       content: Text(message),

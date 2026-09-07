@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plenara/claude.dart';
+import 'package:plenara/people.dart';
 import 'package:plenara/session.dart';
 import 'package:plenara_app/relationship_contacts.dart';
 import 'package:plenara_app/relationships_view.dart';
@@ -93,6 +94,123 @@ class _Launcher implements RelationshipLauncher {
 }
 
 void main() {
+  testWidgets(
+    'Relationships focuses attention, searches globally, and moves people between circles',
+    (tester) async {
+      final session = await _session();
+      for (final (name, preset) in [
+        ('Ari Core', RelationshipPreset.closeFamily),
+        ('Bea Context', RelationshipPreset.contextOnly),
+        ('Cal Context', RelationshipPreset.contextOnly),
+      ]) {
+        await session.createRecord('contact', {
+          'displayName': name,
+          ...relationshipPresetFields(preset),
+        });
+      }
+      final contacts = {
+        for (final contact in session.store.values.where(
+          (record) => record['typeId'] == 'contact',
+        ))
+          '${contact['displayName']}': contact,
+      };
+      final beaId = '${contacts['Bea Context']!['id']}';
+      final calId = '${contacts['Cal Context']!['id']}';
+
+      await tester.pumpWidget(
+        MaterialApp(home: RelationshipsView(session: session)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('relationships-filter-focus')),
+        findsOneWidget,
+      );
+      expect(
+        find.byType(FloatingActionButton),
+        findsNothing,
+        reason:
+            'the header owns Add person; a duplicate FAB sits behind the persistent input/navigation bars',
+      );
+      expect(find.text('Needs attention'), findsOneWidget);
+      expect(find.text('Ari Core'), findsOneWidget);
+      expect(find.text('Bea Context'), findsNothing);
+      expect(find.text('Context only · 2'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const Key('relationships-search')),
+        'bea',
+      );
+      await tester.pump();
+      expect(find.text('Search results'), findsOneWidget);
+      expect(find.text('Bea Context'), findsOneWidget);
+      await tester.tap(find.byTooltip('Clear search'));
+      await tester.pump();
+      expect(
+        tester
+            .widget<SearchBar>(find.byKey(const Key('relationships-search')))
+            .controller
+            ?.text,
+        isEmpty,
+      );
+      expect(find.text('Bea Context'), findsNothing);
+      await tester.enterText(
+        find.byKey(const Key('relationships-search')),
+        'bea',
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(Key('relationship-move-$beaId')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(
+          Key('relationship-move-$beaId-${RelationshipCircle.close.name}'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(session.store[beaId]?['relationshipCircle'], 'close');
+      expect(find.text('Moved Bea Context to Close.'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const Key('relationships-search')), '');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('relationships-organize')));
+      await tester.pumpAndSettle();
+      expect(find.text('All people'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.byKey(Key('relationship-person-$beaId')),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key('relationship-select-$beaId')));
+      await tester.scrollUntilVisible(
+        find.byKey(Key('relationship-person-$calId')),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key('relationship-select-$calId')));
+      await tester.pump();
+      expect(find.text('2 selected'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('relationships-move-selected')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(
+          Key('relationships-bulk-circle-${RelationshipCircle.connected.name}'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(session.store[beaId]?['relationshipCircle'], 'connected');
+      expect(session.store[calId]?['relationshipCircle'], 'connected');
+      expect(find.text('Moved 2 people to Keep connected.'), findsOneWidget);
+    },
+  );
+
   testWidgets('People is an actionable relationship workspace', (tester) async {
     final session = await _session();
     await session.createRecord('contact', {
@@ -117,7 +235,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Who to contact next'), findsOneWidget);
+    expect(find.text('Needs attention'), findsOneWidget);
     expect(find.textContaining('Mia'), findsWidgets);
     await tester.tap(find.byKey(Key('relationship-person-${contact['id']}')));
     await tester.pumpAndSettle();

@@ -30,11 +30,24 @@ class RelationshipsView extends StatefulWidget {
 
 class _RelationshipsViewState extends State<RelationshipsView> {
   bool _importing = false;
+  bool _showAllPeople = false;
+  bool _showAllAttention = false;
+  bool _organizing = false;
+  String _query = '';
+  RelationshipCircle? _selectedCircle;
+  final Set<String> _selectedPeople = {};
+  final TextEditingController _searchController = TextEditingController();
 
   PhoneContactsSource get _contacts =>
       widget.contactsSource ?? NativePhoneContactsSource();
   RelationshipLauncher get _launcher =>
       widget.launcher ?? SystemRelationshipLauncher();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _showResult(ManualWrite result) {
     if (!mounted) return;
@@ -129,32 +142,136 @@ class _RelationshipsViewState extends State<RelationshipsView> {
     }
   }
 
+  Future<void> _movePerson(String contactId, RelationshipCircle circle) async {
+    _showResult(await widget.session.setRelationshipCircle(contactId, circle));
+  }
+
+  Future<void> _moveSelected() async {
+    if (_selectedPeople.isEmpty) return;
+    final circle = await showModalBottomSheet<RelationshipCircle>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _CirclePicker(count: _selectedPeople.length),
+    );
+    if (!mounted || circle == null) return;
+    final result = await widget.session.setRelationshipCircles(
+      _selectedPeople.toList(growable: false),
+      circle,
+    );
+    if (result.ok && mounted) {
+      setState(() {
+        _selectedPeople.clear();
+        _organizing = false;
+      });
+    }
+    _showResult(result);
+  }
+
+  void _toggleOrganizing() {
+    setState(() {
+      _organizing = !_organizing;
+      _selectedPeople.clear();
+      if (_organizing && _selectedCircle == null && !_showAllPeople) {
+        _showAllPeople = true;
+      }
+    });
+  }
+
+  void _selectStatus(RelationshipStatus status) {
+    if (_organizing) {
+      setState(() {
+        if (!_selectedPeople.add(status.contactId)) {
+          _selectedPeople.remove(status.contactId);
+        }
+      });
+      return;
+    }
+    _openPerson(status.contactId);
+  }
+
+  void _showFocus() {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+      _selectedCircle = null;
+      _showAllPeople = false;
+      _showAllAttention = false;
+    });
+  }
+
+  void _showCircle(RelationshipCircle circle) {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+      _selectedCircle = circle;
+      _showAllPeople = false;
+    });
+  }
+
+  void _showEveryone() {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+      _selectedCircle = null;
+      _showAllPeople = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final contacts =
-        widget.session.store.values
-            .where((record) => record['typeId'] == 'contact')
-            .toList()
-          ..sort(
-            (a, b) => '${a['displayName']}'.compareTo('${b['displayName']}'),
-          );
-    final statuses = {
-      for (final status in relationshipStatuses(
-        widget.session.store,
-        widget.session.now,
-      ))
-        status.contactId: status,
-    };
-    final suggestions = suggestedContacts(
+    final statuses = relationshipStatuses(
       widget.session.store,
       widget.session.now,
     );
-    final grouped = <RelationshipCircle, List<Map<String, dynamic>>>{
-      for (final circle in RelationshipCircle.values) circle: [],
+    final attention = statuses
+        .where((status) => status.needsContact)
+        .toList(growable: false);
+    final normalizedQuery = _query.trim().toLowerCase();
+    final searchResults = normalizedQuery.isEmpty
+        ? const <RelationshipStatus>[]
+        : statuses
+              .where(
+                (status) =>
+                    status.displayName.toLowerCase().contains(normalizedQuery),
+              )
+              .toList(growable: false);
+    final selectedStatuses = normalizedQuery.isNotEmpty
+        ? searchResults
+        : _selectedCircle != null
+        ? statuses
+              .where((status) => status.circle == _selectedCircle)
+              .toList(growable: false)
+        : _showAllPeople
+        ? statuses
+        : (_showAllAttention ? attention : attention.take(8).toList());
+    final isFocus =
+        normalizedQuery.isEmpty && _selectedCircle == null && !_showAllPeople;
+    final title = normalizedQuery.isNotEmpty
+        ? 'Search results'
+        : _selectedCircle != null
+        ? relationshipCircleLabel(_selectedCircle!)
+        : _showAllPeople
+        ? 'All people'
+        : 'Needs attention';
+    final subtitle = normalizedQuery.isNotEmpty
+        ? '${searchResults.length} ${searchResults.length == 1 ? 'person' : 'people'} found across every circle.'
+        : _selectedCircle != null
+        ? _circleDescription(_selectedCircle!)
+        : _showAllPeople
+        ? 'Everyone, ordered by what needs attention before name.'
+        : 'Closest and most overdue relationships come first.';
+    final circleCounts = <RelationshipCircle, int>{
+      for (final circle in RelationshipCircle.values)
+        circle: statuses.where((status) => status.circle == circle).length,
     };
-    for (final contact in contacts) {
-      grouped[relationshipCircleOf(contact)]!.add(contact);
-    }
+    final circleAttentionCounts = <RelationshipCircle, int>{
+      for (final circle in RelationshipCircle.values)
+        circle: attention.where((status) => status.circle == circle).length,
+    };
+    final totalPeople = statuses.length;
+    final peopleLabel =
+        '$totalPeople ${totalPeople == 1 ? 'person' : 'people'}';
     return Scaffold(
       appBar: AppBar(
         title: const Text('Relationships'),
@@ -185,11 +302,6 @@ class _RelationshipsViewState extends State<RelationshipsView> {
           ?widget.menuAction,
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addPerson,
-        icon: const Icon(Icons.person_add_alt_1_outlined),
-        label: const Text('Add person'),
-      ),
       body: Stack(
         children: [
           ListView(
@@ -205,18 +317,143 @@ class _RelationshipsViewState extends State<RelationshipsView> {
               ),
               const SizedBox(height: 5),
               Text(
-                'Remember the person, keep a rhythm',
+                'Keep the people who matter in view',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w300,
                 ),
               ),
-              const SizedBox(height: 16),
-              if (suggestions.isNotEmpty)
-                _NextContactsCard(
-                  suggestions: suggestions,
-                  onOpen: _openPerson,
+              const SizedBox(height: 4),
+              Text(
+                '$peopleLabel · ${attention.length} need attention',
+                style: const TextStyle(color: PlenaraTheme.quietInk),
+              ),
+              const SizedBox(height: 14),
+              SearchBar(
+                key: const Key('relationships-search'),
+                controller: _searchController,
+                hintText: 'Find a person in any circle',
+                leading: const Icon(Icons.search_rounded),
+                trailing: [
+                  if (_query.isNotEmpty)
+                    IconButton(
+                      tooltip: 'Clear search',
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _query = '');
+                      },
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                ],
+                onChanged: (value) => setState(() => _query = value),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Browse by circle',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  TextButton.icon(
+                    key: const Key('relationships-organize'),
+                    onPressed: statuses.isEmpty ? null : _toggleOrganizing,
+                    icon: Icon(
+                      _organizing
+                          ? Icons.close_rounded
+                          : Icons.groups_2_outlined,
+                      size: 18,
+                    ),
+                    label: Text(_organizing ? 'Done' : 'Organize'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              SizedBox(
+                height: 42,
+                child: SingleChildScrollView(
+                  key: const Key('relationship-circle-filters'),
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      ChoiceChip(
+                        key: const Key('relationships-filter-focus'),
+                        selected: isFocus,
+                        avatar: const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 16,
+                        ),
+                        label: Text('Focus · ${attention.length}'),
+                        onSelected: (_) => _showFocus(),
+                      ),
+                      const SizedBox(width: 7),
+                      for (final circle in RelationshipCircle.values) ...[
+                        ChoiceChip(
+                          key: Key('relationships-filter-${circle.name}'),
+                          selected:
+                              normalizedQuery.isEmpty &&
+                              _selectedCircle == circle,
+                          label: Text(
+                            '${relationshipCircleLabel(circle)} · ${circleCounts[circle]}',
+                          ),
+                          avatar: circleAttentionCounts[circle] == 0
+                              ? null
+                              : CircleAvatar(
+                                  child: Text(
+                                    '${circleAttentionCounts[circle]}',
+                                  ),
+                                ),
+                          onSelected: (_) => _showCircle(circle),
+                        ),
+                        const SizedBox(width: 7),
+                      ],
+                      ChoiceChip(
+                        key: const Key('relationships-filter-all'),
+                        selected:
+                            normalizedQuery.isEmpty &&
+                            _showAllPeople &&
+                            _selectedCircle == null,
+                        label: Text('All · $totalPeople'),
+                        onSelected: (_) => _showEveryone(),
+                      ),
+                    ],
+                  ),
                 ),
-              if (contacts.isEmpty)
+              ),
+              const SizedBox(height: 16),
+              if (_organizing)
+                Card(
+                  color: const Color(0xFF241B17),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${_selectedPeople.length} selected',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _selectedPeople.isEmpty
+                              ? null
+                              : () => setState(_selectedPeople.clear),
+                          child: const Text('Clear'),
+                        ),
+                        FilledButton.icon(
+                          key: const Key('relationships-move-selected'),
+                          onPressed: _selectedPeople.isEmpty
+                              ? null
+                              : _moveSelected,
+                          icon: const Icon(Icons.drive_file_move_outline),
+                          label: const Text('Move'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              if (statuses.isEmpty)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -237,42 +474,51 @@ class _RelationshipsViewState extends State<RelationshipsView> {
                   ),
                 )
               else ...[
-                for (final circle in RelationshipCircle.values)
-                  if (grouped[circle]!.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 5),
-                      child: Row(
-                        children: [
-                          Text(
-                            relationshipCircleLabel(circle),
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const Spacer(),
-                          Text(
-                            '${grouped[circle]!.length}',
-                            style: const TextStyle(
-                              color: PlenaraTheme.quietInk,
-                            ),
-                          ),
-                        ],
+                Text(title, style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: PlenaraTheme.quietInk),
+                ),
+                const SizedBox(height: 8),
+                if (selectedStatuses.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Text(
+                        normalizedQuery.isNotEmpty
+                            ? 'No one matches “${_query.trim()}”.'
+                            : isFocus
+                            ? 'You’re caught up. No relationship goal needs attention right now.'
+                            : 'No one is in this circle yet.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: PlenaraTheme.quietInk),
                       ),
                     ),
-                    for (final contact in grouped[circle]!)
-                      Card(
-                        child: ListTile(
-                          key: Key('relationship-person-${contact['id']}'),
-                          leading: const CircleAvatar(
-                            child: Icon(Icons.person_outline),
-                          ),
-                          title: Text('${contact['displayName']}'),
-                          subtitle: Text(
-                            _statusLine(statuses['${contact['id']}']),
-                          ),
-                          trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () => _openPerson('${contact['id']}'),
-                        ),
+                  )
+                else
+                  for (final status in selectedStatuses)
+                    _RelationshipRow(
+                      status: status,
+                      selected: _selectedPeople.contains(status.contactId),
+                      organizing: _organizing,
+                      onTap: () => _selectStatus(status),
+                      onMove: (circle) => _movePerson(status.contactId, circle),
+                    ),
+                if (isFocus &&
+                    !_showAllAttention &&
+                    attention.length > selectedStatuses.length)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      key: const Key('relationships-show-all-attention'),
+                      onPressed: () => setState(() => _showAllAttention = true),
+                      icon: const Icon(Icons.expand_more_rounded),
+                      label: Text(
+                        'Show all ${attention.length} needing attention',
                       ),
-                  ],
+                    ),
+                  ),
               ],
             ],
           ),
@@ -283,43 +529,139 @@ class _RelationshipsViewState extends State<RelationshipsView> {
   }
 }
 
-class _NextContactsCard extends StatelessWidget {
-  final List<RelationshipStatus> suggestions;
-  final Future<void> Function(String contactId) onOpen;
+class _RelationshipRow extends StatelessWidget {
+  final RelationshipStatus status;
+  final bool selected;
+  final bool organizing;
+  final VoidCallback onTap;
+  final ValueChanged<RelationshipCircle> onMove;
 
-  const _NextContactsCard({required this.suggestions, required this.onOpen});
+  const _RelationshipRow({
+    required this.status,
+    required this.selected,
+    required this.organizing,
+    required this.onTap,
+    required this.onMove,
+  });
 
   @override
   Widget build(BuildContext context) => Card(
-    color: const Color(0xFF241B17),
-    margin: const EdgeInsets.only(bottom: 18),
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 10, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Who to contact next',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 2),
-          const Text(
-            'Based on your touch and meaningful-connection goals.',
-            style: TextStyle(color: PlenaraTheme.quietInk),
-          ),
-          const Divider(height: 22),
-          for (final status in suggestions)
-            ListTile(
-              key: Key('next-contact-${status.contactId}'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(status.displayName),
-              subtitle: Text(_suggestionLine(status)),
-              trailing: TextButton(
-                child: const Text('Open'),
-                onPressed: () => onOpen(status.contactId),
+    margin: const EdgeInsets.only(bottom: 7),
+    child: ListTile(
+      key: Key('relationship-person-${status.contactId}'),
+      selected: selected,
+      leading: organizing
+          ? Checkbox(
+              key: Key('relationship-select-${status.contactId}'),
+              value: selected,
+              onChanged: (_) => onTap(),
+            )
+          : CircleAvatar(
+              backgroundColor: status.needsContact
+                  ? PlenaraTheme.amber.withValues(alpha: 0.16)
+                  : null,
+              child: Text(
+                status.displayName.trim().isEmpty
+                    ? '?'
+                    : status.displayName.trim().characters.first.toUpperCase(),
               ),
             ),
-        ],
+      title: Text(status.displayName),
+      subtitle: Text(
+        '${relationshipCircleLabel(status.circle)} · ${status.needsContact ? _suggestionLine(status) : _statusLine(status)}',
+      ),
+      trailing: organizing
+          ? null
+          : PopupMenuButton<RelationshipCircle>(
+              key: Key('relationship-move-${status.contactId}'),
+              tooltip: 'Move ${status.displayName} to another circle',
+              onSelected: onMove,
+              itemBuilder: (_) => [
+                for (final circle in RelationshipCircle.values)
+                  PopupMenuItem(
+                    key: Key(
+                      'relationship-move-${status.contactId}-${circle.name}',
+                    ),
+                    value: circle,
+                    enabled: circle != status.circle,
+                    height: 64,
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 28,
+                          child: circle == status.circle
+                              ? const Icon(Icons.check_rounded, size: 18)
+                              : null,
+                        ),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(relationshipCircleLabel(circle)),
+                              Text(
+                                _circleCadence(circle),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Move'),
+                    SizedBox(width: 2),
+                    Icon(Icons.expand_more_rounded, size: 18),
+                  ],
+                ),
+              ),
+            ),
+      onTap: onTap,
+    ),
+  );
+}
+
+class _CirclePicker extends StatelessWidget {
+  final int count;
+
+  const _CirclePicker({required this.count});
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Move $count ${count == 1 ? 'person' : 'people'}',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'People who move inherit this circle’s contact goals. Existing members keep their custom goals.',
+              style: TextStyle(color: PlenaraTheme.quietInk),
+            ),
+            const SizedBox(height: 10),
+            for (final circle in RelationshipCircle.values)
+              ListTile(
+                key: Key('relationships-bulk-circle-${circle.name}'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(relationshipCircleLabel(circle)),
+                subtitle: Text(_circleCadence(circle)),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.pop(context, circle),
+              ),
+          ],
+        ),
       ),
     ),
   );
@@ -1488,6 +1830,30 @@ String _presetDescription(RelationshipPreset preset) => switch (preset) {
   RelationshipPreset.secondDegree => 'Second-degree · no reminders',
   RelationshipPreset.household => 'Core context · no reminders',
   RelationshipPreset.contextOnly => 'Remember details · no reminders',
+};
+
+String _circleCadence(RelationshipCircle circle) {
+  final touch = relationshipCircleTouchDays[circle];
+  final meaningful = relationshipCircleMeaningfulDays[circle];
+  if (touch == null && meaningful == null) return 'History only · no reminders';
+  final parts = <String>[
+    if (touch != null) 'touch every $touch days',
+    if (meaningful != null) 'meaningful every $meaningful days',
+  ];
+  return parts.join(' · ');
+}
+
+String _circleDescription(RelationshipCircle circle) => switch (circle) {
+  RelationshipCircle.core =>
+    'Your innermost circle. Weekly touch and meaningful connection every two weeks.',
+  RelationshipCircle.close =>
+    'Important relationships. Touch every two weeks and connect meaningfully each month.',
+  RelationshipCircle.connected =>
+    'People you actively want in your life. Monthly touch and meaningful connection every two months.',
+  RelationshipCircle.warm =>
+    'Dormant or distant ties to keep alive with a touch about every three months.',
+  RelationshipCircle.context =>
+    'People whose details matter, without contact reminders.',
 };
 
 IconData _mediumIcon(String medium) => switch (medium) {

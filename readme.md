@@ -8,6 +8,11 @@ plans without making voice carry persistent state alone. Plena—the warm partic
 presence—moves between a full conversational form, a compact planner collaborator,
 and a detail ember.
 
+Relationships opens on a bounded, urgency-ranked Focus view instead of the full
+address book. Global search and circle filters reach everyone, while visible
+single-person and bulk Move actions keep circles and their inherited contact goals
+easy to maintain.
+
 Common planning and routing run locally. Optional Anthropic features use the
 user's own API key and disclose the record categories sent for each feature.
 Records are readable JSON files in a user-selected folder; the execution journal

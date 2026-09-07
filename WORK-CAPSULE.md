@@ -1,6 +1,33 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-07 for the code-to-spec alignment audit._
+_Current working memory. Last updated 2026-09-07 for the actionable Relationships home._
+
+## Actionable Relationships home (2026-09-07)
+
+- Relationships now opens on a bounded **Focus** queue of at most eight people whose touch or
+  meaningful-connection goal needs attention. Global search reaches every person, while live
+  circle counts, due badges, and Focus/Core/Close/Keep connected/Keep warm/Context only/All filters
+  make a large address book navigable without reverting to a flat alphabetical default.
+- Circle and All views remain urgency-first. Every person row exposes a visible **Move** action;
+  **Organize** supports multi-select and moves a batch to a new circle as one durable undoable
+  mutation. Moved people inherit the destination circle's goals, while people already in that
+  circle retain any custom goal overrides.
+- The newest undo result now replaces an older transient result instead of waiting behind its
+  five-second display window. This keeps rapid direct and bulk organization feedback truthful.
+- The widget verifier was calibrated against the former flat home, a non-scrolling circle picker,
+  queued stale feedback, and the obstructed duplicate Add-person button; each failed before its
+  production correction passed. The atomic engine check likewise failed when only one selected
+  record was written, then passed after restoring the single coordinated batch. The documentation
+  guard rejected the retired circle-grouped-home claim before the active specs were corrected.
+- A production-theme iPhone 17 Pro Max simulator passed the complete real-engine product journey
+  and the focused Relationships capture. The rendered header, filters, due row, and Move action
+  were inspected in `app/build/simulator-check/relationships-header-actions.png`; the app and the
+  simulator started for this verification were stopped, and no physical phone was used.
+- Final full precheck is green: 2,064 engine tests + 36 intentional skips; 202 Flutter tests + 4
+  channel skips; 95.7% deterministic-core, 89.6% product-logic, and 83.8% transport coverage;
+  analyzers, seed sync, documentation consistency, import layering, render guards,
+  external-channel checks, macOS build, eight real-engine cases, secret scan, and the 24/60
+  conformance ratchet.
 
 ## Code-to-spec alignment audit (2026-09-07)
 
@@ -45,10 +72,12 @@ _Current working memory. Last updated 2026-09-07 for the code-to-spec alignment 
   former 7/21/60 or custom touch cadence remains authoritative and they gain no meaningful clock
   until explicitly recategorized. Legacy interactions migrate to v3 without rewrites and derive
   depth from medium when projected.
-- The Relationships home is grouped by circle. Person detail exposes categories, circle, both goals,
-  roles, proximity, lifecycle, introducer, facts, contact actions, and depth-aware interaction
-  history. Contacts import includes a compact organization step, defaults new people to Context
-  only, and never overwrites an existing relationship plan while refreshing contact details.
+- The Relationships home opens on a bounded urgency-first Focus queue, with global search, live
+  circle counts and due badges, circle/All filters, direct Move actions, and an atomic bulk Organize
+  flow. Person detail exposes categories, circle, both goals, roles, proximity, lifecycle,
+  introducer, facts, contact actions, and depth-aware interaction history. Contacts import includes
+  a compact organization step, defaults new people to Context only, and never overwrites an
+  existing relationship plan while refreshing contact details.
 - Voice can categorize a named person, pause/resume their suggestions, set either goal to an exact
   number of days, ask who is due, and suffix ordinary interaction language with Quick or Meaningful.
 - Domain cadence, import-preservation, voice-depth, schema-migration, interaction UI, and import UI

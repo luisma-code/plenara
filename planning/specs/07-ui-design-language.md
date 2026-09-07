@@ -57,8 +57,9 @@ no concrete sealed `TurnEvent` UI stream today. Widgets must not call storage, r
 directly; a future sealed event vocabulary may formalize the already-centralized boundary.
 
 **P6 — Act-then-describe is the tempo (research §15.1, Spec 05 §3.1).** Undoable direct actions
-act and then describe. Manual edits/deletes expose a five-second targeted Undo snackbar and remain
-recoverable through durable History; spoken undo uses the same execution journal. Non-undoable
+act and then describe. Manual edits/deletes expose a five-second targeted Undo snackbar; a newer
+completed action replaces older transient feedback instead of waiting behind it. Writes remain
+recoverable through durable History, and spoken undo uses the same execution journal. Non-undoable
 type/skill deletion confirms first. Sheets and dialogs are also used for precise editing, import,
 settings, and other bounded workflows, so deletion is not the app's sole modal.
 
@@ -287,7 +288,8 @@ result.
 
 The workhorse. A single-line assistant turn: the type's glyph in its accent tint, the resolved `confirmationText` (Spec 02 §7.1 — never free text composed by the UI), and a quiet **Undo** chip.
 
-- Current manual edits and deletes show a targeted Undo snackbar for five seconds. Durable History
+- Current manual edits and deletes show a targeted Undo snackbar for five seconds. A newer result
+  replaces the current snackbar so rapid edits never queue stale confirmations. Durable History
   retains targeted undo entries after that transient affordance; spoken “undo that” goes through
   the execution journal. Undo is therefore not limited to a single visible latest line.
 - The line is a doorway to the record (§2.2). For multi-write turns (F-07's three writes) there is still **one** line and one undo (atomic per Spec 05 §3.5); the doorway opens the primary record with the side-created records chip-linked.

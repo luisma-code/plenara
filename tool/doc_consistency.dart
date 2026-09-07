@@ -190,6 +190,7 @@ void main() {
     'planning/specs/17-living-planner.md': [
       'passes 1,922 engine',
       'The latest final-tree gate after the 2026-08-19',
+      'a circle-grouped home rather than a flat address book',
     ],
     'planning/specs/06-data-sync.md': [
       'index/                              ← CapabilityIndex binaries',

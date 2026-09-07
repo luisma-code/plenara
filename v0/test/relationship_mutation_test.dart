@@ -194,6 +194,44 @@ void main() {
     expect(session.store[id]?['primaryPhone'], '+15551212');
   });
 
+  test('moving several people between circles is atomic and undoable',
+      () async {
+    final session = await _session();
+    for (final (name, preset) in [
+      ('Mia', RelationshipPreset.closeRemoteFriend),
+      ('Jo', RelationshipPreset.contextOnly),
+    ]) {
+      await session.createRecord('contact', {
+        'displayName': name,
+        ...relationshipPresetFields(preset),
+      });
+    }
+    final contacts = {
+      for (final contact in session.store.values
+          .where((record) => record['typeId'] == 'contact'))
+        '${contact['displayName']}': '${contact['id']}',
+    };
+    await session.editField(contacts['Mia']!, 'touchFrequencyDays', 17);
+
+    final moved = await session.setRelationshipCircles(
+      contacts.values,
+      RelationshipCircle.connected,
+    );
+
+    expect(moved.ok, isTrue);
+    expect(moved.message, 'Moved 2 people to Keep connected.');
+    expect(
+      contacts.values.map((id) => session.store[id]?['relationshipCircle']),
+      everyElement('connected'),
+    );
+    expect(session.store[contacts['Mia']]?['touchFrequencyDays'], isNull);
+
+    expect(await session.undoById(moved.undoId!), contains('Undone'));
+    expect(session.store[contacts['Mia']]?['relationshipCircle'], 'close');
+    expect(session.store[contacts['Mia']]?['touchFrequencyDays'], 17);
+    expect(session.store[contacts['Jo']]?['relationshipCircle'], 'context');
+  });
+
   test('voice assigns relationship categories, pauses, and reports due people',
       () async {
     final session = await _session();

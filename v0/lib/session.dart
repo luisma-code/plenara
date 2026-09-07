@@ -3370,7 +3370,92 @@ class Session {
 
   Future<ManualWrite> setRelationshipCircle(
           String id, RelationshipCircle circle) =>
-      editFields(id, relationshipCircleFields(circle));
+      setRelationshipCircles([id], circle);
+
+  /// Move one or more people between relationship circles as one durable,
+  /// undoable action. People already in the destination keep their custom goal
+  /// overrides; people that actually move inherit the destination defaults.
+  Future<ManualWrite> setRelationshipCircles(
+          Iterable<String> ids, RelationshipCircle circle) =>
+      _serialized(() => _setRelationshipCirclesUnlocked(ids, circle));
+
+  Future<ManualWrite> _setRelationshipCirclesUnlocked(
+      Iterable<String> ids, RelationshipCircle circle) async {
+    final uniqueIds = ids.toSet().toList(growable: false);
+    if (uniqueIds.isEmpty) {
+      return const ManualWrite.fail('Choose at least one person to move.');
+    }
+    final writes = <Map<String, dynamic>>[];
+    final names = <String>[];
+    final fields = relationshipCircleFields(circle);
+    for (final id in uniqueIds) {
+      final current = store[id];
+      if (current == null || current['typeId'] != 'contact') {
+        return const ManualWrite.fail(
+          'One of those people no longer exists, so no one was moved.',
+        );
+      }
+      if (current['relationshipCircle'] == circle.name) continue;
+      final updated = Map<String, dynamic>.from(current);
+      for (final entry in fields.entries) {
+        if (entry.value == null) {
+          updated.remove(entry.key);
+        } else {
+          updated[entry.key] = entry.value;
+        }
+      }
+      try {
+        const ValueCodec().validateRecord(
+          types['contact']!,
+          updated,
+          records: store,
+          dataRoot: dataDir,
+        );
+      } on ValueCodecError catch (error) {
+        return ManualWrite.fail(error.message);
+      }
+      writes.add(updated);
+      names.add('${current['displayName'] ?? 'Someone'}');
+    }
+    final destination = relationshipCircleLabel(circle);
+    if (writes.isEmpty) {
+      return ManualWrite.ok(
+        uniqueIds.length == 1
+            ? 'Already in $destination.'
+            : 'Everyone selected is already in $destination.',
+      );
+    }
+    final result = _executeMutation(
+      writes: writes,
+      deletes: const [],
+      origin: 'manual-edit',
+      description:
+          'moved ${writes.length} contact${writes.length == 1 ? '' : 's'} to $destination',
+      frozenInputs: {
+        'recordIds': uniqueIds,
+        'relationshipCircle': circle.name,
+      },
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite ||
+        result.record == null) {
+      return const ManualWrite.fail(
+        "Couldn't start that move safely, so nothing changed.",
+      );
+    }
+    _clearSpokenCorrectionContext();
+    try {
+      automations.notifyWrites(writes);
+    } catch (_) {/* contained */}
+    final description = writes.length == 1
+        ? 'Moved ${names.single} to $destination.'
+        : 'Moved ${writes.length} people to $destination.';
+    return ManualWrite.ok(
+      result.state == ExecutionResultState.appliedInMemory
+          ? "$description Saving didn't finish, so I'll recover it next launch."
+          : description,
+      undoId: result.record!.id,
+    );
+  }
 
   Future<ManualWrite> _editFieldsUnlocked(
       String id, Map<String, Object?> values) async {

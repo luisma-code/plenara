@@ -44,9 +44,11 @@ only a development experiment; ordinary dogfood never needs a companion server.
 - **Inspect and revise:** tap a Todo body to open its detail editor; use Library for people,
   goals, routines, trackers, journal, projects/areas, learned phrases, automations, and the complete
   data browser.
-- **Relationships:** assign circles/categories, tune touch and meaningful-connection goals, remember
-  facts, log Quick or Meaningful interactions with their medium, link commitments to people, and
-  respond to relationship-date suggestions with Keep, Tomorrow, or Dismiss.
+- **Relationships:** start from the bounded Focus list, search globally, filter by circle, use each
+  row's Move control, and use Organize to move several people in one undoable action. Then tune touch
+  and meaningful-connection goals, remember facts, log Quick or Meaningful interactions with their
+  medium, link commitments to people, and respond to relationship-date suggestions with Keep,
+  Tomorrow, or Dismiss.
 - **Habits:** create a repeated practice, set its weekly target, check in once per local day, and
   pause/resume it without turning it into a recurring Todo.
 - **Voice:** tap to start, tap again to stop and send, or use ×/mute to discard. Interim text may
