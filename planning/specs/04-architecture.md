@@ -1,9 +1,13 @@
 # Spec 04 — Architecture
 
-**Status:** v0.5 — durable execution spine implemented 2026-08-17; remaining destination seams are explicitly marked
+**Status:** Active v0.6 — audited 2026-09-07. `Session`, `ExecutionCoordinator`, the durable local
+journals, serial operation center, storage/reconciliation, native reminder adapters, local search,
+and voice controllers are wired. Named extraction interfaces and worker-isolate topology remain
+destinations only where explicitly marked.
 **Depends on:** Spec 01 — Meta-Schema & Type System (§4.4, §5, §7, §8); Spec 02 — Skill DSL (§2.3, §4, §5, §7.5); Spec 03 — NLU / Intent (§2.3, §2.6, §2.7, §3.5, §5); Research doc §2.5, §8, §9  
 **Blocks:** Spec 05 — Functional; Spec 06 — Data & Sync; Spec 07 — UI; Spec 09 — Test
-**Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
+**Precedence:** wired behavior is current truth; this active spec records its contract. The research
+document and 05a–05f artifacts preserve rationale and evaluation history.
 
 ---
 
@@ -56,8 +60,8 @@ Five layers. The research doc §9.1 table is refined here with the concrete comp
 | Layer | Responsibility | Owns (components) | Depends on (interfaces) | Must not know |
 |---|---|---|---|---|
 | **UI** | Render view state; emit user events; map types to view archetypes; host confirmation surfaces | View models, archetype renderers, the confirmation/clarification widgets | Business Logic (via an app-facing façade + an event/state stream) | Storage, Intelligence, Voice internals; business rules |
-| **Business Logic** | Validate, transform, apply rules; run the interpreter; own the dispatch turn, automations, generation, and undo; drive migration and reconciliation | `DispatchOrchestrator`, `SkillInterpreter`, `SchemaRegistry`, `MigrationRunner`, `AuthoringService`, `ExecutionJournal`, `AutomationRunner`, `GenerativeService`, `AttentionSurface` | Storage, Intelligence, Voice contracts | How data is stored; how a model works internally |
-| **Storage** | Read/write per-record JSON (type-agnostic); own the in-memory decrypted object store; observe external changes where supported; encryption at rest | `StorageRepository`, the object store/cache, the reconcile event adapter, `CryptoBox` | File system / content URIs; the meta-schema shape only | Business rules, UI, AI |
+| **Business Logic** | Validate, transform, apply rules; run the interpreter; own the dispatch turn, automations, generation, and undo; drive migration and reconciliation | Current: `Session`, `SkillInterpreter`, `SchemaRegistry`, `ExecutionCoordinator`, `ExecutionJournal`, automation/generative services and operation state. Destination extractions: `DispatchOrchestrator`, `AuthoringService`, `AttentionSurface` | Storage, Intelligence, Voice contracts | How data is stored; how a model works internally |
+| **Storage** | Read/write per-record JSON (type-agnostic); own the in-memory object store; observe external changes where supported | `StorageRepository`, the object store/cache, and reconcile adapter. `CryptoBox` is a destination; current files are plaintext | File system / content URIs; the meta-schema shape only | Business rules, UI, AI |
 | **Intelligence** | NLU routing & extraction; cloud calls; type/skill authoring; the corrections corpus | `NluRouter`, `ClaudeClient`, the corpus store | Business Logic contracts (intent/type/skill schemas), the `CapabilityIndex` (read-only) | Storage internals, UI |
 | **Voice** | STT, TTS, tap-toggle capture / future wake-word; signal one final transcript | `SpeechRecognizer` + `SpeechOutput` (the `SpeechEngine` target contract is historical) | Business Logic (delivers transcripts; receives text to speak) | Storage, UI, business rules |
 
@@ -68,15 +72,28 @@ Two components sit across the Storage↔Business seam and deserve naming now, be
 The layers form a **directed acyclic dependency graph with the Business Logic layer's *contracts* at the center**. Concretely:
 
 - **Dependencies are on interfaces, never implementations.** Business Logic holds a `StorageRepository`, not a `LocalJsonStorage`; a `ClaudeClient`, not an `AnthropicHttpClient`. Concrete types are constructed once, at the composition root (§2.3), and injected downward.
-- **The Intelligence and Voice layers are leaves, not intermediaries.** A turn does not flow UI → Voice → Intelligence → Storage as a pipe. It flows through the **Business Logic layer's `DispatchOrchestrator`**, which calls each contract in turn (§3.5, §4.2). Voice hands a transcript *to* Business Logic; Intelligence returns an `Intent` *to* Business Logic; neither calls the other, and neither calls Storage's implementation. This is the structural expression of "Code over AI": the deterministic orchestrator is the spine, and the model-bearing layers hang off it.
-- **No back-references.** Storage never calls Business Logic; Intelligence never calls UI. Where a lower layer must inform an upper one of an asynchronous event (a file changed on disk, a final transcript arrived), it does so by emitting on a **stream the upper layer subscribes to** (`Stream<FileChangeEvent>`, `Stream<Transcript>`), not by holding a reference to the caller. Data flows down through calls and up through streams.
-- **The meta-schema is the one shared vocabulary.** Storage is "type-agnostic" (Spec 01 §5) but not schema-ignorant: it knows the *kernel* shape (a record has an `id`, `typeId`, `schemaVersion`, timestamps, a `fields` object, an optional `encryptedPayload`, §3.1, Spec 01 §8.2) so it can persist and index any record without knowing any specific type. Specific type semantics live only in Business Logic's `SchemaRegistry`.
+- **The Intelligence and Voice layers are leaves, not intermediaries.** A turn does not flow UI →
+  Voice → Intelligence → Storage as a pipe. It currently flows through `Session`, adapted by
+  `VoiceTurnController`; the standalone `DispatchOrchestrator` below is the extraction design.
+  Voice hands text to Business Logic and Intelligence returns an `Intent`; neither calls the other
+  or Storage's implementation.
+- **No back-references.** Storage never calls Business Logic; Intelligence never calls UI. Current
+  asynchronous voice state arrives through callbacks/streams owned by the adapter. The generic
+  `FileChangeEvent` and `Transcript` streams below are destination vocabulary, not current types.
+- **The meta-schema is the one shared vocabulary.** Storage is type-agnostic but knows the current
+  record envelope (`id`, `typeId`, `schemaVersion`, `createdAt`, `fields`, `_meta`, optional
+  `parentId`). No `encryptedPayload` is written today. Specific type semantics live in Business
+  Logic's `SchemaRegistry`.
 
 ### 2.3 Composition Root and Wiring
 
 Because every dependency is an interface, something must choose the concrete implementations. That is the **composition root**: a single `AppContainer` constructed at launch (`main()`), before any layer runs, which instantiates each concrete component and injects it into the layer above. It is the *only* place in the codebase where concrete implementation types are named. This keeps the dependency rule mechanically checkable: a lint/import rule forbids any file outside the composition root from importing a concrete `*Impl` class across a layer boundary, so a violation is a build failure, not a code-review miss (§5 of the Test spec makes this a CI gate).
 
-Platform-specific implementations (the `SpeechEngine` backed by iOS `SpeechAnalyzer` vs Windows SAPI, the `CryptoBox` backed by Keychain/Secure Enclave vs DPAPI/TPM, Spec 01 §8.7) are selected here by platform channel at construction time. *(Naming note, Spec 12 X3: the Voice layer's seams are `SpeechInput`/`SpeechOutput` per Spec 12 §2.1 — adopting Spec 09 §3.1's names — with `SpeechEngine` retained as the collective/layer name used in the tables here.)* The layers above receive the same interface on every platform; portability is a composition-root concern, never a business-logic one.
+Platform implementations are selected in the Flutter/engine bootstrap. Current voice seams are
+callback-based `SpeechRecognizer` and `SpeechOutput`; current storage is plaintext and no
+`CryptoBox` implementation exists. `SpeechAnalyzer` and platform key-backed encryption remain
+destinations. The layers above receive common interfaces where those seams exist; portability is a
+composition-root concern.
 
 **Component inventory** (each maps to exactly one layer; the interface is in §3):
 
@@ -106,9 +123,13 @@ This section gathers every layer-boundary interface in one place. Contracts alre
 
 A convention that runs through all of them: **fallible operations return a typed result or throw a typed, translated error** (§5.1), never a raw `Exception` or a bare `null` that means "something went wrong." A `null` in these signatures always means a specific, documented "absent" (no such record, no such type), never a failure.
 
-### 3.1 Storage Layer — `StorageRepository`, `CryptoBox`
+### 3.1 Storage Layer — current `StorageRepository`, destination `CryptoBox`
 
-The Storage layer is type-agnostic (Spec 01 §5): it persists and serves *records* whose only universal shape is the meta-schema kernel envelope (described below). It owns the in-memory decrypted object store — the spine every read is served from — and the platform-capable reconciliation event adapter (§4.5).
+The current `StorageRepository` is synchronous and deliberately small: `loadDefs`, `loadRecords`,
+`persist`, `remove`, learned-corpus reads/writes, definition writes/removal, and diagnostic logging.
+`FileStorageRepository` wraps the per-record JSON store; `Session` owns the resulting in-memory map.
+Records are plaintext. The richer async/encrypted contract below is a destination sketch retained
+for the deferred encryption and provider-watcher work; it is not the source interface today.
 
 ```dart
 abstract class StorageRepository {
@@ -147,17 +168,10 @@ abstract class StorageRepository {
   /// CryptoBox.keyAvailable is false, the write fails with a CryptoError
   /// surface (§5.2) rather than persisting the value in plaintext.
   ///
-  /// **v1 ENCRYPTION POSTURE — normative until Spec 01 §8.7 ships (the deferred
-  /// feature).** While at-rest encryption is deferred, `CryptoBox` is a
-  /// PASS-THROUGH: `keyAvailable` is always true, `sensitiveFields` is recorded on
-  /// the envelope but NOT enforced, sensitive values (including the journal and
-  /// contact notes/facts, Spec 01 §12.3) persist as PLAINTEXT JSON that syncs, and
-  /// the CryptoError / `lockedRecords` / AttentionSurface-locked surfaces are
-  /// inert. The paragraph above is the contract that ACTIVATES when §8.7 is
-  /// scheduled; onboarding states the current posture honestly (§8.7). This
-  /// resolves the apparent contradiction between this section (and §3.14 /
-  /// Spec 02 §5.2) and the Spec 01 §8.7 deferral: without this note an implementer
-  /// following §3.1 literally would fail every journal/sensitive write in v1.
+  /// **Current posture:** this whole encrypted write signature is unimplemented.
+  /// The shipped synchronous repository persists every field as plaintext JSON.
+  /// It must not grow `sensitiveFields` until the CryptoBox and locked-record
+  /// behavior arrive together under Spec 01 §8.7.
   Future<void> write(Record record, {Set<String> sensitiveFields = const {}});
 
   /// Delete one record (file + store), writing a tombstone so sync propagates
@@ -173,7 +187,11 @@ abstract class StorageRepository {
 }
 ```
 
-**Two shapes, one boundary — do not conflate them (a v0.1 modeling gap).** The `Record` that `read`/`readMany`/`readChildren`/`readViaRelation` return and `write` accepts is the **in-memory, fully-decrypted** form — `{ id, typeId, schemaVersion, createdAt, lastModified, parentId?, fields: Map<String,Object?> }` (where `lastModified` is a **derived** value, `max(stamps).ms` per Spec 06 §4.1 D5 — it is not stored on the record envelope; type/skill *definition* files, which have no `_meta` stamps, do keep a stored `lastModified`, Spec 01 §4.2), where `fields` holds *every* attribute value, sensitive or not, in the clear (Spec 01 §8.2: "the in-memory cache always holds fully-decrypted values"). It carries **no** `encryptedPayload` — encryption is a property of the on-disk representation, not the runtime object. The **on-disk envelope** is the split form Spec 01 §8.2 shows: plaintext `fields` (non-sensitive attributes, queryable on disk) plus a single `encryptedPayload` blob (the sensitive attributes, sealed). Storage is the *only* component that crosses between the two: `hydrate`/reads open the payload via `CryptoBox` and merge it into the decrypted `fields`; `write` re-splits `fields` using the caller-supplied `sensitiveFields` set and seals that subset. Every layer above Storage sees only the decrypted `Record`; no other component ever holds an `encryptedPayload` or touches a key (§3.1 `CryptoBox`). Storage still never interprets `fields` against a type — it splits by the names it is handed, not by schema. Filters (`readMany`/`readChildren`/`readViaRelation`) are the Spec 02 §3.6 filter-expression form, evaluated in memory over the decrypted store, which is exactly why a filter over a `sensitive` attribute works (Spec 01 §8.2).
+**Current shape:** the in-memory record map and the on-disk envelope both expose the same plaintext
+`fields`; per-field HLC metadata lives in `_meta`, and `lastModified` is derived from its stamps.
+There is no current `Record` wrapper or encrypted split. **Destination shape:** when Spec 01 §8.7
+ships, Storage alone will split sensitive values into `encryptedPayload` on disk and reconstruct the
+complete in-memory fields. The pseudocode above specifies that future seam.
 
 `CryptoBox` isolates all key handling behind one interface so no other component touches a raw key (Spec 01 §8.7 keeps keys in the platform secure store, never in the synced folder):
 
@@ -210,7 +228,12 @@ Both are defined in full in Spec 01 and only summarized here so the layer's surf
 
 All production record mutations now pass through one synchronous, serial `ExecutionCoordinator` after resolve: ordinary skill writes, cloud multi-action batches, reference corrections, manual edit/delete, routine authoring and figure fill, workout correction, and automation approval. It validates projected writes through `ValueCodec`, freezes origin/input metadata, persists intent plus before-images before touching user records, checkpoints after every atomic operation, and resumes `prepared`, `applying`, or `reversing` entries at startup. Results are typed as `persisted`, `appliedInMemory`, `recovered`, `reversed`, `conflict`, or `failedBeforeWrite`, so the description cannot claim nothing changed after a partial storage failure.
 
-The current journal is one atomically replaced device-local `execution-journal.json`, capped at 25 terminal executions. This is an intentional implementation simplification from the per-execution-file destination below: execution is single-device and serial, so it does not create a shared-file sync race. Corrupt bytes are preserved beside the file and surfaced as a repair issue. The v1 at-rest posture remains the project-wide pass-through `CryptoBox` posture until Spec 01 §8.7 activates; device-local does not mean encrypted yet. Targeted undo checks that every affected record still matches the execution's after-image and refuses rather than overwriting a later edit. Undo and recovery use the same coordinator path; the old volatile fallback path no longer exists.
+The current journal is one atomically replaced device-local `execution-journal.json`, capped at 25
+terminal executions. Corrupt bytes are preserved beside the file and surfaced as a repair issue.
+No `CryptoBox` runtime exists: device-local does not mean encrypted. Targeted undo checks that every
+affected record still matches the execution's after-image and refuses rather than overwriting a
+later edit. Undo and recovery use the same coordinator path; the old volatile fallback path no
+longer exists.
 
 The interfaces below remain the richer destination contract for detached approvals, expiry, and asynchronous storage. They are not a claim that those unimplemented members already exist in the walking skeleton.
 
@@ -257,11 +280,16 @@ abstract class SkillInterpreter {
 }
 ```
 
-The **execute phase captures a before-image** for each write it applies — the target record's prior state, or a `created` marker when the write mints a new record (Spec 02 §4.4). Before-images are what make `undo` possible and are the one addition this spec asks of Spec 02's execution record (aligned in Spec 02 §5.4). They live only in the device-local, encrypted journal (§3.3, never synced), and are reaped with the entry at the end of the undo window (§3.11), so they add no synced-file or plaintext exposure.
+The **execute phase captures a before-image** for each write it applies — the target record's prior
+state, or a created marker when the write mints a new record. Before-images make targeted undo and
+restart recovery possible. They live in the plaintext device-local journal and are retained within
+its 25-terminal-entry bound; they are not synced.
 
 `ResolvedExecution` wraps the `ActionPlan` (the ordered, literal-valued pending writes — the source of both the after-the-fact description and, on a gated path, the review/confirmation payload, Spec 02 §4.1) plus the `executionId` keying its journal entry. `ExecuteOutcome` is one of `Done(confirmationText)`, `PlanChanged(newPlan)`, or a typed `ExecuteError`. Whether an approval gate sits between `resolve` and `execute` is decided by the *orchestrator* from the execution's **origin**, not by the interpreter and no longer by a per-skill `confirmationPolicy` (removed in Spec 02 §7.1): an interactive execution runs straight through and is described (act-then-describe); an unattended-automation execution with writes, or the type/skill-deletion meta-flow, holds for approval (§3.9, Spec 02 §7.5). Keeping `resolve` and `execute` as two calls is what lets the orchestrator interpose that gate where it applies — and, everywhere, capture the plan for the description and the before-images for undo — rather than collapsing to one opaque `run(skill)`.
 
-`ExecutionJournal` is the durable, device-local, encrypted-at-rest store of in-flight executions (Spec 02 §5.2). It is a Business Logic component (the interpreter's private durability), not a storage-layer concern, because its entries are execution *state*, not user records:
+`ExecutionJournal` is the durable, device-local, currently plaintext store of in-flight and recent
+terminal executions (Spec 02 §5.2). Its actual synchronous interface is in
+`v0/lib/execution_coordinator.dart`; the async interface below is a destination shape:
 
 ```dart
 abstract class ExecutionJournal {
@@ -360,6 +388,14 @@ abstract class ClaudeClient {
 `CloudResult<T>` is `Ok(T) | CloudError(kind, message)` — a *value*, not an exception, precisely so a caller cannot forget to handle the offline case (§5.1). The persisted daily/burst admission guard (Spec 03 §3.5) and the BYOK check live inside the client's one HTTP door, so `available` and a typed `rateLimited` result are the only things callers reason about.
 
 ### 3.6 Business Logic — `DispatchOrchestrator` (new)
+
+> **Current implementation boundary.** `Session.handle` owns the routing/resolution/execution/reply
+> sequence, pending clarifications/corrections, authoring, and generative admission. Flutter adapts
+> it through `VoiceTurnController.runTurn` and persists visible results in `ConversationLedger`.
+> There is no standalone `DispatchOrchestrator`, `Transcript`, sealed `TurnEvent` stream, or generic
+> `respond(promptId, …)` implementation. The interface/event vocabulary below is an extraction
+> design; current product behavior, `ExecutionCoordinator`, and durable operation state take
+> precedence over its pseudocode.
 
 Spec 03 §2.7 pinned the *contract* a dispatch orchestrator must satisfy and deliberately did not build it ("that is Architecture/UI"). This is its interface and its place in the layering. It is the **one component that touches both** the interpreter and NLU (Spec 03 §2.7); NLU never drives the interpreter and the interpreter never calls NLU. It owns a single turn end to end and is where the async pipeline of §4.2 is sequenced.
 
@@ -473,9 +509,13 @@ abstract class AuthoringService {
 
 `AuthoringOutcome` is one of `Activated(id)`, `Drafted(draftId, reason)` (offline or free-tier, with the reason surfaced), or a typed `AuthoringError`. The service is the *only* writer of new type/skill files, and it always routes the model's output through the deterministic validators before anything is registered — the architectural embodiment of "AI authors, code executes" (P2.7).
 
-### 3.8 Voice — `SpeechEngine` (restated)
+### 3.8 Voice — `SpeechRecognizer` and `SpeechOutput`
 
-Defined at research §9.2 and Spec 12 — Voice; summarized: `startListening()`, `stopListening()`, `speak(text)`, and a `Stream<Transcript>` that signals interim and **final** transcripts. Only the final transcript enters the dispatch pipeline (Spec 03 §10 MD10, §4.2 here). Backed by platform-native STT/TTS selected at the composition root (§2.3). Concretely the layer is the `SpeechInput`/`SpeechOutput` seam pair of Spec 12 §2.1 (Spec 09 §3.1's names, confirmed by Spec 12 X3); `SpeechEngine` names the collective. The Voice layer knows only the Business Logic seam; it never touches storage or the model.
+The shipped input seam is callback-based `SpeechRecognizer`: `listen` streams partial/final text
+through callbacks, `stop` finalizes, `cancel` discards, and `levels` drives Plena. `SpeechOutput`
+owns TTS lifecycle callbacks and stop/barge-in. Only the accumulated final string reaches
+`VoiceTurnController.send`/`Session.handle`. The stream-based `SpeechInput`/`Transcript` abstraction
+in older design work is not a current class. Voice never touches storage or the model.
 
 ### 3.9 Business Logic — `AutomationRunner` and the Review Feed (new)
 
@@ -667,7 +707,10 @@ delegation exists.
 
 ### 4.2 The Turn Pipeline as Async Stages
 
-One user turn is a sequence of awaited stages, sequenced by `DispatchOrchestrator.dispatch` (§3.6) and surfaced to the UI as a `Stream<TurnEvent>`. Each stage names the isolate it runs on:
+The diagram below is the destination/event-vocabulary view of a turn. Current sequencing lives in
+`Session.handle`, current UI state is exposed through `VoiceTurnController` and
+`ConversationLedger`, and there is no `Stream<TurnEvent>`. The stage order and write-barrier
+responsibilities remain current even where the class names are extraction targets:
 
 ```
 [Voice] final Transcript ──► emitted on SpeechEngine.stream          (UI isolate receives)
@@ -780,7 +823,12 @@ Net: nothing user-facing is served stale. The one cache (routing shape) is corre
 
 This section satisfies **P2.8 — no silent failure** end to end (§0 item 3): a sealed error set, a total mapping from every terminal error to an actionable surface, translation across seams, and the crash/repair consolidation.
 
-### 5.1 The sealed error model
+### 5.1 Destination sealed error model; current typed outcomes
+
+Current code combines typed result enums/classes (`CloudResult`, `ExecutionResult`,
+`ManualWrite`) with caught exceptions and user-facing strings. It does not implement one exhaustive
+sealed `PlenaraError` hierarchy across all layers. The table and hierarchy below are the desired
+consolidation contract, not a claim about the current class graph.
 
 Every fallible interface either returns a **value-typed result** for an *expected* outcome or throws a **sealed error** for an exceptional fault — never a raw exception across a boundary. Value results put the failure case in the type so a caller cannot forget it: `CloudResult<T> = Ok(T) | CloudError(kind, message)` (§3.5), and likewise `StorageResult`, `AuthoringOutcome` (§3.7), `GenerativeOutcome` (§3.10). Exceptional faults are a sealed `PlenaraError` hierarchy (Dart `sealed class` → exhaustive `switch`, so a new variant is a compile error until every surface handles it):
 
@@ -865,4 +913,8 @@ On launch, before the turn pipeline (§4.2) accepts any utterance, the app runs 
 6. Start the file watcher where supported (§4.5). An unsupported watcher completes empty and cannot block Ready; physical iOS has cold-open reconciliation until a native provider adapter exists.
 7. **Ready** — the dispatch gate opens (§4.5); the conflict-copy sweep and GC (Spec 06 §6.5/§7) run after the gate, off the critical path.
 
-The **execution** journal and plan cache are device-local/encrypted (never synced — volatile execution state), so they load from app-support; the corrections corpus (Lane 1), the user's **journal entries**, and all records load from the possibly-syncing storage folder (journal entries sync too, `G-37`). A file that fails to parse during hydration is routed to the repair surface (§5.5) and **does not block startup** — the rest of the store loads, so one corrupt record never bricks the app. A rejected custom type parks its dependent skills on that same repair surface; invalid user-authored capability closure never prevents unrelated skills from reaching Ready. No startup step touches the network.
+The **execution journal** is plaintext and device-local; the plan cache does not exist. The
+corrections corpus, journal entries, and all records load from the possibly syncing storage folder.
+A file that fails to parse is surfaced and does not block unrelated hydration. Invalid definitions
+remain inert without preventing unrelated capabilities from loading. No startup step touches the
+network.

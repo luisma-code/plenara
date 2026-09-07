@@ -3,10 +3,10 @@
 // traces a symbolic GLYPH from her own substance, then lets it drift home and rejoin (§5A).
 // Rendered with drawAtlas for one cheap pass.
 //
-// Live tuning (the Tune sheet), motion trails, and the glyph vocabulary are all in. The one thing
-// still approximated vs the mockup is TRUE frame persistence — trails here are per-frame velocity
-// echoes, not an accumulating buffer; a faithful version would ping-pong a ui.Image (toImageSync).
-// The director → PresenceFrame → renderer split is final in shape, so that's additive, not a rewrite.
+// Live tuning, glyphs, and capped ping-pong frame persistence are implemented on non-iOS targets.
+// iOS deliberately renders without the toImageSync feedback buffer until a supported trail path
+// passes the same perceptual and memory gates. The current frame value is private to this renderer;
+// Spec 15's public PresenceDirector/PresenceFrame extraction remains a destination.
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';

@@ -1,9 +1,10 @@
 # Spec 02 — Skill DSL
 
-**Status:** Draft v0.7 — amended 2026-09-06. The structured 13-op dialect, deterministic validation/resolve, capability closure, durable `ExecutionCoordinator` journal, targeted undo/recovery, automation review, persisted inactive authoring preview, typed relationship capture, and first-class habit workflows are implemented. Numeric opcode compilation, plan caching, and authoring safety Layers 2–3 remain explicit targets.
+**Status:** Active v0.7 — audited 2026-09-07. The structured 13-op dialect, deterministic validation/resolve, capability closure, durable `ExecutionCoordinator` journal, targeted undo/recovery, automation review, persisted inactive authoring preview, typed relationship capture, and first-class habit workflows are implemented. Numeric opcode compilation, plan caching, and authoring safety Layers 2–3 remain explicit targets.
 **Depends on:** Spec 01 — Meta-Schema & Type System (§2–§5, §8)  
 **Blocks:** NLU spec, Architecture spec, Data & Sync spec, UI spec
-**Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
+**Precedence:** wired behavior is current truth; this active spec records its contract. The research
+document and 05a–05f artifacts preserve rationale and evaluation history.
 
 ---
 
@@ -635,7 +636,12 @@ The resolve phase reads and plans; it produces no side effects.
 1. **Parse and validate** the skill file against the DSL schema. Any structural error halts with an authoring-time error — not a runtime error.
 2. **Hydrate the execution context** with the inputs the NLU layer extracted (slot fills from the user's utterance) and system-provided values (`{now}`, `{today}`, user identity). The system values are **frozen at this moment** and recorded in the journal (§4.4); every re-verify and resume reuses them rather than re-reading the clock.
 3. **Walk the step list** starting from `"main"`. For each step:
-   - For read ops (`read_one`, `read_many`, `read_related` — and `read_reference`, which is served from the shipped ReferenceStore rather than the StorageRepository): execute the read against the StorageRepository (served from the in-memory, decrypted object store — Spec 01 §8.2 — so filters over `sensitive` attributes work). The result is bound into the context. **Reads are permitted in the resolve phase** because they have no side effects and their results are needed to evaluate branch conditions.
+   - For read ops (`read_one`, `read_many`, `read_related` — and `read_reference`, which is served
+     from the shipped `ReferenceStore` rather than the `StorageRepository`): execute the read
+     against the in-memory record map. Current records, including fields marked `sensitive`, are
+     plaintext; the future encryption boundary must still present the same complete runtime map.
+     The result is bound into the context. **Reads are permitted in the resolve phase** because
+     they have no side effects and their results are needed to evaluate branch conditions.
    - For `branch`: evaluate the condition, record the resolution in the execution journal (§5), and recursively resolve the chosen label's steps.
    - For `foreach`: resolve the iterable from context (its length is known now, because all reads happen in resolve) and **fully unroll it** — resolve the `do` label's steps once per element, up to the iteration `limit`. Every pending write produced inside the loop body is appended to the action plan. Partial unrolling would break the plan-completeness discipline (§4.3): the *complete* set of writes must be resolved and validated before execute — so the after-the-fact description covers all N writes and a gated path (automation review, §7.5) approves all N, not an extrapolation from the first iteration.
    - For write ops (`write_record`, `delete_record`): **do not execute**. Fully resolve every field value to a literal; for a create, **mint the record `id` now** and freeze it into the plan (§4.4). Then **validate the pending write against the target type's schema** — for a create, all required attributes present (Spec 01 §3.1); for an update (merge), only the changed attributes, and no required attribute set to null; in both cases values conform to their `valueType`, `enum` values are members of `enumValues`, and the append-only-`id` rule (§3.2) holds. A validation failure halts resolve *before* the confirmation is shown, so the user never approves a plan that cannot execute. On success, append the validated pending write to the action plan.
@@ -702,7 +708,9 @@ The execution journal does **not** live in the skill file, and it does **not** l
 
 Current walking-skeleton location: `[app-support]/execution-journal.json`, one atomically replaced, bounded device-local ledger. The richer per-execution-file layout remains the v1 destination when detached concurrent operations require it. Because the current coordinator is serial and the file never syncs, the single-file form has no cross-device merge path. Corrupt bytes are preserved as `execution-journal.json.corrupt` and surfaced for repair before a later atomic write replaces the active file.
 
-> **v1 posture (suite-sync CS-17):** "encrypted at rest" activates when Spec 01 §8.7 ships; until then `CryptoBox` is a pass-through and the journal is **plaintext device-local** (Spec 04 §3.1's posture note). Device-local placement — the sync-correctness and definition-stability arguments above — holds regardless.
+> **Current posture:** `CryptoBox` does not exist in the runtime. The journal is **plaintext and
+> device-local**. Encryption activates only when Spec 01 §8.7 is implemented; device-local
+> placement holds regardless.
 
 ### 5.3 Structure
 
@@ -740,7 +748,10 @@ Act-then-describe (Spec 05 §3.1) is only safe because undo is reliable, and und
 - **Capture (at `executing`, Spec 04 §3.3).** Each write op records what it will overwrite, keyed by op index + recordId: `write_record` create → a `{absent}` marker (undo = delete the minted id); `write_record`/`set` on an existing record → the prior field value(s); `delete_record` → the **full** prior record. Reads/computes/formats capture nothing (they don't write). Capture happens inside the serial-execute step, so a plan's before-image set is a consistent snapshot.
 - **Undo = reverse replay, deterministic, no model.** `undo` (Spec 03 system command) replays the set in reverse op order: a create is deleted, an update is restored to its prior value, a delete is re-written from the captured record. A whole turn's multi-write plan reverses **atomically** — all before-images or none — so a compound turn ("log the run and bump my streak") never half-undoes.
 - **Optimistic-concurrency guard.** Before restoring, undo checks the live record still matches the after-image (Spec 04 §4.5 "record changed under you"). If it diverged (a later turn or a synced edit touched it), undo does not clobber — it surfaces "this changed since; undo anyway / keep" (P7, no silent failure).
-- **Reap-at-done.** Before-images can hold sensitive prior values, and the journal is device-local/encrypted (§5.2) but still finite. A `done` entry and its before-images are **reaped when the undo window closes** (Spec 04 §3.11) or a newer turn supersedes it — the images exist exactly as long as undo can reach them, no longer. Automation-origin entries (`origin: automation`) follow the Review-Feed retention rule instead (§7.5).
+- **Bounded retention.** Before-images can hold sensitive prior values, so the current plaintext,
+  device-local journal retains at most the 25 most recent terminal executions. Reversed entries
+  count toward the same bound; conflict entries are preserved for repair. Time-based undo-window
+  reaping is a destination, not current behavior.
 
 ### 5.5 The deferred plan cache (recorded, not built in v1)
 

@@ -1,6 +1,6 @@
 # Spec 08 — AI Cost & Privacy
 
-**Status:** v0.2 — amended 2026-08-17. The BYOK seam, persistent admission controller, detached cloud diagnostics, per-kind record-class declarations, explicit-invocation consent markers, Settings disclosure catalog, and journal-exclusion canaries are implemented; monthly reflection and its tier-c journal flow remain future work.
+**Status:** Active v0.2 — audited 2026-09-07. The BYOK seam, persistent admission controller, detached cloud diagnostics, per-kind record-class declarations, explicit-invocation consent markers, Settings disclosure catalog, and journal-exclusion canaries are implemented; monthly reflection and its tier-c journal flow remain future work.
 **Depends on:** research doc (§7, §12.8, §13, §14, §15); Spec 02 — Skill DSL (§5.5, §6, §7.6); Spec 03 — NLU / Intent (§2.2a, §3.5, §5, §7.3); Spec 04 — Architecture (§3.5, §3.7, §3.10, §5.2, §6); Spec 05 — Functional (§3.6, §3.8, §13)
 **Blocks:** Spec 09 — Test (the payload/consent invariants below are testable contracts); Spec 10 — Security & Privacy threat model (this spec draws the data-flow map Spec 10 attacks); Spec 11 — Feedback & Diagnostics (shares the consent ground rules)
 
@@ -236,7 +236,13 @@ Consent tiers referenced below are defined in §5.6: **(a)** standing BYOK routi
 | Functional-gap feedback / diagnostics | — (no model; **Spec 11 is sole authority**) | per Spec 11 §§4–5 | internal raw traces may contain user content; external raw capture/export disabled; secrets forbidden in every channel | explicit share action; no automatic upload |
 | API key itself | — | On every cloud call | Sent only as the `x-api-key` header to `api.anthropic.com`, over TLS. Never in any record, log, or synced file (§6.2) | a |
 
-Standing summary of the "never leaves" set: records at rest, the journal (absent tier-c), corpus slot values, embeddings, the execution journal, before-images, the key (except to Anthropic as auth), and any form of telemetry — **there is no telemetry**. On the Anthropic side, all of the above is processed under the user's own API account and Anthropic's API data-handling terms (API inputs/outputs are not used for model training by default; retention windows are Anthropic's published policy) — Plenara adds no additional party. Verifying and plainly wording that Anthropic-side statement for onboarding is Q5.
+Standing summary of what never goes to **Anthropic** unless the table explicitly names it: record
+content, journal text, corpus slot values, embeddings, execution state, before-images, and
+diagnostics. Synced records and journal text do leave the device as plaintext through the user's
+chosen storage provider (Spec 06); that is a separate, explicitly disclosed boundary. The API key
+goes only as Anthropic authentication. Internal diagnostics are device-local and manually
+exportable; external builds capture none (Spec 11). Anthropic-side retention/onboarding wording is
+owned by Q5.
 
 ### 5.6 The consent model — three tiers, stated once
 

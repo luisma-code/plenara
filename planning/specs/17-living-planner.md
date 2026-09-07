@@ -1,6 +1,10 @@
 # Spec 17 — Living Planner & Multimodal Product Model
 
-**Status:** v1.0 — 2026-09-07, active implementation authority. Relationships, one-off Todos, and tracked Habits are the three primary product roots. Plan, the generic Library, and History remain reachable secondary tools. The earlier planner increments, durable mutation/undo, contextual local routing, relationship assistance, adaptive presence/routines, user-selected sync/recovery, and build-channel hardening remain wired.
+**Status:** v1.1 — 2026-09-07, active implementation authority and audited against the current
+Flutter/engine tree. Relationships, one-off Todos, and tracked Habits are the three primary product
+roots. Plan, the generic Library, and History remain reachable secondary tools. The earlier planner
+increments, durable mutation/undo, contextual local routing, relationship assistance, adaptive
+presence/routines, user-selected sync/recovery, and build-channel hardening remain wired.
 **Supersedes:** research §2.2's overlay-only/no-touch rule; Spec 07 P1–P2 and its four-surface model; Spec 15 D1/D14 where they make full-screen presence or ephemeral exchange the steady-state product. Those documents remain design history and point here for current behavior.
 **Depends on:** Specs 01–06 for schema, skills, routing, orchestration, functional behavior, and storage; Spec 07 for visual language and generic archetypes; Spec 12 for voice; Spec 15 for Plena's renderer.
 
@@ -43,12 +47,9 @@ Increment 4's automated evidence gate is complete: 1,904 engine tests plus 36 de
 
 Increment 6's automated evidence gate is complete: 1,907 engine tests plus 36 declared skips, 138 Flutter tests plus the intentional external-channel skip, tier coverage of 94.2% deterministic core / 90.8% product logic / 68.1% transport, a macOS build, five macOS real-engine tests, external-channel isolation, secret scan, and the 24/60 conformance ratchet all pass. New relationship, signal, and durable-suggestion tests were calibrated against deliberate regressions before restoration. Five-day dogfood, perceived continuity, and dismissal-fatigue gates require ordinary use of an explicitly deployed build and are not inferred from automated verification.
 
-The latest final-tree gate after the 2026-08-19 review remediation passes 2,046 engine tests plus 36
-declared skips, 189 Flutter tests plus four intentional skips, 95.7% deterministic-core / 89.9%
-product-logic / 83.8% transport coverage, macOS build, seven real-engine integration cases,
-external-channel isolation, secret scanning, and the 24/60 conformance ratchet. An iOS simulator
-artifact with the native notification adapter also builds. Historical increment evidence above
-remains proof recorded at each boundary; this paragraph is the current aggregate.
+Historical increment evidence above remains proof recorded at each boundary. Volatile final-tree
+counts, coverage, builds, simulator runs, and deployment state live only in `WORK-CAPSULE.md`; this
+product spec does not freeze a second “latest” aggregate that will immediately drift.
 
 ## 0. Product decision
 
@@ -228,7 +229,9 @@ Every failure has an address:
 ## 6. Accessibility and engagement
 
 - Dynamic Type may reflow cards and navigation; the product does not preserve a composition by clipping information.
-- Screen readers receive ordered Relationships/Todos/Habits/Plan semantics and explicit Plena state, never particle descriptions as the sole meaning.
+- Screen readers receive ordered Relationships/Todos/Habits/Plan controls and complete text/caption
+  meaning. A consolidated announced Plena-state node and automatic TTS deference remain
+  accessibility destinations (Specs 12 §6.4 and 15 §8.4).
 - Reduced motion and independent still-presence preferences are first-class.
 - Quiet text meets WCAG AA contrast on its actual rendered ground.
 - Engagement is measured by useful return behavior, plan revisitation, successful capture-to-plan placement, reduced corrective turns, and trusted undo—not glyph frequency or time staring at animation.

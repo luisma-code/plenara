@@ -96,8 +96,9 @@ patterns.
 **Amended 2026-08-17; Spec 17 is authoritative.** Voice remains free-form,
 global, and capable of every core outcome. It is no longer required to carry
 persistent state, spatial comparison, sequencing, or precision editing by
-itself. Today, Plan, Library, and the durable conversation/action ledger make
-consequential state inspectable without speaking; touch, pointer, and keyboard
+itself. Relationships, Todos, and Habits are the current primary roots; Plan,
+Library, History, and the durable conversation/action ledger make consequential
+state inspectable without speaking. Touch, pointer, and keyboard
 use interaction forms suited to them and converge on the same typed business-
 logic mutation path.
 
@@ -863,8 +864,9 @@ threshold rises.
 ### 6.2 Text and visible planning surfaces
 
 > **AMENDED August 2026 by Spec 17.** Voice and typed capture share one command pipeline, but the
-> product is no longer constrained to an overlay-only voice canvas. Today, Plan, Library, History,
-> record-detail editors, proposals, and repair surfaces visibly externalize persistent state.
+> product is no longer constrained to an overlay-only voice canvas. Relationships, Todos, and
+> Habits are primary; Plan, Library, History, record-detail editors, proposals, and repair surfaces
+> visibly externalize persistent state.
 > Voice remains globally available and reaches the same core outcomes.
 
 Quiet capture still uses the shared pipeline:

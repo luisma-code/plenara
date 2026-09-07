@@ -30,8 +30,9 @@ bash tool/precheck.sh
   credential store; do not put it in `config.json`.
 - Development-only command-line tools may use `ANTHROPIC_API_KEY`. Internal/external app builds
   ignore that environment variable and use only the secure store.
-- No key is required for Today, Plan, Library, History, deterministic skills, local retrieval,
-  storage, sync, or voice. A key enables residual routing, generative features, and authoring.
+- No key is required for Relationships, Todos, Habits, Plan, Library, History, deterministic
+  skills, local retrieval, storage, sync, or voice. A key enables residual routing, generative
+  features, and authoring.
 
 The production retrieval index is in-process and offline. The localhost HTTP embedding adapter is
 only a development experiment; ordinary dogfood never needs a companion server.
@@ -40,11 +41,14 @@ only a development experiment; ordinary dogfood never needs a companion server.
 
 - **Capture and plan:** add tasks, schedule them, select several in Plan, move/resize/defer them,
   complete with the explicit circle, and use targeted undo.
-- **Inspect and revise:** tap a Today task body to open its detail editor; use Library for people,
+- **Inspect and revise:** tap a Todo body to open its detail editor; use Library for people,
   goals, routines, trackers, journal, projects/areas, learned phrases, automations, and the complete
   data browser.
-- **Relationships:** remember facts, log interactions, link commitments to people, and respond to
-  relationship-date suggestions with Keep, Tomorrow, or Dismiss.
+- **Relationships:** assign circles/categories, tune touch and meaningful-connection goals, remember
+  facts, log Quick or Meaningful interactions with their medium, link commitments to people, and
+  respond to relationship-date suggestions with Keep, Tomorrow, or Dismiss.
+- **Habits:** create a repeated practice, set its weekly target, check in once per local day, and
+  pause/resume it without turning it into a recurring Todo.
 - **Voice:** tap to start, tap again to stop and send, or use ×/mute to discard. Interim text may
   appear while listening, but dispatch happens once at finalization.
 - **Cloud:** request gift ideas, reconnect coaching, a briefing, weekly reflection, pattern insight,
@@ -77,7 +81,9 @@ Impressions, screen time, and animation do not count as engagement.
 
 - Physical iOS cannot use Dart's recursive directory watcher. It reconciles the selected provider
   folder at cold open; provider-side changes made while Plenara stays open appear after relaunch.
-- iOS currently has in-app reminder nudges but no native notification backend.
+- iOS, macOS, and Windows have native notification adapters. iOS materializes the globally earliest
+  64 pending requests, recurring rules project 16 occurrences, and reconciliation recovers the OS
+  queue across relaunches.
 - At-rest encryption is deferred. Synced records, including journal entries, are readable JSON in
   the selected provider folder. Execution history and diagnostics are device-local but also
   plaintext under the current pass-through crypto posture.

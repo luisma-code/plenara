@@ -6,9 +6,9 @@
 > `minSilenceDuration` is an internal chunking parameter with no user-visible behaviour. See
 > Spec 12's amendment note for the watchdog constants.
 
-Status: **SHIPPED (v0) — Apple Speech is primary on iOS/macOS; Windows prefers local
-sherpa_onnx Whisper when provisioned and otherwise uses its system recognizer; typing is always the
-floor.**
+Status: **ACTIVE v0.3 — audited against the wired implementation 2026-09-07. Apple Speech is
+primary on iOS/macOS; Windows prefers local sherpa_onnx Whisper when provisioned and otherwise uses
+its system recognizer; typing is always the floor. There is deliberately no cloud STT fallback.**
 
 **Change note (2026-07-11, Fable 5):** synced to the shipped implementation (`app/lib/speech.dart`,
 `app/lib/sherpa_speech.dart`, `app/lib/voice_turn_controller.dart`, wired per Spec 15's
@@ -40,8 +40,8 @@ sherpa because its Whisper transcription is markedly better than SAPI dictation.
   service. The tradeoff that *did* materialize is quality: SAPI dictation is rough and may deliver
   few useful partial hypotheses. It can leak stale results across sessions (guarded in code — see
   below). Fine as a no-setup fallback; not the preferred Windows engine.
-- **Cloud fallback — Deepgram** (`deepgram_speech_to_text`), BYOK: **still planned**, unshipped.
-  Neither shipped engine needed it for the Windows dogfood.
+- **Cloud fallback: prohibited.** Spec 12 D2 requires on-device recognition and degradation to text
+  when no local engine is available. The earlier Deepgram plan is retired.
 - Rejected: `whisper4dart` (needs FFmpeg, less maintained than sherpa for Windows). Note the irony:
   we run Whisper anyway, via sherpa's ONNX runtime.
 
@@ -91,7 +91,8 @@ abstract class SpeechRecognizer {
   recognition. Battle scars are documented in code and worth knowing when auditing: a
   **stale-result guard** drops any result arriving <500 ms after `listen()` starts (SAPI strands
   an undelivered final in the recognition context when stopped early, then delivers it at the
-  start of the *next* session); `listenFor` caps a session at 45 s; **no `pauseFor`** (it's a
+  start of the *next* session); `listenFor` uses the shared 120 s session cap (60 s on Apple);
+  **no `pauseFor`** (it's a
   Dart-side timer reset by results — with no partials on Windows it would fire mid-sentence).
 
 **Shipped v0 capture path (`app/lib/voice_turn_controller.dart`, with the engine pick and the tap
@@ -101,8 +102,9 @@ target in `app/lib/main.dart`):**
    platforms the OS recognizer is selected directly. On Windows, sherpa wins when
    `~/.plenara/models/en-whisper` yields a working init and the OS recognizer is the fallback. Any
    selected engine's init failure ⇒ unavailable ⇒ text mode.
-2. **Tap anywhere to talk** (Spec 15 §6.3): a full-screen tap target, active only when a
-   recognizer is available, not muted, and no turn is in flight.
+2. **Start capture:** tap non-interactive Plena space where presence owns the screen; populated
+   Relationships/Todos/Habits and detail surfaces use an explicit accessible voice target. Capture
+   is available only when the recognizer is ready, not muted, and no turn is in flight.
 3. **Re-entry guard:** `_listening` is set before the barge-in await. The stop tap clears listening
    and raises `transcribing` until the recognizer's asynchronous flush/teardown completes; all voice
    targets are disabled during that state, so a third tap cannot start a second native session.
@@ -141,5 +143,5 @@ target in `app/lib/main.dart`):**
 Spoken capture is **live**: tap, talk, tap to finish. Apple Speech handles iOS/macOS; Windows uses
 local Whisper when provisioned and otherwise its OS recognizer. Stop waits for audio teardown and
 auto-sends one transcript; ✕ discards; barge-in, watchdog visibility, mute, and typing remain the
-safety floor. Remaining additions are the first-run Windows model downloader and BYOK cloud
-fallback.
+safety floor. The remaining engine addition is the first-run Windows model downloader; cloud STT
+is not on the roadmap under the active privacy contract.

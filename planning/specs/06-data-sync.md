@@ -1,6 +1,10 @@
 # Spec 06 — Data & Sync
 
-**Status:** v0.4 — 17 August 2026 (merge/reconcile, device-local shadow, capability-gated watcher, conflict review, user-selected folder flow, and fresh-start recovery implemented. Physical iOS uses cold-open reconciliation because its Dart runtime does not support recursive file watching; Spec 04 §4.5 owns that measured degraded mode. Formalizes and **supersedes** the preliminary [storage-sync assessment](storage-sync-assessment.md): its Option-C verdict is adopted here as normative design, with later calls recorded below.)
+**Status:** Active v0.4 — audited 2026-09-07. Merge/reconcile, device-local shadow,
+capability-gated watcher, conflict review, transactional user-selected folder flow, and fresh-start
+recovery are implemented. Physical iOS uses cold-open reconciliation because its Dart runtime does
+not support recursive file watching; Spec 04 §4.5 owns that measured degraded mode. This spec
+formalizes and **supersedes** the preliminary [storage-sync assessment](storage-sync-assessment.md).
 **Depends on:** Research doc v0.10 (§4.9, §8, §10.3, §11.1); Spec 01 §§4.5, 5, 7, 8, 12; Spec 02 §5; Spec 03 §5; Spec 04 §§3.1, 3.11, 3.12, 4.5, 5, 7; storage-sync-assessment.md; the v0 implementation.
 **Blocks:** Spec 09 — Test (merge property tests, §6.1); the iOS file-sync spike (05c D-1) charter (§9.5); the P2 (second-device) milestone (§6.1, §10.1).
 
@@ -209,7 +213,7 @@ Guarantees and their honest limits (D10):
 - **Not guaranteed:** power-loss durability of the very last write (no fsync in the path). Accepted for a personal-notes workload: the loss bound is the final in-flight record, the in-memory store is rebuilt from disk at next launch (Spec 04 §4.5), and a mid-execute crash is recovered by the execution journal's before-images (Spec 04 §5.4), not by storage-layer durability.
 - **Hygiene:** hydration ignores non-`.json` suffixes by construction (the loader's `endsWith('.json')` filter — `.tmp`/`.bak` never load); a startup GC pass deletes orphaned `.tmp`/`.bak` files older than 7 days (§7.3).
 
-**Corrupt or half-synced files never brick startup** (`store.dart loadRecords`): a file that fails to parse is skipped and hydration continues — the folder is a sync target, so partially-transferred files are expected, not exotic. The concrete repository retains the path in its hydration issues and `Session.repairIssues` puts it on Today → Needs attention. The file remains untouched for provider completion or manual repair, and a later reconciliation event—or the next cold open on physical iOS—retries it. A structurally rejected type and any skill depending on it are parked the same way; validation never aborts unrelated capability startup.
+**Corrupt or half-synced files never brick startup** (`store.dart loadRecords`): a file that fails to parse is skipped and hydration continues — the folder is a sync target, so partially-transferred files are expected, not exotic. The concrete repository retains the path in its hydration issues and `Session.repairIssues` exposes it through the secondary repair/attention UI. The file remains untouched for provider completion or manual repair, and a later reconciliation event—or the next cold open on physical iOS—retries it. A structurally rejected type and any skill depending on it are parked the same way; validation never aborts unrelated capability startup.
 
 Definition files (`types/`, `skills/`, `automations/`) use the same atomic primitive. A crash mid-write of a *type* file therefore leaves a temp/backup artifact rather than degrading every instance at the next hydration.
 

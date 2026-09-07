@@ -1,6 +1,32 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-07 for relationship circles and two-clock health._
+_Current working memory. Last updated 2026-09-07 for the code-to-spec alignment audit._
+
+## Code-to-spec alignment audit (2026-09-07)
+
+- All 17 active specifications were reviewed against the wired engine/Flutter implementation, with
+  code taking precedence. Each owning spec now identifies shipped behavior separately from design
+  destinations; the historical research and implementation-plan documents point to Spec 17 for
+  current product composition.
+- Corrected drift included the Relationships/Todos/Habits primary navigation, secondary
+  Plan/Library/History tools, iOS native notifications, callback-based voice seams and user-delimited
+  capture, the shipped iOS voice picker/fixed rate, the single mute preference, Session/controller/
+  ledger UI boundaries, five generic renderer variants, adaptive Plena behavior, and current
+  reference-data limits.
+- The reference-data spec now records the real 403-entry model-estimated nutrition seed, exact
+  production lookup, component-only feature-hash resolver, unscaled `read_reference`, truthful miss
+  path, and absence of units/learned aliases/cloud normalization. The presence spec now records its
+  private `_Frame`, fixed seed, shipped mic/yield/ember behavior, non-iOS trail buffer, and deliberate
+  iOS trail-free path.
+- Documentation consistency now rejects 76 concrete retired claims found across prior alignment
+  work and this pass. The expanded guard was calibrated red/green by temporarily restoring
+  representative retired reference-data, local-model-routing, and fixed-seed-count statements;
+  each produced its named failure before the corrected documents passed.
+- Final full precheck is green: 2,063 engine tests + 36 intentional skips; 201 Flutter tests + 4
+  channel skips; 95.7% deterministic-core, 89.4% product-logic, and 83.8% transport coverage;
+  analyzers, seed sync, documentation consistency, import layering, render guards,
+  external-channel checks, macOS build, eight real-engine cases, secret scan, and the 24/60
+  conformance ratchet.
 
 ## Relationship circles and meaningful connection (2026-09-07)
 

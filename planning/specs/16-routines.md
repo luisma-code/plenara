@@ -1,6 +1,6 @@
 # Spec 16 — Routines & Guided Movement
 
-_Status: v0.2, implemented 2026-08-17. The figure decision is grounded in a measured spike rather
+_Status: Active v0.2, audited 2026-09-07 and implemented. The figure decision is grounded in a measured spike rather
 than taste (§2); the player now renders explicit labeled A/B instructional stills and freezes the
 three animated catalogue payloads on frame one._
 

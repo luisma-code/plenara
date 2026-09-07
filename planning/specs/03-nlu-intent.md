@@ -1,9 +1,14 @@
 # Spec 03 — NLU / Intent
 
-**Status:** v0.8 — amended 2026-08-17. Current production routing is corpus/rules → Router-owned in-process feature-hash skill retrieval for calibrated lanes → closed-set Haiku residual → clarify. Learned generative recognition is implemented; a merged type/skill/generative `CapabilityIndex` and packaged transformer remain targets.
+**Status:** Active v0.8 — audited 2026-09-07. Current production routing is deterministic direct
+commands/corpus → Router-owned in-process feature-hash skill retrieval for calibrated lanes →
+closed-set Haiku residual → clarify. Learned generative recognition and contextual planner/person
+references are implemented; a merged type/skill/generative `CapabilityIndex` and packaged
+transformer remain targets.
 **Depends on:** Spec 01 — Meta-Schema & Type System (§4.1, §5.4, §6, §8.2, §8.7); Spec 02 — Skill DSL (§2.2, §2.3, §4.4, §5.5, §7.1, §7.3)  
 **Blocks:** Architecture spec, UI spec
-**Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
+**Precedence:** wired behavior is current truth; this active spec records its contract. The research
+document and 05a–05f artifacts preserve rationale and evaluation history.
 
 ---
 
@@ -17,7 +22,8 @@ This document specifies:
 2. The retrieval-augmented routing architecture — how an utterance is routed to a skill over a growing, open-ended type space
 3. The confidence-threshold policy — when to act, when to clarify, when to escalate to cloud
 4. Confidence decay — how stale or repeatedly-corrected routing entries lose authority
-5. The flow table — the single on-disk structure that unifies the corrections corpus (utterance → intent, built in v1) with the deferred plan cache (intent → plan, hooked but not built)
+5. The routing corpus (`corpus.json` plus `corpus-learned.json`) and the separately designed,
+   unimplemented plan cache
 6. Slot extraction — how the NLU layer fills the `source: "slot"` inputs declared in a skill's `inputs` contract
 7. The recorded test-pair methodology — how NLU correctness is measured and regressed against
 
@@ -31,9 +37,16 @@ It does **not** cover: speech-to-text transcription (Spec 12 — Voice), skill e
 
 **P2.1 — Voice is uncompromising and free-form.** The user does not learn Plenara's vocabulary; Plenara learns theirs. The NLU layer must accommodate natural, varied phrasing — including incomplete sentences, filler words, corrections mid-utterance, and time-relative expressions ("the usual", "again", "like yesterday"). The corrections corpus (§5) is how the system accumulates this knowledge over time.
 
-**P2.4 — Code over AI, applied to routing.** Routing a known utterance against the corrections corpus is a hash-lookup, not an inference call. The local model is invoked only when the corpus has no match. Cloud escalation is invoked only when the local model is below threshold. Inference is the slow path, not the default.
+**P2.4 — Code over AI, applied to routing.** A known utterance uses deterministic corpus matching.
+On a miss, the current in-process feature-hash skill index may act only through a bounded,
+candidate-specific extractor lane; otherwise the request reaches the closed-set cloud residual or a
+visible clarification. No local generative routing model runs in production.
 
-**P2.5 — Aggressive layering.** The NLU layer is a pure function from `(transcript, NluContext)` to an intent object (the `NluRouter` interface, §2.6; `NluContext` defined there). It calls no storage APIs directly and emits no UI events. It **reads** the capability embedding index and the corrections corpus, and it reads skill and type metadata from the `SchemaRegistry`, all read-only. Critically, it does **not own or build** the embedding index: that index is a `SchemaRegistry`-layer artifact (Spec 01 §5.4), extended to cover skills as well as types (§3.2), and the router only queries it. The NLU layer *owns* one piece of mutable state — the corrections corpus (§5) — and even that it mutates only through an explicit write path, never as a side effect of routing. It is invoked by the Business Logic layer after transcription completes (Spec 12 signals a final transcript, §10 MD10) and before skill dispatch begins.
+**P2.5 — Aggressive layering.** Current `Router` owns its process-local, skill-only feature-hash
+index and corpus matcher; `Session` supplies the skill inventory, clock, and known contacts and owns
+corpus persistence through `StorageRepository`. The future merged type/skill/generative
+`CapabilityIndex` would move index ownership to the registry layer, but that boundary is not
+current. Routing itself does not write records or emit UI.
 
 **P2.8 — No silent failure.** The NLU layer is the sharpest test of this principle, because guessing is always the tempting shortcut. It never takes it. When confidence is genuinely low it returns a `clarification_needed` intent rather than a silent guess (§2.4); when a required slot is missing it asks a follow-up rather than dispatching a partial intent (§6.3); when an utterance needs a capability that does not exist it raises a `define_*` meta-intent (and, on the free tier, an explicit upgrade prompt) rather than dropping the request (§2.2); and when the cloud is unreachable it flags `cloudUnavailable` so the app can tell the user and queue, rather than degrading quietly (§10 MD6). Every low-confidence or blocked path in this spec ends at a user-visible surface, never a dead end.
 
@@ -64,6 +77,11 @@ The normal case. The user's utterance maps to an existing skill in the skill lib
 `routingSource` records how the intent was derived — one of the values enumerated in §2.5. For a skill invocation it is typically `corpus_hit` (flow-table fast path), `retrieval` (the retrieval top-1-with-margin dispatch, §7.3 — the common non-corpus source after the `G-20` NO-GO), `cloud_model` (Haiku residual disambiguation, §7.3.2), or `anaphora` (resolved from `recentIntents`, §5.4a). `local_model` is retained in the enum for the optional tie-breaker role a local model may someday hold (§7.3), but no v1 path emits it. This field is never shown to the user; it feeds the test-pair recorder (§7), the confidence-decay model (§4.2), and the boost-vs-create choice in the write paths (§2.6).
 
 ### 2.2 Capability-Definition Meta-Intents
+
+> **Current boundary:** explicit authoring phrases are recognized by deterministic `Session` rules,
+> checked against existing built-ins/templates, and then start the detached paid authoring flow.
+> The retrieval-driven `define_type`/`define_skill` intent objects and type-similarity thresholds
+> below are destination taxonomy, not current runtime classes.
 
 Intents that operate on the capability system itself — type authoring and skill authoring — rather than on user data. These are the bridge between an utterance that has no matching skill and the authoring flow defined in Spec 01 §6 and Spec 02 §6.
 
@@ -255,7 +273,9 @@ enum ConfirmationKind { implicit, clarificationSelected }
 
 **Why the write paths take a transcript, not just an `Intent`.** The v0.1/v0.2 signature `recordConfirmation(Intent, {viaPreConfirm})` could not do its job: building or finding the corpus entry requires the *normalized template* of what the user actually said (§5.4), and an `Intent` carries only the resolved `skillId` + slot **values**, not the surface phrasing or the spans templating needs. Passing the transcript (and `NluContext`, for the entity/temporal placeholders) makes both write paths self-contained. Whether a call **boosts** an existing entry or **creates** a new one is decided from `accepted.routingSource`: a `corpus_hit` re-normalizes, re-matches (§5.4), and boosts the matched entry; a `retrieval`/`local_model`/`cloud_model` routing templatizes the transcript against `accepted.slots` and inserts a new entry — this is how a retrieval-margin or Haiku-routed phrasing graduates into the fast path. `recordCorrection` always zeroes any entry currently matching the transcript's template and inserts a fresh `explicit_correction` entry (§4.2).
 
-**`Intent` is a sealed hierarchy**, not a bag of nullable fields. The flat table in §2.5 documents the wire/JSON form (what is persisted and logged); in code it is a sum type so the dispatcher's `switch` is exhaustive and the illegal states of §2.5 (a `skill_invocation` with no `skillId`, a `clarification_needed` with no `candidates`) are unrepresentable:
+**Destination typed intent hierarchy.** Current routing exchanges validated
+`Map<String, dynamic>` shapes between `Router`, `ClaudeClient`, and `Session`; it does not define the
+sealed classes below. They remain the desired typed boundary if the routing seam is extracted:
 
 ```dart
 sealed class Intent { double get confidence; RoutingSource get routingSource; }
@@ -288,7 +308,12 @@ The router never mutates `NluContext`; the Business Logic layer assembles a fres
 
 `route` produces an `Intent`; something must then *drive* it — resolve and execute the skill (Spec 02 §4), act-then-describe (or, where the routing is genuinely ambiguous, clarify first), catch a mid-flight `"correct"`, and call the write paths (§2.6) so the corpus learns. The draft left this orchestration scattered across "a UI concern" (§5.2), "the Business Logic layer" (§1), and "the Architecture spec" (§3.2), which meant the `recordCorrection`/`recordConfirmation` calls had **no defined caller, timing, or precondition** — the corpus could not actually be written. This section pins the seam. It does not build the orchestrator (that is Architecture/UI); it states the contract the orchestrator must satisfy so NLU's write paths are well-defined and the whole "utterance → action → learned routing" loop closes.
 
-**Ownership.** A **dispatch orchestrator** in the Business Logic layer owns the turn. NLU exposes only `route` + the write paths and never drives the interpreter; the interpreter (Spec 02) never calls NLU. The orchestrator is the one component that touches both. Its concrete interface is the Architecture spec's `DispatchOrchestrator` (§3.6): the turn's user-visible states flow **out** as a sealed `TurnEvent` stream, and the user's decisions at each surface below — approve / decline / **correct** / candidate-select / accept-residual — flow **back in** via `respond(promptId, TurnResponse)` (with `cancel(turnId)` for barge-in). The lifecycle prose here is the contract that interface satisfies.
+**Ownership.** `Session.handle` currently owns the turn and is the only component that touches both
+the `Router` and interpreter/execution path. NLU exposes routing and corpus write paths but never
+drives the interpreter; the interpreter never calls NLU. Architecture Spec 04's standalone
+`DispatchOrchestrator`, sealed `TurnEvent` stream, and generic `respond(promptId, TurnResponse)` are
+an extraction design, not shipped classes. The lifecycle prose here governs current Session
+behavior and any future extraction.
 
 **One conditional surface, not two (v0.4).** v0.3 defined two approval surfaces — an NLU *routing* pre-confirmation before resolve and a *skill-plan* confirmation after. Act-then-describe (Spec 05 §3.1) removes both from the interactive path: the skill-plan pre-approval is gone with `confirmationPolicy` (Spec 02 §7.1), and a routing that can be acted on is acted on and described, not pre-confirmed. What survives is a single **conditional** surface — a **clarification**, shown *before* resolve only when the app has no reliable best guess (no dominant candidate below `θ_cloud_escalate`/`θ_minimum`, or a `requiresPreConfirm` pattern, §4). It is answered by `SelectCandidate` (a genuine choice), not by an Approve/Decline of a single guess. After it (or immediately, when it is not shown), the skill resolves, executes, and is described; a `"correct"` at any point re-routes.
 
@@ -559,7 +584,9 @@ The flow table is the mechanism from research doc §4.9 that unifies the NLU fas
 **The unification is at the *model* level, not the *file* level — and the v0.1 draft got this wrong.** v0.1 put both lanes in a single synced `flow-table.json` ("one file makes the §4.9 relationship explicit in the schema"). That is elegant and incorrect: the two lanes have incompatible storage requirements that Spec 02 §5 spent its entire redesign establishing.
 
 - **Lane 1** is *earned user data* — learned phrasing that should survive a device swap — so its non-sensitive part belongs in the **synced** folder.
-- **Lane 2** holds *fully-resolved action plans*. Those plans carry concrete field values, including `sensitive`-typed content (journal bodies, private notes). Spec 02 §5.2/§5.5 is explicit that resolved execution state must be **device-local, non-synced, and encrypted at rest** — precisely to keep `sensitive` values out of the always-plaintext synced files (Spec 01 §8.2) and to avoid whole-file last-writer-wins conflicts on volatile data. Spec 02 §5.5 states the cache must be a "separate, device-local, non-synced structure."
+- **Lane 2** would hold *fully-resolved action plans*. It is not implemented. Any future cache must
+  be device-local and non-synced because plans contain concrete values; it remains plaintext until
+  the deferred Spec 01 §8.7 encryption boundary is actually implemented.
 
 A single file cannot be simultaneously synced-plaintext (Lane 1) and device-local-encrypted (Lane 2). **Resolved (v0.2): the two lanes live in two homes.** What they share is the §4.9 *signature* `(normalized-intent, type, slot-shape)` and one *invalidation discipline* (§5.5) — a shared schema of keys, not a shared byte stream. This is a **[RECONCILE]** with Spec 02 §5.5; keeping one file would have re-imported the exact privacy-and-sync defect Spec 02 removed from the skill file.
 
@@ -570,9 +597,12 @@ The resulting layout (detailed in §5.2–§5.3):
 | `corpus.json` (seeded, read-only) + `corpus-learned.json` — the shipped/normative names (Spec 06 §10.1; the draft's `nlu/flow-table.json` is retired — renamed at most once, at the P2 per-device split) | synced Plenara root (non-sensitive templates only) | plaintext | 1 — corrections corpus | **built in v1** |
 | `[app-support]/plenara/nlu/plan-cache` | device-local | encrypted at rest *when Spec 01 §8.7 ships; v1 posture: plaintext device-local per Spec 04 §3.1 (moot until built)* | 2 — plan cache | deferred (§5.1) |
 
-> **Corpus file layout — v1 = single file (Luis's call, 2026-07).** The storage-sync assessment §6.3 item 4 recommends **per-device** corpus files (`nlu/corpus-{deviceId}.json`) "now rather than pre-P2" to avoid whole-file last-writer-wins when two devices sync. For **v1 (single-device)** the single `flow-table.json` above ships as written; **per-device split is deferred to the multi-device (P2) work**, landing together with the record-level CRDT merge engine (the corpus has the same convergence needs as records, so it converts at the same time). Tracked so the assessment and this section agree rather than contradict. v0 uses a single `corpus.json` + `corpus-learned.json`, consistent with this.
+> **Current corpus file layout:** one seeded `corpus.json` plus one rewritten
+> `corpus-learned.json` in the chosen data root. A per-device or per-entry split remains deferred to
+> multi-device corpus convergence work; no `flow-table.json` exists.
 
-Lane 1 carries *earned phrasing* (slot-abstracted templates → intents) that should survive a device swap, so its non-sensitive part syncs. Lane 2 would carry fully-resolved plans with `sensitive` values, so it is device-local + encrypted (Spec 02 §5.2) and is **not built in v1**.
+Lane 1 carries earned phrasing and may sync with the chosen root. Lane 2 is not built; if added it
+must remain device-local and would be plaintext until Spec 01 §8.7 encryption is implemented.
 
 **⚠ Lane 1 is a single synced file under whole-file last-writer-wins — a multi-device conflict hazard (G-36).** The storage model's per-record granularity principle (research §8.2) exists precisely because whole-file LWW sync silently discards one side of a concurrent edit — and `nlu/flow-table.json` is a *monolithic, frequently-written* file (a write-back per dispatched turn). Two devices used in the same sync window will each learn entries the other's overwrite then destroys, or the cloud client will spawn conflict copies nobody resolves. Before multi-device is real (v1 is effectively single-device), this must be redesigned: the corpus is **append-mostly and mergeable by construction** (entries keyed by template signature; boosts commutative), so the right shape is either per-entry files under `nlu/corpus/`, or a per-device journal (`nlu/corpus-{deviceId}.json`) merged at load. Logged as `G-36` in the gap register; a single-device v1 may ship the single file, but the format must not be one a merge cannot be retrofitted onto.
 
@@ -701,7 +731,10 @@ Two normalization passes sit between **any** router's raw slot output and resolu
 - **`G-20` — RESOLVED: the eval failed the bar → the local generative model is cut from the trusted routing path** (findings §11; ≤49% routing across four small models, meta-intent 0%, uncalibrated). The classify step is *not* a trusted router. Constrained decoding is retained only as **optional format insurance** where a local model is used at all (it changed routing accuracy by 0 points — the `skillId`-as-number wart was an artifact of *numbering* candidates; keying them by id removes it without a grammar). See **§7.3** for the deterministic replacement.
 
 ### 7.2 Out-of-domain detection: conservative and records-biased (`G-19`)
-Out-of-domain is decided **locally, by rule + retrieval — not the generative model's guess** (Llama-3.2-3B misroutes the hard case; findings §2). A turn is tagged `out_of_domain` only when **all** hold: (a) the best `CapabilityIndex` hit across every kind is below `θ_retrieval`; (b) the utterance matches a small built-in **world-knowledge shape** (weather, sports, news, definitions, "what is / who is / when did ‹public entity›"); and (c) it carries **no personal cue**. **Personal cues force `records_query`** even when a world-noun appears: first-person/possessive references to the user's own data — "what did **I** say…", "on **our** trip", "**my** …", "last time **I** …". This is a **privacy boundary**, not just UX: a records-cued query is **never** delegated to an external OS/web assistant (the leak `G-19` names). Only (a)+(b)+(c) → the tiered delegation policy (Appendix A §A.3); anything with a personal cue stays in-app. *(The eval showed small models never leak here — 0/4 — but only as a side effect of never abstaining, `G-20`; so OOD stays rule+retrieval-owned and the model is never handed an explicit `out_of_domain` label it could over-trigger.)*
+Out-of-domain is decided locally by deterministic world-knowledge and personal-cue rules, with the
+current Router's skill-only retrieval suggestion used as an additional check. A personal cue keeps
+the query in-app. A merged across-kind `CapabilityIndex` is a destination and must not be cited as
+the current privacy boundary.
 
 ### 7.3 Routing without the on-device generative model (`G-20` NO-GO → `G-33`)
 

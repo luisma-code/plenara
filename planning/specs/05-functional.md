@@ -1,9 +1,14 @@
 # Spec 05 — Functional
 
-**Status:** v0.6 — amended 2026-09-06. This remains the behavior-flow catalog; Spec 17 supersedes its surface model and makes Relationships, one-off Todos, and tracked Habits the three primary roots. Six generative kinds are implemented, while event prep, meal suggestion, monthly reflection, and foresight remain explicitly candidate flows.
+**Status:** Active v0.6 — audited 2026-09-07. This remains the behavior-flow catalog; Spec 17
+supersedes its surface model and makes Relationships, one-off Todos, and tracked Habits the three
+primary roots. Six generative kinds are implemented. Deterministic one-person relationship prep is
+wired separately from the still-candidate multi-attendee `event_prep` generative flow; meal
+suggestion, monthly reflection, and foresight also remain candidates.
 **Depends on:** Spec 01 — Meta-Schema & Type System; Spec 02 — Skill DSL; Spec 03 — NLU / Intent; Spec 04 — Architecture
 **Blocks:** Spec 07 — UI & Design-Language; Spec 09 — Test
-**Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
+**Precedence:** wired behavior is current truth; this active spec records its contract. The research
+document and 05a–05f artifacts preserve rationale and evaluation history.
 
 ---
 
@@ -13,7 +18,9 @@ Specs 01–04 define what the system *is* — types, skills, intents, and the ar
 
 This spec is the authority for:
 
-1. **The canonical interaction flow for each marquee task** — voice in, spoken/visual response out, including every prompt the app issues and every path a flow can branch to.
+1. **The intended interaction flow for each marquee task** — voice in, spoken/visual response out,
+   including prompts and branches. Explicit current-realization notes and the implementation take
+   precedence where an older worked flow still describes a destination.
 2. **Edge cases and failure paths** — what happens when input is ambiguous, records are missing, the user corrects mid-flow, the tier doesn't permit a feature, or the network is absent.
 3. **The interaction contract** — the rules governing when the app acts immediately vs. asks first, how corrections feed the corpus, and what "undo" covers.
 4. **The free/paid boundary, stated interaction-by-interaction** — exactly which flows require a BYOK key and what the user sees if they don't have one.
@@ -26,19 +33,30 @@ It does **not** re-specify the internal mechanisms: type-file format (Spec 01), 
 
 These principles derive directly from the research doc and the four upstream specs. They are restated here because they govern every flow in §§4–23.
 
-**Voice is uncompromising (P2.1).** Every interaction in this spec is initiated by a voice utterance. Touch and keyboard are always available as fallbacks, but no flow requires them. The interaction flows are written as if the user is speaking; where the system asks a question, the user answers by speaking.
+**Voice is uncompromising (P2.1), and UI is equally responsible.** The examples use utterances for
+compactness, but current Relationships, Todos, Habits, Plan, Library, and History workflows expose
+purpose-built touch/keyboard actions. Both modalities converge on business commands; voice is not a
+prerequisite for inspecting, editing, or completing work.
 
 **No silent failure (P2.8).** Every flow has a named exit for every failure mode. There is no "the request was dropped." If the system cannot proceed, it says so and tells the user what to do next.
 
 **Code over AI (P2.4).** Clarification prompts from the interpreter are deterministic — they do not use Claude. Generative synthesis (briefing, coaching, gift suggestions) is explicitly labeled as such in the flows.
 
-**One question at a time.** When a clarification is needed, the app asks exactly one targeted question. It never presents a form. It waits for the answer before continuing. This is the interaction-level expression of P2.1.
+**One clarification at a time.** A routing or missing-slot clarification asks one targeted question.
+Purpose-built sheets/forms are valid for deliberate multi-field editing, contact organization,
+relationship setup, and settings; they are not routing clarifications.
 
 **Act, then describe (the canonical interaction model).** The app never asks permission for an action it understood. When the user makes a request, the app executes immediately and describes what it did in a single concise sentence. The user then either accepts the outcome and moves on, or corrects it by voice (§3.3). Breaking the fourth wall — asking the user anything before acting — is reserved exclusively for the case where the app genuinely cannot determine what was requested (§3.2), plus the single non-undoable operation (type/skill deletion, §24). Reliable undo (§3.5) is the safety net for misunderstandings, not pre-action confirmation.
 
-This principle is the authority for the whole system's confirmation behavior, per the research doc's allocation of "the confirmation/clarification UX" to this spec (research §12, item 5). It is realized on the mechanism the upstream specs already provide, not by asserting a new one: the interpreter's resolve phase still runs in full before any write (Spec 02 §4.1 — freezing system inputs, minting record ids, unrolling `foreach`, validating every write against its schema, and capturing before-images), so nothing that would have been caught by a pre-action confirmation is skipped; only the *approval pause* between resolve and execute is removed. The sentence the app speaks is the skill's resolved `confirmationText` (Spec 02 §7.1), delivered as the `Done(confirmationText)` turn event (Spec 04 §3.6). Because act-then-describe is now the canonical model rather than one option among a per-skill `confirmationPolicy`, that field has been retired from the Skill DSL and the routing pre-confirmation band has been collapsed; the reconciliations are recorded in this spec's Decision Record (D1, D2, D8) and propagated into Specs 02 §7, 03 §2.7/§4, and 04 §3.6/§3.11.
+This principle is the authority for confirmation behavior. `Session` resolves and validates before
+calling `ExecutionCoordinator`; the resulting confirmation string is delivered through
+`VoiceTurnController` and the conversation ledger. The older `Done(confirmationText)` event name is
+destination vocabulary from Spec 04, not a current UI stream. The retired per-skill
+`confirmationPolicy` and routing pre-confirmation band remain retired.
 
-**Every correction is a learning opportunity.** When the user corrects the app, that signal is used to improve not just the NLU routing weights for next time, but potentially the underlying skill and type definitions themselves — so the app gets structurally better, not just statistically better. Corrections that reveal definitional gaps trigger a background authoring review, validated by Claude before being committed (§3.3).
+**Corrections repair first and may teach routing.** Current correction paths reverse or update the
+affected write and can update/forget learned corpus templates. Automatic structural-gap detection
+and background type/skill re-authoring are destinations (§3.3), not current behavior.
 
 **The free tier is never a crippled demo.** All ten free-tier marquee tasks work fully offline with no BYOK key. The paid tier is a genuine upgrade, not a gate on basics.
 
@@ -72,7 +90,9 @@ The default interaction pattern for all writes is:
 
 1. **Resolve.** The interpreter resolves the action plan (Spec 02 §4.1): system inputs are frozen, record ids are minted, any `foreach` is fully unrolled, every pending write is validated against its target type's schema, and the before-image of every record the plan will touch is captured (Spec 04 §3.3). A resolve that hits a missing required input, an unresolvable variable, or a write that would fail schema validation halts here with a surfaced error (P2.8) — before anything is written. This is the same resolve that a pre-action confirmation would have run; act-then-describe removes the *pause* after it, not the checking inside it.
 2. **Execute.** The interpreter applies the validated plan immediately, with no approval pause. Because a create's id was minted at resolve and the before-images were captured, the write is both idempotent on resume (Spec 02 §4.4) and reversible (§3.5).
-3. **Describe.** The app speaks a single sentence describing what was done, in past tense: "Done — task added: call the plumber, Thursday." This sentence is the skill's resolved `confirmationText` (Spec 02 §7.1), surfaced as the `Done(confirmationText)` turn event (Spec 04 §3.6) and handed to the speech engine — not free text composed at delivery time.
+3. **Describe.** The app presents the skill's resolved `confirmationText` in the controller reply
+   and conversation ledger and speaks it when voice output is active. No sealed `Done` event stream
+   exists in the current UI.
 4. **User continues or corrects.** If the app misunderstood, the user says so and the app corrects immediately (§3.3). If the app understood correctly, the user moves on.
 
 There are no pre-action confirmation cards in the normal write path, and the Skill DSL no longer carries a per-skill `confirmationPolicy` field to configure one (Spec 02 §7.1). The app does not ask "Should I do this?" before acting.
@@ -87,8 +107,9 @@ The `[PAID]` gate (§3.6) is not a confirmation; it is an inability to proceed. 
 
 The app breaks the fourth wall only when it genuinely cannot determine what was requested. It never pre-confirms a routing it can act on — a moderate-confidence best guess is acted on and made transparent, not surfaced as "did you mean X? — proceed?" (this collapses the routing pre-confirmation band that Spec 03 v0.3 defined; see D2 and the reconciliation in Spec 03 §2.7/§4). The thresholds below are Spec 03's (§4.3), used here by their real names. *(Post-`G-20`, the quantities behind these names are **retrieval-similarity and margin** signals, not classifier confidence — Spec 03 §7.3.1; the interaction behavior in this section is unchanged, only what the numbers measure.)*
 
-**Transcription below the ASR floor.** The speech engine could not produce a confident transcript at all (Spec 12 §4.6).
-> A: "I didn't quite catch that. Could you say that again?"
+**Unusable or empty recognition.** The current recognizer exposes no numeric confidence floor.
+Empty/no-match captures remain outside routing and repeated empties surface a microphone/text hint
+(Spec 12 §4.6).
 
 **Missing required slot with no default.** A required field cannot be extracted from the utterance and has no fallback (e.g., no `{now}` default). The app asks exactly one question for the most-blocking missing slot, answered via `ProvideSlot` (Spec 04 §3.6 → `NluRouter.resolveFollowUp`, Spec 03 §6.3). After the answer, it acts. At most two clarification rounds per turn; after two, the app acknowledges it is confused and offers to start over.
 
@@ -112,7 +133,9 @@ Because act-then-describe means the (possibly wrong) write has *already happened
 
 **NLU corpus update.** The correction is recorded as a correction pair in the flow table (Spec 03 §5): `(utterance, context_hash) → corrected_intent`. This raises confidence on the corrected routing for future identical utterances. The user never sees this process.
 
-**Structural gap detection.** Beyond updating routing weights, the system analyzes whether the correction reveals a gap in the underlying skill, type, or DSL definition — not just a confidence issue. There are two classes of correction:
+**Structural gap detection (destination).** Current correction code does not analyze a correction
+and automatically re-author a type or skill. The following remains a future design, not shipped
+behavior:
 
 - **Routing miss:** The skill definition was correct, but the routing weights were off. The corpus update alone is sufficient. Example: "log a run" routed to `log-meal` — the `log-run` skill exists and is correct, the corpus just underweighted it.
 - **Definitional gap:** The skill or type definition doesn't reflect how the user actually communicates, or is missing a field/pattern the user naturally expects. Example: the user says "ran 5k on the trail by the river" and the correction reveals the RunWorkout type has no `route` field — a field the user will expect to exist on every log. The skill definition itself needs updating.
@@ -122,25 +145,37 @@ A single correction is not enough to trigger a schema change — one data point 
 - **Repeated correction of the same normalized pattern.** When the corpus's repeated-correction rule (Spec 03 §4.2) fires — the same pattern corrected more than once within the correction window — the orchestrator has evidence that routing weights alone are not the problem, and it queues a background authoring review of the implicated skill/type.
 - **The user names the gap explicitly.** "…and there's no field for the route" or "add a route field to my running tracker" is a direct definitional signal and routes straight to a skill/type edit (Spec 02 §6.4), not through inference.
 
-When either fires, a background authoring review is triggered as a detached operation (Spec 04 §3.7, §4.7): Claude is given the current skill/type definition alongside the correction context and asked to propose a minimal update. The proposed change goes through the same validator as capability authoring (Spec 02 §6.3) before being committed. If validation fails, the proposed update is discarded — an invalid schema update is worse than no update. This step is BYOK-gated; on the free tier, only the corpus update is applied, and a persistent gap surfaces as an authoring suggestion in the `AttentionSurface` the next time a key is present.
+If implemented, either signal could start a detached authoring review and send any proposal through
+the same deterministic validator as explicit capability authoring. It must remain BYOK-gated and
+must never silently activate a schema change.
 
-The user does not see this process in real time. If a structural update is committed, the next identical utterance simply works correctly. Occasionally, if the proposed update is significant enough to change how a type behaves (e.g., adding a required field), the app surfaces a brief notice in the `AttentionSurface`: "I updated your running tracker based on how you've been using it — added a 'Route' field." The user can inspect and revert if needed.
+Any future structural update must instead surface a validated preview for explicit activation, like
+current capability authoring; the app must not quietly commit it from correction evidence.
 
 ### 3.4 Cancellation
 
-The user can cancel by saying "cancel," "never mind," or "stop" while the app is still processing — during capability authoring, during a multi-step foreach, or at the pre-action prompt for type/skill deletion (§24). (Destructive *record* writes have no pre-action prompt under act-then-describe — they execute and are undoable, §3.1 — so there is nothing to cancel there; a completed one is reversed with `undo`, below.) If the app has already completed execution and described it, "cancel" is treated as an undo request (§3.5) rather than an abandonment.
-
-Cancellation during a `foreach` mid-execute halts the remaining iterations and surfaces a partial-completion notice: "Done X of Y. The rest was not applied." No undo is needed for steps that did not run. For completed iterations, undo applies normally (§3.5).
+Current cancellation has three concrete homes: voice capture cancel discards the active capture;
+`OperationCenter.cancel` cancels queued/detached work where its operation state permits; and pending
+authoring/review/proposal surfaces can be dismissed through their explicit command. Synchronous
+skill execution is serialized and checkpointed but is not interruptible mid-`foreach`; the spec
+must not promise a “Done X of Y” live-cancellation surface that the runtime does not provide.
 
 ### 3.5 Undo
 
-The `undo` command (Spec 03 §2.3, Spec 04 §3.11) reverts the most recent completed turn's writes. Undo applies only to the immediately preceding turn; it is not a multi-level history. What it covers:
+The spoken `undo` command reverses the latest eligible write. UI confirmations and History retain
+execution ids and may request targeted undo of an older retained entry, subject to after-image
+conflict checks. What it covers:
 
 - `write_record` (create or update) → the created record is deleted; the updated record is restored to its pre-update before-image (captured at execute, Spec 02 §5.4 / Spec 04 §3.11).
-- `delete_record` → the record is restored from its before-image. (Making record deletion undoable is what lets it follow act-then-describe, §3.1; the reverse plan re-creates the record with a fresh `lastModified` so it wins over its own tombstone on the same device. The rare cross-device race — the tombstone syncs to another device before the undo — is a sync-layer concern flagged to Spec 06.)
-- Multi-step skills → all writes in the turn are reversed atomically. A turn with five writes undone has all five reversed; there is no partial undo.
+- `delete_record` → the record is restored from its before-image with new HLC field stamps so the
+  reversal can supersede its tombstone under Spec 06's merge rules.
+- Multi-step skills → the coordinator reverses operations in a durable, checkpointed sequence.
+  A process interruption resumes on launch; a persistence failure may surface an
+  applied-in-memory/repair state rather than claiming cross-file atomicity.
 
-Undo operates over the most-recently-completed execution's journal entry, retained for the undo window (Spec 04 §3.11); once that window closes the entry is reaped and undo is no longer offered.
+Spoken undo targets the latest eligible execution; UI Snackbar/History actions can target a
+specific execution. The durable journal retains at most 25 terminal executions. The five-second UI
+Snackbar is only the transient affordance lifetime, not journal expiry.
 
 What undo does not cover:
 - Generative outputs (briefing text, gift suggestions, coaching) — these have no persistent side effects to reverse; the content simply vanishes from the response surface.
@@ -232,9 +267,8 @@ A: "Logged FaceTime with Ana — her new job."
 > A: "Who is allergic to peanuts?"
 The user answers; NLU extracts the contact name; routing continues and the app acts.
 
-*E3 — Transcription below the ASR floor.*
-> A: "I didn't quite catch that. Could you say that again?"
-The user repeats or rephrases; the turn restarts from transcription.
+*E3 — Empty/unusable recognition.* No turn is routed. Repeated empty captures surface the current
+microphone/text-mode hint; there is no numeric ASR-confidence threshold.
 
 *E4 — No dominant candidate (multiple plausible skills, none reliable; §3.2).* ("Add a note" could mean task, contact note, or journal, and the app has no reliable basis for a guess.)
 > A: "Did you mean a task, a note about someone, or a journal entry?"
@@ -446,7 +480,9 @@ UI: Contact card for Mia with allergy field highlighted
 *E3 — Fact update.* ("Mia's allergy is actually tree nuts, not peanuts.")
 [System: NLU detects update intent; execute update] A: "Updated — Mia's allergy: tree nuts (was peanuts)."
 
-*E4 — Sensitive contact data.* If the Contact type has `sensitive: true` on notes, the allergy fact lands in the encrypted payload. The app never changes behavior; encryption is transparent.
+*E4 — Sensitive contact data.* The schema may mark the fact sensitive, but current records remain
+plaintext and may sync through the chosen provider. Encrypted payload handling is deferred to
+Spec 01 §8.7.
 
 ---
 
@@ -486,20 +522,20 @@ A: "Your last call with Mum was 3 weeks ago, June 10th."
 
 ---
 
-## 11. Free-Tier Task F8: Private 60-Second Daily Voice Journal
+## 11. Free-Tier Task F8: Private Daily Journal
 
-**Summary:** The user speaks a daily journal entry; it is transcribed on-device and stored as a private `journal_entry` record that **syncs** (so a journal survives device loss). It is never sent to **Claude** or any Plenara server; keeping its content unreadable by the user's *cloud provider* is a json-privacy hardening **deferred to a later version** (encryption, Spec 01 §8.7).
+**Current realization:** ordinary typed or tap-to-talk input can create a `journal_entry` through
+the normal turn pipeline. There is no dedicated 60-second continuous capture mode, stop-word
+session, duration reply, or journal-specific speech UI. The record syncs as plaintext through the
+chosen provider and no current Claude assembler reads journal content.
 
-**Canonical flow:**
+**Current canonical flow:**
 
 ```
-U: "Start journal entry." (or "Today's journal.")
-[System: SpeechRecognizer enters journal capture after the user taps to start; a second tap or the 60-second cap stops it]
-[System: recording in progress — no cloud STT; on-device transcription only]
-U: (speaks freely for up to 60 seconds)
-U: "Done." (or the 60s window closes)
-[System: transcription finalized on-device; written as an ordinary private journal_entry record that syncs — records/<date-prefixed-id>.json (unique per entry; Spec 01 §12.3 / Spec 06 §3.1)]
-A: "Entry saved — 47 seconds."
+U: "Journal that today was a good day."
+[System: ordinary on-device speech capture finalizes and routes to `log-journal`; the skill writes
+an ordinary `journal_entry` record in `records/`]
+A: "Saved to your journal."
 UI: Journal entry card with transcribed text
 ```
 
@@ -513,16 +549,14 @@ UI: Journal entry card with transcribed text
 
 **Edge cases:**
 
-*E1 — Entry already exists for today.*
-> A: "You already have an entry for today. Add to it, or start a new one?"
-Add appends to the same file with a separator and timestamp.
+*E1 — More than one entry on a day.* Each entry receives its own id; current behavior does not
+append into a single date-keyed file.
 
 *E2 — User stops before any speech (0 seconds).*
 The flow is abandoned silently; no file is written.
 
-*E3 — Transcription fails (on-device STT error).*
-> A: "Couldn't transcribe that. Want to try again?"
-No partial entry is written.
+*E3 — Recognition fails.* The ordinary voice failure path clears capture and preserves text-mode
+entry; no partial journal record is written (Spec 12 §9).
 
 *E4 — Entry search (covered in §12) uses on-device embeddings; the text is never sent anywhere.*
 
@@ -639,8 +673,10 @@ The draft is stored inert (Spec 04 §6.2) and surfaced in the `AttentionSurface`
 *E5 — Network lost during authoring (mid-Claude call).*
 The in-flight request is abandoned; the user is told authoring failed; the request is not auto-retried (Spec 04 §6.3 — authoring requires explicit user intent). A draft marker is stored.
 
-*E6 — User refines the design through multiple turns.*
-Each refinement is a follow-up authoring call. The type is not registered until the user says "activate." The draft accumulates in memory (not on disk) across up to five refinement turns; beyond five, the app suggests activating the current draft and refining afterward.
+*E6 — User leaves before activation.* The validated draft is persisted device-locally by
+`CapabilityDraftStore` and restored after relaunch. `activate` revalidates collisions before
+promotion; `never mind` or an unrelated move-on turn discards it. Multi-turn re-authoring and a
+five-refinement cap are not current behavior.
 
 ---
 

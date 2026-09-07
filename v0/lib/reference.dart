@@ -1,7 +1,7 @@
 /// Reference knowledge bases (Spec 13) — shipped, versioned datasets (nutrition first). A food
 /// name resolves through tiers: (1) exact alias match after normalization — sync, offline, the
 /// hot path; (2) in-process embedding nearest-neighbor for near-misses.
-/// (Tier 3, a Haiku normalize-once-and-cache, is the documented next layer.) Every result carries
+/// (A cloud normalize-once-and-cache tier remains an unimplemented design destination.) Every result carries
 /// PROVENANCE so a looked-up value is never confused with a user-entered one, and a miss is
 /// honest (null) rather than a guessed number.
 library;
@@ -111,8 +111,8 @@ class ReferenceStore {
         : ReferenceEntry(e['key'] as String, e, 'reference');
   }
 
-  /// Tiers 1→2: exact, else embedding nearest-neighbor over the canonical keys (needs the embed
-  /// server; keys are embedded once and cached). Returns null if both miss — an honest "unknown",
+  /// Tiers 1→2: exact, else feature-hash nearest-neighbor over the canonical keys (the production
+  /// embedder is in-process; keys are embedded once and cached). Returns null if both miss — an honest "unknown",
   /// never a guess. [theta] guards against a confidently-wrong far match.
   Future<ReferenceEntry?> resolve(String name,
       {Embedder? embedder, double theta = 0.6}) async {

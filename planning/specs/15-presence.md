@@ -11,7 +11,11 @@
 > deep conversation, compact beside Todos/Plan, and an ember on Relationships, Habits, and detail surfaces. The ephemeral-
 > exchange and presence-primary steady-state decisions are implementation history, not current law.
 
-**Status:** Draft v0.3 — July 2026 (Fable 5). First full draft (v0.1, early July) of the voice-first visual experience: the presence as the app's primary surface — the substrate, the presence state machine, the signal→visual expressive mapping, the disembodied personality rules, text materialization and yielding choreography, muted-mode visuals, the presence motion tokens, render tiers and perf budgets, and the accessibility constraints a permanently-moving surface must satisfy.
+**Status:** Active v0.5 — audited against the wired implementation 2026-09-07. Animated Plena,
+state/expression targets, mic-level response, Y0/Y1/Y2 presentation, reduced/still presence,
+glyph scarcity, and non-iOS capped trail persistence are shipped. The public
+`PresenceDirector`/`PresenceFrame` abstraction, persisted personality seed, full in-place parting,
+and iOS trails remain destinations.
 **v0.2 (2026-07-11):** after the first live mockup pass, the substrate is re-pointed from the smoke veil to the **coherent particle swarm** — "the murmuration" (§2.1; D2 rewritten; the veil becomes the documented alternate, §2.2 — a renderer re-pointing, not a re-architecture: §2.4's vector drives both). New: **§5A — the symbolic glyph vocabulary**, the swarm's rare figurative register, with a fifty-glyph curated table (D13). Recorded as release-gating: the **additive-blending hue-legibility constraint** — the mockup's white-out failure must never recur (§4.3, §10 item 7, Q3 extended).
 **v0.3 (2026-07-11):** trued against the **first shipped implementation** (`app/lib/plena.dart`, `app/lib/glyphs.dart`, `app/lib/main.dart` — the Windows dogfood build, which shipped the *animated* swarm directly rather than waiting for the v3 rung, §9.3). The entity is named — **Plena** (§0). Glyph formation is re-specified from in-place mote assignment to the **comet-trail** mechanic the build chose: Plena flies the figure's path herself, shedding a faint semi-transparent tail that holds the shape and then rejoins her (§5A.4; D13 amended). Occasion→glyph selection ships as code (§5A.1). The presence-primary home lands (§6.3–§6.4, §7): Plena plus a mute control and nothing else, tap-anywhere to speak, corner-hover for list content, the **ephemeral current exchange** (no scrollback — the v0 chat feed is deleted), and the muted input bar rising from below. Also recorded: the aura underlay is the *selected* §4.3 mechanism (the fireball core, now designed rather than accidental); true trail persistence via a capped ping-pong buffer (§2.1, §9.2); the dogfood tuning sheet (§5.4).
 **v0.4 (2026-08-17):** the living-planner implementation closes the shipped gaps without changing
@@ -26,8 +30,9 @@ a sub-300 ms whole-body acknowledgement. The full 52-figure corpus remains an in
 reachable only on internal build channels. iOS is explicitly trail-free until a supported render path
 passes the same perceptual and memory gates; no per-frame `toImageSync` workaround returns there.
 **A note on numbering:** this document is intimately a companion to Spec 07 — it deepens §2.1's Stage and §8.4's orb from "chrome" into the primary interface — and a lettered `07a` was considered. Rejected: in this suite, lettered companions (05a–05f) are *working artifacts* — trace rigs, gap registers, review logs — not chartered normative specs, and a normative spec takes a top-level number even when it exists to complete another (precedent: Spec 12's chartering note, which took slot 12 rather than `06a`). Slots 13 and 14 are occupied; this is **Spec 15**. Everything it extends or supersedes in Spec 07 is recorded explicitly as suite-sync items in §11, the way Spec 12 records its retargets — this spec edits no other file.
-**Depends on:** Research doc (§2.1–2.3, §6.2, §11.3–11.5, §15.1); Spec 04 — Architecture (§2.2 layer rules, §3.6 `TurnEvent` stream + `DispatchOrchestrator`, §3.12 `AttentionSurface`, §4.3 barge-in, §4.7 detached ops, §5.2 error surfaces); Spec 05 — Functional (§3 act-then-describe, §13 offline/subtitle/quiet-overlay behavior); Spec 07 — UI & Design-Language (§2.1 the Stage, §6 turn cards, §7 quiet overlay & subtitles, §8 motion tokens & the orb, §9 typography/shape/color, §10 staging); Spec 08 — AI Cost & Privacy (§3.1 cloud latency, §5.2 residual routing — the "difficulty" signals of §4.2); Spec 12 — Voice (§2.1 `micLevel` + `SpeakEvent`, §4 transcript semantics, §6.3 muted `SpeakEvent`s, §7.2 latency budgets, §9 voice errors)
-**Blocks:** Spec 09 — Test (the `PresenceDirector` property tests and golden-frame tier of §9.2 here); the v3 organic rung (Spec 07 §10 step 4 — this spec is that rung's normative content for the Stage); Spec 07's Q3 (wake-word "armed" reading — co-owned here as Q4)
+**Depends on:** Research doc (§2.1–2.3, §6.2, §11.3–11.5, §15.1); Spec 04 — Architecture (layering, detached operations, errors); Spec 05 — Functional (act-then-describe and quiet behavior); Spec 07 — UI & Design-Language; Spec 08 — AI Cost & Privacy (difficulty signals); Spec 12 — Voice (`VoiceTurnController`, mic level, TTS callbacks, capture/error semantics); Spec 17 — adaptive workspace hierarchy.
+**Blocks:** no shipped surface. Future public director/frame factoring, iOS trail work, and wake-word
+states require their own verification gates.
 
 ---
 
@@ -39,7 +44,9 @@ This document specifies:
 
 1. **The substrate** — the one normative visual medium the presence is made of, its named alternates and their tradeoffs, and the Flutter rendering strategy with a frame budget (§2)
 2. **The presence state machine** — the base states (aligned exactly to Spec 12's vocabulary), the modifiers layered over them, and what the substrate *does* in each (§3)
-3. **The expressive mapping** — the concrete table from system signals (TurnEvents, mic level, SpeakEvents, tier/latency class, attention state) to the presence's parameter vector (§4)
+3. **The expressive mapping** — the concrete table from controller state, mic level, speech
+   lifecycle callbacks, difficulty, attention state, and future richer signals to the presence's
+   parameter vector (§4)
 4. **The disembodied personality** — the rules that make the presence read as alive-but-calm without a face, and the ban on anthropomorphic kitsch (§5) — and the **symbolic glyph vocabulary**, the presence's rare figurative register and its fifty curated figures (§5A)
 5. **Text materialization and yielding** — how text condenses out of the field and releases back into it, and the three yield levels by which the presence makes room for Spec 07's views without ever despawning (§6)
 6. **Muted mode** — the visual contract when TTS is off: captions carry words, the presence still speaks (§7)
@@ -53,9 +60,16 @@ It does **not** cover: the view-archetype library and type→archetype mapping (
 
 ## 1. Governing Principles
 
-**P1 — The presence is the app, not a widget in it.** The steady state of the screen is the entity, quietly alive; everything else — cards, captions, views — is something the entity *does* or *makes room for*. Consequences: the Stage's visual hierarchy inverts from Spec 07 §2.1 (the field is the ground, the ambient cards are guests on it — suite-sync X1); there is no frame, panel, or chrome that "contains" the presence; and the presence never unmounts — on every surface, at every scroll depth, some form of it is on screen (§6.3).
+**P1 — The presence is global and adaptively scaled.** At empty rest or in deep conversation Plena
+may own the screen. Populated planner state owns hierarchy: Plena is compact beside Todos/Plan and
+an ember on Relationships, Habits, Library, Settings, and detail surfaces. She remains a coherent
+identity without obscuring actionable content (Spec 17 §3).
 
-**P2 — Driven by streams, never by queries (Spec 07 P5, tightened).** The presence is rendered from a single small value — the `PresenceFrame` parameter vector (§2.4) — computed by one pure component, the `PresenceDirector`, whose only inputs are: the sealed `TurnEvent` stream (Spec 04 §3.6), the `micLevel` and `SpeakEvent` projections (Spec 12 §2.1, surfaced through Business Logic view models per Spec 12 P2.5), the `AttentionSurface` count projection (Spec 04 §3.12), and the voice-availability state (Spec 12 §9). The renderer consumes frames; it holds no other reference. No shader, painter, or particle ever knows what a record, a registry, or a model is. This makes the presence's entire behavior a pure function `(state, signals, time) → PresenceFrame` — deterministic, golden-testable (Spec 09), and skinnable across render tiers (§9.1) without behavioral drift.
+**P2 — Driven by controller state, never domain queries.** The shipped `Plena` widget computes a
+private immutable `_Frame` from `PresenceState`, `PresenceExpression`, difficulty, mic level,
+yield target, theme, reduced/still mode, and glyph trigger. There is no public `PresenceDirector`,
+`PresenceFrame`, sealed `TurnEvent`, or `SpeakEvent` stream. The painter knows no records, registry,
+routing, or model. Factoring a public director/frame is a destination, not current architecture.
 
 **P3 — One entity, continuous.** There is exactly one presence per install. It never duplicates, never despawns, never "closes." Navigation is the presence yielding, receding, or gathering (§6.3) — never the presence being replaced by a screen. Its personality seed (§5.4) is stable for the life of the install. Two presences on screen, or a presence that pops in and out, would break the fiction this whole spec exists to build.
 
@@ -67,7 +81,10 @@ It does **not** cover: the view-archetype library and type→archetype mapping (
 
 **P7 — No state is carried by hue alone.** Every presence state and every difficulty grade is legible with color vision deficiency, on a grayscale screen, and in the reduced-motion variant: hue is always paired with at least one of tempo, coherence, luminance, or grain (§4.3, §10.2). This is the accessibility corollary of the product vision's "hue changes with difficulty" — hue is the *poetry*, never the sole *information*.
 
-**P8 — Beauty degrades gracefully.** The presence has three render tiers (§9.1) and an automatic demotion ladder driven by measured frame time and platform power state. Tier demotion changes *fidelity*, never *meaning*: the same `PresenceFrame` drives every tier, so a low-power static presence still shows the same states, the same difficulty encoding, the same captions. GPU trouble is never allowed to become UX trouble (Spec 04 P2.8, visually).
+**P8 — Beauty degrades gracefully.** The current renderer has animated and static modes; OS Reduce
+Motion and Still Presence select the static form. The three-tier automatic demotion ladder in §9.1
+is a destination. Any future tier change must alter fidelity, never meaning: the same explicit
+state inputs must preserve state and caption semantics.
 
 ---
 
@@ -99,9 +116,10 @@ Why the swarm — and how the design answers the three tradeoffs v0.1 honestly r
 
 Not a wallpaper (it responds within 90 ms to state changes, §3.3), not a music visualizer (it never free-runs on audio energy; every motion is a state or signal, P5), not a particle *system* in the fireworks sense (nothing is emitted, nothing dies — the same motes persist for the whole session, P3 in miniature), not full-screen static (materialized text and views sit on calm ground, §6; the swarm guarantees them contrast, §10.1), and not a brand mascot (P4).
 
-### 2.4 `PresenceFrame` — the parameter vector
+### 2.4 Destination `PresenceFrame` parameter vector
 
-The entire substrate is driven by one immutable value, emitted by the `PresenceDirector` at display rate and consumed by whichever tier renderer is active:
+The following public value remains the desired extraction. Current code uses a private `_Frame`
+inside `plena.dart`, computed directly by the stateful renderer from widget inputs:
 
 ```dart
 class PresenceFrame {
@@ -133,7 +151,7 @@ The base states are **idle / listening / thinking / speaking** — the same four
 | **idle** | app at rest; empty final; turn terminal events settled | **Breathing.** `energy ≈ 0.08`, `tempo 1.0`, high coherence, resting hue, the resting micro-flow (§2.1): the core's cohesion radius swells on a ~4 s sine (`p-breath`) while each mote drifts sub-pixel along the shared field, slow toroidal drift of the core beneath. Nothing else. At a glance across a room it should be *just barely* discernibly alive. |
 | **listening** | capture session live (mic open ⇔ listening, Spec 12 §3.5 — the swarm must never claim listening when the mic is closed, and vice versa) | **Gathering, attentive.** Coherence rises toward 0.9 — motes draw in from the margins toward a tighter core (`m-instant` snap into the state, per Spec 07 §8.4 — responsiveness beats smoothness here); `energy` rides the normalized `micLevel` stream where the platform recognizer exposes it, so the user *sees being heard*. The local Whisper path has no live-level signal and retains a gentle self-driven shimmer. Slight `lean` toward the subtitle region, where their words are condensing (§6.2). |
 | **thinking** | final transcript dispatched; `TurnStarted` → pre-`Done` | **Turning inward.** Coherence high, `tempo` drops to ~0.7, luminance dips a shade, circulation becomes visibly *convective* — motes cycle inward and fold under, the swarm working on itself. This state replaces every spinner in the app (Spec 07 §2.1). Its expression deepens along the difficulty ladder (§4.2) the longer it holds. |
-| **speaking** | `SpeakEvent.started` → `finished`/`stopped` (Spec 12 §2.1) | **Fluctuating in unison with speech.** `energy` and `luminance` follow the speech envelope (§4.1) — swells at phrase scale, shimmer at cadence scale; coherence moderate; a gentle `lean` toward the listener (screen-center-down). Muted changes nothing here (§7): `SpeakEvent`s still fire (Spec 12 §6.3). |
+| **speaking** | controller `_speaking` between TTS start/done (or finite muted presentation) | **Current:** the speaking target raises energy/tempo and the renderer animates continuously. A text/word-synchronized cadence envelope remains a destination (§4.1). |
 
 ### 3.2 Modifiers — layered, not forked
 
@@ -164,7 +182,10 @@ The crux: every aesthetic behavior lands as a signal→parameter rule. The direc
 
 The vision asks for the field to "fluctuate beautifully in unison with its speaking." The obstacle is honest: **platform TTS engines do not expose a realtime output-amplitude stream** (Spec 12 §6.1's matrix — none of the three publishes synthesis PCM to the app by default). The design therefore runs on a **cadence-envelope proxy**, upgraded when real timing data exists:
 
-- **v1 proxy — the synthesized envelope.** When `speak(text)` is issued, the director derives a deterministic envelope from the *text itself*: syllable count estimation (vowel-group heuristic — cheap, locale-tolerant) sets a pulse train at spoken-syllable rate scaled to the configured TTS rate; punctuation and clause boundaries insert phrase-scale swells and dips; expected duration is estimated from character count × rate and **re-anchored against reality** at `SpeakEvent.started` and truncated at `finished`/`stopped`. The envelope drives `energy` (primary) and `luminance` (phrase-scale swells only — see the photosensitivity clamp, §10.3). Result: the swarm breathes *with the shape of the sentence* — provably in sync at start/stop, plausibly in sync within — which observation of ambient-companion products suggests is fully sufficient at conversational glance distance. It will drift on long utterances; long utterances are already capped by the subtitle length discipline (Spec 07 §7.3).
+- **Current:** TTS `onStart`/`onDone` anchors the beginning and end of speaking state; Plena's
+  internal motion is not derived from syllables or punctuation.
+- **Destination proxy:** a deterministic text-derived cadence envelope could add within-utterance
+  phrasing without tapping system audio.
 - **Upgrade path — word boundaries.** If/when TTS word-boundary callbacks prove reliable cross-platform, Spec 12 carries them as `SpeakEvent` extensions (its Q6) and the director snaps the envelope to real word onsets. This spec is the *customer* of that question (suite-sync X6); the proxy is designed so the upgrade changes fidelity, not architecture.
 - **Never raw audio taps.** The director does not capture system audio output to measure amplitude — a loopback tap would be platform-fragile and sits badly against Spec 12 §8's "audio never exists" posture even though output ≠ capture. The envelope is computed from text the app already holds.
 - *(v0.3 — shipped baseline.)* The dogfood build anchors the speaking state strictly to the real TTS callbacks: `speak()`'s start/done bracket the animation, with a generous length-scaled safety cap so a stalled engine can never freeze her mid-speech; when muted (or voiceless) a silent flourish timed to the reply's length stands in. The cadence envelope above is still to land on this anchor — the provably-in-sync endpoints already exist.
@@ -416,7 +437,11 @@ All presence-adjacent text obeys one arrival/departure grammar, layered on Spec 
 
 ### 6.2 The subtitle slots
 
-Spec 07 §7.3's two-slot contract is adopted wholesale — user slot (interim, dimmed-provisional, solidifies on final), assistant slot (whole-line on speech start, 4 s linger), two-line discipline, always-on. This spec adds only: both slots render inside the swarm's lower margin on a calm band; the interim slot's provisional dimness reads as *not yet condensed* (the metaphor and the mechanic finally coincide); and the assistant slot's release re-joins the field per §6.1. Slot ownership, content, and timing remain Spec 07's; Spec 12 §4.3's ownership line is untouched. *(v0.3: shipped captions render as a width-constrained centered column low over the void — the measure, not the window, bounds the line, so a full-screen desktop window never stretches a caption across it; list content gets its own reading column, §6.3.)*
+The current caption is driven by `VoiceTurnController`: recognizer partials remain provisional,
+final heard text is echoed briefly, and the assistant reply appears as a width-constrained column
+through speech then clears about 1.6 seconds after completion. Durable conversation text lives in
+History/the conversation ledger. The calm-band/condensation language remains the visual contract;
+there is no separate two-slot `TurnEvent` renderer.
 
 ### 6.3 Yielding — the seam with Spec 07's views, drawn explicitly
 
@@ -431,7 +456,10 @@ Rules across the ladder: yield transitions are single composed movements (one-mo
 **The shipped ladder (v0.4).** `main.dart` (the widget tree), `app/lib/voice_turn_controller.dart`
 (turn/presence state), and the planner routes implement the ladder as follows:
 
-- **Y0 as shipped:** Plena full-screen over the warm near-black void; the only chrome is a small **mute control at bottom-left** and a quiet overflow menu. **Tap (or click) anywhere is the speak gesture** — the whole screen is the mic target (one utterance per tap, auto-sent on the final transcript; a second tap aborts; tapping while she speaks barges in). No orb widget, no input chrome in voice mode.
+- **Y0 as shipped:** Plena can fill non-interactive rest/conversation space. Tap starts capture;
+  the next tap stops and sends; the explicit × (or mute) discards. Starting capture while she speaks
+  barges in. Populated planner surfaces use an explicit voice target so actionable content keeps its
+  hit regions.
 - **Y1 as shipped — the corner-hover:** when a reply is list-shaped, Plena **eases to a corner** (~600 ms settle, remaining fully alive at small size) and the text hovers elegantly over the void beside her in a constrained reading column — the parting realized, for the dogfood, as making-room-by-withdrawing rather than parting-in-place. She returns full-screen when the exchange clears. The full Y1 parting choreography stands as the target for card-bearing surfaces.
 - **Y2 as shipped:** Settings and Data carry a static edge ember, and record detail carries an inline
   ember. These are deliberately non-interactive identity marks; global capture remains in the
@@ -447,13 +475,17 @@ Owned upstream, listed here for completeness: data read-back and anything list-s
 
 ## 7. Muted Mode
 
-Muting TTS (one of Spec 07 §7.1's two persisted booleans) changes the *audio*, never the entity:
+The current single persisted `voiceMuted` preference switches to text input and suppresses TTS:
 
-- **The presence still speaks.** Muted `speak` calls still emit `SpeakEvent`s (Spec 12 §6.3 — guaranteed mechanically), so the speaking state, the cadence envelope, and the assistant caption run identically. The words the user would have heard are exactly the caption text (parity is Spec 07 §7.3's always-on rule; nothing new is needed here — that is the point of D8/07 and this spec inherits it whole). Watching a muted Plenara answer — the swarm swelling through the shape of a sentence it isn't voicing while the words print beneath — is the mode working as designed, not a degraded state.
+- **Captions carry the answer.** Muted turns skip `SpeechOutput.speak`; controller state presents the
+  reply visually and runs its finite silent presentation lifecycle. There is no shipped
+  `SpeakEvent` type.
 - **The muted modifier** (§3.2) marks the state visibly and calmly at the swarm's rim, satisfying Spec 07 §8.4's visibly-muted rule in the swarm idiom.
 - **Text input:** when input modality is text (Spec 07 §7.1), the quiet overlay's docked field (§7.2) is the persistent affordance — on desktop it is the steady state, focus retained. **Nothing beneath it reflows** (Spec 07 P2, honored absolutely): the swarm neither shrinks nor shifts for the field; the scrim exists only behind the field itself; the calm band beneath the docked field is simply always present while docked. A typed submission animates the same acknowledgment (§5.3) as a spoken one — the presence witnesses typing too.
 - **Closed captions** are, precisely, the assistant subtitle slot — already always-on. Muted mode adds no second caption system; it removes the audio and leaves the contract standing (the cognitive-freeness argument of Spec 07 §7.3, restated as presence design: mode switches must cost the user nothing to re-learn).
-- *(v0.3 — as shipped.)* Mute is the bottom-left control, and in the dogfood **muting is switching to text mode**: it stops any in-flight speech, drops a hot mic (never leave one live with no way to stop it), and raises the **two-line input bar from off-screen bottom** (~350 ms ease; it also rises when no recognizer exists at all). One control drives both of Spec 07 §7.1's booleans for now; the independent-booleans model remains the target. Captions are unaffected — the exchange still materializes over the void, and muted speech still animates as a silent flourish (§4.1).
+- Mute stops in-flight speech, cancels a hot mic, and raises the two-line input bar; the bar also
+  appears when no recognizer exists. Output-only mute would require a new preference and is not
+  current behavior.
 
 ---
 
@@ -496,7 +528,11 @@ When the OS reduced-motion flag is set (or the user chooses "still presence" in 
 
 ### 8.4 Screen readers and the presence
 
-With a screen reader active, app TTS already defers (Spec 12 §6.4). The swarm additionally: exposes a single semantic node ("Plenara — idle / listening / thinking / speaking / muted / text mode", matching Spec 12 §9.5's labeled voice-state chrome), announces base-state changes only (never cues, never difficulty — grade changes are not events a listener needs narrated), and is marked decorative in every other respect so swipe-navigation never lands *inside* the field. Materialized text is ordinary accessible text from the instant it begins condensing (no waiting for the animation).
+The current UI exposes semantic controls and readable caption/text content, but it does not
+automatically detect a screen reader to suppress app TTS. Automatic TTS deference and a single
+announced presence-state node remain accessibility destinations (Spec 12 §6.4). Particle detail
+must remain decorative so swipe navigation never lands inside the field; materialized text remains
+ordinary accessible text.
 
 ---
 
@@ -510,27 +546,34 @@ With a screen reader active, app TTS already defers (Spec 12 §6.4). The swarm a
 | **T1 — the reduced swarm** | 300–800 motes, cheaper draw (`drawPoints`/atlas blits), coarser flow sampling, no aura underlay, core glyphs only (§5A.7 fence 5) | instancing-poor platforms; sustained-thermal demotion; mid-tier mobile |
 | **T0 — the still presence** | static per-state figures — a fixed constellation per state, cross-fade only (identical to §8.3); no glyphs; no trail buffer | reduced motion; power-saver; GPU-distressed *(v0.3: no longer the ship vehicle — it survives as the reduced-motion/test variant inside the shipped renderer, which snaps a static per-state frame and runs no ticker)* |
 
-All tiers consume the same `PresenceFrame` stream from the same `PresenceDirector` — tier selection is a composition-root decision plus a runtime demotion ladder, and **no behavioral logic lives in any renderer** (P2, P8). The mote budget is fixed per tier at startup (§2.1); demotion switches tiers, never bleeds count mid-tier — density-based LOD keeps the silhouette continuous across the switch. Demotion triggers: frame-time p90 > 12 ms sustained 3 s (T2→T1), > 12 ms again or OS low-power/thermal signal (T1→T0); promotion re-attempts only on app open (never oscillate mid-session). Backgrounded: the director suspends entirely — zero frames, zero uniforms, zero battery.
+The shipped renderer has animated and static modes selected by OS Reduce Motion or Still Presence.
+The automatic three-tier frame-time/thermal demotion ladder and common public `PresenceFrame`
+stream described here are destinations. The animation ticker stops when static or unmounted.
 
 ### 9.2 Budgets (normative, measured like Spec 12 §7.2's)
 
 - T2 swarm: ≤ **2.0 ms GPU** per frame at the full 6k budget on min-spec, **one draw call** (+1 for the aura underlay), plus ≤ **0.8 ms CPU** advection (pooled `Float32List`, allocation-free, SIMD-friendly); T1: ≤ 2.5 ms raster at ≤ 800 motes; T0: zero steady-state cost.
-- `PresenceDirector`: ≤ **0.3 ms CPU** per frame, allocation-free in steady state (the frame object is reused or pooled; the glyph annotation is an id + scalar, nothing heap-borne).
+- A future extracted `PresenceDirector` should remain ≤ **0.3 ms CPU** per frame and allocation-free
+  in steady state; this is not a measured current component.
 - 60 fps interaction target on all tiers; T2 idle may drop to 30 fps (breath at 4 s cannot tell the difference) for battery on mobile — desktop dogfood keeps 60.
 - Startup: mote buffers pre-allocated and the flow tile precomputed; the presence is breathing at first paint — it is never a late-arriving decoration.
 - *(v0.3 — shipped raster-health rules, normative.)* The trail-persistence buffer is **capped at ~760 px on its longest side** and scaled up on the blit — an uncapped full-resolution per-frame `toImageSync` stalls the raster thread at full-screen. The sim runs **fixed 60 Hz substeps** (capped at 4 per frame, with no time-debt banking past the cap) and repaints **only when a substep actually ran**, so high-refresh displays neither double-deposit nor double-erode the trail; the static path draws direct and never touches the buffer.
-- Test hooks (for Spec 09, recorded as suite-sync X7): the director is a pure function — property tests over signal sequences (every `TurnEvent` order the orchestrator can emit maps to a legal frame path; grades monotonic; acknowledgment ≤ 90 ms in frame terms), golden-image tests per (state × modifier × tier) on fixed seeds, glyph-formation goldens (draw-midpoint and held-figure frames for the core set), the full-load ramp-distinguishability assertion (§4.3, §10 item 7), and the frame-budget numbers CI-tracked from the v3 rung like Spec 12's latency table.
+- Current tests exercise private frame targets, controller-driven states, glyph definitions/gating,
+  reduced/still behavior, and rendered keyframes. The pure public-director property suite described
+  here can land only after `PresenceDirector`/`PresenceFrame` exist.
 
-### 9.3 Staging — the same skeleton, honestly
+### 9.3 Current realization and remaining work
 
-Aligned to Spec 07 §10's rungs (structure lands final early; expression is staged):
+The animated implementation skipped the old staged ladder. Today `Plena` renders roughly 2,200
+motes, aura, state/expression/difficulty targets, mic-level listening, Y0/Y1 movement, Y2/inline
+embers, finite acknowledgements, a 12-figure production register, Still Presence, and OS Reduce
+Motion. Non-iOS platforms use capped ping-pong `toImageSync` trail persistence; iOS deliberately
+does not until a supported path passes perceptual and memory gates.
 
-1. **v1 / v1.2 (now, Windows dogfood):** ship **T0 on the Stage** — the still presence with cross-faded states — plus the calm-band caption region. This *already replaces* the busy indicator and delivers the state vocabulary; it is "functional and clean on the same skeleton." The `PresenceDirector` + `PresenceFrame` land here in final shape, driven by the real `TurnEvent`/`SpeakEvent` streams (and by Spec 14's shipped seam on the dogfood box).
-2. **v1.5 (with the voice pipeline, Spec 07 §10 step 2):** `micLevel`-driven listening, the cadence envelope, yield levels Y0/Y2 (the ember subsumes the orb the moment the orb would have shipped — no throwaway orb is built; suite-sync X1 lands here at the latest).
-3. **v2:** Y1 parting choreography arrives with the generative/authoring cards it presents.
-4. **v3 (the organic rung):** T2 — the full murmuration, the aura underlay, the vital ramp's designed anchors *passing the §4.3 additive-legibility gate* (with Spec 07 Q2's pass), gesture polish, and the **core glyph set** (§5A.8). A re-skin of the director's output, not a re-architecture — the invariant Spec 07 §10 already promises, kept here. The extended glyph set follows post-v3 curation (Q5).
-
-*(v0.3 — how it actually landed.)* The dogfood jumped the ladder: the **animated Plena shipped first** — the `drawAtlas` swarm at 2,200 motes with the aura, the trail buffer, the tuning sheet, and the glyph engine with 49 figures — with T0 surviving as the reduced-motion/test path inside the same renderer rather than as the ship vehicle. The director/renderer split held its shape (per-state parameter targets smoothed by the director half; the painter only reads), though the formal `PresenceDirector`/`PresenceFrame` components are still to be factored out as spec'd, driven by the sealed streams rather than the screen's booleans. Still owed from the rungs: `micLevel` listening (§3.1), the cadence envelope (§4.1), Y1's parting-in-place and Y2's ember (§6.3), the per-install seed (§5.4), and the designed vital-ramp anchors behind the tuning sheet's dialed values.
+The painter/controller split is real, but the formal public `PresenceDirector`/`PresenceFrame`
+types and sealed input streams are not. The renderer uses a fixed seed (`Random(7)`), not a
+persisted per-install personality seed. Full parting-in-place, formal frame-budget demotion, and
+the remaining light-theme/ramp evidence stay as destinations.
 
 ---
 
@@ -538,7 +581,10 @@ Aligned to Spec 07 §10's rungs (structure lands final early; expression is stag
 
 1. **Contrast — the calm band.** Any text over the field (captions, materialized text, card content at Y1) sits on a calm band: a region where the swarm's local density and luminance are clamped to a band guaranteeing ≥ **4.5:1** contrast with the text color in both themes, and local turbulence/tempo are reduced ≥ 60 %. The band is computed by the renderer from text geometry supplied by layout — never hand-placed — and is the load-bearing answer to "living background, readable words." Verified per tier in the golden tests.
 2. **Colorblind-safe difficulty.** P7 enforced: every state and grade differs from its neighbors in at least two of {tempo, coherence, luminance, grain} in animated tiers, and in luminance + form in T0. The vital ramp's hue axis is redundant by construction, and the golden tests include a grayscale-render assertion.
-3. **Photosensitivity — no strobing, ever.** Full-field luminance modulation is rate-limited to **≤ 2 Hz** and amplitude-limited (well inside WCAG 2.3.1's three-flashes threshold with margin); the speech cadence pulse (§4.1, ~4–5 Hz syllabic) is therefore expressed through *motion amplitude and grain*, never through luminance flashing; motes never blink in unison; no cue inverts the field; glyph formation is motion, never light (§5A.7 fence 3). These are director-level clamps, testable on the frame stream — not renderer courtesies.
+3. **Photosensitivity — no strobing, ever.** The current renderer avoids synchronized blinking,
+   full-field inversions, and light-based glyph formation. The ≤2 Hz full-field luminance clamp and
+   frame-stream verifier are requirements for a future public director; cadence is not currently
+   synthesized (§4.1).
 4. **Vestibular safety.** No full-field zoom, rotation, or parallax sweeps; `lean` is capped at a small fraction of field size; yield transitions translate density, not the viewport.
 5. **Reduced motion** (§8.3) and **screen-reader deference** (§8.4, Spec 12 §6.4/§9.5) as specified — both are release-gating, same class as Spec 07 §8.2 rule 5.
 6. **No information is presence-only** (the mirror of "no information is audio-only," Spec 12 §9.5): every swarm cue — and every glyph, via its `meaningKey` (§5A.7 fence 1) — shadows a card, chip, caption, or attention item that carries the actual content. A user who never looks at the field loses mood, not meaning.
@@ -555,7 +601,8 @@ Aligned to Spec 07 §10's rungs (structure lands final early; expression is stag
 - **X5 — Spec 07 §10 staging:** rungs 1–4 gain the presence deliverables of §9.3 here (T0 at v1, director at v1.2, ember-subsumes-orb at v1.5, T2 at v3); Spec 07's v3 "organic pass" line points to this spec as its Stage-side content.
 - **X6 — Spec 12 Q6:** record this spec (§4.1) as the customer for TTS word-boundary `SpeakEvent` extensions; the cadence-envelope proxy is the standing v1 answer.
 - **X7 — Spec 09:** add the presence test tier — `PresenceDirector` property tests, per-(state × modifier × tier) golden frames on fixed seeds, grayscale-legibility assertion, glyph-formation goldens for the core set, the full-load ramp-distinguishability assertion (§4.3, §10 item 7), and the §9.2 frame budgets as CI-tracked numbers from the v3 rung.
-- **X8 — Spec 14:** note that the dogfood presence rung (§9.3 step 1) binds to Spec 14's shipped `SpeechRecognizer` seam until Spec 12's `SpeechInput` lands; no contract change requested.
+- **X8 — Voice seam alignment (applied):** Specs 12 and 14 now name the shipped
+  `SpeechRecognizer`; no `SpeechInput` migration is implied.
 
 ---
 
@@ -565,15 +612,24 @@ Aligned to Spec 07 §10's rungs (structure lands final early; expression is stag
 
 - **D1 — The presence is global and adaptively scaled (amended by Spec 17).** Plena is primary at empty rest and in deep conversation, a compact collaborator beside planning state, and an ember on detail surfaces. She never despawns conceptually, but user state owns hierarchy. *(Spec 17 §3; supersedes the original presence-primary steady-state rule.)*
 - **D2 — Substrate: the coherent particle swarm — "the murmuration"** *(v0.2, 2026-07-11; supersedes v0.1's smoke veil after the first live mockup)*: 2,000–6,000 motes, one `drawVertices`/instanced pass, the shared-flow-field + core-cohesion model (coherence is a parameter, not an achievement), fixed per-device mote budget with density-based LOD, resting micro-flow for idle. Decisive: the swarm's native gesture vividness, and the glyph register (§5A) — a capability categorically closed to a continuous field. The veil is retained as the documented alternate, driven unchanged by the same `PresenceFrame`; aurora ribbons stay rejected. *(§2)*
-- **D3 — One pure director, one frame vector, three tiers.** `PresenceDirector` consumes only the sealed streams and projections (Spec 07 P5 tightened); `PresenceFrame` is the entire renderer contract; T2/T1/T0 differ in fidelity never meaning, with an automatic demotion ladder and T0 doubling as the reduced-motion variant. *(§2.4, §8.3, §9.1)*
+- **D3 — Current private frame; public director remains a destination.** `Plena` computes `_Frame`
+  from explicit controller/widget inputs and supports animated/static rendering. The formal
+  `PresenceDirector`/`PresenceFrame` and automatic three-tier demotion ladder are not shipped.
 - **D4 — Base states are Spec 12's four, unforked**; everything else is a modifier with a single upstream source of truth; into-listening snaps ≤ 90 ms and never leads the mic. *(§3)*
-- **D5 — Speech sync runs on the cadence-envelope proxy** (text-derived, `SpeakEvent`-anchored), upgraded to word boundaries if Spec 12 Q6 resolves; no system-audio taps. *(§4.1)*
+- **D5 — Speech state is lifecycle-anchored, not cadence-synchronized.** TTS callbacks bound the
+  speaking interval; a text-derived or word-boundary envelope remains optional future fidelity.
 - **D6 — Difficulty is the five-grade operational ladder** (D0 effortless → D4 can't) built from existing signals; grades are monotonic per turn; the ceiling is *quieter*, not louder; every grade moves ≥ 2 non-hue channels. *(§4.2)*
 - **D7 — The vital ramp** is a presence-exclusive third color family; the assent and attention moments reuse Spec 07's two existing semantic colors, so the app-wide vocabulary does not grow for anything that isn't the presence. *(v0.2 addendum:)* the ramp's legibility on the additive mote field is a release-gating design-pass constraint — aura underlay, constrained buildup, or separated/floored anchors, selected in Q3's pass, verified by golden frame. *(§4.3, §10 item 7)*
-- **D8 — Personality = breath + five gestures + timing asymmetry + a persisted seed**; no user tuning in v1; the anthropomorphism fence is absolute ("would weather do it?"). *(v0.2: amended by D13 — the glyph register is the one fenced figurative exception, tightened rather than loosened; the gesture budget of five and the body-fence stand unchanged.)* *(§5)*
+- **D8 — Personality = breath + gestures + timing asymmetry.** The current renderer uses a fixed
+  deterministic seed (`Random(7)`); persisted per-install personality is not implemented.
 - **D9 — Text condenses in place** (opacity/weight, never position — Spec 07 §8.2 r4 preserved); the **yield ladder** (Y0 field / Y1 parting / Y2 ember) is the explicit seam with Spec 07's views, and the ember supersedes the orb as the one entity's contracted form. *(§6)*
-- **D10 — Muted mode is inherited, not invented:** muted `SpeakEvent`s (Spec 12 §6.3) + always-on captions (Spec 07 §7.3) + the no-reflow overlay (Spec 07 P2) already compose the design; this spec adds only the muted rim treatment and the docked-field calm band. *(§7)*
-- **D11 — Accessibility clamps live in the director**, not the renderers: calm-band contrast ≥ 4.5:1, ≤ 2 Hz full-field luminance modulation (cadence goes to motion, not light), no presence-only information, vestibular caps — all frame-stream-testable. *(§10)*
+- **D10 — Muted mode uses controller state, not synthetic speech events.** Muted turns skip TTS,
+  retain captions, and run a finite silent visual presentation. One persisted setting also exposes
+  text input. *(§7)*
+- **D11 — Accessibility is split between shipped controls and destination clamps.** Reduce Motion,
+  Still Presence, semantic controls, readable text, and no presence-only information are current.
+  A public director enforcing calm-band contrast, luminance-frequency, and vestibular clamps on a
+  testable frame stream is not yet implemented. *(§10)*
 - **D12 — Chartered as Spec 15**, not 07a: lettered docs in this suite are working artifacts; normative specs take top-level numbers (Spec 12 precedent). All 07 touchpoints recorded as X1–X5 rather than edited in place. *(header, §11)*
 - **D13 — The symbolic glyph vocabulary (v0.2, curated v0.4).** Glyphs are a figurative register distinct from the five gestures, governed by **apt-or-absent**: a glyph fires only when semantically apt to the app's actual action (a heart for closeness logged, never for a todo added), and most turns fire none. Data-defined line-figures (ordered strokes + dots in normalized presence-space) run on `p-glyph`, one per turn, ≥ 90 s apart, 3/day, signal-traced always. The 52 authored forms remain an internal sketchbook; 12 recognizable consequential marks form the active production register. AI selects or composes within the schema; code executes; never the sole carrier of meaning; stills-or-skips under reduced motion; the kitsch fence is tightened, not loosened ("would a considered hand sketch it in one or two strokes?"). *(§5A)* Formation uses the comet-trail mechanic — Plena flies the path and sheds her tail, §5A.4 — with ~600 sparse faint deposits and most of the body in flight; selection ships as `glyphForTurn` and admission as the persisted `GlyphRarityGate`.
 - **D14 — Plena, shipped (v0.3, 2026-07-11; product role superseded 2026-08-17 and navigation amended 2026-09-06).** The entity name, renderer, comet-trail glyph mechanic, and state expression remain current. The presence-only home, tap-anywhere over interactive content, and ephemeral exchange were a dogfood stage; Spec 17 now places Plena across Relationships/Todos/Habits, secondary Plan/Library/History, and an adaptive full-screen/collaborator/ember scale. The tuning sheet remains internal-only. *(§0, §2.1, §5A.1, §5A.4; Spec 17 §§2–3.)*
@@ -590,4 +646,4 @@ Aligned to Spec 07 §10's rungs (structure lands final early; expression is stag
 
 ---
 
-*End of Spec 15 — The Living Presence v0.3*
+*End of Spec 15 — The Living Presence v0.5*

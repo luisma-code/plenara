@@ -1,9 +1,15 @@
 # Spec 01 — Meta-Schema & Type System
 
-**Status:** Draft v0.4 — implementation spine landed 2026-08-17 (see §§5.1a, 7.2a)
+**Status:** Active v0.5 — audited against the wired implementation 2026-09-07. Schema hydration,
+total value validation, contiguous migrations/backups, seed reconciliation, and the v3 relationship
+schemas are implemented. Full descriptive-metadata enforcement, presentation-hint consumption,
+duplicate-type consolidation, a merged capability index, and at-rest encryption remain explicitly
+marked destinations.
 **Depends on:** Research doc v0.10 (§4, §8, §9)  
 **Blocks:** Skill DSL spec, NLU spec, Architecture spec, Data & Sync spec, UI spec
-**Research-doc precedence (suite-sync CS-26):** where the locked research doc and this spec disagree, this spec is authoritative; the research-doc amendment pass (05c §3, list grown by 05f CS-26) remains queued for Luis.
+**Precedence:** wired behavior is current truth; this active spec records its contract. The research
+document and 05a–05f artifacts preserve rationale and evaluation history rather than overriding
+later implementation.
 
 ---
 
@@ -34,7 +40,10 @@ These principles from the research doc govern every decision in this spec. They 
 
 **P2.5 — Aggressive layering.** The type system lives entirely in the Storage and Business Logic layers. The UI layer knows only view archetypes and view-model contracts. The Intelligence layer knows the schema well enough to author and reconcile types. No layer bypasses the registry.
 
-**P2.6 — Capabilities are data.** A "Meal" type and a built-in "Task" type are stored and treated identically. There is no privileged class of built-in type at the code level — only seed types loaded at first launch.
+**P2.6 — Capabilities are data.** Built-in and authored types share the same JSON definition and
+record envelopes and hydrate through the same registry. Built-ins are still protected seed content,
+and first-party workspaces intentionally specialize known type ids such as task, contact, and
+habit; the generic Library remains the fallback for every type.
 
 **P2.7 — AI authors, code executes.** Claude produces a type definition file as output. The Skill Interpreter, StorageRepository, and SchemaRegistry consume it as data. No generated code is ever evaluated.
 
@@ -173,7 +182,10 @@ Each type is stored as a single JSON file in `[plenara-root]/types/`. The filena
 }
 ```
 
-**Presentation-hint vocabulary (additive fields adopted from Spec 07 — suite-sync X1).** Alongside `archetype`, `primaryField`, `secondaryField`, `timestampField`, `color`, and `icon`, the `presentation` object accepts three **optional, additive** hint fields (non-breaking per §7.1): `valueField` (names a `number`/`decimal` attribute; consumed by the `ledger`/`counter`/`progress` archetypes), `groupField` (names the attribute `ledger` groups by), and `mediaField` (names an `attachment` attribute; required by `gallery`). **Color/icon constraint (Spec 07 X3):** `presentation.color` is free-form hex *on disk*, but at registration it is **snapped to the nearest hue of Spec 07 §9.3's curated 12-hue accent ramp** — the authored value is preserved in the file, the snapped value is what renders; `icon` likewise resolves against Spec 07's glyph set with a deterministic fallback. Until this spec's planned §9 is written, **Spec 07 §§3–4 and §11 are the interim normative source** for presentation semantics.
+**Presentation-hint vocabulary.** Alongside `archetype`, `primaryField`, `secondaryField`,
+`timestampField`, `color`, and `icon`, a presentation object may carry `valueField`, `groupField`,
+and `mediaField`. Hydration validates supplied ids/bindings. Current `DataView` does not consume the
+block, snap colors, or resolve icons; Spec 07 owns that destination behavior.
 
 ### 4.2 Top-Level Fields
 
@@ -182,18 +194,18 @@ Each type is stored as a single JSON file in `[plenara-root]/types/`. The filena
 | `typeId` | string | yes | Lowercase, snake_case. Globally unique within the registry. **Immutable** once created — the filename and all inbound `refType`/`entityRef` links depend on it, so a rename changes `displayName`, never `typeId`. |
 | `schemaVersion` | integer | yes | Starts at 1. Incremented when any breaking change is made to `attributes` or `relations`. Non-breaking additions (new optional fields) do not require a bump. |
 | `displayName` | string | yes | Singular. Shown in UI. |
-| `displayNamePlural` | string | yes | Plural form for lists and summaries. |
-| `description` | string | yes | One sentence. Used by Claude during reconciliation and authoring. |
-| `examplePhrases` | string[] | yes | At least three utterances a user might say to invoke this type. Used by the NLU router's embedding index. |
-| `isBuiltIn` | boolean | yes | `true` only for seed types shipped with the app. Seed types may not be deleted by the user. |
-| `authoredBy` | `"claude"` \| `"system"` | yes | `"system"` for seed types; `"claude"` for all user-defined types. |
-| `authoredAt` | ISO 8601 datetime | yes | When the type was first authored. |
-| `safetyAssessmentId` | string \| null | yes | ID of the stored safety assessment for Claude-authored types. Null for built-in seed types. Required for any user-defined type before activation. |
-| `lastModified` | ISO 8601 datetime | yes | Updated on any change. Drives the registry's incremental re-embed (§5.4); definition-file conflicts are detected by content/`schemaVersion` comparison (§7.5, Spec 06 §7). **Scope note (suite-sync CS-06):** definition files *keep* this stored field — they carry no `_meta` HLC stamps. Record *instances* are different: their envelope stores no `lastModified` (it is derived as `max(stamps).ms`, Spec 06 §4.1 D5). |
+| `displayNamePlural` | string | no | Descriptive metadata; many current seed files omit it. |
+| `description` | string | no | Descriptive/authoring metadata; not required by hydration. |
+| `examplePhrases` | string[] | no | Optional authoring/routing language. The current Router indexes skills, not a separate type index. |
+| `isBuiltIn` | boolean | no | Marks shipped definitions when present; seed reconciliation, not hydration alone, owns protection. |
+| `authoredBy` | `"claude"` \| `"system"` | no | Optional provenance metadata in the current format. |
+| `authoredAt` | ISO 8601 datetime | no | Optional provenance metadata. |
+| `safetyAssessmentId` | string \| null | no | Accepted metadata; current activation does not require it at hydration. |
+| `lastModified` | ISO 8601 datetime | no | Optional definition metadata; the current retrieval index is rebuilt in memory and does not use it. Record instances derive modification time from HLC stamps (Spec 06 §4.1). |
 | `attributes` | Attribute[] | yes | The type's fields. See §4.3. May be empty only for a type whose data is entirely relations. |
 | `relations` | Relation[] | no | Typed edges to other entities; same object schema as attributes (§4.3) with `valueType: entityRef`. Omit or use `[]` if none. |
-| `presentation` | object | yes | View-archetype hints: `archetype`, `primaryField`, `secondaryField`, `timestampField`, and the optional `valueField`/`groupField`/`mediaField` (see the note above §4.2), plus `color`/`icon` (snap-to-ramp/glyph-set resolution, Spec 07 X3). Format: §9; archetype semantics owned by Spec 07 §§3–4. |
-| `nluHints` | object | yes | Intent labels only (`captureIntent`, `queryIntent`). See §10 (planned). The former `confirmationTemplate` field is **retired** (§12.1, `G-03`) — the spoken confirmation is produced by a skill's `format` step (Spec 02 §7.1), never by the type. |
+| `presentation` | object | no | Optional view hints validated when supplied. Current generic rendering is structurally inferred; destination semantics are in Spec 07. |
+| `nluHints` | object | no | Optional intent labels. The former `confirmationTemplate` is retired; skills format replies. |
 | `migrations` | Migration[] | no | Declarative migration descriptors; user-defined types only. See §7.2. |
 | `parentType` | string | optional | If present, this type is *owned* by the named entity type; its instances carry a `parentId`. See §4.5. |
 | `append` | boolean | no | If true, instances are append-only (an event log): written once, never edited inline, indexed by parent/time. Default false. See §4.5. |
@@ -320,11 +332,13 @@ network dependency (Spec 03 §7.3.4 implementation delta).
 6. After all types are registered, run the cross-reference pass: resolve every `refType` and `parentType`. Unresolved references degrade the referencing type (§5.3) but never block startup.
 7. Load the `automations/` registry: parse each automation and resolve its `targetType` and `skillId`. An automation with an unresolved `targetType` is inert and surfaced for repair; one with a missing skill is inert unless `pendingSkill` (§4.4).
 
-Typical startup: < 50ms for 100 types on a mid-range iPhone (parsing + index lookup; the embedding index is a device-local binary in `[app-support]` (§5.4) and only rebuilt incrementally).
+The checked-in performance suite, rather than a prose estimate here, owns startup budgets. The
+current retrieval index is rebuilt in memory from the hydrated skill corpus on each process start.
 
 ### 5.3 Registry Invariants
 
-Most are enforced on every `register()` call; the cross-reference invariants (marked ⁑) run after the full hydration pass, because types load in arbitrary order:
+`SchemaRegistry.hydrate` currently enforces these invariants while loading the full raw definition
+set (cross-reference checks run only after local validation because files load in arbitrary order):
 
 - `typeId` is unique (no two types may share an ID).
 - `typeId` matches the filename (`{typeId}.json`).
@@ -332,21 +346,32 @@ Most are enforced on every `register()` call; the cross-reference invariants (ma
 - Every automation's `targetType` resolves to a registered type (⁑), and its `skillId` exists in `skills/` **or** is marked `pendingSkill: true` (inert until authored).
 - An automation's referenced skill must not be `dangerLevel: "destructive"` (Spec 02 §7 forbids destructive skills on the unattended path; Spec 04 §3.9 rejects them at registration — this invariant is where that rejection is enforced).
 - `schemaVersion` is a positive integer.
-- `examplePhrases` has at least three entries.
-- `safetyAssessmentId` is present and non-null for any type where `authoredBy == "claude"`.
+- Attribute names are unique and each attribute has a supported `valueType`; enum values, defaults,
+  relation shapes, migrations, and automation objects are validated where present.
 - `parentType`, if present, resolves to a registered entity type (⁑, checked post-hydration). There is no `kind` field — ownership and append are orthogonal optional properties (§4.5).
-- `typeId` is immutable: a `register()` that changes an existing type's `typeId` is rejected as a new-type collision, not treated as a rename.
-- **Archetype eligibility (degrading ⁑ — cross-spec addition from Spec 07 §4.2, suite-sync X2):** `presentation.archetype` must be in Spec 07's closed archetype id set (home + child archetypes only; lens ids rejected); every hint field the archetype *requires* must name an existing attribute of an eligible value type (`timestampField` → `date`/`datetime`; `valueField` → `number`/`decimal`; `mediaField` → `attachment`); a child archetype (`key_value`, `edge`) requires `parentType` (for `edge`: at least two `entityRef` relations instead). Violations **degrade, never reject**: the type still registers (capture is never blocked by a cosmetic error, P2.8), the presentation block is marked degraded, Spec 07 §4.3's inference function assigns the fallback, and the degraded hint surfaces in the `AttentionSurface` — mirroring the degraded-relation behavior above.
+- Operationally, `typeId` is immutable: changing it creates a distinct definition and leaves the
+  old definition/data to an explicit migration or consolidation workflow. There is no mutable
+  `register()` API in the shipped registry.
+- **Presentation validation:** when a presentation block is present, hydration accepts only the
+  schema vocabulary in §9 and validates referenced fields and compatible value types. Missing or
+  invalid presentation remains a degradable issue rather than blocking capture.
 
-### 5.4 The Embedding Index
+`displayNamePlural`, `description`, `examplePhrases`, authorship, and `safetyAssessmentId` are
+accepted metadata but are not currently required by hydration. Enforcing them becomes valid only
+after every seed definition and authoring path emits them.
 
-The registry maintains a small flat embedding index over the union of `displayName`, `description`, and all `examplePhrases` for each type. This is the artifact the NLU router queries to resolve an utterance to a type (see NLU spec, §3). The index is:
+### 5.4 Current Retrieval Index and Destination
 
-- Stored in device-local `[app-support]` (**not** a dotfile inside the synced Plenara root) — a binary file, not synced, cheaply re-generated on any device from the type files. This location is decided in NLU spec §10 MD9, uniformly for both the type index and the skill index (next bullet), so a sync engine never has to special-case an excluded dotfile. Built with the dedicated retrieval embedding model of §5.1.
-- Rebuilt incrementally: only types whose `lastModified` is newer than the index's `builtAt` are re-embedded.
-- Queried via cosine similarity. The NLU router receives a ranked list of (typeId, score) pairs and applies a confidence threshold before committing to a type.
+The shipped `Router` builds one process-local feature-hash index over hydrated **skills**. Its
+documents combine each skill's id, display name, description, inputs, examples, and related type
+language. The index is deterministic, has no packaged model or network dependency, is rebuilt as a
+whole when the router is created, and returns ranked skill candidates to the routing cascade. The
+`SchemaRegistry` does not own it and type definitions do not have a separate searchable index.
 
-**Skills are indexed the same way (forward dependency).** NLU routes an utterance to a *skill*, not only a type (NLU spec §3.2), so it needs the same embedding treatment over the skill library (`displayName`, `description`, input labels, and the `examplePhrases` of the skill's `reads`/`writes` types). That parallel skill index is owned by the skill-registry surface (Spec 02 §2.2 / §6.1; its formal interface lands in the Architecture spec) and shares this section's `similarTo`-shaped contract. NLU treats the two as one logical **`CapabilityIndex`** returning a merged, type-tagged ranked list `(id, kind ∈ {skill, type}, score)`; whether that is one physical index or two behind a façade is an Architecture-spec choice. This registry-owned index is the single source — NLU consumes it and never builds its own (that reconciliation is recorded in NLU spec §3.2).
+The broader `CapabilityIndex` described by earlier design work remains a destination: one façade
+could merge type and skill candidates and later use a packaged sentence transformer if held-out
+quality and device-cost evidence justify it. Shipping that destination requires removing the
+Router-owned index rather than creating two routing authorities.
 
 ---
 
@@ -497,9 +522,16 @@ Type-file conflicts are high-stakes (they affect all instance records) and must 
 
 ## 8. Encryption Scoping for Type Instances
 
-This section defines the encryption rules for instance records of each type. The type definition files themselves (`types/*.json`) are **always plaintext** — they are structural, non-personal data and must be readable across devices and tools without decryption.
+> **Current boundary:** at-rest record encryption is not implemented. All user records, including
+> journal and fields marked `sensitive`, are plaintext JSON in the chosen data root and may sync
+> through its provider. The `sensitive` flag is schema metadata today. §§8.1–8.2 and 8.7 specify the
+> deferred selective-encryption design; their example `encryptedPayload` files are not current disk
+> format.
 
-### 8.1 Sensitive Flag
+Type definitions are always plaintext. When the deferred design lands, the following scoping rules
+apply to instance records.
+
+### 8.1 Destination sensitive-flag behavior
 
 An attribute can be declared `"sensitive": true`. Encryption is **selective and per-attribute**: only the values of sensitive attributes are encrypted; non-sensitive attribute values stay plaintext so they remain queryable on disk and portable across tools. A type with no sensitive attributes has fully-plaintext instance records.
 
@@ -511,7 +543,7 @@ Certain built-in types carry a hard-coded sensitivity mapping the app applies re
 - `contact` — private notes and relationship details are sensitive; the display name and the fields the person_card needs (e.g. `relationshipType`, last-contact date) stay plaintext so the card renders and is searchable without decryption.
 - `interaction` — the current runtime stores medium, date, optional activity context, and optional note as plaintext synced JSON; `subject` links it to the person.
 
-### 8.2 Encryption Boundary
+### 8.2 Destination encryption boundary
 
 - **Encrypted:** The JSON values of sensitive attributes, bundled into one `encryptedPayload` blob per record.
 - **Plaintext, alongside:** The values of non-sensitive attributes (in a `fields` object), so they stay queryable on disk without keys.
@@ -579,21 +611,26 @@ The `presentation` object (§4.2) is the type file's rendering contract. This se
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `archetype` | string | yes | One of Spec 07's **closed archetype id set** (ten home + two child archetypes; lens ids are rejected — Spec 07 §3, §4.2). The `grouped-aggregation` placeholder once promised by `G-31` is **retired**: grouped aggregation is delivered as `ledger` + `groupField` (Spec 07 A3); authoring guidance must name `ledger`. |
+| `archetype` | string | yes | One of the schema vocabulary accepted by the registry. The current Flutter generic renderer implements five concrete variants: `checklist`, `person_card`, `tracker`, `timeline`, and `collection`; other accepted ids are schema compatibility vocabulary, not proof of a shipped renderer (Spec 07 §§3–4). |
 | `primaryField` | string | yes | Names an attribute of the type; the dominant text of every rendering. |
 | `secondaryField` | string | no | Supporting attribute. |
 | `timestampField` | string | archetype-dependent | Must name a `date`/`datetime` attribute (Spec 07 §4.2). |
 | `valueField` | string | archetype-dependent | Must name a `number`/`decimal` attribute — `ledger`/`counter`/`progress` (Spec 07 X1). |
 | `groupField` | string | no | An `enum`/`tag` attribute; enables `ledger` grouped subtotals (Spec 07 X1, A3). |
 | `mediaField` | string | `gallery` only | Must name an `attachment` attribute (Spec 07 X1). |
-| `color` | string | no | Authored value **preserved on disk**; the *rendered* value is snapped to the app's accent ramp at registration (Spec 07 §9.3, X3). |
-| `icon` | string | no | Same preservation/resolution rule, against the shipped glyph set (Spec 07 §9.3, X3). |
+| `color` | string | no | Authored value is preserved. Current generic rendering does not consume it; constrained palette resolution is a design destination (Spec 07 §9.3). |
+| `icon` | string | no | Authored value is preserved. Current generic rendering does not consume it; glyph-set resolution is a design destination. |
 
 All hint fields are optional, additive, and non-breaking per §7.1; a hint added to a registered type is a non-breaking edit.
 
 ### 9.2 Validation and inference — by reference
 
-Eligibility checks run inside `SchemaRegistry.register()` as the degrading ⁑ invariant of §5.3 (from Spec 07 §4.2): violations **degrade, never reject** — the type registers, the presentation block is marked degraded, Spec 07 §4.3's ordered inference function assigns the fallback and fills missing hint fields by its conventions, and the degraded hint surfaces on the `AttentionSurface`. Seed-type assignments (§12.3–§12.4) are adopted verbatim by Spec 07 (X5); the `goal` seed carries its `valueField`/`timestampField` bindings explicitly.
+`SchemaRegistry.hydrate` validates a supplied archetype id, supported hint names, referenced fields,
+and field-type compatibility; presentation faults are recorded as degraded issues. The current
+Flutter `DataView` then chooses among its five concrete renderers from record structure and type id.
+It does not yet consume presentation hints, fill inferred field bindings, snap colors/icons, or show
+the registry's degraded-presentation explanation. Those are design destinations owned by Spec 07,
+not current guarantees.
 
 ---
 

@@ -2,16 +2,22 @@
 
 **Date:** 2026-08-17  
 **Inputs:** [specification and code review](../reviews/2026-08-17-spec-code-review.md), [art and animation review](../reviews/2026-08-17-art-animation-review.md), and [planner UX review](../reviews/2026-08-17-planner-ux-review.md)  
-**Status:** implementation complete through Increments 0–8, including the post-plan reset/startup and task/voice dogfood corrections. The final repository gate covers durable mutation, planner/presence/routine behavior, relationship engagement, sync/recovery, and external-artifact hardening. Human glance-time, planning-speed, correction-rate, retrieval-quality, five-day engagement, and slow-leak measurements still require ordinary use or an explicit long soak; they are never inferred from a test harness on Luis's phone.
+**Status:** historical implementation sequence, complete through Increments 0–8 and the later
+Relationships/Todos/Habits rework. [Spec 17](specs/17-living-planner.md) owns the current product
+model; wired code takes precedence over any milestone wording retained below. Current verification
+and deployment evidence lives in [`WORK-CAPSULE.md`](../WORK-CAPSULE.md), rather than frozen totals
+in this plan. Human glance-time, planning-speed, correction-rate, retrieval-quality, five-day
+engagement, and slow-leak measurements still require ordinary use or an explicit long soak; they
+are never inferred from a test harness on Luis's phone.
 **Planning rule:** dependencies and evidence gates determine order. There are no calendar deadlines, and a later increment does not begin merely because an earlier one has code—the earlier increment must pass its user-visible and failure-path gates.
 
-## Executive decision
+## Current outcome
 
-Plenara will become a **living planner**:
+Plenara is a **living planner and relationship assistant**:
 
-- **Today** is the primary orientation surface.
-- **Plan** is the day/week manipulation surface.
-- **Library** holds people, goals, routines, trackers, journal, projects, learned phrases, automations, and the full data browser.
+- **Relationships, Todos, and Habits** are the three primary workspaces; Todos is the default root.
+- **Plan** is the secondary day/week manipulation surface.
+- **Library** holds goals, routines, trackers, journal, projects, learned phrases, automations, and the full data browser; **History** holds the durable conversation/action ledger.
 - **Plena is global**: full-screen at rest or in deep conversation, compact beside planning work, and a quiet ember on detail surfaces.
 - **Voice remains first-class and global**, but it is no longer required to carry persistent state, comparison, or precision editing by itself.
 - **Atomic reversible actions act, show, and describe.** Exploratory, ambiguous, or multi-record planning produces an inspectable proposal before it changes the plan.
@@ -61,7 +67,7 @@ This changes the existing rule in [Spec 11](specs/11-feedback-diagnostics.md), r
 The product should converge on these owned seams:
 
 ```text
-Today / Plan / Library / Conversation ledger
+Relationships / Todos / Habits / Plan / Library / History
                     │
          StructuredTurn + VoiceTurn
                     │
@@ -89,7 +95,8 @@ Rules for the destination:
 - One total `ValueCodec` owns every value-type parse, validation, and disk representation.
 - One `ExecutionCoordinator` owns ordering, durable before-images, persistence progress, recovery, and undo.
 - The planner is a purpose-built projection across tasks, reminders, people, goals, and routines. Generic archetypes remain the fallback for emergent data.
-- Conversation history records how current truth was reached; Today and Plan show current truth.
+- Conversation history records how current truth was reached; Relationships, Todos, Habits, and
+  secondary Plan show current truth.
 - Plena expresses system state and relationship. Planning objects carry user state.
 
 ## Sequencing principles
@@ -139,7 +146,9 @@ The project can run its full gate without exposing a credential, distinguish int
 
 **Spec/source-of-truth pass**
 
-- Create the living-planner product spec as the authority for Today/Plan/Library, multimodality, proposal semantics, and Plena scaling.
+- Create the living-planner product spec as the authority for product navigation, multimodality,
+  proposal semantics, and Plena scaling. Its current form owns Relationships/Todos/Habits and the
+  secondary Plan/Library/History tools.
 - Amend the superseded research/UI/presence principles to pointers and decision-history notes rather than leaving competing rules.
 - Apply the diagnostics rule sweep listed above.
 - Reconcile `WORK-CAPSULE.md`, the voice-input bodies, package metadata, and test counts with current behavior.
@@ -329,7 +338,8 @@ The entire product feels authored by the same visual system. Motion explains sta
 
 **Presence continuity**
 
-- Implement the full-screen → compact collaborator → detail ember ladder across Today, Plan, Library, Settings, Data, and person/detail surfaces.
+- Implement the full-screen → compact collaborator → detail ember ladder across the planner roots,
+  Plan, Library, Settings, Data, and person/detail surfaces.
 - Wire clarification and failure expressions, mic-level listening, and TTS cadence where platform signals exist.
 - Tune saturation and thinking-state visibility in simulator render evidence, then incorporate observations from Luis's ordinary use of explicitly deployed builds; automated test harnesses never target his physical phone.
 - Either restore an Impeller-safe iOS comet trail through a supported render path or make trail-free iOS an explicit tier decision backed by side-by-side perceptual testing. Do not reintroduce per-frame `toImageSync`.
@@ -377,7 +387,8 @@ The planner serves Plenara's actual purpose—helping the user show up for peopl
 
 ### Work
 
-- Project people-linked commitments, birthdays, event preparation, promises, goals, and routines into Today/Plan at controlled frequency.
+- Project people-linked commitments, birthdays, event preparation, promises, goals, and routines
+  into the then-current Today/Plan surfaces at controlled frequency (now Todos/Plan under Spec 17).
 - Let a commitment retain multiple meanings: time in the plan, relationship context in the person view, and evidence in review.
 - Add deterministic neglect/overload/capacity signals before cloud interpretation.
 - Make proactive suggestions durable and explicitly acted on, dismissed, or deferred; never count “shown” as engagement.
@@ -544,7 +555,7 @@ An increment is complete only when all of the following are true:
 8. The full repository gate passes in a credential-scrubbed environment and in the relevant build channel.
 9. The revision is committed and pushed; the evidence names exactly what was proved versus merely implemented.
 
-## Recommended first implementation slice
+## Historical first implementation slice (completed)
 
 Begin with Increment 0, then take Increment 1 through a deliberately small but complete vertical path:
 
@@ -556,4 +567,5 @@ Begin with Increment 0, then take Increment 1 through a deliberately small but c
 6. durable execution for one atomic task add, task complete, targeted undo, and restart recovery;
 7. generalize that proven path across every mutation origin before adding planner fields.
 
-That sequence removes the immediate hazard, honors the dogfood debugging need, and proves the architecture on the smallest real workflow before it expands. The next delivered product increment is then Today—not another invisible subsystem.
+That sequence was the starting implementation plan and is complete. Current product priorities and
+behavior are owned by Spec 17 and `WORK-CAPSULE.md`, not by this historical next-step list.

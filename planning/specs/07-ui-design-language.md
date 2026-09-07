@@ -1,10 +1,16 @@
 # Spec 07 — UI & Design-Language
 
-**Status:** Draft v0.4 — amended 2026-09-06. Owns design tokens, archetypes, subtitles, and recovery surfaces; Spec 17 owns Relationships/Todos/Habits composition, secondary Plan/Library/History tools, first-party domain workspaces, and the adaptive Plena hierarchy. Voice and visible direct manipulation are peers, not an overlay-only constraint.
+**Status:** Active v0.5 — audited against the wired Flutter UI 2026-09-07. Owns the
+implemented visual language and the explicitly marked generic-rendering destinations; Spec 17 owns
+Relationships/Todos/Habits composition, secondary Plan/Library/History tools, first-party domain
+workspaces, and adaptive Plena hierarchy. Voice and direct manipulation are peers.
 **Depends on:** Research doc v0.10 (§2.1–2.3, §4.5, §6.2, §12.7, §15.1); Spec 01 — Meta-Schema & Type System (§3 value types, §4.1–4.3 presentation object, §4.5 owned/append, §12.3 seed types); Spec 02 — Skill DSL (§7.1 `confirmationText` via `format`); Spec 03 — NLU / Intent (§2.4, §2.7, §4.3 thresholds, §6.3); Spec 04 — Architecture (§3.6 TurnEvents, §3.6a ConfirmationView, §3.9 Review Feed, §3.10 GenerativeService, §3.11 undo window, §3.12 AttentionSurface, §4.7 detached operations); Spec 05 — Functional (§2 notation, §3 interaction contract, §13 subtitle overlay, §14 authoring preview, §24 deletion).
-**Blocks:** Spec 09 — Test (widget tests per archetype, Spec 04 §9.3-style UI coverage); the v1.2 "first view archetype" rung (research §11.3).
-**Builds on:** the existing v0 Flutter app (`app/lib/main.dart`) — the chat turn loop, the busy indicator, the log-path greeting, and the on-open nudges are the seed of the Conversation Stream defined in §2.2, not throwaway.
-**Presence sync (2026-07-11 — Spec 15 v0.3):** dated notes in §2.1, §2.2, §7.1–§7.2, §8.4, §10, and D11 reconcile this spec with the shipped presence-primary home: the orb is subsumed by **Plena** (Spec 15), the v0 chat scrollback is retired (history is ephemeral on the home — only the current exchange shows), tap-anywhere is the speak gesture, and the bottom-left mute control raises the text input. Everything else stands as written.
+**Blocks:** no shipped surface. Unimplemented archetypes and visual destinations below require their
+own code and widget-test evidence before becoming current contract.
+**Builds on:** the current Flutter shell in `app/lib/main.dart`, its first-party workspaces,
+`VoiceTurnController`, `ConversationLedger`, `DataView`, and the Session mutation facades.
+**Presence sync:** the historical orb is subsumed by **Plena** (Spec 15). Tap-anywhere is restricted
+to non-interactive presence space; populated planner surfaces expose an explicit voice control.
 **Product-model sync (2026-09-06 — Spec 17 v0.9):** Spec 17 supersedes the overlay-only/no-touch rule, the four-surface/presence-primary steady state, and the interim Today/Plan/Library primary navigation. This document remains authoritative for visual language, value treatments, and generic archetypes; Spec 17 owns Relationships/Todos/Habits, secondary Plan/Library/History tools, multimodal interaction, planner projections, and Plena's adaptive scale.
 
 ---
@@ -38,11 +44,23 @@ Restated from the research doc and upstream specs, with their UI-specific conseq
 
 **P3 — Beautiful, organic, quiet (research §2.3).** Fluid animation, organic shape, generous whitespace, typography-led hierarchy, curated context-sensitive display — "more like a well-designed magazine than a productivity dashboard." Concretely enforced in this spec as: no full CRUD list views (§3), the one-mover motion rule (§8.2), the shape language (§9.2), and the ban on raw forms (§4.4). The organic visual layer is an explicit v1+ goal; §10 stages it so v1 ships functional-and-clean on the same skeleton.
 
-**P4 — Generic coverage without forbidding first-party workspaces (amended by Spec 17 D17.4/D17.8).** A new authored type must render well the moment it is registered, with zero code change. Therefore the generic archetype set is closed and shipped in the binary, a type selects into it via data, and the mapping function (§4) is deterministic, testable code. Built-in product domains may additionally have purpose-built binary UI when the outcome spans several types or benefits from domain actions. That UI must emit typed business commands through the same mutation door and preserve the generic browser as a complete fallback. Claude may choose a generic archetype for a new type; it cannot invent executable UI.
+**P4 — Generic coverage without forbidding first-party workspaces (amended by Spec 17 D17.4/D17.8).** The shipped generic renderer deterministically chooses one of five views — checklist,
+person card, tracker, timeline, or collection — so a hydrated type remains browseable without new
+widget code. The fuller vocabulary in §3 is a destination, not a claim of shipped renderers.
+Built-in product domains may have purpose-built UI but must mutate through Session/business facades
+and preserve Library as the generic fallback. Claude cannot invent executable UI.
 
-**P5 — The UI renders state and emits events; nothing else (research §2.5, Spec 04 §2.2).** The UI's entire inbound vocabulary is the sealed `TurnEvent` stream plus view-model projections (`AttentionSurface`, collection queries); its outbound vocabulary is `dispatch(transcript)` and `respond(promptId, TurnResponse)` (Spec 04 §3.6). No widget queries the registry, storage, or a model directly. The archetype renderer consumes a **view model** assembled in the Business Logic layer, never a raw record.
+**P5 — The UI renders state and calls business facades (research §2.5, Spec 04 §2.2).** Current
+voice/text state comes from `VoiceTurnController`; persistent conversation rows come from
+`ConversationLedger`; planner projections and precise edits come through Session facades. There is
+no concrete sealed `TurnEvent` UI stream today. Widgets must not call storage, routing, or models
+directly; a future sealed event vocabulary may formalize the already-centralized boundary.
 
-**P6 — Act-then-describe is the tempo (research §15.1, Spec 05 §3.1).** The visual language must make acting-without-asking feel safe: every `Done` renders with a visible, calm undo affordance for the length of the undo window (§6.2); the moderate-confidence band renders its transparency hint (§6.3); and the *only* modal, hard-to-dismiss surface in the entire app is the non-undoable deletion confirmation (§6.5). A UI full of dialogs would betray the interaction model; a UI with zero visible undo would make it frightening.
+**P6 — Act-then-describe is the tempo (research §15.1, Spec 05 §3.1).** Undoable direct actions
+act and then describe. Manual edits/deletes expose a five-second targeted Undo snackbar and remain
+recoverable through durable History; spoken undo uses the same execution journal. Non-undoable
+type/skill deletion confirms first. Sheets and dialogs are also used for precise editing, import,
+settings, and other bounded workflows, so deletion is not the app's sole modal.
 
 **P7 — No silent failure has a UI corollary: every failure has an address (research §2.8).** Degraded types, locked records, failed migrations, inert automations, stale drafts — all land in the AttentionSurface (Spec 04 §3.12) and are rendered by this spec's repair patterns (§6.7), never dropped, never rendered as a blank.
 
@@ -86,9 +104,13 @@ One surface, two sections, reachable from the Stage chip and by voice ("what's p
 
 Not a surface — an overlay over any of the four (§7). Nothing beneath it reflows.
 
-### 2.6 Settings — a required addition this spec owns (suite-sync CS-11)
+### 2.6 Settings
 
-The closed surface list above omitted a surface two other specs bind to, and this spec owns fixing that: **Settings must have a home here.** Required content inventory: BYOK key entry/validation/removal (Spec 08 §6.2–6.5), the user-facing per-kind "what it sends" feature catalog (Spec 08 §5.6 tier b — the table is user-facing, not just spec-facing), the local spend tally (Spec 08 Q3/§6.6), and Feedback & Diagnostics (gap list, sends, delete-all — Spec 11 §9). Placement decision pending a design pass: either a fifth top-level surface (quiet, voice-reachable like the rest) or a third section of the Operation Center (§2.4) — either is acceptable; what is not acceptable is the closed list silently excluding a surface Specs 08 and 11 depend on.
+Settings is a secondary destination in the global tools menu and is voice-reachable. It contains
+BYOK entry/validation/removal, per-feature cloud disclosures, local admission/spend state, voice
+selection where supported, appearance/presence preferences, data location/recovery, Feedback &
+Diagnostics, and repair access. It is not a primary navigation root or a section of Operation
+Center.
 
 Settings also owns data-location status, **Choose data location**, and **Reset data and start fresh**. Reset copy must say exactly what crosses the boundary: the provider folder is disconnected but not deleted, the old device-local root is retained as a timestamped backup, and credentials/preferences remain. The identical reset action appears on the startup-error surface when storage initialization fails. That surface names the actual failure, stays usable at small-phone/large-text sizes, and restarts the planner in-process after reset; a diagnostics path without an action is not recovery. Spec 06 §3.1 owns the filesystem and bookmark semantics.
 
@@ -96,7 +118,12 @@ Settings also owns data-location status, **Choose data location**, and **Reset d
 
 ## 3. The View-Archetype Set
 
-The archetype set is **closed**: ten home archetypes, two child archetypes, and three lenses. Shipped in the binary, versioned with the app, extended only by an app release (P4). The set is designed against the concrete marquee tasks (research §3) and the seed types that already name their archetypes (Spec 01 §12.3) — those names are normative here and this spec adopts them unchanged: `checklist`, `person_card`, `key_value`, `edge`, `timeline`, `journal`, `progress`.
+The schema vocabulary contains ten home archetypes, two child archetypes, and three proposed lenses.
+The current `DataView` binary implements **five** renderer variants: `checklist`, `person_card`,
+`tracker`, `timeline`, and `collection`. It selects them structurally and by known type id; it does
+not consume `presentation.archetype`, color, icon, or resolved hint bindings. The additional
+archetypes below are the approved design vocabulary but remain destinations until a renderer and
+tests land. Schema acceptance of an id does not mean that renderer is shipped.
 
 Every archetype defines: its **anatomy**, its **eligibility** (the structural facts a type must have — enforced by the validator, §4.2), its **required hints** (which `presentation` fields it consumes), and its **canonical instances** (which shipped types use it).
 
@@ -148,7 +175,10 @@ Rendered in the Stream, keyed to TurnEvents and detached deliveries rather than 
 
 ## 4. How a Type Maps to an Archetype
 
-The mapping must satisfy two masters: Claude authors the hint (it knows the *intent* of the type), but the UI must never trust an ineligible or missing hint into ugliness (P4, P2.8). The resolution is a three-step deterministic pipeline in the Business Logic layer, run at registration and at every hydration:
+The designed end state is the three-step hint/eligibility/inference pipeline below. Current behavior
+is narrower: `SchemaRegistry.hydrate` validates supplied presentation metadata and records degraded
+issues, while `DataView` independently infers one of its five renderer variants from type id and
+record structure. Presentation hints are not yet passed through a resolved view model.
 
 ### 4.1 Step 1 — the authored hint is authoritative when eligible
 
@@ -156,7 +186,8 @@ The mapping must satisfy two masters: Claude authors the hint (it knows the *int
 
 ### 4.2 Step 2 — the eligibility validator
 
-Run inside `SchemaRegistry.register()` as new invariants (cross-spec addition to Spec 01 §5.3 — §11 X2):
+The current hydration validator implements the schema checks that can be evaluated from a supplied
+presentation block. The following fuller assignment behavior is the destination:
 
 - `presentation.archetype` ∈ the closed archetype id set (home + child only; lens ids are rejected).
 - Every hint field the archetype *requires* (§3) is present and names an existing attribute of an eligible value type (`timestampField` → `date`/`datetime`; `valueField` → `number`/`decimal`; `mediaField` → `attachment`).
@@ -165,7 +196,9 @@ Run inside `SchemaRegistry.register()` as new invariants (cross-spec addition to
 
 ### 4.3 Step 3 — the inference function (fallback and default)
 
-When the hint is absent, invalid, or degraded, `inferArchetype(TypeDefinition) → ArchetypeAssignment` assigns one deterministically. It is an **ordered rule list** — first match wins — so the result is stable, testable, and explainable:
+When the hint is absent, invalid, or degraded, the destination
+`inferArchetype(TypeDefinition) → ArchetypeAssignment` assigns one deterministically. This function
+does not exist in the shipped code; the table remains the intended ordered rule list:
 
 | # | Structural condition (in order) | Archetype |
 |---|---|---|
@@ -186,7 +219,7 @@ Alongside the archetype, inference fills any missing hint fields by convention: 
 
 Rules 1–12 are total: **every possible TypeDefinition lands somewhere**, and rule 12's landing (`collection`) is a designed view, which is what discharges research §4.5's risk in full.
 
-### 4.4 The guarantee: no raw forms, ever
+### 4.4 The guarantee: no generic raw CRUD forms
 
 There is no code path that renders a type as an auto-generated input form. Creation and editing happen by voice (the primary path), by re-speaking a correction (Spec 05 §3.3), or by per-value tap-to-edit inside a rendered view (§5.5) — which edits one value in place with the value type's own input treatment, never a form page. This is testable (Spec 09): for a fuzzed corpus of valid TypeDefinitions, every render resolves to one of the twelve archetypes and zero form widgets are instantiated.
 
@@ -219,13 +252,18 @@ Each of the twelve value types of Spec 01 §3 has exactly one canonical display 
 
 **§5.2 Relations** (`relations` array): rendered with the `entityRef` chip treatment; `cardinality: many` renders a wrapping chip row.
 
-**§5.3 Locked values** (encrypted payload present, `CryptoBox.keyAvailable == false` — Spec 01 §8.7, Spec 04 §5.5): a soft shimmer block the width of typical content with a small lock glyph and the reason on tap ("Waiting for your key to sync"). Plaintext `fields` of the same record render normally. Never an error color; being locked is a *state*, not a failure.
+**§5.3 Locked values (destination).** No encrypted payload or `CryptoBox.keyAvailable` state exists
+today. When Spec 01 §8.7 ships, an unreadable encrypted value uses a soft shimmer block with a lock
+glyph and an actionable explanation; plaintext fields of the same record remain readable.
 
 **§5.4 Sensitive values in shared contexts:** the spoken channel never reads a `sensitive` value aloud unless the user asked for that value specifically (matches Spec 05 §12 E4's search behavior: card shows, speech summarizes).
 
 **§5.5 Tap-to-edit:** any rendered value in a detail view accepts a tap → its edit treatment appears in place → commit renders as a normal act-then-describe turn in the Stream ("Updated — allergy: tree nuts"), so touch edits share the voice path's undo, journal, and corpus semantics (Spec 04 §3.6 — the edit is dispatched as a turn, not written by the widget; P5).
 
-> **v0 posture (`G-49`) — the shipped Library surface.** The editable archetype browser exists under **Library**, alongside the learned-phrases showcase and Settings access. Library is now one of the living-planner information-architecture roots owned by Spec 17, rather than an interim overflow-menu exception. Learned phrases remain humanized and forgettable, symmetric with §5.2's forget-on-correction. Two implementation deviations remain recorded here:
+> **Current posture — the shipped secondary Library surface.** The editable generic browser exists
+> under **Library**, alongside learned phrases and Settings access. Library is a secondary tool,
+> while Relationships/Todos/Habits are the primary roots owned by Spec 17. Learned phrases remain
+> humanized and forgettable. Two implementation facts define the current boundary:
 > 1. **Facade write, not a Stream turn.** A tap-to-edit commit calls a `Session` facade (`editField`/`deleteRecord`) directly rather than dispatching an English turn through the orchestrator (v0 has no structured-turn entry, and synthesizing English for `handle()` would be fragile). The *substance* of §5.5 is preserved — the write shares the **one** journal ring (a spoken "undo that" reverses a manual edit), reminders reconcile, automations fire, telemetry logs — and the confirmation surfaces in-sheet rather than in the Stream (a modal-sheet SnackBar would render behind the sheet; failures show inline as `errorText`, never silently). **End-state:** when a structured-turn entry exists, `editField` becomes its adapter with no UI change.
 > 2. **Edit treatments = what v0's value types need.** Per-value tap-to-edit (not a form, §4.4) is honored; `json` is read-only (voice/skill only) and `enum` membership is validated in the facade, matching the §5 table. Delete is act-then-describe with a **targeted** UNDO snackbar (journal + storage tombstone = doubly reversible), not a pre-delete confirm.
 
@@ -233,17 +271,25 @@ Each of the twelve value types of Spec 01 §3 has exactly one canonical display 
 
 ## 6. The Turn UX — Rendering the Interaction Contract
 
-Spec 05 §3 owns *when* these surfaces appear; this section owns *what they look like*. The renderer is an exhaustive `switch` over the sealed `TurnEvent` set (Spec 04 §3.6) — a new event kind cannot ship without a rendering decision here.
+Spec 05 §3 owns *when* these outcomes occur; this section owns their visual intent. The shipped UI
+does not have an exhaustive sealed `TurnEvent` renderer. `VoiceTurnController` exposes capture,
+busy, transcript, reply, clarification, error, and undo state, while `ConversationLedger` persists
+final utterances, replies, and execution links. Any future event union must adapt those current
+sources without creating a second state authority.
 
 ### 6.1 `TurnStarted` / listening / thinking
 
-No card. The orb (§8.4) carries these states; the live subtitle region carries the interim transcript (§7.3). The Stream gains an entry only when there is something said or done.
+No card. Plena (§8.4) carries listening/thinking/speaking state and the live caption carries the
+interim transcript. The conversation ledger gains an entry only for a final submitted utterance or
+result.
 
 ### 6.2 `Done(confirmationText)` — the act-then-describe line
 
 The workhorse. A single-line assistant turn: the type's glyph in its accent tint, the resolved `confirmationText` (Spec 02 §7.1 — never free text composed by the UI), and a quiet **Undo** chip.
 
-- The Undo chip stays visible on the latest `Done` for the duration of the undo window (Spec 04 §3.11) and then fades (`m-quick`); older `Done` lines in the Stream show no chip (undo is single-level, Spec 05 §3.5). Tapping it dispatches the `undo` system command — the same path as saying it.
+- Current manual edits and deletes show a targeted Undo snackbar for five seconds. Durable History
+  retains targeted undo entries after that transient affordance; spoken “undo that” goes through
+  the execution journal. Undo is therefore not limited to a single visible latest line.
 - The line is a doorway to the record (§2.2). For multi-write turns (F-07's three writes) there is still **one** line and one undo (atomic per Spec 05 §3.5); the doorway opens the primary record with the side-created records chip-linked.
 - An undo's own confirmation ("Undone — removed…") is a normal `Done` line with no undo chip.
 
@@ -255,14 +301,21 @@ In the moderate-confidence band (Spec 05 §3.2), the `Done` line carries a small
 
 The question renders as an assistant line (and is spoken); beneath it, the candidates as **choice chips** (2–4, from Spec 03 §2.4's candidate set — "a task, a note about someone, or a journal entry?"). Voice answer, chip tap (`SelectCandidate`), or typed answer in quiet mode are the same `respond()` (P1). Missing-slot follow-ups (`ProvideSlot`) render as the question line alone — free-form answers get no chips. At most one clarification surface is ever live (Spec 04 §3.6 promptId discipline); a superseded one collapses to its resolved state.
 
-### 6.5 `ConfirmationRequested(nonUndoableDeletion)` — the one modal
+### 6.5 `ConfirmationRequested(nonUndoableDeletion)`
 
-The single pre-action confirmation in the app (Spec 05 §24) and deliberately the single visually *heavy* surface: a centered sheet rendering the `ConfirmationView` (Spec 04 §3.6a) — type name, record count, the irreversibility sentence verbatim — with the three options as full-width choices (delete all / keep records as history / cancel) and **no default-highlighted destructive choice**. It does not dismiss on scrim tap; it requires an explicit choice or spoken answer. Everything else in the app is dismissible and calm precisely so this one surface reads as different in kind.
+Non-undoable type or skill deletion requires explicit pre-action confirmation (Spec 05 §24) with
+the affected definition/data explained and no default-highlighted destructive choice. It is the
+only confirmation required by act-then-describe policy, but not the only sheet or dialog in the UI:
+precise editing, relationship actions, contact import, settings, and recovery legitimately use
+bounded modal surfaces.
 
 ### 6.6 `ResidualOffer`, `Detached`, and generative results
 
 - **ResidualOffer** (compound utterances, Spec 04 §3.6/`G-23`): the free fragment's `Done` line, then an offer line with Accept/Not-now chips ("…want me to create a custom one? [PAID]"). Declining leaves no debris (05a DF-09).
-- **Detached** (Spec 04 §4.7): a one-line acknowledgment in the Stream ("Working on your briefing…") whose card *becomes* the result in place when the operation completes — plus the Operation Center entry (§2.4). If the app is closed in between, delivery lands per Spec 04 §3.9 (notification) and the card is waiting at the top of the Stream on next open.
+- **Detached (current):** operation state appears on Todos and is restored from device-local
+  operation storage; terminal delivery is recorded exactly once in the conversation ledger and may
+  notify through the native adapter. In-place mutation of a Stream card and a combined Operation
+  Center remain design destinations.
 - **Generative result cards (target).** Use one card grammar for implemented kinds; event prep,
   foresight, and reflection are candidate examples, not current registry members. Provenance stays
   visible, structured rows remain referable, and a read-only generation shows no undo affordance.
@@ -282,29 +335,40 @@ The Spec 05 §14 flow's `UI: Authoring preview card`: a live, honest **miniature
 
 ### 7.1 Modes, precisely
 
-There are two independent booleans, not four modes:
+The current app persists one `voiceMuted` preference. When true it raises text input and suppresses
+TTS; when false it enables the voice-first posture. An unavailable recognizer also exposes text
+input without pretending capture is available. A separate output-only TTS preference is a future
+refinement, not shipped state.
 
-- **Input modality** — voice (tap to start, tap again to stop and send) or text. The explicit voice affordance is global on populated planner surfaces; tap-anywhere is limited to non-interactive presence space. Mute switches to text and raises the input field, which also rises automatically when no recognizer is available. Spec 17 owns the current surface hierarchy; Spec 12 owns capture semantics.
-- **Output audio** — TTS on or muted. "Quiet mode" mutes it; subtitles are unaffected because they are always on (next section).
-
-The "quiet overlay" toggles both at once (the meeting/library case, research §2.2); power users can mute TTS alone from settings. Both persist across launches (Spec 05 §13).
+Voice is tap to start and tap again to stop-and-send. The explicit voice affordance is global on
+populated planner surfaces; tap-anywhere is limited to non-interactive presence space. Subtitles
+remain visible regardless of `voiceMuted`.
 
 ### 7.2 The overlay itself
 
-A single text field with a send affordance sliding up from the bottom edge (`m-settle`, §8.1), sitting *over* the active surface with a soft scrim only behind the field itself. Nothing beneath reflows or resizes (P2 — the design is never compromised for keyboard input). Submitted text enters `dispatch()` exactly as a final transcript — one pipeline (research §6.2). The field stays docked while text mode persists; on desktop (the current dogfood platform) the docked field is the steady state and keyboard focus is retained after each turn (as v0's `autofocus` already does). *(As shipped: a two-line field rising from off-screen bottom when muted or STT-less, over the presence home — nothing beneath reflows, as required; Spec 15 §7.)*
+A text field with a send affordance rises from the bottom when muted or STT-less. Submitted text
+calls `VoiceTurnController.send`, the same method used by a final speech result; both then call
+`Session.handle` and share routing, execution, undo, reply, and ledger behavior. The field may
+overlay or participate in the responsive planner layout as needed to remain usable with the
+keyboard and accessibility text sizes.
 
 ### 7.3 Subtitle behavior
 
 The subtitle region (§2.1) has two slots, and its rules are the contract Spec 04 §4.2 refers to for the live subtitle (that reference currently says "Spec 06" — a miscite to fix; §11 X4):
 
 - **The user slot (interim transcript).** Renders the STT interim stream live, in a dimmed style that visibly means *provisional* — words may rewrite as the engine revises. On the final transcript it solidifies (`m-quick` weight change) and commits to the Stream as the user turn. Only the final transcript ever dispatches (Spec 04 §4.2).
-- **The assistant slot (spoken output).** Every word TTS speaks is simultaneously on screen (research §2.2 — "always on, whether or not quiet mode is active"). The line appears in full when speech begins (no karaoke word-tracking in v1 — motion budget, §8.2), persists while speaking plus a 4-second linger, then releases; the text is always also in the Stream, so nothing is lost when it fades.
-- **Length discipline:** the subtitle region never exceeds two lines per slot; longer responses (generative openers) show their first sentence in the slot with the full text on the Stream card — matching the flows' "I've got more on screen" pattern (Spec 05 §16).
+- **The assistant slot (spoken output).** The full reply appears when speech begins, remains through
+  speech, then clears after roughly 1.6 seconds. The conversation ledger retains the full reply, so
+  the transient caption is not the sole record.
+- **Length discipline:** captions prioritize readable current context; longer durable replies remain
+  available in History/conversation rather than relying on the fading presence caption.
 - **Quiet mode difference:** none, visually. Muting TTS changes only the audio; the assistant slot behaves identically, which is what makes the mode switch cognitively free.
 
 ### 7.4 Barge-in, visually
 
-When the user speaks over a live turn (Spec 04 §3.6 barge-in), the assistant slot's line halts mid-thought with a soft fade (never a hard cut), the orb snaps to listening (`m-instant`), and the cancelled turn renders in the Stream in its `TurnCancelled` state — visible history, no debris.
+Starting capture stops active TTS before the recognizer listens and Plena snaps to listening. The
+current ledger has no explicit `TurnCancelled` row; only final submitted utterances and completed
+replies are durable.
 
 ---
 
@@ -359,6 +423,10 @@ Organic and continuous: superellipse ("squircle") corners on all cards and sheet
 
 The base surface is a warm near-neutral field (light and dark variants), with all chrome in low-contrast neutrals — the app's own palette stays out of the way so that **type accent colors** carry identity. Spec 01 §4.1 lets a type carry a free-form hex `color`; unconstrained, that is a clown-suit risk across authored types. This spec constrains it (cross-spec addition, §11 X3):
 
+> **Current boundary:** generic `DataView` does not consume authored `presentation.color` or
+> `presentation.icon`. The ramp snapping and glyph fallback below govern future consumption; they
+> are not performed by `SchemaRegistry.hydrate` today.
+
 - The binary ships a curated **accent ramp** of 12 hues, each pre-tuned for light/dark and for the tint roles (glyph, enum chip, progress fill, timeline spine).
 - An authored `color` is **snapped to the nearest ramp hue** at registration (deterministic, in the same validator pass as §4.2); the file keeps the authored value, rendering uses the snapped one. Claude's authoring guidance names the ramp so snapping is normally the identity.
 - Accent colors tint *identity elements only* (glyph, chips, fills) — never body text, never backgrounds of whole cards. `icon` likewise resolves against the shipped glyph set with a per-archetype default glyph as fallback; unknown names degrade quietly (§4.2 pattern).
@@ -370,24 +438,30 @@ Generous whitespace as a rule with a number: content columns keep ≥ 24 pt side
 
 ---
 
-## 10. Building On the v0 App — Staging
+## 10. Current Realization and Remaining Design Destinations
 
-The current `app/lib/main.dart` is a Material chat screen over the real Session engine. The path from it to this spec, in rungs matching research §11.3 (aesthetics layered, skeleton first):
+The chat-screen staging plan is historical. The current app has:
 
-1. **v0 → v1.2 (with the first archetype):** keep the ChatScreen skeleton as the Conversation Stream; replace `Msg` with a `TurnEvent`-driven sealed rendering (P5 — this is the load-bearing refactor, and it is behavior-neutral); introduce the first home archetype (`timeline`, for the v1.2 tracker rung) and the doorway from `Done` lines. The greeting/nudge messages become AttentionSurface renderings (§6.7) — same content, now on contract. *(Overtaken, 2026-07-11: the presence-primary home (Spec 15 §6.3) replaced the ChatScreen outright and the `Msg` scrollback was deleted as tech debt — the Stream now arrives later as a new turn-log-backed surface, not as a refactor of the v0 list; the greeting and nudges meanwhile join the exchange over the void.)*
-2. **v1.5 (quiet overlay + corrections loop):** the Stage with orb and subtitle region arrives with the voice pipeline; the text field becomes the §7.2 overlay; undo chips, routing chips, clarification chips per §6.
-3. **v2:** generative cards, authoring preview, operation center — these ride the detached-operation machinery when it lands.
-4. **v3 (the organic pass, research §11.5):** shape language, serif text face, the accent ramp, continuity transitions, the full motion token sweep. Until then, v1 uses the same tokens at reduced expression (standard Material motion mapped onto the token names), so the organic pass is a re-skin, not a re-architecture.
+1. purpose-built Relationships, Todos, and Habits workspaces plus secondary Plan, Library, and
+   History;
+2. adaptive Plena presence, persistent captions, text parity, and one voice/text controller;
+3. five structurally selected generic renderers in `DataView`;
+4. direct, actionable edit/import/contact/undo flows and durable operation/conversation state.
 
-The invariant across all rungs: the archetype registry, the mapping pipeline (§4), and the TurnEvent rendering switch exist from v1.2 onward in their final shape — visual polish is staged, structure is not.
+The remaining destinations in this document are the additional generic renderers, a resolved
+presentation-hint view model, richer continuity transitions, output-only mute, and any future
+sealed UI-event vocabulary. They must be described as new implementation work, not assumed
+infrastructure.
 
 ---
 
 ## 11. Cross-Spec Additions & Corrections (for the next reconciliation pass)
 
 - **X1 — New presentation hint fields (✅ landed — Spec 01 §9/§4.2, suite-sync CS-14).** `valueField` (ledger/counter/progress), `groupField` (ledger grouping), `mediaField` (gallery). Optional, additive, non-breaking per Spec 01 §7.1.
-- **X2 — New registry invariants (✅ landed — Spec 01 §5.3).** The archetype eligibility checks of §4.2, degrading (never rejecting) on violation, surfaced via AttentionSurface.
-- **X3 — Constraint semantics for `presentation.color`/`icon` (✅ landed — Spec 01 §4.2/§9.1).** Snap-to-ramp and glyph-set resolution (§9.3): authored values preserved on disk, resolution applied at registration.
+- **X2 — Partial.** Hydration validates supplied archetype/hint structure and records degraded
+  presentation issues. `DataView` does not yet consume a resolved assignment or surface the issue.
+- **X3 — Destination.** Authored color/icon are preserved but currently ignored by generic
+  rendering; palette/glyph resolution is not implemented.
 - **X4 — Miscite fix (✅ landed — Spec 04 §4.2 now cites §7.3 for rendering, Spec 12 §4.1 for dispatch).** Spec 06 is Data & Sync.
 - **X5 — Archetype vocabulary confirmation (✅ landed — Spec 01 §12.3/§12.4).** Seed assignments adopted verbatim; `meal`'s example assignment (`timeline`, Spec 01 §4.1) is eligible under §4.2. `goal`'s `progress` assignment carries its `valueField: "target"`/`timestampField: "horizon"` bindings explicitly in the seed JSON.
 
@@ -397,17 +471,32 @@ The invariant across all rungs: the archetype registry, the mapping pipeline (§
 
 ### Resolved
 
-- **D1 — The archetype set is closed and finite:** ten home archetypes (`timeline`, `checklist`, `ledger`, `journal`, `person_card`, `progress`, `gallery`, `collection`, `counter`, `event_list`), two child archetypes (`key_value`, `edge`), three lenses (`streak`, `calendar`, `dashboard`), plus the turn-scoped conversation-card grammar. Shipped in the binary; extended only by app release (P4). Seed-type assignments from Spec 01 §12.3 adopted unchanged.
-- **D2 — Mapping is hint-first, structure-validated, inference-backed:** the authored `presentation.archetype` wins when its eligibility predicate holds; violations degrade to the deterministic ordered inference function (§4.3), never reject registration and never render a raw form. `collection` is the total fallback — every valid TypeDefinition renders in a designed view.
-- **D3 — Streak, calendar, and dashboard are lenses, not homes.** They attach by structural predicate, are never named in `presentation.archetype`, and switch in place. (Consistent with Spec 05 §8's "streak ring view" being the `show-streak` skill's surface, not the tracker's home.)
-- **D4 — Owned types render inside their owner.** Child-archetype types get no top-level Collections entry; `person_card` composes its owned types automatically from `parentType`, with zero configuration.
-- **D5 — No forms, ever.** Creation/edit is voice, correction, or per-value tap-to-edit dispatched as a turn (§5.5) — touch edits share the voice path's undo/journal/corpus semantics. Testable as a Spec 09 property (§4.4).
-- **D6 — One canonical render + edit treatment per value type** (§5), shared across all archetypes; locked values are a calm state, dangling refs are a repair doorway, `json` is read-only.
-- **D7 — Act-then-describe visual contract:** every `Done` carries the undo chip for exactly the Spec 04 §3.11 window; routing transparency is a chip only in the moderate band; the non-undoable deletion sheet is the app's sole modal and sole heavy surface (§6.5).
-- **D8 — Subtitles are always on; "quiet mode" is two persisted booleans** (input modality, TTS mute) toggled together by the overlay, identical pipeline for typed and spoken input, no visual difference in output rendering (§7).
+- **D1 — The schema vocabulary is closed and finite; the shipped renderer subset is five.** The
+  broader vocabulary remains the destination set and can be extended only by an app release.
+- **D2 — Current mapping is structural and five-way.** `DataView.archetypeFor` selects checklist,
+  contact person-card row, tracker, timeline, or collection. Hint-first resolved assignment remains
+  the destination in §4; collection is the current total fallback.
+- **D3 — Streak/calendar/dashboard lenses are design destinations.** Purpose-built Habits/Plan
+  surfaces provide some equivalent outcomes, but generic lenses do not attach by schema predicate.
+- **D4 — Ownership composition is domain-specific today.** The Relationships workspace composes
+  facts/interactions around a person; generic `personCard` is a contact row and does not
+  automatically embed every `parentType` child.
+- **D5 — No generic schema-generated CRUD forms.** Generic detail editing is per-value. Purpose-built
+  first-party sheets may group fields when that makes relationship, todo, habit, import, or settings
+  workflows clearer; they still use business facades and shared journal semantics.
+- **D6 — Generic detail uses shared per-value rendering/editing.** JSON is read-only. Locked-value
+  treatment remains an encryption-era destination; dangling-reference repair depends on the
+  available repair projection.
+- **D7 — Act-then-describe visual contract:** undoable actions expose transient and durable recovery;
+  non-undoable type/skill deletion confirms. Other bounded sheets/dialogs are valid (§6.5).
+- **D8 — Subtitles are always on; current quiet mode is one persisted `voiceMuted` boolean.** Typed
+  and spoken input converge in `VoiceTurnController.send`/`Session.handle`; independent output-only
+  mute remains a destination (§7).
 - **D9 — Motion is five tokens + six rules** (§8), with reduced-motion as a hard requirement and the doorway shared-element transition as the app's continuity signature.
-- **D10 — Authored color/icon are constrained, not trusted:** snap-to-ramp and glyph-set fallback at registration (§9.3); accents tint identity elements only; no red-badge attention economy (P8).
-- **D11 — The v0 chat UI is the seed, not scaffolding:** the ChatScreen becomes the Conversation Stream via the TurnEvent refactor; structure lands final at v1.2, the organic skin at v3 (§10). *(Amended 2026-07-11: the chat UI was retired when the presence-primary home shipped — the seed claim now holds for the engine seam and the greeting/nudge content, not the widget tree; the Stream will be rebuilt from the turn log, §2.2.)*
+- **D10 — Authored color/icon remain untrusted metadata.** Current generic rendering ignores them;
+  any future consumption must constrain them to the app palette/glyph set (§9.3).
+- **D11 — The chat widget tree is retired.** The current shell and conversation ledger are the
+  implementation base; a future event renderer must adapt them rather than resurrecting v0 (§10).
 
 ### Open
 
@@ -421,4 +510,4 @@ The invariant across all rungs: the archetype registry, the mapping pipeline (§
 
 ---
 
-*End of Spec 07 — UI & Design-Language v0.1*
+*End of Spec 07 — UI & Design-Language v0.5*

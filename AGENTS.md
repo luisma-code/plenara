@@ -19,7 +19,7 @@ Nothing in the repository is intrinsically set in stone. Treat principles and sp
 
 | Source | Authority |
 |---|---|
-| [`planning/specs/17-living-planner.md`](planning/specs/17-living-planner.md) | Today / Plan / Library / History product model and multimodal interaction |
+| [`planning/specs/17-living-planner.md`](planning/specs/17-living-planner.md) | Relationships / Todos / Habits product model, secondary Plan / Library / History tools, and multimodal interaction |
 | [`planning/specs/11-feedback-diagnostics.md`](planning/specs/11-feedback-diagnostics.md) | Diagnostic collection, content, export, and channel boundaries |
 | [`planning/specs/01-meta-schema-type-system.md`](planning/specs/01-meta-schema-type-system.md) through [`planning/specs/06-data-sync.md`](planning/specs/06-data-sync.md) | Schema, capability DSL, routing, architecture, behavior, and storage/sync |
 | [`planning/specs/07-ui-design-language.md`](planning/specs/07-ui-design-language.md) through [`planning/specs/16-routines.md`](planning/specs/16-routines.md) | Visual language, AI/privacy, testing, security, voice, reference data, presence, and routines |

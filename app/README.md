@@ -3,10 +3,11 @@
 The Flutter client for Plenara's living planner. iPhone is the primary target;
 macOS and Windows are supported development/desktop targets.
 
-The client provides Today, Plan, Library, History, settings, voice capture and
-speech output, reminders, Plena's animated presence, secure BYOK credential
-storage, and user-selected data-folder access. Product logic remains in the
-pure-Dart package at `../v0`.
+The client provides primary Relationships, Todos, and Habits workspaces; secondary
+Plan, Library, and History tools; settings; voice capture and speech output;
+reminders; Plena's animated presence; secure BYOK credential storage; and
+user-selected data-folder access. Product logic remains in the pure-Dart package
+at `../v0`.
 
 ## Local verification
 

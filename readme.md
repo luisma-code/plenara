@@ -1,10 +1,12 @@
 # Plenara
 
-Plenara is a voice-first living planner and relational assistant. It combines
-free-form capture with visible Today, Plan, Library, and History surfaces so a
-person can compare, sequence, revise, and revisit plans without making voice
-carry persistent state alone. Plena—the warm particle presence—moves between a
-full conversational form, a compact planner collaborator, and a detail ember.
+Plenara is a voice-first living planner and relational assistant. Relationships,
+one-off Todos, and tracked Habits are its three primary workspaces; Plan, Library,
+and History remain directly reachable secondary tools. Free-form capture and
+visible state work together so a person can compare, sequence, revise, and revisit
+plans without making voice carry persistent state alone. Plena—the warm particle
+presence—moves between a full conversational form, a compact planner collaborator,
+and a detail ember.
 
 Common planning and routing run locally. Optional Anthropic features use the
 user's own API key and disclose the record categories sent for each feature.
@@ -41,8 +43,9 @@ bash tool/external_release_gate.sh
 ```
 
 All automated phone, layout, render, motion, and integration verification uses
-a local iPhone simulator. A physical iPhone is deployment-only and may be used
-only when its owner explicitly requests a usable deployment.
+a local iPhone simulator. A physical iPhone is deployment-only. Completed,
+simulator-verified, committed, and pushed phone builds install under the owner's
+standing authorization and are never launched automatically.
 
 ## Configuration
 

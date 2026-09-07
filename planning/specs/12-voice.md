@@ -10,7 +10,7 @@
 >
 > What replaces it: the VAD/engine becomes a SEGMENTER (Whisper needs ~30s chunks) plus a watchdog —
 > 15s with no speech cancels, 30s of trailing silence stops-and-SENDS, 120s is a hard cap (60s on
-> Apple pending an on-device measurement). Watchdogs key off **speech activity**, not off recognizer
+> Apple). Watchdogs key off **speech activity**, not off recognizer
 > output, so thinking before you speak cannot be mistaken for silence. An auto-stop always sends and
 > always says so — never a silent discard. On the OS-engine path (Windows/Apple) the engine's own
 > finals are ACCUMULATED and never forwarded as independent turns; a deliberate stop trigger (tap
@@ -18,13 +18,15 @@
 > idempotent finalization door. Forwarding each engine final would have meant SAPI still endpointed
 > and this change never reached that platform at all.
 
-**Status:** v0.3 — amended 2026-08-17. Tap-to-start/tap-to-stop, native-final convergence,
-latest-partial recovery, on-device Apple recognition, transcript diagnostics by build channel, and
-the `SpeechRecognizer`/`SpeechOutput` implementation are wired. Long-form journal capture and wake
-word remain target behavior and are labeled below.
+**Status:** Active v0.4 — audited against the wired implementation 2026-09-07. Tap-to-start/
+tap-to-stop, native-final convergence, latest-partial recovery, on-device recognition, capture
+watchdogs, transcript diagnostics by build channel, `SpeechRecognizer`, `SpeechOutput`, iOS voice
+selection, and typed/voice convergence through `VoiceTurnController.send` are wired. Long-form
+journal capture, wake word, downloadable local models, and output-only mute remain destinations.
 **A note on numbering:** Specs 03, 04, and 08 cite a "Spec 06 — Voice" that was never written — the research doc's spec charter (§12) never listed a voice spec, and slot 6 was taken by Data & Sync. This document is that missing spec, chartered as **Spec 12**. It is the referent every "Spec 06 — Voice" citation intends; retargeting those citations (and Spec 10's mis-pointed ownership line) is a suite-sync pass item recorded in §10, not something this spec edits in place.
 **Depends on:** Research doc (§2.1–2.3, §6.1–6.5, §9.1–9.2, §11.2–11.5, §15.1); Spec 03 — NLU / Intent (§1 P2.5, §2.6–2.7, §5.4 normalization, §10 MD10 — final-transcript-only); Spec 04 — Architecture (§2.1–2.3 layer model, §3.6 `DispatchOrchestrator`, §3.8 `SpeechEngine`, §4.2 turn pipeline, §4.3 barge-in policy, §5 error model); Spec 05 — Functional (§3.2 ASR floor, §11 voice journal F8, §13 offline/subtitle F10); Spec 07 — UI (§7 quiet overlay & subtitle contract, §8.4 the orb); Spec 08 — AI Cost & Privacy (§5.2 routing payload, §5.5 master table, §5.6 consent tiers)
-**Blocks:** Spec 09 — Test (the `SpeechInput`/`SpeechOutput` seams marked **[GAP]** in §3.1 — the `SpeechOutput` half has since shipped, §2.1 — and the voice E2E tier of §6.2 O3); the v1.5 voice rung (Spec 07 §10 step 2 — the Stage, orb, and subtitle region arrive with this pipeline); Spec 08 §5.5's STT/TTS row (this spec is its normative source)
+**Blocks:** no shipped voice surface. This remains the normative source for Spec 08's STT/TTS
+privacy row and for future long-form/wake-word/model work.
 
 ---
 
@@ -34,7 +36,8 @@ Plenara is voice-first (P2.1): free-form speech is the primary input, and the wh
 
 This document specifies:
 
-1. **The Voice layer's formal contract** — the `SpeechInput`/`SpeechOutput` seams behind Spec 04 §3.8's `SpeechEngine` summary, and the `Transcript` object that crosses the boundary (§2)
+1. **The Voice layer's formal contract** — the shipped `SpeechRecognizer` callback seam and
+   `SpeechOutput`, plus the richer conceptual transcript contract retained for future evolution (§2)
 2. **The capture model** — tap-to-start/tap-to-stop, watchdog/native-closure finalization, the journal's future continuous mode, the mic-lifecycle invariant, and the wake-word deferral (§3)
 3. **Interim vs. final transcript semantics** — who consumes each, the exactly-one-final rule, finalization triggers, and the ASR floor (§4)
 4. **STT engine selection** — the on-device mandate, the per-platform engine matrix (iOS/macOS, Windows, Android), and vocabulary biasing (§5)
@@ -42,7 +45,7 @@ This document specifies:
 6. **Barge-in and latency targets** — the voice layer's obligations under Spec 04 §4.3's cancellation policy, with numeric budgets (§7)
 7. **The voice-privacy statement** — exactly what audio and what transcript text exists where, what (if anything) leaves the device, and under which consent — the statement Spec 08 §5.5 presumes (§8)
 8. **Error and degrade behavior** — mis-hear, no-speech, permission revoked, engine unavailable, TTS failure — every one landing on a surface, never a dead end (§9)
-9. **Accessibility** (§9.5) and **staging** against the current text-first v0 app (§10)
+9. **Accessibility** (§9.5) and the current realization/future boundaries (§10)
 
 It does **not** cover: what a transcript *means* (routing, slots, corrections — Spec 03); who drives the turn (the `DispatchOrchestrator`, Spec 04 §3.6); how the interim subtitle and the orb *look* (Spec 07 §7.3, §8.4 — this spec owns capture and transcript semantics, Spec 07 owns the visual surface, and the line between them is drawn precisely in §4.3); the consent mechanics for a final transcript reaching Claude during residual routing (Spec 08 §5.2/§5.6 — voice adds no new consent tier, §8.4); or notification sounds (Spec 04 §3.13).
 
@@ -52,11 +55,21 @@ It does **not** cover: what a transcript *means* (routing, slots, corrections �
 
 **P2.1 — Voice is uncompromising, so the pipeline must be unremarkable.** The user says what they naturally say; Plenara figures it out. The voice layer's contribution to that promise is *fidelity and speed*, nothing more: deliver what was said, as text, fast, and let the NLU layer (Spec 03) do the understanding. The voice layer never interprets, never filters, never "helps" — a transcript is delivered verbatim as the engine produced it, and normalization (lowercasing, disfluency stripping) is Spec 03 §5.4's job, downstream, where it is testable against recorded pairs.
 
-**P2.2 — Text is an overlay, one pipeline.** A typed submission from the quiet overlay (Spec 07 §7.2) enters `DispatchOrchestrator.dispatch` as a final `Transcript` with `source: typed` — the identical object, the identical pipeline (research §6.2). There is no separate text command path, and nothing downstream of the `Transcript` may branch on its source except diagnostics.
+**P2.2 — Text and speech converge on one turn pipeline.** The current controller receives either a
+typed string or a final recognizer callback, then calls `VoiceTurnController.send`, which invokes
+the same `Session.handle` route/execution path and conversation ledger. There is no concrete common
+`TranscriptEvent` object today; parity is enforced at the shared controller method.
 
-**P2.4 — Code over AI, applied to the one unavoidable model.** STT is the single place in the free tier where a model's output enters the system uninspected. The posture is the same as Spec 03's toward classifiers: treat the output as *untrusted text*, never as ground truth — the ASR floor gates obviously-failed recognition (§4.6), the correct-and-learn loop absorbs systematic mis-hearings (research §6.3's SpeechAnalyzer accuracy trade-off is *designed* to be absorbed this way), and no engine-reported confidence is ever load-bearing beyond the advisory floor (echoing Spec 03 §7.3.1's measured distrust of self-reported confidence).
+**P2.4 — Code over AI, applied to the one unavoidable model.** STT is the single place in the free
+tier where a model's output enters the system uninspected. Treat that output as *untrusted text*,
+never as ground truth. The current recognizer exposes no useful confidence and therefore has no
+numeric ASR floor (§4.6); the act-then-describe, correction, and undo paths make a mis-hear visible
+and recoverable downstream.
 
-**P2.5 — Aggressive layering: Voice is a leaf.** Per Spec 04 §2.1–2.2: the Voice layer knows only the Business Logic seam. Transcripts flow *up* on a stream; `speak(text)` calls flow *down*; the layer never touches storage, the registry, NLU, the network, or a widget. Platform engines are selected at the composition root (Spec 04 §2.3) behind the same interfaces on every platform.
+**P2.5 — Aggressive layering: Voice is a leaf.** Per Spec 04 §2.1–2.2, the Voice layer knows only
+its controller-facing seam. Recognition arrives through callbacks and `speak(text)` calls flow
+down; the layer never touches storage, the registry, NLU, the network, or a widget. Platform engines
+are selected at the composition root (Spec 04 §2.3) behind the same interfaces on every platform.
 
 **P2.8 — No silent failure.** A revoked mic permission, a missing language pack, a dead engine, an empty capture — every voice failure is a *named state with a surface* (§9), and the load-bearing one is automatic: when speech input cannot work, the app switches to text mode *and says so* (Spec 05 §13 E2). Voice being broken never means Plenara is broken, because text parity is total (P2.2).
 
@@ -68,9 +81,14 @@ It does **not** cover: what a transcript *means* (routing, slots, corrections �
 
 ## 2. Position in the Architecture: Two Seams, One Layer
 
-### 2.1 `SpeechInput` and `SpeechOutput`
+### 2.1 Shipped `SpeechRecognizer`/`SpeechOutput` and the destination contract
 
-Spec 04 §3.8 summarized one `SpeechEngine` (`startListening()`, `stopListening()`, `speak(text)`, `Stream<Transcript>`); Spec 09 §3.1 independently named two planned seams, `SpeechInput` and `SpeechOutput`, and marked them **[GAP]**. This spec resolves the naming in Spec 09's favor — input and output have different platform backends, different failure modes, different fakes, and no shared state, so one interface would be a false unit. **`SpeechEngine` survives as the collective name** for the pair (the composition-root registration and Spec 04's layer table need no restructuring — see §10 X3). The contracts:
+Input and output are separate leaf seams. The shipped input interface is `SpeechRecognizer`
+(`init`, `available`, `levels`, callback-based `listen`, `stop`, synchronous `cancel`) and its
+implementations are `SystemSpeechRecognizer`, optional local-model recognition, and
+`NoopSpeechRecognizer`. The shipped output interface is `SpeechOutput`. The richer stream-based
+`SpeechInput`/`TranscriptEvent` sketch below is retained as a destination contract, not a class map
+of the current source:
 
 ```dart
 /// The capture seam. Platform-backed (§5), selected at the composition root.
@@ -100,7 +118,7 @@ abstract class SpeechInput {
   Future<void> cancelListening();
 
   /// Smoothed input level while a session is live — the orb's listening
-  /// amplitude (Spec 07 §8.4), surfaced to the UI through a Business Logic
+  /// amplitude (Spec 07 §8.4), surfaced to Plena through the controller
   /// view-model projection, never by the UI subscribing to this layer
   /// directly (P2.5).
   Stream<double> get micLevel;
@@ -135,9 +153,10 @@ abstract class SpeechOutput {
 
 Two deltas from draft v0.1's `SpeechOutput`, both deliberate. (a) The `Stream<SpeakEvent>` became **per-utterance callbacks**: a shared event stream is un-identified, which is exactly the cross-fire hazard §6.5's generation token exists to close — binding `onStart`/`onDone` at the call site gives each utterance its own timing signals with no correlation step, and the subtitle/caption lifecycle Spec 07 §7.3 consumes rides these callbacks instead. (b) `turnId` is gone — turn identity lives with the caller, which already holds the callbacks; and cross-turn queueing was dropped for supersede-always, since turns serialize upstream anyway. `NoopSpeechOutput` is the shipped silent implementation (tests, injected sessions, platforms without a voice): `available: false`, and each `speak` fires `onStart`/`onDone` immediately so lifecycle-dependent code runs identically.
 
-### 2.2 The `Transcript` object
+### 2.2 Destination `TranscriptEvent`; current string boundary
 
-The one shape that crosses the Voice → Business Logic boundary, and the shape `dispatch(Transcript)` (Spec 04 §3.6) already names:
+The following remains the intended richer boundary object. It is **not implemented** in the current
+app:
 
 ```dart
 class TranscriptEvent {
@@ -151,16 +170,21 @@ class TranscriptEvent {
 enum TranscriptSource { voice, typed }
 ```
 
-A typed overlay submission is constructed by the Business Logic façade as a single `TranscriptEvent(isFinal: true, source: typed, engineConfidence: null)` with a fresh `utteranceId` — it never passes through `SpeechInput` at all, which is what keeps the Voice layer honest about owning *speech*, not *input*.
+Today, `SpeechRecognizer.onResult(text, isFinal)` supplies strings. Only the accumulated final
+string is sent. Typed text enters the same `VoiceTurnController.send(String)` method directly.
 
 ### 2.3 Who drives what
 
 The Voice layer is driven, never driving (Spec 04 §2.2 — leaves are not intermediaries):
 
-- The user's press/tap on the orb is a **UI event** → the Business Logic façade calls `SpeechInput.startListening` / `stopListening`. The Voice layer has no gesture knowledge.
-- A **final** transcript is handed by the Business Logic layer to `DispatchOrchestrator.dispatch` (Spec 04 §4.2 stage 1). The Voice layer never calls the orchestrator.
+- The user's tap on an explicit voice target (or non-interactive Plena space) is a UI event;
+  `VoiceTurnController` calls `SpeechRecognizer.listen`/`stop`. The recognizer has no gesture
+  knowledge.
+- A final transcript is handed to `VoiceTurnController.send`, which adapts the turn to
+  `Session.handle`. The Voice layer never calls routing or execution directly.
 - The orchestrator's `Done(confirmationText)`, clarification prompts, and error surfaces reach `SpeechOutput.speak` via the orchestrator (Spec 04 §3.6/§3.8). *What* is spoken — including the never-speak-sensitive-values-unprompted rule — is decided upstream (Spec 07 §5.4, Spec 05); `SpeechOutput` renders exactly the string it is given.
-- Testing: both seams ship with fakes from day one (`FakeSpeechInput` emits scripted interim/final sequences; on the output side, `NoopSpeechOutput` ships in-tree (§2.1) and the widget tests inject their own recording `SpeechOutput` fake), per Spec 09 D2 — only the razor-thin platform shims get the one-time human mic smoke.
+- Testing uses fake `SpeechRecognizer`/`SpeechOutput` implementations and `NoopSpeechRecognizer`/
+  `NoopSpeechOutput`; platform shims receive simulator/host integration coverage.
 
 ---
 
@@ -187,9 +211,11 @@ speech cancels, 30 seconds of trailing silence stops and sends, and 120 seconds 
 automatic stop is visible. These are safety/resource bounds; the ordinary boundary remains the
 second tap.
 
-### 3.3 Journal continuous mode (Spec 05 §11)
+### 3.3 Journal continuous mode (destination; Spec 05 §11)
 
-The 60-second voice journal is the one long-form capture. `startListening(journal)` semantics, matching F8's flow exactly:
+No separate long-form `journal` capture mode is implemented. Typed or ordinary voice commands can
+write journal records through the normal turn pipeline. If a dedicated 60-second capture mode is
+added, its destination semantics are:
 
 - Continuous recognition up to a hard **60 s** window; long-form-capable engine required (§5.2–§5.4 name which per platform).
 - The session ends on: the window closing; an explicit stop (tap/release — always available); or the **stop word** — a trailing, isolated "done" *followed by ≥ 1 s of silence*. The trailing-and-silent guard is what keeps "I'm done with the migraine phase, thankfully" mid-entry from truncating the entry; the stop word is stripped from the final text. When in doubt the engine keeps listening — an over-long entry is trimmable, a truncated one is lost.
@@ -202,11 +228,16 @@ The 60-second voice journal is the one long-form capture. `startListening(journa
 
 ### 3.5 The mic-lifecycle invariant
 
-**The microphone is open if and only if a capture session is live**, and a capture session is live if and only if the orb shows *listening*. No pre-warming with an open mic, no trailing capture after finalization, no audio buffered across sessions. Mic permission is requested on the **first press of the orb** — in context, when the user is expressing intent to speak — never at app launch. This invariant is the technical substrate of the privacy statement (§8.1) and is testable: the fake-backed harness asserts no `startListening` without a driving event and no session outliving its `stopListening`/`cancelListening`.
+**The microphone is open if and only if a capture session is live**, and a live capture is reflected
+by Plena's listening state. No pre-warming, trailing capture after finalization, or audio buffered
+across sessions. Permission is requested on the first explicit capture action, never at app launch.
+Fake-backed tests assert no `listen` without that action and no session outliving `stop`/`cancel`.
 
 ### 3.6 Speak and listen are mutually exclusive (v1)
 
-At most one of `SpeechInput` capturing / `SpeechOutput` playing is active at any instant. A capture start while speech is playing is a **barge-in**: `SpeechOutput.stop()` completes (≤ 150 ms, §7.1) *before* the mic opens. This ordering means the mic never hears the app's own voice, which is why the current tap-toggle build needs no echo cancellation; wake word would eventually spend that simplification (§3.4).
+At most one of `SpeechRecognizer` capture / `SpeechOutput` playback is active. Capture start while
+speech is playing is a **barge-in**: `SpeechOutput.stop()` completes before the mic opens. This
+ordering keeps the mic from hearing Plena's own voice; wake word would spend that simplification.
 
 ---
 
@@ -215,15 +246,17 @@ At most one of `SpeechInput` capturing / `SpeechOutput` playing is active at any
 ### 4.1 Two kinds of event, two consumers, no exceptions
 
 - **Interim** transcripts (`isFinal: false`) are live, revisable hypotheses — words may be rewritten as the engine refines. Their only product consumer is the subtitle user-slot (Spec 07 §7.3), rendered dimmed-provisional. They are never dispatched (Spec 03 §10 MD10; Spec 04 §4.2: "only the final transcript enters the pipeline… so a turn starts exactly once per utterance"), never persisted as user records, and never fed to NLU. Internal diagnostic capture is the sole non-product observer and follows Spec 11's build-channel policy; external builds capture none.
-- **Final** transcripts (`isFinal: true`) are emitted **exactly once per capture session**, at finalization, and are the sole voice-side input to `DispatchOrchestrator.dispatch`. An **empty final** (silence, or nothing recognizable) produces **no turn**: the orb returns to idle, the subtitle slot clears, nothing is spoken and nothing enters the Stream — silence answered with silence (Spec 05 §11 E2 generalizes: an empty capture is abandoned quietly). The "didn't catch that" surface is reserved for the ASR floor (§4.6) — *speech happened but was unusable* — never for *no speech*.
+- **Final** transcripts (`isFinal: true`) are emitted at most once per capture session through
+  `RecognitionSession.finish` and are the sole voice-side input to
+  `VoiceTurnController.send`/`Session.handle`. An empty final produces no turn. Repeated empty/no-
+  match captures surface a microphone/text hint rather than routing garbage.
 
 ### 4.2 Finalization triggers, per mode
 
 | Mode | Finalizes on |
 |---|---|
-| `pushToTalk` | release (`stopListening`) → engine flush |
 | `toggle` | second tap / stop affordance; native closure or a visible recovery watchdog also converges on finalization (§3.2) |
-| `journal` | 60 s window, explicit stop, or the guarded stop word (§3.3) |
+| `journal` (destination) | a future long-form mode may use an explicit stop, bounded window, or guarded stop word (§3.3) |
 
 One session, one `utteranceId`, one final. All completion signals — explicit stop, watchdog, native
 `done`/error, and stop-call completion — converge on one idempotent finalization door. A native
@@ -236,23 +269,39 @@ final itself — the Business Logic layer must never be left waiting on a sessio
 
 ### 4.3 The ownership line with Spec 07 §7.3, drawn once
 
-**This spec owns what a transcript *is*; Spec 07 owns what it *looks like*.** Concretely: this spec defines the event stream, revisability, the exactly-one-final rule, finalization triggers, emptiness, the ASR floor, and the never-dispatched/never-persisted status of interims. Spec 07 §7.3 defines the two-slot subtitle region, the dimmed-provisional style, the solidify-on-final weight change, the two-line discipline, and the assistant-slot linger. Spec 04 §4.2's live-subtitle sentence cites its rendering contract from Spec 07 §7.3 (per Spec 07 X4) and its dispatch contract from this section. Neither spec restates the other's half.
+**This spec owns recognizer callback/finalization semantics; Spec 07 owns what the resulting text
+looks like.** Current partial/final callbacks, exactly-once accumulated finalization, emptiness, and
+the never-dispatched status of interims live here. No stream-based transcript contract or numeric
+ASR floor is current. Spec 07 owns provisional/final caption rendering and assistant-reply linger.
 
 ### 4.4 Verbatim delivery; normalization is downstream
 
-The Voice layer delivers the engine's text as produced — casing, punctuation, disfluencies and all. Spec 03 §5.4 owns normalization (lowercase, strip disfluencies, canonicalize numbers/units) because the corpus template match depends on *its* normalization being the single, versioned, testable one. Two normalizers would mean corpus keys silently diverging from live traffic. The one transformation this layer performs is journal stop-word stripping (§3.3), which is a capture-delimiter concern, not text processing.
+The Voice layer delivers the engine's text as produced — casing, punctuation, disfluencies and
+all. Spec 03 §5.4 owns normalization because corpus matching needs one deterministic normalizer.
+The future dedicated journal mode may strip its guarded stop word as a capture delimiter (§3.3);
+the current ordinary capture path performs no such transform.
 
-### 4.5 Vocabulary biasing (the hook into §5)
+### 4.5 Vocabulary biasing (destination)
 
-Where the platform engine supports recognition biasing (SFSpeechRecognizer `contextualStrings`, research §6.3; analogous hints elsewhere, §5), the Voice layer accepts a **bias list** assembled by the Business Logic layer: contact display names and aliases (the `entityNames` universe, Spec 03 §2.6), capability `displayName`s and template phrases, and high-frequency literal tokens from the user's learned corpus templates. This is the cheapest accuracy lever the pipeline has — "Mia," "reconnect," and the user's own tracker names are exactly what generic language models mis-hear, and exactly what routing most needs verbatim. The list is rebuilt on the same triggers as the `CapabilityIndex` (registry change, entity change — Spec 01 §5.4) and **never leaves the device**: it is only ever handed to an on-device engine (§5.1), so the fact that it contains every contact's name creates no disclosure (§8.3).
+The shipped `speech_to_text` call passes no contact/capability bias list. If a future backend exposes
+reliable local vocabulary hints, Business Logic may assemble contact aliases, capability names,
+and learned literals; the list must remain on-device.
 
 ### 4.6 The ASR floor
 
-When the engine reports utterance-level confidence and it falls below `θ_asr` (default **0.30**, configurable), or the engine signals recognition failure outright, the final transcript is delivered flagged below-floor and the orchestrator surfaces Spec 05 §3.2's line — "I didn't quite catch that. Could you say that again?" — instead of routing garbage. Rules: the floor is **advisory-confidence's only job** (P2.4 — engine confidence is never a routing input, mirroring Spec 03 §7.3.1's finding that self-reported confidence is uncalibrated everywhere it's been measured); a below-floor transcript is *shown* in the subtitle (the user should see what was heard — it's often informative) but not dispatched; two consecutive below-floor captures offer text mode ("Want to type it instead?") rather than looping. Calibrating `θ_asr` per engine is Q2. *(Housekeeping: Spec 05 §3.2 cites the ASR floor to "Spec 03 §3.5," which is the cloud-escalation section and has no such floor — the concept lives here; §10 X5.)*
+The current `SpeechRecognizer` callback does not expose engine confidence, so no numeric ASR floor
+is implemented. Engine errors/native closure converge through finalization; repeated captures with
+no usable text surface a mic-permission/text-mode hint. A future confidence field may add an
+advisory floor, but it must not become a routing score.
 
 ### 4.7 Mis-hearing is not this layer's problem to fix
 
-A *confident but wrong* transcript ("log a tree-K run") is indistinguishable from a right one at this layer, and no voice-side second-guessing is permitted (P2.1 — the layer never interprets). The system's real defenses live downstream and are already specified: the act-then-describe description makes the mis-hear visible in one line, `"correct"` re-routes it (Spec 03 §2.7), undo reverses it (Spec 04 §3.11), and the corrections corpus absorbs *systematic* mis-hearings the same way it absorbs phrasing variation — research §6.3 explicitly prices SpeechAnalyzer's higher word-error rate against this loop. The one voice-side contribution is biasing (§4.5), which prevents the most damaging class (proper nouns) at the source.
+A confidently wrong transcript ("log a tree-K run") is indistinguishable from a right one at this
+layer, and no voice-side second-guessing is permitted (P2.1 — the layer never interprets). The
+system's defenses live downstream: the description makes the mis-hear visible, `"correct"`
+re-routes it (Spec 03 §2.7), undo reverses it (Spec 04 §3.11), and the corrections corpus absorbs
+systematic phrasing variation. Vocabulary biasing is only a possible future mitigation (§4.5); the
+current recognizer supplies no hint list.
 
 ---
 
@@ -268,15 +317,21 @@ The cost is honest and accepted: on-device recognition trails the best cloud rec
 
 ### 5.2 iOS / macOS (P1 and P4)
 
-- **Primary: SpeechAnalyzer** (iOS 26 / macOS 26) — on-device, no network path at all, free, long-form-capable (covers journal mode), automatic language detection, ~2× faster than Whisper Large V3 Turbo on Apple Silicon at a modestly higher WER (research §6.3 — the accepted trade). The min-OS decision makes this the normal case, not the lucky one.
-- **Fallback: SFSpeechRecognizer** (sub-26 devices) with **`requiresOnDeviceRecognition = true` as a hard requirement** — if on-device recognition is unsupported for the locale/device, the recognizer is treated as unavailable (→ text mode), never allowed to fall through to Apple's server path. `contextualStrings` carries the §4.5 bias list; SpeechAnalyzer's vocabulary-customization equivalent is used where exposed.
-- **Flutter bridges:** `liquid_speech` (SpeechAnalyzer) and `speech_to_text` (SFSpeechRecognizer) per research §6.3, wrapped behind `SpeechInput` — bridge choice is a composition-root detail the layers above never see.
+- **Current:** `speech_to_text` wraps Apple's speech recognizer and the single options builder sets
+  `onDevice: true` (mapped to `requiresOnDeviceRecognition`). Unsupported device/locale state
+  degrades to text mode.
+- **Destination:** SpeechAnalyzer may replace the bridge if measured platform coverage and quality
+  justify it; it is not a current dependency.
+- **Current Flutter bridge:** `speech_to_text`, configured through the single
+  `plenaraSpeechOptions` builder with `onDevice: true`, behind `SpeechRecognizer`.
+  SpeechAnalyzer and downloadable local-model alternatives remain implementation options, not
+  current dependencies.
 
 ### 5.3 Windows (P2 — the current dogfood platform)
 
-- **Turn capture (v1 working choice): WinRT `SpeechRecognizer`** — built-in, offline, well-suited to short command-length utterances (research §6.3). Zero added binary weight.
-- **Journal / long-form: Whisper.cpp** with a small quantized model via a platform channel — WinRT is not built for 60 s of free dictation; Whisper.cpp is the research doc's named offline fallback for exactly this ("longer dictation or offline use"). Whisper's initial-prompt mechanism carries the §4.5 bias list.
-- **Open (Q1):** whether Whisper.cpp should take *turn* capture too, giving Windows one engine and one quality bar at the price of model load latency and binary size. Decide from the dogfood spike's measured WER and time-to-first-interim on real hardware — this is the first platform where voice will actually be lived with, so the spike (§10.1) settles it with data, not taste.
+- **Current:** provisioned `sherpa_onnx` local Whisper is preferred for turn capture; the system
+  recognizer is the zero-provisioning fallback. The model is manually provisioned today.
+- **Destination:** first-run model download and a distinct long-form journal mode.
 
 ### 5.4 Android (P3)
 
@@ -286,7 +341,9 @@ The cost is honest and accepted: on-device recognition trails the best cloud rec
 
 ### 5.5 What "engine selection" is not
 
-There is no runtime engine picker, no per-utterance engine racing, and no cloud-STT "quality boost" tier — one engine per (platform, mode) pair, chosen at the composition root, swappable only by build. The `SpeechInput` seam is precisely so this table can change per platform generation (SpeechAnalyzer arriving, Whisper models shrinking) with zero churn above the Voice layer (research §9.2's original intent for `SpeechEngine`).
+There is no runtime engine picker, per-utterance racing, or cloud-STT quality tier. The
+`SpeechRecognizer` seam lets the composition root change platform backends without changing the
+controller.
 
 ---
 
@@ -302,7 +359,10 @@ Per research §6.4, adopted without contest — every platform's native synthesi
 | Android | Android `TextToSpeech` | Good (Google TTS engine, on-device voices) |
 | Windows | WinRT `SpeechSynthesizer` | **Shipped** (v0, via `flutter_tts` → WinRT/SAPI — §6.5); the default local voice is honestly mediocre, and that is the accepted cost of the offline mandate |
 
-One voice per install, chosen from the platform's installed voices in Settings (default: the platform's best available local voice for the app locale); consistent across all utterance kinds — the assistant is one presence, not a cast. Speech rate is user-adjustable (§9.5) and the platform's default rate is the default. *(The shipped v0 predates the Settings picker: it takes the engine's default voice at a fixed rate — §6.5.)*
+One voice per install, consistent across utterance kinds. On iOS, Settings exposes installed
+Enhanced/Premium English voices and persists the user's selection; without a valid explicit choice,
+the engine selects the best installed local voice. Other platforms use their local default. The
+current engine fixes rate at `0.5` and pitch at `1.0`; user-adjustable rate/pitch is not shipped.
 
 ### 6.2 What is spoken
 
@@ -310,17 +370,26 @@ One voice per install, chosen from the platform's installed voices in Settings (
 
 ### 6.3 Muting and quiet mode
 
-"Quiet mode" mutes TTS (one of Spec 07 §7.1's two persisted booleans). Muting must not change the visual lifecycle: as shipped, a muted turn never reaches `speak` — the caller runs the *identical* end-of-speaking path on a length-scaled silent timer instead — so the caption lifecycle is the same with audio off, and Spec 07 §7.3's "no visual difference" rule holds mechanically. Muting mid-utterance stops the in-flight speech immediately (§6.5). TTS engine *failure* is distinct from muting and is §9.4.
+The single persisted `voiceMuted` setting both selects the text-first posture and suppresses TTS.
+A muted turn never reaches `speak`; captions and durable ledger output still carry the reply.
+Muting mid-utterance stops playback immediately (§6.5). TTS engine failure is distinct from muting
+and is §9.4. Independent output-only mute remains a destination (Spec 07 §7.1).
 
 ### 6.4 Screen-reader deference
 
-When a platform screen reader is active (VoiceOver / TalkBack / Windows Narrator), Plenara's own TTS **defaults to muted** and the app relies on properly-labeled semantics + the always-on subtitles, so two synthesized voices never fight over the same content. The user can re-enable app TTS explicitly (some users prefer the app's voice for content and the reader for chrome). This is a hard requirement, not polish — same class as Spec 07 §8.2's reduced-motion rule.
+The UI provides semantic labels and complete text/caption operation, but automatic screen-reader
+detection and TTS muting are not implemented. That remains a release accessibility destination so
+two synthesized voices do not compete.
 
 ### 6.5 Shipped: the v0 talk-back (two-way voice is live)
 
 As of v0 (July 2026), the talk-back half of the loop is real: Plena speaks every reply aloud through the shipped `SpeechOutput` seam (`app/lib/speech_out.dart`), wired in `app/lib/main.dart` to her *speaking* presence (Spec 15 §3.1/§4.1). What shipped, and the guarantees an implementer or auditor should hold it to:
 
-- **Engine — offline, on-device, per the §6.1 matrix.** `FlutterTtsSpeechOutput` wraps `flutter_tts`, which lands on WinRT/SAPI on Windows. The explicit call: **focus offline and live with the crummy Windows voice** rather than reach for a cloud voice — §5.1's posture, applied to output. The seam is what makes that reversible: a cloud voice — or Apple's genuinely good `AVSpeechSynthesizer`, the planned engine when the app reaches iOS/macOS — swaps in at the composition root without touching the app. Windows build note: the `flutter_tts` Windows plugin restores its WinRT deps via NuGet, so building needs `nuget.exe` — `build.cmd` fetches it once if absent.
+- **Engine — offline, on-device, per the §6.1 matrix.** `FlutterTtsSpeechOutput` wraps
+  `flutter_tts` on every shipped platform, reaching the installed system voices (including Apple
+  voices on iOS/macOS and WinRT/SAPI on Windows). The iOS composition configures its playback
+  session and exposes a persisted installed-voice picker. Windows build note: the plugin restores
+  its WinRT dependencies via NuGet, and `build.cmd` fetches `nuget.exe` once if absent.
 - **Per-utterance generation token — the exactly-once guarantee.** `init()` sets `awaitSpeakCompletion(true)`, so the engine's speak future resolves *per utterance* — on natural end **or** on `stop()`. Each `speak()` takes an incrementing generation; completion state and `onDone` are driven from that future, gated on the generation still being current — never from the engine's shared, un-identified handlers. A stale event from a superseded utterance can therefore never cross-fire a newer utterance's callbacks, and `onDone` fires exactly once per non-superseded call.
 - **Animation anchoring.** `onStart` — driven by the engine's start handler — anchors Plena's *speaking* state to real audio onset, not to the `speak()` call; `onDone` (natural end or barge-in stop) ends it, and the caption clears a beat (~1.6 s) later, so captions follow actual speech rather than a guessed duration.
 - **Safety timer.** A cap scaled to response length (3 s + 75 ms/char, clamped 4–60 s) guarantees the speaking state and caption always clear even if the engine never reports completion. It is deliberately generous: it exists to catch a dead engine, never to cut speech off mid-sentence.
@@ -371,7 +440,10 @@ This section is the statement Spec 08 §5.5 presumes (its STT/TTS row cites "Spe
 
 ### 8.2 Interim transcripts
 
-Ephemeral by contract (§4.1): rendered to the subtitle, superseded, gone. Never persisted, never logged (including the local diagnostic log — only the *final* transcript is a turn, and only turns are logged), never dispatched, never leave the device.
+Interims are never dispatched, stored as user records, added to the conversation ledger, synced, or
+sent to a model. Internal/development builds deliberately retain recognizer hypotheses in local raw
+diagnostics so capture failures can be reconstructed; external builds capture none. Spec 11 is the
+sole authority for retention/export, and raw audio remains forbidden in every channel.
 
 ### 8.3 Final transcripts — the honest edges
 
@@ -379,7 +451,8 @@ A final transcript is *text*, and it flows where the user's words are supposed t
 
 - **On-device:** it enters the durable conversation/action ledger (Spec 17), the device-local diagnostic log according to Spec 11's build channel (content-bearing and manually raw-exportable in internal dogfood; absent from external raw logs), and — via dispatch — whatever records the routed skill writes. The journal transcript is the record body and follows Spec 05 §11's stated sync posture.
 - **Off-device, exactly one path:** on the paid tier, a *novel* phrasing's final transcript is sent **verbatim** to Anthropic as the residual-routing utterance, under the standing tier-(a) consent granted at key connection, with the free/offline tiers never sending it — exactly as specified in Spec 08 §5.2/§5.6. **Voice changes nothing here and adds no new consent**: the transcript's exposure is identical whether the words were spoken or typed (P2.2, one pipeline). The onboarding sentence Spec 08 §5.6 mandates ("it will send that sentence — and only it") is the disclosure; this spec's contribution is that *audio* is categorically not part of that sentence.
-- **The bias list (§4.5)** — contact names, capability names, corpus literals — is handed only to on-device engines and never serialized anywhere off-device.
+- **Future vocabulary hints (§4.5)** must remain on-device. The current recognizer assembles and
+  sends no contact, capability, or corpus bias list.
 
 ### 8.4 The consent chain, complete
 
@@ -397,7 +470,11 @@ A final transcript is *text*, and it flows where the user's words are supposed t
 
 ## 9. Errors & Degradation
 
-### 9.1 The sealed error set (cross-spec addition to Spec 04 §5.1)
+### 9.1 Destination typed error set
+
+The shipped seam reports availability, exceptions, `SpeechNotice`, and `onDone`; it does not define
+these classes. The following remains the intended typed expansion if platform-specific recovery
+needs outgrow the current controller state:
 
 ```dart
 sealed class VoiceError { }
@@ -409,7 +486,12 @@ class TtsUnavailable       extends VoiceError {}   // no usable synthesis voice
 
 (`noSpeech` and below-floor are deliberately *not* errors — they are normal outcomes with defined handling, §4.1/§4.6.) The set extends Spec 04 §5.1's layer table with a Voice row; the mapping below extends §5.2's surface map. Recorded as suite-sync item X6.
 
-### 9.2 The surface map — every failure lands somewhere actionable
+### 9.2 Failure-surface destination and current floor
+
+Current behavior always clears capture state, preserves/finalizes heard text unless explicitly
+cancelled, shows capture notices, and leaves the typed field available. The richer OS-settings deep
+links, language-pack repair entries, confidence-floor surface, and sealed-error mapping in this
+table are destinations unless independently implemented:
 
 | Failure | Behavior + surface |
 |---|---|
@@ -435,23 +517,26 @@ Voice diagnostics follow Spec 11, the sole collection/export authority. Internal
 
 - **Motor:** tap-to-toggle capture everywhere (§3.1); pauses do not endpoint ordinary speech, and no interaction anywhere requires press-and-hold.
 - **Hearing / deaf users:** the app is fully usable with TTS off or absent — subtitles are always on (Spec 07 §7.3) and text mode is complete (P2.2). No information is audio-only, ever (this is why notification sounds are Spec 04 §3.13's problem *with* visible counterparts).
-- **Speech and voice differences:** dysarthric, accented, or atypical speech will fare as the platform engine fares — the honest posture is: biasing (§4.5) helps proper nouns; the ASR-floor path offers text quickly rather than making the user fail repeatedly (§4.6's two-strike rule); and text mode is a first-class permanent choice, not a punishment. Plenara never requires voice.
-- **Screen readers:** §6.4's deference rule; all voice-state chrome (orb states, muted state, text-mode state) carries semantic labels.
-- **TTS rate/pitch:** user-adjustable within the platform voice's supported range; persisted.
+- **Speech and voice differences:** dysarthric, accented, or atypical speech will fare as the
+  platform engine fares. The current recovery is visible notices plus a first-class text mode;
+  vocabulary hints and confidence-based gating are future options, not current protections.
+- **Screen readers:** current controls and text carry semantic labels. Automatic screen-reader
+  detection/TTS deference remains the §6.4 destination.
+- **TTS rate/pitch:** currently fixed at rate `0.5`, pitch `1.0`. User-adjustable persisted values
+  remain an accessibility destination.
 - Reduced-motion and visual accessibility are Spec 07 §8.2's and unchanged by this spec.
 
 ---
 
-## 10. Staging & Suite-Sync Corrections
+## 10. Current Realization & Suite-Sync Corrections
 
-### 10.1 Staging against the v0 app
+### 10.1 Current realization
 
-The v0 `app/lib/main.dart` began text-first ("Text-first for now; voice later") — the typed path through `Session.handle` is exactly the P2.2 pipeline this spec keeps, so nothing is thrown away. The talk-back leg has since landed (§6.5): Plena speaks replies through the shipped `SpeechOutput` seam. The rungs:
-
-1. **Seams first (any time, cheap):** land `SpeechInput`/`SpeechOutput` + `TranscriptEvent` with fakes and the `FakeSpeechInput`-driven E2E tier *(the `SpeechOutput` half has shipped — §2.1/§6.5)* — this closes Spec 09 §3.1's **[GAP]** and §6.2 O3's blocked path *before* any platform shim exists, and refactors the ChatScreen send path to construct a typed `TranscriptEvent` (behavior-neutral).
-2. **Windows spike (dogfood):** WinRT turn capture + Whisper.cpp journal capture behind the seams; measure WER, time-to-first-interim, and the §7.2 budgets on real hardware; settle Q1. This is the "voice spike" Spec 09 O3 waits on. *(Honesty note, updated: research §11.2's walking skeleton lists "spoken confirmation" in v0; the v0 first shipped text-first, and the spoken-confirmation leg has since landed (§6.5) — the output half of the skeleton's voice leg is closed; the capture half lands with the spike.)*
-3. **v1.5 rung (Spec 07 §10 step 2):** the Stage, orb, subtitle region, and quiet overlay arrive together with this pipeline on the P1 platform (SpeechAnalyzer); latency budgets become CI-tracked numbers.
-4. **Ambient rung (v3):** wake word per §3.4, gated on Q3.
+The voice loop is shipped: callback-based recognition, accumulated native segments, user-delimited
+stop-and-send, watchdog recovery, live mic levels/captions, on-device-only options, TTS lifecycle,
+barge-in ordering, mute, and typed parity all converge through `VoiceTurnController`. Remaining
+work is explicitly additive: long-form journal capture, optional downloadable local models,
+wake-word prerequisites, and richer transcript metadata. None blocks the current voice workflow.
 
 ### 10.2 Corrections for the next reconciliation pass (this spec edits no other file)
 
@@ -459,7 +544,8 @@ The v0 `app/lib/main.dart` began text-first ("Text-first for now; voice later") 
 
 - **X1 — Retarget "Spec 06 — Voice" citations → Spec 12:** Spec 03 §0 (scope exclusion), §1 P2.5 ("Spec 06 signals a final transcript"); Spec 04 §0 (scope), §3.8 ("Defined at research §9.2 and Spec 06"); Spec 08 §0 (scope) and §5.5 (STT/TTS row, twice). Spec 04 §4.2's subtitle sentence splits per §4.3's ownership line: rendering cite → Spec 07 §7.3 (already Spec 07 X4), dispatch-semantics cite → this spec §4.1.
 - **X2 — Spec 08 §5.5 STT/TTS row** gains this spec as its normative source ("configured on-device per Spec 12 §5.1").
-- **X3 — `SpeechEngine` naming:** Spec 04 §2.3 (component inventory) and §3.8 note the split into `SpeechInput`/`SpeechOutput` (this spec §2.1), with `SpeechEngine` retained as the collective/layer name; Spec 09 §3.1's planned seam names are confirmed as-is.
+- **X3 — Voice seam naming:** current specs use shipped `SpeechRecognizer`/`SpeechOutput` names;
+  `SpeechInput`/`TranscriptEvent` remains only the destination sketch in §2.
 - **X4 — Spec 10 out-of-scope line** ("the voice pipeline's STT privacy characteristics… belong to Spec 08") → belong to Spec 12 §8; Spec 08 carries only the consent-tier framing.
 - **X5 — Spec 05 §3.2 ASR-floor miscite** ("Spec 03 §3.5") → this spec §4.6.
 - **X6 — Spec 04 §5.1/§5.2** gain the `VoiceError` row and surfaces of §9.1–§9.2.
@@ -470,25 +556,51 @@ The v0 `app/lib/main.dart` began text-first ("Text-first for now; voice later") 
 
 ### Resolved
 
-- **D1 — Two seams, one layer.** The Voice layer is `SpeechInput` + `SpeechOutput` (adopting Spec 09's names; `SpeechEngine` survives as the collective), a strict leaf per Spec 04 §2.2: transcripts up a stream, `speak` down a call, platform selection at the composition root, fakes from day one. The `TranscriptEvent` is the single boundary object; typed overlay input is the same object with `source: typed` — one pipeline (P2.2). *(§2)*
+- **D1 — Two seams, one layer.** The shipped pair is callback-based `SpeechRecognizer` plus
+  `SpeechOutput`, strict leaves selected at composition. The richer `SpeechInput`/
+  `TranscriptEvent` vocabulary is a destination. Current typed and spoken strings converge at
+  `VoiceTurnController.send`, not through an identical transcript object. *(§2)*
 - **D2 — No cloud STT, ever — the on-device mandate.** All speech recognition is on-device on every platform in every mode, enforced by construction (hard on-device engine flags; ineligible otherwise); unavailability degrades to text mode, never to a networked recognizer. The shipped `plenaraSpeechOptions` is the one option builder and sets `onDevice: true`; on Apple the plugin maps that to `requiresOnDeviceRecognition = true`, and a regression test rejects either platform option if the flag falls. This is the normative source for Spec 08 §5.5's "Never" row and the generalization of Spec 05 §11's journal invariant. Accepted costs: platform-trailing accuracy (absorbed by the correct-and-learn loop, research §6.3) and reduced reach on old devices (consistent with the min-OS decision, research §15.1). *(§5.1)*
-- **D3 — Engine matrix.** iOS/macOS: SpeechAnalyzer primary; SFSpeechRecognizer with `requiresOnDeviceRecognition = true` + `contextualStrings` as sub-26 fallback. Windows: WinRT for turn capture (pending Q1), Whisper.cpp for journal/long-form. Android: on-device `SpeechRecognizer` only (the network default is prohibited), Whisper.cpp fallback. One engine per (platform, mode); no runtime picker. *(§5.2–§5.5)*
+- **D3 — Current engine matrix.** `speech_to_text` wraps the platform system recognizer and the
+  shared options require on-device recognition. Optional local-model and SpeechAnalyzer paths are
+  future alternatives. There is no cloud fallback or runtime engine picker. *(§5.2–§5.5)*
 - **D4 — Capture model.** Tap starts a turn; the next tap stops and sends; the explicit × or mute discards. Engines may segment but never decide the user is finished. The 15 s no-speech, 30 s trailing-silence, and 120 s hard-cap watchdogs only recover forgotten sessions and visibly report any automatic stop. Wake word remains deferred. Mic-lifecycle invariant: mic open ⇔ session live ⇔ orb listening; permission is asked at first tap. *(§3; amended by G-52)*
-- **D5 — Interim/final semantics.** Interims feed the subtitle user-slot only (Spec 07 §7.3) — never dispatched, persisted, or logged; exactly one final per session, the sole dispatch input (reaffirming Spec 03 MD10 / Spec 04 §4.2); an empty final is a quiet no-op, not an error. Ownership line with Spec 07 drawn at §4.3: this spec owns what a transcript is, Spec 07 owns how it renders. *(§4.1–§4.3)*
+- **D5 — Interim/final semantics.** Interims feed live caption state and internal diagnostics but are
+  never dispatched or persisted as conversation turns. `RecognitionSession.finish` is the single
+  idempotent finalization door and emits at most one non-empty final; empty is a quiet no-op.
 - **D6 — Verbatim delivery.** The Voice layer performs no text normalization (Spec 03 §5.4 owns the single normalizer); the only transform is journal stop-word stripping, a capture-delimiter concern. *(§4.4)*
-- **D7 — The voice-privacy statement.** Audio never exists at rest and never leaves the device — no path, no consent tier, no retention setting; interims are ephemeral; a final transcript's only off-device path is the existing tier-(a) residual-routing consent (Spec 08 §5.2/§5.6), identical for spoken and typed input — **voice adds zero new disclosure and zero new consent**. The bias list (contact/capability names) is handed only to on-device engines. *(§8)*
-- **D8 — TTS is platform-native, offline, one consistent voice**; speak and listen are mutually exclusive in v1 (no AEC needed); muting leaves the visual lifecycle identical — the muted path runs the same end-of-speaking lifecycle without reaching `speak` (§6.3; Spec 07 D8); app TTS defers to an active screen reader by default. *(§6, §3.6)*
-- **D9 — Latency budgets are normative** (§7.2 table), headlined by release → spoken-`Done` ≤ 1.0 s p50 on a corpus-hit turn and barge-in silence ≤ 150 ms; measured at the seams from the first spike, CI-tracked from the v1.5 rung. *(§7)*
-- **D10 — The failure design center is text mode as the universal safe state.** Sealed `VoiceError` set; every failure auto-lands on text mode and/or an AttentionSurface item with the reason named (mic permission → Spec 05 §13 E2 verbatim; missing pack → repair item; TTS loss → named once, subtitles carry). No-speech is silent; the ASR floor (advisory confidence < 0.30, the *only* use of engine confidence — P2.4) re-asks once and offers text on the second strike; confident mis-hears belong to the downstream describe/correct/undo/corpus loop, never to voice-side second-guessing. *(§4.6–§4.7, §9)*
-- **D11 — Vocabulary biasing** from contact names/aliases, capability display names + template phrases, and corpus literals; rebuilt on registry/entity change; on-device only. The cheapest proper-noun accuracy lever the pipeline has. *(§4.5)*
-- **D12 — Accessibility requirements are hard:** toggle capture everywhere, complete no-audio operation (subtitles + text mode), screen-reader deference, adjustable TTS rate, system Reduce Motion, and a separate still-presence preference. Plenara never *requires* voice. Endpoint tuning was removed with G-52 because the engine no longer ends a turn. *(§9.5)*
-- **D13 — Talk-back shipped, offline-first (v0, July 2026).** Two-way voice is real: Plena speaks replies through the shipped `SpeechOutput` seam — `init`/`available`/`speaking`/`speak(text, {onStart, onDone})`/`stop`, with per-utterance callbacks replacing draft v0.1's `SpeakEvent` stream and `turnId` (§2.1's deltas). Engine: `flutter_tts` → WinRT/SAPI on Windows — the explicit choice to stay offline and accept the mediocre local voice, with the seam keeping a cloud voice (or `AVSpeechSynthesizer` on Apple, the planned engine there) a composition-root swap; `build.cmd` fetches the `nuget.exe` the Windows plugin needs. Lifecycle guarantees: a per-utterance generation token over `awaitSpeakCompletion(true)` makes `onDone` exactly-once and immune to stale-event cross-fire; `onStart` anchors the speaking animation to real audio onset; a length-scaled safety cap clears state if the engine goes silent; listen-start, mute, and a new send all stop in-flight speech. *(§2.1, §6.5)*
+- **D7 — The voice-privacy statement.** Audio never exists at rest or leaves the device. Internal
+  builds may retain transcript hypotheses under Spec 11; external builds do not. A final transcript
+  can leave only through the same consented residual-routing path as typed text. No vocabulary bias
+  list is currently assembled. *(§8)*
+- **D8 — TTS is platform-native, offline, one consistent voice**; capture and playback are mutually
+  exclusive and mute retains visual output. Automatic screen-reader deference remains a destination.
+- **D9 — Latency budgets are targets, not current evidence** (§7.2 table), headlined by release →
+  spoken-`Done` ≤ 1.0 s p50 on a corpus-hit turn and barge-in silence ≤ 150 ms. The current suite
+  checks sequencing and lifecycle; it does not claim physical-device latency measurement or a
+  CI-tracked distribution. *(§7)*
+- **D10 — The failure design center is text mode.** Current failures and repeated empty captures
+  resolve through recognizer availability/notices and controller state; there is no sealed
+  `VoiceError` implementation or numeric ASR floor. *(§4.6–§4.7, §9)*
+- **D11 — Vocabulary biasing is a destination.** The current recognizer receives no contact,
+  capability, or corpus hint list. Any future list is on-device only. *(§4.5)*
+- **D12 — Accessibility requirements are hard:** toggle capture, complete no-audio operation,
+  subtitles/text parity, semantic voice state, system Reduce Motion, and Still Presence are shipped.
+  Persisted adjustable TTS rate/pitch remains a destination. Plenara never requires voice. *(§9.5)*
+- **D13 — Talk-back shipped, offline-first.** `FlutterTtsSpeechOutput` supplies per-utterance
+  callbacks, generation guards, safety cleanup, barge-in/mute handling, iOS playback-session setup,
+  automatic best-installed voice choice, and an iOS Settings picker for natural English voices.
+  Rate/pitch remain fixed. *(§2.1, §6.1–§6.5)*
 - **D14 — OS-dictation edge copy shipped (August 2026).** The public privacy policy now says that keyboard dictation initiated in text mode belongs to the OS provider, while Plenara's own microphone path remains on-device-only. Q7 is resolved. *(§8.5)*
 
 ### Open
 
-- **Q1 — Windows turn-capture engine.** WinRT vs. Whisper.cpp-for-everything on the dogfood platform: decide from the spike's measured WER, time-to-first-interim, and model-load latency on min-spec hardware (§5.3). Whisper-for-all buys one quality bar; WinRT buys zero binary weight and instant start.
-- **Q2 — ASR-floor calibration.** `θ_asr = 0.30` is a launch guess and engine confidence-reporting reliability varies (and may echo Spec 03's uncalibrated-confidence finding); calibrate per engine against recorded below-floor/above-floor captures during the spike, and confirm which engines report usable utterance confidence at all.
+- **Q1 — Windows local-model packaging.** Provisioned `sherpa_onnx` Whisper is already preferred
+  and the OS recognizer is the fallback. The remaining question is whether and how the model pack
+  becomes a supported first-run download rather than a manually provisioned capability (§5.3).
+- **Q2 — Confidence only if a future engine earns it.** No numeric ASR floor exists today. If a
+  future backend exposes reliable utterance confidence, calibrate it against recorded captures
+  before adding any advisory floor; do not introduce a launch-guess threshold.
 - **Q3 — Wake word prerequisites** (ambient rung): Porcupine integration, acoustic echo cancellation once speak/listen can overlap, the always-armed buffer-discard audit against §8.1's "audio never exists at rest," and Spec 07 Q3's "armed without surveillance" orb reading. All four before "Hey Plenara" ships.
 - **Q4 — Whisper.cpp sizing.** Model choice/quantization per platform (binary budget vs. WER vs. the §7.2 journal-finalization budget), and whether one multilingual model or per-locale packs. Interacts with Q5.
 - **Q5 — Locale & multilingual.** v1 is single-locale (device locale); SpeechAnalyzer's automatic language detection and mixed-language utterances are deferred — and must land together with Spec 03's multilingual-embedder swap note (§3.2) or routing quality silently diverges from transcription language.
@@ -496,4 +608,4 @@ The v0 `app/lib/main.dart` began text-first ("Text-first for now; voice later") 
 
 ---
 
-*End of Spec 12 — Voice v0.3*
+*End of Spec 12 — Voice v0.4*
