@@ -5,7 +5,7 @@ description: Verify Plenara UI, voice, animation, integration, or runtime behavi
 
 # Verify Plenara on local surfaces
 
-Read the relevant owning spec and [`WORK-CAPSULE.md`](../../../WORK-CAPSULE.md) before choosing the verification surface.
+Read the relevant owning spec before choosing the verification surface. List headings in [`WORK-CAPSULE.md`](../../../WORK-CAPSULE.md), then read only the current verification and platform sections relevant to this run; do not load the capsule end to end by default.
 
 - Use widget/render tests for deterministic layout and interaction, a local iPhone simulator for iOS integration, and macOS only for behavior its platform can represent.
 - Never install, launch, inspect, probe, or run a harness on Luis's physical iPhone. Installation is a separate `plenara-phone-deploy` workflow, triggered by an explicit request or by the permanent standing authorization for a completed, simulator-verified, committed, and pushed phone build.

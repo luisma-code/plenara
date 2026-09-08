@@ -24,6 +24,7 @@ class TodayBoard extends StatelessWidget {
   final VoidCallback? onAddTodo;
   final VoidCallback? onOpenAttention;
   final Widget? menuAction;
+  final double bottomContentPadding;
 
   const TodayBoard({
     super.key,
@@ -38,6 +39,7 @@ class TodayBoard extends StatelessWidget {
     this.onOpenAttention,
     this.menuAction,
     this.onVoice,
+    this.bottomContentPadding = 118,
   });
 
   @override
@@ -76,7 +78,7 @@ class TodayBoard extends StatelessWidget {
             onTap: onVoice,
             child: ListView(
               key: const Key('today-board'),
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 118),
+              padding: EdgeInsets.fromLTRB(20, 18, 20, bottomContentPadding),
               children: [
                 Row(
                   children: [

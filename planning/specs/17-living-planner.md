@@ -130,6 +130,8 @@ This separation follows the Social Convoy distinction between closeness circles 
 
 Todos is the default root for one-off commitments. It retains the bounded Now/Next/Later task projection, direct completion, latest targeted undo, operational/repair state, relationship signals, and fast capture. Repeated work does not masquerade as a recurring task: due habits appear in a clearly labeled Habits card with a direct check-in and doorway to the Habits root.
 
+Persistent navigation and the raised text-input surface may overlay the planner, but every Todos action remains reachable and can scroll wholly above those surfaces with visible clearance. The text path must not make Plan, Library, or the final item in any planner section partially obscured or untappable.
+
 The secondary Plan workspace retains its phone day strip, selected-day agenda, load/capacity, unscheduled queue, deadlines, conflict treatment, direct scheduling/resizing/completion, and multi-select. Tablet/desktop expands those semantics into week columns and a queue.
 
 ### 2.3 Habits

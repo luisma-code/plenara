@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plenara Product Development"
+  short_description: "Orient product, architecture, and behavior changes"
+  default_prompt: "Use $plenara-product-development to orient this Plenara product change."

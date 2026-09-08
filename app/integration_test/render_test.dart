@@ -392,7 +392,12 @@ void main() {
       expect(
         tester.getRect(todosPlan).bottom,
         lessThan(obstructionTop - 8),
-        reason: 'Plan must be wholly above persistent bottom surfaces',
+        reason:
+            'Plan must be wholly above persistent bottom surfaces; '
+            'planBottom=${tester.getRect(todosPlan).bottom}, '
+            'obstructionTop=$obstructionTop, '
+            'scroll=${tester.state<ScrollableState>(todosPlanScroll).position.pixels}/'
+            '${tester.state<ScrollableState>(todosPlanScroll).position.maxScrollExtent}',
       );
       await tester.tap(todosPlan);
       await runFrames(tester, 35);

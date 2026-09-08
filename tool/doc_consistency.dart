@@ -41,6 +41,7 @@ void main() {
     'planning/specs/storage-sync-assessment.md',
     '.agents/skills/plenara-doc-alignment/SKILL.md',
     '.agents/skills/plenara-phone-deploy/SKILL.md',
+    '.agents/skills/plenara-product-development/SKILL.md',
     '.agents/skills/plenara-simulator-verification/SKILL.md',
   ];
 
@@ -79,9 +80,7 @@ void main() {
   }
 
   const staleClaims = <String, List<String>>{
-    'readme.md': [
-      'Global search and circle filters reach everyone',
-    ],
+    'readme.md': ['Global search and circle filters reach everyone'],
     'AGENTS.md': [
       'Text/subtitles are overlays — UI is never compromised',
       'retrieval-embedding model (~80MB',
@@ -221,9 +220,36 @@ void main() {
     );
   }
 
+  final agentsText = File('${root.path}/AGENTS.md').readAsStringSync();
+  final agentsLines = agentsText
+      .split('\n')
+      .where((line) => line.trim().isNotEmpty)
+      .length;
+  if (agentsLines > 45) {
+    errors.add(
+      'AGENTS.md: always-loaded project router exceeds 45 non-empty lines ($agentsLines)',
+    );
+  }
+  if (agentsText.contains('Read [`WORK-CAPSULE.md`](WORK-CAPSULE.md)')) {
+    errors.add(
+      'AGENTS.md: blanket WORK-CAPSULE startup loading returned; route to relevant sections instead',
+    );
+  }
+  for (final skill in const [
+    'plenara-product-development',
+    'plenara-doc-alignment',
+    'plenara-simulator-verification',
+    'plenara-phone-deploy',
+  ]) {
+    if (!agentsText.contains('`$skill`')) {
+      errors.add('AGENTS.md: project router is missing `$skill`');
+    }
+  }
+
   const skillDefinitions = <String>[
     '.agents/skills/plenara-doc-alignment/SKILL.md',
     '.agents/skills/plenara-phone-deploy/SKILL.md',
+    '.agents/skills/plenara-product-development/SKILL.md',
     '.agents/skills/plenara-simulator-verification/SKILL.md',
   ];
   for (final relative in skillDefinitions) {

@@ -1,6 +1,40 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-07 for proximity-aware Relationships._
+_Current working memory. Last updated 2026-09-08 for progressive project instructions._
+
+## Progressive project instructions (2026-09-08)
+
+- Root `AGENTS.md` is now a small always-loaded router rather than a restatement of product,
+  architecture, storage, diagnostics, UI, verification, and deployment rules. It retains only the
+  product purpose, authority map, task-to-skill routing, physical-phone boundary, and completion
+  gate.
+- `WORK-CAPSULE.md` is no longer mandatory end-to-end startup reading. Agents list its headings and
+  read only the current-state, platform, deployment, or verification sections relevant to their
+  task.
+- The new `plenara-product-development` skill owns conditional orientation for product behavior,
+  architecture, schemas, storage/sync, routing, privacy, voice, and UI work. The existing
+  documentation, simulator-verification, and phone-deployment skills remain focused on their own
+  workflows.
+- `tool/doc_consistency.dart` now guards the root instruction budget, rejects the retired blanket
+  capsule-loading rule, requires all four routed project skills, and validates the new skill.
+- Calibration restored the actual blanket capsule-loading instruction and produced its named guard
+  failure. A second red run broke the new root route and skill folder/name match and named both
+  defects. The scoped rule and skill identity were then restored. The official skill validator
+  passes all four project skills, and the new `agents/openai.yaml` parses with its expected
+  invocation prompt.
+- The first full gate caught a real text-mode planner obstruction: at maximum scroll, the Plan chip
+  still ended at y=444.22 while the raised input bar required it above y=429. The planner now uses
+  the same 168-point trailing clearance as caption lists whenever text input is raised, and the
+  integration assertion reports both surface geometry and scroll extent. The focused real-engine
+  case then passed; its short macOS sample reached roughly 388 MiB RSS, exited normally, and left no
+  app/test process. This is cleanup evidence, not a leak claim.
+- Final full precheck is green: 2,065 engine tests + 36 intentional skips; 203 Flutter tests + 4
+  channel skips; 95.7% deterministic-core, 89.5% product-logic, and 83.8% transport coverage;
+  analyzers, seed sync, documentation consistency, import layering, render guards,
+  external-channel checks, macOS build, eight real-engine cases, secret scan, and the 24/60
+  conformance ratchet. The full real-engine run moved from roughly 377 to 510 MiB while loading its
+  eight surfaces, completed normally, and left no app/test process; it is not a long-soak leak
+  claim.
 
 ## Proximity-aware Relationships (2026-09-07)
 
@@ -648,23 +682,26 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
 
 ## Project instruction package
 
-- Root `AGENTS.md` is the tracked, canonical project-specific instruction authority. It contains
-  current product facts, authority routing, diagnostics policy, device safety, verification, and
-  maintenance rules without copying Luis's cross-project working preferences.
+- Root `AGENTS.md` is the tracked, canonical project-specific instruction router. It keeps only
+  always-relevant product purpose, authority routing, device safety, and completion rules without
+  copying Luis's cross-project working preferences or forcing unrelated context into every task.
 - `CLAUDE.md` is intentionally only a compatibility pointer to `AGENTS.md`, preventing two full
   copies from drifting. The obsolete `.claude/settings.json` was removed because its blanket shell
   grant, Windows paths, and retired llama commands were machine policy rather than portable project
   guidance.
-- Repo-scoped Codex skills live under `.agents/skills/`: simulator verification, documentation
-  alignment, and standing-authorized physical-phone deployment. Project agent definitions under
-  `.codex/agents/` cover spec/code review, product/art/motion review, and simulator verification.
-  Agent roles do not grant permission to delegate, deploy, or take external actions.
-- The instruction guard checks all three skills, requires each project agent to route through
-  `AGENTS.md`, rejects the retired instruction claims, and keeps `CLAUDE.md` as a thin pointer.
-- Calibration restored the actual overlay-only claim, expanded `CLAUDE.md` into a second authority,
+- Repo-scoped Codex skills live under `.agents/skills/`: product development, simulator
+  verification, documentation alignment, and standing-authorized physical-phone deployment.
+  Project agent definitions under `.codex/agents/` cover spec/code review, product/art/motion
+  review, and simulator verification. Agent roles do not grant permission to delegate, deploy, or
+  take external actions.
+- The instruction guard checks all four skills, keeps the root router bounded, requires each
+  project agent to route through `AGENTS.md`, rejects blanket capsule loading and retired claims,
+  and keeps `CLAUDE.md` as a thin pointer.
+- At the earlier three-skill package revision, calibration restored the actual overlay-only claim,
+  expanded `CLAUDE.md` into a second authority,
   mismatched a skill name, and removed an agent description; one run named all four defects, and
-  the restored run passed. The official Codex skill validator also passed all three skills from an
-  isolated temporary environment, which was removed afterward.
+  the restored run passed. The official Codex skill validator passed all three skills that existed
+  at that revision from an isolated temporary environment, which was removed afterward.
 - Final precheck is green: 1,922 engine tests + 36 intentional skips; 161 Flutter tests + 3
   development-channel skips; 94.7% deterministic / 90.5% product / 68.1% transport coverage;
   macOS build; seven real-engine cases; external-channel, secret, and 24/60 conformance gates.

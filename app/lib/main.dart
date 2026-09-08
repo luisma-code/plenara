@@ -1023,6 +1023,10 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
               _ => TodayBoard(
                 session: _session,
                 onChanged: () => setState(() {}),
+                // The text-input surface rises above navigation. Give the
+                // planner the same trailing clearance used by caption lists so
+                // its final actions can scroll wholly above both overlays.
+                bottomContentPadding: showInput ? 168 : 118,
                 onVoice: canUseVoice ? _turn.toggleMic : null,
                 onAddTodo: () =>
                     addTodoFromUi(context, _session, () => setState(() {})),
