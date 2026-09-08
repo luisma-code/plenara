@@ -457,6 +457,17 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
   This authorizes installation only—never launch, testing, probes, container inspection, log access,
   reset, uninstall, or TestFlight/App Store distribution. Documentation-only revisions do not
   trigger a redundant build/install.
+- On 2026-09-07 at 17:02 PDT, the actionable Relationships home and single/bulk circle movement
+  were installed on **Aluminum Monster** as signed internal-channel `0.13.0 (19)`, bundle
+  `com.plenara.plenaraApp`, from pushed source revision
+  `ea4286cefc1034ce13281e018c4ac8d81069f1a1`. The development-signed AOT SHA-256 is
+  `1fe7122cc950528ba8266531a5d94ff73dce11e6275e3bf29fee417c5289f1e6`; its signature,
+  embedded revision `ea4286cefc10`, approved internal raw-diagnostics surface, absence of provider
+  credential patterns, team `7V63BZ39HU`, and provisioning profile
+  `9700a183-07f9-4d2b-936c-3176f893ef68` through 2027-07-28 were verified before CoreDevice
+  confirmed `App installed`. The first tunnel-only invocation ended without an installation result;
+  the tracked retry completed. Deployment only—the physical app was not launched, tested, probed,
+  or inspected.
 - On 2026-09-07 at 10:56 PDT, relationship circles and two-clock connection goals were installed on
   **Aluminum Monster** as signed internal-channel `0.13.0 (19)`, bundle
   `com.plenara.plenaraApp`, from pushed source revision
