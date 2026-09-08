@@ -491,6 +491,15 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
   This authorizes installation only—never launch, testing, probes, container inspection, log access,
   reset, uninstall, or TestFlight/App Store distribution. Documentation-only revisions do not
   trigger a redundant build/install.
+- On 2026-09-07 at 17:43 PDT, proximity-aware Relationships was installed on **Aluminum Monster**
+  as signed internal-channel `0.13.0 (19)`, bundle `com.plenara.plenaraApp`, from pushed source
+  revision `f1c7f79e79c8040af6adf85bb8ae09d2924a7e07`. The development-signed AOT SHA-256 is
+  `27a3e732acd6cae73d6081baff8ee35135f05017555e46099563e6b01a3a8408`; its signature,
+  embedded revision `f1c7f79e79c8`, approved internal raw-diagnostics surface, absence of provider
+  credential patterns, team `7V63BZ39HU`, and provisioning profile
+  `9700a183-07f9-4d2b-936c-3176f893ef68` through 2027-07-28 were verified before CoreDevice
+  confirmed `App installed`. Deployment only—the physical app was not launched, tested, probed, or
+  inspected.
 - On 2026-09-07 at 17:02 PDT, the actionable Relationships home and single/bulk circle movement
   were installed on **Aluminum Monster** as signed internal-channel `0.13.0 (19)`, bundle
   `com.plenara.plenaraApp`, from pushed source revision
