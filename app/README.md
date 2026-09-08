@@ -10,8 +10,10 @@ user-selected data-folder access. Product logic remains in the pure-Dart package
 at `../v0`.
 
 The Relationships root is Focus-first: due connections are bounded and ranked,
-global search and circle filters cover the complete address book, and direct or
-bulk circle moves share the engine's durable undo path.
+global search plus circle and Local/Remote filters cover the complete address book,
+and direct or bulk organization shares the engine's durable undo path. Circle and
+proximity remain independent; proximity selects in-person versus call/FaceTime
+guidance without changing contact-frequency goals.
 
 ## Local verification
 

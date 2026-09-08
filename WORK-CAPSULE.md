@@ -1,6 +1,39 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-07 for the actionable Relationships home._
+_Current working memory. Last updated 2026-09-07 for proximity-aware Relationships._
+
+## Proximity-aware Relationships (2026-09-07)
+
+- Proximity was already a stored independent descriptor and already influenced due-contact copy,
+  but it was buried in person detail. The Relationships home now exposes a second combinable facet:
+  **Local**, **Remote**, **Household**, or **Not set**, with membership and due counts scoped by the
+  selected relationship circle. Rows identify both axes explicitly.
+- Each row's **Organize** menu and the multi-select Organize sheet can change either circle or
+  proximity through the engine's durable undo path. Bulk proximity changes are one atomic execution
+  and preserve circle, tracking switches, cadence inheritance, and custom goal overrides.
+- Local/Household due guidance and follow-up Todos now lead toward planning time together; Remote
+  guidance and follow-ups lead toward a phone call or FaceTime. Voice accepts commands such as “set
+  Sam as remote” or “set Mia as local” without changing closeness or goals.
+- The new engine check failed when only the first selected person was written and passed after the
+  atomic batch was restored. The voice check failed when Local was removed from the proximity
+  command boundary. Widget checks rejected the former hidden filter and generic local follow-up;
+  the documentation guard likewise rejected the retired circle-only navigation claim.
+- The real-engine product journey passed on the local iPhone 17 Pro Max simulator and captured
+  `app/build/simulator-check/relationships-proximity-filters.png`. Visual inspection confirmed that
+  Local and Remote are simultaneously visible on the phone, proximity counts and due badges read
+  clearly, and the denser `Core · Remote` row retains an actionable Organize control. The short run
+  produced one Runner RSS sample around 509 MiB, which is not a plateau or leak claim. The app and
+  simulator were stopped, no app/test process remained, and the physical phone was not used.
+- The first full precheck correctly rejected its old person-row tap after the additional proximity
+  row made that card taller: its center sat behind the persistent input bar. The journey now scrolls
+  until the whole person card is above both persistent bottom surfaces and asserts that geometry
+  before tapping. The focused real-engine macOS rerun passed with one short RSS sample around
+  347 MiB; the app exited and no process remained.
+- Final full precheck is green: 2,065 engine tests + 36 intentional skips; 203 Flutter tests + 4
+  channel skips; 95.7% deterministic-core, 89.5% product-logic, and 83.8% transport coverage;
+  analyzers, seed sync, documentation consistency, import layering, render guards,
+  external-channel checks, macOS build, eight real-engine cases, secret scan, and the 24/60
+  conformance ratchet.
 
 ## Actionable Relationships home (2026-09-07)
 
@@ -8,10 +41,10 @@ _Current working memory. Last updated 2026-09-07 for the actionable Relationship
   meaningful-connection goal needs attention. Global search reaches every person, while live
   circle counts, due badges, and Focus/Core/Close/Keep connected/Keep warm/Context only/All filters
   make a large address book navigable without reverting to a flat alphabetical default.
-- Circle and All views remain urgency-first. Every person row exposes a visible **Move** action;
-  **Organize** supports multi-select and moves a batch to a new circle as one durable undoable
-  mutation. Moved people inherit the destination circle's goals, while people already in that
-  circle retain any custom goal overrides.
+- Filtered and All views remain urgency-first. Every person row exposes a visible **Organize**
+  action; multi-select changes a batch's circle or proximity as one durable undoable mutation.
+  Moved people inherit the destination circle's goals, while proximity changes preserve goals and
+  people already in a destination circle retain custom overrides.
 - The newest undo result now replaces an older transient result instead of waiting behind its
   five-second display window. This keeps rapid direct and bulk organization feedback truthful.
 - The widget verifier was calibrated against the former flat home, a non-scrolling circle picker,
@@ -73,8 +106,9 @@ _Current working memory. Last updated 2026-09-07 for the actionable Relationship
   until explicitly recategorized. Legacy interactions migrate to v3 without rewrites and derive
   depth from medium when projected.
 - The Relationships home opens on a bounded urgency-first Focus queue, with global search, live
-  circle counts and due badges, circle/All filters, direct Move actions, and an atomic bulk Organize
-  flow. Person detail exposes categories, circle, both goals, roles, proximity, lifecycle,
+  circle/proximity counts and due badges, combinable filters, per-person Organize actions, and an
+  atomic bulk Organize flow. Person detail exposes categories, circle, both goals, roles, proximity,
+  lifecycle,
   introducer, facts, contact actions, and depth-aware interaction history. Contacts import includes
   a compact organization step, defaults new people to Context only, and never overwrites an
   existing relationship plan while refreshing contact details.

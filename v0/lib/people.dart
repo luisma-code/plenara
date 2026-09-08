@@ -21,6 +21,27 @@ enum ConnectionDepth { quick, meaningful }
 
 enum RelationshipNeed { none, touch, meaningful }
 
+const relationshipProximities = <String>[
+  'local',
+  'remote',
+  'household',
+  'unknown',
+];
+
+String relationshipProximityLabel(String proximity) => switch (proximity) {
+      'household' => 'Household',
+      'local' => 'Local',
+      'remote' => 'Remote',
+      _ => 'Not set',
+    };
+
+String relationshipProximityGuidance(String proximity) => switch (proximity) {
+      'household' => 'Make intentional time together',
+      'local' => 'Plan something in person',
+      'remote' => 'Call or FaceTime',
+      _ => 'Choose how you usually connect',
+    };
+
 /// Human shortcuts shown by UI and understood by voice. They resolve to the
 /// normalized circle + descriptors below; the preset name is not stored.
 enum RelationshipPreset {

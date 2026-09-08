@@ -80,6 +80,10 @@ final _relationshipCategoryRe = RegExp(
   r'^(?:categorize|classify|organize|set)\s+(.+?)\s+as\s+(close family|close local friend|close remote friend|friend to keep connected|connected friend|old remote friend|neighbor|local community|community|second[- ]degree connection|household|context only)[.!]?$',
   caseSensitive: false,
 );
+final _relationshipProximityRe = RegExp(
+  r"^(?:set|mark|categorize|organize)\s+(.+?)(?:'s)?\s+(?:(?:location|proximity)\s+(?:to|as)\s+|as\s+(?:a\s+)?)(household|local|remote|unknown)(?:\s+(?:friend|relationship|person))?[.!]?$",
+  caseSensitive: false,
+);
 final _relationshipPauseRe = RegExp(
   r'^(pause|resume)\s+(?:contact\s+)?reminders\s+for\s+(.+?)[.!]?$',
   caseSensitive: false,
@@ -1518,7 +1522,7 @@ class Session {
         '• Movement — "create a stretching routine for my low back", then "let\'s do low back" '
             'and I\'ll walk you through it',
       if (has('remember-person-fact'))
-        '• People — "remember that Mia is Sarah\'s daughter", "what do I know about Mia", "FaceTimed Sam about the trip", "when did I last talk to Sam"',
+        '• People — "set Sam as remote", "who should I reach out to?", "remember that Mia is Sarah\'s daughter", "FaceTimed Sam about the trip", "when did I last talk to Sam"',
       if (has('set-birthday'))
         '• Birthdays — "Sarah\'s birthday is july 16", "whose birthday is coming up"',
       if (has('set-alias'))
@@ -1569,8 +1573,9 @@ class Session {
     }
     if (m(['people', 'contact', 'friend', 'relationship']) &&
         has('remember-person-fact')) {
-      return 'For people: "remember that Mia is Sarah\'s daughter", "what do I know about Mia", '
-          '"FaceTimed Sam yesterday", "how old is Sarah", "when did I last talk to Sam".';
+      return 'For people: "set Sam as remote", "set Mia as local", "who should I reach out to?", '
+          '"remember that Mia is Sarah\'s daughter", "FaceTimed Sam yesterday", "how old is Sarah", '
+          'or "when did I last talk to Sam".';
     }
     if (m(['birthday', 'bday']) && has('set-birthday')) {
       return 'For birthdays: "Sarah\'s birthday is july 16", "when is Sarah\'s birthday", "whose birthday is coming up".';
@@ -1732,11 +1737,20 @@ class Session {
       }).join('\n');
     }
     final category = _relationshipCategoryRe.firstMatch(utterance);
+    final proximity = _relationshipProximityRe.firstMatch(utterance);
     final pause = _relationshipPauseRe.firstMatch(utterance);
     final goal = _relationshipGoalRe.firstMatch(utterance);
-    if (category == null && pause == null && goal == null) return null;
-    final personName =
-        (category?.group(1) ?? pause?.group(2) ?? goal!.group(2)!).trim();
+    if (category == null &&
+        proximity == null &&
+        pause == null &&
+        goal == null) {
+      return null;
+    }
+    final personName = (category?.group(1) ??
+            proximity?.group(1) ??
+            pause?.group(2) ??
+            goal!.group(2)!)
+        .trim();
     final contact = _findContactNamed(personName);
     if (contact == null) {
       _outSource = 'clarify';
@@ -1751,6 +1765,11 @@ class Session {
       fields = relationshipPresetFields(preset);
       confirmation =
           'Set ${contact['displayName']} as ${relationshipPresetLabel(preset)}.';
+    } else if (proximity != null) {
+      final value = proximity.group(2)!.toLowerCase();
+      fields = {'proximity': value};
+      confirmation =
+          'Set ${contact['displayName']} as ${relationshipProximityLabel(value)}.';
     } else if (pause != null) {
       final resume = pause.group(1)!.toLowerCase() == 'resume';
       fields = {
@@ -3371,6 +3390,90 @@ class Session {
   Future<ManualWrite> setRelationshipCircle(
           String id, RelationshipCircle circle) =>
       setRelationshipCircles([id], circle);
+
+  Future<ManualWrite> setRelationshipProximity(String id, String proximity) =>
+      setRelationshipProximities([id], proximity);
+
+  /// Assign where one or more people live as one durable, undoable action.
+  /// Proximity is independent from relationship circle and never changes the
+  /// person's inherited contact-frequency goals.
+  Future<ManualWrite> setRelationshipProximities(
+          Iterable<String> ids, String proximity) =>
+      _serialized(() => _setRelationshipProximitiesUnlocked(ids, proximity));
+
+  Future<ManualWrite> _setRelationshipProximitiesUnlocked(
+      Iterable<String> ids, String proximity) async {
+    if (!relationshipProximities.contains(proximity)) {
+      return const ManualWrite.fail('Choose a valid location.');
+    }
+    final uniqueIds = ids.toSet().toList(growable: false);
+    if (uniqueIds.isEmpty) {
+      return const ManualWrite.fail('Choose at least one person to organize.');
+    }
+    final writes = <Map<String, dynamic>>[];
+    final names = <String>[];
+    for (final id in uniqueIds) {
+      final current = store[id];
+      if (current == null || current['typeId'] != 'contact') {
+        return const ManualWrite.fail(
+          'One of those people no longer exists, so nothing changed.',
+        );
+      }
+      if ('${current['proximity'] ?? 'unknown'}' == proximity) continue;
+      final updated = Map<String, dynamic>.from(current)
+        ..['proximity'] = proximity;
+      try {
+        const ValueCodec().validateRecord(
+          types['contact']!,
+          updated,
+          records: store,
+          dataRoot: dataDir,
+        );
+      } on ValueCodecError catch (error) {
+        return ManualWrite.fail(error.message);
+      }
+      writes.add(updated);
+      names.add('${current['displayName'] ?? 'Someone'}');
+    }
+    final destination = relationshipProximityLabel(proximity);
+    if (writes.isEmpty) {
+      return ManualWrite.ok(
+        uniqueIds.length == 1
+            ? 'Already marked $destination.'
+            : 'Everyone selected is already marked $destination.',
+      );
+    }
+    final result = _executeMutation(
+      writes: writes,
+      deletes: const [],
+      origin: 'manual-edit',
+      description:
+          'set ${writes.length} contact${writes.length == 1 ? '' : 's'} as $destination',
+      frozenInputs: {
+        'recordIds': uniqueIds,
+        'proximity': proximity,
+      },
+    );
+    if (result.state == ExecutionResultState.failedBeforeWrite ||
+        result.record == null) {
+      return const ManualWrite.fail(
+        "Couldn't start that change safely, so nothing changed.",
+      );
+    }
+    _clearSpokenCorrectionContext();
+    try {
+      automations.notifyWrites(writes);
+    } catch (_) {/* contained */}
+    final description = writes.length == 1
+        ? 'Set ${names.single} as $destination.'
+        : 'Set ${writes.length} people as $destination.';
+    return ManualWrite.ok(
+      result.state == ExecutionResultState.appliedInMemory
+          ? "$description Saving didn't finish, so I'll recover it next launch."
+          : description,
+      undoId: result.record!.id,
+    );
+  }
 
   /// Move one or more people between relationship circles as one durable,
   /// undoable action. People already in the destination keep their custom goal

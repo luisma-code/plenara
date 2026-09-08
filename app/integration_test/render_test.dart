@@ -185,6 +185,7 @@ void main() {
       await session.createRecord('contact', {
         'displayName': 'Sam',
         ...relationshipPresetFields(RelationshipPreset.closeFamily),
+        'proximity': 'remote',
         'primaryPhone': '+1 415 555 0100',
         'primaryEmail': 'sam@example.com',
       });
@@ -294,6 +295,7 @@ void main() {
       );
       if (const bool.fromEnvironment('PLENARA_CAPTURE_SCREENSHOT')) {
         await binding.takeScreenshot('relationships-header-actions');
+        await binding.takeScreenshot('relationships-proximity-filters');
       }
       await tester.tap(addPerson);
       await runFrames(tester, 10);
@@ -312,7 +314,32 @@ void main() {
         findsNothing,
         reason: 'the change notification should auto-dismiss',
       );
-      await tester.tap(find.byKey(Key('relationship-person-$samId')));
+      final relationshipPerson = find.byKey(Key('relationship-person-$samId'));
+      final relationshipScroll = find
+          .descendant(
+            of: find.byKey(const Key('relationships-view')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final relationshipObstructionTop = [
+        tester.getRect(find.byKey(const Key('planner-navigation'))).top,
+        tester.getRect(find.byKey(const Key('planner-input-bar'))).top,
+      ].reduce((a, b) => a < b ? a : b);
+      for (var attempt = 0; attempt < 6; attempt++) {
+        if (tester.getRect(relationshipPerson).bottom <
+            relationshipObstructionTop - 8) {
+          break;
+        }
+        await tester.drag(relationshipScroll, const Offset(0, -90));
+        await runFrames(tester, 2);
+      }
+      expect(
+        tester.getRect(relationshipPerson).bottom,
+        lessThan(relationshipObstructionTop - 8),
+        reason:
+            'the person row must be wholly above persistent bottom surfaces',
+      );
+      await tester.tap(relationshipPerson);
       await runFrames(tester, 25);
       expect(find.byKey(const Key('person-relationship-view')), findsOneWidget);
       expect(find.text('Core'), findsOneWidget);

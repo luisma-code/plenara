@@ -211,6 +211,107 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Relationships filters and organizes people by local or remote proximity',
+    (tester) async {
+      final session = await _session();
+      for (final (name, preset) in [
+        ('Ana Local', RelationshipPreset.closeLocalFriend),
+        ('Bea Remote', RelationshipPreset.closeRemoteFriend),
+        ('Cal Unknown', RelationshipPreset.contextOnly),
+      ]) {
+        await session.createRecord('contact', {
+          'displayName': name,
+          ...relationshipPresetFields(preset),
+        });
+      }
+      final contacts = {
+        for (final contact in session.store.values.where(
+          (record) => record['typeId'] == 'contact',
+        ))
+          '${contact['displayName']}': contact,
+      };
+      final anaId = '${contacts['Ana Local']!['id']}';
+      final beaId = '${contacts['Bea Remote']!['id']}';
+      final calId = '${contacts['Cal Unknown']!['id']}';
+
+      await tester.pumpWidget(
+        MaterialApp(home: RelationshipsView(session: session)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Where they are'), findsOneWidget);
+      expect(find.text('Local · 1'), findsOneWidget);
+      expect(find.text('Remote · 1'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('relationships-proximity-remote')));
+      await tester.pumpAndSettle();
+      expect(find.text('Remote relationships'), findsOneWidget);
+      expect(find.text('Bea Remote'), findsOneWidget);
+      expect(find.text('Ana Local'), findsNothing);
+      expect(find.text('Close · 1'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('relationships-filter-close')));
+      await tester.pumpAndSettle();
+      expect(find.text('Close · Remote'), findsOneWidget);
+      expect(
+        find.text(
+          'Close · Remote\nMeaningful connection due · Call or FaceTime',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(Key('relationship-move-$beaId')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key('relationship-proximity-$beaId-local')));
+      await tester.pumpAndSettle();
+      expect(session.store[beaId]?['proximity'], 'local');
+      expect(session.store[beaId]?['relationshipCircle'], 'close');
+      expect(find.text('Set Bea Remote as Local.'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('relationships-proximity-any')));
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byKey(const Key('relationship-circle-filters')),
+        const Offset(-1000, 0),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('relationships-filter-all')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('relationships-organize')));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(Key('relationship-person-$anaId')),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.byKey(Key('relationship-select-$anaId')));
+      await tester.scrollUntilVisible(
+        find.byKey(Key('relationship-person-$calId')),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.byKey(Key('relationship-select-$calId')));
+      await tester.pump();
+      expect(find.text('2 selected'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('relationships-move-selected')));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('relationships-bulk-proximity-remote')),
+        220,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(
+        find.byKey(const Key('relationships-bulk-proximity-remote')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(session.store[anaId]?['proximity'], 'remote');
+      expect(session.store[anaId]?['relationshipCircle'], 'close');
+      expect(session.store[calId]?['proximity'], 'remote');
+      expect(session.store[calId]?['relationshipCircle'], 'context');
+      expect(find.text('Set 2 people as Remote.'), findsOneWidget);
+    },
+  );
+
   testWidgets('People is an actionable relationship workspace', (tester) async {
     final session = await _session();
     await session.createRecord('contact', {
@@ -218,6 +319,7 @@ void main() {
       'primaryPhone': '+15550000',
       'primaryEmail': 'mia@example.com',
       'relationshipGoal': 'close',
+      'proximity': 'local',
     });
     final contact = session.store.values.singleWhere(
       (r) => r['typeId'] == 'contact',
@@ -240,13 +342,17 @@ void main() {
     await tester.tap(find.byKey(Key('relationship-person-${contact['id']}')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('person-relationship-view')), findsOneWidget);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Plan something'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('relationship-add-follow-up')));
     await tester.pumpAndSettle();
     final followUp = session.store.values.singleWhere(
       (record) => record['typeId'] == 'task',
     );
-    expect(followUp['description'], 'Reach out to Mia');
+    expect(followUp['description'], 'Make plans with Mia');
     expect(followUp['contactRefs'], [contact['id']]);
 
     await tester.tap(

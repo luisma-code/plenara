@@ -232,6 +232,45 @@ void main() {
     expect(session.store[contacts['Jo']]?['relationshipCircle'], 'context');
   });
 
+  test('setting proximity for several people is atomic and preserves circles',
+      () async {
+    final session = await _session();
+    for (final (name, preset) in [
+      ('Mia', RelationshipPreset.closeLocalFriend),
+      ('Jo', RelationshipPreset.contextOnly),
+    ]) {
+      await session.createRecord('contact', {
+        'displayName': name,
+        ...relationshipPresetFields(preset),
+      });
+    }
+    final contacts = {
+      for (final contact in session.store.values
+          .where((record) => record['typeId'] == 'contact'))
+        '${contact['displayName']}': '${contact['id']}',
+    };
+    await session.editField(contacts['Mia']!, 'touchFrequencyDays', 17);
+
+    final organized = await session.setRelationshipProximities(
+      contacts.values,
+      'remote',
+    );
+
+    expect(organized.ok, isTrue);
+    expect(organized.message, 'Set 2 people as Remote.');
+    expect(
+      contacts.values.map((id) => session.store[id]?['proximity']),
+      everyElement('remote'),
+    );
+    expect(session.store[contacts['Mia']]?['relationshipCircle'], 'close');
+    expect(session.store[contacts['Mia']]?['touchFrequencyDays'], 17);
+    expect(session.store[contacts['Jo']]?['relationshipCircle'], 'context');
+
+    expect(await session.undoById(organized.undoId!), contains('Undone'));
+    expect(session.store[contacts['Mia']]?['proximity'], 'local');
+    expect(session.store[contacts['Jo']]?['proximity'], 'unknown');
+  });
+
   test('voice assigns relationship categories, pauses, and reports due people',
       () async {
     final session = await _session();
@@ -244,6 +283,9 @@ void main() {
     );
     expect(session.store[id]?['relationshipCircle'], 'close');
     expect(session.store[id]?['proximity'], 'remote');
+    expect(await session.handle('set Mia as local'), contains('Local'));
+    expect(session.store[id]?['relationshipCircle'], 'close');
+    expect(session.store[id]?['proximity'], 'local');
     expect(
       await session.handle(
         'set meaningful connection goal for Mia every 45 days',
@@ -251,7 +293,10 @@ void main() {
       contains('45 days'),
     );
     expect(session.store[id]?['meaningfulFrequencyDays'], 45);
-    expect(await session.handle('who should I reach out to'), contains('Mia'));
+    expect(
+      await session.handle('who should I reach out to'),
+      allOf(contains('Mia'), contains('in person')),
+    );
     expect(
       await session.handle('pause reminders for Mia'),
       contains('Paused'),

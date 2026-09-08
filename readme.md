@@ -9,9 +9,10 @@ presence—moves between a full conversational form, a compact planner collabora
 and a detail ember.
 
 Relationships opens on a bounded, urgency-ranked Focus view instead of the full
-address book. Global search and circle filters reach everyone, while visible
-single-person and bulk Move actions keep circles and their inherited contact goals
-easy to maintain.
+address book. Global search plus combinable circle and Local/Remote filters reach
+everyone. Visible single-person and bulk Organize actions maintain either axis;
+circle changes set contact goals, while location changes tailor suggestions toward
+making plans in person or calling/FaceTiming.
 
 Common planning and routing run locally. Optional Anthropic features use the
 user's own API key and disclose the record categories sent for each feature.

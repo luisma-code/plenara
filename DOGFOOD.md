@@ -44,15 +44,18 @@ only a development experiment; ordinary dogfood never needs a companion server.
 - **Inspect and revise:** tap a Todo body to open its detail editor; use Library for people,
   goals, routines, trackers, journal, projects/areas, learned phrases, automations, and the complete
   data browser.
-- **Relationships:** start from the bounded Focus list, search globally, filter by circle, use each
-  row's Move control, and use Organize to move several people in one undoable action. Then tune touch
-  and meaningful-connection goals, remember facts, log Quick or Meaningful interactions with their
-  medium, link commitments to people, and respond to relationship-date suggestions with Keep,
-  Tomorrow, or Dismiss.
+- **Relationships:** start from the bounded Focus list, search globally, and combine circle with
+  Local/Remote filters. Use each row's Organize control or multi-select Organize to change either
+  axis in one undoable action. Confirm circle changes apply inherited goals while location changes
+  preserve them; Local follow-ups should make plans and Remote follow-ups should plan a call or
+  FaceTime. Then tune goals, remember facts, log Quick or Meaningful interactions with their medium,
+  link commitments to people, and respond to relationship-date suggestions with Keep, Tomorrow, or
+  Dismiss.
 - **Habits:** create a repeated practice, set its weekly target, check in once per local day, and
   pause/resume it without turning it into a recurring Todo.
 - **Voice:** tap to start, tap again to stop and send, or use ×/mute to discard. Interim text may
-  appear while listening, but dispatch happens once at finalization.
+  appear while listening, but dispatch happens once at finalization. “Set Sam as remote” and “set
+  Mia as local” update proximity without changing their circles or goals.
 - **Cloud:** request gift ideas, reconnect coaching, a briefing, weekly reflection, pattern insight,
   or a message draft. Settings lists the record classes each implemented feature may send.
 - **Capabilities and routines:** ask to start tracking something new or create a movement routine;

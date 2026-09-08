@@ -11,7 +11,7 @@ void main() {
 
   const activeDocs = <String>[
     'AGENTS.md',
-    'README.md',
+    'readme.md',
     'app/README.md',
     'CLAUDE.md',
     'DOGFOOD.md',
@@ -79,6 +79,9 @@ void main() {
   }
 
   const staleClaims = <String, List<String>>{
+    'readme.md': [
+      'Global search and circle filters reach everyone',
+    ],
     'AGENTS.md': [
       'Text/subtitles are overlays — UI is never compromised',
       'retrieval-embedding model (~80MB',

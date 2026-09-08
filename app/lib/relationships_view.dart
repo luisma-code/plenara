@@ -35,6 +35,7 @@ class _RelationshipsViewState extends State<RelationshipsView> {
   bool _organizing = false;
   String _query = '';
   RelationshipCircle? _selectedCircle;
+  String? _selectedProximity;
   final Set<String> _selectedPeople = {};
   final TextEditingController _searchController = TextEditingController();
 
@@ -146,19 +147,28 @@ class _RelationshipsViewState extends State<RelationshipsView> {
     _showResult(await widget.session.setRelationshipCircle(contactId, circle));
   }
 
-  Future<void> _moveSelected() async {
+  Future<void> _setPersonProximity(String contactId, String proximity) async {
+    _showResult(
+      await widget.session.setRelationshipProximity(contactId, proximity),
+    );
+  }
+
+  Future<void> _organizeSelected() async {
     if (_selectedPeople.isEmpty) return;
-    final circle = await showModalBottomSheet<RelationshipCircle>(
+    final choice = await showModalBottomSheet<_OrganizationChoice>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => _CirclePicker(count: _selectedPeople.length),
+      builder: (_) => _GroupOrganizer(count: _selectedPeople.length),
     );
-    if (!mounted || circle == null) return;
-    final result = await widget.session.setRelationshipCircles(
-      _selectedPeople.toList(growable: false),
-      circle,
-    );
+    if (!mounted || choice == null) return;
+    final ids = _selectedPeople.toList(growable: false);
+    final result = choice.circle != null
+        ? await widget.session.setRelationshipCircles(ids, choice.circle!)
+        : await widget.session.setRelationshipProximities(
+            ids,
+            choice.proximity!,
+          );
     if (result.ok && mounted) {
       setState(() {
         _selectedPeople.clear();
@@ -195,6 +205,7 @@ class _RelationshipsViewState extends State<RelationshipsView> {
     setState(() {
       _query = '';
       _selectedCircle = null;
+      _selectedProximity = null;
       _showAllPeople = false;
       _showAllAttention = false;
     });
@@ -206,6 +217,24 @@ class _RelationshipsViewState extends State<RelationshipsView> {
       _query = '';
       _selectedCircle = circle;
       _showAllPeople = false;
+    });
+  }
+
+  void _showProximity(String proximity) {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+      _selectedProximity = proximity;
+      _showAllPeople = true;
+    });
+  }
+
+  void _showEverywhere() {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+      _selectedProximity = null;
+      _showAllPeople = true;
     });
   }
 
@@ -236,19 +265,30 @@ class _RelationshipsViewState extends State<RelationshipsView> {
                     status.displayName.toLowerCase().contains(normalizedQuery),
               )
               .toList(growable: false);
+    final isFocus =
+        normalizedQuery.isEmpty &&
+        _selectedCircle == null &&
+        _selectedProximity == null &&
+        !_showAllPeople;
+    final facetedStatuses = statuses
+        .where(
+          (status) =>
+              (_selectedCircle == null || status.circle == _selectedCircle) &&
+              (_selectedProximity == null ||
+                  status.proximity == _selectedProximity),
+        )
+        .toList(growable: false);
     final selectedStatuses = normalizedQuery.isNotEmpty
         ? searchResults
-        : _selectedCircle != null
-        ? statuses
-              .where((status) => status.circle == _selectedCircle)
-              .toList(growable: false)
-        : _showAllPeople
-        ? statuses
+        : !isFocus
+        ? facetedStatuses
         : (_showAllAttention ? attention : attention.take(8).toList());
-    final isFocus =
-        normalizedQuery.isEmpty && _selectedCircle == null && !_showAllPeople;
     final title = normalizedQuery.isNotEmpty
         ? 'Search results'
+        : _selectedCircle != null && _selectedProximity != null
+        ? '${relationshipCircleLabel(_selectedCircle!)} · ${relationshipProximityLabel(_selectedProximity!)}'
+        : _selectedProximity != null
+        ? '${relationshipProximityLabel(_selectedProximity!)} relationships'
         : _selectedCircle != null
         ? relationshipCircleLabel(_selectedCircle!)
         : _showAllPeople
@@ -256,6 +296,8 @@ class _RelationshipsViewState extends State<RelationshipsView> {
         : 'Needs attention';
     final subtitle = normalizedQuery.isNotEmpty
         ? '${searchResults.length} ${searchResults.length == 1 ? 'person' : 'people'} found across every circle.'
+        : _selectedProximity != null
+        ? '${relationshipProximityGuidance(_selectedProximity!)}. Ordered by what needs attention.'
         : _selectedCircle != null
         ? _circleDescription(_selectedCircle!)
         : _showAllPeople
@@ -263,13 +305,55 @@ class _RelationshipsViewState extends State<RelationshipsView> {
         : 'Closest and most overdue relationships come first.';
     final circleCounts = <RelationshipCircle, int>{
       for (final circle in RelationshipCircle.values)
-        circle: statuses.where((status) => status.circle == circle).length,
+        circle: statuses
+            .where(
+              (status) =>
+                  status.circle == circle &&
+                  (_selectedProximity == null ||
+                      status.proximity == _selectedProximity),
+            )
+            .length,
     };
     final circleAttentionCounts = <RelationshipCircle, int>{
       for (final circle in RelationshipCircle.values)
-        circle: attention.where((status) => status.circle == circle).length,
+        circle: attention
+            .where(
+              (status) =>
+                  status.circle == circle &&
+                  (_selectedProximity == null ||
+                      status.proximity == _selectedProximity),
+            )
+            .length,
+    };
+    final proximityCounts = <String, int>{
+      for (final proximity in relationshipProximities)
+        proximity: statuses
+            .where(
+              (status) =>
+                  status.proximity == proximity &&
+                  (_selectedCircle == null || status.circle == _selectedCircle),
+            )
+            .length,
+    };
+    final proximityAttentionCounts = <String, int>{
+      for (final proximity in relationshipProximities)
+        proximity: attention
+            .where(
+              (status) =>
+                  status.proximity == proximity &&
+                  (_selectedCircle == null || status.circle == _selectedCircle),
+            )
+            .length,
     };
     final totalPeople = statuses.length;
+    final circleScopeCount = _selectedProximity == null
+        ? totalPeople
+        : statuses
+              .where((status) => status.proximity == _selectedProximity)
+              .length;
+    final proximityScopeCount = _selectedCircle == null
+        ? totalPeople
+        : statuses.where((status) => status.circle == _selectedCircle).length;
     final peopleLabel =
         '$totalPeople ${totalPeople == 1 ? 'person' : 'people'}';
     return Scaffold(
@@ -351,7 +435,7 @@ class _RelationshipsViewState extends State<RelationshipsView> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Browse by circle',
+                      'Relationship circle',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
@@ -413,9 +497,56 @@ class _RelationshipsViewState extends State<RelationshipsView> {
                             normalizedQuery.isEmpty &&
                             _showAllPeople &&
                             _selectedCircle == null,
-                        label: Text('All · $totalPeople'),
+                        label: Text('All circles · $circleScopeCount'),
                         onSelected: (_) => _showEveryone(),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Where they are',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 42,
+                child: SingleChildScrollView(
+                  key: const Key('relationship-proximity-filters'),
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      ChoiceChip(
+                        key: const Key('relationships-proximity-any'),
+                        selected:
+                            normalizedQuery.isEmpty &&
+                            _selectedProximity == null &&
+                            !isFocus,
+                        label: Text('Everywhere · $proximityScopeCount'),
+                        onSelected: (_) => _showEverywhere(),
+                      ),
+                      const SizedBox(width: 7),
+                      for (final proximity in relationshipProximities) ...[
+                        ChoiceChip(
+                          key: Key('relationships-proximity-$proximity'),
+                          selected:
+                              normalizedQuery.isEmpty &&
+                              _selectedProximity == proximity,
+                          avatar: proximityAttentionCounts[proximity] == 0
+                              ? null
+                              : CircleAvatar(
+                                  child: Text(
+                                    '${proximityAttentionCounts[proximity]}',
+                                  ),
+                                ),
+                          label: Text(
+                            '${relationshipProximityLabel(proximity)} · ${proximityCounts[proximity]}',
+                          ),
+                          onSelected: (_) => _showProximity(proximity),
+                        ),
+                        const SizedBox(width: 7),
+                      ],
                     ],
                   ),
                 ),
@@ -445,9 +576,9 @@ class _RelationshipsViewState extends State<RelationshipsView> {
                           key: const Key('relationships-move-selected'),
                           onPressed: _selectedPeople.isEmpty
                               ? null
-                              : _moveSelected,
-                          icon: const Icon(Icons.drive_file_move_outline),
-                          label: const Text('Move'),
+                              : _organizeSelected,
+                          icon: const Icon(Icons.tune_rounded),
+                          label: const Text('Organize'),
                         ),
                       ],
                     ),
@@ -490,6 +621,8 @@ class _RelationshipsViewState extends State<RelationshipsView> {
                             ? 'No one matches “${_query.trim()}”.'
                             : isFocus
                             ? 'You’re caught up. No relationship goal needs attention right now.'
+                            : _selectedProximity != null
+                            ? 'No one is marked ${relationshipProximityLabel(_selectedProximity!).toLowerCase()} in this circle.'
                             : 'No one is in this circle yet.',
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: PlenaraTheme.quietInk),
@@ -504,6 +637,8 @@ class _RelationshipsViewState extends State<RelationshipsView> {
                       organizing: _organizing,
                       onTap: () => _selectStatus(status),
                       onMove: (circle) => _movePerson(status.contactId, circle),
+                      onProximity: (proximity) =>
+                          _setPersonProximity(status.contactId, proximity),
                     ),
                 if (isFocus &&
                     !_showAllAttention &&
@@ -535,6 +670,7 @@ class _RelationshipRow extends StatelessWidget {
   final bool organizing;
   final VoidCallback onTap;
   final ValueChanged<RelationshipCircle> onMove;
+  final ValueChanged<String> onProximity;
 
   const _RelationshipRow({
     required this.status,
@@ -542,6 +678,7 @@ class _RelationshipRow extends StatelessWidget {
     required this.organizing,
     required this.onTap,
     required this.onMove,
+    required this.onProximity,
   });
 
   @override
@@ -549,6 +686,7 @@ class _RelationshipRow extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 7),
     child: ListTile(
       key: Key('relationship-person-${status.contactId}'),
+      isThreeLine: true,
       selected: selected,
       leading: organizing
           ? Checkbox(
@@ -568,23 +706,39 @@ class _RelationshipRow extends StatelessWidget {
             ),
       title: Text(status.displayName),
       subtitle: Text(
-        '${relationshipCircleLabel(status.circle)} · ${status.needsContact ? _suggestionLine(status) : _statusLine(status)}',
+        '${relationshipCircleLabel(status.circle)} · ${relationshipProximityLabel(status.proximity)}\n${status.needsContact ? _suggestionLine(status) : _statusLine(status)}',
       ),
       trailing: organizing
           ? null
-          : PopupMenuButton<RelationshipCircle>(
+          : PopupMenuButton<String>(
               key: Key('relationship-move-${status.contactId}'),
-              tooltip: 'Move ${status.displayName} to another circle',
-              onSelected: onMove,
+              tooltip: 'Organize ${status.displayName}',
+              onSelected: (choice) {
+                final parts = choice.split(':');
+                if (parts.first == 'circle') {
+                  onMove(
+                    RelationshipCircle.values.firstWhere(
+                      (circle) => circle.name == parts.last,
+                    ),
+                  );
+                } else {
+                  onProximity(parts.last);
+                }
+              },
               itemBuilder: (_) => [
+                const PopupMenuItem<String>(
+                  enabled: false,
+                  height: 36,
+                  child: Text('RELATIONSHIP CIRCLE'),
+                ),
                 for (final circle in RelationshipCircle.values)
-                  PopupMenuItem(
+                  PopupMenuItem<String>(
                     key: Key(
                       'relationship-move-${status.contactId}-${circle.name}',
                     ),
-                    value: circle,
+                    value: 'circle:${circle.name}',
                     enabled: circle != status.circle,
-                    height: 64,
+                    height: 58,
                     child: Row(
                       children: [
                         SizedBox(
@@ -609,13 +763,50 @@ class _RelationshipRow extends StatelessWidget {
                       ],
                     ),
                   ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  enabled: false,
+                  height: 36,
+                  child: Text('WHERE THEY ARE'),
+                ),
+                for (final proximity in relationshipProximities)
+                  PopupMenuItem<String>(
+                    key: Key(
+                      'relationship-proximity-${status.contactId}-$proximity',
+                    ),
+                    value: 'proximity:$proximity',
+                    enabled: proximity != status.proximity,
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 28,
+                          child: proximity == status.proximity
+                              ? const Icon(Icons.check_rounded, size: 18)
+                              : null,
+                        ),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(relationshipProximityLabel(proximity)),
+                              Text(
+                                relationshipProximityGuidance(proximity),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Move'),
+                    Text('Organize'),
                     SizedBox(width: 2),
                     Icon(Icons.expand_more_rounded, size: 18),
                   ],
@@ -627,10 +818,23 @@ class _RelationshipRow extends StatelessWidget {
   );
 }
 
-class _CirclePicker extends StatelessWidget {
+class _OrganizationChoice {
+  final RelationshipCircle? circle;
+  final String? proximity;
+
+  const _OrganizationChoice.circle(RelationshipCircle value)
+    : circle = value,
+      proximity = null;
+
+  const _OrganizationChoice.proximity(String value)
+    : circle = null,
+      proximity = value;
+}
+
+class _GroupOrganizer extends StatelessWidget {
   final int count;
 
-  const _CirclePicker({required this.count});
+  const _GroupOrganizer({required this.count});
 
   @override
   Widget build(BuildContext context) => SafeArea(
@@ -642,15 +846,24 @@ class _CirclePicker extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Move $count ${count == 1 ? 'person' : 'people'}',
+              'Organize $count ${count == 1 ? 'person' : 'people'}',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 4),
             const Text(
-              'People who move inherit this circle’s contact goals. Existing members keep their custom goals.',
+              'Set how close you want to stay or where people are. These are independent.',
               style: TextStyle(color: PlenaraTheme.quietInk),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
+            Text(
+              'Relationship circle',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const Text(
+              'Moving circles applies that circle’s contact goals.',
+              style: TextStyle(color: PlenaraTheme.quietInk),
+            ),
+            const SizedBox(height: 6),
             for (final circle in RelationshipCircle.values)
               ListTile(
                 key: Key('relationships-bulk-circle-${circle.name}'),
@@ -658,7 +871,30 @@ class _CirclePicker extends StatelessWidget {
                 title: Text(relationshipCircleLabel(circle)),
                 subtitle: Text(_circleCadence(circle)),
                 trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.pop(context, circle),
+                onTap: () =>
+                    Navigator.pop(context, _OrganizationChoice.circle(circle)),
+              ),
+            const Divider(height: 28),
+            Text(
+              'Where they are',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const Text(
+              'Location changes suggestions, not contact frequency.',
+              style: TextStyle(color: PlenaraTheme.quietInk),
+            ),
+            const SizedBox(height: 6),
+            for (final proximity in relationshipProximities)
+              ListTile(
+                key: Key('relationships-bulk-proximity-$proximity'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(relationshipProximityLabel(proximity)),
+                subtitle: Text(relationshipProximityGuidance(proximity)),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.pop(
+                  context,
+                  _OrganizationChoice.proximity(proximity),
+                ),
               ),
           ],
         ),
@@ -932,15 +1168,21 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
 
   Future<void> _addFollowUp() async {
     final name = '${_contact?['displayName'] ?? 'them'}';
+    final proximity = '${_contact?['proximity'] ?? 'unknown'}';
+    final description = switch (proximity) {
+      'household' || 'local' => 'Make plans with $name',
+      'remote' => 'Call or FaceTime $name',
+      _ => 'Reach out to $name',
+    };
     final today = widget.session.now.toIso8601String().split('T').first;
     _showResult(
       await widget.session.createRecord('task', {
-        'description': 'Reach out to $name',
+        'description': description,
         'createdAt': widget.session.now.toIso8601String(),
         'dueAt': today,
         'status': 'today',
         'contactRefs': [widget.contactId],
-      }, description: 'added a follow-up with $name to today'),
+      }, description: 'added $description to today'),
     );
   }
 
@@ -1018,6 +1260,13 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
     final phone = '${contact['primaryPhone'] ?? ''}'.trim();
     final email = '${contact['primaryEmail'] ?? ''}'.trim();
     final facetime = phone.isNotEmpty ? phone : email;
+    final proximity = '${contact['proximity'] ?? 'unknown'}';
+    final followUpLabel = switch (proximity) {
+      'household' => 'Plan time together',
+      'local' => 'Plan something',
+      'remote' => 'Plan a call',
+      _ => 'Add follow-up',
+    };
     final introducedBy = widget.session.store['${contact['introducedBy']}'];
     return Scaffold(
       appBar: AppBar(
@@ -1060,8 +1309,14 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
                   OutlinedButton.icon(
                     key: const Key('relationship-add-follow-up'),
                     onPressed: _addFollowUp,
-                    icon: const Icon(Icons.add_task_rounded),
-                    label: const Text('Add follow-up'),
+                    icon: Icon(
+                      proximity == 'remote'
+                          ? Icons.phone_in_talk_outlined
+                          : proximity == 'local' || proximity == 'household'
+                          ? Icons.event_available_outlined
+                          : Icons.add_task_rounded,
+                    ),
+                    label: Text(followUpLabel),
                   ),
                   OutlinedButton.icon(
                     onPressed: phone.isEmpty
@@ -1755,12 +2010,7 @@ String _suggestionLine(RelationshipStatus status) {
   final need = status.need == RelationshipNeed.meaningful
       ? 'Meaningful connection due'
       : 'Touch due';
-  final contact = switch (status.proximity) {
-    'household' || 'local' => 'Make time in person',
-    'remote' => 'Try FaceTime or a call',
-    _ => 'Open for contact options',
-  };
-  return '$need · $contact';
+  return '$need · ${relationshipProximityGuidance(status.proximity)}';
 }
 
 String _goalSummary(RelationshipStatus status) {
