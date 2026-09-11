@@ -579,6 +579,15 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
   This authorizes installation only—never launch, testing, probes, container inspection, log access,
   reset, uninstall, or TestFlight/App Store distribution. Documentation-only revisions do not
   trigger a redundant build/install.
+- On 2026-09-10 at 20:17 PDT, visible relationship health was installed on **Aluminum Monster** as
+  signed internal-channel `0.13.0 (19)`, bundle `com.plenara.plenaraApp`, from pushed source
+  revision `847735a1a705c04e69e380ef74f33673f682d8e6`. The development-signed AOT SHA-256 is
+  `623e8ed7947e2c7fc37028f50ab6f52ed038f730b8be6661e133368fbd3afe50`; its signature,
+  embedded revision `847735a1a705`, approved internal raw-diagnostics surface, absence of provider
+  credential patterns, team `7V63BZ39HU`, and provisioning profile
+  `9700a183-07f9-4d2b-936c-3176f893ef68` through 2027-07-28 were verified before CoreDevice
+  confirmed `App installed`. Deployment only—the physical app was not launched, tested, probed, or
+  inspected.
 - On 2026-09-10 at 19:20 PDT, alphabetical Relationships lists were installed on **Aluminum
   Monster** as signed internal-channel `0.13.0 (19)`, bundle `com.plenara.plenaraApp`, from pushed
   source revision `e442d0c6a4b482dc168b71ce4673b5332b6e3dc5`. The development-signed AOT SHA-256 is
