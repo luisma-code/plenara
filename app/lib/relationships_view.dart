@@ -278,11 +278,13 @@ class _RelationshipsViewState extends State<RelationshipsView> {
                   status.proximity == _selectedProximity),
         )
         .toList(growable: false);
-    final selectedStatuses = normalizedQuery.isNotEmpty
+    final prioritizedStatuses = normalizedQuery.isNotEmpty
         ? searchResults
         : !isFocus
         ? facetedStatuses
         : (_showAllAttention ? attention : attention.take(8).toList());
+    final selectedStatuses = List<RelationshipStatus>.of(prioritizedStatuses)
+      ..sort(_compareRelationshipNames);
     final title = normalizedQuery.isNotEmpty
         ? 'Search results'
         : _selectedCircle != null && _selectedProximity != null
@@ -295,14 +297,14 @@ class _RelationshipsViewState extends State<RelationshipsView> {
         ? 'All people'
         : 'Needs attention';
     final subtitle = normalizedQuery.isNotEmpty
-        ? '${searchResults.length} ${searchResults.length == 1 ? 'person' : 'people'} found across every circle.'
+        ? '${searchResults.length} ${searchResults.length == 1 ? 'person' : 'people'} found across every circle. Alphabetized by name.'
         : _selectedProximity != null
-        ? '${relationshipProximityGuidance(_selectedProximity!)}. Ordered by what needs attention.'
+        ? '${relationshipProximityGuidance(_selectedProximity!)}. Alphabetized by name.'
         : _selectedCircle != null
         ? _circleDescription(_selectedCircle!)
         : _showAllPeople
-        ? 'Everyone, ordered by what needs attention before name.'
-        : 'Closest and most overdue relationships come first.';
+        ? 'Everyone, alphabetized by name.'
+        : 'Selected by relationship urgency, alphabetized by name.';
     final circleCounts = <RelationshipCircle, int>{
       for (final circle in RelationshipCircle.values)
         circle: statuses
@@ -662,6 +664,15 @@ class _RelationshipsViewState extends State<RelationshipsView> {
       ),
     );
   }
+}
+
+int _compareRelationshipNames(RelationshipStatus a, RelationshipStatus b) {
+  final folded = a.displayName.trim().toLowerCase().compareTo(
+    b.displayName.trim().toLowerCase(),
+  );
+  if (folded != 0) return folded;
+  final exact = a.displayName.trim().compareTo(b.displayName.trim());
+  return exact != 0 ? exact : a.contactId.compareTo(b.contactId);
 }
 
 class _RelationshipRow extends StatelessWidget {

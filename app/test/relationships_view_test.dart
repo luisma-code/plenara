@@ -95,6 +95,47 @@ class _Launcher implements RelationshipLauncher {
 
 void main() {
   testWidgets(
+    'Relationships lists displayed people alphabetically even when urgency differs',
+    (tester) async {
+      tester.view.physicalSize = const Size(393, 852);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final session = await _session();
+      for (final (name, preset) in [
+        ('Zoe Never Contacted', RelationshipPreset.closeFamily),
+        ('Amy Untracked', RelationshipPreset.contextOnly),
+      ]) {
+        await session.createRecord('contact', {
+          'displayName': name,
+          ...relationshipPresetFields(preset),
+        });
+      }
+
+      await tester.pumpWidget(
+        MaterialApp(home: RelationshipsView(session: session)),
+      );
+      await tester.pumpAndSettle();
+      final allCircles = find.byKey(const Key('relationships-filter-all'));
+      await tester.ensureVisible(allCircles);
+      await tester.pumpAndSettle();
+      await tester.tap(allCircles);
+      await tester.pumpAndSettle();
+
+      final amyRow = find.text('Amy Untracked');
+      final zoeRow = find.text('Zoe Never Contacted');
+      expect(amyRow, findsOneWidget);
+      expect(zoeRow, findsOneWidget);
+      expect(
+        tester.getTopLeft(amyRow).dy,
+        lessThan(tester.getTopLeft(zoeRow).dy),
+        reason:
+            'displayed people should be alphabetized by name, independent of relationship urgency',
+      );
+    },
+  );
+
+  testWidgets(
     'Relationships focuses attention, searches globally, and moves people between circles',
     (tester) async {
       final session = await _session();
@@ -283,13 +324,19 @@ void main() {
         180,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.byKey(Key('relationship-select-$anaId')));
+      final selectAna = find.byKey(Key('relationship-select-$anaId'));
+      await tester.ensureVisible(selectAna);
+      await tester.pumpAndSettle();
+      await tester.tap(selectAna);
       await tester.scrollUntilVisible(
         find.byKey(Key('relationship-person-$calId')),
         180,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.byKey(Key('relationship-select-$calId')));
+      final selectCal = find.byKey(Key('relationship-select-$calId'));
+      await tester.ensureVisible(selectCal);
+      await tester.pumpAndSettle();
+      await tester.tap(selectCal);
       await tester.pump();
       expect(find.text('2 selected'), findsOneWidget);
       await tester.tap(find.byKey(const Key('relationships-move-selected')));

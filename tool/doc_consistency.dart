@@ -80,7 +80,18 @@ void main() {
   }
 
   const staleClaims = <String, List<String>>{
-    'readme.md': ['Global search and circle filters reach everyone'],
+    'readme.md': [
+      'Global search and circle filters reach everyone',
+      'urgency-ranked Focus view',
+    ],
+    'app/lib/relationships_view.dart': [
+      'ordered by what needs attention before name',
+      'Closest and most overdue relationships come first.',
+    ],
+    'WORK-CAPSULE.md': [
+      'Filtered and All views remain urgency-first',
+      'without reverting to a flat alphabetical default',
+    ],
     'AGENTS.md': [
       'Text/subtitles are overlays — UI is never compromised',
       'retrieval-embedding model (~80MB',
@@ -193,6 +204,8 @@ void main() {
       'passes 1,922 engine',
       'The latest final-tree gate after the 2026-08-19',
       'a circle-grouped home rather than a flat address book',
+      'retain urgency ordering',
+      'urgency-first filtered/all-people views',
     ],
     'planning/specs/06-data-sync.md': [
       'index/                              ← CapabilityIndex binaries',

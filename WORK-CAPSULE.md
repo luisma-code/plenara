@@ -1,6 +1,26 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-08 for progressive project instructions._
+_Current working memory. Last updated 2026-09-10 for alphabetical Relationships lists._
+
+## Alphabetical Relationships lists (2026-09-10)
+
+- Every displayed Relationships list—bounded Focus, expanded Focus, search, circle/proximity
+  filters, and All—is alphabetized case-insensitively by trimmed display name. Urgency still chooses
+  which eight due people enter the bounded Focus set and still drives due badges and suggestions;
+  it no longer determines row order.
+- The phone-sized widget regression uses a never-contacted `Zoe` and untracked `Amy` to make the old
+  urgency-first order observable. The initial harness failed because its second lazy row was not
+  built; after opening the actual All-circles surface, it failed on the intended geometry
+  (`Amy` y=732 below `Zoe` y=309) and passed after the display sort.
+- The real-engine journey also creates `Alex`, opens All circles, and compares the rendered row
+  geometry against seeded `Sam`. With the production display sort temporarily removed it failed
+  (`Alex` y=508 below `Sam` y=421); restored code passed on the iPhone 17 Pro simulator and saved
+  `app/build/simulator-check/relationships-alphabetical-all.png`. The simulator process rose from
+  about 561 to 623 MiB during the 23-second journey and exited normally; the longer full macOS
+  journey rose from about 301 to 489 MiB across changing render states, then exited with no orphan.
+- Final full `bash tool/precheck.sh` passed: 2,065 engine tests plus 36 declared skips, 204 Flutter
+  widget tests plus 4 skips, 4 external-channel tests, all 8 real-engine integration tests, coverage
+  floors, analyzers, host build, secret scan, and the 24/60 conformance ratchet.
 
 ## Progressive project instructions (2026-09-08)
 
@@ -74,8 +94,9 @@ _Current working memory. Last updated 2026-09-08 for progressive project instruc
 - Relationships now opens on a bounded **Focus** queue of at most eight people whose touch or
   meaningful-connection goal needs attention. Global search reaches every person, while live
   circle counts, due badges, and Focus/Core/Close/Keep connected/Keep warm/Context only/All filters
-  make a large address book navigable without reverting to a flat alphabetical default.
-- Filtered and All views remain urgency-first. Every person row exposes a visible **Organize**
+  make a large address book navigable. Urgency chooses the bounded Focus set; every displayed list
+  is alphabetized by name.
+- Filtered and All views are alphabetical. Every person row exposes a visible **Organize**
   action; multi-select changes a batch's circle or proximity as one durable undoable mutation.
   Moved people inherit the destination circle's goals, while proximity changes preserve goals and
   people already in a destination circle retain custom overrides.
@@ -139,9 +160,10 @@ _Current working memory. Last updated 2026-09-08 for progressive project instruc
   former 7/21/60 or custom touch cadence remains authoritative and they gain no meaningful clock
   until explicitly recategorized. Legacy interactions migrate to v3 without rewrites and derive
   depth from medium when projected.
-- The Relationships home opens on a bounded urgency-first Focus queue, with global search, live
-  circle/proximity counts and due badges, combinable filters, per-person Organize actions, and an
-  atomic bulk Organize flow. Person detail exposes categories, circle, both goals, roles, proximity,
+- The Relationships home chooses a bounded Focus set by urgency and alphabetizes every displayed
+  list, with global search, live circle/proximity counts and due badges, combinable filters,
+  per-person Organize actions, and an atomic bulk Organize flow. Person detail exposes categories,
+  circle, both goals, roles, proximity,
   lifecycle,
   introducer, facts, contact actions, and depth-aware interaction history. Contacts import includes
   a compact organization step, defaults new people to Context only, and never overwrites an

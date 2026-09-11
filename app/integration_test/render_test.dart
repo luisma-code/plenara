@@ -314,6 +314,24 @@ void main() {
         findsNothing,
         reason: 'the change notification should auto-dismiss',
       );
+      final allCircles = find.byKey(const Key('relationships-filter-all'));
+      await tester.ensureVisible(allCircles);
+      await runFrames(tester, 3);
+      await tester.tap(allCircles);
+      await runFrames(tester, 20);
+      final alexName = find.text('Alex');
+      final samName = find.text('Sam');
+      expect(alexName, findsOneWidget);
+      expect(samName, findsOneWidget);
+      expect(
+        tester.getTopLeft(alexName).dy,
+        lessThan(tester.getTopLeft(samName).dy),
+        reason: 'Relationships rows must be alphabetized by display name',
+      );
+      if (const bool.fromEnvironment('PLENARA_CAPTURE_SCREENSHOT') ||
+          const bool.fromEnvironment('PLENARA_CAPTURE_ALPHABETICAL')) {
+        await binding.takeScreenshot('relationships-alphabetical-all');
+      }
       final relationshipPerson = find.byKey(Key('relationship-person-$samId'));
       final relationshipScroll = find
           .descendant(
