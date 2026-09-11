@@ -1,6 +1,38 @@
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-10 for alphabetical Relationships lists._
+_Current working memory. Last updated 2026-09-10 for visible relationship health._
+
+## Visible relationship health (2026-09-10)
+
+- Every Relationships row now combines a labeled icon badge with a matching avatar ring. Sage
+  means `Healthy` and includes days until the next goal; amber marks `Due today` or `Due in Nd`;
+  coral marks `Nd overdue` or missing contact history; neutral marks `Not tracked`. Text and icons
+  carry the same meaning as color for accessibility.
+- Overdue age is the number of days past the most urgent tracked touch or meaningful-connection
+  goal, not raw time since the last interaction. This makes a Core relationship and a Keep warm
+  relationship comparable against the rhythms Luis actually chose. A missing meaningful history is
+  labeled separately from no contact history.
+- The old row layout left only 57 points for status content beside the avatar and visible Organize
+  action; the first badge implementation overflowed by 121–202 points on a 393-point phone. The row
+  now owns its layout directly, keeps Organize visible, and gives its content column about 213
+  points. Compact visible day notation (`22d`) retains full-day accessible semantics.
+- The phone-sized widget verifier failed against the real missing-badge behavior, then distinguishes
+  healthy, due-soon, due-today, overdue, no-history, and untracked labels; it also proves healthy and
+  overdue decorations differ. Removing the badge's flexible text constraint made the 2× text-scale
+  check overflow by 46 points; restoration passed. All seven Relationships widget cases are green.
+- The real-engine journey adds adjacent healthy and overdue people, scrolls them wholly above the
+  persistent input/navigation surfaces, and checks their rendered badges. Once the journey reached
+  that surface, removing the production badge failed specifically on missing `Healthy · 4d left`.
+  Restored code passed on the iPhone 17 Pro simulator and saved
+  `app/build/simulator-check/relationships-health-status.png`; visual inspection confirmed distinct
+  neutral, sage, and coral rings/badges plus readable supporting copy. Runner RSS rose from about
+  543 to 618 MiB during the 23-second changing-state run, then exited normally with no orphan. This
+  is cleanup evidence, not a long-soak leak claim; the physical phone was not used for verification.
+- Final full `bash tool/precheck.sh` passed: 2,065 engine tests plus 36 declared skips, 205 Flutter
+  widget tests plus 4 skips, 4 external-channel tests, all 8 real-engine integration tests, coverage
+  floors, analyzers, host build, secret scan, and the 24/60 conformance ratchet. The full macOS
+  journey rose from about 302 to 492 MiB while changing among its eight surfaces, then exited
+  normally with no app/test orphan; this is cleanup evidence, not a long-soak leak claim.
 
 ## Alphabetical Relationships lists (2026-09-10)
 

@@ -693,140 +693,331 @@ class _RelationshipRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 7),
-    child: ListTile(
-      key: Key('relationship-person-${status.contactId}'),
-      isThreeLine: true,
-      selected: selected,
-      leading: organizing
-          ? Checkbox(
-              key: Key('relationship-select-${status.contactId}'),
-              value: selected,
-              onChanged: (_) => onTap(),
-            )
-          : CircleAvatar(
-              backgroundColor: status.needsContact
-                  ? PlenaraTheme.amber.withValues(alpha: 0.16)
-                  : null,
-              child: Text(
-                status.displayName.trim().isEmpty
-                    ? '?'
-                    : status.displayName.trim().characters.first.toUpperCase(),
+  Widget build(BuildContext context) {
+    final health = _relationshipHealthVisual(status);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 7),
+      color: selected ? PlenaraTheme.amber.withValues(alpha: 0.08) : null,
+      child: InkWell(
+        key: Key('relationship-person-${status.contactId}'),
+        borderRadius: BorderRadius.circular(18),
+        onTap: organizing ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (organizing)
+                Checkbox(
+                  key: Key('relationship-select-${status.contactId}'),
+                  value: selected,
+                  onChanged: (_) => onTap(),
+                )
+              else
+                DecoratedBox(
+                  decoration: ShapeDecoration(
+                    color: health.color.withValues(alpha: 0.12),
+                    shape: CircleBorder(
+                      side: BorderSide(
+                        color: health.color.withValues(alpha: 0.72),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  child: SizedBox.square(
+                    dimension: 40,
+                    child: Center(
+                      child: Text(
+                        status.displayName.trim().isEmpty
+                            ? '?'
+                            : status.displayName
+                                  .trim()
+                                  .characters
+                                  .first
+                                  .toUpperCase(),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: organizing ? onTap : null,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              status.displayName,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                          if (!organizing) _organizer(context),
+                        ],
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        '${relationshipCircleLabel(status.circle)} · ${relationshipProximityLabel(status.proximity)}',
+                        style: const TextStyle(color: PlenaraTheme.quietInk),
+                      ),
+                      const SizedBox(height: 7),
+                      Wrap(
+                        spacing: 7,
+                        runSpacing: 5,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          _RelationshipHealthBadge(status: status),
+                          Text(
+                            _relationshipRowContext(status),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: PlenaraTheme.quietInk),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-      title: Text(status.displayName),
-      subtitle: Text(
-        '${relationshipCircleLabel(status.circle)} · ${relationshipProximityLabel(status.proximity)}\n${status.needsContact ? _suggestionLine(status) : _statusLine(status)}',
+            ],
+          ),
+        ),
       ),
-      trailing: organizing
-          ? null
-          : PopupMenuButton<String>(
-              key: Key('relationship-move-${status.contactId}'),
-              tooltip: 'Organize ${status.displayName}',
-              onSelected: (choice) {
-                final parts = choice.split(':');
-                if (parts.first == 'circle') {
-                  onMove(
-                    RelationshipCircle.values.firstWhere(
-                      (circle) => circle.name == parts.last,
-                    ),
-                  );
-                } else {
-                  onProximity(parts.last);
-                }
-              },
-              itemBuilder: (_) => [
-                const PopupMenuItem<String>(
-                  enabled: false,
-                  height: 36,
-                  child: Text('RELATIONSHIP CIRCLE'),
-                ),
-                for (final circle in RelationshipCircle.values)
-                  PopupMenuItem<String>(
-                    key: Key(
-                      'relationship-move-${status.contactId}-${circle.name}',
-                    ),
-                    value: 'circle:${circle.name}',
-                    enabled: circle != status.circle,
-                    height: 58,
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 28,
-                          child: circle == status.circle
-                              ? const Icon(Icons.check_rounded, size: 18)
-                              : null,
-                        ),
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(relationshipCircleLabel(circle)),
-                              Text(
-                                _circleCadence(circle),
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                const PopupMenuDivider(),
-                const PopupMenuItem<String>(
-                  enabled: false,
-                  height: 36,
-                  child: Text('WHERE THEY ARE'),
-                ),
-                for (final proximity in relationshipProximities)
-                  PopupMenuItem<String>(
-                    key: Key(
-                      'relationship-proximity-${status.contactId}-$proximity',
-                    ),
-                    value: 'proximity:$proximity',
-                    enabled: proximity != status.proximity,
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 28,
-                          child: proximity == status.proximity
-                              ? const Icon(Icons.check_rounded, size: 18)
-                              : null,
-                        ),
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(relationshipProximityLabel(proximity)),
-                              Text(
-                                relationshipProximityGuidance(proximity),
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+    );
+  }
+
+  Widget _organizer(BuildContext context) => PopupMenuButton<String>(
+    key: Key('relationship-move-${status.contactId}'),
+    tooltip: 'Organize ${status.displayName}',
+    onSelected: (choice) {
+      final parts = choice.split(':');
+      if (parts.first == 'circle') {
+        onMove(
+          RelationshipCircle.values.firstWhere(
+            (circle) => circle.name == parts.last,
+          ),
+        );
+      } else {
+        onProximity(parts.last);
+      }
+    },
+    itemBuilder: (_) => [
+      const PopupMenuItem<String>(
+        enabled: false,
+        height: 36,
+        child: Text('RELATIONSHIP CIRCLE'),
+      ),
+      for (final circle in RelationshipCircle.values)
+        PopupMenuItem<String>(
+          key: Key('relationship-move-${status.contactId}-${circle.name}'),
+          value: 'circle:${circle.name}',
+          enabled: circle != status.circle,
+          height: 58,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 28,
+                child: circle == status.circle
+                    ? const Icon(Icons.check_rounded, size: 18)
+                    : null,
+              ),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Organize'),
-                    SizedBox(width: 2),
-                    Icon(Icons.expand_more_rounded, size: 18),
+                    Text(relationshipCircleLabel(circle)),
+                    Text(
+                      _circleCadence(circle),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
               ),
-            ),
-      onTap: onTap,
+            ],
+          ),
+        ),
+      const PopupMenuDivider(),
+      const PopupMenuItem<String>(
+        enabled: false,
+        height: 36,
+        child: Text('WHERE THEY ARE'),
+      ),
+      for (final proximity in relationshipProximities)
+        PopupMenuItem<String>(
+          key: Key('relationship-proximity-${status.contactId}-$proximity'),
+          value: 'proximity:$proximity',
+          enabled: proximity != status.proximity,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 28,
+                child: proximity == status.proximity
+                    ? const Icon(Icons.check_rounded, size: 18)
+                    : null,
+              ),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(relationshipProximityLabel(proximity)),
+                    Text(
+                      relationshipProximityGuidance(proximity),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+    ],
+    child: const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Organize'),
+          SizedBox(width: 2),
+          Icon(Icons.expand_more_rounded, size: 18),
+        ],
+      ),
     ),
   );
+}
+
+class _RelationshipHealthBadge extends StatelessWidget {
+  final RelationshipStatus status;
+
+  const _RelationshipHealthBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final visual = _relationshipHealthVisual(status);
+    return Semantics(
+      key: Key('relationship-health-${status.contactId}'),
+      label: visual.semanticLabel,
+      container: true,
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: visual.color.withValues(alpha: 0.13),
+            border: Border.all(color: visual.color.withValues(alpha: 0.62)),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(visual.icon, size: 13, color: visual.color),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    visual.label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: visual.color,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RelationshipHealthVisual {
+  final String label;
+  final String semanticLabel;
+  final Color color;
+  final IconData icon;
+
+  const _RelationshipHealthVisual({
+    required this.label,
+    required this.semanticLabel,
+    required this.color,
+    required this.icon,
+  });
+}
+
+_RelationshipHealthVisual _relationshipHealthVisual(RelationshipStatus status) {
+  const healthy = Color(0xFF9FC59E);
+  const approaching = Color(0xFFD8B56C);
+  const overdue = Color(0xFFE9A58B);
+  if (status.health == RelationshipHealth.untracked) {
+    return const _RelationshipHealthVisual(
+      label: 'Not tracked',
+      semanticLabel: 'Relationship health: not tracked',
+      color: PlenaraTheme.quietInk,
+      icon: Icons.remove_circle_outline_rounded,
+    );
+  }
+  if (status.health == RelationshipHealth.noHistory) {
+    final meaningful = status.need == RelationshipNeed.meaningful;
+    return _RelationshipHealthVisual(
+      label: meaningful ? 'No meaningful contact' : 'No contact logged',
+      semanticLabel: meaningful
+          ? 'Relationship health: meaningful contact needed, no meaningful contact logged'
+          : 'Relationship health: contact needed, no contact logged',
+      color: overdue,
+      icon: Icons.priority_high_rounded,
+    );
+  }
+  if (status.urgencyDays < 0) {
+    final days = -status.urgencyDays;
+    return _RelationshipHealthVisual(
+      label: '${days}d overdue',
+      semanticLabel:
+          'Relationship health: contact needed, ${_dayCount(days)} overdue',
+      color: overdue,
+      icon: Icons.history_rounded,
+    );
+  }
+  if (status.urgencyDays == 0) {
+    return const _RelationshipHealthVisual(
+      label: 'Due today',
+      semanticLabel: 'Relationship health: contact due today',
+      color: PlenaraTheme.amber,
+      icon: Icons.notifications_active_outlined,
+    );
+  }
+  final dueSoon =
+      status.touchHealth == RelationshipHealth.dueSoon ||
+      status.meaningfulHealth == RelationshipHealth.dueSoon;
+  if (dueSoon) {
+    return _RelationshipHealthVisual(
+      label: 'Due in ${status.urgencyDays}d',
+      semanticLabel:
+          'Relationship health: due in ${_dayCount(status.urgencyDays)}',
+      color: approaching,
+      icon: Icons.schedule_rounded,
+    );
+  }
+  return _RelationshipHealthVisual(
+    label: 'Healthy · ${status.urgencyDays}d left',
+    semanticLabel:
+        'Relationship health: healthy, ${_dayCount(status.urgencyDays)} until the next contact goal',
+    color: healthy,
+    icon: Icons.check_circle_outline_rounded,
+  );
+}
+
+String _dayCount(int days) => '$days ${days == 1 ? 'day' : 'days'}';
+
+String _relationshipRowContext(RelationshipStatus status) {
+  if (status.needsContact) return _suggestionLine(status);
+  if (status.lastTouchAt == null) return _statusLine(status);
+  final last = _friendlyDate(_isoDate(status.lastTouchAt!));
+  final medium = _mediumLabel(status.lastTouchMedium ?? 'interaction');
+  return '$medium · $last';
 }
 
 class _OrganizationChoice {

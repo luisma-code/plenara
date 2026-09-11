@@ -201,6 +201,19 @@ void main() {
         'at': '2026-06-28',
         'note': 'Caught up about summer plans.',
       });
+      await session.createRecord('contact', {
+        'displayName': 'Ava',
+        ...relationshipPresetFields(RelationshipPreset.closeFamily),
+        'proximity': 'local',
+      });
+      final avaId =
+          '${session.store.values.singleWhere((record) => record['typeId'] == 'contact' && record['displayName'] == 'Ava')['id']}';
+      await session.createRecord('interaction', {
+        'subject': avaId,
+        'medium': 'phone',
+        'connectionDepth': 'meaningful',
+        'at': '2026-07-03',
+      });
       await session.createRecord('task', {
         'description': 'Renew the passport',
         'createdAt': '2026-06-01T09:00:00',
@@ -320,12 +333,12 @@ void main() {
       await tester.tap(allCircles);
       await runFrames(tester, 20);
       final alexName = find.text('Alex');
-      final samName = find.text('Sam');
+      final avaName = find.text('Ava');
       expect(alexName, findsOneWidget);
-      expect(samName, findsOneWidget);
+      expect(avaName, findsOneWidget);
       expect(
         tester.getTopLeft(alexName).dy,
-        lessThan(tester.getTopLeft(samName).dy),
+        lessThan(tester.getTopLeft(avaName).dy),
         reason: 'Relationships rows must be alphabetized by display name',
       );
       if (const bool.fromEnvironment('PLENARA_CAPTURE_SCREENSHOT') ||
@@ -343,6 +356,11 @@ void main() {
         tester.getRect(find.byKey(const Key('planner-navigation'))).top,
         tester.getRect(find.byKey(const Key('planner-input-bar'))).top,
       ].reduce((a, b) => a < b ? a : b);
+      await tester.scrollUntilVisible(
+        relationshipPerson,
+        180,
+        scrollable: relationshipScroll,
+      );
       for (var attempt = 0; attempt < 6; attempt++) {
         if (tester.getRect(relationshipPerson).bottom <
             relationshipObstructionTop - 8) {
@@ -357,6 +375,23 @@ void main() {
         reason:
             'the person row must be wholly above persistent bottom surfaces',
       );
+      final avaHealth = find.byKey(Key('relationship-health-$avaId'));
+      final samHealth = find.byKey(Key('relationship-health-$samId'));
+      expect(
+        find.descendant(
+          of: avaHealth,
+          matching: find.text('Healthy · 4d left'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: samHealth, matching: find.text('1d overdue')),
+        findsOneWidget,
+      );
+      if (const bool.fromEnvironment('PLENARA_CAPTURE_SCREENSHOT') ||
+          const bool.fromEnvironment('PLENARA_CAPTURE_HEALTH')) {
+        await binding.takeScreenshot('relationships-health-status');
+      }
       await tester.tap(relationshipPerson);
       await runFrames(tester, 25);
       expect(find.byKey(const Key('person-relationship-view')), findsOneWidget);

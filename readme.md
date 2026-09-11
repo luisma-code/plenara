@@ -10,10 +10,12 @@ and a detail ember.
 
 Relationships opens on a bounded Focus view instead of the full address book.
 Urgency chooses which eight due people enter that set, while every displayed list
-is alphabetized by name. Global search plus combinable circle and Local/Remote
-filters reach everyone. Visible single-person and bulk Organize actions maintain
-either axis; circle changes set contact goals, while location changes tailor
-suggestions toward making plans in person or calling/FaceTiming.
+is alphabetized by name. Labeled, color-supported health badges show who is healthy,
+due soon, due today, overdue (including by how many days), or not tracked. Global
+search plus combinable circle and Local/Remote filters reach everyone. Visible
+single-person and bulk Organize actions maintain either axis; circle changes set
+contact goals, while location changes tailor suggestions toward making plans in
+person or calling/FaceTiming.
 
 Common planning and routing run locally. Optional Anthropic features use the
 user's own API key and disclose the record categories sent for each feature.

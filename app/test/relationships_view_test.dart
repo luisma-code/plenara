@@ -95,6 +95,135 @@ class _Launcher implements RelationshipLauncher {
 
 void main() {
   testWidgets(
+    'Relationships shows healthy state and comparable overdue age without relying on color',
+    (tester) async {
+      tester.view.physicalSize = const Size(393, 852);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final session = await _session();
+      for (final (name, at) in [
+        ('Ava Healthy', '2026-09-01'),
+        ('Mia Waiting', '2026-08-20'),
+        ('Zoe Waiting Longer', '2026-08-01'),
+      ]) {
+        await session.createRecord('contact', {
+          'displayName': name,
+          ...relationshipPresetFields(RelationshipPreset.closeLocalFriend),
+        });
+        final contact = session.store.values.singleWhere(
+          (record) =>
+              record['typeId'] == 'contact' && record['displayName'] == name,
+        );
+        await session.createRecord('interaction', {
+          'subject': contact['id'],
+          'medium': 'phone',
+          'connectionDepth': 'meaningful',
+          'at': at,
+        });
+      }
+      for (final (name, preset, at) in [
+        ('Bea Due Today', RelationshipPreset.closeFamily, '2026-08-30'),
+        ('Cal Due Soon', RelationshipPreset.closeFamily, '2026-09-01'),
+        ('Nora No History', RelationshipPreset.closeFamily, null),
+        ('Uma Untracked', RelationshipPreset.contextOnly, null),
+      ]) {
+        await session.createRecord('contact', {
+          'displayName': name,
+          ...relationshipPresetFields(preset),
+        });
+        if (at != null) {
+          final contact = session.store.values.singleWhere(
+            (record) =>
+                record['typeId'] == 'contact' && record['displayName'] == name,
+          );
+          await session.createRecord('interaction', {
+            'subject': contact['id'],
+            'medium': 'phone',
+            'connectionDepth': 'meaningful',
+            'at': at,
+          });
+        }
+      }
+      final contacts = {
+        for (final contact in session.store.values.where(
+          (record) => record['typeId'] == 'contact',
+        ))
+          '${contact['displayName']}': '${contact['id']}',
+      };
+
+      await tester.pumpWidget(
+        MaterialApp(home: RelationshipsView(session: session)),
+      );
+      await tester.pumpAndSettle();
+      final allCircles = find.byKey(const Key('relationships-filter-all'));
+      await tester.ensureVisible(allCircles);
+      await tester.pumpAndSettle();
+      await tester.tap(allCircles);
+      await tester.pumpAndSettle();
+
+      final expected = {
+        'Ava Healthy': 'Healthy · 9d left',
+        'Bea Due Today': 'Due today',
+        'Cal Due Soon': 'Due in 2d',
+        'Mia Waiting': '3d overdue',
+        'Nora No History': 'No meaningful contact',
+        'Uma Untracked': 'Not tracked',
+        'Zoe Waiting Longer': '22d overdue',
+      };
+      final badgeDecorations = <String, Decoration>{};
+      for (final entry in expected.entries) {
+        final badge = find.byKey(
+          Key('relationship-health-${contacts[entry.key]}'),
+        );
+        expect(
+          badge,
+          findsOneWidget,
+          reason: '${entry.key} needs a visible, labeled health indicator',
+        );
+        await tester.ensureVisible(badge);
+        await tester.pumpAndSettle();
+        expect(
+          find.descendant(of: badge, matching: find.text(entry.value)),
+          findsOneWidget,
+        );
+        expect(
+          tester.getSemantics(badge).label,
+          startsWith('Relationship health:'),
+        );
+        badgeDecorations[entry.key] = tester
+            .widget<DecoratedBox>(
+              find
+                  .descendant(of: badge, matching: find.byType(DecoratedBox))
+                  .first,
+            )
+            .decoration;
+      }
+
+      expect(
+        badgeDecorations['Ava Healthy'],
+        isNot(badgeDecorations['Mia Waiting']),
+        reason: 'healthy and overdue states need distinct visual treatments',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: RelationshipsView(session: session),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'health badges must reflow instead of clipping larger text',
+      );
+    },
+  );
+
+  testWidgets(
     'Relationships lists displayed people alphabetically even when urgency differs',
     (tester) async {
       tester.view.physicalSize = const Size(393, 852);
@@ -225,7 +354,13 @@ void main() {
       );
       await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(Key('relationship-select-$beaId')));
+      final selectBea = find.byKey(Key('relationship-select-$beaId'));
+      await tester.ensureVisible(selectBea);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
+      await tester.pumpAndSettle();
+      await tester.tap(selectBea);
+      await tester.pump();
+      expect(tester.widget<Checkbox>(selectBea).value, isTrue);
       await tester.scrollUntilVisible(
         find.byKey(Key('relationship-person-$calId')),
         180,
@@ -233,8 +368,15 @@ void main() {
       );
       await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(Key('relationship-select-$calId')));
+      final selectCal = find.byKey(Key('relationship-select-$calId'));
+      await tester.ensureVisible(selectCal);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
+      await tester.pumpAndSettle();
+      await tester.tap(selectCal);
       await tester.pump();
+      expect(tester.widget<Checkbox>(selectCal).value, isTrue);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+      await tester.pumpAndSettle();
       expect(find.text('2 selected'), findsOneWidget);
       await tester.tap(find.byKey(const Key('relationships-move-selected')));
       await tester.pumpAndSettle();
@@ -292,10 +434,22 @@ void main() {
       expect(find.text('Close · 1'), findsOneWidget);
       await tester.tap(find.byKey(const Key('relationships-filter-close')));
       await tester.pumpAndSettle();
-      expect(find.text('Close · Remote'), findsOneWidget);
+      final beaRow = find.byKey(Key('relationship-person-$beaId'));
       expect(
-        find.text(
-          'Close · Remote\nMeaningful connection due · Call or FaceTime',
+        find.descendant(of: beaRow, matching: find.text('Close · Remote')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: beaRow,
+          matching: find.text('No meaningful contact'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: beaRow,
+          matching: find.text('Meaningful connection due · Call or FaceTime'),
         ),
         findsOneWidget,
       );
@@ -326,8 +480,11 @@ void main() {
       );
       final selectAna = find.byKey(Key('relationship-select-$anaId'));
       await tester.ensureVisible(selectAna);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
       await tester.pumpAndSettle();
       await tester.tap(selectAna);
+      await tester.pump();
+      expect(tester.widget<Checkbox>(selectAna).value, isTrue);
       await tester.scrollUntilVisible(
         find.byKey(Key('relationship-person-$calId')),
         180,
@@ -335,9 +492,13 @@ void main() {
       );
       final selectCal = find.byKey(Key('relationship-select-$calId'));
       await tester.ensureVisible(selectCal);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
       await tester.pumpAndSettle();
       await tester.tap(selectCal);
       await tester.pump();
+      expect(tester.widget<Checkbox>(selectCal).value, isTrue);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+      await tester.pumpAndSettle();
       expect(find.text('2 selected'), findsOneWidget);
       await tester.tap(find.byKey(const Key('relationships-move-selected')));
       await tester.pumpAndSettle();
