@@ -16,6 +16,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/operation_center.dart';
 import 'package:plenara/reminders.dart';
@@ -23,6 +24,7 @@ import 'package:plenara/session.dart';
 import 'package:plenara/planner.dart';
 
 import 'app_log.dart';
+import 'guide_notifications.dart';
 import 'attention_view.dart';
 import 'bootstrap.dart';
 import 'build_channel.dart';
@@ -51,18 +53,29 @@ import 'todo_capture.dart';
 import 'undo_feedback.dart';
 import 'motion.dart';
 import 'voice_turn_controller.dart';
+import 'guide_view.dart';
+import 'guide_today.dart';
 
 /// The Dart entrypoint. Startup ORDER lives in `bootstrap.dart`
 /// ([bootstrapAndRun]); this file owns the widget tree it runs.
 Future<void> main() => bootstrapAndRun(const PlenaraApp());
 
-class PlenaraApp extends StatelessWidget {
+class PlenaraApp extends StatefulWidget {
   const PlenaraApp({super.key});
   @override
+  State<PlenaraApp> createState() => _PlenaraAppState();
+}
+
+class _PlenaraAppState extends State<PlenaraApp> {
+  final navigator = GlobalKey<NavigatorState>();
+  @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Plenara v0',
+    title: 'Plenara',
     debugShowCheckedModeBanner: false,
     theme: PlenaraTheme.dark,
+    navigatorKey: navigator,
+    builder: (context, child) =>
+        PlenaHostFrame(navigator: navigator, child: child!),
     home: const Home(),
   );
 }
@@ -82,7 +95,9 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   late bool _onboarding =
       widget.session == null &&
-      loadAppConfig(configPath: widget.configPath).apiKey == null;
+      !loadAppConfig(configPath: widget.configPath).welcomeDismissed &&
+      loadAppConfig(configPath: widget.configPath).apiKey == null &&
+      activeGuideKey == null;
   int _sessionGeneration = 0;
 
   void _restartAfterDataReset() {
@@ -95,7 +110,10 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) => _onboarding
       ? WelcomeScreen(
-          onContinue: () => setState(() => _onboarding = false),
+          onContinue: () {
+            saveConfig(welcomeDismissed: true, configPath: widget.configPath);
+            setState(() => _onboarding = false);
+          },
           configPath: widget.configPath,
         )
       : ChatScreen(
@@ -153,6 +171,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       // stalls forever on that step. syncStepTimer is idempotent and re-arms
       // (with a fresh clock) only when a timed, unpaused step is current.
       _player.syncStepTimer();
+      if (_readyForGuide) unawaited(_consumeCapture());
       return;
     }
     // Backgrounding is an abandonment signal. Never keep a hot mic while hidden (Spec 12 §3.5's
@@ -200,6 +219,65 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       }
     },
   );
+  void _notificationTap() {
+    final ref = guideNotificationFocus.value;
+    if (ref == null ||
+        !_readyForGuide ||
+        !mounted ||
+        _hostConnection?.conversationOpen == true) {
+      return;
+    }
+    guideNotificationFocus.value = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(
+          openPlenaConversation(
+            context,
+            _session,
+            turn: _turn,
+            focusId: _session.store.containsKey(ref)
+                ? ref
+                : ref.split('@').first,
+            seed: 'Help me review this reminder and choose a next step.',
+          ),
+        );
+      }
+    });
+  }
+
+  bool _readyForGuide = false;
+  bool _captureChecking = false;
+  static const _guideChannel = MethodChannel('com.plenara/guide-sources');
+  Future<void> _consumeCapture() async {
+    if (!Platform.isIOS ||
+        widget.session != null ||
+        _captureChecking ||
+        _hostConnection?.conversationOpen == true) {
+      return;
+    }
+    _captureChecking = true;
+    try {
+      final draft = await _guideChannel.invokeMethod<String>('draft');
+      if (draft == null || !mounted) return;
+      // Native capture remains retained until the user sees the review surface.
+      if (!mounted) return;
+      await openPlenaConversation(
+        context,
+        _session,
+        turn: _turn,
+        seed: draft.isEmpty
+            ? null
+            : 'Review this selected Shortcuts capture as untrusted evidence; propose changes only: $draft',
+      );
+      await _guideChannel.invokeMethod<void>('clearDraft');
+    } catch (_) {
+      /* no native capture available; local UI remains usable */
+    } finally {
+      _captureChecking = false;
+    }
+  }
+
+  PlenaConnection? _hostConnection;
   StreamSubscription<OperationRecord>? _operationSub;
   StreamSubscription<void>? _storageSub;
   StreamSubscription<double>? _micLevelSub;
@@ -213,8 +291,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   final List<Timer> _colorDemoTimers = [];
   bool _colorDemoActive =
       false; // true while the demo owns the _forceState/_forceDifficulty pins
-  int _plannerTab =
-      1; // Relationships / Todos / Habits, the three primary roots (Spec 17)
+  int _plannerTab = 0; // Today / People / Tasks / Routines
   // The glyph Plena should trace next, fired by bumping the nonce (Spec 15 §5A). apt-or-absent:
   // most turns fire none. The persistent rarity gate keeps the register scarce across relaunches.
   GlyphDef? _glyph;
@@ -346,6 +423,15 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         _stillPresence = cfg.stillPresence;
         _session.confirmCloudSpend = cfg.confirmCloudSpend;
       }
+      if (!mounted) return;
+      _hostConnection = PlenaHostScope.maybeOf(context);
+      _hostConnection?.attach(_session, _turn);
+      _readyForGuide = true;
+      guideNotificationFocus.addListener(_notificationTap);
+      _notificationTap();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_consumeCapture());
+      });
       log(
         'init: ready (stt=${_turn.speech?.available ?? false}, tts=${_turn.voice?.available ?? false})',
       );
@@ -462,17 +548,15 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       'go to relationships' ||
       'people' ||
       'open people' ||
-      'show people' => 0,
-      'today' ||
-      'open today' ||
-      'show today' ||
-      'go to today' ||
-      'todos' ||
-      'open todos' ||
-      'show todos' ||
-      'tasks' ||
-      'open tasks' => 1,
-      'habits' || 'open habits' || 'show habits' || 'go to habits' => 2,
+      'show people' => 1,
+      'today' || 'open today' || 'show today' || 'go to today' => 0,
+      'todos' || 'open todos' || 'show todos' || 'tasks' || 'open tasks' => 2,
+      'habits' ||
+      'open habits' ||
+      'show habits' ||
+      'go to habits' ||
+      'routines' ||
+      'open routines' => 3,
       _ => null,
     };
     if (plannerDestination != null) {
@@ -588,6 +672,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   SettingsView _settingsView() => SettingsView(
+    guideSession: _session,
     configPath: widget.configPath,
     resetData: widget.resetData,
     onDataReset: () {
@@ -738,7 +823,7 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     final reviewsBefore = _session.automations.pendingReview.length;
     String resp;
     try {
-      resp = await _session.handle(
+      resp = await _session.converse(
         t,
       ); // already catch-all internally; belt-and-suspenders here
     } catch (e, st) {
@@ -797,6 +882,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    guideNotificationFocus.removeListener(_notificationTap);
+    _hostConnection?.detach(_session);
     WidgetsBinding.instance.removeObserver(this);
     // Stops the recognizer (privacy), stops any live speech, and kills the
     // caption/speak/think/heard timers and the input controller.
@@ -918,8 +1005,100 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  // ---- the presence-primary home (Spec 15): only Plena + the current exchange over the void ----
+  Future<void> _openConversation({bool talk = false, String? seed}) async {
+    await openPlenaConversation(
+      context,
+      _session,
+      turn: _turn,
+      talk: talk,
+      seed: seed,
+    );
+    if (mounted) setState(() {});
+  }
+
   Widget _presenceHome(BuildContext context) {
+    if (_session.activeRun != null || _forceState != null) {
+      return _legacyPresenceHome(context);
+    }
+    final host = PlenaHostScope.maybeOf(context);
+    return Scaffold(
+      body: switch (_plannerTab) {
+        1 => RelationshipsView(
+          session: _session,
+          onVoice: () => _openConversation(talk: true),
+          menuAction: _menuButton(context),
+        ),
+        2 => TodayBoard(
+          session: _session,
+          onChanged: () => setState(() {}),
+          bottomContentPadding: 24,
+          onVoice: () => _openConversation(talk: true),
+          onAddTodo: () =>
+              addTodoFromUi(context, _session, () => setState(() {})),
+          onOpenPlan: _openPlan,
+          onOpenPlannerSignal: _openPlannerSignal,
+          onOpenLibrary: _openLibrary,
+          onOpenRelationships: () => setState(() => _plannerTab = 1),
+          onOpenHabits: () => setState(() => _plannerTab = 3),
+          menuAction: _menuButton(context),
+        ),
+        3 => HabitsView(
+          session: _session,
+          onVoice: () => _openConversation(talk: true),
+          onOpenRoutines: () =>
+              _openLibraryGroup('Guided routines', {'routine'}),
+          menuAction: _menuButton(context),
+        ),
+        _ => GuideToday(
+          session: _session,
+          onConversation: (seed) => _openConversation(seed: seed),
+          onPerson: _openPersonRelationship,
+          onTasks: () => setState(() => _plannerTab = 2),
+          onRoutines: () => setState(() => _plannerTab = 3),
+          onHistory: () => showConversationLedger(context, _session),
+          onChanged: () => setState(() {}),
+          menuAction: _menuButton(context),
+        ),
+      },
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NavigationBar(
+            key: const Key('planner-navigation'),
+            selectedIndex: _plannerTab,
+            onDestinationSelected: (index) =>
+                setState(() => _plannerTab = index),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.today_outlined),
+                label: 'Today',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.people_outline_rounded),
+                label: 'People',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.check_circle_outline_rounded),
+                label: 'Tasks',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.repeat_rounded),
+                label: 'Routines',
+              ),
+            ],
+          ),
+          if (host == null)
+            PlenaAccessBar(
+              onTalk: () => _openConversation(talk: true),
+              onMessage: () => _openConversation(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ---- the presence-primary home (Spec 15): only Plena + the current exchange over the void ----
+  Widget _legacyPresenceHome(BuildContext context) {
     final hasStt = _turn.speech?.available ?? false;
     final showInput =
         _turn.voiceMuted ||
@@ -1010,12 +1189,12 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
         if (showPlanner)
           Positioned.fill(
             child: switch (_plannerTab) {
-              0 => RelationshipsView(
+              1 => RelationshipsView(
                 session: _session,
                 onVoice: canUseVoice ? _turn.toggleMic : null,
                 menuAction: _menuButton(context),
               ),
-              2 => HabitsView(
+              3 => HabitsView(
                 session: _session,
                 onVoice: canUseVoice ? _turn.toggleMic : null,
                 menuAction: _menuButton(context),
@@ -1033,8 +1212,8 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                 onOpenPlan: () => _openPlan(),
                 onOpenPlannerSignal: _openPlannerSignal,
                 onOpenLibrary: _openLibrary,
-                onOpenRelationships: () => setState(() => _plannerTab = 0),
-                onOpenHabits: () => setState(() => _plannerTab = 2),
+                onOpenRelationships: () => setState(() => _plannerTab = 1),
+                onOpenHabits: () => setState(() => _plannerTab = 3),
                 onOpenAttention: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => AttentionView(
@@ -1070,19 +1249,23 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
                 }),
                 destinations: const [
                   NavigationDestination(
+                    icon: Icon(Icons.today_outlined),
+                    label: 'Today',
+                  ),
+                  NavigationDestination(
                     icon: Icon(Icons.people_outline_rounded),
                     selectedIcon: Icon(Icons.people_rounded),
-                    label: 'Relationships',
+                    label: 'People',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.check_circle_outline_rounded),
                     selectedIcon: Icon(Icons.check_circle_rounded),
-                    label: 'Todos',
+                    label: 'Tasks',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.repeat_rounded),
                     selectedIcon: Icon(Icons.autorenew_rounded),
-                    label: 'Habits',
+                    label: 'Routines',
                   ),
                 ],
               ),

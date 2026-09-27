@@ -62,4 +62,30 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(contacts[0]["email"] as? String, "bob@example.com")
   }
 
+  @available(iOS 16.0, *)
+  func testShortcutCaptureIsReviewableAndDoesNotOverwrite() async throws {
+    GuideCapture.clear()
+    defer { GuideCapture.clear() }
+    var capture = CaptureWithPlenara()
+    capture.text = "Alex: maybe dinner Friday."
+    _ = try await capture.perform()
+    XCTAssertEqual(GuideCapture.read(), "Alex: maybe dinner Friday.")
+    var other = CaptureWithPlenara()
+    other.text = "A second capture"
+    do { _ = try await other.perform(); XCTFail("A pending capture must not be overwritten.") }
+    catch { }
+    _ = try await OpenPlena().perform()
+    XCTAssertEqual(GuideCapture.read(), "Alex: maybe dinner Friday.")
+  }
+
+  func testCaptureSecureStoreRejectsDuplicateAndClears() throws {
+    GuideCapture.clear()
+    defer { GuideCapture.clear() }
+    try GuideCapture.write("Selected synthetic evidence")
+    XCTAssertEqual(GuideCapture.read(), "Selected synthetic evidence")
+    XCTAssertThrowsError(try GuideCapture.write("Overwrite"))
+    GuideCapture.clear()
+    XCTAssertNil(GuideCapture.read())
+  }
+
 }

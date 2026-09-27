@@ -237,6 +237,8 @@ PlenaraConfig loadAppConfig({String? configPath}) {
     confirmCloudSpend: cfg.confirmCloudSpend,
     stillPresence: cfg.stillPresence,
     dataFolderSelected: cfg.dataFolderSelected,
+    guideMonthlyLimit: cfg.guideMonthlyLimit,
+    welcomeDismissed: cfg.welcomeDismissed,
   );
 }
 
@@ -274,4 +276,43 @@ void resetAppCredentialsForTest() {
   _store = PlatformCredentialStore();
   _activeApiKey = null;
   _initialized = false;
+}
+
+// Separate provider credential: an Anthropic key is never sent to OpenAI.
+CredentialStore guideCredentialStore = PlatformCredentialStore(
+  key: 'openai_guide_key',
+);
+String? activeGuideKey;
+Future<void> initializeGuideCredential() async {
+  try {
+    activeGuideKey = _nonEmpty(await guideCredentialStore.readApiKey());
+    AppLog.instance.registerSecret(activeGuideKey);
+  } catch (_) {
+    activeGuideKey = null;
+  }
+}
+
+Future<void> saveGuideCredential(String value) async {
+  final key = value.trim();
+  if (key.isEmpty) {
+    await guideCredentialStore.deleteApiKey();
+    activeGuideKey = null;
+    return;
+  }
+  final previous = await guideCredentialStore.readApiKey();
+  try {
+    await guideCredentialStore.writeApiKey(key);
+    if (_nonEmpty(await guideCredentialStore.readApiKey()) != key) {
+      throw StateError('Secure write failed.');
+    }
+  } catch (_) {
+    if (previous == null) {
+      await guideCredentialStore.deleteApiKey();
+    } else {
+      await guideCredentialStore.writeApiKey(previous);
+    }
+    rethrow;
+  }
+  activeGuideKey = key;
+  AppLog.instance.registerSecret(key);
 }

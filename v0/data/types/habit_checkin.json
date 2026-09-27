@@ -1,11 +1,44 @@
 {
   "typeId": "habit_checkin",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "displayName": "Habit Check-in",
   "parentType": "habit",
   "attributes": [
-    {"name": "habit", "valueType": "entityRef", "refType": "habit", "required": true},
-    {"name": "date", "valueType": "date", "required": true},
-    {"name": "note", "valueType": "text", "required": false}
+    {
+      "name": "habit",
+      "valueType": "entityRef",
+      "refType": "habit",
+      "required": true
+    },
+    {
+      "name": "date",
+      "valueType": "date",
+      "required": true
+    },
+    {
+      "name": "note",
+      "valueType": "text",
+      "required": false
+    },
+    {
+      "name": "outcome",
+      "valueType": "enum",
+      "required": false,
+      "enumValues": [
+        "completed",
+        "minimum",
+        "skipped"
+      ],
+      "default": "completed"
+    }
+  ],
+  "migrations": [
+    {
+      "fromVersion": 1,
+      "toVersion": 2,
+      "fieldDefaults": {
+        "outcome": "completed"
+      }
+    }
   ]
 }

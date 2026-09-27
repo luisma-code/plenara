@@ -31,7 +31,7 @@
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Plena listens when you tap anywhere to talk.</string>
+	<string>Plena listens when you choose Talk to Plena.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Plena turns your speech into text to understand what you say.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -76,5 +76,13 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Browse upcoming plans you select to review with Plena. Events do not automatically become completed interactions.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Browse reminders you select to review with Plena. Nothing is imported automatically.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Browse upcoming plans you select to review with Plena. Events do not automatically become completed interactions.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Browse reminders you select to review with Plena. Nothing is imported automatically.</string>
 </dict>
 </plist>

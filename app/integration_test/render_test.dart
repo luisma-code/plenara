@@ -153,17 +153,15 @@ void main() {
           ),
         );
         await runFrames(tester, 30); // init + live Today projection
-        expect(find.byKey(const Key('today-board')), findsOneWidget);
-
-        await tester.enterText(
-          find.byType(TextField),
-          'add buy milk to my list',
-        );
-        await tester.tap(find.text('Send'));
+        expect(find.byKey(const Key('guide-today')), findsOneWidget);
+        await tester.tap(find.byKey(const Key('message-plena')));
+        await runFrames(tester, 25);
+        await tester.enterText(find.byType(TextField), 'add task buy milk');
+        await tester.tap(find.byTooltip('Send message'));
         await runFrames(tester, 20);
 
         await tester.enterText(find.byType(TextField), 'list my tasks');
-        await tester.tap(find.text('Send'));
+        await tester.tap(find.byTooltip('Send message'));
         await runFrames(
           tester,
           80,
@@ -242,6 +240,9 @@ void main() {
         ),
       );
       await runFrames(tester, 35);
+      expect(find.byKey(const Key('guide-today')), findsOneWidget);
+      await tester.tap(find.widgetWithText(NavigationDestination, 'Tasks'));
+      await runFrames(tester, 25);
       expect(find.byKey(const Key('today-board')), findsOneWidget);
       expect(
         find.byKey(const Key('planning-artifact-morning')),
@@ -295,7 +296,7 @@ void main() {
       await tester.tap(find.byTooltip('Back'));
       await runFrames(tester, 20);
 
-      await tester.tap(find.text('Relationships').last);
+      await tester.tap(find.widgetWithText(NavigationDestination, 'People'));
       await runFrames(tester, 25);
       expect(find.byKey(const Key('relationships-view')), findsOneWidget);
       expect(find.text('Sam'), findsWidgets);
@@ -354,7 +355,8 @@ void main() {
           .first;
       final relationshipObstructionTop = [
         tester.getRect(find.byKey(const Key('planner-navigation'))).top,
-        tester.getRect(find.byKey(const Key('planner-input-bar'))).top,
+        if (find.byKey(const Key('planner-input-bar')).evaluate().isNotEmpty)
+          tester.getRect(find.byKey(const Key('planner-input-bar'))).top,
       ].reduce((a, b) => a < b ? a : b);
       await tester.scrollUntilVisible(
         relationshipPerson,
@@ -380,7 +382,7 @@ void main() {
       expect(
         find.descendant(
           of: avaHealth,
-          matching: find.text('Healthy · 4d left'),
+          matching: find.text('Within rhythm · 4d left'),
         ),
         findsOneWidget,
       );
@@ -407,12 +409,12 @@ void main() {
       await runFrames(tester, 20);
       expect(find.byKey(const Key('relationships-view')), findsOneWidget);
 
-      await tester.tap(find.text('Habits').last);
+      await tester.tap(find.widgetWithText(NavigationDestination, 'Routines'));
       await runFrames(tester, 25);
       expect(find.byKey(const Key('habits-view')), findsOneWidget);
       expect(find.text('meditation'), findsOneWidget);
 
-      await tester.tap(find.text('Todos').last);
+      await tester.tap(find.widgetWithText(NavigationDestination, 'Tasks'));
       await runFrames(tester, 25);
       final todosPlanScroll = find
           .descendant(
@@ -487,8 +489,10 @@ void main() {
 
       await tester.tap(find.byTooltip('Back'));
       await runFrames(tester, 20);
+      await tester.tap(find.text('Message Plena'));
+      await runFrames(tester, 10);
       await tester.enterText(find.byType(TextField), 'open library');
-      await tester.tap(find.text('Send'));
+      await tester.tap(find.byTooltip('Send message'));
       await runFrames(tester, 25);
       expect(find.byKey(const Key('library-home')), findsOneWidget);
       expect(find.text('People'), findsOneWidget);
@@ -533,6 +537,8 @@ void main() {
           ),
         );
         await runFrames(tester, 35);
+        await tester.tap(find.widgetWithText(NavigationDestination, 'Tasks'));
+        await runFrames(tester, 25);
         expect(find.text('pack clothes'), findsOneWidget);
 
         await tester.tap(find.text('pack clothes'));
@@ -698,7 +704,7 @@ void main() {
         isTrue,
       );
       expect(find.byKey(const Key('startup-recovery')), findsNothing);
-      expect(find.byKey(const Key('today-board')), findsOneWidget);
+      expect(find.byKey(const Key('guide-today')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

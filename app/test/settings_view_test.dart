@@ -33,7 +33,11 @@ void main() {
       expect(find.byKey(const Key('plena-detail-ember')), findsOneWidget);
       expect(find.widgetWithText(Chip, 'not connected'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), 'my-byok-key');
+      await tester.ensureVisible(find.byKey(const Key('anthropic-api-key')));
+      await tester.enterText(
+        find.byKey(const Key('anthropic-api-key')),
+        'my-byok-key',
+      );
       await tester.tap(find.text('Save without testing'));
       await tester.pumpAndSettle();
 
@@ -52,11 +56,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final declaration = find.byKey(const Key('cloud-content-declarations'));
+    final declaration = find.text('What each cloud feature sends');
     await tester.ensureVisible(declaration);
     await tester.tap(declaration);
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Gift ideas'));
+    await tester.pumpAndSettle();
     expect(find.text('Gift ideas'), findsOneWidget);
     expect(find.text('contact, contact_fact'), findsWidgets);
     expect(find.text('Journal'), findsOneWidget);
@@ -79,7 +85,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextField), 'sk-ant-good');
+      await tester.ensureVisible(find.byKey(const Key('anthropic-api-key')));
+      await tester.enterText(
+        find.byKey(const Key('anthropic-api-key')),
+        'sk-ant-good',
+      );
       await tester.tap(find.text('Test connection'));
       await tester.pumpAndSettle();
 
@@ -106,7 +116,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextField), 'sk-ant-nocredits');
+      await tester.ensureVisible(find.byKey(const Key('anthropic-api-key')));
+      await tester.enterText(
+        find.byKey(const Key('anthropic-api-key')),
+        'sk-ant-nocredits',
+      );
       await tester.tap(find.text('Test connection'));
       await tester.pumpAndSettle();
 
@@ -149,7 +163,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'sk-ant-wrong');
+      await tester.ensureVisible(find.byKey(const Key('anthropic-api-key')));
+      await tester.enterText(
+        find.byKey(const Key('anthropic-api-key')),
+        'sk-ant-wrong',
+      );
       await tester.tap(find.text('Test connection'));
       await tester.pumpAndSettle();
       expect(find.textContaining('rejected'), findsOneWidget);

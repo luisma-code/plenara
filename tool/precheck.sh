@@ -8,10 +8,10 @@ set -euo pipefail
 # The quality gate is hermetic. In particular, never let a developer's live BYOK key reach a test
 # matcher: an assertion failure prints its unexpected actual value. Config precedence itself is
 # covered with an injected environment map in config_test.dart.
-unset ANTHROPIC_API_KEY CARTESIA_API_KEY ELEVENLABS_API_KEY PLENARA_DATA PLENARA_FREE || true
+unset OPENAI_API_KEY ANTHROPIC_API_KEY CARTESIA_API_KEY ELEVENLABS_API_KEY PLENARA_DATA PLENARA_FREE || true
 
 ROOT="$(git rev-parse --show-toplevel)"
-env ANTHROPIC_API_KEY=guard-anthropic CARTESIA_API_KEY=guard-cartesia \
+env OPENAI_API_KEY=guard-openai ANTHROPIC_API_KEY=guard-anthropic CARTESIA_API_KEY=guard-cartesia \
   ELEVENLABS_API_KEY=guard-elevenlabs \
   bash "$ROOT/tool/safe-xcodebuild.sh" --check-environment >/dev/null
 # Prefer the vendored Windows toolchain if present; else fall back to PATH (macOS / Linux / CI).
@@ -98,7 +98,7 @@ else
 fi
 
 echo "== [11/12] secret scan (no BYOK/API keys in tracked files) =="
-if git -C "$ROOT" grep -nE "sk-ant-[A-Za-z0-9]{20}" -- . >/dev/null 2>&1; then
+if git -C "$ROOT" grep -nE "sk-(ant-|proj-)?[A-Za-z0-9_-]{20}" -- . >/dev/null 2>&1; then
   echo "!! SECRET DETECTED in a tracked file — aborting." >&2
   exit 1
 fi

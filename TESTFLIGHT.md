@@ -5,7 +5,7 @@ The goal: build + upload from the Mac, install/update on the iPhone **over cellu
 
 ## What Claude does on the Mac (automated — no Apple login needed)
 - `ITSAppUsesNonExemptEncryption=false` set in `Info.plist` (the app uses only standard HTTPS/TLS to
-  Anthropic — export-exempt), so Apple never prompts export compliance per upload. ✅ done
+  OpenAI/Anthropic — export-exempt), so Apple never prompts export compliance per upload. ✅ done
 - `flutter build ipa --release` builds the distribution **archive** (`app/build/ios/archive/…`). ✅ verified
 - `tool/testflight-upload.sh` exports a **signed IPA** from that archive and uploads it — using ONLY
   the App Store Connect **API key** (`xcodebuild -allowProvisioningUpdates` auto-creates the iOS
@@ -42,7 +42,7 @@ internal beta group **Internal** (`23726f32-…`) with Luis as tester.
 # bump version: in app/pubspec.yaml first — +BUILD must strictly increase
 cd app
 revision=$(git rev-parse --short HEAD)
-unset ANTHROPIC_API_KEY CARTESIA_API_KEY ELEVENLABS_API_KEY PLENARA_DATA PLENARA_FREE
+unset OPENAI_API_KEY ANTHROPIC_API_KEY CARTESIA_API_KEY ELEVENLABS_API_KEY PLENARA_DATA PLENARA_FREE
 flutter build ipa --release \
   --dart-define=PLENARA_CHANNEL=internal \
   --dart-define=PLENARA_REVISION="$revision"   # internal dogfood diagnostics/tools

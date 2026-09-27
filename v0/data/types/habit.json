@@ -1,11 +1,65 @@
 {
   "typeId": "habit",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "displayName": "Habit",
   "attributes": [
-    {"name": "title", "valueType": "text", "required": true},
-    {"name": "targetPerWeek", "valueType": "number", "required": false, "default": 7},
-    {"name": "status", "valueType": "enum", "enumValues": ["active", "paused", "archived"], "required": false, "default": "active"},
-    {"name": "createdAt", "valueType": "datetime", "required": true}
+    {
+      "name": "title",
+      "valueType": "text",
+      "required": true
+    },
+    {
+      "name": "targetPerWeek",
+      "valueType": "number",
+      "required": false,
+      "default": 7
+    },
+    {
+      "name": "status",
+      "valueType": "enum",
+      "enumValues": [
+        "active",
+        "paused",
+        "archived"
+      ],
+      "required": false,
+      "default": "active"
+    },
+    {
+      "name": "createdAt",
+      "valueType": "datetime",
+      "required": true
+    },
+    {
+      "name": "reason",
+      "valueType": "text",
+      "required": false
+    },
+    {
+      "name": "cue",
+      "valueType": "text",
+      "required": false
+    },
+    {
+      "name": "normalVersion",
+      "valueType": "text",
+      "required": false
+    },
+    {
+      "name": "minimumVersion",
+      "valueType": "text",
+      "required": false
+    },
+    {
+      "name": "preferredDays",
+      "valueType": "text",
+      "required": false
+    }
+  ],
+  "migrations": [
+    {
+      "fromVersion": 1,
+      "toVersion": 2
+    }
   ]
 }

@@ -64,7 +64,7 @@ class _TodoEditorState extends State<_TodoEditor> {
   Widget build(BuildContext context) {
     final today = DateTime(widget.now.year, widget.now.month, widget.now.day);
     return AlertDialog(
-      title: const Text('Add a one-off todo'),
+      title: const Text('Add a task'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

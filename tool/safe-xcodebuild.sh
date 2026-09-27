@@ -5,6 +5,7 @@
 set -euo pipefail
 
 SENSITIVE_BUILD_VARS=(
+  OPENAI_API_KEY
   ANTHROPIC_API_KEY
   CARTESIA_API_KEY
   ELEVENLABS_API_KEY
@@ -15,7 +16,7 @@ unset "${SENSITIVE_BUILD_VARS[@]}" || true
 
 if [ "${1:-}" = "--check-environment" ]; then
   remaining="$(/usr/bin/env | /usr/bin/cut -d= -f1 | \
-    /usr/bin/grep -E '^(ANTHROPIC|CARTESIA|ELEVENLABS)_API_KEY$' || true)"
+    /usr/bin/grep -E '^(OPENAI|ANTHROPIC|CARTESIA|ELEVENLABS)_API_KEY$' || true)"
   if [ -n "$remaining" ]; then
     echo "unsafe xcodebuild environment: provider API key variable remains set" >&2
     exit 1

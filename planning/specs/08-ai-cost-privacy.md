@@ -1,5 +1,16 @@
 # Spec 08 — AI Cost & Privacy
 
+## GPT guide — approved 2026-09-26
+
+The production guide uses `OpenAiGuide` through Responses with `gpt-6-sol`, `store:false`, low reasoning effort, function tools and the model’s full 128,000 output allowance. It is separate from the retained Anthropic command routing, authoring and named synthesis features described below. New guide requests require an OpenAI key in device secure storage, explicit context consent and a positive monthly USD limit. Neither ChatGPT/Codex subscription nor an Anthropic key connects this provider.
+
+Every request, including tool continuations, reserves a conservative input envelope plus the full output allowance before HTTP. Verified catalog prices are $2/M input and $10/M output; actual usage settles the reservation. Unknown outcomes retain it. Corruption, rollback, exhausted budget and inability to persist block requests. This is a per-device cap; it cannot cap other apps or another device using the same account. Settings exposes actual/reserved totals and zero/disconnect controls. No paid live evaluation is authorized by implementation alone.
+
+Guide tools can read contact, contact_fact, interaction, task, reminder, habit, habit_checkin, routine and routine_step. They exclude journal, mood, diagnostics, phone/email/system contact identifiers. Recent guide conversation and user-selected imported evidence can also be sent. User-written notes may contain sensitive information, so selection is not proof of nonsensitivity. The consent copy discloses this field. Provider abuse-monitoring retention can apply even with `store:false`. Imported text is untrusted evidence; no history-wide message or call access is implemented.
+
+The model can only propose create/update operations. Schema validation, reference/date validation, stale-update detection, application and undo belong to the durable coordinator. No arbitrary skill execution, record deletion, external sending or source-side writes are exposed. Model output is not shortened, rewritten or retried to enforce character style. Guide content is absent from diagnostic turn traces; the intentional bounded conversation ledger is device-local and remains readable JSON under the existing storage posture.
+
+
 **Status:** Active v0.2 — audited 2026-09-07. The BYOK seam, persistent admission controller, detached cloud diagnostics, per-kind record-class declarations, explicit-invocation consent markers, Settings disclosure catalog, and journal-exclusion canaries are implemented; monthly reflection and its tier-c journal flow remain future work.
 **Depends on:** research doc (§7, §12.8, §13, §14, §15); Spec 02 — Skill DSL (§5.5, §6, §7.6); Spec 03 — NLU / Intent (§2.2a, §3.5, §5, §7.3); Spec 04 — Architecture (§3.5, §3.7, §3.10, §5.2, §6); Spec 05 — Functional (§3.6, §3.8, §13)
 **Blocks:** Spec 09 — Test (the payload/consent invariants below are testable contracts); Spec 10 — Security & Privacy threat model (this spec draws the data-flow map Spec 10 attacks); Spec 11 — Feedback & Diagnostics (shares the consent ground rules)

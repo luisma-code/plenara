@@ -162,8 +162,15 @@ void main() {
         MaterialApp(home: ChatScreen(session: _session(), retrieval: false)),
       );
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'add buy milk to my list');
-      await tester.tap(find.text('Send'));
+      await tester.tap(find.byKey(const Key('message-plena')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('plena-message-input')),
+        'add task buy milk',
+      );
+      await tester.tap(find.byTooltip('Send message'));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.more_horiz)); // open the discreet menu
@@ -194,8 +201,15 @@ void main() {
       MaterialApp(home: ChatScreen(session: _session(), retrieval: false)),
     );
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'add buy milk to my list');
-    await tester.tap(find.text('Send'));
+    await tester.tap(find.byKey(const Key('message-plena')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('plena-message-input')),
+      'add task buy milk',
+    );
+    await tester.tap(find.byTooltip('Send message'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
@@ -243,8 +257,15 @@ void main() {
         MaterialApp(home: ChatScreen(session: session, retrieval: false)),
       );
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'add buy milk to my list');
-      await tester.tap(find.text('Send'));
+      await tester.tap(find.byKey(const Key('message-plena')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('plena-message-input')),
+        'add task buy milk',
+      );
+      await tester.tap(find.byTooltip('Send message'));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
@@ -343,8 +364,15 @@ void main() {
       MaterialApp(home: ChatScreen(session: session, retrieval: false)),
     );
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'add buy milk to my list');
-    await tester.tap(find.text('Send'));
+    await tester.tap(find.byKey(const Key('message-plena')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('plena-message-input')),
+      'add task buy milk',
+    );
+    await tester.tap(find.byTooltip('Send message'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();

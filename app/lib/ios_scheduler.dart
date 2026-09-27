@@ -7,6 +7,7 @@ import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'app_log.dart';
+import 'guide_notifications.dart';
 
 class IosNotificationScheduler
     implements NotificationScheduler, PendingNotificationScheduler {
@@ -23,14 +24,37 @@ class IosNotificationScheduler
     try {
       tzdata.initializeTimeZones();
       await _plugin.initialize(
-        settings: const InitializationSettings(
+        settings: InitializationSettings(
           iOS: DarwinInitializationSettings(
             requestAlertPermission: false,
             requestSoundPermission: false,
             requestBadgePermission: false,
+            notificationCategories: [
+              DarwinNotificationCategory(
+                'plena-context',
+                actions: [
+                  DarwinNotificationAction.plain(
+                    'discuss',
+                    'Discuss with Plena',
+                    options: {DarwinNotificationActionOption.foreground},
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
+        onDidReceiveNotificationResponse: (response) {
+          final parsed = parseNotificationPayload(response.payload);
+          if (parsed != null) guideNotificationFocus.value = parsed.ref;
+        },
       );
+      final launch = await _plugin.getNotificationAppLaunchDetails();
+      if (launch?.didNotificationLaunchApp == true) {
+        final parsed = parseNotificationPayload(
+          launch?.notificationResponse?.payload,
+        );
+        if (parsed != null) guideNotificationFocus.value = parsed.ref;
+      }
       final granted =
           await _plugin
               .resolvePlatformSpecificImplementation<
@@ -81,10 +105,13 @@ class IosNotificationScheduler
       await _plugin.zonedSchedule(
         id: notificationId(ref),
         title: 'Plenara',
-        body: body,
+        body: 'A reminder you chose is ready. Open Plenara to review it.',
         scheduledDate: tz.TZDateTime.from(when, tz.local),
         notificationDetails: const NotificationDetails(
-          iOS: DarwinNotificationDetails(),
+          iOS: DarwinNotificationDetails(
+            categoryIdentifier: 'plena-context',
+            presentSound: false,
+          ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         payload: notificationPayload(ref, when),

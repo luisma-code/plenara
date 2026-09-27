@@ -42,7 +42,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      for (final label in ['Connect Claude', 'Continue offline for now']) {
+      for (final label in ['Connect Plena guide', 'Continue offline for now']) {
         final target = find.text(label);
         expect(target, findsOneWidget);
         final rect = tester.getRect(target);

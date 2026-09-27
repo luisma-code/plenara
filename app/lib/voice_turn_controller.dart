@@ -340,7 +340,7 @@ class VoiceTurnController extends ChangeNotifier {
       _deepThink = true;
       _notify();
     });
-    log('turn [$turnId]: "$t"');
+    log('turn [$turnId]: submitted');
     final outcome = await runTurn(t);
     if (outcome == null || _disposed) {
       return; // widget torn down mid-turn -> don't notify after dispose
@@ -349,7 +349,7 @@ class VoiceTurnController extends ChangeNotifier {
     final usedCloud = outcome.usedCloud;
     log(
       'turn [$turnId] -> [${outcome.source}${usedCloud ? ', cloud' : ', offline'}] '
-      '${resp.length > 140 ? '${resp.substring(0, 140)}…' : resp}',
+      '${resp.length} characters',
     );
     // _busy is always cleared, so the input can never lock up.
     // automation deliveries (✨) + newly-held writes (📋) join the reply over the void

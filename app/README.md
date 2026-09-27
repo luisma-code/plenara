@@ -1,19 +1,10 @@
 # Plenara Flutter app
 
-The Flutter client for Plenara's living planner. iPhone is the primary target;
-macOS and Windows are supported development/desktop targets.
+Plenara helps Luis make space for relationships, follow through on commitments, and build routines that fit his life. Today brings those three goals together; People, Tasks, and Routines provide direct access. Labeled Talk to Plena and Message Plena controls follow roots and detail pages into one resumable conversation.
 
-The client provides primary Relationships, Todos, and Habits workspaces; secondary
-Plan, Library, and History tools; settings; voice capture and speech output;
-reminders; Plena's animated presence; secure BYOK credential storage; and
-user-selected data-folder access. Product logic remains in the pure-Dart package
-at `../v0`.
+The optional GPT guide reads relevant planner context and proposes editable, undoable updates. It uses a separate secure OpenAI API key, explicit context consent and a persisted monthly spending limit. Local commands and direct touch actions remain available offline. No recorded relationship update means unknown. Practices support a reason, cue, normal/minimum versions, flexible opportunities, and deliberate skips.
 
-The Relationships root is Focus-first: due connections are bounded and ranked,
-global search plus circle and Local/Remote filters cover the complete address book,
-and direct or bulk organization shares the engine's durable undo path. Circle and
-proximity remain independent; proximity selects in-person versus call/FaceTime
-guidance without changing contact-frequency goals.
+User-selected Calendar/Reminders evidence, pasted text and Shortcuts captures reduce bookkeeping without automatic message surveillance. Calendar entries do not prove attendance. Notifications use private, silent copy and open the relevant conversation. Planner files remain readable JSON in the chosen folder; device history stays local. See [the privacy policy](../PRIVACY.md).
 
 ## Local verification
 

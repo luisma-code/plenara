@@ -11,6 +11,8 @@
 > deep conversation, compact beside Todos/Plan, and an ember on Relationships, Habits, and detail surfaces. The ephemeral-
 > exchange and presence-primary steady-state decisions are implementation history, not current law.
 
+**Current guide shell (2026-09-26):** Spec 17 v2 owns Today/People/Tasks/Routines, persistent labeled Talk/Message access and the resumable thread. The thread uses a small static presence while listening/thinking. The renderer and its legacy full-screen/collaborator modes remain available to existing routine and diagnostic surfaces; they do not establish the guide thread’s layout.
+
 **Status:** Active v0.5 — audited against the wired implementation 2026-09-07. Animated Plena,
 state/expression targets, mic-level response, Y0/Y1/Y2 presentation, reduced/still presence,
 glyph scarcity, and non-iOS capped trail persistence are shipped. The public

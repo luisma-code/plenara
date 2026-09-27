@@ -4,6 +4,9 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'store.dart' show writeJsonAtomic;
 import 'dart:math';
 
 import 'automations.dart';
@@ -14,6 +17,7 @@ import 'conversation_ledger.dart';
 import 'execution_coordinator.dart';
 import 'reference.dart';
 import 'generative.dart';
+import 'guide.dart';
 import 'interpreter.dart';
 import 'migration.dart';
 import 'operation_center.dart';
@@ -615,6 +619,9 @@ class LearnedFlow {
 
 class Session {
   final String dataDir;
+  GuideClient guide;
+  GuideReceipt? guideReceipt;
+  String? guideFocusId;
   final DateTime? _fixedClock;
   final Random _manualIdRandom = Random.secure();
 
@@ -852,11 +859,13 @@ class Session {
   Session(this.dataDir,
       {DateTime? clock,
       CloudClient? cloud,
+      GuideClient? guide,
       StorageRepository? storage,
       ExecutionJournal? executionJournal,
       NotificationScheduler? scheduler,
       String? deviceDir})
-      : _fixedClock = clock,
+      : guide = guide ?? const OfflineGuide(),
+        _fixedClock = clock,
         _injectedCloud = cloud,
         _injectedStorage = storage,
         _injectedExecutionJournal = executionJournal,
@@ -1047,6 +1056,7 @@ class Session {
       },
     );
     final recoveredExecutions = executions.recover();
+    _restoreGuideReceipt();
     _journal
       ..clear()
       ..addAll(executions.completed
@@ -3218,13 +3228,23 @@ class Session {
     );
   }
 
+  Future<ManualWrite> acknowledgeRelationship(String id) => editFields(id, {
+        'acknowledgedAt': now.toIso8601String(),
+        'acknowledgement': "We caught up recently; we're good.",
+      });
+
   /// Check a habit in once for the current local day. Voice and the Habits
   /// button share the same habit_checkin record shape; repeat taps are honest
   /// no-ops rather than inflated progress.
-  Future<ManualWrite> recordHabitCheckIn(String habitId) =>
-      _serialized(() => _recordHabitCheckInUnlocked(habitId));
+  Future<ManualWrite> recordHabitCheckIn(String habitId,
+          {String outcome = 'completed'}) =>
+      _serialized(() => _recordHabitCheckInUnlocked(habitId, outcome: outcome));
 
-  Future<ManualWrite> _recordHabitCheckInUnlocked(String habitId) async {
+  Future<ManualWrite> _recordHabitCheckInUnlocked(String habitId,
+      {String outcome = 'completed'}) async {
+    if (!const {'completed', 'minimum', 'skipped'}.contains(outcome))
+      return const ManualWrite.fail(
+          'Choose a completion, smaller version, or deliberate skip.');
     final habit = store[habitId];
     if (habit == null || habit['typeId'] != 'habit') {
       return const ManualWrite.fail('That habit no longer exists.');
@@ -3233,18 +3253,22 @@ class Session {
       return const ManualWrite.fail('That habit is paused.');
     }
     final today = now.toIso8601String().split('T').first;
-    final already = store.values.any(
-      (record) =>
-          record['typeId'] == 'habit_checkin' &&
-          '${record['habit']}' == habitId &&
-          '${record['date']}' == today,
-    );
-    if (already) {
-      return ManualWrite.fail('${habit['title']} is already done today.');
+    final already = store.values
+        .where(
+          (record) =>
+              record['typeId'] == 'habit_checkin' &&
+              '${record['habit']}' == habitId &&
+              '${record['date']}' == today,
+        )
+        .firstOrNull;
+    if (already != null) {
+      if ((already['outcome'] ?? 'completed') == outcome)
+        return ManualWrite.fail('This practice already has that update today.');
+      return _editFieldsUnlocked('${already['id']}', {'outcome': outcome});
     }
     final result = await _createRecordUnlocked(
       'habit_checkin',
-      {'habit': habitId, 'date': today},
+      {'habit': habitId, 'date': today, 'outcome': outcome},
       description: 'checked in ${habit['title']}',
     );
     if (!result.ok) return result;
@@ -4402,7 +4426,10 @@ class Session {
   /// Nothing inside a turn awaits handle() itself, so the chain cannot deadlock.
   Future<String> handle(String u) => _serialized(() => _handleTurn(u));
 
-  Future<String> _handleTurn(String u) async {
+  Future<String> converse(String u) =>
+      _serialized(() => _handleTurn(u, conversational: true));
+
+  Future<String> _handleTurn(String u, {bool conversational = false}) async {
     u = u.trim();
     _searchResults.clear();
     _outSource = 'clarify';
@@ -4426,6 +4453,9 @@ class Session {
     final autoDelivered0 = automations.deliveries.length;
     final autoHeld0 = automations.pendingReview.length;
     final autoRefused0 = automations.refusals.length;
+    final guideSpendBefore = guide is OpenAiGuide
+        ? (((guide as OpenAiGuide).budget.snapshot['spent'] as num?) ?? 0)
+        : 0;
     final startedAt = DateTime.now();
     // Cost telemetry: snapshot the cloud token counters so this turn's spend is logged per-turn
     // (the turnlog is append-only, so summing 'cost.usd' across it gives a real running total).
@@ -4440,7 +4470,7 @@ class Session {
     final sOut0 = c is ClaudeClient ? c.sonnetOutTokens : 0;
     String resp;
     try {
-      resp = await _handle(u);
+      resp = conversational ? await _handleGuide(u) : await _handle(u);
     } catch (e, st) {
       _outSource = 'error';
       _outError =
@@ -4492,11 +4522,14 @@ class Session {
     }
     // Did this turn actually spend cloud tokens? (drives the per-response cloud dot — accurate
     // even when a cloud/generative call failed to an offline reply, which spends nothing.)
-    _lastTurnSpentCloud = c is ClaudeClient &&
-        (c.inTokens - inTok0 > 0 ||
-            c.outTokens - outTok0 > 0 ||
-            c.sonnetInTokens - sIn0 > 0 ||
-            c.sonnetOutTokens - sOut0 > 0);
+    _lastTurnSpentCloud = (guide is OpenAiGuide &&
+            (((guide as OpenAiGuide).budget.snapshot['spent'] as num?) ?? 0) >
+                guideSpendBefore) ||
+        c is ClaudeClient &&
+            (c.inTokens - inTok0 > 0 ||
+                c.outTokens - outTok0 > 0 ||
+                c.sonnetInTokens - sIn0 > 0 ||
+                c.sonnetOutTokens - sOut0 > 0);
     // Post-turn housekeeping (reminder reconcile + the diagnostics trace) must NEVER lose the
     // already-computed response — a turnlog I/O error or a reconcile hiccup is non-fatal to the
     // turn (Fable review: these sat outside the try). Wrap so they can't escape to the UI.
@@ -4510,11 +4543,12 @@ class Session {
       _logTurnGuarded({
         'at': startedAt.toIso8601String(),
         'ms': DateTime.now().difference(startedAt).inMilliseconds,
-        'utterance': u,
+        if (!conversational) 'utterance': u,
         'source': _outSource,
         if (_outSkill != null) 'skill': _outSkill,
         if (_outTemplate != null) 'template': _outTemplate,
-        if (_outSlots != null && _outSlots!.isNotEmpty) 'slots': _outSlots,
+        if (!conversational && _outSlots != null && _outSlots!.isNotEmpty)
+          'slots': _outSlots,
         if (_cloudStatus != null) 'cloud': _cloudStatus,
         if (c is ClaudeClient &&
             (c.inTokens - inTok0 > 0 ||
@@ -4530,9 +4564,10 @@ class Session {
                 ClaudeClient.sonnetCostUsd(
                     c.sonnetInTokens - sIn0, c.sonnetOutTokens - sOut0),
           },
-        if (_outReads.isNotEmpty) 'reads': _outReads,
-        if (_outWrites.isNotEmpty) 'writes': _outWrites,
-        'response': resp.length > 240 ? '${resp.substring(0, 240)}…' : resp,
+        if (!conversational && _outReads.isNotEmpty) 'reads': _outReads,
+        if (!conversational && _outWrites.isNotEmpty) 'writes': _outWrites,
+        if (!conversational)
+          'response': resp.length > 240 ? '${resp.substring(0, 240)}…' : resp,
         // CloudError.detail ("for logs") rides the diag map on any cloud-consulting
         // turn that didn't come back ok — so a failed cloud call is diagnosable.
         if (_outDiag != null ||
@@ -4543,7 +4578,8 @@ class Session {
             if (_cloudDetail != null) 'cloudDetail': _cloudDetail,
             if (_generative.lastTruncated) 'cloudTruncated': true,
           },
-        if (_outError != null) 'error': _outError,
+        if (_outError != null)
+          'error': conversational ? 'Guide turn failed' : _outError,
         if (automations.deliveries.length > autoDelivered0 ||
             automations.pendingReview.length > autoHeld0 ||
             automations.refusals.length > autoRefused0)
@@ -4617,6 +4653,411 @@ class Session {
     // by _releaseOpSlot once the LAST queued operation finishes, not here: a tap
     // queued behind this turn is still a mutation in flight.
     return resp;
+  }
+
+  File get _guideReceiptFile =>
+      File('${_deviceDir ?? dataDir}/guide-receipt.json');
+
+  void _restoreGuideReceipt() {
+    if (!_guideReceiptFile.existsSync()) return;
+    try {
+      final data = jsonDecode(_guideReceiptFile.readAsStringSync());
+      if (data is Map && data['receipt'] is Map) {
+        guideReceipt = GuideReceipt.fromJson(
+            Map<String, dynamic>.from(data['receipt'] as Map));
+        if (executions.journal.entries
+            .any((e) => e.frozenInputs['receiptId'] == guideReceipt!.id)) {
+          _persistGuideReceipt(null);
+        }
+      }
+    } catch (_) {
+      executionRepairIssues
+          .add('A conversation receipt could not be restored.');
+    }
+  }
+
+  void _persistGuideReceipt(GuideReceipt? value) {
+    _guideReceiptFile.parent.createSync(recursive: true);
+    writeJsonAtomic(_guideReceiptFile, {'receipt': value?.toJson()});
+    guideReceipt = value;
+  }
+
+  Future<void> editGuideReceipt(int index, Map<String, dynamic> fields) =>
+      _serialized(() async {
+        final receipt = guideReceipt;
+        if (receipt == null || index < 0 || index >= receipt.changes.length)
+          return;
+        final changes =
+            receipt.changes.map((c) => Map<String, dynamic>.from(c)).toList();
+        changes[index]['fields'] = fields;
+        _persistGuideReceipt(GuideReceipt(
+            receipt.title, changes, receipt.before,
+            id: receipt.id));
+      });
+
+  Future<void> removeGuideReceiptChange(int index) => _serialized(() async {
+        final receipt = guideReceipt;
+        if (receipt == null || index < 0 || index >= receipt.changes.length)
+          return;
+        final changes = [...receipt.changes]..removeAt(index);
+        _persistGuideReceipt(changes.isEmpty
+            ? null
+            : GuideReceipt(receipt.title, changes, receipt.before,
+                id: receipt.id));
+      });
+
+  Future<void> dismissGuideReceipt() => _serialized(() async {
+        _persistGuideReceipt(null);
+      });
+
+  Future<ManualWrite> applyGuideReceipt(
+          {List<Map<String, dynamic>>? changes}) =>
+      _serialized(() async {
+        final receipt = guideReceipt;
+        if (receipt == null)
+          return const ManualWrite.fail('There is no pending receipt.');
+        if (executions.journal.entries
+            .any((e) => e.frozenInputs['receiptId'] == receipt.id)) {
+          _persistGuideReceipt(null);
+          return const ManualWrite.fail(
+              'This receipt has already been applied.');
+        }
+        final selected = changes ?? receipt.changes;
+        if (selected.isEmpty)
+          return const ManualWrite.fail('Choose at least one change.');
+        final writes = <Map<String, dynamic>>[];
+        final working = Map<String, Map<String, dynamic>>.from(store);
+        final ids = <String, String>{};
+        for (final change in selected) {
+          if (!guideRecordTypes.contains(change['type']))
+            return const ManualWrite.fail('That record type is not permitted.');
+          final id = '${change['id'] ?? ''}';
+          if (change['operation'] == 'create' && id.startsWith('new:')) {
+            if (ids.containsKey(id))
+              return const ManualWrite.fail('Duplicate temporary record id.');
+            ids[id] = _mintManualId('${change['type']}');
+          }
+        }
+        Object? resolve(Object? value) {
+          if (value is String && value.startsWith('new:')) {
+            if (!ids.containsKey(value))
+              throw const FormatException(
+                  'Select the referenced new record too.');
+            return ids[value];
+          }
+          if (value is List) return value.map(resolve).toList();
+          if (value is Map)
+            return value.map((k, v) => MapEntry('$k', resolve(v)));
+          return value;
+        }
+
+        try {
+          // Validate against the complete projected receipt, so forward
+          // references are as valid as references to earlier proposed records.
+          for (final change in selected) {
+            final temp = '${change['id'] ?? ''}';
+            if (change['operation'] == 'create' &&
+                ids.containsKey(temp) &&
+                change['fields'] is Map) {
+              working[ids[temp]!] = {
+                'id': ids[temp],
+                'typeId': change['type'],
+                ...Map<String, dynamic>.from(resolve(change['fields']) as Map)
+              };
+            }
+          }
+          for (final change in selected) {
+            final typeId = '${change['type']}';
+            final type = types[typeId];
+            if (type == null || change['fields'] is! Map)
+              return const ManualWrite.fail('Invalid change fields.');
+            final fields =
+                Map<String, dynamic>.from(resolve(change['fields']) as Map);
+            if (fields.keys
+                .any((k) => k == 'id' || k == 'typeId' || k.startsWith('_'))) {
+              return const ManualWrite.fail(
+                  'Record identity cannot be edited.');
+            }
+            final op = change['operation'];
+            final inputId = '${change['id'] ?? ''}';
+            final old = store[inputId];
+            if (op == 'update') {
+              if (old == null ||
+                  old['typeId'] != typeId ||
+                  jsonEncode(old) != jsonEncode(receipt.before[inputId])) {
+                return const ManualWrite.fail(
+                    'This record changed since the proposal. Ask Plena to refresh it.');
+              }
+            } else if (op != 'create') {
+              return const ManualWrite.fail(
+                  'Only additions and edits are permitted.');
+            }
+            final id = op == 'update'
+                ? inputId
+                : ids[inputId] ?? _mintManualId(typeId);
+            if (writes.any((r) => r['id'] == id))
+              return const ManualWrite.fail(
+                  'Combine edits to the same record first.');
+            final record = const ValueCodec().validateRecord(
+                type,
+                {
+                  if (op == 'update') ...old!,
+                  'id': id,
+                  'typeId': typeId,
+                  '_schemaVersion': typeVersion(type),
+                  if (op == 'create' &&
+                      ((type['attributes'] as List)
+                          .whereType<Map>()
+                          .any((a) => a['name'] == 'createdAt')))
+                    'createdAt': now.toIso8601String(),
+                  ...fields,
+                },
+                records: working,
+                dataRoot: dataDir);
+            if ((typeId == 'interaction' && record['planned'] != true) ||
+                typeId == 'habit_checkin') {
+              final date = DateTime.tryParse(
+                  '${record[typeId == 'interaction' ? 'at' : 'date']}');
+              if (date == null || date.isAfter(now)) {
+                return const ManualWrite.fail(
+                    'A completed interaction or practice needs a real date no later than today.');
+              }
+            }
+            if (typeId == 'habit_checkin' &&
+                working.values.any((r) =>
+                    r['typeId'] == typeId &&
+                    r['id'] != id &&
+                    r['habit'] == record['habit'] &&
+                    r['date'] == record['date'])) {
+              return const ManualWrite.fail(
+                  'That practice already has an update for this day. Edit that update instead.');
+            }
+            if (typeId == 'habit') {
+              final target = record['targetPerWeek'];
+              if (target is! num ||
+                  target < 1 ||
+                  target > 7 ||
+                  target != target.round())
+                return const ManualWrite.fail(
+                    'Choose one to seven weekly opportunities.');
+              final days = '${record['preferredDays'] ?? ''}';
+              if (days.isNotEmpty &&
+                  days.split(',').any((d) =>
+                      int.tryParse(d) == null ||
+                      int.parse(d) < 1 ||
+                      int.parse(d) > 7))
+                return const ManualWrite.fail(
+                    'Choose valid weekdays for this practice.');
+            }
+            writes.add(record);
+            working[id] = record;
+          }
+        } on ValueCodecError catch (error) {
+          return ManualWrite.fail(error.message);
+        } catch (_) {
+          return const ManualWrite.fail(
+              'A referenced change is missing or invalid.');
+        }
+        final result = _executeMutation(
+            writes: writes,
+            deletes: const [],
+            origin: 'guide-receipt',
+            description: receipt.title,
+            frozenInputs: {'receiptId': receipt.id, 'changes': selected});
+        if (result.state == ExecutionResultState.failedBeforeWrite ||
+            result.record == null) {
+          return const ManualWrite.fail(
+              'Could not start saving safely. Nothing changed.');
+        }
+        _clearSpokenCorrectionContext();
+        // Clearing the receipt is best-effort after execution; the journal is the
+        // authority and supplies the proof used to avoid replay after a crash.
+        try {
+          _persistGuideReceipt(null);
+        } catch (_) {
+          guideReceipt = null;
+        }
+        try {
+          conversationLedger.append(
+              utterance: 'Apply: ${receipt.title}',
+              reply: result.state == ExecutionResultState.appliedInMemory
+                  ? 'Updated here; saving is pending recovery.'
+                  : 'Saved — ${receipt.title}.',
+              source: 'guide-receipt',
+              outcome: 'accepted',
+              at: now,
+              executionId: result.record!.id,
+              affectedRecordIds: writes.map((r) => '${r['id']}').toList());
+        } catch (_) {
+          /* a ledger failure cannot invalidate an applied execution */
+        }
+        try {
+          automations.notifyWrites(writes);
+        } catch (_) {}
+        return ManualWrite.ok(
+            result.state == ExecutionResultState.appliedInMemory
+                ? 'Updated here; saving is pending recovery.'
+                : 'Saved — ${receipt.title}.',
+            undoId: result.record!.id);
+      });
+
+  Future<String> _handleGuide(String utterance) async {
+    if (_run != null) {
+      final control = await _routineControl(utterance, now);
+      if (control != null) return control;
+    }
+    // These explicit commands remain available without a cloud conversation.
+    // Broad expressive matches (notably "I feel ...") never preempt guidance.
+    if (RegExp(
+            r'^(?:undo that|log (?:my )?mood(?: as)? .+|add task .+|remind me .+|list my .+|show my .+)$',
+            caseSensitive: false)
+        .hasMatch(utterance)) {
+      return _handle(utterance);
+    }
+    _outSource = 'guide';
+    final history = conversationLedger.entries
+        .where((e) => e.source == 'guide' || e.source == 'guide-receipt')
+        .toList();
+    final input = <Map<String, dynamic>>[
+      {
+        'role': 'developer',
+        'content': 'Local time: ${now.toIso8601String()}. '
+            'Current focus record: ${guideFocusId ?? 'none'}. '
+            'Permitted classes: ${guideRecordTypes.join(', ')}. '
+            'Existing pending receipt: ${guideReceipt?.title ?? 'none'}. '
+            'Do not replace a pending receipt without discussing it.'
+      },
+      for (final entry
+          in history.skip((history.length - 16).clamp(0, history.length))) ...[
+        {'role': 'user', 'content': entry.utterance},
+        {'role': 'assistant', 'content': entry.reply},
+      ],
+      {'role': 'user', 'content': utterance},
+    ];
+    while (true) {
+      final response = await guide.respond(input, guideTools);
+      if (response is CloudError<Map<String, dynamic>>) {
+        _outError = 'GPT ${response.kind.name}';
+        return switch (response.kind) {
+          CloudErrorKind.noKey =>
+            'Conversation with GPT is not connected yet. Open Settings → Plena guide to connect it. You can still capture tasks, update people, and check in routines here.',
+          CloudErrorKind.rateLimited =>
+            'GPT is paused by its spending limit or provider quota. Check Settings → Plena guide. Your existing records and local actions are available.',
+          CloudErrorKind.badKey =>
+            'The OpenAI key was rejected. Update it in Settings → Plena guide.',
+          _ =>
+            'GPT could not finish this conversation (${response.kind.name}). No proposed changes were applied. You can retry when the connection is available.',
+        };
+      }
+      final output =
+          (response as CloudOk<Map<String, dynamic>>).value['output'] as List;
+      // Preserve the complete output, including reasoning/phase, for tool continuations.
+      input.addAll(
+          output.whereType<Map>().map((r) => Map<String, dynamic>.from(r)));
+      final calls = output
+          .whereType<Map>()
+          .where((r) => r['type'] == 'function_call')
+          .toList();
+      if (calls.isEmpty) {
+        final reply = output
+            .whereType<Map>()
+            .where((r) => r['type'] == 'message')
+            .expand((r) => (r['content'] as List?) ?? const [])
+            .whereType<Map>()
+            .where((r) => r['type'] == 'output_text')
+            .map((r) => '${r['text']}')
+            .join('\n');
+        return reply.isEmpty
+            ? 'GPT returned no reply. No changes were applied.'
+            : reply;
+      }
+      for (final call in calls) {
+        Map<String, dynamic> result;
+        try {
+          final args =
+              jsonDecode('${call['arguments']}') as Map<String, dynamic>;
+          result = _guideTool('${call['name']}', args);
+        } catch (_) {
+          result = {'error': 'Invalid tool arguments; no changes applied.'};
+        }
+        input.add({
+          'type': 'function_call_output',
+          'call_id': call['call_id'],
+          'output': jsonEncode(result)
+        });
+      }
+      // The transport's reservation is the single budget gate for every round.
+    }
+  }
+
+  Map<String, dynamic> _guideTool(String name, Map<String, dynamic> args) {
+    if (name == 'get_schema') {
+      final type = '${args['type']}';
+      return guideRecordTypes.contains(type) && types.containsKey(type)
+          ? {'schema': types[type]}
+          : {'error': 'This class is not permitted.'};
+    }
+    if (name == 'search_records') {
+      final type = args['type'];
+      if (type != null && !guideRecordTypes.contains(type))
+        return {'error': 'This class is not permitted.'};
+      final query = '${args['query'] ?? ''}'.toLowerCase();
+      final found = store.values
+          .where((r) =>
+              guideRecordTypes.contains(r['typeId']) &&
+              (type == null || r['typeId'] == type) &&
+              (args['id'] == null || r['id'] == args['id']) &&
+              (query.isEmpty || jsonEncode(r).toLowerCase().contains(query)))
+          .take(12);
+      return {
+        'records': [
+          for (final r in found)
+            {
+              for (final e in r.entries)
+                if (!const {'primaryPhone', 'primaryEmail', 'systemContactId'}
+                    .contains(e.key))
+                  e.key: e.value,
+            }
+        ],
+        'coverage':
+            'Only records entered or confirmed here; missing records mean unknown.'
+      };
+    }
+    if (name == 'propose_changes') {
+      if (guideReceipt != null)
+        return {
+          'error':
+              'There is already a pending receipt. Ask Luis to apply or dismiss it first.'
+        };
+      final changes = (args['changes'] as List)
+          .map((x) => Map<String, dynamic>.from(x as Map))
+          .toList();
+      if (changes.isEmpty ||
+          changes.any((c) =>
+              !guideRecordTypes.contains(c['type']) ||
+              !const {'create', 'update'}.contains(c['operation']) ||
+              c['fields'] is! Map ||
+              c['reason'] is! String)) {
+        return {'error': 'Invalid change set.'};
+      }
+      final before = <String, Map<String, dynamic>>{};
+      for (final change in changes.where((c) => c['operation'] == 'update')) {
+        final record = store[change['id']];
+        if (record == null || record['typeId'] != change['type'])
+          return {'error': 'Unknown record id.'};
+        before['${change['id']}'] =
+            Map<String, dynamic>.from(jsonDecode(jsonEncode(record)) as Map);
+      }
+      _persistGuideReceipt(GuideReceipt(
+          '${args['title'] ?? 'Conversation updates'}', changes, before));
+      return {
+        'state': 'proposed',
+        'saved': false,
+        'title': guideReceipt!.title,
+        'changes': changes
+      };
+    }
+    return {'error': 'Tool is not permitted.'};
   }
 
   /// Keep a failed cloud call's log-only detail for this turn's trace, truncated.

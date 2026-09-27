@@ -10,7 +10,11 @@ class HabitStatus {
   final bool completedToday;
   final int currentStreakDays;
   final List<bool> lastSevenDays;
+  final List<String> lastSevenOutcomes;
   final bool active;
+  final bool skippedToday;
+  final bool opportunityToday;
+  final String reason, cue, normalVersion, minimumVersion;
 
   const HabitStatus({
     required this.id,
@@ -20,13 +24,25 @@ class HabitStatus {
     required this.completedToday,
     required this.currentStreakDays,
     required this.lastSevenDays,
+    this.lastSevenOutcomes = const [],
     required this.active,
+    this.skippedToday = false,
+    this.opportunityToday = true,
+    this.reason = '',
+    this.cue = '',
+    this.normalVersion = '',
+    this.minimumVersion = '',
   });
 
   int get remainingThisWeek =>
       (targetPerWeek - completedThisWeek).clamp(0, targetPerWeek);
 
-  bool get dueToday => active && !completedToday && remainingThisWeek > 0;
+  bool get dueToday =>
+      active &&
+      !completedToday &&
+      !skippedToday &&
+      opportunityToday &&
+      remainingThisWeek > 0;
 }
 
 DateTime _day(DateTime value) => DateTime(value.year, value.month, value.day);
@@ -50,12 +66,20 @@ List<HabitStatus> habitStatuses(_Store store, DateTime now) {
   final today = _day(now);
   final weekStart = _weekStart(today);
   final logsByHabit = <String, Set<String>>{};
+  final skipsByHabit = <String, Set<String>>{};
+  final outcomesByHabit = <String, Map<String, String>>{};
   for (final record in store.values) {
     if (record['typeId'] != 'habit_checkin') continue;
     final habit = '${record['habit'] ?? ''}';
     final date = DateTime.tryParse('${record['date'] ?? ''}');
     if (habit.isEmpty || date == null || _day(date).isAfter(today)) continue;
-    logsByHabit.putIfAbsent(habit, () => <String>{}).add(_dayKey(date));
+    outcomesByHabit.putIfAbsent(habit, () => {})[_dayKey(date)] =
+        '${record['outcome'] ?? 'completed'}';
+    if (record['outcome'] == 'skipped') {
+      skipsByHabit.putIfAbsent(habit, () => <String>{}).add(_dayKey(date));
+    } else {
+      logsByHabit.putIfAbsent(habit, () => <String>{}).add(_dayKey(date));
+    }
   }
 
   final result = <HabitStatus>[];
@@ -88,7 +112,31 @@ List<HabitStatus> habitStatuses(_Store store, DateTime now) {
         for (var offset = 6; offset >= 0; offset--)
           dates.contains(_dayKey(today.subtract(Duration(days: offset)))),
       ],
+      lastSevenOutcomes: [
+        for (var offset = 6; offset >= 0; offset--)
+          outcomesByHabit[id]
+                  ?[_dayKey(today.subtract(Duration(days: offset)))] ??
+              'unknown'
+      ],
       active: '${habit['status'] ?? 'active'}' == 'active',
+      skippedToday:
+          (skipsByHabit[id] ?? const <String>{}).contains(_dayKey(today)),
+      opportunityToday: (() {
+        final preferred = '${habit['preferredDays'] ?? ''}'
+            .split(',')
+            .map(int.tryParse)
+            .whereType<int>()
+            .where((d) => d >= 1 && d <= 7)
+            .toSet();
+        final days = preferred.isEmpty
+            ? {for (var i = 0; i < target; i++) 1 + (i * 7 / target).floor()}
+            : preferred;
+        return days.contains(today.weekday);
+      })(),
+      reason: '${habit['reason'] ?? ''}',
+      cue: '${habit['cue'] ?? ''}',
+      normalVersion: '${habit['normalVersion'] ?? ''}',
+      minimumVersion: '${habit['minimumVersion'] ?? ''}',
     ));
   }
   result.sort((a, b) {

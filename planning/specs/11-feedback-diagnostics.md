@@ -1,5 +1,10 @@
 # Spec 11 — Feedback & Diagnostics
 
+## Guide privacy boundary — 2026-09-26
+
+Production guide turn diagnostics omit utterance, assistant reply, slots, reads and written record payloads. Application voice-turn logs record submission/state/length rather than transcript/reply. The intentional device-local conversation ledger remains the user-visible transcript and is not an automatically exported diagnostic. Internal native recognizer hypothesis diagnostics retain their disclosed collection boundary below; that independent channel is not claimed content-free. Selected Calendar/Reminders/pasted evidence is never logged by its intake surface.
+
+
 **Status:** Active v0.4 — audited 2026-09-07. This is the sole authority for diagnostic collection/export. Development and single-user internal builds deliberately retain content-bearing logs—including speech-recognizer hypotheses needed to reconstruct a failed capture—and permit explicit raw export; external builds capture no raw content and expose no raw export. Secrets and raw audio are forbidden in every channel. Privacy-safe Contacts picker lifecycle diagnostics, the compiled-artifact gate, and the exact internal export preview are implemented. Decisions recorded in §10.
 **Depends on:** research §12 item 11 + §14 (the mandate); Spec 03 — NLU/Intent (§2.5 `routingSource`, §2.6/§5 corrections corpus, §7.3 routing amendments); Spec 04 — Architecture (§3.5 `ClaudeClient`/`CloudError`, §3.12 `AttentionSurface`, §5 sealed error taxonomy, §7.1 device-local vs synced stores); Spec 02 — Skill DSL (§6 authoring seam, used by the area-label decision D6)
 **Blocks:** release-candidate hardening (research §11.5 — "the diagnostics and feedback loop runs continuously from v1 and gates the first shared build"); informs Spec 08 (AI Cost & Privacy) and Spec 10 (Security & Privacy threat model) — both now written (suite-sync CS-20)

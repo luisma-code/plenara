@@ -13,6 +13,7 @@ import 'package:plenara/claude.dart';
 import 'package:plenara/config.dart';
 import 'package:plenara/reminders.dart';
 import 'package:plenara/session.dart';
+import 'package:plenara/guide.dart';
 import 'package:plenara/storage_repository.dart';
 
 import 'app_log.dart';
@@ -84,8 +85,18 @@ Session buildSession({NotificationScheduler? scheduler}) {
   );
   final apiKey = cfg.apiKey;
   if (apiKey != null) storage.registerTurnlogSecret(apiKey);
+  if (activeGuideKey != null) storage.registerTurnlogSecret(activeGuideKey!);
   return Session(
     dataDir,
+    guide: cfg.freeTier
+        ? const OfflineGuide()
+        : OpenAiGuide(
+            key: activeGuideKey,
+            budget: GuideBudget(
+              '${defaultDeviceDir()}/guide-usage.json',
+              cfg.guideMonthlyLimit,
+            ),
+          ),
     cloud: useCloud
         ? ClaudeClient(
             apiKeyOverride: cfg.apiKey,
@@ -151,6 +162,7 @@ Future<void> bootstrapAndRun(Widget app) async {
     AppLog.instance.log('boot: phase credentials begin');
     try {
       await initializeAppCredentials();
+      await initializeGuideCredential();
     } catch (error, stack) {
       // A locked keychain / PlatformException / failed migration must never
       // prevent runApp — a permanent blank screen with zero diagnostics is the

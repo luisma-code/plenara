@@ -293,10 +293,17 @@ void main() {
       contains('45 days'),
     );
     expect(session.store[id]?['meaningfulFrequencyDays'], 45);
-    expect(
-      await session.handle('who should I reach out to'),
-      allOf(contains('Mia'), contains('in person')),
-    );
+    expect(await session.handle('who should I reach out to'),
+        contains('No one is due'));
+    // Known old evidence can create a cadence suggestion; missing evidence cannot.
+    await session.createRecord('interaction', {
+      'subject': id,
+      'at': '2026-01-01',
+      'connectionDepth': 'meaningful',
+      'medium': 'in_person'
+    });
+    expect(await session.handle('who should I reach out to'),
+        allOf(contains('Mia'), contains('in person')));
     expect(
       await session.handle('pause reminders for Mia'),
       contains('Paused'),

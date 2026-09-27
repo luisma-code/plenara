@@ -64,7 +64,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Relationships'));
+      await tester.tap(find.widgetWithText(NavigationDestination, 'People'));
       await tester.pumpAndSettle();
 
       final addPerson = find.byKey(const Key('relationships-add-person'));
@@ -85,7 +85,7 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Habits').last);
+      await tester.tap(find.widgetWithText(NavigationDestination, 'Routines'));
       await tester.pumpAndSettle();
       expect(
         tester
@@ -95,7 +95,7 @@ void main() {
         reason: 'Add habit and More must have separate phone hit targets',
       );
 
-      await tester.tap(find.text('Todos').last);
+      await tester.tap(find.widgetWithText(NavigationDestination, 'Tasks'));
       await tester.pumpAndSettle();
       expect(
         tester
@@ -109,34 +109,42 @@ void main() {
     },
   );
 
-  testWidgets('primary navigation is Relationships, Todos, and Habits', (
+  testWidgets('primary navigation is Today, People, Tasks, and Routines', (
     tester,
   ) async {
     final session = await _session();
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
     await tester.pumpAndSettle();
 
-    expect(find.text('Relationships'), findsOneWidget);
-    expect(find.text('Todos'), findsOneWidget);
-    expect(find.text('Habits'), findsOneWidget);
-    expect(find.byKey(const Key('today-board')), findsOneWidget);
+    expect(
+      find.widgetWithText(NavigationDestination, 'People'),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(NavigationDestination, 'Tasks'), findsOneWidget);
+    expect(
+      find.widgetWithText(NavigationDestination, 'Routines'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('guide-today')), findsOneWidget);
 
-    await tester.tap(find.text('Relationships'));
+    await tester.tap(find.widgetWithText(NavigationDestination, 'People'));
     await tester.pumpAndSettle();
     expect(find.byType(RelationshipsView), findsOneWidget);
 
-    await tester.tap(find.text('Habits'));
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Routines'));
     await tester.pumpAndSettle();
     expect(find.byType(HabitsView), findsOneWidget);
   });
 
-  testWidgets('Todos adds a one-off item without turning it into a habit', (
+  testWidgets('Tasks adds a one-off item without turning it into a habit', (
     tester,
   ) async {
     final session = await _session();
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Tasks'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('todo-add')));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -166,7 +174,10 @@ void main() {
     await tester.tap(find.byKey(const Key('habits-empty-add')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('habit-title')), 'Meditate');
+    tester.testTextInput.hide();
+    await tester.ensureVisible(find.byKey(const Key('habit-target-3')));
     await tester.tap(find.byKey(const Key('habit-target-3')));
+    await tester.ensureVisible(find.byKey(const Key('habit-save')));
     await tester.tap(find.byKey(const Key('habit-save')));
     await tester.pumpAndSettle();
 
@@ -197,6 +208,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Tasks'));
+    await tester.pumpAndSettle();
     final signal = find.byKey(const Key('planner-signal-staleQueue'));
     await tester.scrollUntilVisible(
       signal,
@@ -224,17 +237,8 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: ChatScreen(session: session)));
       await tester.pumpAndSettle();
 
-      final signal = find.byKey(
-        const Key('planner-signal-relationshipNeglect'),
-      );
-      await tester.scrollUntilVisible(
-        signal,
-        240,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.drag(find.byType(Scrollable).first, const Offset(0, -160));
-      await tester.pumpAndSettle();
-      await tester.tap(signal);
+      expect(find.textContaining('Last update unknown'), findsOneWidget);
+      await tester.tap(find.text('Make space for them'));
       await tester.pumpAndSettle();
 
       expect(find.byType(PersonRelationshipView), findsOneWidget);

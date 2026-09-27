@@ -10,12 +10,14 @@ class HabitsView extends StatefulWidget {
   final Session session;
   final VoidCallback? onVoice;
   final Widget? menuAction;
+  final VoidCallback? onOpenRoutines;
 
   const HabitsView({
     super.key,
     required this.session,
     this.onVoice,
     this.menuAction,
+    this.onOpenRoutines,
   });
 
   @override
@@ -60,6 +62,7 @@ class _HabitsViewState extends State<HabitsView> {
         'title': draft.title.trim(),
         'targetPerWeek': draft.targetPerWeek,
         'status': 'active',
+        ...draft.fields,
         'createdAt': widget.session.now.toIso8601String(),
       }, description: 'started tracking ${draft.title.trim()}'),
     );
@@ -71,6 +74,7 @@ class _HabitsViewState extends State<HabitsView> {
       builder: (_) => _HabitEditor(
         title: status.title,
         targetPerWeek: status.targetPerWeek,
+        fields: widget.session.store[status.id] ?? const {},
       ),
     );
     if (draft == null) return;
@@ -78,6 +82,7 @@ class _HabitsViewState extends State<HabitsView> {
       await widget.session.editFields(status.id, {
         'title': draft.title.trim(),
         'targetPerWeek': draft.targetPerWeek,
+        ...draft.fields,
       }),
     );
   }
@@ -117,6 +122,67 @@ class _HabitsViewState extends State<HabitsView> {
     }
   }
 
+  Future<void> _startPractice(HabitStatus habit) async {
+    final outcome = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(habit.title),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (habit.reason.isNotEmpty) Text(habit.reason),
+              if (habit.cue.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text('Start when: ${habit.cue}'),
+                ),
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  habit.normalVersion.isEmpty
+                      ? 'Take a moment for this practice.'
+                      : habit.normalVersion,
+                ),
+              ),
+              if (habit.minimumVersion.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    'A smaller version counts: ${habit.minimumVersion}',
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Back'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'skipped'),
+            child: const Text('Skip today'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'minimum'),
+            child: const Text('Smaller version done'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'completed'),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+    if (outcome != null) {
+      _showResult(
+        await widget.session.recordHabitCheckIn(habit.id, outcome: outcome),
+      );
+    }
+  }
+
   void _message(String message) {
     ScaffoldMessenger.of(
       context,
@@ -130,17 +196,18 @@ class _HabitsViewState extends State<HabitsView> {
     final paused = habits.where((habit) => !habit.active).toList();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Habits'),
+        title: const Text('Routines'),
         actions: [
-          IconButton.filledTonal(
-            key: const Key('habits-voice'),
-            tooltip: 'Talk to Plena',
-            onPressed: widget.onVoice,
-            icon: const Icon(Icons.mic_none_rounded),
-          ),
+          if (widget.onVoice != null)
+            IconButton.filledTonal(
+              key: const Key('habits-voice'),
+              tooltip: 'Talk to Plena',
+              onPressed: widget.onVoice,
+              icon: const Icon(Icons.mic_none_rounded),
+            ),
           IconButton(
             key: const Key('habits-add'),
-            tooltip: 'Add habit',
+            tooltip: 'Add practice',
             onPressed: _addHabit,
             icon: const Icon(Icons.add_rounded),
           ),
@@ -154,7 +221,7 @@ class _HabitsViewState extends State<HabitsView> {
             padding: const EdgeInsets.fromLTRB(16, 12, 72, 110),
             children: [
               Text(
-                'HABITS',
+                'ROUTINES',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: PlenaraTheme.amber,
                   letterSpacing: 2.2,
@@ -162,17 +229,23 @@ class _HabitsViewState extends State<HabitsView> {
               ),
               const SizedBox(height: 5),
               Text(
-                'Repeat what matters, see the pattern',
+                'Make starting easier',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w300,
                 ),
               ),
               const SizedBox(height: 6),
               const Text(
-                'One-off commitments stay in Todos. Habits are practices you want to repeat and track.',
+                'Practices can fit your week. A smaller version, a rest day, and a fresh start all have a place.',
                 style: TextStyle(color: PlenaraTheme.quietInk),
               ),
               const SizedBox(height: 18),
+              if (widget.onOpenRoutines != null)
+                TextButton.icon(
+                  onPressed: widget.onOpenRoutines,
+                  icon: const Icon(Icons.play_circle_outline),
+                  label: const Text('Guided routines'),
+                ),
               if (active.isEmpty)
                 Card(
                   child: Padding(
@@ -188,7 +261,7 @@ class _HabitsViewState extends State<HabitsView> {
                           key: const Key('habits-empty-add'),
                           onPressed: _addHabit,
                           icon: const Icon(Icons.add_rounded),
-                          label: const Text('Track a habit'),
+                          label: const Text('Create a practice'),
                         ),
                       ],
                     ),
@@ -206,6 +279,19 @@ class _HabitsViewState extends State<HabitsView> {
                         await widget.session.recordHabitCheckIn(habit.id),
                       );
                     },
+                    onStart: () => _startPractice(habit),
+                    onMinimum: () async => _showResult(
+                      await widget.session.recordHabitCheckIn(
+                        habit.id,
+                        outcome: 'minimum',
+                      ),
+                    ),
+                    onSkip: () async => _showResult(
+                      await widget.session.recordHabitCheckIn(
+                        habit.id,
+                        outcome: 'skipped',
+                      ),
+                    ),
                     onEdit: () => _editHabit(habit),
                     onPause: () => _setActive(habit, false),
                     onDelete: () => _deleteHabit(habit),
@@ -240,6 +326,7 @@ class _HabitCard extends StatelessWidget {
   final HabitStatus habit;
   final DateTime today;
   final VoidCallback onCheckIn;
+  final VoidCallback onStart, onMinimum, onSkip;
   final VoidCallback onEdit;
   final VoidCallback onPause;
   final VoidCallback onDelete;
@@ -248,6 +335,9 @@ class _HabitCard extends StatelessWidget {
     required this.habit,
     required this.today,
     required this.onCheckIn,
+    required this.onStart,
+    required this.onMinimum,
+    required this.onSkip,
     required this.onEdit,
     required this.onPause,
     required this.onDelete,
@@ -278,7 +368,7 @@ class _HabitCard extends StatelessWidget {
                   if (value == 'delete') onDelete();
                 },
                 itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Edit habit')),
+                  PopupMenuItem(value: 'edit', child: Text('Adapt practice')),
                   PopupMenuItem(value: 'pause', child: Text('Pause')),
                   PopupMenuItem(value: 'delete', child: Text('Remove')),
                 ],
@@ -286,9 +376,34 @@ class _HabitCard extends StatelessWidget {
             ],
           ),
           Text(
-            '${habit.completedThisWeek} of ${habit.targetPerWeek} this week'
-            '${habit.currentStreakDays > 1 ? ' · ${habit.currentStreakDays}-day streak' : ''}',
+            '${habit.completedThisWeek} of ${habit.targetPerWeek} this week',
             style: const TextStyle(color: PlenaraTheme.quietInk),
+          ),
+          if (habit.cue.isNotEmpty) Text('When: ${habit.cue}'),
+          if (habit.minimumVersion.isNotEmpty)
+            Text('Small version: ${habit.minimumVersion}'),
+          if (habit.skippedToday) const Text('Rest chosen for today'),
+          if (!habit.opportunityToday &&
+              !habit.completedToday &&
+              !habit.skippedToday)
+            const Text('A flexible rest day; you can still choose to practice'),
+          Wrap(
+            spacing: 8,
+            children: [
+              TextButton(onPressed: onStart, child: const Text('Start')),
+              TextButton(
+                onPressed: habit.completedToday || habit.skippedToday
+                    ? null
+                    : onMinimum,
+                child: const Text('Smaller version'),
+              ),
+              TextButton(
+                onPressed: habit.completedToday || habit.skippedToday
+                    ? null
+                    : onSkip,
+                child: const Text('Skip today'),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           LinearProgressIndicator(
@@ -304,24 +419,36 @@ class _HabitCard extends StatelessWidget {
             children: [
               for (final (index, done) in habit.lastSevenDays.indexed)
                 Expanded(
-                  child: Column(
-                    children: [
-                      Icon(
-                        done ? Icons.circle : Icons.circle_outlined,
-                        size: 13,
-                        color: done
-                            ? PlenaraTheme.amber
-                            : PlenaraTheme.quietInk,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _weekday(index, today),
-                        style: const TextStyle(
-                          color: PlenaraTheme.quietInk,
-                          fontSize: 10,
+                  child: Tooltip(
+                    message:
+                        '${_weekday(index, today)}: ${habit.lastSevenOutcomes.isEmpty ? (done ? 'completed' : 'unknown') : habit.lastSevenOutcomes[index]}',
+                    child: Column(
+                      children: [
+                        Icon(
+                          habit.lastSevenOutcomes.isNotEmpty &&
+                                  habit.lastSevenOutcomes[index] == 'skipped'
+                              ? Icons.remove
+                              : habit.lastSevenOutcomes.isNotEmpty &&
+                                    habit.lastSevenOutcomes[index] == 'minimum'
+                              ? Icons.adjust
+                              : done
+                              ? Icons.circle
+                              : Icons.circle_outlined,
+                          size: 13,
+                          color: done
+                              ? PlenaraTheme.amber
+                              : PlenaraTheme.quietInk,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 3),
+                        Text(
+                          _weekday(index, today),
+                          style: const TextStyle(
+                            color: PlenaraTheme.quietInk,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               const SizedBox(width: 8),
@@ -352,14 +479,19 @@ String _weekday(int index, DateTime today) {
 class _HabitDraft {
   final String title;
   final int targetPerWeek;
-  const _HabitDraft(this.title, this.targetPerWeek);
+  final Map<String, Object?> fields;
+  const _HabitDraft(this.title, this.targetPerWeek, this.fields);
 }
 
 class _HabitEditor extends StatefulWidget {
   final String title;
   final int targetPerWeek;
-
-  const _HabitEditor({this.title = '', this.targetPerWeek = 7});
+  final Map<String, dynamic> fields;
+  const _HabitEditor({
+    this.title = '',
+    this.targetPerWeek = 7,
+    this.fields = const {},
+  });
 
   @override
   State<_HabitEditor> createState() => _HabitEditorState();
@@ -370,44 +502,94 @@ class _HabitEditorState extends State<_HabitEditor> {
     text: widget.title,
   );
   late int _target = widget.targetPerWeek;
+  late final _fields = {
+    for (final k in ['reason', 'cue', 'normalVersion', 'minimumVersion'])
+      k: TextEditingController(text: '${widget.fields[k] ?? ''}'),
+  };
+  late final Set<int> _days = '${widget.fields['preferredDays'] ?? ''}'
+      .split(',')
+      .map(int.tryParse)
+      .whereType<int>()
+      .toSet();
 
   @override
   void dispose() {
     _title.dispose();
+    for (final c in _fields.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text(widget.title.isEmpty ? 'Track a habit' : 'Edit habit'),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          key: const Key('habit-title'),
-          controller: _title,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'What do you want to repeat?',
+    title: Text(widget.title.isEmpty ? 'Create a practice' : 'Adapt practice'),
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            key: const Key('habit-title'),
+            controller: _title,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'What do you want to repeat?',
+            ),
           ),
-        ),
-        const SizedBox(height: 18),
-        const Text('Rhythm'),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 7,
-          children: [
-            for (final target in const [1, 3, 5, 7])
-              ChoiceChip(
-                key: Key('habit-target-$target'),
-                selected: _target == target,
-                onSelected: (_) => setState(() => _target = target),
-                label: Text(target == 7 ? 'Daily' : '$target× / week'),
+          for (final entry in _fields.entries)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: TextField(
+                controller: entry.value,
+                decoration: InputDecoration(
+                  labelText: switch (entry.key) {
+                    'reason' => 'Why this matters',
+                    'cue' => 'When would it fit?',
+                    'normalVersion' => 'Usual version',
+                    _ => 'Smallest useful version',
+                  },
+                ),
               ),
-          ],
-        ),
-      ],
+            ),
+          const SizedBox(height: 18),
+          const Text('Rhythm'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 7,
+            children: [
+              for (final target in const [1, 3, 5, 7])
+                ChoiceChip(
+                  key: Key('habit-target-$target'),
+                  selected: _target == target,
+                  onSelected: (_) => setState(() => _target = target),
+                  label: Text(target == 7 ? 'Daily' : '$target× / week'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text('Preferred opportunities (optional)'),
+          Wrap(
+            spacing: 4,
+            children: [
+              for (var d = 1; d <= 7; d++)
+                FilterChip(
+                  label: Text(
+                    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d - 1],
+                  ),
+                  selected: _days.contains(d),
+                  onSelected: (yes) => setState(() {
+                    if (yes) {
+                      _days.add(d);
+                    } else {
+                      _days.remove(d);
+                    }
+                  }),
+                ),
+            ],
+          ),
+        ],
+      ),
     ),
     actions: [
       TextButton(
@@ -418,9 +600,15 @@ class _HabitEditorState extends State<_HabitEditor> {
         key: const Key('habit-save'),
         onPressed: () {
           if (_title.text.trim().isEmpty) return;
-          Navigator.pop(context, _HabitDraft(_title.text.trim(), _target));
+          Navigator.pop(
+            context,
+            _HabitDraft(_title.text.trim(), _target, {
+              for (final e in _fields.entries) e.key: e.value.text.trim(),
+              'preferredDays': (_days.toList()..sort()).join(','),
+            }),
+          );
         },
-        child: const Text('Save habit'),
+        child: const Text('Save practice'),
       ),
     ],
   );

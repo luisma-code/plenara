@@ -16,6 +16,8 @@ import 'credential_store.dart';
 import 'data_location.dart';
 import 'presence_shell.dart';
 import 'voice_setup.dart';
+import 'guide_settings.dart';
+import 'package:plenara/session.dart';
 
 /// The settings surface (Spec 07 §2.6): view the data folder + diagnostics log path, and connect
 /// the BYOK Anthropic key in-app. Because Anthropic offers NO third-party OAuth / subscription /
@@ -26,6 +28,7 @@ import 'voice_setup.dart';
 /// [openUrl] and [validateKey] are injectable for tests.
 class SettingsView extends StatefulWidget {
   final String? configPath;
+  final Session? guideSession;
   final Future<void> Function(String url)? openUrl;
   final Future<CloudResult<String>> Function(String key)? validateKey;
   final DiagnosticPolicy? diagnosticPolicy;
@@ -39,6 +42,7 @@ class SettingsView extends StatefulWidget {
   const SettingsView({
     super.key,
     this.configPath,
+    this.guideSession,
     this.openUrl,
     this.validateKey,
     this.diagnosticPolicy,
@@ -788,6 +792,11 @@ class _SettingsViewState extends State<SettingsView> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 76, 16),
               children: [
+                GuideSettingsCard(
+                  session: widget.guideSession,
+                  configPath: widget.configPath,
+                ),
+                const SizedBox(height: 16),
                 const Text(
                   'Data folder',
                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -915,6 +924,7 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  key: const Key('anthropic-api-key'),
                   controller: _keyCtrl,
                   obscureText: true,
                   decoration: const InputDecoration(
@@ -992,7 +1002,7 @@ class _SettingsViewState extends State<SettingsView> {
                   controlAffinity: ListTileControlAffinity.leading,
                   title: const Text('Free mode (offline only)'),
                   subtitle: const Text(
-                    'Turns off every cloud feature — no Claude calls, no spend. Tasks, reminders, '
+                    'Turns off every cloud feature — no provider calls, no spend. Tasks, reminders, '
                     'people, logging and search all keep working on-device. Restart Plenara to apply.',
                   ),
                   value: _cfg.freeTier,

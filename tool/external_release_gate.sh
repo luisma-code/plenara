@@ -4,7 +4,7 @@
 # without this gate and its generated revision-bound manifest.
 set -euo pipefail
 
-unset ANTHROPIC_API_KEY CARTESIA_API_KEY ELEVENLABS_API_KEY PLENARA_DATA PLENARA_FREE || true
+unset OPENAI_API_KEY ANTHROPIC_API_KEY CARTESIA_API_KEY ELEVENLABS_API_KEY PLENARA_DATA PLENARA_FREE || true
 ROOT="$(git rev-parse --show-toplevel)"
 ALLOW_DIRTY=()
 if [ "${1:-}" = "--allow-dirty" ]; then
@@ -91,7 +91,7 @@ scan_forbidden "$IOS_AOT"
 rg -aF -q 'Diagnostics capture and raw export are disabled in this external build.' "$IOS_AOT"
 
 echo "== tracked secret and release-placeholder scan =="
-if git -C "$ROOT" grep -nE 'sk-ant-[A-Za-z0-9]{20}' -- . >/dev/null 2>&1; then
+if git -C "$ROOT" grep -nE 'sk-(ant-|proj-)?[A-Za-z0-9_-]{20}' -- . >/dev/null 2>&1; then
   echo '!! secret-shaped value in tracked files' >&2
   exit 1
 fi

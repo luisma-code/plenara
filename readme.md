@@ -1,26 +1,10 @@
 # Plenara
 
-Plenara is a voice-first living planner and relational assistant. Relationships,
-one-off Todos, and tracked Habits are its three primary workspaces; Plan, Library,
-and History remain directly reachable secondary tools. Free-form capture and
-visible state work together so a person can compare, sequence, revise, and revisit
-plans without making voice carry persistent state alone. Plena—the warm particle
-presence—moves between a full conversational form, a compact planner collaborator,
-and a detail ember.
+Plenara helps Luis make space for relationships, follow through on commitments, and build routines that fit his life. Today brings those three goals together; People, Tasks, and Routines provide direct access. Labeled Talk to Plena and Message Plena controls follow roots and detail pages into one resumable conversation.
 
-Relationships opens on a bounded Focus view instead of the full address book.
-Urgency chooses which eight due people enter that set, while every displayed list
-is alphabetized by name. Labeled, color-supported health badges show who is healthy,
-due soon, due today, overdue (including by how many days), or not tracked. Global
-search plus combinable circle and Local/Remote filters reach everyone. Visible
-single-person and bulk Organize actions maintain either axis; circle changes set
-contact goals, while location changes tailor suggestions toward making plans in
-person or calling/FaceTiming.
+The optional GPT guide reads relevant planner context and proposes editable, undoable updates. It uses a separate secure OpenAI API key, explicit context consent and a persisted monthly spending limit. Local commands and direct touch actions remain available offline. No recorded relationship update means unknown. Practices support a reason, cue, normal/minimum versions, flexible opportunities, and deliberate skips.
 
-Common planning and routing run locally. Optional Anthropic features use the
-user's own API key and disclose the record categories sent for each feature.
-Records are readable JSON files in a user-selected folder; the execution journal
-and other device state remain local. See [the privacy policy](PRIVACY.md).
+User-selected Calendar/Reminders evidence, pasted text and Shortcuts captures reduce bookkeeping without automatic message surveillance. Calendar entries do not prove attendance. Notifications use private, silent copy and open the relevant conversation. Planner files remain readable JSON in the chosen folder; device history stays local. See [the privacy policy](PRIVACY.md).
 
 ## Repository
 

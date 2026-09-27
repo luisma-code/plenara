@@ -1,3 +1,12 @@
+## Guiding workflow redesign (2026-09-26)
+
+- Luis approved the Astra first-principles review and requested implementation. The current shell opens Today with People, Tasks and Routines roots; a navigator-level labeled Talk/Message entry follows detail routes. Conversation uses the same voice/text controller and a local resumable ledger.
+- The optional OpenAI Responses guide is distinct from Anthropic command/authoring. Its secure key, explicit context consent and persisted monthly reservation gate are configured in Settings → Plena guide. No paid live inference was authorized or run during implementation; the default budget is zero.
+- Mixed model updates require one editable atomic receipt with restart/replay protection and undo. Unknown contact history is neutral; acknowledgement reduces suggestions without inventing an interaction. Practices support cues, normal/minimum versions, chosen weekdays, minimum completion and explicit skip.
+- Selected paste, Calendar/Reminders browsing and App Shortcuts prepare reviewable drafts. Pending Shortcut captures use unlock-only device keychain storage. No Messages/call-history monitor is installed.
+- Release verification: full precheck ALL GREEN (2,073 engine, 183 app, 4 external-channel, 8 macOS render checks); 8 iOS render checks, 1 native source bridge check, and 4 Swift native tests passed. Expressive dispatch, receipt-person visibility and keychain overwrite guards have demonstrated red/green calibrations. Short simulator/host RSS windows showed no ballooning; no slow-leak or device-resource claim.
+- Current implementation and evidence: [implementation report](reviews/2026-09-26-guide-implementation.md), [discussion](reviews/2026-09-26-guide-discussion.md), [Spec 17](planning/specs/17-living-planner.md). The dated Astra review preserves pre-redesign evidence.
+
 # Plenara — Work Capsule
 
 _Current working memory. Last updated 2026-09-10 for visible relationship health._

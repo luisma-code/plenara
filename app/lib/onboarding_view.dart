@@ -5,7 +5,7 @@ import 'credential_store.dart';
 import 'build_channel.dart';
 import 'plena.dart';
 import 'plenara_theme.dart';
-import 'settings_view.dart';
+import 'guide_settings.dart';
 
 /// Welcome / connect nudge (task #14). Shown whenever no API key is set — i.e. on first run AND on
 /// later launches until the user connects — so the guided Connect flow is one tap away instead of
@@ -24,12 +24,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   // Load once (loadConfig reads — and on first run WRITES — the config file; doing it in build()
   // would be filesystem I/O on every frame). Refresh only after returning from Connect.
   late PlenaraConfig _cfg = loadAppConfig(configPath: widget.configPath);
-  bool get _connected => _cfg.apiKey != null;
+  bool get _connected => activeGuideKey != null && _cfg.guideMonthlyLimit > 0;
 
   Future<void> _openConnect() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SettingsView(configPath: widget.configPath),
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Connect Plena')),
+          body: SingleChildScrollView(
+            child: GuideSettingsCard(configPath: widget.configPath),
+          ),
+        ),
       ),
     );
     if (mounted) {
@@ -102,10 +107,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 Expanded(
                                   child: Text(
                                     connected
-                                        ? 'Claude is connected. Your key stays in secure system storage; requested cloud features send only the context they disclose.'
+                                        ? 'Plena guide is connected. Your key stays in secure system storage; requested cloud features send only the context they disclose.'
                                         : isExternalBuild
-                                        ? 'Your records stay in your chosen data folder. Offline planning sends nothing to Anthropic, and this build stores no raw diagnostics.'
-                                        : 'Your records stay in your chosen data folder. This internal build keeps conversation diagnostics on this device unless you explicitly share them.',
+                                        ? 'Your records stay in your chosen data folder. Offline planning sends nothing to cloud providers, and this build stores no raw diagnostics.'
+                                        : 'Your records stay in your chosen data folder. This internal build keeps native speech diagnostics on this device unless you explicitly share them.',
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: PlenaraTheme.quietInk,
@@ -127,12 +132,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       child: FilledButton.icon(
                         onPressed: _openConnect,
                         icon: const Icon(Icons.link_rounded),
-                        label: const Text('Connect Claude'),
+                        label: const Text('Connect Plena guide'),
                       ),
                     )
                   else
                     const Text(
-                      'Claude is connected ✓',
+                      'Plena guide is connected ✓',
                       style: TextStyle(color: Color(0xFF9FC59E)),
                     ),
                   const SizedBox(height: 6),

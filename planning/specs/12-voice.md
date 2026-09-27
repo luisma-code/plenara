@@ -1,5 +1,10 @@
 # Spec 12 — Voice
 
+## Current everyday entrance — 2026-09-26
+
+Visible Talk to Plena and Message Plena open one conversation from roots and details. Typing remains available while voice is enabled; muting replies does not control composer discovery. Final speech uses `Session.converse` in everyday conversation, and routine controls retain the local engine. The explicit Finish/Cancel, on-device speech and background cancellation invariants below remain. Guide turns omit content from application turn logs; native internal speech hypotheses still follow the separate Spec 11 policy. Optional guide context transmission follows Spec 08, separately from Anthropic consent. Audio is never sent to OpenAI by the guide.
+
+
 > **⚠ AMENDED 2026-07-28 (`G-52`) — capture is USER-DELIMITED.** Automatic end-of-speech detection
 > is REMOVED on every engine. Tap to start, tap again to stop-and-send; the ✕ (or mute) discards.
 > This supersedes: §3.1's push-to-talk-as-primary (PTT is dropped for touch platforms — Luis
@@ -450,7 +455,7 @@ sole authority for retention/export, and raw audio remains forbidden in every ch
 A final transcript is *text*, and it flows where the user's words are supposed to flow. Stated plainly:
 
 - **On-device:** it enters the durable conversation/action ledger (Spec 17), the device-local diagnostic log according to Spec 11's build channel (content-bearing and manually raw-exportable in internal dogfood; absent from external raw logs), and — via dispatch — whatever records the routed skill writes. The journal transcript is the record body and follows Spec 05 §11's stated sync posture.
-- **Off-device, exactly one path:** on the paid tier, a *novel* phrasing's final transcript is sent **verbatim** to Anthropic as the residual-routing utterance, under the standing tier-(a) consent granted at key connection, with the free/offline tiers never sending it — exactly as specified in Spec 08 §5.2/§5.6. **Voice changes nothing here and adds no new consent**: the transcript's exposure is identical whether the words were spoken or typed (P2.2, one pipeline). The onboarding sentence Spec 08 §5.6 mandates ("it will send that sentence — and only it") is the disclosure; this spec's contribution is that *audio* is categorically not part of that sentence.
+- **Off-device:** connected GPT guide turns send final text and disclosed bounded planner context to OpenAI under separate guide consent and budget (Spec 08). Explicit local command/authoring features retain their Anthropic boundary where invoked. Offline mode sends neither. Audio remains on-device; typed and final spoken text share the same guide path.
 - **Future vocabulary hints (§4.5)** must remain on-device. The current recognizer assembles and
   sends no contact, capability, or corpus bias list.
 

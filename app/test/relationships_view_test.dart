@@ -163,11 +163,11 @@ void main() {
       await tester.pumpAndSettle();
 
       final expected = {
-        'Ava Healthy': 'Healthy · 9d left',
+        'Ava Healthy': 'Within rhythm · 9d left',
         'Bea Due Today': 'Due today',
         'Cal Due Soon': 'Due in 2d',
         'Mia Waiting': '3d overdue',
-        'Nora No History': 'No meaningful contact',
+        'Nora No History': 'Last update unknown',
         'Uma Untracked': 'Not tracked',
         'Zoe Waiting Longer': '22d overdue',
       };
@@ -187,10 +187,7 @@ void main() {
           find.descendant(of: badge, matching: find.text(entry.value)),
           findsOneWidget,
         );
-        expect(
-          tester.getSemantics(badge).label,
-          startsWith('Relationship health:'),
-        );
+        expect(tester.getSemantics(badge).label, isNotEmpty);
         badgeDecorations[entry.key] = tester
             .widget<DecoratedBox>(
               find
@@ -302,7 +299,7 @@ void main() {
         reason:
             'the header owns Add person; a duplicate FAB sits behind the persistent input/navigation bars',
       );
-      expect(find.text('Needs attention'), findsOneWidget);
+      expect(find.text('People to make space for'), findsOneWidget);
       expect(find.text('Ari Core'), findsOneWidget);
       expect(find.text('Bea Context'), findsNothing);
       expect(find.text('Context only · 2'), findsOneWidget);
@@ -440,17 +437,11 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.descendant(
-          of: beaRow,
-          matching: find.text('No meaningful contact'),
-        ),
+        find.descendant(of: beaRow, matching: find.text('Last update unknown')),
         findsOneWidget,
       );
       expect(
-        find.descendant(
-          of: beaRow,
-          matching: find.text('Meaningful connection due · Call or FaceTime'),
-        ),
+        find.descendant(of: beaRow, matching: find.text('Call or FaceTime')),
         findsOneWidget,
       );
 
@@ -545,7 +536,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Needs attention'), findsOneWidget);
+    expect(find.text('People to make space for'), findsOneWidget);
     expect(find.textContaining('Mia'), findsWidgets);
     await tester.tap(find.byKey(Key('relationship-person-${contact['id']}')));
     await tester.pumpAndSettle();

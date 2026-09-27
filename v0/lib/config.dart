@@ -46,6 +46,8 @@ class PlenaraConfig {
   /// system's Reduce Motion preference. State remains legible as a still form.
   final bool stillPresence;
   final bool dataFolderSelected;
+  final bool welcomeDismissed;
+  final double guideMonthlyLimit;
   PlenaraConfig(this.dataDir, this.apiKey,
       {this.freeTier = false,
       this.apiKeySource = ConfigValueSource.absent,
@@ -54,7 +56,9 @@ class PlenaraConfig {
       this.micHintsShown = 0,
       this.confirmCloudSpend = false,
       this.stillPresence = false,
-      this.dataFolderSelected = false});
+      this.dataFolderSelected = false,
+      this.guideMonthlyLimit = 0,
+      this.welcomeDismissed = false});
 }
 
 /// App-injected home base. Desktop leaves this null — USERPROFILE/HOME are set. iOS and Android
@@ -156,7 +160,11 @@ PlenaraConfig loadConfig(
       micHintsShown: mh is int ? mh : 0,
       confirmCloudSpend: cs is bool ? cs : false,
       stillPresence: sp is bool ? sp : false,
-      dataFolderSelected: dfs);
+      dataFolderSelected: dfs,
+      welcomeDismissed: cfg['welcomeDismissed'] == true,
+      guideMonthlyLimit: cfg['guideMonthlyLimit'] is num
+          ? (cfg['guideMonthlyLimit'] as num).toDouble()
+          : 0);
 }
 
 /// Persist config edits from the in-app settings surface (Spec 07 §2.6): merges into the
@@ -173,6 +181,8 @@ void saveConfig(
     bool? confirmCloudSpend,
     bool? stillPresence,
     bool? dataFolderSelected,
+    double? guideMonthlyLimit,
+    bool? welcomeDismissed,
     String? configPath}) {
   final f = File(configPath ?? defaultConfigPath());
   Map<String, dynamic> cfg = {};
@@ -184,6 +194,8 @@ void saveConfig(
   // Only persist dataDir when explicitly given — a caller updating just a pref (e.g. the mute
   // toggle) must NOT bake a resolved PLENARA_DATA env override in as the permanent dataDir.
   if (dataDir != null) cfg['dataDir'] = dataDir;
+  if (guideMonthlyLimit != null) cfg['guideMonthlyLimit'] = guideMonthlyLimit;
+  if (welcomeDismissed != null) cfg['welcomeDismissed'] = welcomeDismissed;
   if (apiKey != null) cfg['apiKey'] = apiKey;
   if (freeTier != null)
     cfg['freeTier'] = freeTier; // null leaves the mode untouched
@@ -284,7 +296,8 @@ void ensureSeeded(String dataDir, String sourceDir) {
                   encodedInstalledVersion is! int) &&
               !backup.existsSync()) {
             backup.parent.createSync(recursive: true);
-            _copyAtomic(target, backup.path); // a torn rollback point is no rollback point
+            _copyAtomic(target,
+                backup.path); // a torn rollback point is no rollback point
           }
           if (shippedVersion > installedVersion) {
             writeJsonAtomic(target, shipped);

@@ -42,6 +42,7 @@ const fileTiers = <String, CoverageTier>{
   'embed.dart': CoverageTier.productLogic,
   'cron.dart': CoverageTier.productLogic,
   'claude.dart': CoverageTier.transport,
+  'guide.dart': CoverageTier.transport,
 };
 
 /// Operator/temporary integration code excluded until replay recording is split

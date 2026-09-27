@@ -1,6 +1,6 @@
 # Plenara: from keeping records to helping Luis live well
 
-**September 26, 2026 · Design proposal for Luis's review.** This is one proposal, not an approved replacement specification or an implemented redesign. Current behavior remains governed by [Spec 17](../planning/specs/17-living-planner.md). Reviewed source revision: `787ab88`.
+**September 26, 2026 · Approved by Luis: “Please implement the changes suggested by the Astra design review.”** This dated review preserves the observed pre-redesign behavior and rationale. Current implementation authority is [Spec 17](../planning/specs/17-living-planner.md). Reviewed source revision: `787ab88`.
 
 ## Recommendation
 

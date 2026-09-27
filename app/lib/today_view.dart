@@ -87,7 +87,7 @@ class TodayBoard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'TODOS',
+                            'TASKS',
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
                                   color: PlenaraTheme.amber,
@@ -112,7 +112,7 @@ class TodayBoard extends StatelessWidget {
                     const SizedBox(width: 4),
                     IconButton(
                       key: const Key('todo-add'),
-                      tooltip: 'Add one-off todo',
+                      tooltip: 'Add task',
                       onPressed: onAddTodo,
                       icon: const Icon(Icons.add_task_rounded),
                     ),
@@ -740,7 +740,7 @@ class _HabitsDueCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Habits for today',
+                  'Practices for today',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),

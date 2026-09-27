@@ -2,7 +2,7 @@
 
 **Status:** Active v0.5 — audited against the wired Flutter UI 2026-09-07. Owns the
 implemented visual language and the explicitly marked generic-rendering destinations; Spec 17 owns
-Relationships/Todos/Habits composition, secondary Plan/Library/History tools, first-party domain
+Today/People/Tasks/Routines composition, secondary Plan/Library/History tools, first-party domain
 workspaces, and adaptive Plena hierarchy. Voice and direct manipulation are peers.
 **Depends on:** Research doc v0.10 (§2.1–2.3, §4.5, §6.2, §12.7, §15.1); Spec 01 — Meta-Schema & Type System (§3 value types, §4.1–4.3 presentation object, §4.5 owned/append, §12.3 seed types); Spec 02 — Skill DSL (§7.1 `confirmationText` via `format`); Spec 03 — NLU / Intent (§2.4, §2.7, §4.3 thresholds, §6.3); Spec 04 — Architecture (§3.6 TurnEvents, §3.6a ConfirmationView, §3.9 Review Feed, §3.10 GenerativeService, §3.11 undo window, §3.12 AttentionSurface, §4.7 detached operations); Spec 05 — Functional (§2 notation, §3 interaction contract, §13 subtitle overlay, §14 authoring preview, §24 deletion).
 **Blocks:** no shipped surface. Unimplemented archetypes and visual destinations below require their

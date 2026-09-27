@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plenara_app/main.dart';
+import 'package:plenara_app/credential_store.dart';
 import 'package:plenara_app/onboarding_view.dart';
 import 'package:plenara_app/plena.dart';
 import 'package:plenara_app/plenara_theme.dart';
@@ -11,7 +12,9 @@ void main() {
   String cfg({String apiKey = ''}) {
     final dir = Directory.systemTemp.createTempSync('plenara_onb_');
     final path = '${dir.path}/config.json';
-    File(path).writeAsStringSync('{"dataDir": "X:/data", "apiKey": "$apiKey"}');
+    File(path).writeAsStringSync(
+      '{"dataDir": "X:/data", "apiKey": "$apiKey", "guideMonthlyLimit":10}',
+    );
     return path;
   }
 
@@ -43,7 +46,7 @@ void main() {
 
       expect(find.text('Meet Plena'), findsOneWidget);
       expect(find.byType(PresenceView), findsOneWidget);
-      expect(find.text('Connect Claude'), findsOneWidget);
+      expect(find.text('Connect Plena guide'), findsOneWidget);
       expect(find.text('Continue offline for now'), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'no clipping or overflow');
 
@@ -58,6 +61,8 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(320, 568));
     addTearDown(() => tester.binding.setSurfaceSize(null));
+    activeGuideKey = 'test-only-openai';
+    addTearDown(() => activeGuideKey = null);
     await tester.pumpWidget(
       welcome(
         configPath: cfg(apiKey: 'test-key'),
@@ -65,8 +70,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Claude is connected ✓'), findsOneWidget);
-    expect(find.text('Connect Claude'), findsNothing);
+    expect(find.text('Plena guide is connected ✓'), findsOneWidget);
+    expect(find.text('Connect Plena guide'), findsNothing);
     expect(find.text('Continue to Today'), findsOneWidget);
   });
 
@@ -80,7 +85,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Connect Claude'), findsOneWidget);
+    expect(find.text('Connect Plena guide'), findsOneWidget);
     expect(find.text('Continue offline for now'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

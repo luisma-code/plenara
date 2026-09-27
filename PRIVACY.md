@@ -1,6 +1,6 @@
 # Plenara Privacy Policy
 
-Effective August 17, 2026
+Effective September 26, 2026
 
 Plenara is a personal, voice-first planner. It has no Plenara account, advertising,
 tracking, analytics service, or Plenara-operated server.
@@ -12,7 +12,7 @@ files in the folder you choose. Early versions do not encrypt those record files
 you choose an iCloud Drive, OneDrive, Google Drive, or another synchronized folder,
 that provider receives and stores the files under your account and its privacy terms.
 
-Your Anthropic API key is stored in the operating system's secure credential store.
+Your Anthropic and OpenAI API keys are stored in the operating system's secure credential store.
 Device-local execution history and diagnostics are not placed in your synchronized
 data folder.
 
@@ -35,6 +35,14 @@ only the record categories disclosed for that feature in Plenara's Settings. Cur
 features exclude journal entries. Anthropic processes those requests under its API
 terms and bills your Anthropic account. Offline mode makes no Anthropic requests.
 
+## GPT guide and selected sources
+
+The optional Plena guide uses your separate OpenAI API key and monthly spending limit. Sending a conversation sends recent guide dialogue and relevant people, facts, interactions, tasks, reminders, practices and guided routines. Journal and mood records, contact phone/email/system identifiers, and diagnostics are excluded from guide tools. A user-written note or pasted text can still contain sensitive information. OpenAI bills your API account separately from ChatGPT/Codex. Requests use `store:false`; provider abuse-monitoring retention can still apply. Zero budget or Disconnect pauses requests.
+
+Calendar and Reminders browsing needs separate iOS permission. Browsing stays local; only an item you select and then send is included in a conversation. Nothing is automatically imported, written back, or assumed completed. Paste selected text or use Capture with Plenara in Shortcuts; the pending Shortcut draft uses this device’s unlock-only keychain. Plenara does not read blanket Messages history or iPhone call logs. Revoke source permission in iOS Settings.
+
+The device-local conversation ledger retains up to 250 turns as readable JSON under the existing local storage model. Guide turns omit input/reply/record content from diagnostic turn traces. Internal native speech hypotheses have the separately disclosed diagnostic boundary below. Notifications omit names and private reminder text on the lock screen and are silent by default.
+
 ## Diagnostics
 
 Development and single-user internal builds keep content-bearing diagnostic logs on
@@ -52,7 +60,7 @@ remote crash-reporting service, or analytics endpoint.
 
 ## Deletion and control
 
-You can disconnect Anthropic in Settings, choose a different data folder, delete the
+You can disconnect OpenAI and Anthropic in Settings, choose a different data folder, delete the
 JSON files in your chosen folder, and uninstall Plenara to remove its device-local
 state. Copies held by a synchronization provider must be managed through that
 provider. A diagnostics share draft is controlled by the destination you select in

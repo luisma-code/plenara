@@ -1,5 +1,10 @@
 # Spec 16 — Routines & Guided Movement
 
+## Routines root and repeated practices — 2026-09-26
+
+The Routines root offers repeated practices and a doorway to guided sequences. These remain separate types. Habit v2 stores optional reason, cue, normalVersion, minimumVersion and preferredDays (comma-separated ISO weekday numbers). Without chosen days, weekly opportunities are spaced across the week. Habit-checkin v2 adds completed/minimum/skipped outcome; v1 records migrate to completed. A minimum version counts toward chosen weekly progress, deliberate skip does not, and silence is unknown. Corrections edit the same day’s record. The UI supports Start, Done, Smaller version and Skip, without a daily streak verdict. The sequence player/figures and run semantics below are unchanged.
+
+
 _Status: Active v0.2, audited 2026-09-07 and implemented. The figure decision is grounded in a measured spike rather
 than taste (§2); the player now renders explicit labeled A/B instructional stills and freezes the
 three animated catalogue payloads on frame one._

@@ -539,6 +539,14 @@ class _RecordDetailSheet extends StatefulWidget {
 }
 
 class _RecordDetailSheetState extends State<_RecordDetailSheet> {
+  String? _previousGuideFocus;
+  @override
+  void initState() {
+    super.initState();
+    _previousGuideFocus = widget.session.guideFocusId;
+    widget.session.guideFocusId = widget.recordId;
+  }
+
   String?
   _editing; // the attribute name currently in edit mode (text/number only)
   String?
@@ -549,6 +557,7 @@ class _RecordDetailSheetState extends State<_RecordDetailSheet> {
 
   @override
   void dispose() {
+    widget.session.guideFocusId = _previousGuideFocus;
     _ctrl.dispose();
     super.dispose();
   }

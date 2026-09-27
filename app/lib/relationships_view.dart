@@ -7,6 +7,7 @@ import 'plenara_theme.dart';
 import 'presence_shell.dart';
 import 'relationship_contacts.dart';
 import 'undo_feedback.dart';
+import 'guide_view.dart';
 
 class RelationshipsView extends StatefulWidget {
   final Session session;
@@ -254,7 +255,14 @@ class _RelationshipsViewState extends State<RelationshipsView> {
       widget.session.now,
     );
     final attention = statuses
-        .where((status) => status.needsContact)
+        .where(
+          (status) =>
+              status.needsContact ||
+              (status.health == RelationshipHealth.noHistory &&
+                  !status.acknowledged &&
+                  status.engagement == RelationshipEngagement.active &&
+                  status.circle != RelationshipCircle.context),
+        )
         .toList(growable: false);
     final normalizedQuery = _query.trim().toLowerCase();
     final searchResults = normalizedQuery.isEmpty
@@ -295,7 +303,7 @@ class _RelationshipsViewState extends State<RelationshipsView> {
         ? relationshipCircleLabel(_selectedCircle!)
         : _showAllPeople
         ? 'All people'
-        : 'Needs attention';
+        : 'People to make space for';
     final subtitle = normalizedQuery.isNotEmpty
         ? '${searchResults.length} ${searchResults.length == 1 ? 'person' : 'people'} found across every circle. Alphabetized by name.'
         : _selectedProximity != null
@@ -304,7 +312,7 @@ class _RelationshipsViewState extends State<RelationshipsView> {
         ? _circleDescription(_selectedCircle!)
         : _showAllPeople
         ? 'Everyone, alphabetized by name.'
-        : 'Selected by relationship urgency, alphabetized by name.';
+        : 'Invitations to connect, based on your chosen rhythms. Missing updates stay unknown.';
     final circleCounts = <RelationshipCircle, int>{
       for (final circle in RelationshipCircle.values)
         circle: statuses
@@ -360,14 +368,15 @@ class _RelationshipsViewState extends State<RelationshipsView> {
         '$totalPeople ${totalPeople == 1 ? 'person' : 'people'}';
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Relationships'),
+        title: const Text('People'),
         actions: [
-          IconButton.filledTonal(
-            key: const Key('relationships-voice'),
-            tooltip: 'Talk to Plena',
-            onPressed: widget.onVoice,
-            icon: const Icon(Icons.mic_none_rounded),
-          ),
+          if (widget.onVoice != null)
+            IconButton.filledTonal(
+              key: const Key('relationships-voice'),
+              tooltip: 'Talk to Plena',
+              onPressed: widget.onVoice,
+              icon: const Icon(Icons.mic_none_rounded),
+            ),
           IconButton(
             key: const Key('relationships-import'),
             tooltip: 'Import from Contacts',
@@ -410,7 +419,7 @@ class _RelationshipsViewState extends State<RelationshipsView> {
               ),
               const SizedBox(height: 4),
               Text(
-                '$peopleLabel · ${attention.length} need attention',
+                '$peopleLabel · ${attention.length} connection opportunities',
                 style: const TextStyle(color: PlenaraTheme.quietInk),
               ),
               const SizedBox(height: 14),
@@ -952,6 +961,14 @@ _RelationshipHealthVisual _relationshipHealthVisual(RelationshipStatus status) {
   const healthy = Color(0xFF9FC59E);
   const approaching = Color(0xFFD8B56C);
   const overdue = Color(0xFFE9A58B);
+  if (status.acknowledged) {
+    return const _RelationshipHealthVisual(
+      label: 'Recently updated',
+      semanticLabel: 'You said you caught up recently',
+      color: PlenaraTheme.quietInk,
+      icon: Icons.check_rounded,
+    );
+  }
   if (status.health == RelationshipHealth.untracked) {
     return const _RelationshipHealthVisual(
       label: 'Not tracked',
@@ -961,22 +978,18 @@ _RelationshipHealthVisual _relationshipHealthVisual(RelationshipStatus status) {
     );
   }
   if (status.health == RelationshipHealth.noHistory) {
-    final meaningful = status.need == RelationshipNeed.meaningful;
-    return _RelationshipHealthVisual(
-      label: meaningful ? 'No meaningful contact' : 'No contact logged',
-      semanticLabel: meaningful
-          ? 'Relationship health: meaningful contact needed, no meaningful contact logged'
-          : 'Relationship health: contact needed, no contact logged',
-      color: overdue,
-      icon: Icons.priority_high_rounded,
+    return const _RelationshipHealthVisual(
+      label: 'Last update unknown',
+      semanticLabel: 'Last update unknown; no conclusion about contact',
+      color: PlenaraTheme.quietInk,
+      icon: Icons.help_outline_rounded,
     );
   }
   if (status.urgencyDays < 0) {
     final days = -status.urgencyDays;
     return _RelationshipHealthVisual(
       label: '${days}d overdue',
-      semanticLabel:
-          'Relationship health: contact needed, ${_dayCount(days)} overdue',
+      semanticLabel: 'Recorded cadence: ${_dayCount(days)} overdue',
       color: overdue,
       icon: Icons.history_rounded,
     );
@@ -984,7 +997,7 @@ _RelationshipHealthVisual _relationshipHealthVisual(RelationshipStatus status) {
   if (status.urgencyDays == 0) {
     return const _RelationshipHealthVisual(
       label: 'Due today',
-      semanticLabel: 'Relationship health: contact due today',
+      semanticLabel: 'Recorded cadence: contact due today',
       color: PlenaraTheme.amber,
       icon: Icons.notifications_active_outlined,
     );
@@ -996,15 +1009,15 @@ _RelationshipHealthVisual _relationshipHealthVisual(RelationshipStatus status) {
     return _RelationshipHealthVisual(
       label: 'Due in ${status.urgencyDays}d',
       semanticLabel:
-          'Relationship health: due in ${_dayCount(status.urgencyDays)}',
+          'Recorded cadence: due in ${_dayCount(status.urgencyDays)}',
       color: approaching,
       icon: Icons.schedule_rounded,
     );
   }
   return _RelationshipHealthVisual(
-    label: 'Healthy · ${status.urgencyDays}d left',
+    label: 'Within rhythm · ${status.urgencyDays}d left',
     semanticLabel:
-        'Relationship health: healthy, ${_dayCount(status.urgencyDays)} until the next contact goal',
+        'Within chosen rhythm, ${_dayCount(status.urgencyDays)} until the next contact goal',
     color: healthy,
     icon: Icons.check_circle_outline_rounded,
   );
@@ -1013,7 +1026,9 @@ _RelationshipHealthVisual _relationshipHealthVisual(RelationshipStatus status) {
 String _dayCount(int days) => '$days ${days == 1 ? 'day' : 'days'}';
 
 String _relationshipRowContext(RelationshipStatus status) {
-  if (status.needsContact) return _suggestionLine(status);
+  if (status.needsContact || status.health == RelationshipHealth.noHistory) {
+    return _suggestionLine(status);
+  }
   if (status.lastTouchAt == null) return _statusLine(status);
   final last = _friendlyDate(_isoDate(status.lastTouchAt!));
   final medium = _mediumLabel(status.lastTouchMedium ?? 'interaction');
@@ -1122,6 +1137,20 @@ class PersonRelationshipView extends StatefulWidget {
 }
 
 class _PersonRelationshipViewState extends State<PersonRelationshipView> {
+  String? _previousFocus;
+  @override
+  void initState() {
+    super.initState();
+    _previousFocus = widget.session.guideFocusId;
+    widget.session.guideFocusId = widget.contactId;
+  }
+
+  @override
+  void dispose() {
+    widget.session.guideFocusId = _previousFocus;
+    super.dispose();
+  }
+
   RelationshipLauncher get _launcher =>
       widget.launcher ?? SystemRelationshipLauncher();
 
@@ -1502,6 +1531,25 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
+                  TextButton(
+                    onPressed: () async {
+                      _showResult(
+                        await widget.session.acknowledgeRelationship(
+                          widget.contactId,
+                        ),
+                      );
+                    },
+                    child: const Text('We already caught up'),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => openPlenaConversation(
+                      context,
+                      widget.session,
+                      focusId: widget.contactId,
+                    ),
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: const Text('Ask Plena'),
+                  ),
                   FilledButton.tonalIcon(
                     key: const Key('log-interaction'),
                     onPressed: _logInteraction,
@@ -2201,7 +2249,7 @@ String _statusLine(RelationshipStatus? status) {
         : '${_engagementLabel(status?.engagement ?? RelationshipEngagement.active)} · history only';
   }
   if (status.lastTouchAt == null) {
-    return 'No interaction logged · ${_goalSummary(status)}';
+    return 'Last update unknown · ${_goalSummary(status)}';
   }
   final last = _friendlyDate(_isoDate(status.lastTouchAt!));
   final medium = _mediumLabel(status.lastTouchMedium ?? 'interaction');
@@ -2209,6 +2257,9 @@ String _statusLine(RelationshipStatus? status) {
 }
 
 String _suggestionLine(RelationshipStatus status) {
+  if (status.health == RelationshipHealth.noHistory) {
+    return relationshipProximityGuidance(status.proximity);
+  }
   final need = status.need == RelationshipNeed.meaningful
       ? 'Meaningful connection due'
       : 'Touch due';
@@ -2226,13 +2277,11 @@ String _goalSummary(RelationshipStatus status) {
 }
 
 String _healthTitle(RelationshipStatus status) {
+  if (status.acknowledged) return 'Recently caught up';
   final meaningful = status.need == RelationshipNeed.meaningful;
   return switch (status.health) {
     RelationshipHealth.untracked => 'History without reminders',
-    RelationshipHealth.noHistory =>
-      meaningful
-          ? 'Ready for a meaningful connection'
-          : 'Ready for a first check-in',
+    RelationshipHealth.noHistory => 'Last update unknown',
     RelationshipHealth.onTrack => 'On track',
     RelationshipHealth.dueSoon =>
       meaningful ? 'Meaningful connection coming due' : 'Contact coming due',

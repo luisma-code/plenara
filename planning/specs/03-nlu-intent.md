@@ -1,5 +1,10 @@
 # Spec 03 — NLU / Intent
 
+## Production guide entry — 2026-09-26
+
+The everyday app enters `Session.converse`, which provides a continuing GPT read/propose tool loop (Spec 17 and Spec 08). The deterministic interpreter described below remains available through `Session.handle` for explicit commands, CLI, routine controls and capability features. A narrow unambiguous local command subset is available inside guide conversation. Broad expressive statements such as “I feel disconnected…” cannot preempt guidance or implicitly log mood. Provider absence returns truthful setup/offline feedback with direct local workflows still available.
+
+
 **Status:** Active v0.8 — audited 2026-09-07. Current production routing is deterministic direct
 commands/corpus → Router-owned in-process feature-hash skill retrieval for calibrated lanes →
 closed-set Haiku residual → clarify. Learned generative recognition and contextual planner/person

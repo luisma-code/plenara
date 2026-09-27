@@ -217,6 +217,7 @@ class RelationshipStatus {
   final RelationshipNeed need;
   final RelationshipHealth health;
   final int urgencyDays;
+  final bool acknowledged;
 
   const RelationshipStatus({
     required this.contactId,
@@ -238,6 +239,7 @@ class RelationshipStatus {
     required this.need,
     required this.health,
     required this.urgencyDays,
+    this.acknowledged = false,
   });
 
   // Compatibility names for callers that only need the latest touch clock.
@@ -247,9 +249,9 @@ class RelationshipStatus {
   DateTime? get nextContactAt => nextTouchAt;
 
   bool get needsContact =>
-      health == RelationshipHealth.noHistory ||
-      health == RelationshipHealth.due ||
-      health == RelationshipHealth.overdue;
+      !acknowledged &&
+      (health == RelationshipHealth.due ||
+          health == RelationshipHealth.overdue);
 }
 
 RelationshipCircle relationshipCircleOf(Map<String, dynamic> contact) {
@@ -344,13 +346,11 @@ RelationshipHealth _clockHealth(int? target, DateTime? last, DateTime today) {
 }
 
 bool _needs(RelationshipHealth health) =>
-    health == RelationshipHealth.noHistory ||
-    health == RelationshipHealth.due ||
-    health == RelationshipHealth.overdue;
+    health == RelationshipHealth.due || health == RelationshipHealth.overdue;
 
 int _remaining(int? target, DateTime? last, DateTime today) {
   if (target == null) return 1 << 20;
-  if (last == null) return -100000;
+  if (last == null) return 1 << 19;
   return DateTime(last.year, last.month, last.day + target)
       .difference(today)
       .inDays;
@@ -425,6 +425,13 @@ List<RelationshipStatus> relationshipStatuses(_Store store, DateTime now) {
       _ => touchHealth,
     };
     statuses.add(RelationshipStatus(
+      acknowledged: (() {
+        final at = DateTime.tryParse('${contact['acknowledgedAt']}');
+        final target = touchTarget ?? meaningfulTarget ?? 14;
+        return at != null &&
+            !at.isAfter(now) &&
+            now.difference(at).inDays < target;
+      })(),
       contactId: '${contact['id']}',
       displayName: '${contact['displayName'] ?? 'Someone'}',
       goal: _goalOf(contact),

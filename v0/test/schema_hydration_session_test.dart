@@ -144,7 +144,7 @@ void main() {
     await session.init(retrieval: false);
 
     final contact = session.store['mia']!;
-    expect(contact['_schemaVersion'], 3);
+    expect(contact['_schemaVersion'], 4);
     expect(contact['relationshipCircle'], isNull);
     expect(relationshipTouchTargetDays(contact), 23);
     expect(relationshipMeaningfulTargetDays(contact), isNull);

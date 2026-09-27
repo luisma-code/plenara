@@ -1,5 +1,10 @@
 # Spec 04 — Architecture
 
+## Guiding conversation boundary — 2026-09-26
+
+`PlenaHostFrame` sits above Navigator, sharing the root Session and VoiceTurnController with detail conversations. `GuideToday` is the default cross-domain projection. `Session.converse` assembles bounded ledger context and calls a `GuideClient`; OpenAiGuide implements Responses with a persisted admission budget. Read/schema/propose tools are allowlisted. `GuideReceipt` stays device-local; apply validates and enters ExecutionCoordinator once, with receipt identity in frozen inputs preventing replay. The local Session.handle interpreter remains independently usable. EventKit browsing is a native read-only MethodChannel; App Intents retain selected drafts in this device’s keychain. Neither source bypasses review.
+
+
 **Status:** Active v0.6 — audited 2026-09-07. `Session`, `ExecutionCoordinator`, the durable local
 journals, serial operation center, storage/reconciliation, native reminder adapters, local search,
 and voice controllers are wired. Named extraction interfaces and worker-isolate topology remain
