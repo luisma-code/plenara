@@ -588,6 +588,7 @@ call, a spend, an irreversible act, or missing credentials. All three were done:
   This authorizes installation only—never launch, testing, probes, container inspection, log access,
   reset, uninstall, or TestFlight/App Store distribution. Documentation-only revisions do not
   trigger a redundant build/install.
+- On 2026-09-26 at 18:15 PDT, the guiding workflow redesign was installed on **Aluminum Monster** as signed internal-channel `0.14.0 (20)`, bundle `com.plenara.plenaraApp`, from pushed source revision `71ba38abd9e6b41855ad919e28fe3bcd8ba6a30c`. Release AOT SHA-256: `17ca0734f746b1ce9fe9f398fa512c9024e9223b67fa735cb9395afc5e76b524`. Deep signature verification, team `7V63BZ39HU`, development profile `9700a183-07f9-4d2b-936c-3176f893ef68` through 2027-07-28, embedded revision `71ba38a`, internal canary, absence of credential-shaped strings/debug kernel, and compiled CaptureWithPlenara/OpenPlena metadata were verified before CoreDevice confirmed installation. Installation only: no physical launch, test, inspection or log retrieval. GPT requires the user's secure key, consent and monthly limit; no paid model evaluation occurred.
 - On 2026-09-10 at 20:17 PDT, visible relationship health was installed on **Aluminum Monster** as
   signed internal-channel `0.13.0 (19)`, bundle `com.plenara.plenaraApp`, from pushed source
   revision `847735a1a705c04e69e380ef74f33673f682d8e6`. The development-signed AOT SHA-256 is

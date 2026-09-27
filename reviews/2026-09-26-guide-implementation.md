@@ -57,3 +57,11 @@ The iOS real-engine render/interaction suite passed all eight checks on the dedi
 During the iOS interaction run, 38 one-second RSS samples ranged from 297–486 MiB and ended at 368 MiB; no ballooning threshold fired. This brief simulator observation is not proof against a slow leak or physical-device resource limits. No paid live GPT call or model comparison was performed: conversational quality and provider latency remain unmeasured without Luis’s key and billing authorization.
 
 The final `bash tool/precheck.sh` completed ALL GREEN: 2,073 engine tests, 183 app tests, four external-channel checks and eight macOS real-engine interaction/render checks passed. The existing conformance baseline remains 24 passing / 36 explicitly skipped of 60; app tests retain four existing skips. Analysis is clean, seed assets match, documentation checks pass, and deterministic-core/product/transport coverage floors pass (95.7% / 89.1% / 85.6%). Native XCTest’s restored production run passed all four tests, without skips. macOS RSS samples remained approximately 343–412 MiB through the observed interaction window. Foreground activation was unavailable on the locked Mac; the real engine and automated interactions still completed successfully.
+
+Native red/green summaries are preserved in [native evidence](2026-09-26-guide-implementation-evidence/native-test-results.json). The release contains compiled metadata for Capture with Plenara and Open Plena. Native intent execution passed; system Siri/Share Sheet setup was not automated.
+
+## Delivery
+
+Committed and pushed implementation: `71ba38abd9e6b41855ad919e28fe3bcd8ba6a30c`. Installed on Aluminum Monster on September 26 at 18:15 PDT as internal-channel **0.14.0 (20)**. Release AOT hash: `17ca0734f746b1ce9fe9f398fa512c9024e9223b67fa735cb9395afc5e76b524`. Signature, provisioning, revision, channel, intent metadata, release/AOT packaging and credential scan passed. CoreDevice confirmed installation. The physical app was not launched or tested; an update install preserves existing data. Verification app processes were terminated.
+
+To connect GPT: Settings → Plena guide → add an OpenAI API key, choose context consent, and set a positive monthly dollar limit. Zero pauses GPT. This is independent of Codex/ChatGPT and the existing Anthropic key. No paid inference or conversational-quality claim is included.

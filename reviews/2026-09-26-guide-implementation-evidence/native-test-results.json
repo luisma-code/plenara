@@ -1,0 +1,35 @@
+{
+  "Test-Runner-2026.09.26_18-09-07--0700.xcresult": {
+    "result": "Passed",
+    "passedTests": 4,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "totalTestCount": 4,
+    "testFailures": []
+  },
+  "Test-Runner-2026.09.26_18-11-32--0700.xcresult": {
+    "result": "Failed",
+    "passedTests": 0,
+    "failedTests": 1,
+    "skippedTests": 0,
+    "totalTestCount": 1,
+    "testFailures": [
+      {
+        "failureText": "XCTAssertThrowsError failed: did not throw an error",
+        "targetName": "RunnerTests",
+        "testIdentifier": 1,
+        "testIdentifierString": "RunnerTests/testCaptureSecureStoreRejectsDuplicateAndClears()",
+        "testIdentifierURL": "test://com.apple.xcode/Runner/RunnerTests/RunnerTests/testCaptureSecureStoreRejectsDuplicateAndClears",
+        "testName": "testCaptureSecureStoreRejectsDuplicateAndClears()"
+      }
+    ]
+  },
+  "Test-Runner-2026.09.26_18-12-23--0700.xcresult": {
+    "result": "Passed",
+    "passedTests": 4,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "totalTestCount": 4,
+    "testFailures": []
+  }
+}
