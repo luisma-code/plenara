@@ -9,7 +9,12 @@
 
 # Plenara — Work Capsule
 
-_Current working memory. Last updated 2026-09-10 for visible relationship health._
+## iPad layout and universal iOS install (2026-09-27)
+
+- The existing iOS target is universal (`TARGETED_DEVICE_FAMILY=1,2`); ship one signed app build to iPhone and iPad. At 840 logical points the shell switches to a labeled left rail; Today cards, People and Routines use responsive columns/grids; conversation/detail content has readable maximum widths and data details use a centered dialog on iPad. Phone navigation and bottom sheets remain compact.
+- A calibrated responsive widget test covers the wide shell, three Today pillars, and return to phone navigation. A dedicated integration test targets the local 13-inch iPad Pro simulator (`BF87136A-5095-455E-B9D9-CC96990848E0`) for real-engine layout proof. Physical iPhone and iPad are install-only targets.
+
+_Current working memory. Last updated 2026-09-27 for universal iPhone/iPad delivery._
 
 ## Visible relationship health (2026-09-10)
 

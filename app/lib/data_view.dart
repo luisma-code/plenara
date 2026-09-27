@@ -131,18 +131,34 @@ Future<void> showRecordDetailSheet({
     );
   }
 
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    builder: (_) => _RecordDetailSheet(
-      session: session,
-      typeId: typeId,
-      typeDef: typeDef,
-      recordId: recordId,
-      onEdit: edit,
-      onDelete: delete,
-    ),
+  final detail = _RecordDetailSheet(
+    session: session,
+    typeId: typeId,
+    typeDef: typeDef,
+    recordId: recordId,
+    onEdit: edit,
+    onDelete: delete,
   );
+  if (MediaQuery.sizeOf(context).shortestSide >= 600) {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 820,
+            maxHeight: MediaQuery.sizeOf(dialogContext).height * .88,
+          ),
+          child: detail,
+        ),
+      ),
+    );
+  } else {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => detail,
+    );
+  }
 }
 
 class DataView extends StatefulWidget {

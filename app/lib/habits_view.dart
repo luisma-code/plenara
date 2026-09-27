@@ -270,32 +270,55 @@ class _HabitsViewState extends State<HabitsView> {
               else ...[
                 Text('Today', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
-                for (final habit in active)
-                  _HabitCard(
-                    habit: habit,
-                    today: widget.session.now,
-                    onCheckIn: () async {
-                      _showResult(
-                        await widget.session.recordHabitCheckIn(habit.id),
-                      );
-                    },
-                    onStart: () => _startPractice(habit),
-                    onMinimum: () async => _showResult(
-                      await widget.session.recordHabitCheckIn(
-                        habit.id,
-                        outcome: 'minimum',
-                      ),
-                    ),
-                    onSkip: () async => _showResult(
-                      await widget.session.recordHabitCheckIn(
-                        habit.id,
-                        outcome: 'skipped',
-                      ),
-                    ),
-                    onEdit: () => _editHabit(habit),
-                    onPause: () => _setActive(habit, false),
-                    onDelete: () => _deleteHabit(habit),
-                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 760 ? 2 : 1;
+                    const gap = 14.0;
+                    final width = columns == 1
+                        ? constraints.maxWidth
+                        : (constraints.maxWidth - gap) / 2;
+                    return Wrap(
+                      key: columns == 1
+                          ? const Key('routine-practice-list')
+                          : const Key('routine-practice-grid'),
+                      spacing: gap,
+                      runSpacing: 4,
+                      children: [
+                        for (final habit in active)
+                          SizedBox(
+                            width: width,
+                            child: _HabitCard(
+                              habit: habit,
+                              today: widget.session.now,
+                              onCheckIn: () async {
+                                _showResult(
+                                  await widget.session.recordHabitCheckIn(
+                                    habit.id,
+                                  ),
+                                );
+                              },
+                              onStart: () => _startPractice(habit),
+                              onMinimum: () async => _showResult(
+                                await widget.session.recordHabitCheckIn(
+                                  habit.id,
+                                  outcome: 'minimum',
+                                ),
+                              ),
+                              onSkip: () async => _showResult(
+                                await widget.session.recordHabitCheckIn(
+                                  habit.id,
+                                  outcome: 'skipped',
+                                ),
+                              ),
+                              onEdit: () => _editHabit(habit),
+                              onPause: () => _setActive(habit, false),
+                              onDelete: () => _deleteHabit(habit),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ],
               if (paused.isNotEmpty) ...[
                 const SizedBox(height: 14),

@@ -1021,72 +1021,167 @@ class _ChatState extends State<ChatScreen> with WidgetsBindingObserver {
       return _legacyPresenceHome(context);
     }
     final host = PlenaHostScope.maybeOf(context);
+    final wide = MediaQuery.sizeOf(context).width >= 840;
+    final root = switch (_plannerTab) {
+      1 => RelationshipsView(
+        session: _session,
+        onVoice: () => _openConversation(talk: true),
+        menuAction: _menuButton(context),
+      ),
+      2 => TodayBoard(
+        session: _session,
+        onChanged: () => setState(() {}),
+        bottomContentPadding: 24,
+        onVoice: () => _openConversation(talk: true),
+        onAddTodo: () =>
+            addTodoFromUi(context, _session, () => setState(() {})),
+        onOpenPlan: _openPlan,
+        onOpenPlannerSignal: _openPlannerSignal,
+        onOpenLibrary: _openLibrary,
+        onOpenRelationships: () => setState(() => _plannerTab = 1),
+        onOpenHabits: () => setState(() => _plannerTab = 3),
+        menuAction: _menuButton(context),
+      ),
+      3 => HabitsView(
+        session: _session,
+        onVoice: () => _openConversation(talk: true),
+        onOpenRoutines: () => _openLibraryGroup('Guided routines', {'routine'}),
+        menuAction: _menuButton(context),
+      ),
+      _ => GuideToday(
+        session: _session,
+        onConversation: (seed) => _openConversation(seed: seed),
+        onPerson: _openPersonRelationship,
+        onTasks: () => setState(() => _plannerTab = 2),
+        onRoutines: () => setState(() => _plannerTab = 3),
+        onHistory: () => showConversationLedger(context, _session),
+        onChanged: () => setState(() {}),
+        menuAction: _menuButton(context),
+      ),
+    };
     return Scaffold(
-      body: switch (_plannerTab) {
-        1 => RelationshipsView(
-          session: _session,
-          onVoice: () => _openConversation(talk: true),
-          menuAction: _menuButton(context),
-        ),
-        2 => TodayBoard(
-          session: _session,
-          onChanged: () => setState(() {}),
-          bottomContentPadding: 24,
-          onVoice: () => _openConversation(talk: true),
-          onAddTodo: () =>
-              addTodoFromUi(context, _session, () => setState(() {})),
-          onOpenPlan: _openPlan,
-          onOpenPlannerSignal: _openPlannerSignal,
-          onOpenLibrary: _openLibrary,
-          onOpenRelationships: () => setState(() => _plannerTab = 1),
-          onOpenHabits: () => setState(() => _plannerTab = 3),
-          menuAction: _menuButton(context),
-        ),
-        3 => HabitsView(
-          session: _session,
-          onVoice: () => _openConversation(talk: true),
-          onOpenRoutines: () =>
-              _openLibraryGroup('Guided routines', {'routine'}),
-          menuAction: _menuButton(context),
-        ),
-        _ => GuideToday(
-          session: _session,
-          onConversation: (seed) => _openConversation(seed: seed),
-          onPerson: _openPersonRelationship,
-          onTasks: () => setState(() => _plannerTab = 2),
-          onRoutines: () => setState(() => _plannerTab = 3),
-          onHistory: () => showConversationLedger(context, _session),
-          onChanged: () => setState(() {}),
-          menuAction: _menuButton(context),
-        ),
-      },
+      body: wide
+          ? Row(
+              children: [
+                SafeArea(
+                  child: Container(
+                    width: 224,
+                    decoration: BoxDecoration(
+                      color: PlenaraTheme.ground.withValues(alpha: .92),
+                      border: Border(
+                        right: BorderSide(
+                          color: Colors.white.withValues(alpha: .08),
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(22, 24, 18, 20),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.auto_awesome_rounded,
+                                color: PlenaraTheme.amber,
+                              ),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: Text(
+                                  'Plenara',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        Expanded(
+                          child: NavigationRail(
+                            key: const Key('planner-navigation-rail'),
+                            extended: true,
+                            minExtendedWidth: 224,
+                            selectedIndex: _plannerTab,
+                            groupAlignment: -.9,
+                            onDestinationSelected: (index) =>
+                                setState(() => _plannerTab = index),
+                            destinations: const [
+                              NavigationRailDestination(
+                                icon: Icon(Icons.today_outlined),
+                                selectedIcon: Icon(Icons.today_rounded),
+                                label: Text('Today'),
+                              ),
+                              NavigationRailDestination(
+                                icon: Icon(Icons.people_outline_rounded),
+                                selectedIcon: Icon(Icons.people_rounded),
+                                label: Text('People'),
+                              ),
+                              NavigationRailDestination(
+                                icon: Icon(Icons.check_circle_outline_rounded),
+                                selectedIcon: Icon(Icons.check_circle_rounded),
+                                label: Text('Tasks'),
+                              ),
+                              NavigationRailDestination(
+                                icon: Icon(Icons.repeat_rounded),
+                                selectedIcon: Icon(Icons.autorenew_rounded),
+                                label: Text('Routines'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Text(
+                            'Make room for what matters',
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(color: PlenaraTheme.quietInk),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1540),
+                      child: root,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : root,
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          NavigationBar(
-            key: const Key('planner-navigation'),
-            selectedIndex: _plannerTab,
-            onDestinationSelected: (index) =>
-                setState(() => _plannerTab = index),
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.today_outlined),
-                label: 'Today',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.people_outline_rounded),
-                label: 'People',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.check_circle_outline_rounded),
-                label: 'Tasks',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.repeat_rounded),
-                label: 'Routines',
-              ),
-            ],
-          ),
+          if (!wide)
+            NavigationBar(
+              key: const Key('planner-navigation'),
+              selectedIndex: _plannerTab,
+              onDestinationSelected: (index) =>
+                  setState(() => _plannerTab = index),
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.today_outlined),
+                  label: 'Today',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.people_outline_rounded),
+                  label: 'People',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.check_circle_outline_rounded),
+                  label: 'Tasks',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.repeat_rounded),
+                  label: 'Routines',
+                ),
+              ],
+            ),
           if (host == null)
             PlenaAccessBar(
               onTalk: () => _openConversation(talk: true),

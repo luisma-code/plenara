@@ -97,15 +97,31 @@ class _PlenaHostFrameState extends State<PlenaHostFrame> {
       builder: (context, _) {
         final visible =
             connection.session != null && !connection.conversationOpen;
-        return Column(
-          children: [
-            Expanded(child: widget.child),
-            if (visible)
-              PlenaAccessBar(
-                onTalk: () => _open(true),
-                onMessage: () => _open(false),
-              ),
-          ],
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final tablet = constraints.maxWidth >= 840;
+            return Column(
+              children: [
+                Expanded(child: widget.child),
+                if (visible)
+                  tablet
+                      ? Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: SizedBox(
+                            width: 520,
+                            child: PlenaAccessBar(
+                              onTalk: () => _open(true),
+                              onMessage: () => _open(false),
+                            ),
+                          ),
+                        )
+                      : PlenaAccessBar(
+                          onTalk: () => _open(true),
+                          onMessage: () => _open(false),
+                        ),
+              ],
+            );
+          },
         );
       },
     ),
@@ -374,25 +390,40 @@ class _GuideConversationViewState extends State<GuideConversationView>
               padding: const EdgeInsets.all(16),
               children: [
                 if (entries.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Text(
-                      'What would make today feel worthwhile? Tell me what is on your mind, or something that happened.',
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1040),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Text(
+                          'What would make today feel worthwhile? Tell me what is on your mind, or something that happened.',
+                        ),
+                      ),
                     ),
                   ),
                 for (final entry in entries) ...[
                   Align(
                     alignment: Alignment.centerRight,
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Text(entry.utterance),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.sizeOf(context).width * .76,
+                      ),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(entry.utterance),
+                        ),
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 8, 4, 18),
-                    child: SelectableText(entry.reply),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1040),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 22),
+                        child: SelectableText(entry.reply),
+                      ),
+                    ),
                   ),
                 ],
                 if (turn.listening || turn.transcribing || turn.busy)
@@ -419,70 +450,76 @@ class _GuideConversationViewState extends State<GuideConversationView>
                     ],
                   ),
                 if (receipt != null)
-                  Card(
-                    key: const Key('guide-receipt'),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            receipt.title,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const Text(
-                            'Proposed updates · nothing applied yet',
-                            style: TextStyle(color: PlenaraTheme.quietInk),
-                          ),
-                          for (final (index, change) in receipt.changes.indexed)
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                '${change['operation'] == 'create' ? 'Add' : 'Update'} ${_recordLabel(change)}',
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1080),
+                      child: Card(
+                        key: const Key('guide-receipt'),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                receipt.title,
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
-                              subtitle: Text(
-                                '${change['reason']}\n${_fieldsSummary(change['fields'] as Map, widget.session, receipt)}',
+                              const Text(
+                                'Proposed updates · nothing applied yet',
+                                style: TextStyle(color: PlenaraTheme.quietInk),
                               ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    tooltip: 'Edit update',
-                                    onPressed: () => _edit(index),
-                                    icon: const Icon(Icons.edit_outlined),
+                              for (final (index, change)
+                                  in receipt.changes.indexed)
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(
+                                    '${change['operation'] == 'create' ? 'Add' : 'Update'} ${_recordLabel(change)}',
                                   ),
-                                  IconButton(
-                                    tooltip: 'Remove update',
-                                    onPressed: () async {
-                                      await widget.session
-                                          .removeGuideReceiptChange(index);
-                                      if (mounted) setState(() {});
-                                    },
-                                    icon: const Icon(Icons.close),
+                                  subtitle: Text(
+                                    '${change['reason']}\n${_fieldsSummary(change['fields'] as Map, widget.session, receipt)}',
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        tooltip: 'Edit update',
+                                        onPressed: () => _edit(index),
+                                        icon: const Icon(Icons.edit_outlined),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Remove update',
+                                        onPressed: () async {
+                                          await widget.session
+                                              .removeGuideReceiptChange(index);
+                                          if (mounted) setState(() {});
+                                        },
+                                        icon: const Icon(Icons.close),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              Wrap(
+                                spacing: 8,
+                                children: [
+                                  FilledButton(
+                                    onPressed: _applying ? null : _apply,
+                                    child: const Text('Apply updates'),
+                                  ),
+                                  TextButton(
+                                    onPressed: _applying
+                                        ? null
+                                        : () async {
+                                            await widget.session
+                                                .dismissGuideReceipt();
+                                            if (mounted) setState(() {});
+                                          },
+                                    child: const Text('Dismiss'),
                                   ),
                                 ],
                               ),
-                            ),
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              FilledButton(
-                                onPressed: _applying ? null : _apply,
-                                child: const Text('Apply updates'),
-                              ),
-                              TextButton(
-                                onPressed: _applying
-                                    ? null
-                                    : () async {
-                                        await widget.session
-                                            .dismissGuideReceipt();
-                                        if (mounted) setState(() {});
-                                      },
-                                child: const Text('Dismiss'),
-                              ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -496,66 +533,71 @@ class _GuideConversationViewState extends State<GuideConversationView>
           ),
           SafeArea(
             top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (turn.listening)
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        FilledButton(
-                          onPressed: turn.toggleMic,
-                          child: const Text('Finish and send'),
-                        ),
-                        TextButton(
-                          onPressed: turn.cancelListening,
-                          child: const Text('Cancel'),
-                        ),
-                      ],
-                    ),
-                  Row(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1080),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: TextField(
-                          key: const Key('plena-message-input'),
-                          controller: turn.input,
-                          minLines: 1,
-                          maxLines: 4,
-                          onSubmitted: (_) => turn.send(),
-                          decoration: const InputDecoration(
-                            hintText: 'Message Plena…',
-                            border: OutlineInputBorder(),
-                          ),
+                      if (turn.listening)
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            FilledButton(
+                              onPressed: turn.toggleMic,
+                              child: const Text('Finish and send'),
+                            ),
+                            TextButton(
+                              onPressed: turn.cancelListening,
+                              child: const Text('Cancel'),
+                            ),
+                          ],
                         ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              key: const Key('plena-message-input'),
+                              controller: turn.input,
+                              minLines: 1,
+                              maxLines: 4,
+                              onSubmitted: (_) => turn.send(),
+                              decoration: const InputDecoration(
+                                hintText: 'Message Plena…',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          IconButton(
+                            tooltip: 'Send message',
+                            onPressed: turn.busy ? null : turn.send,
+                            icon: const Icon(Icons.send_rounded),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      IconButton(
-                        tooltip: 'Send message',
-                        onPressed: turn.busy ? null : turn.send,
-                        icon: const Icon(Icons.send_rounded),
-                      ),
+                      if (!turn.listening)
+                        TextButton.icon(
+                          onPressed: turn.busy
+                              ? null
+                              : () {
+                                  if (turn.speech?.available == true) {
+                                    turn.toggleMic();
+                                  } else {
+                                    setState(
+                                      () => _notice =
+                                          'Microphone unavailable. Messaging remains available.',
+                                    );
+                                  }
+                                },
+                          icon: const Icon(Icons.mic_none_rounded),
+                          label: const Text('Talk to Plena'),
+                        ),
                     ],
                   ),
-                  if (!turn.listening)
-                    TextButton.icon(
-                      onPressed: turn.busy
-                          ? null
-                          : () {
-                              if (turn.speech?.available == true) {
-                                turn.toggleMic();
-                              } else {
-                                setState(
-                                  () => _notice =
-                                      'Microphone unavailable. Messaging remains available.',
-                                );
-                              }
-                            },
-                      icon: const Icon(Icons.mic_none_rounded),
-                      label: const Text('Talk to Plena'),
-                    ),
-                ],
+                ),
               ),
             ),
           ),

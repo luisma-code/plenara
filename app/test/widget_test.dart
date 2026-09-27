@@ -129,6 +129,83 @@ Future<void> _send(WidgetTester tester, String text) async {
 }
 
 void main() {
+  testWidgets(
+    'iPad-width Today reflows into a rail and three readable pillars',
+    (tester) async {
+      final originalSize = tester.view.physicalSize;
+      final originalPixelRatio = tester.view.devicePixelRatio;
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1366, 1024);
+      addTearDown(() {
+        tester.view.physicalSize = originalSize;
+        tester.view.devicePixelRatio = originalPixelRatio;
+      });
+      final s = await _session();
+      await s.createRecord('contact', {
+        'displayName': 'Alex Rivera',
+        'relationshipCircle': 'close',
+      });
+      await s.handle('add task Send Alex the guide');
+      await s.createRecord('habit', {
+        'title': 'Walk after lunch',
+        'status': 'active',
+        'targetPerWeek': 3,
+        'preferredDays': '6',
+        'createdAt': s.now.toIso8601String(),
+        'cue': 'After lunch',
+        'minimumVersion': 'Two minutes outside',
+      });
+      await _home(tester, s);
+      expect(
+        MediaQuery.sizeOf(tester.element(find.byType(ChatScreen))).width,
+        greaterThanOrEqualTo(840),
+        reason: 'the tablet surface must be measured in logical screen pixels',
+      );
+      expect(find.byKey(const Key('planner-navigation-rail')), findsOneWidget);
+      expect(find.byKey(const Key('planner-navigation')), findsNothing);
+      final grid = find.byKey(const Key('tablet-opportunity-grid'));
+      expect(grid, findsOneWidget);
+      final cards = find.descendant(of: grid, matching: find.byType(Card));
+      expect(cards, findsNWidgets(3));
+      final leftEdges = [
+        for (var i = 0; i < 3; i++) tester.getRect(cards.at(i)).left,
+      ];
+      expect(leftEdges.toSet(), hasLength(3));
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('planner-navigation-rail')),
+          matching: find.text('People'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const Key('relationships-filter-all')),
+      );
+      await tester.tap(find.byKey(const Key('relationships-filter-all')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('people-opportunity-grid')), findsOneWidget);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('planner-navigation-rail')),
+          matching: find.text('Routines'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('routine-practice-grid')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      tester.view.physicalSize = const Size(402, 874);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('planner-navigation-rail')), findsNothing);
+      expect(find.byKey(const Key('planner-navigation')), findsOneWidget);
+      expect(find.byKey(const Key('tablet-opportunity-grid')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Today is default; all four roots keep labeled Plena access', (
     tester,
   ) async {

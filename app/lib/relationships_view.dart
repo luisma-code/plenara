@@ -399,274 +399,321 @@ class _RelationshipsViewState extends State<RelationshipsView> {
       ),
       body: Stack(
         children: [
-          ListView(
-            key: const Key('relationships-view'),
-            padding: const EdgeInsets.fromLTRB(16, 12, 72, 100),
-            children: [
-              Text(
-                'RELATIONSHIPS',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: PlenaraTheme.amber,
-                  letterSpacing: 2.2,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                'Keep the people who matter in view',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w300,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '$peopleLabel · ${attention.length} connection opportunities',
-                style: const TextStyle(color: PlenaraTheme.quietInk),
-              ),
-              const SizedBox(height: 14),
-              SearchBar(
-                key: const Key('relationships-search'),
-                controller: _searchController,
-                hintText: 'Find a person in any circle',
-                leading: const Icon(Icons.search_rounded),
-                trailing: [
-                  if (_query.isNotEmpty)
-                    IconButton(
-                      tooltip: 'Clear search',
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _query = '');
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                ],
-                onChanged: (value) => setState(() => _query = value),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Relationship circle',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1360),
+              child: LayoutBuilder(
+                builder: (context, viewport) => ListView(
+                  key: const Key('relationships-view'),
+                  padding: EdgeInsets.fromLTRB(
+                    viewport.maxWidth >= 840 ? 28 : 16,
+                    viewport.maxWidth >= 840 ? 20 : 12,
+                    viewport.maxWidth >= 840 ? 28 : 72,
+                    viewport.maxWidth >= 840 ? 112 : 100,
                   ),
-                  TextButton.icon(
-                    key: const Key('relationships-organize'),
-                    onPressed: statuses.isEmpty ? null : _toggleOrganizing,
-                    icon: Icon(
-                      _organizing
-                          ? Icons.close_rounded
-                          : Icons.groups_2_outlined,
-                      size: 18,
-                    ),
-                    label: Text(_organizing ? 'Done' : 'Organize'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              SizedBox(
-                height: 42,
-                child: SingleChildScrollView(
-                  key: const Key('relationship-circle-filters'),
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      ChoiceChip(
-                        key: const Key('relationships-filter-focus'),
-                        selected: isFocus,
-                        avatar: const Icon(
-                          Icons.auto_awesome_rounded,
-                          size: 16,
-                        ),
-                        label: Text('Focus · ${attention.length}'),
-                        onSelected: (_) => _showFocus(),
+                  children: [
+                    Text(
+                      'RELATIONSHIPS',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: PlenaraTheme.amber,
+                        letterSpacing: 2.2,
                       ),
-                      const SizedBox(width: 7),
-                      for (final circle in RelationshipCircle.values) ...[
-                        ChoiceChip(
-                          key: Key('relationships-filter-${circle.name}'),
-                          selected:
-                              normalizedQuery.isEmpty &&
-                              _selectedCircle == circle,
-                          label: Text(
-                            '${relationshipCircleLabel(circle)} · ${circleCounts[circle]}',
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'Keep the people who matter in view',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w300),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$peopleLabel · ${attention.length} connection opportunities',
+                      style: const TextStyle(color: PlenaraTheme.quietInk),
+                    ),
+                    const SizedBox(height: 14),
+                    SearchBar(
+                      key: const Key('relationships-search'),
+                      controller: _searchController,
+                      hintText: 'Find a person in any circle',
+                      leading: const Icon(Icons.search_rounded),
+                      trailing: [
+                        if (_query.isNotEmpty)
+                          IconButton(
+                            tooltip: 'Clear search',
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _query = '');
+                            },
+                            icon: const Icon(Icons.close_rounded),
                           ),
-                          avatar: circleAttentionCounts[circle] == 0
-                              ? null
-                              : CircleAvatar(
-                                  child: Text(
-                                    '${circleAttentionCounts[circle]}',
-                                  ),
-                                ),
-                          onSelected: (_) => _showCircle(circle),
-                        ),
-                        const SizedBox(width: 7),
                       ],
-                      ChoiceChip(
-                        key: const Key('relationships-filter-all'),
-                        selected:
-                            normalizedQuery.isEmpty &&
-                            _showAllPeople &&
-                            _selectedCircle == null,
-                        label: Text('All circles · $circleScopeCount'),
-                        onSelected: (_) => _showEveryone(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Where they are',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 6),
-              SizedBox(
-                height: 42,
-                child: SingleChildScrollView(
-                  key: const Key('relationship-proximity-filters'),
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      ChoiceChip(
-                        key: const Key('relationships-proximity-any'),
-                        selected:
-                            normalizedQuery.isEmpty &&
-                            _selectedProximity == null &&
-                            !isFocus,
-                        label: Text('Everywhere · $proximityScopeCount'),
-                        onSelected: (_) => _showEverywhere(),
-                      ),
-                      const SizedBox(width: 7),
-                      for (final proximity in relationshipProximities) ...[
-                        ChoiceChip(
-                          key: Key('relationships-proximity-$proximity'),
-                          selected:
-                              normalizedQuery.isEmpty &&
-                              _selectedProximity == proximity,
-                          avatar: proximityAttentionCounts[proximity] == 0
-                              ? null
-                              : CircleAvatar(
-                                  child: Text(
-                                    '${proximityAttentionCounts[proximity]}',
-                                  ),
-                                ),
-                          label: Text(
-                            '${relationshipProximityLabel(proximity)} · ${proximityCounts[proximity]}',
-                          ),
-                          onSelected: (_) => _showProximity(proximity),
-                        ),
-                        const SizedBox(width: 7),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (_organizing)
-                Card(
-                  color: const Color(0xFF241B17),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
-                    child: Row(
+                      onChanged: (value) => setState(() => _query = value),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
                       children: [
                         Expanded(
                           child: Text(
-                            '${_selectedPeople.length} selected',
-                            style: Theme.of(context).textTheme.titleSmall,
+                            'Relationship circle',
+                            style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ),
-                        TextButton(
-                          onPressed: _selectedPeople.isEmpty
+                        TextButton.icon(
+                          key: const Key('relationships-organize'),
+                          onPressed: statuses.isEmpty
                               ? null
-                              : () => setState(_selectedPeople.clear),
-                          child: const Text('Clear'),
-                        ),
-                        FilledButton.icon(
-                          key: const Key('relationships-move-selected'),
-                          onPressed: _selectedPeople.isEmpty
-                              ? null
-                              : _organizeSelected,
-                          icon: const Icon(Icons.tune_rounded),
-                          label: const Text('Organize'),
+                              : _toggleOrganizing,
+                          icon: Icon(
+                            _organizing
+                                ? Icons.close_rounded
+                                : Icons.groups_2_outlined,
+                            size: 18,
+                          ),
+                          label: Text(_organizing ? 'Done' : 'Organize'),
                         ),
                       ],
                     ),
-                  ),
-                ),
-              if (statuses.isEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'No people yet. Add someone directly or bring in their phone and email from Contacts.',
-                          textAlign: TextAlign.center,
+                    const SizedBox(height: 2),
+                    SizedBox(
+                      height: 42,
+                      child: SingleChildScrollView(
+                        key: const Key('relationship-circle-filters'),
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            ChoiceChip(
+                              key: const Key('relationships-filter-focus'),
+                              selected: isFocus,
+                              avatar: const Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 16,
+                              ),
+                              label: Text('Focus · ${attention.length}'),
+                              onSelected: (_) => _showFocus(),
+                            ),
+                            const SizedBox(width: 7),
+                            for (final circle in RelationshipCircle.values) ...[
+                              ChoiceChip(
+                                key: Key('relationships-filter-${circle.name}'),
+                                selected:
+                                    normalizedQuery.isEmpty &&
+                                    _selectedCircle == circle,
+                                label: Text(
+                                  '${relationshipCircleLabel(circle)} · ${circleCounts[circle]}',
+                                ),
+                                avatar: circleAttentionCounts[circle] == 0
+                                    ? null
+                                    : CircleAvatar(
+                                        child: Text(
+                                          '${circleAttentionCounts[circle]}',
+                                        ),
+                                      ),
+                                onSelected: (_) => _showCircle(circle),
+                              ),
+                              const SizedBox(width: 7),
+                            ],
+                            ChoiceChip(
+                              key: const Key('relationships-filter-all'),
+                              selected:
+                                  normalizedQuery.isEmpty &&
+                                  _showAllPeople &&
+                                  _selectedCircle == null,
+                              label: Text('All circles · $circleScopeCount'),
+                              onSelected: (_) => _showEveryone(),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 12),
-                        FilledButton.icon(
-                          onPressed: _import,
-                          icon: const Icon(Icons.contact_page_outlined),
-                          label: const Text('Import from Contacts'),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                )
-              else ...[
-                Text(title, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: PlenaraTheme.quietInk),
-                ),
-                const SizedBox(height: 8),
-                if (selectedStatuses.isEmpty)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(18),
-                      child: Text(
-                        normalizedQuery.isNotEmpty
-                            ? 'No one matches “${_query.trim()}”.'
-                            : isFocus
-                            ? 'You’re caught up. No relationship goal needs attention right now.'
-                            : _selectedProximity != null
-                            ? 'No one is marked ${relationshipProximityLabel(_selectedProximity!).toLowerCase()} in this circle.'
-                            : 'No one is in this circle yet.',
-                        textAlign: TextAlign.center,
+                    const SizedBox(height: 12),
+                    Text(
+                      'Where they are',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      height: 42,
+                      child: SingleChildScrollView(
+                        key: const Key('relationship-proximity-filters'),
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            ChoiceChip(
+                              key: const Key('relationships-proximity-any'),
+                              selected:
+                                  normalizedQuery.isEmpty &&
+                                  _selectedProximity == null &&
+                                  !isFocus,
+                              label: Text('Everywhere · $proximityScopeCount'),
+                              onSelected: (_) => _showEverywhere(),
+                            ),
+                            const SizedBox(width: 7),
+                            for (final proximity
+                                in relationshipProximities) ...[
+                              ChoiceChip(
+                                key: Key('relationships-proximity-$proximity'),
+                                selected:
+                                    normalizedQuery.isEmpty &&
+                                    _selectedProximity == proximity,
+                                avatar: proximityAttentionCounts[proximity] == 0
+                                    ? null
+                                    : CircleAvatar(
+                                        child: Text(
+                                          '${proximityAttentionCounts[proximity]}',
+                                        ),
+                                      ),
+                                label: Text(
+                                  '${relationshipProximityLabel(proximity)} · ${proximityCounts[proximity]}',
+                                ),
+                                onSelected: (_) => _showProximity(proximity),
+                              ),
+                              const SizedBox(width: 7),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_organizing)
+                      Card(
+                        color: const Color(0xFF241B17),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${_selectedPeople.length} selected',
+                                  style: Theme.of(context).textTheme.titleSmall,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _selectedPeople.isEmpty
+                                    ? null
+                                    : () => setState(_selectedPeople.clear),
+                                child: const Text('Clear'),
+                              ),
+                              FilledButton.icon(
+                                key: const Key('relationships-move-selected'),
+                                onPressed: _selectedPeople.isEmpty
+                                    ? null
+                                    : _organizeSelected,
+                                icon: const Icon(Icons.tune_rounded),
+                                label: const Text('Organize'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (statuses.isEmpty)
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
+                              const Text(
+                                'No people yet. Add someone directly or bring in their phone and email from Contacts.',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              FilledButton.icon(
+                                onPressed: _import,
+                                icon: const Icon(Icons.contact_page_outlined),
+                                label: const Text('Import from Contacts'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else ...[
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
                         style: const TextStyle(color: PlenaraTheme.quietInk),
                       ),
-                    ),
-                  )
-                else
-                  for (final status in selectedStatuses)
-                    _RelationshipRow(
-                      status: status,
-                      selected: _selectedPeople.contains(status.contactId),
-                      organizing: _organizing,
-                      onTap: () => _selectStatus(status),
-                      onMove: (circle) => _movePerson(status.contactId, circle),
-                      onProximity: (proximity) =>
-                          _setPersonProximity(status.contactId, proximity),
-                    ),
-                if (isFocus &&
-                    !_showAllAttention &&
-                    attention.length > selectedStatuses.length)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      key: const Key('relationships-show-all-attention'),
-                      onPressed: () => setState(() => _showAllAttention = true),
-                      icon: const Icon(Icons.expand_more_rounded),
-                      label: Text(
-                        'Show all ${attention.length} needing attention',
-                      ),
-                    ),
-                  ),
-              ],
-            ],
+                      const SizedBox(height: 8),
+                      if (selectedStatuses.isEmpty)
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(18),
+                            child: Text(
+                              normalizedQuery.isNotEmpty
+                                  ? 'No one matches “${_query.trim()}”.'
+                                  : isFocus
+                                  ? 'You’re caught up. No relationship goal needs attention right now.'
+                                  : _selectedProximity != null
+                                  ? 'No one is marked ${relationshipProximityLabel(_selectedProximity!).toLowerCase()} in this circle.'
+                                  : 'No one is in this circle yet.',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: PlenaraTheme.quietInk,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns = constraints.maxWidth >= 760 ? 2 : 1;
+                            final gap = 12.0;
+                            final width = columns == 1
+                                ? constraints.maxWidth
+                                : (constraints.maxWidth - gap) / 2;
+                            return Wrap(
+                              key: columns == 1
+                                  ? const Key('people-opportunity-list')
+                                  : const Key('people-opportunity-grid'),
+                              spacing: gap,
+                              runSpacing: 4,
+                              children: [
+                                for (final status in selectedStatuses)
+                                  SizedBox(
+                                    width: width,
+                                    child: _RelationshipRow(
+                                      status: status,
+                                      selected: _selectedPeople.contains(
+                                        status.contactId,
+                                      ),
+                                      organizing: _organizing,
+                                      onTap: () => _selectStatus(status),
+                                      onMove: (circle) =>
+                                          _movePerson(status.contactId, circle),
+                                      onProximity: (proximity) =>
+                                          _setPersonProximity(
+                                            status.contactId,
+                                            proximity,
+                                          ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      if (isFocus &&
+                          !_showAllAttention &&
+                          attention.length > selectedStatuses.length)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            key: const Key('relationships-show-all-attention'),
+                            onPressed: () =>
+                                setState(() => _showAllAttention = true),
+                            icon: const Icon(Icons.expand_more_rounded),
+                            label: Text(
+                              'Show all ${attention.length} needing attention',
+                            ),
+                          ),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ),
           const PlenaEmber(mode: 'Relationship library.'),
         ],
@@ -1513,261 +1560,279 @@ class _PersonRelationshipViewState extends State<PersonRelationshipView> {
       ),
       body: Stack(
         children: [
-          ListView(
-            key: const Key('person-relationship-view'),
-            padding: const EdgeInsets.fromLTRB(16, 10, 72, 80),
-            children: [
-              Text(
-                _healthTitle(status),
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 3),
-              Text(
-                _statusLine(status),
-                style: const TextStyle(color: PlenaraTheme.quietInk),
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1360),
+              child: ListView(
+                key: const Key('person-relationship-view'),
+                padding: EdgeInsets.fromLTRB(
+                  MediaQuery.sizeOf(context).width >= 840 ? 36 : 16,
+                  20,
+                  MediaQuery.sizeOf(context).width >= 840 ? 36 : 72,
+                  96,
+                ),
                 children: [
-                  TextButton(
-                    onPressed: () async {
-                      _showResult(
-                        await widget.session.acknowledgeRelationship(
-                          widget.contactId,
+                  Text(
+                    _healthTitle(status),
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    _statusLine(status),
+                    style: const TextStyle(color: PlenaraTheme.quietInk),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      TextButton(
+                        onPressed: () async {
+                          _showResult(
+                            await widget.session.acknowledgeRelationship(
+                              widget.contactId,
+                            ),
+                          );
+                        },
+                        child: const Text('We already caught up'),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => openPlenaConversation(
+                          context,
+                          widget.session,
+                          focusId: widget.contactId,
                         ),
-                      );
-                    },
-                    child: const Text('We already caught up'),
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        label: const Text('Ask Plena'),
+                      ),
+                      FilledButton.tonalIcon(
+                        key: const Key('log-interaction'),
+                        onPressed: _logInteraction,
+                        icon: const Icon(Icons.add_comment_outlined),
+                        label: const Text('Log interaction'),
+                      ),
+                      OutlinedButton.icon(
+                        key: const Key('relationship-add-follow-up'),
+                        onPressed: _addFollowUp,
+                        icon: Icon(
+                          proximity == 'remote'
+                              ? Icons.phone_in_talk_outlined
+                              : proximity == 'local' || proximity == 'household'
+                              ? Icons.event_available_outlined
+                              : Icons.add_task_rounded,
+                        ),
+                        label: Text(followUpLabel),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: phone.isEmpty
+                            ? null
+                            : () => _launch(
+                                () => _launcher.phone(phone),
+                                'A phone call could not be opened.',
+                              ),
+                        icon: const Icon(Icons.call_outlined),
+                        label: const Text('Call'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: facetime.isEmpty
+                            ? null
+                            : () => _launch(
+                                () => _launcher.facetime(facetime),
+                                'FaceTime could not be opened.',
+                              ),
+                        icon: const Icon(Icons.video_call_outlined),
+                        label: const Text('FaceTime'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: email.isEmpty
+                            ? null
+                            : () => _launch(
+                                () => _launcher.email(email),
+                                'Email could not be opened.',
+                              ),
+                        icon: const Icon(Icons.email_outlined),
+                        label: const Text('Email'),
+                      ),
+                    ],
                   ),
-                  TextButton.icon(
-                    onPressed: () => openPlenaConversation(
-                      context,
-                      widget.session,
-                      focusId: widget.contactId,
+                  const SizedBox(height: 20),
+                  _Section(
+                    title: 'Relationship plan',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Start with a category. You can tune any part afterward.',
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 7,
+                          runSpacing: 7,
+                          children: [
+                            for (final preset in RelationshipPreset.values)
+                              ActionChip(
+                                key: Key('relationship-preset-${preset.name}'),
+                                label: Text(relationshipPresetLabel(preset)),
+                                onPressed: () => _setPreset(preset),
+                              ),
+                          ],
+                        ),
+                        const Divider(height: 26),
+                        const Text('Circle'),
+                        const SizedBox(height: 7),
+                        Wrap(
+                          spacing: 7,
+                          children: [
+                            for (final circle in RelationshipCircle.values)
+                              ChoiceChip(
+                                key: Key('relationship-circle-${circle.name}'),
+                                label: Text(relationshipCircleLabel(circle)),
+                                selected: status.circle == circle,
+                                onSelected: (_) => _setCircle(circle),
+                              ),
+                          ],
+                        ),
+                        const Divider(height: 26),
+                        _goalRow(status, meaningful: false),
+                        const SizedBox(height: 10),
+                        _goalRow(status, meaningful: true),
+                        const Divider(height: 26),
+                        _descriptorRow(
+                          'Roles',
+                          ((contact['relationshipRoles'] as List?) ?? const [])
+                                  .isEmpty
+                              ? 'Not set'
+                              : (contact['relationshipRoles'] as List).join(
+                                  ', ',
+                                ),
+                          _editRoles,
+                        ),
+                        _descriptorRow(
+                          'Proximity',
+                          _titleCase('${contact['proximity'] ?? 'unknown'}'),
+                          () => _chooseProximity(
+                            '${contact['proximity'] ?? 'unknown'}',
+                          ),
+                        ),
+                        _descriptorRow(
+                          'Reminders',
+                          _engagementLabel(status.engagement),
+                          () => _chooseEngagement(status.engagement),
+                        ),
+                        _descriptorRow(
+                          'Introduced by',
+                          introducedBy == null
+                              ? 'Not set'
+                              : '${introducedBy['displayName']}',
+                          _chooseIntroducedBy,
+                        ),
+                      ],
                     ),
-                    icon: const Icon(Icons.chat_bubble_outline),
-                    label: const Text('Ask Plena'),
                   ),
-                  FilledButton.tonalIcon(
-                    key: const Key('log-interaction'),
-                    onPressed: _logInteraction,
-                    icon: const Icon(Icons.add_comment_outlined),
-                    label: const Text('Log interaction'),
-                  ),
-                  OutlinedButton.icon(
-                    key: const Key('relationship-add-follow-up'),
-                    onPressed: _addFollowUp,
-                    icon: Icon(
-                      proximity == 'remote'
-                          ? Icons.phone_in_talk_outlined
-                          : proximity == 'local' || proximity == 'household'
-                          ? Icons.event_available_outlined
-                          : Icons.add_task_rounded,
+                  _Section(
+                    title: 'Contact details',
+                    child: Column(
+                      children: [
+                        _editableRow(
+                          'Name',
+                          '${contact['displayName']}',
+                          'displayName',
+                        ),
+                        _editableRow('Phone', phone, 'primaryPhone'),
+                        _editableRow('Email', email, 'primaryEmail'),
+                        _editableRow(
+                          'Notes',
+                          '${contact['notes'] ?? ''}',
+                          'notes',
+                        ),
+                      ],
                     ),
-                    label: Text(followUpLabel),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: phone.isEmpty
-                        ? null
-                        : () => _launch(
-                            () => _launcher.phone(phone),
-                            'A phone call could not be opened.',
+                  _Section(
+                    title: 'Facts',
+                    action: TextButton.icon(
+                      key: const Key('fact-add'),
+                      onPressed: _addFact,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add fact'),
+                    ),
+                    child: facts.isEmpty
+                        ? const Text(
+                            'Nothing noted yet.',
+                            style: TextStyle(color: PlenaraTheme.quietInk),
+                          )
+                        : Column(
+                            children: [
+                              for (final fact in facts)
+                                ListTile(
+                                  key: Key('fact-${fact['id']}'),
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text('${fact['fact']}'),
+                                  onTap: () => _editFact(fact),
+                                  trailing: IconButton(
+                                    tooltip: 'Delete fact',
+                                    onPressed: () => _deleteRecord(fact),
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                    icon: const Icon(Icons.call_outlined),
-                    label: const Text('Call'),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: facetime.isEmpty
-                        ? null
-                        : () => _launch(
-                            () => _launcher.facetime(facetime),
-                            'FaceTime could not be opened.',
+                  _Section(
+                    title: 'Interaction history',
+                    action: TextButton.icon(
+                      onPressed: _logInteraction,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Log'),
+                    ),
+                    child: interactions.isEmpty
+                        ? const Text(
+                            'No interactions logged yet.',
+                            style: TextStyle(color: PlenaraTheme.quietInk),
+                          )
+                        : Column(
+                            children: [
+                              for (final interaction in interactions)
+                                ListTile(
+                                  key: Key('interaction-${interaction['id']}'),
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: Icon(
+                                    _mediumIcon(
+                                      '${interaction['medium'] ?? ''}',
+                                    ),
+                                    color: PlenaraTheme.amber,
+                                  ),
+                                  title: Text(
+                                    '${_mediumLabel('${interaction['medium'] ?? interaction['kind'] ?? 'interaction'}')} · ${connectionDepthOf(interaction) == ConnectionDepth.meaningful ? 'Meaningful' : 'Quick touch'}',
+                                  ),
+                                  subtitle: Text(
+                                    [
+                                      _friendlyDate('${interaction['at']}'),
+                                      if ('${interaction['note'] ?? ''}'
+                                          .trim()
+                                          .isNotEmpty)
+                                        '${interaction['note']}',
+                                    ].join(' · '),
+                                  ),
+                                  onTap: () => _editInteraction(interaction),
+                                  trailing: IconButton(
+                                    tooltip: 'Delete interaction',
+                                    onPressed: () => _deleteRecord(interaction),
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                    icon: const Icon(Icons.video_call_outlined),
-                    label: const Text('FaceTime'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: email.isEmpty
-                        ? null
-                        : () => _launch(
-                            () => _launcher.email(email),
-                            'Email could not be opened.',
-                          ),
-                    icon: const Icon(Icons.email_outlined),
-                    label: const Text('Email'),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              _Section(
-                title: 'Relationship plan',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Start with a category. You can tune any part afterward.',
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 7,
-                      runSpacing: 7,
-                      children: [
-                        for (final preset in RelationshipPreset.values)
-                          ActionChip(
-                            key: Key('relationship-preset-${preset.name}'),
-                            label: Text(relationshipPresetLabel(preset)),
-                            onPressed: () => _setPreset(preset),
-                          ),
-                      ],
-                    ),
-                    const Divider(height: 26),
-                    const Text('Circle'),
-                    const SizedBox(height: 7),
-                    Wrap(
-                      spacing: 7,
-                      children: [
-                        for (final circle in RelationshipCircle.values)
-                          ChoiceChip(
-                            key: Key('relationship-circle-${circle.name}'),
-                            label: Text(relationshipCircleLabel(circle)),
-                            selected: status.circle == circle,
-                            onSelected: (_) => _setCircle(circle),
-                          ),
-                      ],
-                    ),
-                    const Divider(height: 26),
-                    _goalRow(status, meaningful: false),
-                    const SizedBox(height: 10),
-                    _goalRow(status, meaningful: true),
-                    const Divider(height: 26),
-                    _descriptorRow(
-                      'Roles',
-                      ((contact['relationshipRoles'] as List?) ?? const [])
-                              .isEmpty
-                          ? 'Not set'
-                          : (contact['relationshipRoles'] as List).join(', '),
-                      _editRoles,
-                    ),
-                    _descriptorRow(
-                      'Proximity',
-                      _titleCase('${contact['proximity'] ?? 'unknown'}'),
-                      () => _chooseProximity(
-                        '${contact['proximity'] ?? 'unknown'}',
-                      ),
-                    ),
-                    _descriptorRow(
-                      'Reminders',
-                      _engagementLabel(status.engagement),
-                      () => _chooseEngagement(status.engagement),
-                    ),
-                    _descriptorRow(
-                      'Introduced by',
-                      introducedBy == null
-                          ? 'Not set'
-                          : '${introducedBy['displayName']}',
-                      _chooseIntroducedBy,
-                    ),
-                  ],
-                ),
-              ),
-              _Section(
-                title: 'Contact details',
-                child: Column(
-                  children: [
-                    _editableRow(
-                      'Name',
-                      '${contact['displayName']}',
-                      'displayName',
-                    ),
-                    _editableRow('Phone', phone, 'primaryPhone'),
-                    _editableRow('Email', email, 'primaryEmail'),
-                    _editableRow('Notes', '${contact['notes'] ?? ''}', 'notes'),
-                  ],
-                ),
-              ),
-              _Section(
-                title: 'Facts',
-                action: TextButton.icon(
-                  key: const Key('fact-add'),
-                  onPressed: _addFact,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add fact'),
-                ),
-                child: facts.isEmpty
-                    ? const Text(
-                        'Nothing noted yet.',
-                        style: TextStyle(color: PlenaraTheme.quietInk),
-                      )
-                    : Column(
-                        children: [
-                          for (final fact in facts)
-                            ListTile(
-                              key: Key('fact-${fact['id']}'),
-                              contentPadding: EdgeInsets.zero,
-                              title: Text('${fact['fact']}'),
-                              onTap: () => _editFact(fact),
-                              trailing: IconButton(
-                                tooltip: 'Delete fact',
-                                onPressed: () => _deleteRecord(fact),
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-              ),
-              _Section(
-                title: 'Interaction history',
-                action: TextButton.icon(
-                  onPressed: _logInteraction,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Log'),
-                ),
-                child: interactions.isEmpty
-                    ? const Text(
-                        'No interactions logged yet.',
-                        style: TextStyle(color: PlenaraTheme.quietInk),
-                      )
-                    : Column(
-                        children: [
-                          for (final interaction in interactions)
-                            ListTile(
-                              key: Key('interaction-${interaction['id']}'),
-                              contentPadding: EdgeInsets.zero,
-                              leading: Icon(
-                                _mediumIcon('${interaction['medium'] ?? ''}'),
-                                color: PlenaraTheme.amber,
-                              ),
-                              title: Text(
-                                '${_mediumLabel('${interaction['medium'] ?? interaction['kind'] ?? 'interaction'}')} · ${connectionDepthOf(interaction) == ConnectionDepth.meaningful ? 'Meaningful' : 'Quick touch'}',
-                              ),
-                              subtitle: Text(
-                                [
-                                  _friendlyDate('${interaction['at']}'),
-                                  if ('${interaction['note'] ?? ''}'
-                                      .trim()
-                                      .isNotEmpty)
-                                    '${interaction['note']}',
-                                ].join(' · '),
-                              ),
-                              onTap: () => _editInteraction(interaction),
-                              trailing: IconButton(
-                                tooltip: 'Delete interaction',
-                                onPressed: () => _deleteRecord(interaction),
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-              ),
-            ],
+            ),
           ),
           const PlenaEmber(mode: 'Person relationship detail.'),
         ],

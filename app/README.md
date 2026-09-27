@@ -6,6 +6,8 @@ The optional GPT guide reads relevant planner context and proposes editable, und
 
 User-selected Calendar/Reminders evidence, pasted text and Shortcuts captures reduce bookkeeping without automatic message surveillance. Calendar entries do not prove attendance. Notifications use private, silent copy and open the relevant conversation. Planner files remain readable JSON in the chosen folder; device history stays local. See [the privacy policy](../PRIVACY.md).
 
+The universal iOS app adapts its layout for iPad: a labeled persistent navigation rail, multi-column Today and People/Routines content, and readable-width details and conversation. One iOS release build installs on both iPhone and iPad. Verify layout on an iPad simulator; never use the physical iPad as a test target.
+
 ## Local verification
 
 ```sh
