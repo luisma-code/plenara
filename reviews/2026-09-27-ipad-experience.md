@@ -22,8 +22,9 @@ Xcode already configures Plenara as one universal iOS target for iPhone and iPad
 - `integration_test/ipad_layout_test.dart` ran on the iPad Pro 13-inch (M5) iOS 26.5 simulator and checked the actual window width, side rail, Today grid, three opportunities, and render exceptions.
 - Full `bash tool/precheck.sh` passed: 2,073 engine tests with 36 declared skips; 184 app tests with 4 declared skips; all 4 external-channel tests; 8 real-engine render tests; analyzer, coverage, host build, seed/doc consistency, secret scan, and the 24/60 conformance ratchet.
 - The macOS render journey rose from about 290 MB to 459 MB RSS, then held around that level through eight cases and exited normally. This is cleanup evidence, not a long-run memory claim.
-- iOS target build, source revision, signing, secret checks, and device installation: recorded after the final release build.
-- Install-only delivery targets: iPhone 16 Pro “Aluminum Monster” and iPad Pro 13-inch (M5) “Golden God.” Neither physical device is used for tests, launches, or layout checks.
+- The internal release is `0.14.1+21`, source revision `db6ee82`, for universal family `[1,2]`; signing team `7V63BZ39HU`; signature verification passed; AOT SHA-256 `7ea3fbb55016b58f2c3684adad0555668c697918735d768b3108e723b8a77f05`.
+- The app installed successfully, without launch, on iPhone 16 Pro “Aluminum Monster” (UDID `00008140-000645442862201C`) on 2026-09-27.
+- iPad Pro 13-inch (M5) “Golden God” (UDID `00008142-001265C90AFB401C`) is paired, reachable, and in developer mode. Installation was rejected because the embedded development profile authorizes only Aluminum Monster. Xcode automatic registration/profile refresh failed with `No Accounts: Add a new account in Accounts settings.` Sign into Xcode with the existing Apple developer team so the profile can include Golden God; the iPad install then needs a rebuild. The app was not launched on either physical device.
 
 ## Scope boundary
 

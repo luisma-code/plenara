@@ -13,6 +13,8 @@
 
 - The existing iOS target is universal (`TARGETED_DEVICE_FAMILY=1,2`); ship one signed app build to iPhone and iPad. At 840 logical points the shell switches to a labeled left rail; Today cards, People and Routines use responsive columns/grids; conversation/detail content has readable maximum widths and data details use a centered dialog on iPad. Phone navigation and bottom sheets remain compact.
 - A calibrated responsive widget test covers the wide shell, three Today pillars, and return to phone navigation. A dedicated integration test targets the local 13-inch iPad Pro simulator (`BF87136A-5095-455E-B9D9-CC96990848E0`) for real-engine layout proof. Physical iPhone and iPad are install-only targets.
+- Universal iOS `0.14.1+21`, internal channel, source revision `db6ee82`, built and signed by Apple Development team `7V63BZ39HU`; AOT SHA-256 `7ea3fbb55016b58f2c3684adad0555668c697918735d768b3108e723b8a77f05`. `codesign --verify --deep --strict` passed. Device family is `[1,2]`. Installed without launching on Aluminum Monster (UDID `00008140-000645442862201C`) on 2026-09-27.
+- Golden God is paired, in developer mode, and reachable (UDID `00008142-001265C90AFB401C`), but the embedded development profile only permits Aluminum Monster. Xcode’s automatic profile refresh/registration failed with `No Accounts: Add a new account in Accounts settings.` The iPad install was rejected because its UDID is absent from the profile. After Xcode has the Apple developer account signed in and refreshes the profile, rebuild and install the same universal app; do not launch either device.
 
 _Current working memory. Last updated 2026-09-27 for universal iPhone/iPad delivery._
 
