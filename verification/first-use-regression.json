@@ -2,5 +2,6 @@
   "brokenRun": "native-20261016-111508.xcresult",
   "failure": "Finishing setup must return to the app",
   "cause": "The first-person editor dismissed but left the outer setup sheet covering the app.",
-  "fix": "Dismiss setup from the completed child-sheet dismissal event after a person was added. Cancellation keeps setup open."
+  "fix": "Dismiss setup from the completed child-sheet dismissal event after a person was added. Cancellation keeps setup open.",
+  "passedReleaseResult": ".build/native-20261016-115443.xcresult"
 }

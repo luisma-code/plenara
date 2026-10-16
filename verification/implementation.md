@@ -26,11 +26,15 @@ The UI journeys exercised first use, saved notes and moments after relaunch, the
 
 Known-broken controls were rejected before trusting the checks. Records cover persistence/reminder/import behavior, dark appearance, recovery, first-use sheet dismissal, dated reminders, and the memory guard. During implementation, real regressions in picker dismissal, unstable picker identifiers under denied access, exact backup date preservation, and nested first-use dismissal were corrected and reverified.
 
-The simulator app RSS peaked at **385.2 MiB** during XCTest. A calibrated 512 MiB guard ran throughout. This is a bounded test observation, not proof of absence of leaks or physical-device memory performance.
+The simulator app RSS peaked at **385.7 MiB** during XCTest. A calibrated 512 MiB guard ran throughout. This is a bounded test observation, not proof of absence of leaks or physical-device memory performance.
 
 ## Delivery
 
-The implementation is committed to `main` and pushed before building the signed physical-device artifact. The install result is recorded below after the delivery attempt. Physical-device delivery is installation only; no phone launch or testing is performed.
+The implementation is committed to `main` and pushed. A signed optimized arm64 device build succeeded with the existing Apple development identity and passed strict code-signature verification. Version **1.0.0 (1000)** retains bundle identity `com.plenara.plenaraApp`. Simulator fixture people and launch controls are absent from the device binary.
+
+Installation was attempted on the configured iPhone, **Aluminum Monster**. CoreDevice returned error **1011: unable to locate the requested device**. This is an unreachable-device blocker; signing succeeded. No physical-phone app was launched or tested. The install script retains the signed artifact locally for delivery when that hardware is reachable.
+
+The signed-artifact audit also exposed XcodeGen’s target-level device-family default overriding the project setting. The app target now explicitly declares iPhone only; the Release gate and device build were repeated after that correction.
 
 ## More captures
 
