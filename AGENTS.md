@@ -18,6 +18,8 @@ Contacts import is explicit selection, never background address-book reading.
 Verification uses a dedicated simulator. Physical devices are install-only.
 Build and test in Release; keep logging useful without logging personal content.
 `ios/README.md` records build, verification, signing, deployment, and data paths.
+Prefer the configured TestFlight route for remote delivery; verify processing
+and assignment to the enrolled internal group before claiming availability.
 
 Run `bash tool/precheck.sh` before reporting repository work complete.
 Global user preferences continue to apply; no old project-local skill is active.

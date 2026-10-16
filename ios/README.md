@@ -47,7 +47,28 @@ Logs record operations/errors without personal content.
 
 ## Delivery
 
-`tool/deploy-phone.sh` builds an optimized signed iPhone artifact using the
+For remote delivery, use **TestFlight** through the existing Plenara App Store
+Connect app and its enrolled internal group. `bash tool/deploy-testflight.sh`
+archives optimized Release code, exports an App Store Connect IPA, validates,
+and uploads it. It uses the existing API key outside the repository. Run the
+precheck before uploading. Apple must finish processing before assignment:
+
+```sh
+python3 tool/testflight.py status 1000
+python3 tool/testflight.py distribute 1000
+```
+
+The helper reads back bundle identity, the internal group, owner enrollment,
+exact build number, version 1.0.0 for iOS, processing status, group assignment,
+and beta availability. Do not equate upload completion with availability.
+Change the version check deliberately when releasing another marketing version.
+A future upload needs a new build number; do not upload the same build twice.
+Build/export/upload logs stay under `.tmp/testflight/`; the IPA is ignored
+under `.build/testflight/export/`. TestFlight installs remotely through Apple's
+app; no physical-phone testing or automatic launch is performed.
+
+`tool/deploy-phone.sh` is the direct-install alternative when the phone is
+reachable. It builds an optimized signed iPhone artifact using the
 existing team, app identity, and configured App Store Connect key. Credentials
 remain outside the repo. It installs to Luis’s configured iPhone without
 launching. No tests or probes are run on the phone. The configured device is

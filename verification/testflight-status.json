@@ -1,0 +1,24 @@
+{
+  "appId": "6795650460",
+  "bundleId": "com.plenara.plenaraApp",
+  "group": {
+    "id": "23726f32-08a5-4c99-9470-5eecd52760ea",
+    "name": "Internal",
+    "internal": true
+  },
+  "ownerEnrolled": true,
+  "builds": [
+    {
+      "id": "8833f59e-243a-4485-b20c-c5da5edaa1f1",
+      "version": "1000",
+      "processingState": "VALID",
+      "expired": false,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "IN_BETA_TESTING",
+        "externalBuildState": "READY_FOR_BETA_SUBMISSION"
+      }
+    }
+  ]
+}

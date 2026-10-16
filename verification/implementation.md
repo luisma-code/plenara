@@ -30,6 +30,8 @@ The simulator app RSS peaked at **385.7 MiB** during XCTest. A calibrated 512 Mi
 
 ## Delivery
 
+**Remote delivery now available:** version 1.0.0 (1000) is in TestFlight for the existing internal group. See the [TestFlight delivery record](testflight-delivery.md). The direct-device attempt below is retained as historical evidence.
+
 The implementation is committed to `main` and pushed. A signed optimized arm64 device build succeeded with the existing Apple development identity and passed strict code-signature verification. Version **1.0.0 (1000)** retains bundle identity `com.plenara.plenaraApp`. Simulator fixture people and launch controls are absent from the device binary.
 
 Installation was attempted on the configured iPhone, **Aluminum Monster**. CoreDevice returned error **1011: unable to locate the requested device**. This is an unreachable-device blocker; signing succeeded. No physical-phone app was launched or tested. The install script retains the signed artifact locally for delivery when that hardware is reachable.
