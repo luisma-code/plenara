@@ -30,3 +30,18 @@ confirmed through the launcher customization UI.
 
 No physical iPhone is launched or tested. TestFlight availability is recorded
 below after Apple's processing and group readback.
+
+
+## TestFlight delivery confirmed
+
+Version **1.0.0 (1001)** passed Apple's validation and upload without errors.
+Delivery UUID: `68d609ee-6576-49cd-8e73-5715bb0c41f8`.
+Apple readback confirms **VALID**, not expired, assigned to the enrolled
+**Internal** group, and **IN_BETA_TESTING**. The automatic upload/release
+workflow completed successfully. Release notes were updated and verified.
+
+[Distribution readback](icon-testflight-status.json) · [Signed artifact record](icon-device-artifact.json)
+
+The native source remains exactly the simulator-verified candidate. Only the
+delivery record was added afterward. The icon is available through TestFlight;
+installation on the owner's remote phone is not observable from this Mac.
