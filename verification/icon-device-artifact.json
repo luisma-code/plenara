@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "build": "1001",
+  "deviceFamily": [
+    1
+  ],
+  "signatureVerified": true,
+  "lightAndDarkIconsPackaged": true,
+  "ipaBytes": 889615,
+  "ipaSHA256": "4ea76f4840f123121766931d15b158658bc99d94b04fd54ad5facd0b6f242b20"
+}
