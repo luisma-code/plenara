@@ -74,3 +74,22 @@ memory guard and cleanup. No physical phone is launched or tested. The owner's
 remote installation cannot be observed from this Mac.
 
 The simulator app RSS peaked at 398.6 MiB in the full test run under the calibrated 512 MiB guard. This bounded observation does not establish physical-device memory use or absence of leaks.
+
+
+## TestFlight delivery confirmed
+
+**1.0.0 (1002)** is available to the existing Internal group. Apple's readback
+confirms VALID, not expired, group assignment, and IN_BETA_TESTING, with the
+owner enrolled. Validation and upload succeeded without errors. Delivery UUID:
+`5d0d50df-1387-4184-97a6-49e4003054d2`. Release notes were updated and read back.
+
+The signed optimized iPhone artifact retains `com.plenara.plenaraApp` and the
+existing journal path. Its signature passed strict verification. The new
+relationship UI is present, while simulator reset/fixture paths and test data
+are absent. [Signed artifact record](device-artifact.json)
+· [TestFlight readback](testflight-status.json).
+
+The app source stayed unchanged after the final verification. The completed
+implementation and delivery records are committed and pushed to main. No
+physical phone was launched or tested; remote installation is controlled by
+TestFlight on the owner's device.

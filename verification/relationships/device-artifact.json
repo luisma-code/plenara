@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "build": "1002",
+  "bundleIdentifier": "com.plenara.plenaraApp",
+  "deviceFamily": [
+    1
+  ],
+  "sameJournalPath": true,
+  "simulatorFixturesExcluded": true,
+  "newRelationshipUIIncluded": true,
+  "releaseOptimizationVerified": true,
+  "strictSignatureVerified": true,
+  "ipaBytes": 964410,
+  "ipaSHA256": "bd169250b62960cfb1e18fbecd853120f77a1dae02f133c1addc57e22574c17c"
+}
