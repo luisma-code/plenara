@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "build": "1000",
+  "bundleIdentifier": "com.plenara.plenaraApp",
+  "deviceFamily": [
+    1
+  ],
+  "signedReleaseBuild": "succeeded",
+  "strictCodeSignature": "verified",
+  "simulatorFixturesAbsent": true,
+  "install": "blocked",
+  "installError": "CoreDevice error 1011: configured iPhone unavailable",
+  "physicalDeviceLaunched": false
+}

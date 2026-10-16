@@ -17,6 +17,8 @@ for test in json.loads((out/'manifest.json').read_text()):
    shutil.copyfile(out/a['exportedFileName'],Path('verification')/(labels[name]+'.png'));found.add(name)
 assert found==set(labels),'Missing screenshots: '+str(set(labels)-found)
 shutil.copyfile('.tmp/full-native-memory.csv' if Path('.tmp/full-native-memory.csv').exists() else '.tmp/native-memory.csv','verification/native-memory.csv')
+memory=Path('verification/native-memory.csv')
+memory.write_bytes(memory.read_bytes().replace(b'\r\n',b'\n'))
 files=list(Path('ios/Plenara').rglob('*'))+[Path('ios/project.yml')]
 Path('verification/native-source-hashes.json').write_text(json.dumps({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(files) if p.is_file()},indent=2)+'\n')
 print('Exported '+str(len(found))+' native screenshots and verification metadata.')

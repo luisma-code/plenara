@@ -34,7 +34,7 @@ The implementation is committed to `main` and pushed. A signed optimized arm64 d
 
 Installation was attempted on the configured iPhone, **Aluminum Monster**. CoreDevice returned error **1011: unable to locate the requested device**. This is an unreachable-device blocker; signing succeeded. No physical-phone app was launched or tested. The install script retains the signed artifact locally for delivery when that hardware is reachable.
 
-The signed-artifact audit also exposed XcodeGen’s target-level device-family default overriding the project setting. The app target now explicitly declares iPhone only; the Release gate and device build were repeated after that correction.
+The signed-artifact audit also exposed XcodeGen’s target-level device-family default overriding the project setting. The app target now explicitly declares iPhone only; the Release gate and device build were repeated after that correction. The final signed artifact confirms device family `[1]`, passes signature verification, and is 4.4 MiB. The repeated install attempt returned the same unreachable-device error. [Device delivery record](device-delivery.json).
 
 ## More captures
 
