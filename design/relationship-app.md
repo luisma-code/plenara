@@ -352,3 +352,13 @@ To regenerate: `bash tool/precheck.sh --capture`, then run
 `node tool/render-preview.cjs` with the same Node module path used by precheck.
 The archive’s 926 file hashes are verified on every precheck. No archived app
 was launched and no physical device was used.
+
+
+## Native app icon
+
+The native icon uses six filled, rounded petals in the app’s ivory, lavender,
+and peach palette, on a plum field. This carries the six-part botanical motif
+into the launcher with enough visual weight for small sizes. The dark
+appearance deepens the plum background. Editable masters live in `design/icon/`;
+`tool/render-icon.cjs` renders both asset-catalog PNGs and the size-review sheet.
+See the [icon update record](../verification/icon-update.md).

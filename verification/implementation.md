@@ -22,7 +22,7 @@ The production app starts empty. Fictional demo people and test launch paths are
 
 The UI journeys exercised first use, saved notes and moments after relaunch, the real Apple contact picker, duplicate-safe reimport, notification permission and the OS pending-request readback, actual Files export and restoration, dark pixels, maximum accessibility text, and birthday/follow-up context and completion. Verification ran only on a dedicated iPhone 16 Pro simulator running iOS 26.5. The iOS 18 minimum builds against the current SDK; older OS runtimes were not available for execution.
 
-[Native test summary](native-test-summary.json) · [Denied Contacts summary](contacts-denied-summary.json) · [Verified source hashes](native-source-hashes.json)
+[Native test summary](native-test-summary.json) · [Denied Contacts summary](contacts-denied-summary.json) · [Original implementation source hashes, build 1000](native-source-hashes.json)
 
 Known-broken controls were rejected before trusting the checks. Records cover persistence/reminder/import behavior, dark appearance, recovery, first-use sheet dismissal, dated reminders, and the memory guard. During implementation, real regressions in picker dismissal, unstable picker identifiers under denied access, exact backup date preservation, and nested first-use dismissal were corrected and reverified.
 
