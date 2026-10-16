@@ -89,11 +89,85 @@ final class PlenaraUITests: XCTestCase {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo", "--dark"]; app.launch()
         XCTAssertTrue(app.staticTexts["A little closer."].waitForExistence(timeout: 5)); assertDarkBackground(); attach("Dark Stay close")
         app.buttons["tab-1"].tap(); app.swipeUp(); app.buttons["person-Sofia Chen"].tap(); attach("Dark person")
+        app.buttons["relationship-intention"].tap(); waitForRelationshipEditor(); attach("Dark relationship choices"); app.buttons["Cancel"].tap()
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]; app.launch()
         XCTAssertTrue(app.buttons["tab-1"].waitForExistence(timeout: 5)); app.buttons["tab-1"].tap(); attach("Large text People")
         let search = app.textFields["people-search"]; search.tap(); search.typeText("Sofia\n")
-        app.swipeUp(); app.buttons["person-Sofia Chen"].tap(); XCTAssertTrue(app.buttons["deepen-toggle"].waitForExistence(timeout: 5)); attach("Large text person")
+        app.swipeUp(); app.buttons["person-Sofia Chen"].tap(); XCTAssertTrue(app.buttons["relationship-intention"].waitForExistence(timeout: 5)); attach("Large text person")
+        let relationship = app.buttons["relationship-intention"]
+        for _ in 0..<4 { if relationship.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(relationship.isHittable); relationship.tap(); waitForRelationshipEditor()
+        XCTAssertTrue(app.buttons["feeling-choice"].waitForExistence(timeout: 5)); attach("Large text relationship choices")
+        app.buttons["Cancel"].tap()
         app.buttons["tab-0"].tap(); XCTAssertTrue(app.staticTexts["A little closer."].exists)
+    }
+    func testExistingImportSurvivesUpgradeAndIndependentChoices() throws {
+        let fixture = try XCTUnwrap(Bundle(for: PlenaraUITests.self).url(forResource: "journal-build-1001", withExtension: "json"))
+        let bytes = try Data(contentsOf: fixture)
+        app.terminate(); app.launchArguments = ["--ui-testing", "--legacy-fixture"]
+        app.launchEnvironment["PLENARA_LEGACY_JOURNAL"] = bytes.base64EncodedString(); app.launch()
+        app.buttons["tab-1"].tap()
+        XCTAssertTrue(app.buttons["person-Maya Imported"].waitForExistence(timeout: 5), "The previous-version import must open without reimporting")
+        XCTAssertTrue(app.buttons["person-Alex Imported"].exists)
+        app.buttons["person-Maya Imported"].tap()
+        let intention = app.buttons["relationship-intention"]
+        XCTAssertTrue(intention.waitForExistence(timeout: 5)); XCTAssertTrue(intention.label.contains("Grow closer"))
+        XCTAssertFalse(intention.label.contains("Feels good")); XCTAssertFalse(intention.label.contains("Needs care"))
+        attach("Migrated imported person")
+        intention.tap(); waitForRelationshipEditor()
+        choose("direction-choice", "Keep it steady")
+        choose("feeling-choice", "Needs care")
+        XCTAssertEqual(app.textFields["relationship-context"].value as? String, "Lunch together", "Existing intention text must survive the new choices")
+        attach("Independent relationship choices")
+        app.buttons["save-relationship"].tap()
+        XCTAssertTrue(intention.waitForExistence(timeout: 5)); XCTAssertTrue(intention.label.contains("Keep it steady")); XCTAssertTrue(intention.label.contains("Needs care"))
+        app.buttons["Edit"].tap()
+        let friend = app.switches["connection-Friend"]
+        for _ in 0..<4 { if friend.isHittable { break }; app.collectionViews.firstMatch.swipeUp() }
+        XCTAssertTrue(friend.isHittable); friend.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        choose("closeness-choice", "Casual")
+        choose("distance-choice", "Far away")
+        attach("About your relationship")
+        app.buttons["save-person"].tap()
+        app.terminate(); app.launchArguments = ["--ui-testing"]; app.launchEnvironment = [:]; app.launch()
+        app.buttons["tab-1"].tap(); app.buttons["person-Maya Imported"].tap()
+        XCTAssertTrue(app.staticTexts["Family"].exists); XCTAssertTrue(app.staticTexts["Friend"].exists); XCTAssertTrue(app.staticTexts["Casual"].exists); XCTAssertTrue(app.staticTexts["Far away"].exists)
+        XCTAssertTrue(intention.label.contains("Keep it steady")); XCTAssertTrue(intention.label.contains("Needs care"))
+        attach("Updated relationship profile")
+        let memory = app.staticTexts["Ask about the exhibition"]
+        for _ in 0..<4 { if memory.exists { break }; app.swipeUp() }
+        XCTAssertTrue(memory.exists, "The existing imported person's notes must survive upgrade and editing")
+        app.buttons["tab-1"].tap()
+        shortcut("Family"); shortcut("Far away"); shortcut("Needs care")
+        XCTAssertTrue(app.buttons["person-Maya Imported"].exists)
+        XCTAssertFalse(app.buttons["person-Alex Imported"].exists, "A combined filter must exclude a person matching only distance")
+        XCTAssertEqual(app.staticTexts["people-count"].label, "1 person")
+        attach("Combined relationship filters")
+        app.buttons["people-filters"].tap(); attach("All relationship filters"); app.buttons["Close"].tap()
+        shortcut("Grow closer")
+        XCTAssertTrue(app.staticTexts["No one matches yet."].exists)
+        app.buttons["Clear filters"].tap()
+        XCTAssertTrue(app.buttons["person-Maya Imported"].exists); XCTAssertTrue(app.buttons["person-Alex Imported"].exists)
+    }
+    func waitForRelationshipEditor() {
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { value, _ in
+            guard let button = value as? XCUIElement else { return false }
+            return button.isHittable && button.frame.minY < 150
+        }, object: app.buttons["Cancel"])
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 5), .completed, "The relationship sheet must finish presenting before capture or input")
+    }
+    func choose(_ identifier: String, _ value: String) {
+        let control = app.buttons[identifier]
+        for _ in 0..<3 { if control.isHittable { break }; app.collectionViews.firstMatch.swipeUp() }
+        XCTAssertTrue(control.isHittable, "The relationship choice must be reachable: \(identifier)")
+        control.tap(); app.buttons[value].tap()
+    }
+    func shortcut(_ label: String) {
+        let control = app.buttons["filter-\(label)"]
+        let strip = app.scrollViews["people-shortcuts"]
+        if !control.isHittable { strip.swipeRight() }
+        for _ in 0..<3 { if control.isHittable { break }; strip.swipeLeft() }
+        XCTAssertTrue(control.isHittable); control.tap()
     }
     func assertDarkBackground() {
         let image = app.screenshot().image

@@ -1,13 +1,13 @@
 # Plenara — a little closer
 
-**Approved design · October 16, 2026 · implementation requested by Luis**
+**Approved design · October 16, 2026 · independent relationship attributes approved after Astra consultation**
 
 Plenara is a quiet place to care for your relationships. It helps you remember
 who you want to stay close to, make room for them, and carry the little details
 forward. The primary problem is time slipping away, especially with distant
 friends. The app should turn that into an easy invitation to reconnect.
 
-[See the screen preview](preview.png) · [Full person page](person-details.png) · [Try the interactive prototype](prototype.html)
+[Current native relationship update](../verification/relationships/update.md) · [Original screen preview](preview.png) · [Original interactive design reference](prototype.html)
 
 The preview and prototype use fictional people. This document is the single
 home for the approved product design. The previous planner, designs, project
@@ -49,12 +49,16 @@ It does not imply that a distant friendship matters less.
 
 ### People
 
-A searchable, alphabetical list of people. Filter by Everyone, Deepen, Local,
-Far away, or Family. Closeness can become a secondary filter if the list grows;
-the first version should keep the primary row short.
+A searchable, alphabetical list of people. Shortcuts include Everyone, Grow
+closer, Needs care, Nearby, Far away, and Family. Choices from different
+dimensions combine: Family + Far away + Needs care narrows the list to all
+three. The Filters sheet exposes connection, distance, closeness, intention,
+and feeling independently, including unanswered profiles. Everyone clears all
+filters. Show the active combination and a reassuring empty state: no matches
+does not mean the imported people disappeared.
 
 Each row has a photo or a warm initials avatar, name, location, and closeness.
-The deepening intention has a small symbol and an accessible text label.
+Growth and care intentions have small symbols with accessible text labels.
 An add button offers Contacts import and manual entry.
 
 ### Moments
@@ -68,10 +72,14 @@ time together; it does not reward logging volume.
 
 Read from top to bottom in the order you need before contacting someone:
 
-1. **Who they are.** Photo, preferred name, city, local time if known, family or
-   friend, closeness, and local or far away. Birthdays are visible here when kept.
-2. **Your intention.** “A relationship I want to deepen.” A reversible choice
-   independent of closeness: you can deepen a close bond or a new acquaintance.
+1. **Who they are.** Photo, preferred name, city, local time if known, Family
+   and/or Friend, current closeness, and Nearby/Far away. Birthdays are visible
+   here when kept. Connection, distance, and closeness form About your relationship.
+2. **What matters now.** Two separate optional choices: What would you like?
+   (Keep it steady / Grow closer) and How does it feel? (Feels good / Needs care).
+   A shared optional context note captures what you want to give attention to.
+   Both choices can be cleared. A good relationship can still be one to grow;
+   a close bond can need care without a change in desired closeness.
 3. **Do something.** Log a moment; reach out using their preferred method.
 4. **Before you catch up.** A pinned fact or question: an upcoming show, a new
    job, a parent’s recovery, a topic to revisit. Written by you; no inference
@@ -95,10 +103,11 @@ be skipped. Don’t demand a complete profile before the person appears.
 | --- | --- | --- |
 | Preferred name, pronunciation, photo | Recognize and address them naturally | Name required; the rest optional |
 | Contact methods and preference | Start a call or message without searching | Import phones/emails; let Luis choose the preferred route |
-| Family or friend; optional description | Distinguish the relationship without a taxonomy project | Simple choice plus optional “cousin,” “friend from university,” etc. |
-| Closeness | How this bond currently feels | Inner circle, Close, Getting to know, Acquaintance; leave unset |
-| City/area, time zone, local/far away | Suggest a fitting connection at a sensible time | Manual or imported area; no GPS requirement or assumption from phone prefix |
-| Deepening intention | Remember where Luis wants to invest more | Explicit toggle; optionally add “why I want to deepen this” |
+| Connection: Family and/or Friend | How you know them, independent of affection | Two optional selections, either or both; optional “cousin,” “university friend,” etc. |
+| Current closeness | How close the bond feels today | Inner circle, Close, Casual; leave unset |
+| City/area, time zone, Nearby/Far away | Suggest a fitting connection at a sensible time | Manual or imported area; no GPS requirement or assumption from phone prefix |
+| Desired direction | Remember the relationship you want | Keep it steady / Grow closer; leave unset |
+| Personal feeling | Distinguish feeling good from something deserving care | Feels good / Needs care; leave unset, never inferred; optional context note |
 | Desired contact rhythm | Convert intention into a gentle reminder | Weekly to seasonal, custom interval, or off; always editable |
 | Last meaningful connection | Notice when time has slipped away | Derived from confirmed moments; allow an approximate starting date |
 | Recent outreach | Avoid pestering someone awaiting a reply | Separate from connection; no automated escalation |
@@ -118,7 +127,13 @@ Contacts notes. Do not silently write journal notes back to Contacts.
 ## How the reminders work
 
 “Healthy” is personal. The app uses a rhythm Luis chooses; elapsed time is a
-reminder signal, not a claim that the bond is unhealthy.
+reminder signal, not a claim that the bond is unhealthy. Direction and feeling
+are user-authored answers, independent of connection, distance, and closeness.
+They start unset, including on import. Keep it steady is an intention, not a
+health assessment. Needs care does not lower closeness, change a rhythm, start
+a countdown, or add a notification. Home keeps Time to connect separate from
+small, explicit growth/care invitations, avoiding duplicate cards for the same
+person. Needs care is never ranked as urgent by the reminder algorithm.
 
 **Starting suggestions, to be confirmed during setup:**
 
@@ -126,8 +141,7 @@ reminder signal, not a claim that the bond is unhealthy.
 | --- | --- | --- | --- |
 | Inner circle | Weekly | Offer twice weekly or a personal rhythm | Nearby meal; distant call |
 | Close | Monthly | Offer every 2 weeks | Nearby walk; distant voice-note exchange |
-| Getting to know | Every 2 months | Offer every 2–4 weeks | Nearby coffee; distant shared interest |
-| Acquaintance | Every 3 months | Offer monthly | Nearby event; distant thoughtful check-in |
+| Casual | Every 3 months | Offer monthly | Nearby coffee/event; distant thoughtful check-in |
 | Unset | Off until chosen | Offer setup | Import is not permission to nudge |
 
 These are proposals, not a formula for friendship. Family does not automatically
@@ -135,8 +149,8 @@ mean inner circle. Distance does not lower the suggested frequency. Location
 and distance are separate: “local” is Luis’s judgement, and can be edited after
 a move. Travelling can temporarily change how a connection is suggested.
 
-A manual rhythm always wins. Turning on Deepen offers a shorter interval; it
-never silently changes an existing interval. A custom rhythm is supported in
+A manual rhythm always wins. Choosing Grow closer does not change a rhythm. The rhythm editor
+offers a suggestion that must be explicitly chosen. A custom rhythm is supported in
 the native app even though the browser prototype uses preset choices.
 
 For scheduling, use calendar dates in the owner’s time zone. A reminder becomes
@@ -174,7 +188,7 @@ not send notifications or implement all scheduling behavior.
 3. Review selected people before adding. Import name, available photo, selected
    phone/email, and optional birthday/city only when useful and accessible.
 4. Ask for lightweight setup, individually or in a batch. Do not infer family,
-   closeness, deepening intention, last contact, or reminder permission.
+   closeness, direction, feeling, last contact, or reminder permission.
 5. Let Luis add more later without duplicating existing people. Keep source
    contact identifiers for reimport; detect possible matches but ask before
    merging ambiguous entries. Linking a manually added person must preserve
@@ -250,7 +264,7 @@ storage architecture or a safe place for real relationship information.
 
 Contacts import and manual people entry; relationship setup; home suggestions;
 search and filters; person page; editable notes and moments; adjustable rhythms;
-deepening intention; opt-in reminders; export and deletion. The app opens
+independent direction/feeling choices; opt-in reminders; export and deletion. The app opens
 existing communication tools rather than building its own messaging system.
 
 It should not need an AI service to remember a fact or know time has passed.
@@ -264,9 +278,15 @@ connection. Export must include people, notes, rhythms, and dated moments in a
 readable format. These controls are part of the proposed native app, not all
 present in the design demo.
 
-## The browser design reference
+## The original browser design reference
 
-Implemented and wired: three tabs; people search and filters; person pages;
+This is the historical visual reference from before the independent-attributes
+update. Its original categorical labels and single-filter behavior are not the
+current native product specification. It stays clearly marked as an earlier
+reference, with fictional demo data, so original design decisions and their
+checks remain reproducible.
+
+Originally implemented and wired: three tabs; people search and filters; person pages;
 manual add/edit of basic person fields; intention toggling; preset rhythm
 editing; adding dated notes; logging a connection or outreach; seven-day snooze;
 fictional selective contact import with repeat-import deduplication; a reminder
@@ -362,3 +382,33 @@ into the launcher with enough visual weight for small sizes. The dark
 appearance deepens the plum background. Editable masters live in `design/icon/`;
 `tool/render-icon.cjs` renders both asset-catalog PNGs and the size-review sheet.
 See the [icon update record](../verification/icon-update.md).
+
+
+## Independent attributes: alternatives and preservation
+
+Luis approved the five-dimensional model following Astra consultation: Family
+and/or Friend; Nearby/Far away; Inner circle/Close/Casual; Keep it steady/Grow
+closer; Feels good/Needs care. Every dimension can remain unset.
+
+A single Steady/Grow/Repair selector would mix desired closeness with felt
+condition; someone can want to maintain a close bond while clearing the air.
+A lone Needs care toggle would make an unassessed relationship look healthy.
+The two explicit optional choices preserve both distinctions with one small
+additional field. Health scores, severities, target closeness levels, and
+automatic assessments add apparatus and false precision without helping the
+chosen experience. These choices remain revisable by Luis.
+
+Updates retain the existing app identity and `RelationshipJournal/journal-v1.json`
+storage path. New classification fields are additive and optional for decoding
+old journals and backups. Old Family/Friend selections remain; Deepen=true
+becomes Grow closer, while false stays unanswered. Local becomes Nearby;
+Acquaintance becomes Casual. Getting to know is retained as earlier context,
+with current closeness unset because a stage does not establish felt closeness.
+Existing rhythms, pauses, history, contact links, photos, notes, identities,
+and personal text are retained. No reimport is required.
+
+Opening an old journal normalizes it in memory without rewriting the original
+file. The first successful edit keeps a protected before-update recovery copy
+in addition to the normal previous-save backup. Later saves do not replace the
+before-update copy. Settings offers explicit recovery with confirmation. Old
+exported backups and previous local saves use the same decoding/migration path.

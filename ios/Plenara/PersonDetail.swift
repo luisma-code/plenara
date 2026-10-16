@@ -15,7 +15,7 @@ struct PersonDetail: View {
     @State private var editingMemory: Memory?
     @State private var editingMoment: Moment?
     @State private var addMemory = false
-    @State private var deepenSuggestion = false
+    @State private var intentionEditing = false
     @State private var contactError = false
     var person: Person? { store.journal.people.first { $0.id == id } }
     var body: some View {
@@ -37,6 +37,7 @@ struct PersonDetail: View {
                     }.padding(24)
                 }
                 .sheet(isPresented: $editing) { PersonEditor(person: p) }
+                .sheet(isPresented: $intentionEditing) { RelationshipIntentEditor(person: p) }
                 .sheet(isPresented: $rhythm) { RhythmEditor(person: p) }
                 .sheet(isPresented: $logging) { MomentEditor(personID: p.id) }
                 .sheet(isPresented: $addMemory) { MemoryEditor(personID: p.id, memory: Memory()) }
@@ -56,10 +57,6 @@ struct PersonDetail: View {
                     Button("Remove person and journal", role: .destructive) { store.deletePerson(p.id); if store.errorMessage == nil { dismiss() } }
                     Button("Cancel", role: .cancel) { }
                 } message: { Text("This removes their notes and moments from Plenara. Their phone contact is untouched. Export a backup first to keep a copy.") }
-                .confirmationDialog("Make a little more room?", isPresented: $deepenSuggestion, titleVisibility: .visible) {
-                    Button("Adjust contact rhythm") { rhythm = true }
-                    Button("Keep my rhythm", role: .cancel) { }
-                } message: { Text("You can choose a shorter rhythm for this relationship. Your current rhythm hasn’t changed.") }
             } else { QuietEmpty(title: "This person was removed.", message: "Your other relationships are still here.").padding() }
         }.background(Theme.paper).toolbar(.hidden, for: .navigationBar)
             .alert("Contact method unavailable", isPresented: $contactError) { Button("OK") {} } message: { Text("This device couldn’t open that app. You can copy the number or email from Edit.") }
@@ -72,12 +69,17 @@ struct PersonDetail: View {
             if !p.relationshipDetail.isEmpty { Text(p.relationshipDetail).font(.subheadline).foregroundStyle(Theme.muted) }
             Text(location(p)).font(.subheadline).foregroundStyle(Theme.muted)
             if let birthday = birthdayText(p) { Text("Birthday · \(birthday)").font(.subheadline).foregroundStyle(Theme.muted).accessibilityIdentifier("birthday-info") }
-            if p.relationship == "Not set" && p.closeness == "Not set" && p.distance == "Not set" {
+            if p.connectionKinds.isEmpty && p.closeness == "Not set" && p.distance == "Not set" {
                 Button("Add relationship details") { editing = true }.font(.subheadline).frame(minHeight: 44)
             } else { ViewThatFits { HStack { relationshipTags(p) }; VStack { relationshipTags(p) } } }
-            Button {
-                var changed = p; changed.deepen.toggle(); if store.save(changed) && changed.deepen { deepenSuggestion = true }
-            } label: { Label(p.deepen ? "A relationship I want to deepen" : "I’d like to deepen this", systemImage: "leaf").font(.subheadline).padding(13).frame(minHeight: 44).background(Theme.lavender, in: RoundedRectangle(cornerRadius: 15)) }.accessibilityIdentifier("deepen-toggle").accessibilityValue(p.deepen ? "On" : "Off")
+            Button { intentionEditing = true } label: {
+                VStack(alignment: .leading, spacing: 9) {
+                    HStack { Eyebrow(text: "What matters now"); Spacer(); Image(systemName: "chevron.right").font(.caption) }
+                    if p.directionChoice != "Not set" { Label(p.directionChoice, systemImage: p.wantsToGrow ? "leaf" : "heart").font(.subheadline.weight(.semibold)) }
+                    if p.feelingChoice != "Not set" { Label(p.feelingChoice, systemImage: p.feelingChoice == "Needs care" ? "heart" : "heart.circle").font(.subheadline) }
+                    if p.directionChoice == "Not set" && p.feelingChoice == "Not set" { Text("What would you like for this relationship?").font(.subheadline) }
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(16).background(Theme.lavender, in: RoundedRectangle(cornerRadius: 18))
+            }.buttonStyle(.plain).accessibilityIdentifier("relationship-intention")
             if !p.intention.isEmpty { Text(p.intention).font(.subheadline).foregroundStyle(Theme.muted).multilineTextAlignment(.center) }
         }.frame(maxWidth: .infinity)
     }
@@ -91,7 +93,7 @@ struct PersonDetail: View {
         return parts.isEmpty ? "A place in your life" : parts.joined(separator: " · ")
     }
     @ViewBuilder func relationshipTags(_ p: Person) -> some View {
-        if p.relationship != "Not set" { tag(p.relationship) }
+        ForEach(p.connectionKinds, id: \.self) { tag($0) }
         if p.closeness != "Not set" { tag(p.closeness) }
         if p.distance != "Not set" { tag(p.distance) }
     }

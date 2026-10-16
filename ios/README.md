@@ -33,6 +33,15 @@ the physical-device binary. Production opens an empty journal.
 ## Data
 
 The live file is `Application Support/RelationshipJournal/journal-v1.json`.
+The independent-attributes update keeps this exact file and app identity;
+imported people do not need to be imported again. `JournalStore.readJournal`
+is the shared old/new decoding, migration, and validation path for startup,
+backup import, and recovery. New attributes decode optionally. The original
+bytes are not rewritten on open. The first edit retains a protected
+`.before-relationship-update` copy which later saves never replace; Settings
+can recover it after confirmation. The frozen fictional build-1001 journal in
+`PlenaraTests/Fixtures/` exercises preservation in unit and UI tests. It is
+packaged into test bundles only, never the production app.
 This distinct path does not read or migrate the previous app’s planner data.
 Writes are atomic, protected until the first device unlock, and retain one
 previous save. A damaged file is left untouched and editing is blocked until

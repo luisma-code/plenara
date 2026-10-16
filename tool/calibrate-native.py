@@ -14,7 +14,7 @@ try:
  replace('JournalStore.swift','e.dateEncodingStrategy = .deferredToDate','e.dateEncodingStrategy = .iso8601')
  replace('JournalStore.swift','d.dateDecodingStrategy = .deferredToDate','d.dateDecodingStrategy = .iso8601')
  replace('JournalStore.swift','if FileManager.default.fileExists(atPath: self.file.path) {','if false {')
- replace('JournalStore.swift','    @discardableResult private func persist(_ candidate: Journal) -> Bool {','    @discardableResult private func persist(_ candidate: Journal) -> Bool {\n        journal = candidate')
+ replace('JournalStore.swift','    @discardableResult private func persist(_ input: Journal) -> Bool {','    @discardableResult private func persist(_ input: Journal) -> Bool {\n        journal = input')
  replace('Models.swift',' && $0.connected','')
  replace('Models.swift','var reminders: [DatedReminder] = []','if true { return [] }; var reminders: [DatedReminder] = []')
  replace('Models.swift','max(0, calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day ?? 0)','0')
@@ -48,7 +48,7 @@ try:
  run=subprocess.run(['bash','tool/test-native.sh'],text=True,capture_output=True)
  log=Path('.tmp/native-tests.log').read_text() if Path('.tmp/native-tests.log').exists() else ''
  Path('.tmp/native-broken-control.log').write_text(log)
- expected=re.findall(r'func (test\w+)\(',Path('ios/PlenaraTests/JournalTests.swift').read_text()+Path('ios/PlenaraUITests/PlenaraUITests.swift').read_text())
+ expected=json.loads(Path('verification/native-calibration.json').read_text())['failedTests']
  failed=set(re.findall(r"Test Case '-\[[^ ]+ (test\w+)\]' failed",log))
  assert run.returncode != 0, 'Known-broken candidate unexpectedly passed'
  missing=set(expected)-failed

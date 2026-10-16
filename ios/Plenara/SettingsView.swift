@@ -56,8 +56,17 @@ struct SettingsView: View {
                     Button("Restore from a backup") { importing = true }
                     if FileManager.default.fileExists(atPath: store.file.appendingPathExtension("previous").path) {
                         Button("Recover previous local save") {
-                            do { let bytes = try Data(contentsOf: store.file.appendingPathExtension("previous")); let previous = try JournalStore.decoder.decode(Journal.self, from: bytes); try previous.validate(); pendingRestore = bytes; restoreName = "\(previous.people.count) people and \(previous.moments.count) moments from the previous local save"; confirmRestore = true }
+                            do { let bytes = try Data(contentsOf: store.file.appendingPathExtension("previous")); let previous = try JournalStore.readJournal(bytes); pendingRestore = bytes; restoreName = "\(previous.people.count) people and \(previous.moments.count) moments from the previous local save"; confirmRestore = true }
                             catch { statusMessage = "The previous save couldn’t be opened. Please restore an exported backup." }
+                        }
+                    }
+                    if FileManager.default.fileExists(atPath: store.beforeRelationshipUpdate.path) {
+                        Button("Recover before relationship update") {
+                            do {
+                                let bytes = try Data(contentsOf: store.beforeRelationshipUpdate)
+                                let previous = try JournalStore.readJournal(bytes)
+                                pendingRestore = bytes; restoreName = "\(previous.people.count) people and \(previous.moments.count) moments from before the relationship update"; confirmRestore = true
+                            } catch { statusMessage = "The before-update backup couldn’t be opened. Your current journal is untouched." }
                         }
                     }
                     Text("Save the backup somewhere you trust, such as your private iCloud Drive. Backups include your personal notes and contact details. A readable journal is for reading; the JSON backup is for restoring.").font(.footnote).foregroundStyle(Theme.muted)
@@ -78,7 +87,7 @@ struct SettingsView: View {
                     do { let url = try result.get(); let scoped = url.startAccessingSecurityScopedResource(); defer { if scoped { url.stopAccessingSecurityScopedResource() } }
                         let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
                         guard size < 50_000_000 else { throw JournalError.invalidBackup }
-                        let bytes = try Data(contentsOf: url); let loaded = try JournalStore.decoder.decode(Journal.self, from: bytes); try loaded.validate()
+                        let bytes = try Data(contentsOf: url); let loaded = try JournalStore.readJournal(bytes)
                         pendingRestore = bytes; restoreName = "\(loaded.people.count) people and \(loaded.moments.count) moments"; confirmRestore = true
                     } catch { statusMessage = "That backup couldn’t be opened. Your current journal is untouched. \(error.localizedDescription)" }
                 }

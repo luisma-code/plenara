@@ -11,6 +11,12 @@ import SwiftUI
         if args.contains("--ui-testing") {
             url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("UITestJournal/journal.json")
             if args.contains("--reset") { try? FileManager.default.removeItem(at: url!.deletingLastPathComponent()) }
+            // A frozen fictional journal from build 1001 is supplied by the UI test bundle.
+            // This never reads, replaces, or resets the production journal.
+            if args.contains("--legacy-fixture"), let encoded = ProcessInfo.processInfo.environment["PLENARA_LEGACY_JOURNAL"], let bytes = Data(base64Encoded: encoded) {
+                try? FileManager.default.createDirectory(at: url!.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try? bytes.write(to: url!, options: .atomic)
+            }
         }
         #endif
         let s = JournalStore(file: url)

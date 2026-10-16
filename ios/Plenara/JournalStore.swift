@@ -11,11 +11,18 @@ import OSLog
     // Foundation reference-date numbers round-trip subsecond dates losslessly.
     static let encoder: JSONEncoder = { let e = JSONEncoder(); e.dateEncodingStrategy = .deferredToDate; e.outputFormatting = [.prettyPrinted, .sortedKeys]; return e }()
     static let decoder: JSONDecoder = { let d = JSONDecoder(); d.dateDecodingStrategy = .deferredToDate; return d }()
+    var beforeRelationshipUpdate: URL { file.appendingPathExtension("before-relationship-update") }
+    static func readJournal(_ bytes: Data) throws -> Journal {
+        var loaded = try decoder.decode(Journal.self, from: bytes)
+        loaded.migrateRelationshipFields()
+        try loaded.validate()
+        return loaded
+    }
     init(file: URL? = nil) {
         self.file = file ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("RelationshipJournal/journal-v1.json")
         journal = Journal()
         if FileManager.default.fileExists(atPath: self.file.path) {
-            do { let loaded = try Self.decoder.decode(Journal.self, from: Data(contentsOf: self.file)); try loaded.validate(); journal = loaded }
+            do { journal = try Self.readJournal(Data(contentsOf: self.file)) }
             catch { locked = true; errorMessage = "Your saved journal could not be opened. It has been left untouched. You can restore a backup in Settings. \(error.localizedDescription)" }
         }
         log.notice("Journal opened; read-only: \(self.locked)")
@@ -25,13 +32,18 @@ import OSLog
         var candidate = journal; change(&candidate)
         return persist(candidate)
     }
-    @discardableResult private func persist(_ candidate: Journal) -> Bool {
+    @discardableResult private func persist(_ input: Journal) -> Bool {
+        var candidate = input; candidate.migrateRelationshipFields()
         do {
             try candidate.validate()
             let bytes = try Self.encoder.encode(candidate)
             try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
             if !locked && FileManager.default.fileExists(atPath: file.path) {
                 let old = try Data(contentsOf: file)
+                if !FileManager.default.fileExists(atPath: beforeRelationshipUpdate.path),
+                   let legacy = try? Self.decoder.decode(Journal.self, from: old), let upgraded = try? Self.readJournal(old), legacy != upgraded {
+                    try old.write(to: beforeRelationshipUpdate, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+                }
                 try old.write(to: file.appendingPathExtension("previous"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             }
             try bytes.write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
@@ -49,14 +61,14 @@ import OSLog
     func deletePerson(_ id: UUID) { update { j in j.people.removeAll { $0.id == id }; j.moments.removeAll { $0.personID == id } } }
     func deleteMoment(_ id: UUID) { update { $0.moments.removeAll { $0.id == id } } }
     func restore(_ bytes: Data) -> Bool {
-        do { guard bytes.count < 50_000_000 else { throw JournalError.invalidBackup }; let loaded = try Self.decoder.decode(Journal.self, from: bytes); try loaded.validate(); return persist(loaded) }
+        do { guard bytes.count < 50_000_000 else { throw JournalError.invalidBackup }; let loaded = try Self.readJournal(bytes); return persist(loaded) }
         catch { errorMessage = "Couldn’t restore this backup. Nothing was replaced. \(error.localizedDescription)"; return false }
     }
     func exportData() throws -> Data { guard !locked else { throw JournalError.unreadable("The saved journal could not be opened. Restore a backup before exporting.") }; return try Self.encoder.encode(journal) }
     func exportText() -> String {
         var lines = ["# Plenara relationship journal", "Exported \(Date().formatted(date: .long, time: .shortened))", ""]
         for p in journal.people.sorted(by: { $0.name < $1.name }) {
-            lines += ["## \(p.name)", "\(p.relationship) · \(p.closeness) · \(p.city) · \(p.distance)", "Contact rhythm: \(p.cadence) days; paused: \(p.paused); deepen: \(p.deepen)", "Intention: \(p.intention)", "Phone: \(p.phones.joined(separator: ", ")); email: \(p.emails.joined(separator: ", "))", ""]
+            lines += ["## \(p.name)", "\(p.connectionKinds.joined(separator: " + ")) · \(p.closeness) · \(p.city) · \(p.distance)", "Contact rhythm: \(p.cadence) days; paused: \(p.paused)", "What I want: \(p.directionChoice); how it feels: \(p.feelingChoice)", "Context: \(p.intention)", "Earlier closeness description: \(p.previousCloseness ?? "None")", "Phone: \(p.phones.joined(separator: ", ")); email: \(p.emails.joined(separator: ", "))", ""]
             lines += p.notes.map { "- [\($0.category)] \($0.text) (\($0.date.formatted(date: .abbreviated, time: .omitted)))\($0.archived ? " [archived]" : "")" }
             lines += historyText(p.id)
             lines.append("")

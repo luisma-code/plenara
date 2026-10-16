@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		212CBB96B6EFC62673294887 /* journal-build-1001.json in Resources */ = {isa = PBXBuildFile; fileRef = 58D025A283E0AC76F0DBDCE5 /* journal-build-1001.json */; };
 		4BE37F9140A0A6515BAA2070 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3259977C97BB1AC732391513 /* Notifications.swift */; };
 		50DB402C2898F5DAF81BE6A0 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D892E5BA821A44C3BED59E30 /* SettingsView.swift */; };
 		544A888FBDF51452485DD258 /* Editors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46062D418D812EA72756096E /* Editors.swift */; };
 		5E0C15A501AFD911B34E1921 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 31506821D838E8564AC9360B /* Assets.xcassets */; };
+		618CA85F43E0F943BA204D5A /* journal-build-1001.json in Resources */ = {isa = PBXBuildFile; fileRef = 58D025A283E0AC76F0DBDCE5 /* journal-build-1001.json */; };
 		6B40E425B1BA7AE2D3FD1E64 /* DemoData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D1D11A7FD899F84ACDF11A /* DemoData.swift */; };
 		72849E51928FC6FB4C0F6957 /* ContactsImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40965E43A7AC4763973F9A78 /* ContactsImport.swift */; };
 		7A17ECB951F484C7BDBE156E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9617528514025C89E6C55D94 /* Models.swift */; };
@@ -49,6 +51,7 @@
 		40965E43A7AC4763973F9A78 /* ContactsImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactsImport.swift; sourceTree = "<group>"; };
 		46062D418D812EA72756096E /* Editors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Editors.swift; sourceTree = "<group>"; };
 		4D928B00C16235036BA3329D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		58D025A283E0AC76F0DBDCE5 /* journal-build-1001.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "journal-build-1001.json"; sourceTree = "<group>"; };
 		6B28D0FF869A94F695ADD840 /* JournalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalStore.swift; sourceTree = "<group>"; };
 		7EAF6FD728F0C5AE62AE4432 /* PlenaraApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlenaraApp.swift; sourceTree = "<group>"; };
 		8631E4EE0B53D88EC2989E17 /* PlenaraUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlenaraUITests.swift; sourceTree = "<group>"; };
@@ -68,6 +71,7 @@
 			isa = PBXGroup;
 			children = (
 				F40AB01F659C846B9B6BDB61 /* JournalTests.swift */,
+				95880806B19ED09C6486FB70 /* Fixtures */,
 			);
 			path = PlenaraTests;
 			sourceTree = "<group>";
@@ -88,6 +92,14 @@
 				2C99011AE9A1640892390AB7 /* PlenaraUITests */,
 				AD73E8A019610DFA20DC61BF /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		95880806B19ED09C6486FB70 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				58D025A283E0AC76F0DBDCE5 /* journal-build-1001.json */,
+			);
+			path = Fixtures;
 			sourceTree = "<group>";
 		};
 		AD73E8A019610DFA20DC61BF /* Products */ = {
@@ -147,6 +159,7 @@
 			buildConfigurationList = 7313B4DAB4F92612A0990764 /* Build configuration list for PBXNativeTarget "PlenaraUITests" */;
 			buildPhases = (
 				31BFD1019AADEA7E540519D9 /* Sources */,
+				58D5F9729D3E6251937535AB /* Resources */,
 			);
 			buildRules = (
 			);
@@ -165,6 +178,7 @@
 			buildConfigurationList = E65EE5934881D80D1CF93469 /* Build configuration list for PBXNativeTarget "PlenaraTests" */;
 			buildPhases = (
 				33CCD998D02D220B3F81E25D /* Sources */,
+				6589B036BAC6BEE50C46C3F3 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -224,6 +238,22 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		58D5F9729D3E6251937535AB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				212CBB96B6EFC62673294887 /* journal-build-1001.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6589B036BAC6BEE50C46C3F3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				618CA85F43E0F943BA204D5A /* journal-build-1001.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6854CD2B22D567E465F917FA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -355,7 +385,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1001;
+				CURRENT_PROJECT_VERSION = 1002;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 7V63BZ39HU;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -491,7 +521,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1001;
+				CURRENT_PROJECT_VERSION = 1002;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 7V63BZ39HU;
 				ENABLE_NS_ASSERTIONS = NO;

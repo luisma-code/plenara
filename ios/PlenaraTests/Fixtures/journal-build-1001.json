@@ -1,0 +1,99 @@
+{
+  "moments" : [
+    {
+      "channel" : "In person",
+      "connected" : true,
+      "date" : 700000003,
+      "id" : "44444444-4444-4444-4444-444444444444",
+      "note" : "Lunch after the exhibition",
+      "personID" : "11111111-1111-1111-1111-111111111111"
+    }
+  ],
+  "people" : [
+    {
+      "baselineApproximate" : true,
+      "baselineConnection" : 700000000,
+      "birthdayDay" : 2,
+      "birthdayMonth" : 4,
+      "birthdayReminder" : true,
+      "cadence" : 21,
+      "city" : "Oakland",
+      "closeness" : "Getting to know",
+      "created" : 600000000,
+      "deepen" : true,
+      "distance" : "Local",
+      "emails" : [
+        "maya@example.invalid"
+      ],
+      "id" : "11111111-1111-1111-1111-111111111111",
+      "intention" : "Lunch together",
+      "name" : "Maya Imported",
+      "notes" : [
+        {
+          "archived" : false,
+          "category" : "An idea for us",
+          "date" : 700000002,
+          "followUp" : 900000001,
+          "id" : "33333333-3333-3333-3333-333333333333",
+          "pinned" : true,
+          "text" : "Ask about the exhibition"
+        }
+      ],
+      "paused" : false,
+      "phones" : [
+        "+15555550123"
+      ],
+      "photo" : "AQID",
+      "preferredMethod" : "Call",
+      "pronunciation" : "MY-ah",
+      "relationship" : "Family",
+      "relationshipDetail" : "Cousin",
+      "reminderStart" : 700000001,
+      "snoozeUntil" : 900000000,
+      "sourceContactID" : "fixture-contact-1001",
+      "timeZone" : "America\/Los_Angeles"
+    },
+    {
+      "baselineApproximate" : false,
+      "birthdayDay" : 0,
+      "birthdayMonth" : 0,
+      "birthdayReminder" : false,
+      "cadence" : 90,
+      "city" : "",
+      "closeness" : "Acquaintance",
+      "created" : 813884352.648342,
+      "deepen" : false,
+      "distance" : "Far away",
+      "emails" : [
+
+      ],
+      "id" : "22222222-2222-2222-2222-222222222222",
+      "intention" : "",
+      "name" : "Alex Imported",
+      "notes" : [
+
+      ],
+      "paused" : true,
+      "phones" : [
+
+      ],
+      "preferredMethod" : "Message",
+      "pronunciation" : "",
+      "relationship" : "Friend",
+      "relationshipDetail" : "",
+      "sourceContactID" : "fixture-contact-alex",
+      "timeZone" : ""
+    }
+  ],
+  "preferences" : {
+    "birthdays" : false,
+    "followUps" : false,
+    "hour" : 11,
+    "minute" : 15,
+    "notifications" : true,
+    "quietEnd" : 8,
+    "quietStart" : 21,
+    "weekday" : 4
+  },
+  "schemaVersion" : 1
+}

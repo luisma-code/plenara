@@ -59,7 +59,7 @@ struct PersonRow: View {
         HStack(spacing: 13) {
             Avatar(person: person)
             VStack(alignment: .leading, spacing: 5) {
-                HStack { Text(person.name).font(.headline); if person.deepen { Image(systemName: "sparkle").foregroundStyle(Theme.plum).accessibilityLabel("Want to deepen") } }
+                HStack { Text(person.name).font(.headline); if person.wantsToGrow { Image(systemName: "leaf").foregroundStyle(Theme.plum).accessibilityLabel("Grow closer") }; if person.feelingChoice == "Needs care" { Image(systemName: "heart").foregroundStyle(Theme.plum).accessibilityLabel("Needs care") } }
                 Text(detail ?? [person.city, person.closeness == "Not set" ? "" : person.closeness].filter { !$0.isEmpty }.joined(separator: " · ")).font(.subheadline).foregroundStyle(Theme.muted)
             }.frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.muted)

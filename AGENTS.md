@@ -14,6 +14,10 @@ SwiftUI app. The HTML prototype is retained as a visual reference, with
 fictional browser-local data. Do not confuse it with the shipped native app.
 
 The native journal is local and atomic; failed saves must not publish changes.
+Preserve existing imported journals across updates: keep identity/storage paths,
+use the shared old/new decoder, retain before-update recovery bytes, and prove
+upgrade/edit/reopen with the frozen previous-version fixture. Classification
+has five independent optional dimensions; feeling never starts reminders.
 Contacts import is explicit selection, never background address-book reading.
 Verification uses a dedicated simulator. Physical devices are install-only.
 Build and test in Release; keep logging useful without logging personal content.

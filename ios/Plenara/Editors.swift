@@ -24,15 +24,20 @@ struct PersonEditor: View {
                     TextField("Name", text: $person.name).accessibilityIdentifier("person-name")
                     TextField("Pronunciation (optional)", text: $person.pronunciation)
                 }
-                Section("Your relationship") {
-                    Picker("Relationship", selection: $person.relationship) { ForEach(["Not set", "Friend", "Family"], id: \.self) { Text($0) } }
+                Section {
+                    Text("How do you know them?").font(.subheadline).foregroundStyle(Theme.muted)
+                    ForEach(Person.connectionOptions, id: \.self) { kind in
+                        Toggle(kind, isOn: Binding(get: { person.connectionKinds.contains(kind) }, set: { selected in
+                            person.connectionKinds = selected ? person.connectionKinds + [kind] : person.connectionKinds.filter { $0 != kind }
+                        })).accessibilityIdentifier("connection-\(kind)")
+                    }
                     TextField("Cousin, university friend…", text: $person.relationshipDetail)
-                    Picker("Closeness", selection: $person.closeness) { ForEach(Person.closenessOptions, id: \.self) { Text($0) } }
-                    Toggle("I want to deepen this", isOn: $person.deepen)
-                    TextField("What I’d like to grow (optional)", text: $person.intention, axis: .vertical)
-                }
+                    Picker("How close do you feel?", selection: $person.closeness) { ForEach(Person.closenessOptions, id: \.self) { Text($0) } }.accessibilityIdentifier("closeness-choice")
+                    if let earlier = person.previousCloseness { Text("Earlier context: \(earlier). Your previous description is kept.").font(.footnote).foregroundStyle(Theme.muted) }
+                    Picker("Near or far?", selection: $person.distance) { ForEach(Person.distanceOptions, id: \.self) { Text($0) } }.accessibilityIdentifier("distance-choice")
+                } header: { Text("About your relationship") } footer: { Text("All optional. Family and Friend can both apply. Closeness and distance are independent.") }
+                RelationshipIntentFields(person: $person)
                 Section { TextField("City or area", text: $person.city)
-                    Picker("Near or far?", selection: $person.distance) { ForEach(["Not set", "Local", "Far away"], id: \.self) { Text($0) } }
                     Button { choosingZone = true } label: { HStack { Text("Local time zone"); Spacer(); Text(zoneLabel(person.timeZone)).foregroundStyle(Theme.muted).multilineTextAlignment(.trailing) } }
                 } header: { Text("Their place in the world") } footer: { Text("You decide what local means. No location tracking.") }
                 Section("Reach out") {
@@ -58,7 +63,7 @@ struct PersonEditor: View {
                     Picker("Contact rhythm", selection: $person.cadence) {
                         ForEach(Array(Set([0, 3, 7, 14, 21, 30, 60, 90, person.cadence])).sorted(), id: \.self) { Text(rhythmLabel($0)).tag($0) }
                     }
-                    let suggested = Person.suggestedCadence(person.closeness, deepen: person.deepen)
+                    let suggested = Person.suggestedCadence(person.closeness, deepen: person.wantsToGrow)
                     if suggested > 0 && suggested != person.cadence { Button("Use suggestion: \(rhythmLabel(suggested).lowercased())") { person.cadence = suggested } }
                     if person.cadence > 0 && person.baselineConnection == nil && store.journal.lastConnection(person) == nil { Text("Reminders start from today. This won’t mark a connection. You can set your last contact or a custom rhythm on their page.").font(.footnote).foregroundStyle(Theme.muted) }
                 } header: { Text("A gentle rhythm") } footer: { Text("Optional. Importing or adding someone never starts reminders unless you choose a rhythm.") }
@@ -112,7 +117,7 @@ struct RhythmEditor: View {
                     Picker("A gentle reminder", selection: $person.cadence) { ForEach(Array(Set([0, 3, 7, 14, 21, 30, 60, 90, person.cadence])).sorted(), id: \.self) { Text(rhythmLabel($0)).tag($0) } }
                     Toggle("Custom rhythm", isOn: Binding(get: { person.cadence > 0 }, set: { person.cadence = $0 ? max(1, person.cadence) : 0 }))
                     if person.cadence > 0 { Stepper("Every \(person.cadence) days", value: $person.cadence, in: 1...3650).accessibilityIdentifier("cadence-stepper") }
-                    let suggestion = Person.suggestedCadence(person.closeness, deepen: person.deepen)
+                    let suggestion = Person.suggestedCadence(person.closeness, deepen: person.wantsToGrow)
                     if suggestion > 0 { Button("Use suggested rhythm: \(rhythmLabel(suggestion).lowercased())") { person.cadence = suggestion } }
                     Toggle("Pause reminders for this person", isOn: $person.paused)
                 }
@@ -215,4 +220,37 @@ func photoThumbnail(_ data: Data) -> Data? {
     guard let source = CGImageSourceCreateWithData(data as CFData, nil),
           let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: 256] as CFDictionary) else { return nil }
     return thumbnail(UIImage(cgImage: cg))
+}
+
+
+struct RelationshipIntentFields: View {
+    @Binding var person: Person
+    var body: some View {
+        Section {
+            Picker("What would you like?", selection: $person.directionChoice) {
+                ForEach(Person.directionOptions, id: \.self) { Text($0) }
+            }.accessibilityIdentifier("direction-choice")
+            Picker("How does it feel?", selection: $person.feelingChoice) {
+                ForEach(Person.feelingOptions, id: \.self) { Text($0) }
+            }.accessibilityIdentifier("feeling-choice")
+            TextField("Anything you want to give attention to?", text: $person.intention, axis: .vertical).accessibilityIdentifier("relationship-context")
+        } header: { Text("What matters now") } footer: {
+            Text("Leave either answer unset or clear it with Not set. These are your choices, not a rating. They never change your reminders.")
+        }
+    }
+}
+struct RelationshipIntentEditor: View {
+    @EnvironmentObject var store: JournalStore
+    @Environment(\.dismiss) var dismiss
+    @State var person: Person
+    var body: some View {
+        NavigationStack {
+            Form { RelationshipIntentFields(person: $person) }.scrollContentBackground(.hidden).background(Theme.paper)
+                .navigationTitle("What matters now").navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.buttonStyle(.automatic) }
+                    ToolbarItem(placement: .confirmationAction) { Button("Save") { if store.save(person) { dismiss() } }.buttonStyle(.automatic).accessibilityIdentifier("save-relationship") }
+                }
+        }
+    }
 }

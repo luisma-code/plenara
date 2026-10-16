@@ -1,0 +1,20 @@
+{
+  "ios/Plenara/Assets.xcassets/AppIcon.appiconset/Contents.json": "3ea3263212ecbc674ddcfe95c1797d90c3cc879d312cb008272878024b21c845",
+  "ios/Plenara/Assets.xcassets/AppIcon.appiconset/Icon-dark.png": "057135598c70bb3c8b06f2e3898607ab7520a08f41554dac84a91ba0b40e1258",
+  "ios/Plenara/Assets.xcassets/AppIcon.appiconset/Icon.png": "7a31d4cfcb525799b59077fff63185cc399c6d063dbfd876c3b68309dd2c1069",
+  "ios/Plenara/Assets.xcassets/Contents.json": "81c54324c918dd55789178a4a2d951210270d905af16c1428f6192d454f76c8f",
+  "ios/Plenara/ContactsImport.swift": "4ac72d263181dbbb696cb6cb23a3ced0721ff5defc6e0b429aec119bca39b014",
+  "ios/Plenara/DemoData.swift": "a4a6674fc1e1eff886318a9bcc69a17eb230ceb8d9e7d93b7b4524d8eb41b18f",
+  "ios/Plenara/Editors.swift": "9b3e7681428a7f293576f79972ebc4656f2206d7214a9734f0cfcd3edf634fba",
+  "ios/Plenara/HomeView.swift": "58039307bb9a62b0997c002dee4ccd46110b235a2c1e7c622ebac59117c0c9a1",
+  "ios/Plenara/Info.plist": "d8ef0acd51e613eef66c13c41d10ebf2e04ceee280e9e5acdeab926fa489a829",
+  "ios/Plenara/JournalStore.swift": "68c1acccf89599947d746ba17fc13bb217724abdf97c87cc5458e5594269933a",
+  "ios/Plenara/Models.swift": "4a8a3b3d9c27ae5fcf84cb34da9abf1a922acce7f3719fe9a453d855754f2be7",
+  "ios/Plenara/Notifications.swift": "370881c942b9cef112a595676de492bf4eff9b7fe049059457e3c1436a135739",
+  "ios/Plenara/PersonDetail.swift": "6a52489b341a226c4d8431ca1cb77e7021f383d3d34c91f680caa6e8fcc7486b",
+  "ios/Plenara/PlenaraApp.swift": "7bdbda65fc031a0ccd0210277263eb3d9c124687cd1835cea4936d48022f1b34",
+  "ios/Plenara/PrivacyInfo.xcprivacy": "cf6d2f4fe0ff5ab46608e153bf3458f5f0e853800c96318f5f8f81359e03a755",
+  "ios/Plenara/SettingsView.swift": "36fd0b60243f9f2575ed27db7628a9d2b8827b17a79f78cf3afc28d69ce0cfb7",
+  "ios/Plenara/Theme.swift": "0c7288c49815cb2f507db5f8f08a10c72666b359b8375178905a8a072e802524",
+  "ios/project.yml": "2c25aca6d05b5286658b72e8f4665cb3ada8d079e8bbdb402c99a3d165525279"
+}

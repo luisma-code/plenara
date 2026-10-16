@@ -1,0 +1,10 @@
+{
+  "rejectedControls": [
+    "A build 1001 import must remain readable after upgrade",
+    "The previous-version import must open without reimporting",
+    "Keep a complete before-update recovery copy",
+    "Combined filters must require every dimension",
+    "A wish to grow or need for care must not start a reminder"
+  ],
+  "nativeSourcesRestored": true
+}

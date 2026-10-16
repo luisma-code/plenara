@@ -45,11 +45,11 @@ import Contacts
         XCTAssertEqual(Journal().daysSince(start, now: end, calendar: cal), 1)
     }
     func testImportDeduplicatesPreservesJournalAndCanLinkManualPerson() {
-        var j = Journal(); var p = Person(); p.name = "Maya"; p.cadence = 14; p.deepen = true; p.notes = [Memory(text: "Loves pottery")]; j.people = [p]
+        var j = Journal(); var p = Person(); p.name = "Maya"; p.cadence = 14; p.directionChoice = "Grow closer"; p.connectionKinds = ["Family", "Friend"]; p.feelingChoice = "Needs care"; p.notes = [Memory(text: "Loves pottery")]; j.people = [p]
         XCTAssertEqual(Person().relationship, "Not set", "Import must not assume that a family member is a friend")
         var contact = Person(); contact.name = "Maya Thompson"; contact.sourceContactID = "system-id"; contact.phones = ["5551234"]
         ContactImport.apply(contact, to: p.id, journal: &j)
-        XCTAssertEqual(j.people.count, 1); XCTAssertEqual(j.people[0].notes, p.notes); XCTAssertTrue(j.people[0].deepen); XCTAssertEqual(j.people[0].cadence, 14)
+        XCTAssertEqual(j.people.count, 1); XCTAssertEqual(j.people[0].notes, p.notes); XCTAssertTrue(j.people[0].wantsToGrow); XCTAssertEqual(j.people[0].connectionKinds, ["Family", "Friend"]); XCTAssertEqual(j.people[0].feelingChoice, "Needs care"); XCTAssertEqual(j.people[0].cadence, 14)
         ContactImport.apply(contact, to: nil, journal: &j)
         XCTAssertEqual(j.people.count, 1, "Repeat import must use the linked source identifier")
         XCTAssertEqual(j.people[0].phones, ["5551234"])
@@ -99,4 +99,75 @@ import Contacts
         j.people[0].paused = true
         XCTAssertEqual(ReminderPlan.make(j).count, 1, "Pausing a person also pauses their birthday and follow-up reminders")
     }
+    func legacyBytes() throws -> Data {
+        let url = try XCTUnwrap(Bundle(for: JournalTests.self).url(forResource: "journal-build-1001", withExtension: "json"))
+        return try Data(contentsOf: url)
+    }
+    func testUpgradePreservesImportedJournalAndOriginalFile() throws {
+        let bytes = try legacyBytes()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let file = root.appendingPathComponent("journal.json"); try bytes.write(to: file)
+        let old = try JournalStore.decoder.decode(Journal.self, from: bytes)
+        let upgraded = store()
+        XCTAssertFalse(upgraded.locked, "A build 1001 import must remain readable after upgrade")
+        XCTAssertEqual(try Data(contentsOf: file), bytes, "Opening an old journal must leave the original disk bytes untouched")
+        XCTAssertEqual(upgraded.journal.people.map(\.id), old.people.map(\.id), "Upgrade must keep every imported person and stable identity")
+        XCTAssertEqual(upgraded.journal.moments, old.moments)
+        XCTAssertEqual(upgraded.journal.preferences, old.preferences)
+        let p = try XCTUnwrap(upgraded.journal.people.first)
+        XCTAssertEqual(p.connectionKinds, ["Family"])
+        XCTAssertEqual(p.directionChoice, "Grow closer")
+        XCTAssertEqual(p.feelingChoice, "Not set", "Upgrade must never infer a relationship feeling")
+        XCTAssertEqual(p.closeness, "Not set"); XCTAssertEqual(p.previousCloseness, "Getting to know")
+        XCTAssertEqual(p.distance, "Nearby")
+        XCTAssertEqual(upgraded.journal.people[1].closeness, "Casual")
+        XCTAssertEqual(upgraded.journal.people[1].directionChoice, "Not set", "Old deepen=false does not mean Keep it steady")
+        XCTAssertTrue(upgraded.save(p))
+        XCTAssertEqual(try Data(contentsOf: file.appendingPathExtension("previous")), bytes, "The first new save must retain the complete original journal")
+        let before = try JSONSerialization.jsonObject(with: bytes) as! [String: Any]
+        let after = try JSONSerialization.jsonObject(with: upgraded.exportData()) as! [String: Any]
+        let oldPeople = before["people"] as! [[String: Any]], newPeople = after["people"] as! [[String: Any]]
+        for (oldPerson, newPerson) in zip(oldPeople, newPeople) {
+            for (key, value) in oldPerson where !["closeness", "distance"].contains(key) {
+                XCTAssertEqual(newPerson[key] as? NSObject, value as? NSObject, "Upgrade changed saved field: \(key)")
+            }
+        }
+        XCTAssertEqual(try Data(contentsOf: upgraded.beforeRelationshipUpdate), bytes, "Keep a complete before-update recovery copy")
+        XCTAssertTrue(upgraded.update { $0.people[0].feelingChoice = "Feels good" })
+        XCTAssertEqual(try Data(contentsOf: upgraded.beforeRelationshipUpdate), bytes, "Later saves must never overwrite the before-update recovery copy")
+        // Return to unanswered feeling for the old-backup comparison below.
+        XCTAssertTrue(upgraded.update { $0.people[0].feelingChoice = "Not set" })
+        XCTAssertEqual(store().journal, upgraded.journal, "Migrated people, notes, photos, contact links, and moments must survive reopening")
+        let restored = JournalStore(file: root.appendingPathComponent("restored.json"))
+        XCTAssertTrue(restored.restore(try upgraded.exportData())); XCTAssertEqual(restored.journal, upgraded.journal)
+        XCTAssertTrue(restored.restore(bytes)); XCTAssertEqual(restored.journal.people, upgraded.journal.people, "Old backups must also migrate without losing imports")
+    }
+    func testIndependentClassificationAndCombinedFilters() {
+        var p = Person(); p.name = "Cousin and friend"; p.connectionKinds = ["Family", "Friend"]; p.distance = "Far away"; p.closeness = "Inner circle"; p.directionChoice = "Grow closer"; p.feelingChoice = "Feels good"
+        var f = PeopleFilter(); f.connection = "Family"; f.distance = "Far away"; f.direction = "Grow closer"
+        XCTAssertTrue(f.includes(p), "Family, distance, and growing closer must combine")
+        f.feeling = "Needs care"
+        XCTAssertFalse(f.includes(p), "Combined filters must require every dimension, not any one match")
+        p.feelingChoice = "Needs care"; XCTAssertTrue(f.includes(p))
+        f.closeness = "Casual"; XCTAssertFalse(f.includes(p))
+        p.directionChoice = "Keep it steady"; XCTAssertEqual(p.feelingChoice, "Needs care"); XCTAssertEqual(p.closeness, "Inner circle"); XCTAssertEqual(p.connectionKinds, ["Family", "Friend"])
+        p.feelingChoice = "Not set"; p.directionChoice = "Not set"; XCTAssertFalse(p.wantsToGrow)
+        XCTAssertEqual(Person().feelingChoice, "Not set"); XCTAssertEqual(Person().directionChoice, "Not set")
+    }
+    func testFeelingsAndIntentionsNeverCreateOrAlterReminderRhythms() {
+        var p = Person(); p.name = "Old friend"; p.connectionKinds = ["Friend"]; p.distance = "Far away"; p.closeness = "Close"
+        p.directionChoice = "Grow closer"; p.feelingChoice = "Needs care"
+        var j = Journal(); j.people = [p]
+        XCTAssertEqual(p.cadence, 0); XCTAssertNil(p.reminderStart)
+        XCTAssertTrue(j.suggestions().isEmpty, "A wish to grow or need for care must not start a reminder")
+        p.cadence = 30; p.baselineConnection = Date().addingTimeInterval(-60 * 86400)
+        p.directionChoice = "Keep it steady"; p.feelingChoice = "Feels good"; j.people = [p]
+        XCTAssertTrue(j.isDue(p), "A factual rhythm reminder is independent of feeling good")
+        p.feelingChoice = "Needs care"; XCTAssertEqual(p.cadence, 30)
+        j.preferences.notifications = true
+        let before = ReminderPlan.make(j).map { $0.id }
+        j.people = [p]
+        XCTAssertEqual(ReminderPlan.make(j).map { $0.id }, before, "Needs care alone must not add notifications")
+    }
+
 }

@@ -1,5 +1,7 @@
 # Plenara — native implementation
 
+Initial release, build 1000. The current [independent relationship update](relationships/update.md) preserves existing imports.
+
 October 16, 2026. The approved relationship app is implemented in SwiftUI for iPhone, iOS 18 and later.
 
 [Open the native preview](native-preview.png)

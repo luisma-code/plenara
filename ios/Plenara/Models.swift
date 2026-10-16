@@ -10,7 +10,13 @@ struct Person: Identifiable, Codable, Equatable {
     var city = ""
     var distance = "Not set"
     var timeZone = ""
+    // These two v1 fields are retained for backward-compatible backup decoding.
+    // Active classification uses connectionKinds and directionChoice below.
     var deepen = false
+    var connections: [String]?
+    var direction: String?
+    var feeling: String?
+    var previousCloseness: String?
     var intention = ""
     var cadence = 0
     var paused = false
@@ -29,9 +35,37 @@ struct Person: Identifiable, Codable, Equatable {
     var notes: [Memory] = []
     var created = Date()
     var initials: String { name.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined().uppercased() }
-    static let closenessOptions = ["Not set", "Inner circle", "Close", "Getting to know", "Acquaintance"]
+    static let connectionOptions = ["Family", "Friend"]
+    static let closenessOptions = ["Not set", "Inner circle", "Close", "Casual"]
+    static let distanceOptions = ["Not set", "Nearby", "Far away"]
+    static let directionOptions = ["Not set", "Keep it steady", "Grow closer"]
+    static let feelingOptions = ["Not set", "Feels good", "Needs care"]
+    var connectionKinds: [String] {
+        get { connections ?? (Self.connectionOptions.contains(relationship) ? [relationship] : []) }
+        set { connections = Self.connectionOptions.filter { newValue.contains($0) }; relationship = connections?.first ?? "Not set" }
+    }
+    var directionChoice: String {
+        get { direction ?? (deepen ? "Grow closer" : "Not set") }
+        set { direction = newValue; deepen = newValue == "Grow closer" }
+    }
+    var feelingChoice: String {
+        get { feeling ?? "Not set" }
+        set { feeling = newValue }
+    }
+    var wantsToGrow: Bool { directionChoice == "Grow closer" }
+    mutating func migrateRelationshipFields() {
+        if connections == nil { connectionKinds = Self.connectionOptions.contains(relationship) ? [relationship] : [] }
+        if direction == nil { directionChoice = deepen ? "Grow closer" : "Not set" }
+        if feeling == nil { feelingChoice = "Not set" }
+        if distance == "Local" { distance = "Nearby" }
+        if closeness == "Getting to know" || closeness == "Acquaintance" {
+            previousCloseness = previousCloseness ?? closeness
+            // A relationship stage does not establish how close someone feels.
+            closeness = closeness == "Acquaintance" ? "Casual" : "Not set"
+        }
+    }
     static func suggestedCadence(_ closeness: String, deepen: Bool) -> Int {
-        switch closeness { case "Inner circle": return deepen ? 3 : 7; case "Close": return deepen ? 14 : 30; case "Getting to know": return deepen ? 30 : 60; case "Acquaintance": return deepen ? 30 : 90; default: return 0 }
+        switch closeness { case "Inner circle": return deepen ? 3 : 7; case "Close": return deepen ? 14 : 30; case "Casual": return deepen ? 30 : 90; default: return 0 }
     }
 }
 struct Memory: Identifiable, Codable, Equatable {
@@ -72,6 +106,9 @@ struct Journal: Codable, Equatable {
     var people: [Person] = []
     var moments: [Moment] = []
     var preferences = Preferences()
+    mutating func migrateRelationshipFields() {
+        for i in people.indices { people[i].migrateRelationshipFields() }
+    }
     func lastConnection(_ p: Person) -> Date? {
         ([p.baselineConnection].compactMap { $0 } + moments.filter { $0.personID == p.id && $0.connected }.map(\.date)).max()
     }
@@ -88,22 +125,25 @@ struct Journal: Codable, Equatable {
         let eligible = people.filter { isDue($0, now: now, calendar: calendar) }.sorted {
             let l = Double(daysSince(lastConnection($0) ?? $0.reminderStart!, now: now, calendar: calendar)) / Double($0.cadence)
             let r = Double(daysSince(lastConnection($1) ?? $1.reminderStart!, now: now, calendar: calendar)) / Double($1.cadence)
-            if l != r { return l > r }; if $0.deepen != $1.deepen { return $0.deepen }; return $0.id.uuidString < $1.id.uuidString
+            if l != r { return l > r }; if $0.wantsToGrow != $1.wantsToGrow { return $0.wantsToGrow }; return $0.id.uuidString < $1.id.uuidString
         }
         guard eligible.count > 3 else {
-            if let featured = eligible.first(where: \.deepen) { return [featured] + eligible.filter { $0.id != featured.id } }; return eligible
+            if let featured = eligible.first(where: \.wantsToGrow) { return [featured] + eligible.filter { $0.id != featured.id } }; return eligible
         }
         let day = calendar.dateComponents([.day], from: Date(timeIntervalSince1970: 0), to: calendar.startOfDay(for: now)).day ?? 0
         // A rotating daily slice prevents one long gap from occupying the home forever.
         let start = abs(day) % eligible.count
         let slice = (0..<3).map { eligible[(start + $0) % eligible.count] }
-        return slice.sorted { $0.deepen && !$1.deepen }
+        return slice.sorted { $0.wantsToGrow && !$1.wantsToGrow }
     }
     func history(_ id: UUID? = nil) -> [Moment] { moments.filter { id == nil || $0.personID == id }.sorted { $0.date > $1.date } }
     func validate() throws {
         guard schemaVersion == 1, people.count <= 10000, moments.count <= 200000,
               Set(people.map(\.id)).count == people.count, Set(moments.map(\.id)).count == moments.count,
-              people.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (0...3650).contains($0.cadence) && (0...12).contains($0.birthdayMonth) && (0...31).contains($0.birthdayDay) && ($0.timeZone.isEmpty || TimeZone(identifier: $0.timeZone) != nil) }),
+              people.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (0...3650).contains($0.cadence) && (0...12).contains($0.birthdayMonth) && (0...31).contains($0.birthdayDay) && ($0.timeZone.isEmpty || TimeZone(identifier: $0.timeZone) != nil) &&
+                  Set($0.connectionKinds).isSubset(of: Set(Person.connectionOptions)) &&
+                  Person.closenessOptions.contains($0.closeness) && Person.distanceOptions.contains($0.distance) &&
+                  Person.directionOptions.contains($0.directionChoice) && Person.feelingOptions.contains($0.feelingChoice) }),
               moments.allSatisfy({ m in people.contains { $0.id == m.personID } && m.date <= Date().addingTimeInterval(60) }),
               (1...7).contains(preferences.weekday), (0...23).contains(preferences.hour), (0...59).contains(preferences.minute),
               (0...23).contains(preferences.quietStart), (0...23).contains(preferences.quietEnd), preferences.quietStart != preferences.quietEnd
@@ -137,5 +177,22 @@ extension Journal {
             }
         }
         return reminders
+    }
+}
+
+
+struct PeopleFilter: Equatable {
+    var connection = "Everyone"
+    var distance = "Everyone"
+    var closeness = "Everyone"
+    var direction = "Everyone"
+    var feeling = "Everyone"
+    var isActive: Bool { [connection, distance, closeness, direction, feeling].contains { $0 != "Everyone" } }
+    func includes(_ p: Person) -> Bool {
+        (connection == "Everyone" || (connection == "Not set" ? p.connectionKinds.isEmpty : p.connectionKinds.contains(connection))) &&
+        (distance == "Everyone" || p.distance == distance) &&
+        (closeness == "Everyone" || p.closeness == closeness) &&
+        (direction == "Everyone" || p.directionChoice == direction) &&
+        (feeling == "Everyone" || p.feelingChoice == feeling)
     }
 }
