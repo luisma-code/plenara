@@ -1,0 +1,3706 @@
+[
+  {
+    "path": ".agents/skills/plenara-doc-alignment/SKILL.md",
+    "sha256": "7515eacba17ee20c6532703d055ecceb59d0783b72e09dd8ba6eaef6e5eee5f8"
+  },
+  {
+    "path": ".agents/skills/plenara-phone-deploy/SKILL.md",
+    "sha256": "3aa968d4b0c11b340980984fb4808260296a25288710c7e18cb7b03c4c647b4f"
+  },
+  {
+    "path": ".agents/skills/plenara-product-development/SKILL.md",
+    "sha256": "49dca289d991511672bf2116350bdfb886256fa5ccb92e5aac5e3c11aca43b53"
+  },
+  {
+    "path": ".agents/skills/plenara-product-development/agents/openai.yaml",
+    "sha256": "5a6623a7fc6d4350cf03a7a4a9904f42edb3f6ca33f894a4d787339d2a0fd125"
+  },
+  {
+    "path": ".agents/skills/plenara-simulator-verification/SKILL.md",
+    "sha256": "bfedee12b4e4f150b3d7d89a900290dea8be4ccef0200bc4fd6c4e96c9fca35c"
+  },
+  {
+    "path": ".codex/agents/product-experience-reviewer.toml",
+    "sha256": "047f0493d402bc770f0f76980f13c3cc9bd04fd0b79e8c74b9afd715ad9dfb12"
+  },
+  {
+    "path": ".codex/agents/simulator-verifier.toml",
+    "sha256": "5b26cdba34cd8a654a02965c8bbe2d681d432e4a637bd0d3176a7238756efe9f"
+  },
+  {
+    "path": ".codex/agents/spec-code-reviewer.toml",
+    "sha256": "800a5ceedcfd92df2c8d5dc47b6f21a134eea189bb071af912b412ca7c5d642a"
+  },
+  {
+    "path": ".flutter-version",
+    "sha256": "a4ef8b0e3eefac3b0842bcbbebc3f994ec6e309dc40c85ee75ea8dfc4ca4f2a4"
+  },
+  {
+    "path": ".gitattributes",
+    "sha256": "f4e52f0b076f311f0487610a52c707a1cece6be486e7febe33a3ed8327dec99f"
+  },
+  {
+    "path": ".github/workflows/ci.yml",
+    "sha256": "1f28ec6fe457164b2768a199e18ce137727cb79f64ae9c277f7da5199bc50e42"
+  },
+  {
+    "path": ".gitignore",
+    "sha256": "2432f069efcf0ee74d9c991e55e7825725d1d8f6756f18f1f3e71586607f11e7"
+  },
+  {
+    "path": "AGENTS.md",
+    "sha256": "40f0ca5d580e1710abc9b5b2aba113647b320b5fc7ae33db5bb75a8b2125c081"
+  },
+  {
+    "path": "CLAUDE.md",
+    "sha256": "d24248cffaaf69c054ad647aeb3a3dd871a65552f8513cf60e7f3c47a6e5cd8f"
+  },
+  {
+    "path": "DOGFOOD.md",
+    "sha256": "b190ba96880b9af931aecfd301014f333d149a38919d0fd8adb349dd51cc8d9e"
+  },
+  {
+    "path": "HANDOFF.md",
+    "sha256": "560ba445cf71978a771832b411baa02593fe097f0064fb9cc61ac39882dc0214"
+  },
+  {
+    "path": "PRIVACY.md",
+    "sha256": "51fd2e6a72142f98fe45fde12c659522be9cb8bced3ec777482b69cc7a534311"
+  },
+  {
+    "path": "RELEASING.md",
+    "sha256": "c02aee66a22b9b414a4db81efb92d90b5cb386a91dafcdafeb57daf51761d537"
+  },
+  {
+    "path": "SESSION-HANDOFF.md",
+    "sha256": "341d4d9ee45acd300bdd2f727ae3b239caa842595361ad19f7035b7b11043919"
+  },
+  {
+    "path": "TESTFLIGHT.md",
+    "sha256": "42f7bc311c293e00edca8c4bb8d27c23ea27a78c78b14a67c8c06a41e466de9e"
+  },
+  {
+    "path": "TRANSITION.md",
+    "sha256": "195f79e086ddfbd7ebc2960ab7b529e1c92d7a21240630e8042eb00e26d43b57"
+  },
+  {
+    "path": "WORK-CAPSULE.md",
+    "sha256": "6166a13274be623c743b8333813ad765f05024d5658dddc9956defe5813b8b55"
+  },
+  {
+    "path": "app/.gitignore",
+    "sha256": "5cd8ed156d9127dd66862c07bc2a35180198e6a4b38edb411d0a7588924981a5"
+  },
+  {
+    "path": "app/.metadata",
+    "sha256": "60b8f9ce02c6554d3bd873ab7f7f805a0d3e0d6836c537a37bb127db8b036155"
+  },
+  {
+    "path": "app/README.md",
+    "sha256": "e3279eef582d64ea87798c5d632e122c701bea47564cce6d95ce51631c80e4a0"
+  },
+  {
+    "path": "app/analysis_options.yaml",
+    "sha256": "e0ea485cfdbc3e12b93efb8679a5ea73ebfe20ea4ca0c473dc594fc2fb274ed5"
+  },
+  {
+    "path": "app/assets/brand/plena-app-icon.png",
+    "sha256": "4dbe9b8a5503d6fb414c73111337ded30486953b3e9dd90a8a78ca1833561d6e"
+  },
+  {
+    "path": "app/assets/exercises/alternating-biceps-curls-with-dumbbell.png",
+    "sha256": "b000c664d16443d74e3bc707c6655e84be30e473d06b6611e442fc24f0da26f5"
+  },
+  {
+    "path": "app/assets/exercises/alternating-dumbbell-hammer-curl.png",
+    "sha256": "83222352016dcd5636569ea000b8f3c258cf57727abf93ef025d789ebf16c1b8"
+  },
+  {
+    "path": "app/assets/exercises/ankle-dorsiflexion-rocks.png",
+    "sha256": "c1925e12d57ea20f4698305ff75bca9abdd2d8eefbea7cfc237ec7e2f4628c6e"
+  },
+  {
+    "path": "app/assets/exercises/arabesque.png",
+    "sha256": "566497a3240d2a5e58804321fc21e03ec9f816f8aa32c735187898c59e46b893"
+  },
+  {
+    "path": "app/assets/exercises/axe-hold.png",
+    "sha256": "d6d3b7e71379192a382e407cb967a0c60df29de109374607035e52ba4a0c6743"
+  },
+  {
+    "path": "app/assets/exercises/barbell-ab-rollout.png",
+    "sha256": "14c261dff350d6570a79fb41df31ad464f22117d2a494d397c8bcbae6d3cd9e6"
+  },
+  {
+    "path": "app/assets/exercises/barbell-clean-and-press.png",
+    "sha256": "71d07703a63684343c4d5639457207dbaf25b9f956a6431f18e90798057d58b0"
+  },
+  {
+    "path": "app/assets/exercises/barbell-full-squat.png",
+    "sha256": "712714dc0520aa8344c084bfb6445641b0de8e65fc6f1b56fcd76c83106edd98"
+  },
+  {
+    "path": "app/assets/exercises/barbell-triceps-extension.png",
+    "sha256": "e71677989f1f029254103904df74c1626d48875e8fc8534af7a561868d9da5ec"
+  },
+  {
+    "path": "app/assets/exercises/barbell-wrist-curl.png",
+    "sha256": "e542fb5be32f09c4ff484416add9acf4a856aed03c4143988f0b238ac985f76e"
+  },
+  {
+    "path": "app/assets/exercises/bench-press-narrow-grip.png",
+    "sha256": "caec63a23fffcfc55234b4a1bfdc5190557da55752060f97bb70ea08ca9bdc29"
+  },
+  {
+    "path": "app/assets/exercises/bench-press.png",
+    "sha256": "343fa07eb96ddc9bd98f2d70ef1e70841ffca2329dfd1d16b275bfe630392a27"
+  },
+  {
+    "path": "app/assets/exercises/benchpress-dumbbells.png",
+    "sha256": "5389534cd7cdbdd382cd9fa4371862006184ceba7f0501ef6380b777f62626ca"
+  },
+  {
+    "path": "app/assets/exercises/bent-high-pulls.png",
+    "sha256": "f520f595b44b1f4a8d1d7871770504edad079edf62637d03d126a0ceeb0e6a36"
+  },
+  {
+    "path": "app/assets/exercises/bent-over-dumbbell-rows.png",
+    "sha256": "f5a2c10825ce8d0a2ad7fce6af3bdcf1b6e23d8d9964f3ec658a886d79bd5a84"
+  },
+  {
+    "path": "app/assets/exercises/bent-over-rowing-reverse.png",
+    "sha256": "448abe0000da36f2a21f5180419c26a2c09319a73fc89d20276041b2aa99c170"
+  },
+  {
+    "path": "app/assets/exercises/bent-over-rowing.png",
+    "sha256": "da9179dba7baf184105f06424454496d50a535debb6b4ec5dac044c3598b03e0"
+  },
+  {
+    "path": "app/assets/exercises/biceps-curl-with-cable.png",
+    "sha256": "07a26e086c19104e89c75754288c5a2c64e2623d9f21f2d7a3a1872a31db1d2c"
+  },
+  {
+    "path": "app/assets/exercises/biceps-curls-with-barbell.png",
+    "sha256": "0ea67f12829545f43295835b9c7ad0d31276ce80168a294b87a1f461b08e6dc9"
+  },
+  {
+    "path": "app/assets/exercises/biceps-curls-with-dumbbell.png",
+    "sha256": "5e488b23d9c3068148142d2ae7924940c0edcc0e8224adc33d1c9bf3f19435ac"
+  },
+  {
+    "path": "app/assets/exercises/biceps-curls-with-sz-bar.png",
+    "sha256": "d129c530146411970c1f9a12b485eaa54dcc8cb4e3cb937e9309c8876e9c9774"
+  },
+  {
+    "path": "app/assets/exercises/biceps-with-trx.png",
+    "sha256": "f0780d7d6e6901993707a8d323585a21cfda0643a98ca318f11f096f9dc211d3"
+  },
+  {
+    "path": "app/assets/exercises/blackroll.png",
+    "sha256": "487a3d677880a9734e0701052d5416c8e545264b4035f035119abedba03aab90"
+  },
+  {
+    "path": "app/assets/exercises/bulgarian-split-squats-left.png",
+    "sha256": "8639baa54bb9dd38be76dd09714f99e908f9f8bfba979a1e83c9e2b2abc656ea"
+  },
+  {
+    "path": "app/assets/exercises/bulgarian-squat-with-dumbbells.png",
+    "sha256": "030bef1d9369d0a66b42dc2a8bf39cad129b0242cc3de2809e35ae54ec9ad1a0"
+  },
+  {
+    "path": "app/assets/exercises/bus-drivers.png",
+    "sha256": "5025832ea1606b02a7f16c53849f1e9b770fc738479c266a068f08a2e5fb7005"
+  },
+  {
+    "path": "app/assets/exercises/butterfly.png",
+    "sha256": "942702263feb18873f95b75d91412077e43f2771cc681a16e95d19f88d421fa4"
+  },
+  {
+    "path": "app/assets/exercises/cable-concentration-curl.png",
+    "sha256": "6fc89d3955bf0fa914f0208f22d367b7c4a6e9a20bd7768c5fc40ba2c33e6ce2"
+  },
+  {
+    "path": "app/assets/exercises/cable-cross-over.png",
+    "sha256": "cc4750f6969ffc2f682cd83afe8cbd9d46e90e66605be70e4608f68dd48ef9cc"
+  },
+  {
+    "path": "app/assets/exercises/cable-front-raise-with-a-small-bar.png",
+    "sha256": "0a6f3e9335075149dd8c06283fbbead96c7c7de86ffba68c3e660c37664a6958"
+  },
+  {
+    "path": "app/assets/exercises/cable-glute-extension.png",
+    "sha256": "3bbebd53ca14dc242bb7961cf193b75e480778493812c9655ff91e01127ae3c1"
+  },
+  {
+    "path": "app/assets/exercises/cable-lateral-raises-single-arm.png",
+    "sha256": "d8e82406ccbe2fd34f1f42c54bdb1c41affd96dcec64000dd6c5eb8ec96ac098"
+  },
+  {
+    "path": "app/assets/exercises/calf-press-using-leg-press-machine.png",
+    "sha256": "cf0590ccbbdf5ebfb3aa3bf1cd2ca970d39dd55322e710e81fd46221f8f5f36e"
+  },
+  {
+    "path": "app/assets/exercises/chest-press.png",
+    "sha256": "b3350cab75778eac220178dc6eaa358cebf39e0d37b2977cbaaba2bb9a38c905"
+  },
+  {
+    "path": "app/assets/exercises/child-s-pose.png",
+    "sha256": "9f58f3fe76a51c397861c7843f0acc21e013f5b7a661cfbf34b0602a7467c190"
+  },
+  {
+    "path": "app/assets/exercises/chin-up.png",
+    "sha256": "14a787a4c9e2fa4556b387e3c2ae3cc4ea5789e9a105bd6e8905bd85fa0c0c04"
+  },
+  {
+    "path": "app/assets/exercises/claps-over-the-head.png",
+    "sha256": "46291b6f6b15878006108a014f9a1d6a92998ff8a0b3ef023386358212e8a953"
+  },
+  {
+    "path": "app/assets/exercises/clean-and-press.png",
+    "sha256": "f4a03555037385796cd149c1ffb43c7fe6194ac3ceb1fb4adead889df94247c4"
+  },
+  {
+    "path": "app/assets/exercises/close-grip-lat-pull-down.png",
+    "sha256": "e3fd8b915d386298fc3a9541274a52a1e63df6836e855861c2c396bafe1cbb55"
+  },
+  {
+    "path": "app/assets/exercises/close-grip-press-ups.png",
+    "sha256": "658d465751433b1ff70338c9cccc99910d40102f9effd35795b739f355b06292"
+  },
+  {
+    "path": "app/assets/exercises/close-grip-supinated-lat-pulldown.png",
+    "sha256": "66211a1dbdec5b3c08bb0e580ab266e8398645242e4dc8ab3af2d3c4fab805c3"
+  },
+  {
+    "path": "app/assets/exercises/cross-bench-dumbbell-pullovers.png",
+    "sha256": "e3743f3e76d0b9f8e6a502e73d979210b982a866daf921b5c6198de92aa91017"
+  },
+  {
+    "path": "app/assets/exercises/crunches.png",
+    "sha256": "6db8a9c659cb7757a324367c2b80097e2841014b38168abf94653dbc47041a8b"
+  },
+  {
+    "path": "app/assets/exercises/curl-de-mu-eca-con-barra.png",
+    "sha256": "ef6791aed81117d397391a323ad26b0594fee57d06ba43b0f682146aa54c2f8f"
+  },
+  {
+    "path": "app/assets/exercises/deadlifts.png",
+    "sha256": "eef8edabb71407a84e39bcca7e479213a99c4778c1214a4ea4aa85270ebbcffb"
+  },
+  {
+    "path": "app/assets/exercises/decline-bench-leg-raise.png",
+    "sha256": "254080eafc62fc1e05550cced81c98a46c0e6861655603ff2224527755b1fa9c"
+  },
+  {
+    "path": "app/assets/exercises/decline-bench-press-barbell.png",
+    "sha256": "b919e1193df17b7eab562900ed32851c1606c889e25e3eeefd7b384053b1cc99"
+  },
+  {
+    "path": "app/assets/exercises/devil-s-press.png",
+    "sha256": "f19a59c039a93fb08a6ea1477961e5f7ef92d4ddb46c66d4ed098b4a8e6305a7"
+  },
+  {
+    "path": "app/assets/exercises/dips-between-two-benches.png",
+    "sha256": "ec74dd4895f18d8ea34e68d75e6264304e62c6b601e1da92702e05e3a0dd4e66"
+  },
+  {
+    "path": "app/assets/exercises/dips.png",
+    "sha256": "d88c1e858b768188d2d6dad3fe36eefa10426174121dc6b58622f236c2c4ef0a"
+  },
+  {
+    "path": "app/assets/exercises/double-leg-calf-raise.png",
+    "sha256": "fdf58ac1cb874f151934b363270dbc01bed45bb2402365614b9427398f199448"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-bent-over-face-pull.png",
+    "sha256": "b257dd96d902cddae67ed70a9d19ca5365b476d583cde25464ccaf2491d81b4f"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-bicep-curl-to-press.png",
+    "sha256": "07a1b7a3e5a8808581325263297db87e9678560485691503dde5011c32ae786d"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-donkey-kick.png",
+    "sha256": "de22f5444dc85ee05c8ef235aee8827573e110469668ca176467703b9a9c079f"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-floor-press.png",
+    "sha256": "ba2aa343ccab51e4f0636084627495a304fbadf0f76b4f27aabbce75d3fcba44"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-front-squat.png",
+    "sha256": "1caf5d5c7294ee454b69164b2570c7f91ead318c6acf4a91c7e03dc3fecbde46"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-goblet-squat.png",
+    "sha256": "a49c10b5af2d4a5bae464d43cf2a299fd20c04fa0e3f87bfec4424f6f68f2f62"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-hex-press.png",
+    "sha256": "c858a92fff83aa4cf813f8709ba9947f4b87c84b31b6dda3943bf967f68108d9"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-lunges-walking.png",
+    "sha256": "a3593342d922f84d8155845fae10e480e05658796bc94a28cb2944db1a936706"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-rear-delt-row.png",
+    "sha256": "339a7354995444268cb9ad0f2f40c0435458fc75ee1a0838081e19340ea0afe5"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-rear-lunge.png",
+    "sha256": "c8d4b7c5de95a7e800c704c8f197d1579f81413a7e73255ffa49c2da43743ee9"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-romanian-deadlift.png",
+    "sha256": "5990d4c0dec35cf407673d4453e30969a5b526adf5b7f0e04fdb6ffe5a534daf"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-snatch.png",
+    "sha256": "070aeefe605d6493149d3e78063aa81e8a0d414626c8bbc0cffe7cf171d9ccc8"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-sumo-deadlift.png",
+    "sha256": "3a24f9a8a1a1e731b834d3f4b5e72f67e2f5fcd537c8429db8fbdf660299a15c"
+  },
+  {
+    "path": "app/assets/exercises/dumbbell-wide-bicep-curls.png",
+    "sha256": "031cfc54e93189b931614b40cdc41bdd7eb7394c7d80ab080a566d7b5e124770"
+  },
+  {
+    "path": "app/assets/exercises/external-rotation-stretch.png",
+    "sha256": "ed7c93538b435788e161990ee48de489bec0bc0b5e423584718a12ac58d10a0e"
+  },
+  {
+    "path": "app/assets/exercises/face-pulls-with-yellow-green-band.png",
+    "sha256": "347d684f4de1c887284c2f909c20bf6ff84a76d5ff42a56acd626b706f4deb27"
+  },
+  {
+    "path": "app/assets/exercises/finger-pushup.png",
+    "sha256": "7363901bf0276a25b4d7bb233a6fb57d8d66e84cde1879c6409132f1a2045ee4"
+  },
+  {
+    "path": "app/assets/exercises/floor-dips.png",
+    "sha256": "cdf951ab997fa7bfb637332067a223f6983fa735b56ebc15e41278e4e0ac9fc1"
+  },
+  {
+    "path": "app/assets/exercises/fly-with-cable.png",
+    "sha256": "b3f1f4d15a6974e4659ba6a7ed0bbdd3a3a01b02f9f3c41e618df4350d7a4e23"
+  },
+  {
+    "path": "app/assets/exercises/fly-with-dumbbells.png",
+    "sha256": "8cf942b49d643dffd60239bc3e6af64be3d81be2500d73e3dd296f724c7f8b16"
+  },
+  {
+    "path": "app/assets/exercises/foam-roller-adductors.png",
+    "sha256": "f662a9c40a87f073369795d8cbd9f454babbef8342de48509bba015929c84810"
+  },
+  {
+    "path": "app/assets/exercises/foam-roller-anterior-tibialis.png",
+    "sha256": "6792cebfb4b844833c60520ca2ae2905284f2ebc2e4ba0cf3cf6b4aec7f74d1d"
+  },
+  {
+    "path": "app/assets/exercises/foam-roller-gluteus.png",
+    "sha256": "d23149ddd3fbb2dbbd6cc88b3bd1eb8a35b977672475dbf6633604f701623959"
+  },
+  {
+    "path": "app/assets/exercises/foam-roller-quadriceps.png",
+    "sha256": "89d816c851c222dd5272c0fa2711f3688dda1028d7e537083ffd828c6c52d28e"
+  },
+  {
+    "path": "app/assets/exercises/forearm-curls-underhand-grip.png",
+    "sha256": "6bcbb2e653e0437e151cdd488859d98c18779e937c8fb433bd58c1fb7e42fd23"
+  },
+  {
+    "path": "app/assets/exercises/front-raises.png",
+    "sha256": "07726d80b1c378604322d35640afc6b5398257f8364e6e3987b98b1f3eac1e26"
+  },
+  {
+    "path": "app/assets/exercises/front-squats.png",
+    "sha256": "870e20a24711c2c36073d8e2e029538bff022631e1991e63035baf2d95feed54"
+  },
+  {
+    "path": "app/assets/exercises/good-morning.png",
+    "sha256": "3c092ddaca22e62539e593b196a87d8abab93f507cc8351b6a6fbbdcb91782ed"
+  },
+  {
+    "path": "app/assets/exercises/hammer-curls.png",
+    "sha256": "dd10ec631d09b9bc8d73c522741f90b921e11bbb5bf302aa9789e0d5022ed992"
+  },
+  {
+    "path": "app/assets/exercises/hammercurls-on-cable.png",
+    "sha256": "771dcac218d276dc5df476976ee641a42762bf4b260ebf55bfb02f1b05c683f6"
+  },
+  {
+    "path": "app/assets/exercises/hamstring-foam-roller.png",
+    "sha256": "136f30201ea87c389c38f642f1c57d9f58e2ac77632dac5cb80b63c2d27e628c"
+  },
+  {
+    "path": "app/assets/exercises/hamstring-kicks.png",
+    "sha256": "007069f804043dc8acd2da8e8b72f0cb021ae5139e65291927e3ecbfe9588419"
+  },
+  {
+    "path": "app/assets/exercises/hand-grip.png",
+    "sha256": "f274f7e2297d5477b41a3ba832dec621c8c0f25dcde5586944422d7c516db772"
+  },
+  {
+    "path": "app/assets/exercises/handstand-pushup.png",
+    "sha256": "d801489fbf345b3337fc791d97745a3fb2049297425748846bd4e6901ba0ccbc"
+  },
+  {
+    "path": "app/assets/exercises/high-cable-cross-tricep-extention-nb.png",
+    "sha256": "84b4d39b57cddd58abb04fe9526fdab1736115bb37abbfd467e233d50a9483d6"
+  },
+  {
+    "path": "app/assets/exercises/high-knee-jumps.png",
+    "sha256": "76e0e71c75daf4d13a30b43dfc6a246ba6b16e7c2fe6c8889449c30db7f4ad78"
+  },
+  {
+    "path": "app/assets/exercises/high-knees.png",
+    "sha256": "72cc96d6810090e414ef52be908d1b0723a16aaf1f91148d4ccb2edffbc35797"
+  },
+  {
+    "path": "app/assets/exercises/high-pulley-pullover.png",
+    "sha256": "a181e2b69ac75318ff3670dcaf31825ec0b597dbdba6c436e52cd4da2997bedd"
+  },
+  {
+    "path": "app/assets/exercises/hindu-pushups.png",
+    "sha256": "1752581da1916f74962eb1d9dc308108af6d486c0cbd7c16d87bd20bd7335325"
+  },
+  {
+    "path": "app/assets/exercises/hollow-hold.png",
+    "sha256": "3e6085d70de86d2023549dbd73f7c5c742a71b020d5dfa4416ecd5e2d0829378"
+  },
+  {
+    "path": "app/assets/exercises/hyperextensions.png",
+    "sha256": "457d42e11daaf12ac6b4fad1479543cdbd18acd53840cc0e61834d7ee8fbe0a9"
+  },
+  {
+    "path": "app/assets/exercises/incline-bench-press-barbell.png",
+    "sha256": "2039823e711f398ee3fe727865bc97fef0ce3fa8abd5a244190d523aeba6c3a9"
+  },
+  {
+    "path": "app/assets/exercises/incline-bench-press-dumbbell.png",
+    "sha256": "b3788bca7cee9559547b09e1b898eea965f308a8b054f29a360b7fbd6a04b1f2"
+  },
+  {
+    "path": "app/assets/exercises/incline-bench-pulldown.png",
+    "sha256": "fc0c5b76a97f9ef614f82bbffe702a6c5f36a20ee80a280847a018b4eddffb77"
+  },
+  {
+    "path": "app/assets/exercises/incline-chest-supported-dumbbell-row.png",
+    "sha256": "f8d48c85ac295bdc3aec77b54e446aa4c501573903ec5edbebfd5cae7015a74a"
+  },
+  {
+    "path": "app/assets/exercises/incline-crunches.png",
+    "sha256": "7760490831a31b6242a40dfc2bf44de9e2280dd92d255bd441caa4d976054022"
+  },
+  {
+    "path": "app/assets/exercises/inverted-rows.png",
+    "sha256": "23a7e236d0ad637b71b0cd2aa9c6e8b5c35346b604ceaf0a24ae19edfd06bfc6"
+  },
+  {
+    "path": "app/assets/exercises/isometric-squat-to-failure.png",
+    "sha256": "3cdf523af06a0f726de5fee63d228f5c9f38f12fc56f29d893da3917dfdbf970"
+  },
+  {
+    "path": "app/assets/exercises/jumping-jacks.png",
+    "sha256": "5ee16a6c8d084f3c64f7acf6b80712f7bc58cc5aa5ef008c8ed624d800d332b4"
+  },
+  {
+    "path": "app/assets/exercises/kettlebell-swing.png",
+    "sha256": "22e638c9d3f36050a877cc054936ad5ebcbe1cc16ce5d74a55df0f9fba81e8b7"
+  },
+  {
+    "path": "app/assets/exercises/knee-raises.png",
+    "sha256": "c96eb9963fe68764ed4065dd89390c4b6cc9bfb2cd507d9a7678a895dae74a3f"
+  },
+  {
+    "path": "app/assets/exercises/kneeling-kickbacks.png",
+    "sha256": "9d63127d951ddab925ba387d7f87eb6e80cf9bf575de1c29b1c33432950e5cf6"
+  },
+  {
+    "path": "app/assets/exercises/lateral-raises.png",
+    "sha256": "608de773f438a6910d1841f6b1639659e94d7519fe64c7af77e4109d3712abad"
+  },
+  {
+    "path": "app/assets/exercises/lateral-rows-on-cable-one-armed.png",
+    "sha256": "b4e440c5d0886fca4714b0721d8bc23237b28fa9156f5f19a25809ef4bb43052"
+  },
+  {
+    "path": "app/assets/exercises/leg-curl.png",
+    "sha256": "792efe2b68d2da7fa4f15c03db1ae828959ecfdd221e5d887022cd2bedf4edd7"
+  },
+  {
+    "path": "app/assets/exercises/leg-curls-laying.png",
+    "sha256": "2a68f002ecd0086314ee65a99891c19c9eb4b6a5d32b81fe7509362895948f78"
+  },
+  {
+    "path": "app/assets/exercises/leg-extension.png",
+    "sha256": "c64f9b33c5128d0ac36a53f3318b1f81748f7ebd333393d4f528583b78cbf13e"
+  },
+  {
+    "path": "app/assets/exercises/leg-press.png",
+    "sha256": "c5276ad3a72b298c174c0f158acaca6afeec2192f9fb392541d806968acb3674"
+  },
+  {
+    "path": "app/assets/exercises/leg-presses-narrow.png",
+    "sha256": "75a83cc8e2892b11e8f99ff473f7fe9cbd8f60f87631e092e5cd1d40dfbfae27"
+  },
+  {
+    "path": "app/assets/exercises/leg-raises-lying.png",
+    "sha256": "c0b5b71fa4650c61666d63ab409905444cfe618208885c292fab1c5a6d445c18"
+  },
+  {
+    "path": "app/assets/exercises/leg-raises-pull-up-bar.png",
+    "sha256": "11c2080997add4780ba4a4227fa57c6f3460e54f4d7dbad243332daad9548c18"
+  },
+  {
+    "path": "app/assets/exercises/long-pulley-low-row.png",
+    "sha256": "520181e9743e7b641684b9d3c06b3612fb520834b3ff92559f8c4840ab4aa070"
+  },
+  {
+    "path": "app/assets/exercises/low-cable-cross-over-nb.png",
+    "sha256": "8eaa290d7d77de124c84b8df09ad237b4eb6746c218e9ba7314cc48ec1f5e6e4"
+  },
+  {
+    "path": "app/assets/exercises/lunges.png",
+    "sha256": "e8b2daff42dd568e50d0742778c1d4f809c0dd6611304121d745a8cccea3108d"
+  },
+  {
+    "path": "app/assets/exercises/machine-chest-fly.png",
+    "sha256": "296214d2325f54b42454d218a6aee9d46a00b3a4dd221d9748351885c22488cf"
+  },
+  {
+    "path": "app/assets/exercises/machine-hip-abduction.png",
+    "sha256": "fb9f01b47d7ddbd548370f74b410f8ca93f69c961231384d3c79df6a67e586a0"
+  },
+  {
+    "path": "app/assets/exercises/machine-lateral-raise.png",
+    "sha256": "6c40c977061894753ef9cf85a51a57ec4d3bf5b25c1b510038c1cd16e3550421"
+  },
+  {
+    "path": "app/assets/exercises/machine-side-lateral-raises.png",
+    "sha256": "a025b35e10579adf4dfaad382f48e93776a46294447759773ee2836b9e0c859d"
+  },
+  {
+    "path": "app/assets/exercises/medicine-ball-booklet-crunch.png",
+    "sha256": "8ea46c27e4cae95eab0f39235bc83afe438784411bf798e71b23f5f4742be774"
+  },
+  {
+    "path": "app/assets/exercises/medicine-ball-twist.png",
+    "sha256": "7d58cc3599392053ea4e3daee95f059dd8e339efe1263d56b21e9a8987c392ac"
+  },
+  {
+    "path": "app/assets/exercises/mentzer-pulldown.png",
+    "sha256": "4d7b2522bdaa5175118f1843d7d2d9c3c216bf2bb280a0fb7472b936c8a55657"
+  },
+  {
+    "path": "app/assets/exercises/military-press-mit-sz-bar.png",
+    "sha256": "b47d06f3808fa605dbd43950893c8fa7e8dcc9ddc350b9c797bae68ca2dc5d4e"
+  },
+  {
+    "path": "app/assets/exercises/negative-crunches.png",
+    "sha256": "7760490831a31b6242a40dfc2bf44de9e2280dd92d255bd441caa4d976054022"
+  },
+  {
+    "path": "app/assets/exercises/neutral-grip-pull-ups-or-trx-rows.png",
+    "sha256": "c6b8cada3fc33f9baede87991174280d5e9ceb57b93c9e9b4641a6e5fd41b45c"
+  },
+  {
+    "path": "app/assets/exercises/one-arm-bent-row.png",
+    "sha256": "d3baa735e1498052d052ec955b14fbd2bcf69c55fa5e95c262a90b984af4af77"
+  },
+  {
+    "path": "app/assets/exercises/one-handed-kettlebell-curls.png",
+    "sha256": "7bbba24623a2a714c40be1e9975da5f66cf1df0762a93c64fe8bf597be43c832"
+  },
+  {
+    "path": "app/assets/exercises/overhead-barbell-press.png",
+    "sha256": "2593c3b7a5c1434ddd4fb2896247852ebec699d7271260d26f8f1f5753e9b62c"
+  },
+  {
+    "path": "app/assets/exercises/pendular-hack.png",
+    "sha256": "f00b64008d072b3d92b13904d463aa7bb839ed9bea9d49bedefedacf930bfb51"
+  },
+  {
+    "path": "app/assets/exercises/pike-push-ups.png",
+    "sha256": "c1411bb778719d1f296d60fae2f5135077cb859211363f4cd6c218be620901e0"
+  },
+  {
+    "path": "app/assets/exercises/pistol-squat.png",
+    "sha256": "9610874d72c879a0f719465284fe82c1109fd3a8fa5cae5736cd42e5b2e50102"
+  },
+  {
+    "path": "app/assets/exercises/plank.png",
+    "sha256": "8c96659aa40237edebce4a0360ae94851f5df7f1f6d131d6c793d32daa7c6a44"
+  },
+  {
+    "path": "app/assets/exercises/plantarflexion-stretch-with-band.png",
+    "sha256": "fc975edb4806e11b806e40333d360156e6dd4bce4d0f5f28ba255f4f9dac1162"
+  },
+  {
+    "path": "app/assets/exercises/preacher-curls.png",
+    "sha256": "89455f5ce2ff150d1e94edf442f6ecfd861fbdcdedc665d6c6160e4fef5b1bd6"
+  },
+  {
+    "path": "app/assets/exercises/pull-ups.png",
+    "sha256": "4a78cefe7ccd45763afe5ec2ba1198f13633f69ca4e6da739139ca7794d7c739"
+  },
+  {
+    "path": "app/assets/exercises/push-press.png",
+    "sha256": "b50c5728c626e4c1e0a64f9de72839bda0467ae7010d294ab5b4435ab1c61169"
+  },
+  {
+    "path": "app/assets/exercises/push-ups-decline.png",
+    "sha256": "570b70bf98b1107097ad5f08865daab1fd63e0fa36a01dffe9a55e660c58a735"
+  },
+  {
+    "path": "app/assets/exercises/quadriped-arm-and-leg-raise.png",
+    "sha256": "b5ff238c86ae2d8e143d3510eeb0bd45d951c1e17a3ab9dfc88596cec82f1121"
+  },
+  {
+    "path": "app/assets/exercises/rack-deadlift.png",
+    "sha256": "23da5911b82281c5517e4526955afe89d458320cb62727aa41cae4c05d3b8d5e"
+  },
+  {
+    "path": "app/assets/exercises/rear-delt-raises.png",
+    "sha256": "a1db350e03590314470317f1da985696fee5d26f2e230c7309547450e23b2443"
+  },
+  {
+    "path": "app/assets/exercises/remo-maquina-agarre-estrecho-supino.png",
+    "sha256": "2f9acfc5be80578319ed57e99533a9b40da216bbd894850b25586ded107023af"
+  },
+  {
+    "path": "app/assets/exercises/reverse-grip-barbell-curls.png",
+    "sha256": "da22108a5e92dc2be5466ae804eea8980a063871a8569f1c32797d3bcfda5d4f"
+  },
+  {
+    "path": "app/assets/exercises/reverse-lunges.png",
+    "sha256": "e7889539101a00849d9fc8297de05eb89371aa6eb2ad56f01cccc1cb9750b81c"
+  },
+  {
+    "path": "app/assets/exercises/rope-pullover-row.png",
+    "sha256": "017fa4d09ab25c5f867a48d8e773d8ed065b566e354d458ab74b03b89a2906bf"
+  },
+  {
+    "path": "app/assets/exercises/rowing-seated-narrow-grip.png",
+    "sha256": "e6259a99a90feaeb80de238ada441168e863dcf2dfbdc9968636920c204d23af"
+  },
+  {
+    "path": "app/assets/exercises/rowing-t-bar.png",
+    "sha256": "0ee38244dd01cb988e224cf7bff5f9475262be1b4030dcb5ba6ea7aa18f3ef06"
+  },
+  {
+    "path": "app/assets/exercises/rubber-band-glute-kickback.png",
+    "sha256": "571ef1a1f2f347e6d3b2d8f65bd2088ae200f32f8435d04365f59a9cb790e03f"
+  },
+  {
+    "path": "app/assets/exercises/russian-twist.png",
+    "sha256": "02c30fd5358a8ffaa539a0694f852499ca104f2dce7745f778f04b72f152912b"
+  },
+  {
+    "path": "app/assets/exercises/seated-cable-row.png",
+    "sha256": "a31681dd1e9947cc9888bf7250d4513d8d343f117721ed381398617c7c1f0e55"
+  },
+  {
+    "path": "app/assets/exercises/seated-dumbbell-calf-raise.png",
+    "sha256": "c8c189d88fe612fe28f91b082803311a7853028c25aabaecc3860ece98526eae"
+  },
+  {
+    "path": "app/assets/exercises/seated-hip-adduction.png",
+    "sha256": "854327ab4fd26682bf192d845ba9db9b4bf485328f20a3489c5531d7b9d555a6"
+  },
+  {
+    "path": "app/assets/exercises/seated-row-machine.png",
+    "sha256": "90721290e1201a2f9adfd4a11d4213f4f1117b601a3be27845066452c2582bc1"
+  },
+  {
+    "path": "app/assets/exercises/seated-w-curl.png",
+    "sha256": "48c32e45df540a6edf0cb3119ae62c0accc513a80b30b0ba440580ff569a44e0"
+  },
+  {
+    "path": "app/assets/exercises/shoulder-press-barbell.png",
+    "sha256": "e6b150653b7f47ee9837dbc938ad628f35ca471b50e57914e6293e5ea144ee7a"
+  },
+  {
+    "path": "app/assets/exercises/shoulder-press-dumbbells.png",
+    "sha256": "a52bb785a75d551c259b55fe7f7091959328928554bf09b16d55f5770c39e4f0"
+  },
+  {
+    "path": "app/assets/exercises/shoulder-raise-dumbbell.png",
+    "sha256": "d7f0f4e20c7dabc82ea80296fb449665f668a5af9ab5d22eaebf8c39ec35d839"
+  },
+  {
+    "path": "app/assets/exercises/shoulder-shrug.png",
+    "sha256": "8c6852eeb2e2878b9acbd60bf65e4aea994e493c0c563f4fd1bdc73b69e3578b"
+  },
+  {
+    "path": "app/assets/exercises/shrugs-barbells.png",
+    "sha256": "33baf4b3760ffc04553e8dc4439e3c96c4114f5550e98532e8035af6b5c9c510"
+  },
+  {
+    "path": "app/assets/exercises/shrugs-dumbbells.png",
+    "sha256": "eaad18a29ec2823a6f9fb465ffb5cccca86fe877b83e0f8a5be28fc68b03ab22"
+  },
+  {
+    "path": "app/assets/exercises/side-bend.png",
+    "sha256": "f002ee1c08d3c4fdee1b00ac64f0b28092d81d32558c3428340495c99b655912"
+  },
+  {
+    "path": "app/assets/exercises/side-crunch.png",
+    "sha256": "bc12f9d7a7f1eefe9558f8d71d9ac57bf3aec06773e0e5a5c4642e5a3f2b0c5b"
+  },
+  {
+    "path": "app/assets/exercises/side-laying-interior-rotation.png",
+    "sha256": "40c6d36e5640c18cb10b711796129c590a2537d76309455c23cfc99180469e16"
+  },
+  {
+    "path": "app/assets/exercises/single-arm-dumbbell-shoulder-press.png",
+    "sha256": "a92bd9ffe5ebd86b427a760d1c761f5f9639bf9fa97684706112d24713968afc"
+  },
+  {
+    "path": "app/assets/exercises/single-arm-plank-to-row.png",
+    "sha256": "3670d97ce232bc61bb49e0377dc7945bd417eceba664e2bfe7b0fe0335a2b5be"
+  },
+  {
+    "path": "app/assets/exercises/single-leg-deadlift-with-dumbbell.png",
+    "sha256": "251899e19675f9a0f9f8f16a8a444494a74e815649a45fbcb2b1b5e6ba78ca75"
+  },
+  {
+    "path": "app/assets/exercises/single-leg-lunge-with-kettlebell.png",
+    "sha256": "1884e19bde981512b4aa5496dabde7559852d4456f9aa78c79370dd491019785"
+  },
+  {
+    "path": "app/assets/exercises/single-leg-side-glute-press.png",
+    "sha256": "2fbaea2a17411bf88a21c11a7046107ace316b70e4dc117bd0b26d5e03bb3d1e"
+  },
+  {
+    "path": "app/assets/exercises/sit-up-elbow-thrust.png",
+    "sha256": "830c15d09e3943c6a028bdcdb8c5e07a2d74c7d4e653c004a2b47b87df94b953"
+  },
+  {
+    "path": "app/assets/exercises/sitting-calf-stretch-dorsiflexion.png",
+    "sha256": "962c7dfac30af531bd4de747d8c272b672243ed9e7359eb7d881c79f5e00e0ff"
+  },
+  {
+    "path": "app/assets/exercises/skullcrusher-sz-bar.png",
+    "sha256": "71a01ea53a1edaf0227ecf1d8ef193b13235154a227aa218b3566e852db51853"
+  },
+  {
+    "path": "app/assets/exercises/sloper-hanging.png",
+    "sha256": "54e8382313f11d0cfc62700c0f9357f46dcb2e22f224fa73a8219a86b3037570"
+  },
+  {
+    "path": "app/assets/exercises/smith-machine-slight-incline-press.png",
+    "sha256": "0c62131355cced23e79d6e7b67f0c79b39fbdf67d617a69752155ae67343544b"
+  },
+  {
+    "path": "app/assets/exercises/smith-machine-split-squat.png",
+    "sha256": "54e8c802899686da24ff97162cccd457feccf2ff3a6ba37edae9d9c7f8ee2233"
+  },
+  {
+    "path": "app/assets/exercises/smith-machine-squat.png",
+    "sha256": "0925ed1e72c2cdad7e4c121ea83ec3cc00059ba3853eca3e4cbef4555c9cd047"
+  },
+  {
+    "path": "app/assets/exercises/smith-press.png",
+    "sha256": "36bfee11ab3933e37c1d028f89f4a06a8cda46d81294e97d6bfb0b9a83167a85"
+  },
+  {
+    "path": "app/assets/exercises/standing-biceps-stretch-right.png",
+    "sha256": "a5db8d61a1813dee9de2a4e95c8670147b61bd3511740a92e42efdcfb450588c"
+  },
+  {
+    "path": "app/assets/exercises/standing-calf-raises.png",
+    "sha256": "f95cf941c9a6e00e2427ff967cce6dbc28e12e412a8e032aa902c1c510b3bd63"
+  },
+  {
+    "path": "app/assets/exercises/stationary-bike-cardio.png",
+    "sha256": "b06672347e3da6ac6fb933f072f86c60d2dc1f6170be37e3711982639958e8ee"
+  },
+  {
+    "path": "app/assets/exercises/step-jack.png",
+    "sha256": "d3d6a596a2699c4ca62cdec5ab410a7fec2a711af69a173ff9e4ca6d3a637352"
+  },
+  {
+    "path": "app/assets/exercises/step-ups.png",
+    "sha256": "77f46efc5e34f505b387a8c3778b5c54a6ed2aa8b8093015b82b510ee2281ddb"
+  },
+  {
+    "path": "app/assets/exercises/straight-arm-pulldown-cable.png",
+    "sha256": "1bae941837de3d01b12781fdd82ff753e4b9b7c78ebd628b44445dd543386e9e"
+  },
+  {
+    "path": "app/assets/exercises/sumo-deadlift.png",
+    "sha256": "4f432a598bf9883d78665907facc13f880568b6a241b84ee409dd05c935151d9"
+  },
+  {
+    "path": "app/assets/exercises/suspended-crossess.png",
+    "sha256": "4ae8e5fb366a4c2a0a18f9edbaddfea6734967ea9278f136f35ad80047ac7b59"
+  },
+  {
+    "path": "app/assets/exercises/talons-fesses.png",
+    "sha256": "ab8d8c58e23cffea4191034785ecfeca0a9ed153601ebf91d20f073bc3958b83"
+  },
+  {
+    "path": "app/assets/exercises/torso-twist.png",
+    "sha256": "05ef283e482af7335327e5fb64db60e7405fc4d96e0af32151330f8883b874d9"
+  },
+  {
+    "path": "app/assets/exercises/trap-press.png",
+    "sha256": "1412aab76b446729d43776c7b343c0220ef1105aab16a1319c9d4c87e7ffc2b5"
+  },
+  {
+    "path": "app/assets/exercises/treadmill-cardio.png",
+    "sha256": "d24d3ad2b0fa89fb7f0567a970c0c66b4fd6b292e9bf33588a172fecb847da21"
+  },
+  {
+    "path": "app/assets/exercises/tricep-pushdown-on-cable.png",
+    "sha256": "2b5103bc83d35b02a919f8d7a282a63d6a00d1c939704e7c66213bf20ee06b6f"
+  },
+  {
+    "path": "app/assets/exercises/tricep-rope-pushdowns.png",
+    "sha256": "752811bf9c715e3a172fe9842e5521f28b2a4517942dff213c2495c70ec0d9f6"
+  },
+  {
+    "path": "app/assets/exercises/triceps-extensions-on-cable.png",
+    "sha256": "89ecb04a940b5fb68cc5f137d393cc71a7fba5bd40631d67a8b49ab4133cc0d8"
+  },
+  {
+    "path": "app/assets/exercises/triceps-overhead-dumbbell.png",
+    "sha256": "a2b51a7a70ec31379f511d3bafdb8dc418e208c37ce84eaf7790914a767dc544"
+  },
+  {
+    "path": "app/assets/exercises/triceps-pushdown.png",
+    "sha256": "5b503f9000028d5790d6afeb1af03f706a3b817f28041b403b9bc18d0a83fd03"
+  },
+  {
+    "path": "app/assets/exercises/triceps-stretch-left.png",
+    "sha256": "63d3b935d497bf5fbf2b2c058dadaa78a529e91ef426f705a48d68d1d20b5b6a"
+  },
+  {
+    "path": "app/assets/exercises/trx-rows.png",
+    "sha256": "bcb96bc545bcac7315f31fcb5d7bebc46284762890c7fd0419a7dd90aacf177f"
+  },
+  {
+    "path": "app/assets/exercises/tuck-planche.png",
+    "sha256": "2658e79ceb5fab29e459f7e577cb9f84150bac1f082ad6d7620a4cdfbb7319c7"
+  },
+  {
+    "path": "app/assets/exercises/unilateral-cable-row.png",
+    "sha256": "4760eac11b87c74ef9b6e5956a8f505ca606c2c626f0505af4fc42b517affd70"
+  },
+  {
+    "path": "app/assets/exercises/upright-row-on-multi-press.png",
+    "sha256": "08b88b6c8bd296d13e62c36a31199f26ee2bbbbf5e63199978355830f561b5a2"
+  },
+  {
+    "path": "app/assets/exercises/upright-row-sz-bar.png",
+    "sha256": "55adaaceb86358d9ea14eeaf5c62f7647bdb18656adb72a936a5122708066d7b"
+  },
+  {
+    "path": "app/assets/exercises/upright-row-w-dumbbells.png",
+    "sha256": "b99277075a4685c236c14ba06c51fb990c24c43c3a55c53a1cf07e395eb83490"
+  },
+  {
+    "path": "app/assets/exercises/wall-balls.png",
+    "sha256": "0e211b1269bb1747ff98741d34d288ffd20a6491728f05f78be1e17705932091"
+  },
+  {
+    "path": "app/assets/seed/automations/workout-encouragement.json",
+    "sha256": "4b92a8a4e857ad2620d268389dbbc26cc6d2b6084242d69c6291a5c7d108b34a"
+  },
+  {
+    "path": "app/assets/seed/corpus.json",
+    "sha256": "0765fef8100763433a6645aa6b16295a1427bb5e82b3fbb17fa7d0ee9da32a37"
+  },
+  {
+    "path": "app/assets/seed/reference/exercises.json",
+    "sha256": "2a8b9e5ae2f0da5de797594552dc5cee65c76f940720f642cb0644c64a0dbab5"
+  },
+  {
+    "path": "app/assets/seed/reference/nutrition.json",
+    "sha256": "008da1c41259795a628f21c2efb88df8517576d04772d46a0326786fb5dea1f8"
+  },
+  {
+    "path": "app/assets/seed/skills/calories-today.json",
+    "sha256": "1b1e5b605edf6f7de81775ceb554d16423c4587f646dbe1b498c4e007d012879"
+  },
+  {
+    "path": "app/assets/seed/skills/cancel-reminder.json",
+    "sha256": "d273c22c1dcd40afb691251b3d6b89df0089451719d4cb9603946df0247cd5c6"
+  },
+  {
+    "path": "app/assets/seed/skills/clear-goal.json",
+    "sha256": "46906412cfeb6db902cc84965ab9192ab0958f71a066b7e0eaeeacbfedc49be4"
+  },
+  {
+    "path": "app/assets/seed/skills/clear-tasks.json",
+    "sha256": "755b757a8404e00d57e8e14819f680ecdaeb417b89b7480058f1e532b5a88c98"
+  },
+  {
+    "path": "app/assets/seed/skills/complete-reminder.json",
+    "sha256": "b1a983f60aa197dd89fb9555035d98e383fe3c8951250cadd24a14d8f215ca62"
+  },
+  {
+    "path": "app/assets/seed/skills/complete-task.json",
+    "sha256": "dd014ad118b1f50a9d1317e7b7608271214f0d1a4fd08c8bef2d50da545ba4b2"
+  },
+  {
+    "path": "app/assets/seed/skills/contact-age.json",
+    "sha256": "48dcb1bed54655fd2d1c16db12dd84daa5a4b960ced04743eb50f33626f59d40"
+  },
+  {
+    "path": "app/assets/seed/skills/count-runs-this-week.json",
+    "sha256": "7deca778ecdf8cf1f1def68cad009ac23518883c782ff3da1843b3a1a5708fbc"
+  },
+  {
+    "path": "app/assets/seed/skills/create-habit.json",
+    "sha256": "d1163300ef58d73b7fa97098cec29bcfc459a050b84db56848d9e36e1d3f23b2"
+  },
+  {
+    "path": "app/assets/seed/skills/create-task.json",
+    "sha256": "48803eb5048f3edac85e601d51c5a06f7849cb78845e4b87956f045275718d9b"
+  },
+  {
+    "path": "app/assets/seed/skills/delete-journal-latest.json",
+    "sha256": "6e72bc0eb150f60cda859071859f187f560f011e68c5ebcc8d89acdf187995d2"
+  },
+  {
+    "path": "app/assets/seed/skills/delete-task-at.json",
+    "sha256": "416edb5dc3391cb29449a4d36ad921a66720965f1661f8817e798a5c9c206647"
+  },
+  {
+    "path": "app/assets/seed/skills/delete-task.json",
+    "sha256": "7e195160955826f97cb92290ebb276165c55e7ea91bc893e277f1e4f92d14902"
+  },
+  {
+    "path": "app/assets/seed/skills/due-by.json",
+    "sha256": "1630e3320ac109a8d96a27b95967ad79fbd46b36eb93934f1dd864cace1b6211"
+  },
+  {
+    "path": "app/assets/seed/skills/due-on.json",
+    "sha256": "deb6a5d276fe42d9daaf631826331ec08726fbaf2c031f39c9f0821f379c247b"
+  },
+  {
+    "path": "app/assets/seed/skills/due-tasks.json",
+    "sha256": "bb510ecb7ec2d53a5a7b56c56631fc4a44f2da6c7191ec5b4c99ff1ab5671ccf"
+  },
+  {
+    "path": "app/assets/seed/skills/due-week.json",
+    "sha256": "82de5e821c902ede59100cc5142fa01d13239bd22a27d79aed45f1ea538d97ba"
+  },
+  {
+    "path": "app/assets/seed/skills/explain-task-list.json",
+    "sha256": "71d29e548af3b67c75a2e78c5f83857d579768276029e2cd26af8973bef9d4a8"
+  },
+  {
+    "path": "app/assets/seed/skills/find-people-by-fact.json",
+    "sha256": "61ec0716cb1db8f4e134f7169461612cbe4e26d4d8954c213152468cb52d85d6"
+  },
+  {
+    "path": "app/assets/seed/skills/forget-fact.json",
+    "sha256": "9650a7e62e65ef9b73c319d2be672b8f3a53afd3ded6ef28466db2de843b3092"
+  },
+  {
+    "path": "app/assets/seed/skills/goal-progress.json",
+    "sha256": "b223ffc02b1468cfa8af1dce50b3b8b0c64148829a5436537de58c4e856e134e"
+  },
+  {
+    "path": "app/assets/seed/skills/habit-progress.json",
+    "sha256": "72e0fb6fca94e5f3624fa481afe5dc5078c9675ba15e347833f737126351e5a5"
+  },
+  {
+    "path": "app/assets/seed/skills/last-interaction.json",
+    "sha256": "6bd8df40d6a3630e1435433b787080fea4a66090c115c53305f0d30ab6a2e80d"
+  },
+  {
+    "path": "app/assets/seed/skills/last-routine-session.json",
+    "sha256": "de11f5e097890ff48e3fb307d61574ff9b5620479509e993b290ec9d35d1331f"
+  },
+  {
+    "path": "app/assets/seed/skills/list-completed-tasks.json",
+    "sha256": "e3bf15a1a0a2472a048e53a1a12adc4af5c4564982d8532faf1ba0e6f3ea534e"
+  },
+  {
+    "path": "app/assets/seed/skills/list-habits.json",
+    "sha256": "fd18795219f19594e32eac8ae40515c06b5867f162923c7f86af91123d374eca"
+  },
+  {
+    "path": "app/assets/seed/skills/list-interactions.json",
+    "sha256": "b00bcb7f1e0cdc0d26753ac930b6b84e56a4d1c5fc3891b2890f4e022cf66068"
+  },
+  {
+    "path": "app/assets/seed/skills/list-meals.json",
+    "sha256": "e0fd27fe4c351932098f2630e3dd8d6911186acf633242b30c430b8409478d13"
+  },
+  {
+    "path": "app/assets/seed/skills/list-relations.json",
+    "sha256": "7d19577c2638797c21bf17187f030f2dbf74d214944f92d08defaea3891af0a6"
+  },
+  {
+    "path": "app/assets/seed/skills/list-reminders-on.json",
+    "sha256": "333ce81ad6d7da13f91ae66b663a4c16010bfa6812826370e256afb05a4f537b"
+  },
+  {
+    "path": "app/assets/seed/skills/list-reminders-week.json",
+    "sha256": "7f602b58d886b1a16463e08fc4ef03a666a01236f948bf2fc426c10513101012"
+  },
+  {
+    "path": "app/assets/seed/skills/list-reminders.json",
+    "sha256": "2deb63ebcc0944b121a5198b159a1b5a948e82839d48e94cf83f83a1e22a88e9"
+  },
+  {
+    "path": "app/assets/seed/skills/list-routines.json",
+    "sha256": "4c08850fa4acc627558818ea030c1cffe42d999fadb069eab8c4a970b7d58d41"
+  },
+  {
+    "path": "app/assets/seed/skills/list-tasks.json",
+    "sha256": "7894f3179122acfa97a3debc20e7835e6836e51b0a2e3fcb2d43597fba703043"
+  },
+  {
+    "path": "app/assets/seed/skills/log-habit.json",
+    "sha256": "59cea1cdb8f76af6e0d81e0e64b0a7c192518d64a37a5aa48391ee014c72ed99"
+  },
+  {
+    "path": "app/assets/seed/skills/log-interaction.json",
+    "sha256": "f8e51a7af5167caa5b88684d6c7f999b361ec8254a1ae54dc206a28650671e88"
+  },
+  {
+    "path": "app/assets/seed/skills/log-journal.json",
+    "sha256": "5f9bcc8c515ef1700383c850d557b346f485f49ad72c8f74a0541a71a334a86e"
+  },
+  {
+    "path": "app/assets/seed/skills/log-meal.json",
+    "sha256": "32af844aa3524310cbe3c6d3896acc20bd38ecd0361aa5f581ec7d222bdc1fd5"
+  },
+  {
+    "path": "app/assets/seed/skills/log-mood.json",
+    "sha256": "9e0a6f9145682448a8b6730ab8d1d96c71db12df6301ac2236d6c96645ad9c28"
+  },
+  {
+    "path": "app/assets/seed/skills/log-plan.json",
+    "sha256": "6b70c0726f1a60a7a96b4aa1c91245eff20a9fbed888ad30060b762e70d54a28"
+  },
+  {
+    "path": "app/assets/seed/skills/log-routine-session.json",
+    "sha256": "4af81bde623fdef2c1c64b15ab0730c0d02c741d51d6d76be3c831818e533134"
+  },
+  {
+    "path": "app/assets/seed/skills/log-run.json",
+    "sha256": "2a724d7a0dc20203f5a7087a9fd91aadbd55f653c2c36aa918ed670401856def"
+  },
+  {
+    "path": "app/assets/seed/skills/log-walk.json",
+    "sha256": "36a328c5db4383e27d0f3262991e12e03138574cabbc5b3a93cf7e72eaf037d7"
+  },
+  {
+    "path": "app/assets/seed/skills/log-workout.json",
+    "sha256": "284c25d53f2e312dc97f612b7ae38e65cf8a62aa4839c6f8c11fa50f9d2faf6d"
+  },
+  {
+    "path": "app/assets/seed/skills/neglected-contacts.json",
+    "sha256": "09f634a733e4635c9b1866ddd299d27ed9c1c5f6f9fdad4dd2a60dc00420dc78"
+  },
+  {
+    "path": "app/assets/seed/skills/recall-fact-about.json",
+    "sha256": "b9e5287f28b865acf53eff0d94dd74a7e53056d07fbf0e81add6444a5ecf1bba"
+  },
+  {
+    "path": "app/assets/seed/skills/recall-facts.json",
+    "sha256": "c5ee7f8b5b599ad28828c0da120bc48e870c8e7017e5e6f40af96feb36b67334"
+  },
+  {
+    "path": "app/assets/seed/skills/recall-journal-on.json",
+    "sha256": "6de0afd9a44a0c5f4292e355324629bafdaddbc669ee48c49e767df340fe9f33"
+  },
+  {
+    "path": "app/assets/seed/skills/recall-journal.json",
+    "sha256": "b6a2ad4ace4ea4adf51812836d737ee026eca6b2af7b2f729c54ae0f2d55f344"
+  },
+  {
+    "path": "app/assets/seed/skills/recall-latest-journal.json",
+    "sha256": "48c9bfab16b6b4c13243ff658f21f1bbbef89712c1832a167e8fcb8649c77124"
+  },
+  {
+    "path": "app/assets/seed/skills/recall-mood.json",
+    "sha256": "2be9911481f96ed216b692224642b40edcea705303c03c584e44e7bab166875e"
+  },
+  {
+    "path": "app/assets/seed/skills/relation-between.json",
+    "sha256": "57044ea1ff614e5a76c8aad6fa364befe2c180d2bfb67235d39825aaac171d36"
+  },
+  {
+    "path": "app/assets/seed/skills/remember-person-fact.json",
+    "sha256": "a29bfbb16441fd9e8428bfe73e2b833a0c02c97ee52f3f61947138c4115524b9"
+  },
+  {
+    "path": "app/assets/seed/skills/remember-relationship.json",
+    "sha256": "3c12f9afe5d7a6c9ede490052c6a529496329a750cc4c203aeebbac892397b77"
+  },
+  {
+    "path": "app/assets/seed/skills/remember-relative.json",
+    "sha256": "f2161096470c0c74d99c164f2ca46f53270a93787ebf030a348764141cd76769"
+  },
+  {
+    "path": "app/assets/seed/skills/remember-trait.json",
+    "sha256": "bfcf7b325b962b5eb130f9f9d3864ccb0d88a8672222932bad5f4242dde61a1b"
+  },
+  {
+    "path": "app/assets/seed/skills/remove-alias.json",
+    "sha256": "e77e51df5ab314da788e59c54152bdee2dc554f88839e656306d2ed5273830e5"
+  },
+  {
+    "path": "app/assets/seed/skills/reschedule-reminder.json",
+    "sha256": "e73d875d72908aef50954440e06c9006cdd01623f70d595ca4e82d439b04abdb"
+  },
+  {
+    "path": "app/assets/seed/skills/reschedule-task.json",
+    "sha256": "e4aa3bdf0bad78e5da507c612a68f2ae2e9753632b6517fe15ac62bc2a791943"
+  },
+  {
+    "path": "app/assets/seed/skills/routine-streak.json",
+    "sha256": "979504c561e3f0a5e0b45695668c5e3ec198b6bae858f6fb5dc449b17c1abc02"
+  },
+  {
+    "path": "app/assets/seed/skills/run-distance-this-month.json",
+    "sha256": "e47faf8dc3722603a4e6f2c3137ef97e2ea8fe5386491de34b40f7a732dea0a2"
+  },
+  {
+    "path": "app/assets/seed/skills/run-distance-this-week.json",
+    "sha256": "bd630b3705426c708259d3a68dfc6205bfb1f77180388b2367d388c947fd6966"
+  },
+  {
+    "path": "app/assets/seed/skills/run-streak.json",
+    "sha256": "5f30794a1cbf9eb1e34a0e0fd34ee8cae7fa3f280c36597425ea31b4f55dee6d"
+  },
+  {
+    "path": "app/assets/seed/skills/set-alias.json",
+    "sha256": "5b16fdb87356ad77dbffcfcdd948c048d33beba6e1587d1a7a5bd8f4b3ce786a"
+  },
+  {
+    "path": "app/assets/seed/skills/set-birthday.json",
+    "sha256": "b4a85c2a12410d4334fe36941391349cedea3d95208cf1d1302f10353334aa5e"
+  },
+  {
+    "path": "app/assets/seed/skills/set-biweekly-reminder.json",
+    "sha256": "30b1fcd9ad7b3c3be8449d91a272aa40b4d3aee97870c3ea0fff4e60a31c09f2"
+  },
+  {
+    "path": "app/assets/seed/skills/set-contact-date.json",
+    "sha256": "608240366b133f95aa2ae7c2ee8f9d37ee45a95be4c72ca016f2810855bf0d66"
+  },
+  {
+    "path": "app/assets/seed/skills/set-daily-reminder.json",
+    "sha256": "1f2dda37d47b4b3e01e3723f5fdc4087cef0806cb2fa1b4d144ca8eb3b82690a"
+  },
+  {
+    "path": "app/assets/seed/skills/set-goal.json",
+    "sha256": "05b4a151480378143597cf4b60ba493ea341bbaad90d1d6020ec7e97d99ab344"
+  },
+  {
+    "path": "app/assets/seed/skills/set-monthly-date-reminder.json",
+    "sha256": "1050009b14f1884adfa580b095815f9388a97b6c27352f1f012b015b3d791637"
+  },
+  {
+    "path": "app/assets/seed/skills/set-monthly-reminder.json",
+    "sha256": "c1aadd9ad0d514b93b500b9ed341fe56c293ad5771571f3e9d39afeae1975e79"
+  },
+  {
+    "path": "app/assets/seed/skills/set-multiday-reminder.json",
+    "sha256": "b014bc45fc5c3b21ffa4bed359eca9c5f61d8a4016e74e117a1982c5a9a6003e"
+  },
+  {
+    "path": "app/assets/seed/skills/set-reminder-on-day.json",
+    "sha256": "668ca072d925694663a207a7fc1ffd26313b4efb8e005581dc4354f16ad96bb5"
+  },
+  {
+    "path": "app/assets/seed/skills/set-reminder.json",
+    "sha256": "98369a276aec3b5e5c093ae5c1e754d71edf6f146bad5b2237f207ade3f78c5e"
+  },
+  {
+    "path": "app/assets/seed/skills/set-weekday-reminder.json",
+    "sha256": "f6862d6808b277ca78f6ba13c46cedf4e49c74fc518047a68da7ff85eed48d0c"
+  },
+  {
+    "path": "app/assets/seed/skills/set-weekend-reminder.json",
+    "sha256": "1ccb3d4419942ebd26cf008ac00b725269d61000cdbed4bda8a7dec84be8c991"
+  },
+  {
+    "path": "app/assets/seed/skills/set-weekly-reminder.json",
+    "sha256": "adbb1da0315180d5b398df2a5e21941d490301b70e974eb9fbb575bb98c94d51"
+  },
+  {
+    "path": "app/assets/seed/skills/set-yearly-reminder.json",
+    "sha256": "1a653ffe389d9dfb011a988d1824dc108f2a10bc31186b018408e9a3c85d6776"
+  },
+  {
+    "path": "app/assets/seed/skills/task-before-birthday.json",
+    "sha256": "fe37e85d1b1dcdf804ff91347982f717be1b1fddc33322b4e4f0700f39a72db4"
+  },
+  {
+    "path": "app/assets/seed/skills/total-distance.json",
+    "sha256": "96466b180081e6d30333e5f5257f481af7e004e6ba4a6ab5caafbd8d6feb129b"
+  },
+  {
+    "path": "app/assets/seed/skills/upcoming-birthdays.json",
+    "sha256": "6d35f86c1f045df905f662376ea7ff4118afcc7dac7ead9ca89b4aacfe646889"
+  },
+  {
+    "path": "app/assets/seed/skills/upcoming-interaction.json",
+    "sha256": "520bf1853029498f78e68c1c010cd6168cad292976b28f3de09626bf316cd49c"
+  },
+  {
+    "path": "app/assets/seed/skills/update-goal.json",
+    "sha256": "585c0a6d2e112b494cbac1a9f2ce97a6bf6acb15a13859733a9c500b206cff55"
+  },
+  {
+    "path": "app/assets/seed/skills/walk-distance.json",
+    "sha256": "14b55363adacacf94ba91ad3f6710ab48fb96ad400f97cd535017816608497c1"
+  },
+  {
+    "path": "app/assets/seed/skills/when-birthday.json",
+    "sha256": "0d0e6d464fd6098a5ccfef83cf491c4fa005b8d80358de734248fe5ad51fb9dd"
+  },
+  {
+    "path": "app/assets/seed/skills/when-contact-date.json",
+    "sha256": "3de9dfbda70d79ef557d12b18c794b1c50ed8e2bd18a458a7d98ab3ae90cae96"
+  },
+  {
+    "path": "app/assets/seed/templates/medication.json",
+    "sha256": "18069fa022df41b6ed97aa9fd2631219722f1cc91ba53d11983d457ecd14b3df"
+  },
+  {
+    "path": "app/assets/seed/templates/reading.json",
+    "sha256": "5034513699b21d37d0e706317665abadd2b90727ad6b2ecfe46c5a34bef1ccd9"
+  },
+  {
+    "path": "app/assets/seed/templates/steps.json",
+    "sha256": "b9fe12dd66253b3f920f5e9e8f2d23204005dabfdd6059188ee94ef4c96b3d10"
+  },
+  {
+    "path": "app/assets/seed/templates/water.json",
+    "sha256": "a6b13590e539d4559866f2b148219d5f4698f25c74f7c6aa7b2fbc0ece600587"
+  },
+  {
+    "path": "app/assets/seed/templates/weight.json",
+    "sha256": "5e8598d53ad0a544fce528b3deb5632e8ab383310e80e6bb9c117d1af715a5f3"
+  },
+  {
+    "path": "app/assets/seed/types/area.json",
+    "sha256": "d77064f20dc6d7e83e811551bcf3db24519a609a24a61d47d338a74e6ef8d1ed"
+  },
+  {
+    "path": "app/assets/seed/types/contact.json",
+    "sha256": "59080ce4fe13d9f54b13f9b5a7e3392ff7664d91a1f30423a5d452c9809bac65"
+  },
+  {
+    "path": "app/assets/seed/types/contact_date.json",
+    "sha256": "e0d90875ccf5fa3c6e3d6173f16ccad8e59ce33def8efb78433d79efae17d077"
+  },
+  {
+    "path": "app/assets/seed/types/contact_fact.json",
+    "sha256": "a3fa268822dba0a00161476e7584dc2ae301b350dcffa74e3ff703197289ca7b"
+  },
+  {
+    "path": "app/assets/seed/types/contact_relationship.json",
+    "sha256": "7f58ff7b1394397910c650a6ff82e8e0c0753955ebff9bb7e18029e2d5660811"
+  },
+  {
+    "path": "app/assets/seed/types/goal.json",
+    "sha256": "be0b376ff555c72d50fb5e1e9b0ba53048edc1bc161c662d2e694c8db6a758c1"
+  },
+  {
+    "path": "app/assets/seed/types/habit.json",
+    "sha256": "dc427659f3f3314de59caeda848cbc4c06c576d3bfa717aa828c5066c58bd5a8"
+  },
+  {
+    "path": "app/assets/seed/types/habit_checkin.json",
+    "sha256": "629015775e73d9b21a23f7ba71d3f5739bc451215078f5629d91edc979496bc6"
+  },
+  {
+    "path": "app/assets/seed/types/interaction.json",
+    "sha256": "346433555e562dc76a3e32206542a246f935f6aa5faa78728eb5ffa494cb89bd"
+  },
+  {
+    "path": "app/assets/seed/types/journal_entry.json",
+    "sha256": "8cf03758881f8c504d8f2c2cbcd6ea1610aadb9a3776cda002f03cbc48e21b51"
+  },
+  {
+    "path": "app/assets/seed/types/meal.json",
+    "sha256": "1da1017af75230e6b5f689124c822eac23fb734d53a3c6870fe0b89f6c457ed7"
+  },
+  {
+    "path": "app/assets/seed/types/mood.json",
+    "sha256": "954d36cff84750da0ec1b20e5ef54d8513e031962cab864e790484834810154a"
+  },
+  {
+    "path": "app/assets/seed/types/project.json",
+    "sha256": "5eccd6738ebbb69225ec395d0aea5ad832234183e3360e3b8632012e9be0694e"
+  },
+  {
+    "path": "app/assets/seed/types/reminder.json",
+    "sha256": "2d8485c08b59c54af497d8123688547ce918a59702daf0f850fb6ed2ac3fb1ba"
+  },
+  {
+    "path": "app/assets/seed/types/routine.json",
+    "sha256": "34280a272027f935d11fe08dc25a512bc109ffbfa66f6df9e569d266600da095"
+  },
+  {
+    "path": "app/assets/seed/types/routine_session.json",
+    "sha256": "f1b61022f9199c03316f7bcac6d9de6eba2846f71f87a24330060912ba2dc056"
+  },
+  {
+    "path": "app/assets/seed/types/routine_step.json",
+    "sha256": "c9e2d1084d8abfb59c2a58884eb42f4bc9e4fe5f4154e232ffba50978388df0c"
+  },
+  {
+    "path": "app/assets/seed/types/task.json",
+    "sha256": "86ca5a83071c91417fa901b5c160cf97d46ba165ce830018d3aa5fc58b6c2699"
+  },
+  {
+    "path": "app/assets/seed/types/workout.json",
+    "sha256": "e9ddfe2d26a6204b0c1666f860697ba0f3e4fd4fc476032a1973bc7f8528040b"
+  },
+  {
+    "path": "app/integration_test/guide_native_test.dart",
+    "sha256": "46d9944c53736813cdf58d310a47daa76fb0890ae00bdd21b42bdcd3c6685010"
+  },
+  {
+    "path": "app/integration_test/ios_notification_test.dart",
+    "sha256": "77a882fa1bdc82c2de3303ac0f59be426c6e240db1d209c91cbbdbde0c18f0d2"
+  },
+  {
+    "path": "app/integration_test/ipad_layout_test.dart",
+    "sha256": "fa567bb1e64f532e661ae6ddfbfe4fd3eb77726e5eaea644b19a27393a9806ee"
+  },
+  {
+    "path": "app/integration_test/release_soak_test.dart",
+    "sha256": "c81de7af4aa4d9b932e71990aabe217744f19cb9d6764efad3a3474ea73e9178"
+  },
+  {
+    "path": "app/integration_test/render_test.dart",
+    "sha256": "991b3f132c4d894b1ddf45b8936580ad4ab8a2ab55d181d94c821b3b8e5a73d2"
+  },
+  {
+    "path": "app/ios/.gitignore",
+    "sha256": "37380775aeb2499662b7aca80f4ac4c95ae827c3ba2bfa179aa3e9af4812c623"
+  },
+  {
+    "path": "app/ios/Flutter/AppFrameworkInfo.plist",
+    "sha256": "da12038f9b2688a8a26160fea2609fa8fcb11421448c109f09c0f573efe7698d"
+  },
+  {
+    "path": "app/ios/Flutter/Debug.xcconfig",
+    "sha256": "690b8a8b1ae15ddd29b241429963e971bbc6720ab22f154cf8cf6b085b6d4925"
+  },
+  {
+    "path": "app/ios/Flutter/Release.xcconfig",
+    "sha256": "75abb819a9de1e0e41c835e7307bc64a506cac25a9a5c0b0d8253fa1c3d5d422"
+  },
+  {
+    "path": "app/ios/Podfile",
+    "sha256": "db2da28b10a5ac3ed5d42dbf7208ece60fc886bd1f86f14335dde4037ba32350"
+  },
+  {
+    "path": "app/ios/Podfile.lock",
+    "sha256": "e3bc26039f501df7eac3ca39f6a75f8c67c18a3b8df8c70a2c7b4d4804d41681"
+  },
+  {
+    "path": "app/ios/Runner.xcodeproj/project.pbxproj",
+    "sha256": "5f1434f0a277dc8fda8a55483299270e76ec70e3d5d44bbac2b8a54675e80e4b"
+  },
+  {
+    "path": "app/ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+    "sha256": "7f3b00b5c3fdb45242d7b87e1e5c4e25d1fa8129a16c94295ecc4e8ea2235c5f"
+  },
+  {
+    "path": "app/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+    "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+  },
+  {
+    "path": "app/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings",
+    "sha256": "11b247bc6796892d67c9a821d18604db4dd6a880981b34f38460b9866e6b247f"
+  },
+  {
+    "path": "app/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+    "sha256": "7709aad00b6853213a9bcd8e782dbaeed27c07ee5feb42e6474cadca91d5c92d"
+  },
+  {
+    "path": "app/ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme",
+    "sha256": "9fbce429f56243561dd437a527136c9f9ed77165e3b271b923faf236cfcd0484"
+  },
+  {
+    "path": "app/ios/Runner.xcworkspace/contents.xcworkspacedata",
+    "sha256": "465e6de5660384eb6832e8078920ba6cd5305c445cb29a24a86a2fda4aa6b67e"
+  },
+  {
+    "path": "app/ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+    "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+  },
+  {
+    "path": "app/ios/Runner.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings",
+    "sha256": "11b247bc6796892d67c9a821d18604db4dd6a880981b34f38460b9866e6b247f"
+  },
+  {
+    "path": "app/ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+    "sha256": "7709aad00b6853213a9bcd8e782dbaeed27c07ee5feb42e6474cadca91d5c92d"
+  },
+  {
+    "path": "app/ios/Runner/AppDelegate.swift",
+    "sha256": "0c86b6695f8af33603c2c9f0008036adcd8f5dcba2d7c1ec5dfc20dba5e603f7"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json",
+    "sha256": "3b1e214f466ffedff74baa5598ad5c4421130eea6bc8d57b8fe23435e8280ae4"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png",
+    "sha256": "4dbe9b8a5503d6fb414c73111337ded30486953b3e9dd90a8a78ca1833561d6e"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png",
+    "sha256": "edebb537e905ccd955be3a0a6749b4e10bccae344d06261f0820eec412bda615"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png",
+    "sha256": "36b790603169a90266420b82b8304dda31a7564a5af5cb4c8838b4dbe423296c"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png",
+    "sha256": "5428d634014e7fdae75e8146f570c12b8c20a35f6ac0e41610b8111c4526a742"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png",
+    "sha256": "620117f6df9f00e452c1f913780f0e022185897ee27d906ee6106384efa1e513"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png",
+    "sha256": "f146e27c9887b54b6b44daf4a82a80bdddd64cb4c073e4d966b7c868945136ac"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png",
+    "sha256": "9fb9c311273b66d70c27822094cfc60778c1aedefb0b56ed37638f990a3098a6"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png",
+    "sha256": "36b790603169a90266420b82b8304dda31a7564a5af5cb4c8838b4dbe423296c"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png",
+    "sha256": "ea5666cefd05f4df7ab25c1d806d857f60928fd02abf53a59eda44f8e3716c49"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png",
+    "sha256": "6005778ba3032f1bfe38b83b2038bb71ea8e3c0d3eec83cb119d4580d6860382"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png",
+    "sha256": "6005778ba3032f1bfe38b83b2038bb71ea8e3c0d3eec83cb119d4580d6860382"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png",
+    "sha256": "b760a849c0bcdb74bfcfb8a2b00d9a8cd104ad570da842cecd8a8c88692e65e2"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png",
+    "sha256": "456cd37275100f0485a0c91a8e7084f65d843b9852e4b840ac1d5ebe04f95347"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png",
+    "sha256": "1d9ad63faffda5eee5d41a1383419b2597130805f23e429630ea4702a27d1ba1"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png",
+    "sha256": "3f005462103421126228b7582c7cb80945161758aefc2e0c22ba6813a88ae391"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json",
+    "sha256": "ccc7950fd5f5b82067c85f667940a9d59189151460761ece8098ca78daa19469"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png",
+    "sha256": "1f978dc1e9e3d0d7c3705fcd21715ccba3f880f37a271659d67aea77620cd946"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png",
+    "sha256": "cfd0b122b90deace5a3377457ca41decd4d84598e466ebd609196af10fbf1854"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png",
+    "sha256": "945c23afd841f8122d991a2779dc5b790119168eb54e02085dbf3de4dd1607f8"
+  },
+  {
+    "path": "app/ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md",
+    "sha256": "71721ce8275b1a453c7dd372b479c5a310b53260b1b5a5558e6f46bd07098587"
+  },
+  {
+    "path": "app/ios/Runner/Base.lproj/LaunchScreen.storyboard",
+    "sha256": "ed22d569079d4e66f1cf8395fc33943b37122e7cf2b51b847fc833adb954cd9a"
+  },
+  {
+    "path": "app/ios/Runner/Base.lproj/Main.storyboard",
+    "sha256": "fd367b6c43006d61b730f674970dd48b9f662c8f2264e52ffc1558102a2c9f2d"
+  },
+  {
+    "path": "app/ios/Runner/Info.plist",
+    "sha256": "29bcd1ae2912a6bdf81df30938927a6beb96fd9fb4dc431a3de064af07fc334b"
+  },
+  {
+    "path": "app/ios/Runner/PrivacyInfo.xcprivacy",
+    "sha256": "32947a9d5bf7ddc5278e70442f7272050c07abbf6f9c0fe140dcd860a4d8a9ec"
+  },
+  {
+    "path": "app/ios/Runner/Runner-Bridging-Header.h",
+    "sha256": "1a8d11d01d1cc92c650c9c9ed35299240052d4683a15a719a2315ef44185e074"
+  },
+  {
+    "path": "app/ios/Runner/Runner.entitlements",
+    "sha256": "0672f83103b450e4e0b5b86e42238d9b9ba39af727de43d185f22ec56143cda5"
+  },
+  {
+    "path": "app/ios/Runner/SceneDelegate.swift",
+    "sha256": "add68b905971dedfcc0d0b5b7118030de5925ba8c081ad9815463699e3a444ad"
+  },
+  {
+    "path": "app/ios/RunnerTests/RunnerTests.swift",
+    "sha256": "8133ed02262234932fc39d8ac5b370fcfeea38b55a37ae1bf199297028c4f350"
+  },
+  {
+    "path": "app/lib/app_log.dart",
+    "sha256": "4c2d45de863288d98d2e53ab13f064034908b7d0f91f0587a45b40fdbe21a2b9"
+  },
+  {
+    "path": "app/lib/attention_view.dart",
+    "sha256": "171c4a642d6747a45c5f18842d4222a76365b347dd21593bbf4459a3934d536b"
+  },
+  {
+    "path": "app/lib/bootstrap.dart",
+    "sha256": "91d578cc572c9196934b1940161040138572679135490b81d889457fc22d80bb"
+  },
+  {
+    "path": "app/lib/build_channel.dart",
+    "sha256": "a2704e932c23786b73f33ce5a1692c2b18b532425d0d3c52613e836f6ffd0249"
+  },
+  {
+    "path": "app/lib/credential_store.dart",
+    "sha256": "5cd8c7dcf2a27a3aaac842bf4b95c8c08897ab42fd9cf152c8bf86f75443d685"
+  },
+  {
+    "path": "app/lib/data_location.dart",
+    "sha256": "b20fe5594c26782b0e8d819a337d353d0501acc53d7a3b613e8bd51a7f68d79f"
+  },
+  {
+    "path": "app/lib/data_view.dart",
+    "sha256": "bfaf58a2add9cbfb9935dedd3c9edcf0b0d7b9d2b4fab277c1fa7f8f907923e9"
+  },
+  {
+    "path": "app/lib/dev_harness.dart",
+    "sha256": "d25e9971ac3db4a558dc4db0009f470de50a3d40183b1f116368bfaeffef92b5"
+  },
+  {
+    "path": "app/lib/glyph_policy.dart",
+    "sha256": "b08b1fa205aca563debc83a2d9eef137b256be016c9edce53b8964ad30fb7f2b"
+  },
+  {
+    "path": "app/lib/glyphs.dart",
+    "sha256": "88c2f5b94c73760d9ff34d9c28d84da3063092244dd056f561a3fbf3912c9269"
+  },
+  {
+    "path": "app/lib/guide_notifications.dart",
+    "sha256": "ea1cb6879318b53b64cac9c7afd1ca7b24261e16cdcff6da03a12acd00f301ba"
+  },
+  {
+    "path": "app/lib/guide_settings.dart",
+    "sha256": "6377b240ed8de863a25f96084bb016dfe993b57526e33e3b77e689182ad67b3c"
+  },
+  {
+    "path": "app/lib/guide_sources.dart",
+    "sha256": "c7c0ce81e3ed6cb302ef4f94b3b04bcc51e1962b7d7f1c263b876847ab5ea174"
+  },
+  {
+    "path": "app/lib/guide_today.dart",
+    "sha256": "0566f67c03231b3010a3a938510541712e91d4c857cbb22278deca1665600357"
+  },
+  {
+    "path": "app/lib/guide_view.dart",
+    "sha256": "e0785f27423844f29bb83c7286d81ef9de2cfae850da3ae2faf82e01424ebb41"
+  },
+  {
+    "path": "app/lib/habits_view.dart",
+    "sha256": "8345d361e3e0f1efa38abef46e13e7d76b6962a4fef95f69be41dabe3c0e5ad7"
+  },
+  {
+    "path": "app/lib/ios_scheduler.dart",
+    "sha256": "6960da42a4bbc64d3329589c85473851f0eed284eac23ecec785e6bb471227cb"
+  },
+  {
+    "path": "app/lib/library_home.dart",
+    "sha256": "cd0e03938720595ec53eb8774ea4dff3c7dadf1afb7028e016e25c19bb803f45"
+  },
+  {
+    "path": "app/lib/macos_scheduler.dart",
+    "sha256": "bd7e6560ac1ae8c85db6c6a4de26b4c2e37ca43271a5664839a62e167c73c198"
+  },
+  {
+    "path": "app/lib/main.dart",
+    "sha256": "8769977b0ebf38e82606d486c5c9fb90065becfedb0ea76201fd0fb721cc6b62"
+  },
+  {
+    "path": "app/lib/motion.dart",
+    "sha256": "6033b5c152b313772187a90db05872b9e0b935e1f6d19ce756672462c4f43211"
+  },
+  {
+    "path": "app/lib/onboarding_view.dart",
+    "sha256": "1773a0c183640250fab441e00ed79305b1a387907234c6249fcaf8f4ba970338"
+  },
+  {
+    "path": "app/lib/plan_view.dart",
+    "sha256": "97c9edef6a939401b1d5aca9c770eab213b782d38e30756c80d5b1d67f4d4042"
+  },
+  {
+    "path": "app/lib/plena.dart",
+    "sha256": "7e08683e0d30a783326bd6abe623dd97481479389a8c6d8689c018b1d62f8e2b"
+  },
+  {
+    "path": "app/lib/plenara_theme.dart",
+    "sha256": "dd5d22900565c26524b7fb63c2b40b3e6f9c1314b683e024e5bcae0241569341"
+  },
+  {
+    "path": "app/lib/presence_shell.dart",
+    "sha256": "99b2f11c661c703f54264721ad6ed6a2e7ed159f2d7b41772a38992f017b327c"
+  },
+  {
+    "path": "app/lib/relationship_contacts.dart",
+    "sha256": "8a89b28987d62cd6f6cdc8db4ebc95ba0780523a311b7decc01c4fd3ae6fb45a"
+  },
+  {
+    "path": "app/lib/relationships_view.dart",
+    "sha256": "79e631fdb9fda1f706d7c491c1d53cfb0e995ad3e6f95856a719e8e4b93283f2"
+  },
+  {
+    "path": "app/lib/reply_view.dart",
+    "sha256": "791579722dd1c2cfbb0a6abe9aa2067ab7bdd35ab678ba95631c50acda6eee0c"
+  },
+  {
+    "path": "app/lib/routine_player.dart",
+    "sha256": "1fed0feba1561d0e761abe415b27e147bd10dbf729f319a95f3f12fc1e4a4f37"
+  },
+  {
+    "path": "app/lib/routine_view.dart",
+    "sha256": "0ce53575ce36c37a47a73f8edfd56f059b4d95e7cfcc9b898576203862b45f25"
+  },
+  {
+    "path": "app/lib/seed_assets.dart",
+    "sha256": "869f7b8e735d6b17f080dd700eec4b4d405423458e45169dd0da42faedef42dc"
+  },
+  {
+    "path": "app/lib/settings_view.dart",
+    "sha256": "ce4e69db1f5b4d33b0f3489aa0ef6aab755f50590f4d516d53a6e5ffb507d249"
+  },
+  {
+    "path": "app/lib/sherpa_speech.dart",
+    "sha256": "32e7899122ce9b5fd1c06746fa3d9597ba97dd93e9a2ed4f8848d302fb3d362c"
+  },
+  {
+    "path": "app/lib/speech.dart",
+    "sha256": "b6ca7115414a82c687db47da0c5978e72626aa02d03c21d45eb00b75d517b5d1"
+  },
+  {
+    "path": "app/lib/speech_out.dart",
+    "sha256": "8d655681fb40886cfc32412f4a5823a04a2867e07331c5d3c7a40a796f0ddcc5"
+  },
+  {
+    "path": "app/lib/today_view.dart",
+    "sha256": "ed9a4fa125d26a2a1c5388618c85e4e6cec3432b2bcd30e115971352fc4985fa"
+  },
+  {
+    "path": "app/lib/todo_capture.dart",
+    "sha256": "192e352d033b57e2427062706b16547c8a965d3339f9f7fb9d95e1c5c20cec8a"
+  },
+  {
+    "path": "app/lib/undo_feedback.dart",
+    "sha256": "0ea15c487fec0e4742e1de4090036f26a7c1305b63fa310e674bf71a3c98b167"
+  },
+  {
+    "path": "app/lib/voice_setup.dart",
+    "sha256": "7835edf9f21174abdf78725feb36ce9a39b2f47d2e1329143066018ed57c1732"
+  },
+  {
+    "path": "app/lib/voice_turn_controller.dart",
+    "sha256": "8f0b49020ab3c8731369b4bc3c4d460a49c03a6bbc218b4bff20a09268215976"
+  },
+  {
+    "path": "app/lib/windows_scheduler.dart",
+    "sha256": "73d757b51f435af85102b737cd50e19c637c89a17d477037c8fe9666fd458ed4"
+  },
+  {
+    "path": "app/macos/.gitignore",
+    "sha256": "ffec1a0bbd70547186b82ad4e49089bafab2de309b89de97c776d70debb179fa"
+  },
+  {
+    "path": "app/macos/Flutter/Flutter-Debug.xcconfig",
+    "sha256": "802714a37a8fd3065fb3d8e21cbcfbb3147c7ad25f25934b64590085aa9f5b28"
+  },
+  {
+    "path": "app/macos/Flutter/Flutter-Release.xcconfig",
+    "sha256": "d575f436f8bab30d7096792396e73b65db242edc01913c4123d2c29e713b3a6d"
+  },
+  {
+    "path": "app/macos/Flutter/GeneratedPluginRegistrant.swift",
+    "sha256": "19f085a4ea2805ee77a58e0800065b5d6d7bca4ab9aef6b96cc808e8ff9b3ca3"
+  },
+  {
+    "path": "app/macos/Podfile",
+    "sha256": "e85521f1c80ceaca2c2af8578c97857fc84f4c467514025c0b89bb55c0e8543a"
+  },
+  {
+    "path": "app/macos/Podfile.lock",
+    "sha256": "fa7514ee8c087aa0a6d83135b84ffc63aff9415666af369f97602ee63c7261ce"
+  },
+  {
+    "path": "app/macos/Runner.xcodeproj/project.pbxproj",
+    "sha256": "4867e6cd4f213aadf5d867212fb468d3b7b11ee666dc73517b440d2d96620892"
+  },
+  {
+    "path": "app/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+    "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+  },
+  {
+    "path": "app/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+    "sha256": "7709aad00b6853213a9bcd8e782dbaeed27c07ee5feb42e6474cadca91d5c92d"
+  },
+  {
+    "path": "app/macos/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme",
+    "sha256": "170736a627e2f02ed5ae2a5e1056101680f1cb1c9f1d952e3f38a596549a24aa"
+  },
+  {
+    "path": "app/macos/Runner.xcworkspace/contents.xcworkspacedata",
+    "sha256": "465e6de5660384eb6832e8078920ba6cd5305c445cb29a24a86a2fda4aa6b67e"
+  },
+  {
+    "path": "app/macos/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+    "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+  },
+  {
+    "path": "app/macos/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+    "sha256": "7709aad00b6853213a9bcd8e782dbaeed27c07ee5feb42e6474cadca91d5c92d"
+  },
+  {
+    "path": "app/macos/Runner/AppDelegate.swift",
+    "sha256": "ce9dbe45a57c59e85519da50a26c471615b9c8cdd85a8f4a39d2e480e62a4af4"
+  },
+  {
+    "path": "app/macos/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json",
+    "sha256": "bc6ba8105ca69651aeeb77358851590de295dca04681a1d58c0f449641c242f3"
+  },
+  {
+    "path": "app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_1024.png",
+    "sha256": "4dbe9b8a5503d6fb414c73111337ded30486953b3e9dd90a8a78ca1833561d6e"
+  },
+  {
+    "path": "app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_128.png",
+    "sha256": "1f978dc1e9e3d0d7c3705fcd21715ccba3f880f37a271659d67aea77620cd946"
+  },
+  {
+    "path": "app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_16.png",
+    "sha256": "61f968a95727df2de1a61516d2bf202597469c20d5371f1ad135cfff0c0330a6"
+  },
+  {
+    "path": "app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_256.png",
+    "sha256": "cfd0b122b90deace5a3377457ca41decd4d84598e466ebd609196af10fbf1854"
+  },
+  {
+    "path": "app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png",
+    "sha256": "3c87ddd1567e42c0de5258eda2a29d15c56047ee676e61002579163464660f40"
+  },
+  {
+    "path": "app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_512.png",
+    "sha256": "583cd0cf5f723be29c183e548ee36ab357383eb7d1d5380c61d12ccf1cbafdbb"
+  },
+  {
+    "path": "app/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_64.png",
+    "sha256": "3e4d42d6cd9ff7e5c9802b20ab55a6165bd4163f809c58a7dfc90860204b4da4"
+  },
+  {
+    "path": "app/macos/Runner/Base.lproj/MainMenu.xib",
+    "sha256": "be9e9ef8469d3262370e0f0b855ed163cbf9c8362c59e330b2ffe63b86fa42f4"
+  },
+  {
+    "path": "app/macos/Runner/Configs/AppInfo.xcconfig",
+    "sha256": "eac40df7693a03e68cb4280934addd910d0c8609804bb0098eb364188aa07148"
+  },
+  {
+    "path": "app/macos/Runner/Configs/Debug.xcconfig",
+    "sha256": "8067d533ef6593760baad9a9855a786a7a77470fcc3f0925ec04fe43bc1ac4b0"
+  },
+  {
+    "path": "app/macos/Runner/Configs/Release.xcconfig",
+    "sha256": "7a6a4b4d973a23052fa0a0388dd261e32d311d7b66ba1bfc3b914b361808ac61"
+  },
+  {
+    "path": "app/macos/Runner/Configs/Warnings.xcconfig",
+    "sha256": "0e341a392b16ad302d12890aa3dac9257a6c10ece685437604259a85341645a3"
+  },
+  {
+    "path": "app/macos/Runner/DebugProfile.entitlements",
+    "sha256": "b7cde57b8039aca95d216891778fa8d7b76f7a1b05f795ae46d2f2f517fe3808"
+  },
+  {
+    "path": "app/macos/Runner/Info.plist",
+    "sha256": "19ba4bc1c26142787f994c6ff00b241f5da05acd585dce197223c2e31e5ffbf7"
+  },
+  {
+    "path": "app/macos/Runner/MainFlutterWindow.swift",
+    "sha256": "65c9613c11bcedfa51416b16c975d8ba6ff12b405fc19d60db8755d92e86d9fe"
+  },
+  {
+    "path": "app/macos/Runner/PrivacyInfo.xcprivacy",
+    "sha256": "32947a9d5bf7ddc5278e70442f7272050c07abbf6f9c0fe140dcd860a4d8a9ec"
+  },
+  {
+    "path": "app/macos/Runner/Release.entitlements",
+    "sha256": "0ce9408a0c2023019943838bae28c4e812670e0a9052c75dae89d00185f809de"
+  },
+  {
+    "path": "app/macos/RunnerTests/RunnerTests.swift",
+    "sha256": "6bc180bc77c7def7a21d197233e25dff42cc493ab9d294632edafc18fdf0ac44"
+  },
+  {
+    "path": "app/pubspec.lock",
+    "sha256": "29a80e08c4949394dbe852875843e095a703c2f2e4f42f272124d104cf29a860"
+  },
+  {
+    "path": "app/pubspec.yaml",
+    "sha256": "fd71984f004bf57754cc863071f7964293afd5b89ee1176f0cbc93a510c70b40"
+  },
+  {
+    "path": "app/test/app_icon_test.dart",
+    "sha256": "4adf19ad7516ceaf8d3794cab9f9e97f2fa58ab5d7299bec6e0727b325833216"
+  },
+  {
+    "path": "app/test/app_log_test.dart",
+    "sha256": "dc23a8ff2545c29c496e78d9756292ceeaa9e5d2ec608803e4ac9029d358b8a1"
+  },
+  {
+    "path": "app/test/attention_view_test.dart",
+    "sha256": "a22a3038d2dcd07d2f240bc1b9fe95a2e09443f870a486ea06a454d3baa3961c"
+  },
+  {
+    "path": "app/test/build_channel_test.dart",
+    "sha256": "c12e44d0aa968d70fe5ff492b4ead7d57755772833e56b6ff1f2e3f46a22011d"
+  },
+  {
+    "path": "app/test/credential_store_test.dart",
+    "sha256": "ff1549666c67f47dab5ed5fb06a9fa4919726a5320afd16d6f73190d0e235395"
+  },
+  {
+    "path": "app/test/data_location_test.dart",
+    "sha256": "9de6fb3bdcf7900d15a672e276727fdac2bd1b7f163f842ce083892b47e794ae"
+  },
+  {
+    "path": "app/test/data_view_test.dart",
+    "sha256": "b355b1c96d40d1e9f0bb0733c4f57307d30d4ac742f2417e55d79ccb11f114f2"
+  },
+  {
+    "path": "app/test/device_accessibility_matrix_test.dart",
+    "sha256": "70419d80fbf71e67d95a873f669dced35d70702ece723651c17facb10d9036ee"
+  },
+  {
+    "path": "app/test/external_channel_test.dart",
+    "sha256": "591bcd0c6529015612ac63d1c1754ad7852dbb699a7f7593c9373841da7d1a3a"
+  },
+  {
+    "path": "app/test/figure_paint_test.dart",
+    "sha256": "219984ff7f4fd7826269543e00751e599d40a2f30f381d003c117ce6f09badc2"
+  },
+  {
+    "path": "app/test/gesture_snap.dart",
+    "sha256": "b4bfc321b87a5dfe78fa91094e3f08fc0f916031d422e4c5cf3efbd1d83e0f21"
+  },
+  {
+    "path": "app/test/glyph_policy_test.dart",
+    "sha256": "beafef011b9cc1d899f6deb2497c7d20b0b58b9a3d4ffbf9645308d1c668ef7d"
+  },
+  {
+    "path": "app/test/glyph_render.dart",
+    "sha256": "c497658cdbf568371db3037a70772c1d2a566ebf5f89282e85e6acdd1d8116ef"
+  },
+  {
+    "path": "app/test/glyph_test.dart",
+    "sha256": "00e1bd956a4bf8d76c806f195eb08834d233e9dc92b57e5a95402c72e2b1c2e4"
+  },
+  {
+    "path": "app/test/guide_settings_test.dart",
+    "sha256": "dcb5946afea38a6fad009e966e166a379e7bad5bc62c2ee4f203714b81053448"
+  },
+  {
+    "path": "app/test/motion_strip.dart",
+    "sha256": "f5ac7b12a4487b33c7692afa9e2347af85f295288bf5f801b15f1b6c529ff6ef"
+  },
+  {
+    "path": "app/test/motion_test.dart",
+    "sha256": "30214297a9c79fd32149fd77cff8647640a842430dd87a6078cc89ad0ddab7c5"
+  },
+  {
+    "path": "app/test/onboarding_view_test.dart",
+    "sha256": "6f7bf98940669bf275f88104c3bad420dcd7b2750ee495ef880986df5a75f138"
+  },
+  {
+    "path": "app/test/plan_view_test.dart",
+    "sha256": "83a10a210049f523bd706c65fb2dd49a2f69c4bac0fb03946d6e9eb9824b7a6a"
+  },
+  {
+    "path": "app/test/relationship_contacts_test.dart",
+    "sha256": "4eeab5d41733dee1cc70d7cecb7e99f8d7cf26fbaff350d670f1140ea723f122"
+  },
+  {
+    "path": "app/test/relationships_view_test.dart",
+    "sha256": "5499a137495594d851828a5059b2cccd22e6a9575d4adddaa6f43c7d2c51d7d6"
+  },
+  {
+    "path": "app/test/render_invariants_test.dart",
+    "sha256": "80e3b2a57e873b5a6f40da13e25b4cac7d0f0ed7046326d5c2f36ccc9b665597"
+  },
+  {
+    "path": "app/test/render_resource_test.dart",
+    "sha256": "c69d2f09cccb7b1f10de7b51f75c8dd75e154169af8db682425ae4ca73410df9"
+  },
+  {
+    "path": "app/test/reply_view_test.dart",
+    "sha256": "ecc1eb2347c3a68f7d84ca669476e920382fc2f9ad825a83a5d69e833f935de4"
+  },
+  {
+    "path": "app/test/routine_view_test.dart",
+    "sha256": "071c1a687a25e352c6437805f4fa352782a9567d4569a18cf086d1aa1f1b7f02"
+  },
+  {
+    "path": "app/test/seed_assets_test.dart",
+    "sha256": "fb04b7aab71e43bafce1a67b56e56f26ae80ba2b8003fdf13e1bb63077cf8546"
+  },
+  {
+    "path": "app/test/session_transcript_test.dart",
+    "sha256": "5c96cf91a527d4856e2bc945f071922c0147a12003408eb47428f8c53ffc1f43"
+  },
+  {
+    "path": "app/test/settings_view_test.dart",
+    "sha256": "d21beb3f65238b9d89b46fd222c8276f9fd7624dbef897c5697c33a6faf6d3b8"
+  },
+  {
+    "path": "app/test/sherpa_capture_test.dart",
+    "sha256": "4321980a36af0a4ded6102177a1481419af656cd265ab85b4eb63e6bd5b8067b"
+  },
+  {
+    "path": "app/test/soak_analysis_test.dart",
+    "sha256": "e9e3fe7b7269d4dd42c948ce12e471d7e63f89c1f002d5765d9d41651ddfe548"
+  },
+  {
+    "path": "app/test/speakify_test.dart",
+    "sha256": "02059ae9e25bc041b2cdab29a36fe18465098936a026acf9d348dbeaeed84be2"
+  },
+  {
+    "path": "app/test/three_pillars_test.dart",
+    "sha256": "b2464e03ac194c1fb92eb8b8f6990666bab5267be6a2a51cf2d0beedbdad7aca"
+  },
+  {
+    "path": "app/test/today_view_test.dart",
+    "sha256": "bda9cba2dc12ad2b76b7124b3f63f67c2ec2fd6933b43ea4fc5c64c350c6f92c"
+  },
+  {
+    "path": "app/test/undo_feedback_test.dart",
+    "sha256": "cd1463dc95ae657fa9b078bbb0d00a72ea568bf1a0465eba62ce85fae55e1f33"
+  },
+  {
+    "path": "app/test/voice_turn_controller_test.dart",
+    "sha256": "2d26f4bc74eff4fbf3f7009bb275b3eaa661626c2e859148ece9e6c28873f029"
+  },
+  {
+    "path": "app/test/widget_test.dart",
+    "sha256": "fb88fd58a0f5b82632778ca9a715b1e9072382c2c536cc65e3bb132ae44afc57"
+  },
+  {
+    "path": "app/test_driver/integration_test.dart",
+    "sha256": "aca25d491eba8f9c135635d0f32cd64534e1b7c1f6b3cc089f0081f05994abde"
+  },
+  {
+    "path": "app/tool/dev-run.sh",
+    "sha256": "45503c60f1a27a80d740de6dfee05198c70f649187949e9b5e2f1d94bf54c503"
+  },
+  {
+    "path": "app/tool/generate_app_icons.dart",
+    "sha256": "70cb4466bb87ae0cf155110f3166855181eaf209787a58f25c2446fb544e2ede"
+  },
+  {
+    "path": "app/tool/gesture_contact_sheet.py",
+    "sha256": "437b345a02b6d56426e2c11d200964ea5b628f741901171494a34d277123d145"
+  },
+  {
+    "path": "app/tool/leak-check.sh",
+    "sha256": "50bc3f65b34cfebe69b28ef1f59123e8f43e78e2b2dda668b14f0835bdedd644"
+  },
+  {
+    "path": "app/tool/snap_gestures.sh",
+    "sha256": "35a5ae656bc124c8a21df54776619945c238f63fb43870629bce2021c9aeb36d"
+  },
+  {
+    "path": "app/tool/soak_analysis.dart",
+    "sha256": "ef44a5a9621e1eede2e161d2dee51e9f5c3992e07165a63b994d08a54649e741"
+  },
+  {
+    "path": "app/tool/test_gesture_contact_sheet.py",
+    "sha256": "0b9ff225f52de829a25852074b5756d6b86aeaa55c43b3ae21eded56e3b526ad"
+  },
+  {
+    "path": "app/windows/.gitignore",
+    "sha256": "96345475f1a3c66bd32d28178fba151ab1506b35b1f7857b8f7651863093ea11"
+  },
+  {
+    "path": "app/windows/CMakeLists.txt",
+    "sha256": "6c69a8fc780c161a0f506da95b2fad995347d412007792331f3d1a114e84cb04"
+  },
+  {
+    "path": "app/windows/flutter/CMakeLists.txt",
+    "sha256": "1fe418971b6f41bb35ceb3d64113a835f3f6f171ecaa707bf232492b57a588d6"
+  },
+  {
+    "path": "app/windows/flutter/generated_plugin_registrant.cc",
+    "sha256": "4c3ddc920018379fb38438344b731fe2891612a2fffbcc6ca690d20ae75ffbe0"
+  },
+  {
+    "path": "app/windows/flutter/generated_plugin_registrant.h",
+    "sha256": "dbc11635d7b1ba1887adf40df5b83d634e9c3ab0bee34510c71528bb4d73602a"
+  },
+  {
+    "path": "app/windows/flutter/generated_plugins.cmake",
+    "sha256": "8e3fcbf0bde0afab0c735bbca8a29691d8f56d9148d989b510ad30471d332d1e"
+  },
+  {
+    "path": "app/windows/runner/CMakeLists.txt",
+    "sha256": "34119ec122e36940235ef4bc245fcfb43b6960ed443e28af1a8d833a81209b9e"
+  },
+  {
+    "path": "app/windows/runner/Runner.rc",
+    "sha256": "9761ac8c8fdd1a013e7480194143a71cbcf5ce693f736e3345e12824598299df"
+  },
+  {
+    "path": "app/windows/runner/flutter_window.cpp",
+    "sha256": "dd185884c0b5301d400b58f12ebb36b1c8b326531597e531b40e44a6eeb0e943"
+  },
+  {
+    "path": "app/windows/runner/flutter_window.h",
+    "sha256": "38e0fcd3a0b83895852ec295cb70d90179c0dcd40d58f065eb5232a4ecd84898"
+  },
+  {
+    "path": "app/windows/runner/main.cpp",
+    "sha256": "31c86e96e084c8fac715465c16901a7816f48cd48d43b014255ba31a2ea801c8"
+  },
+  {
+    "path": "app/windows/runner/resource.h",
+    "sha256": "1fa98588b04561590ba1cf0521ab86a9db4a878312f21c9d5861d965ddd8d1ae"
+  },
+  {
+    "path": "app/windows/runner/resources/app_icon.ico",
+    "sha256": "4bcacb359947288d172235ddb1d0ed990c6ffcb50d11e7653c60ecbd167c1434"
+  },
+  {
+    "path": "app/windows/runner/runner.exe.manifest",
+    "sha256": "825d243e9fa1542619909c1b72d09b3ed7c1f3b225bb8367c125835e5dc3f8aa"
+  },
+  {
+    "path": "app/windows/runner/utils.cpp",
+    "sha256": "6c2c87106b4b29d534c7edcafb3b7f7b9079caa3cdafa7e56671ad2adf5a2543"
+  },
+  {
+    "path": "app/windows/runner/utils.h",
+    "sha256": "95a7f7dddb832997cefa937a96f89472332277e75734a5de553610760b744b03"
+  },
+  {
+    "path": "app/windows/runner/win32_window.cpp",
+    "sha256": "9065f31ccf746cf8b390121f958f9e959033af864aed779597066625ed56bc36"
+  },
+  {
+    "path": "app/windows/runner/win32_window.h",
+    "sha256": "7dd03746b19dcf3542829b2f6e8ed40a2714ce5f2cb3b0e23f0118a2fcf62d62"
+  },
+  {
+    "path": "build.cmd",
+    "sha256": "44d430df9970a00fdb6e9040615110025c61f176b909d957c43bb3bac2e669e9"
+  },
+  {
+    "path": "dogfood.cmd",
+    "sha256": "a3ee1711cbc711535e7683fb69a456a82030f42622e9bff891b35095f32da1a3"
+  },
+  {
+    "path": "planning/implementation-plan-2026-08-17.md",
+    "sha256": "d25f5d9dc497c79a91f6ab6d2854ee97080b9477afaabaf76ac732e82ad08316"
+  },
+  {
+    "path": "planning/phrasing/integrate.py",
+    "sha256": "75a30449734759f6838086c37e6804696e519ff73b750de95f34a34df9dc23c0"
+  },
+  {
+    "path": "planning/phrasing/journal.json",
+    "sha256": "85621e9f0614fa233f6e1b0d460da10d35351449d4c68349eb485aea50352ce8"
+  },
+  {
+    "path": "planning/phrasing/logging.json",
+    "sha256": "3a14dd7442cd41cd59ce3ca9528421bc4e80955b85b8b0cf8dd144a04ae43913"
+  },
+  {
+    "path": "planning/phrasing/people.json",
+    "sha256": "9a24fc10497459ba7486057c646d889bb0117a2c2400250ffe23167e4545ecf1"
+  },
+  {
+    "path": "planning/phrasing/queries-meta.json",
+    "sha256": "df6db9553a0df2f2ab180ebe1a75cb0c10825167fa23e615c4b8a23de7780a14"
+  },
+  {
+    "path": "planning/phrasing/reminders.json",
+    "sha256": "3bd25732a553541d92c57367a2d780b2c3fb1389852f94a276f9cff6f4af6d91"
+  },
+  {
+    "path": "planning/phrasing/tasks.json",
+    "sha256": "bc51aaa92123639644988a4f7c9af3b3e53de8dcec0822f0b503e8186604ad85"
+  },
+  {
+    "path": "planning/plenara_research.md",
+    "sha256": "15b28da23816d8f85c6e4842fe8bb57b4cd1289674f2dd56ba8157eb7e2ee4da"
+  },
+  {
+    "path": "planning/specs/01-meta-schema-type-system.md",
+    "sha256": "88fed415cafcdd266f0aef9be8d681343e96e91276fcaea00da8dedf67be94f6"
+  },
+  {
+    "path": "planning/specs/02-skill-dsl.md",
+    "sha256": "0c2987b5a23c744adc7c1db613ecf9ae900a138b46788b2e15499ab09ad90719"
+  },
+  {
+    "path": "planning/specs/03-nlu-intent.md",
+    "sha256": "52b75a1185098a255eecae75f412a478d78698241eb763ec74f5314d2a60df99"
+  },
+  {
+    "path": "planning/specs/04-architecture.md",
+    "sha256": "6549aa4a7a5d2e71d8a9dbf8b22b391c81e31851451ce5fd2a60b37e647650d9"
+  },
+  {
+    "path": "planning/specs/05-functional.md",
+    "sha256": "0046a349dde733ee881e10d9fd3f157611906835c08418f1e8fddf791d961092"
+  },
+  {
+    "path": "planning/specs/05a-functional-examples.md",
+    "sha256": "4208f50031538cfaa1b8404db96ddd598fe9d015c069304165732af8bf62f011"
+  },
+  {
+    "path": "planning/specs/05a-rig/.gitignore",
+    "sha256": "32fe29bd17d0b8e68f5ef4c67607f9a36d0bd87f721262f422f5ac4c6de78c6d"
+  },
+  {
+    "path": "planning/specs/05a-rig/README.md",
+    "sha256": "bd514a7639b27ce944f25f76953bd6a067ee2171c9ddb4195715244484db11b0"
+  },
+  {
+    "path": "planning/specs/05a-rig/dataset.json",
+    "sha256": "0a8c65bfa01053e902409418890447db0f161a5f58059e1aa1adc36fe94855cf"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/analyze_eval.py",
+    "sha256": "016c54d57d5507a3c7dbd850533bd775ff8f9fe52ffbd74e2a6795aa2e8e4bc3"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/build_dataset.py",
+    "sha256": "5661c8722ad1dcd29ebbc582718f5e291eb3f91e8884209426ef70f01abd4b9d"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/eval_haiku_fullinv.py",
+    "sha256": "74288ddd8f8f9380f31fd643b4427bff2e22a0e1c0eb3ad407a4bbb45c58d079"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/eval_retrieval.py",
+    "sha256": "cf6c21a4baca9e3ecc44e0d617ff1b75c5e1039084934b2f85cefec4f2e608f2"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/eval_routing.py",
+    "sha256": "e47a96745d47380a8e3ca3ba7cf070647143c33745c02228a4ec1d7d72e42592"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/heldout_eval.py",
+    "sha256": "80e36f2ed03f18523d123716bca4137c61018feba4312bfa052601ed8d8e65ba"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/learning_curve.py",
+    "sha256": "428d8b640ab73e16539d322f4f2011796ada9e67518cd0b38ffd1d9df34d12c5"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/lib.py",
+    "sha256": "0b89b03b5cdaab910f9b055acc67b5521fe750cd38290c21be63391d624eac2a"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/measure.py",
+    "sha256": "fe6ec591e4b815b3b775fb4f2a998dc218aa5e50d3eb9a43381e65892fa1632d"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/probe_05d.py",
+    "sha256": "48287171b04e2b80716556feabeef9285301814aba9235534bf4a9b330df078b"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/serve.sh",
+    "sha256": "7c11e2da881e12e86db7688384b60b5fda21370884957ad056a3dc5df09fab9b"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/DP-01-safety-surveillance.json",
+    "sha256": "00fdb4560cb08c6ddae6fb30ecf436230456d3c712876141af893a51fac058d5"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/DP-02.json",
+    "sha256": "8c9ee463d728a60f0bc3b3baf283471932480e4c4facb7607a15e4b412e862da"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/DP-08-safety-disordered.json",
+    "sha256": "f1ae5dab97f3ef305445eccd08a1be390ba9fd0ea8877560fbe780011b0578f6"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/F-01.json",
+    "sha256": "48e6c57f36e3a3d9cf4ce7569bfc7766b690f598e009fd366dbdf809f426d870"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/F-07.json",
+    "sha256": "e7d8ec78bdca48ed7d16c95c5404140724f469fc15a4d6644ac77c59dcffdcb5"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/F-19.json",
+    "sha256": "32b335062ee60a392d4402b58b743aa11e748fb28607fab675f2a2dc92810d7a"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/P-01.json",
+    "sha256": "e243bd7f2e0621ac61b099537d5620e118a92380c6ac2509b3804a3ee7b4a66b"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/P-05-computed-skill.json",
+    "sha256": "c961f80b5113ba8b7fde1ef094fb4985e26ba95a51159c9fe0a01b30a4a6811c"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/P-06-briefing.json",
+    "sha256": "bd8a1be9f46eea1c13410f78cf5572815520fdfa046e9ab472bb0e359c27daec"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/P-07-gift.json",
+    "sha256": "73adfd72e0c6d70246913cd12fe2245a259e0ac8b6b575ec7c693a54bde1c5ee"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/tasks/P-16-aggregation-view.json",
+    "sha256": "d84c7d3ad272b44474e45570c68e853c6e4ab79415b7e57336f471bffbe47698"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/validate_authoring.py",
+    "sha256": "6ad10403599dd46233a2797392df47a4c57724ed52d41f8eccf14d2c05f73ec0"
+  },
+  {
+    "path": "planning/specs/05a-rig/harness/verify.py",
+    "sha256": "d5a66267a63725a731e57e64719d0d7d57caa1545343e6d381e4f157aa383a41"
+  },
+  {
+    "path": "planning/specs/05a-rig/heldout.json",
+    "sha256": "350ab6a9fab5749fd044bf6a709ee46546c9f4802228669018e3147fceb25381"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/DP-01-safety-surveillance.json",
+    "sha256": "b999e3d4c66e0744fbc3921a77573bce7d939ca1dbbc7225351c53688296e93c"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/DP-02.json",
+    "sha256": "1354e48371f801926729bfe8ab0d2eb35b9bf33cd07129e46acd6d12e1325c4b"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/DP-08-safety-disordered.json",
+    "sha256": "56d84897b60b19f3c2d4f1bf34eb081cfddc470953c9b7e837333ea3d47c4bf7"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/F-01.json",
+    "sha256": "b48cb2d5d2f1c2815cc73099816c3f97ced17fee18396c35004a0666c5856712"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/F-07.json",
+    "sha256": "232377385c929a3125a63b5acd0ea47188b1d3132dad84540b96db42ce4b7e0a"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/F-19.json",
+    "sha256": "b14024fd81f555c130a614a33c242afcc57efc246658ff75387d2db5f6e69352"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/P-01.json",
+    "sha256": "ab97456d12118ac05ec6a9295431328e0afe8937c01cf50c3665184facb6a874"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/P-05-computed-skill.json",
+    "sha256": "8f083e77d04c019c739ef1124234e39e0cffd1f6a99de983088174a5578b17a2"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/P-06-briefing.json",
+    "sha256": "97d5055f5961214152b2a16e6ee99725db41e59542228aa3a3115364328c93f2"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/P-07-gift.json",
+    "sha256": "6a7f89f8fabe75c1c26ea352e863c9c50ec60b4f8a7e824df804479a176498fa"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/P-16-aggregation-view.json",
+    "sha256": "e93b1b4cf0ce22c11a4b5e6d4c7b121458970338ac0efaf8cafc0bb1476afec0"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/embed-bge.log",
+    "sha256": "1571f6be890a407a4c11fe09d0950ac36974923cb78fd005a80fef2971a018fa"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/embed-server.log",
+    "sha256": "0b699e974a267763c7b70b8dc0007c7197af868efaf952434428a69349bb8dbd"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/embed-v0.log",
+    "sha256": "a5a435bb83cf6753d978db0909367d62c250b81bfc3201f8514f7e9f774ce6c5"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/eval-haiku-fullinv.json",
+    "sha256": "c84aa2d58f9c168814e54d70e52155a66a6c44ffeea3f6195f001df7a5b959ad"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/eval-retrieval.json",
+    "sha256": "5e63e5a536373661abc622e9d132b04c0d63eb770448d036d5625fe11eaff5ed"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/eval-routing-analysis.md",
+    "sha256": "6397f706dfac4477a80523bc686797f4018b02fbd465ceb1932c1825e24bf328"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/eval-routing-raw.json",
+    "sha256": "bb8f2d1d8c7e51d4165ac8981f5f02b72e05c4593d4cd997b4276877d4a8c0f2"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/eval-routing-summary.json",
+    "sha256": "233659cf6f92ff5df9c9fbd408c456fd2b5a031237e5ba714d7bd032c725d45b"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/eval-run.log",
+    "sha256": "6ad678a61b94b4f5aaaed3dd5a0b436969fe37504e2803556decd9e847549ca9"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/eval-run2.log",
+    "sha256": "6b6ddd0f40eed393d969d66f749275d47350c5707514fc46e75aa1e3c14bcacd"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/gemma-server.log",
+    "sha256": "c79defe05ede5bccda2e20285864efc09482cdd2154aa8652cb0814e2e8a367f"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/heldout-eval.json",
+    "sha256": "4cb7a4a593b2ab64aac207d72b9aa2de53fe8ddeff95b3e74bc4cbbab911620d"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/learning-curve.json",
+    "sha256": "0ca6a193527d90aa8a24b587597e238e7cf055860a2546d0feaef4cdb7e94712"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/learning-streams.json",
+    "sha256": "0c55a1123e13b8082fb7f5d8f55e20db71efc4c9673ff18cc22e14c25878ebb7"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/llama-server.log",
+    "sha256": "8ed1bb809623a18f6bd6986e65781fa01a0e242a9dee19325695cca3de3dc80b"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/phi-server.log",
+    "sha256": "7b338486d24cd9ccd503856232c8dea231a0b9deae5b35be71989fe90cec4eb3"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/probe-05d.json",
+    "sha256": "5dcefd286f345a70a973a55d4a529be1f82a1085f103fb4516841ceabe4cc8f3"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/probe-embed-server.log",
+    "sha256": "ee7e685ba7af53c142a1bef1b4ebda073c5ce57bb8aaff940253300027ede824"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/probe-synthetic-anchors.json",
+    "sha256": "33f6a95ab6c64965211b49fd0473ba0f10982ceb787004106c35a4e31608a2ff"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/qwen-server.log",
+    "sha256": "6293178e278539f261d62c0a1882d43b8810a5f4da52342180839c032136c600"
+  },
+  {
+    "path": "planning/specs/05a-rig/results/setup.log",
+    "sha256": "69c1497b8c4208c7da28aa58fc4d1f1394755ad6332a67b4b400a9bbe0156faa"
+  },
+  {
+    "path": "planning/specs/05a-rig/setup.sh",
+    "sha256": "44b542a3033dd62f988fc1d2c5be8cfdce981c1ceb0388f8d1a6d90e8beecca1"
+  },
+  {
+    "path": "planning/specs/05a-traces.md",
+    "sha256": "e288337f62f2261a1938276c2021cc9814d92160727a088a04c672002c9d4c4e"
+  },
+  {
+    "path": "planning/specs/05b-gap-register.md",
+    "sha256": "bfa587d8fdd73f8e3eeb79272f5fc4b7a482981e14db3f626ed3517d857142c1"
+  },
+  {
+    "path": "planning/specs/05c-fable-review.md",
+    "sha256": "8120bd4622c1349788427e6646ffc6a94805c51da1b17cb4ac716877a4e151d0"
+  },
+  {
+    "path": "planning/specs/05d-routing-design.md",
+    "sha256": "fec790c489420976be943eac97abd7464333f56eb95eed6fdf1b290c4e3bc422"
+  },
+  {
+    "path": "planning/specs/05e-fable-review.md",
+    "sha256": "d3c891e20ac1afef9ee628c359e1ec6e0367fe78a0e72f0cc58b01609829c2d4"
+  },
+  {
+    "path": "planning/specs/05f-cross-spec-review.md",
+    "sha256": "0f404d67b8c6181ff38d0bf3dd17a15b8b52f3112cc2e40647aabfebca53fff8"
+  },
+  {
+    "path": "planning/specs/06-data-sync.md",
+    "sha256": "6de1f665fa502ec3a53481c9e73c42215f3e65b1112709a70773f5a68a76b5ba"
+  },
+  {
+    "path": "planning/specs/07-ui-design-language.md",
+    "sha256": "e84d1fe612ba48bbce926cee145699e6b64c30a4e934048542a445af152b949e"
+  },
+  {
+    "path": "planning/specs/08-ai-cost-privacy.md",
+    "sha256": "3c18b21eb09f897c72fae128dc775a96fbb0b93510ddb2ab942338175658fa23"
+  },
+  {
+    "path": "planning/specs/09-test.md",
+    "sha256": "8291974e0a7bfe20cf9dc5bf81eced48d66b9fad1cd942f1c6f9165aa6b47fcf"
+  },
+  {
+    "path": "planning/specs/10-security-privacy-threat-model.md",
+    "sha256": "fe69bb9ccc00362b761ebac7223a2a4f52e3dd92259c5f43a5e8b62293cfa24d"
+  },
+  {
+    "path": "planning/specs/11-feedback-diagnostics.md",
+    "sha256": "14bc4de49b37d250734d826657bc932cb54192c131cbd69689caea45527eb319"
+  },
+  {
+    "path": "planning/specs/12-voice.md",
+    "sha256": "2fa09983c5f37fcb0d01bc700416e246cefe24206504b4ca57bdda4e9fa1a8a6"
+  },
+  {
+    "path": "planning/specs/13-reference-knowledge-bases.md",
+    "sha256": "f55467e7c6fac3b795e66e36d311d82b3cd877af7c44671e266e85b59bdfaf26"
+  },
+  {
+    "path": "planning/specs/14-voice-input.md",
+    "sha256": "fe6714e41d76022ce939639555b7b0ab0a16d35878688739be42e12735e2bd86"
+  },
+  {
+    "path": "planning/specs/15-presence.md",
+    "sha256": "1f5ed9bd9025e595c1a0166fcd726aa11a869f5613e2a3fd466061203a386bba"
+  },
+  {
+    "path": "planning/specs/16-routines.md",
+    "sha256": "5ae331991b70ca9040152ff4f509d0aaa080b0e47e80aaa9d631d55c8bc81d97"
+  },
+  {
+    "path": "planning/specs/17-living-planner.md",
+    "sha256": "3dc2141408377933d9086af607f1c35f6b84a71ae2b9b9d9f290bb66ae2151a3"
+  },
+  {
+    "path": "planning/specs/storage-sync-assessment.md",
+    "sha256": "a15fd25bcb4d62b4389f2d612a2dab7735b9b790b7da3e1b4b0b9614ab3091ce"
+  },
+  {
+    "path": "prep-machine.ps1",
+    "sha256": "ed3ed758d3de99839d34f1e67f0a28b3644478387086e7222638c234ba0bda15"
+  },
+  {
+    "path": "readme.md",
+    "sha256": "2d4bc2629cd545706be9a2e2b61d0e111a750a4b34a96020509155516e08d6a9"
+  },
+  {
+    "path": "releases/VERSIONS.md",
+    "sha256": "136319c71f24282679997490b669863463fadc9cb8ffa5629fc4ab3cf460ffc3"
+  },
+  {
+    "path": "releases/app-store-metadata.json",
+    "sha256": "4ffc40d7a5f19b3fb34c478dcd9cd52527fdf6bd3b713156021a4dc45850b8c6"
+  },
+  {
+    "path": "releases/v0/RETROSPECTIVE.md",
+    "sha256": "25fb1b310405ad74a307b72f149732b7f2c089c81f98c8fb596b922dd0b26564"
+  },
+  {
+    "path": "releases/v1/RETROSPECTIVE.md",
+    "sha256": "18f9005065e91d85f13fb547423f143df4b73a20a7ef019676ad03530954d2e7"
+  },
+  {
+    "path": "releases/v2/RETROSPECTIVE.md",
+    "sha256": "6536e04adf305c1a67ad7211be82960f0501a0c9799af4cc90f77e4c06d9cbce"
+  },
+  {
+    "path": "releases/v3/RETROSPECTIVE.md",
+    "sha256": "6ee3c29df065a6bfc329aadd3c11d8662208e845dcda28448c0e4abc52b6329b"
+  },
+  {
+    "path": "releases/v4/RETROSPECTIVE.md",
+    "sha256": "834fa7da4c9b495dd52d4c9c5773e1be00db95773a80920374391eb9a2bf79ef"
+  },
+  {
+    "path": "releases/v5/RETROSPECTIVE.md",
+    "sha256": "2bd9e6055de32c4f21061ec8c15e852d809e28d958655421ce46e4360a4ae429"
+  },
+  {
+    "path": "releases/v6/RETROSPECTIVE.md",
+    "sha256": "d61e6ac4b27ff658a171e53cd4798592d477cadeb2a96bf1c0f1abccf79183a0"
+  },
+  {
+    "path": "research/spec-05a-phase3/README.md",
+    "sha256": "cb60d05a4dce82c3894dc52d1e6bcfdb896531b84c7fae37903bdd4e46968c12"
+  },
+  {
+    "path": "research/spec-05a-phase3/findings.md",
+    "sha256": "6988640ea4c044c0fc8fdb16f81b4bb9e002098845178c13c3400259c5308bf3"
+  },
+  {
+    "path": "research/spec-05a-phase3/local-model-eval.md",
+    "sha256": "0e345ad5ec45e255e4f18ef1f1d80c2bc667867378a33b752aabcf2e6f6a338d"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/DP-02.json",
+    "sha256": "1354e48371f801926729bfe8ab0d2eb35b9bf33cd07129e46acd6d12e1325c4b"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/F-01.json",
+    "sha256": "b48cb2d5d2f1c2815cc73099816c3f97ced17fee18396c35004a0666c5856712"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/F-07.json",
+    "sha256": "232377385c929a3125a63b5acd0ea47188b1d3132dad84540b96db42ce4b7e0a"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/F-07_F-19_DP-02.console.txt",
+    "sha256": "87a0610b8cf85806f316369298ca796b5afca729dfc47db6bbd298722218f97e"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/F-19.json",
+    "sha256": "b14024fd81f555c130a614a33c242afcc57efc246658ff75387d2db5f6e69352"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/P-01.console.txt",
+    "sha256": "c5efd5d1a606e18ab16a9625f46c1b8024834866eca4b6fe12c5fac3f9db08cc"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/P-01.json",
+    "sha256": "ab97456d12118ac05ec6a9295431328e0afe8937c01cf50c3665184facb6a874"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/llama-server.log",
+    "sha256": "ec98e8528e872d198c30f7900cae5329359309b4e37e8ccabc1d0c9b61aeddf9"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/qwen-server.log",
+    "sha256": "1823be0746191a495cefb40f43790b145dcad871ce6f1fe223b8642b9690e44d"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/rig-setup.console.txt",
+    "sha256": "69c1497b8c4208c7da28aa58fc4d1f1394755ad6332a67b4b400a9bbe0156faa"
+  },
+  {
+    "path": "research/spec-05a-phase3/raw/setup.log",
+    "sha256": "69c1497b8c4208c7da28aa58fc4d1f1394755ad6332a67b4b400a9bbe0156faa"
+  },
+  {
+    "path": "reviews/2026-08-17-art-animation-review.md",
+    "sha256": "4b1943a2582e237daba1dd791bde82a16c7c09db5a3c07e131b1bc415a1bfd44"
+  },
+  {
+    "path": "reviews/2026-08-17-code-spec-doc-consistency-review.md",
+    "sha256": "562ec4ad60665f85204ca6679c3ec871a29deeec5178c1df3ce238f9d193113b"
+  },
+  {
+    "path": "reviews/2026-08-17-planner-ux-review.md",
+    "sha256": "fda44fe389a1196f272668b48172560f85a1b450a2934f1b3d3f1fca5811a231"
+  },
+  {
+    "path": "reviews/2026-08-17-release-hardening-verification.md",
+    "sha256": "4fd0a0536a9f0363c68298a381f230d3ccbe72c589d5d62e15bfff8f98950f68"
+  },
+  {
+    "path": "reviews/2026-08-17-spec-code-review.md",
+    "sha256": "64f86c450b8fcbf855ebe8acd4e482e640f5e1c0b9f63458f4f066a88c10e08b"
+  },
+  {
+    "path": "reviews/2026-08-18-full-code-review-remediation.md",
+    "sha256": "92ba7163920d979eb838280641cc46225d61a56e11fa355ac42130f6df445d11"
+  },
+  {
+    "path": "reviews/2026-08-19-full-code-spec-review.md",
+    "sha256": "b777ca30a90ad68665a6a571d813c9f59fe49f38fe9b1546e637690e5886ab9f"
+  },
+  {
+    "path": "reviews/2026-09-26-first-principles-evidence/01-todos-voice.png",
+    "sha256": "a9b99215fdb986cdc7f4052065377220e1d74390cff92269c91b20b0c7102626"
+  },
+  {
+    "path": "reviews/2026-09-26-first-principles-evidence/02-relationships-voice.png",
+    "sha256": "afa5b87a20a2a3b97f28103413d929e3aae662e5950748268336df53254057b4"
+  },
+  {
+    "path": "reviews/2026-09-26-first-principles-evidence/03-habits-voice.png",
+    "sha256": "73e187d8d2e998abc548319f02ccbf1e270a875f4376455bbb9c311498322509"
+  },
+  {
+    "path": "reviews/2026-09-26-first-principles-evidence/04-person-detail.png",
+    "sha256": "87ec9634d679b6fffd2202462996e2179c4fc7bae886d54afb26ff2517cf1905"
+  },
+  {
+    "path": "reviews/2026-09-26-first-principles-evidence/capture.dart",
+    "sha256": "6087d54f38d1a364c1875184aedc3d3ef047f57f7aa81b841e5ac57943b183df"
+  },
+  {
+    "path": "reviews/2026-09-26-first-principles-review.md",
+    "sha256": "89c436308d2ca4488b5a7dbe4283c274a8a41e063be43fa0219d94cb80aee4c5"
+  },
+  {
+    "path": "reviews/2026-09-26-guide-discussion.md",
+    "sha256": "c0fd330e29efd8ed3698cd57175f6968404c1c57d668d5b3faae7c566eddc620"
+  },
+  {
+    "path": "reviews/2026-09-26-guide-implementation-evidence/01-today.png",
+    "sha256": "7574ac35339dbc93d4487ad35280685f9896efd3c97968a3556b999d94c6dbfe"
+  },
+  {
+    "path": "reviews/2026-09-26-guide-implementation-evidence/02-people.png",
+    "sha256": "84c95dcefab049d93731427aaac871c518b8a42329665026086447708939c85f"
+  },
+  {
+    "path": "reviews/2026-09-26-guide-implementation-evidence/03-routines.png",
+    "sha256": "2885fb35d6cd2efba08e6fd83fb8b440eb34ca65fe87ac3de7d7ac2ca3546356"
+  },
+  {
+    "path": "reviews/2026-09-26-guide-implementation-evidence/04-conversation.png",
+    "sha256": "b60ffc2e85bfc2f28c51638b7359f0be44341d626161cfe67c084789f6063cb3"
+  },
+  {
+    "path": "reviews/2026-09-26-guide-implementation-evidence/05-receipt.png",
+    "sha256": "e8d84f16edff13094e61f31a12d28f973959dee436245a0e023cb8b368b5b03a"
+  },
+  {
+    "path": "reviews/2026-09-26-guide-implementation-evidence/capture.dart",
+    "sha256": "c7a0a2d1b4885a1d0a694434efc5f631064fcdddcb1c92dc180afde2d440af75"
+  },
+  {
+    "path": "reviews/2026-09-26-guide-implementation-evidence/native-test-results.json",
+    "sha256": "f38768bd6289c4fef8d1cce78b02aebe78bda5aaf837f401e63c1e1aa56526f7"
+  },
+  {
+    "path": "reviews/2026-09-26-guide-implementation.md",
+    "sha256": "81f4f0fbd4a8448491219f17ac00daf804de125f504ac2874d10da98429831d9"
+  },
+  {
+    "path": "reviews/2026-09-27-ipad-experience.md",
+    "sha256": "4a58a713b782c8e75417702159c066434361f2638b84241de8360d9df3c22415"
+  },
+  {
+    "path": "run.cmd",
+    "sha256": "8badc9f2f18f2f32a64326cd07a75b937ba34f55d45ad1c4b3f6586ea70390d7"
+  },
+  {
+    "path": "scripts/keep-alive.ps1",
+    "sha256": "6ef51d013592ea3a2e2f2eae4390a7786e03f1b7a739fd0a501ea486fb6c667c"
+  },
+  {
+    "path": "spikes/.gitignore",
+    "sha256": "862263fa1f46c20f0d1e4dac5ffcc75abd55c08211b2c3864c5f8764b9d87793"
+  },
+  {
+    "path": "spikes/PHASE-0-STATUS.md",
+    "sha256": "80d5f764f168b38d0822561b01f60df407896d26f66a6c4a76bf0188dbfabef1"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/README.md",
+    "sha256": "bb02637dbb2502dd93d1d5121d539af10b8e5e108eb9b05cd6e0b09fc55e8255"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/interpreter.py",
+    "sha256": "31bb61f8854a26620c79a96273676ab9659b8892f9da12f86282b0cf34552415"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/run_spike.py",
+    "sha256": "a4ad25f31f4cc1c7931836a2ab93ef63e91166d4536263c520c648ed2afd52db"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/skills/count-runs-this-week.json",
+    "sha256": "04c6f94fa06da3338c7927e7688b903794541c33cb12f21156ccae7ef9aba228"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/skills/create-task.json",
+    "sha256": "8ac0b4fc5cabbc1acfc9f49b5714d49b972c20927165e759b6ce784e2f60ce57"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/skills/remember-person-fact.json",
+    "sha256": "60ba92c5ea8c98057dca7e79358981e26dc18ae5d5e50707a93d1c5cd8756f2b"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/types/contact.json",
+    "sha256": "2e63d5f1190735b025135e5168563212e34379817e8099229978ebed8265082f"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/types/contact_fact.json",
+    "sha256": "9607aa7636dbc968616a2650395e9ec0c1d4bb8e85cf82f9d465675fa57e2762"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/types/contact_relationship.json",
+    "sha256": "adea484d2ab265978fdedff83e7e76ad234a652f6158a8a62cfaba25bae3b979"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/types/task.json",
+    "sha256": "828c3f3057585794539c84c41ba01b845bc077dcd43b5d8093bdf0eff1e1b4d6"
+  },
+  {
+    "path": "spikes/dsl-meta-schema/types/workout.json",
+    "sha256": "73c8fed9ea926b3230963dffaa56e5a0b270a0a35e12d8a3c807a2d96395c6c3"
+  },
+  {
+    "path": "spikes/storage-crdt/README.md",
+    "sha256": "794907585a97fd4f8ebff7b7503ccc5c3fbb90c38e447f80a6cf865efbc36639"
+  },
+  {
+    "path": "spikes/storage-crdt/merge.py",
+    "sha256": "231880e550e574ade96efc6f3478c559835a34573b7c8b356dd7783365c81968"
+  },
+  {
+    "path": "spikes/storage-crdt/test_crdt.py",
+    "sha256": "1e9fcf9080e7f91e28b03d4ca75c02f4c2964a2a33101b60609485e847ba5294"
+  },
+  {
+    "path": "tool/ExportOptions.plist",
+    "sha256": "0994e4dc8523815b708ee2dd82f2670339ebf486d5769a9e6640be5a538f26f5"
+  },
+  {
+    "path": "tool/asc.py",
+    "sha256": "556d88ba2b8e602d122076aa2e857ab20a0f2437ad53047d79f4a9a570d5c02f"
+  },
+  {
+    "path": "tool/devkey.sh",
+    "sha256": "1cda85dd286cdd7915c6c7c90ec9b6d0d6f885cbb77afe4baea1deec71cde29a"
+  },
+  {
+    "path": "tool/doc_consistency.dart",
+    "sha256": "056de1c22e4dfb6a3d732a9f28fee7631f88dc3ff4f19dae8f0e2d9384323247"
+  },
+  {
+    "path": "tool/external_release_gate.sh",
+    "sha256": "79e983ce0406a752b982160670a9919ac5da45b0e7340ee5770b304d741d8d47"
+  },
+  {
+    "path": "tool/fetch_exercises.py",
+    "sha256": "6afcb18956be9fa77a08eef09ff9cf208e83aa108f48ffba69ea3bd60e8aa470"
+  },
+  {
+    "path": "tool/generate_release_manifest.dart",
+    "sha256": "a20fbdbb9216d6fedc8156e8d60ca8fd3174aec70f701cbf5bb2d9d74d535595"
+  },
+  {
+    "path": "tool/precheck.sh",
+    "sha256": "0c7771d5e7e6bb78dd373f2c69191a4b3066f2bbe14ad5837abae8e16dd0e428"
+  },
+  {
+    "path": "tool/safe-xcodebuild.sh",
+    "sha256": "2ea59974385980a448598ffdcdd7322882c6a3246f3dad600059bc33f7dc0a79"
+  },
+  {
+    "path": "tool/sync_seed.sh",
+    "sha256": "644419a4bff6ba53d40036dd098a891736ca85ddd42dcbd0410db4c4a30b2161"
+  },
+  {
+    "path": "tool/testflight-upload.sh",
+    "sha256": "b119d7e04adcf284eaf277bb23de81b9a0b513f8fc370b1bdbe64d111c8c7d22"
+  },
+  {
+    "path": "v0/.gitignore",
+    "sha256": "2adf5ae229168a180d5118686825c6b0e5d6fa655d9f751797643e2188ad0daa"
+  },
+  {
+    "path": "v0/README.md",
+    "sha256": "c219619c94cb93dded999183c5c0427bc599a10ac88b576206b6c141cea6ff7b"
+  },
+  {
+    "path": "v0/bin/conformance_count.dart",
+    "sha256": "316e6c5d14803419e776cdf2886559cee467068e07802b8bc563b30f7f52dbd8"
+  },
+  {
+    "path": "v0/bin/coverage_check.dart",
+    "sha256": "3115c4dcc65e4647a68ff0acfb8098585b91a19ed40ede0e97a7afb33bb045a1"
+  },
+  {
+    "path": "v0/bin/dogfood.dart",
+    "sha256": "ad2a8220c7c6946774f41f0402b11e1608ed852de188108e242a62b3c0c90b71"
+  },
+  {
+    "path": "v0/bin/import_lint.dart",
+    "sha256": "8acff38775f74792d3ada235d886cbf4f408bbd3caa6309f2c8a28954a66f560"
+  },
+  {
+    "path": "v0/bin/migration_smoke.dart",
+    "sha256": "4212fabd0cc760f141ccf34b123cfd18c3bfdcc25021059b984cf1f3c0245b6e"
+  },
+  {
+    "path": "v0/bin/plenara.dart",
+    "sha256": "a68f7f3d9913458f956fc6053e4081f4b143dd8134f0875bd26a81e14892f8c5"
+  },
+  {
+    "path": "v0/bin/record_fixtures.dart",
+    "sha256": "70c09227e2ae9637bd3b89b227b14285ffe064bffce93467e4f7800912ea7859"
+  },
+  {
+    "path": "v0/bin/turnlog_report.dart",
+    "sha256": "995222714cfec39452437f5868e4ff806857a917269fd802ba76cbcbd30bccf6"
+  },
+  {
+    "path": "v0/bin/usecase_harness.dart",
+    "sha256": "f2a090d7d888e5e65be80ecd40b442fc60610328970209becb11db8354c35dae"
+  },
+  {
+    "path": "v0/bin/verify_data_copy.dart",
+    "sha256": "d7d3b17cb76cd0843165989d22b5bfd8ea1d06e9bd326717450674d723739b0f"
+  },
+  {
+    "path": "v0/data/automations/workout-encouragement.json",
+    "sha256": "4b92a8a4e857ad2620d268389dbbc26cc6d2b6084242d69c6291a5c7d108b34a"
+  },
+  {
+    "path": "v0/data/corpus.json",
+    "sha256": "0765fef8100763433a6645aa6b16295a1427bb5e82b3fbb17fa7d0ee9da32a37"
+  },
+  {
+    "path": "v0/data/reference/exercises.json",
+    "sha256": "2a8b9e5ae2f0da5de797594552dc5cee65c76f940720f642cb0644c64a0dbab5"
+  },
+  {
+    "path": "v0/data/reference/nutrition.json",
+    "sha256": "008da1c41259795a628f21c2efb88df8517576d04772d46a0326786fb5dea1f8"
+  },
+  {
+    "path": "v0/data/skills/calories-today.json",
+    "sha256": "1b1e5b605edf6f7de81775ceb554d16423c4587f646dbe1b498c4e007d012879"
+  },
+  {
+    "path": "v0/data/skills/cancel-reminder.json",
+    "sha256": "d273c22c1dcd40afb691251b3d6b89df0089451719d4cb9603946df0247cd5c6"
+  },
+  {
+    "path": "v0/data/skills/clear-goal.json",
+    "sha256": "46906412cfeb6db902cc84965ab9192ab0958f71a066b7e0eaeeacbfedc49be4"
+  },
+  {
+    "path": "v0/data/skills/clear-tasks.json",
+    "sha256": "755b757a8404e00d57e8e14819f680ecdaeb417b89b7480058f1e532b5a88c98"
+  },
+  {
+    "path": "v0/data/skills/complete-reminder.json",
+    "sha256": "b1a983f60aa197dd89fb9555035d98e383fe3c8951250cadd24a14d8f215ca62"
+  },
+  {
+    "path": "v0/data/skills/complete-task.json",
+    "sha256": "dd014ad118b1f50a9d1317e7b7608271214f0d1a4fd08c8bef2d50da545ba4b2"
+  },
+  {
+    "path": "v0/data/skills/contact-age.json",
+    "sha256": "48dcb1bed54655fd2d1c16db12dd84daa5a4b960ced04743eb50f33626f59d40"
+  },
+  {
+    "path": "v0/data/skills/count-runs-this-week.json",
+    "sha256": "7deca778ecdf8cf1f1def68cad009ac23518883c782ff3da1843b3a1a5708fbc"
+  },
+  {
+    "path": "v0/data/skills/create-habit.json",
+    "sha256": "d1163300ef58d73b7fa97098cec29bcfc459a050b84db56848d9e36e1d3f23b2"
+  },
+  {
+    "path": "v0/data/skills/create-task.json",
+    "sha256": "48803eb5048f3edac85e601d51c5a06f7849cb78845e4b87956f045275718d9b"
+  },
+  {
+    "path": "v0/data/skills/delete-journal-latest.json",
+    "sha256": "6e72bc0eb150f60cda859071859f187f560f011e68c5ebcc8d89acdf187995d2"
+  },
+  {
+    "path": "v0/data/skills/delete-task-at.json",
+    "sha256": "416edb5dc3391cb29449a4d36ad921a66720965f1661f8817e798a5c9c206647"
+  },
+  {
+    "path": "v0/data/skills/delete-task.json",
+    "sha256": "7e195160955826f97cb92290ebb276165c55e7ea91bc893e277f1e4f92d14902"
+  },
+  {
+    "path": "v0/data/skills/due-by.json",
+    "sha256": "1630e3320ac109a8d96a27b95967ad79fbd46b36eb93934f1dd864cace1b6211"
+  },
+  {
+    "path": "v0/data/skills/due-on.json",
+    "sha256": "deb6a5d276fe42d9daaf631826331ec08726fbaf2c031f39c9f0821f379c247b"
+  },
+  {
+    "path": "v0/data/skills/due-tasks.json",
+    "sha256": "bb510ecb7ec2d53a5a7b56c56631fc4a44f2da6c7191ec5b4c99ff1ab5671ccf"
+  },
+  {
+    "path": "v0/data/skills/due-week.json",
+    "sha256": "82de5e821c902ede59100cc5142fa01d13239bd22a27d79aed45f1ea538d97ba"
+  },
+  {
+    "path": "v0/data/skills/explain-task-list.json",
+    "sha256": "71d29e548af3b67c75a2e78c5f83857d579768276029e2cd26af8973bef9d4a8"
+  },
+  {
+    "path": "v0/data/skills/find-people-by-fact.json",
+    "sha256": "61ec0716cb1db8f4e134f7169461612cbe4e26d4d8954c213152468cb52d85d6"
+  },
+  {
+    "path": "v0/data/skills/forget-fact.json",
+    "sha256": "9650a7e62e65ef9b73c319d2be672b8f3a53afd3ded6ef28466db2de843b3092"
+  },
+  {
+    "path": "v0/data/skills/goal-progress.json",
+    "sha256": "b223ffc02b1468cfa8af1dce50b3b8b0c64148829a5436537de58c4e856e134e"
+  },
+  {
+    "path": "v0/data/skills/habit-progress.json",
+    "sha256": "72e0fb6fca94e5f3624fa481afe5dc5078c9675ba15e347833f737126351e5a5"
+  },
+  {
+    "path": "v0/data/skills/last-interaction.json",
+    "sha256": "6bd8df40d6a3630e1435433b787080fea4a66090c115c53305f0d30ab6a2e80d"
+  },
+  {
+    "path": "v0/data/skills/last-routine-session.json",
+    "sha256": "de11f5e097890ff48e3fb307d61574ff9b5620479509e993b290ec9d35d1331f"
+  },
+  {
+    "path": "v0/data/skills/list-completed-tasks.json",
+    "sha256": "e3bf15a1a0a2472a048e53a1a12adc4af5c4564982d8532faf1ba0e6f3ea534e"
+  },
+  {
+    "path": "v0/data/skills/list-habits.json",
+    "sha256": "fd18795219f19594e32eac8ae40515c06b5867f162923c7f86af91123d374eca"
+  },
+  {
+    "path": "v0/data/skills/list-interactions.json",
+    "sha256": "b00bcb7f1e0cdc0d26753ac930b6b84e56a4d1c5fc3891b2890f4e022cf66068"
+  },
+  {
+    "path": "v0/data/skills/list-meals.json",
+    "sha256": "e0fd27fe4c351932098f2630e3dd8d6911186acf633242b30c430b8409478d13"
+  },
+  {
+    "path": "v0/data/skills/list-relations.json",
+    "sha256": "7d19577c2638797c21bf17187f030f2dbf74d214944f92d08defaea3891af0a6"
+  },
+  {
+    "path": "v0/data/skills/list-reminders-on.json",
+    "sha256": "333ce81ad6d7da13f91ae66b663a4c16010bfa6812826370e256afb05a4f537b"
+  },
+  {
+    "path": "v0/data/skills/list-reminders-week.json",
+    "sha256": "7f602b58d886b1a16463e08fc4ef03a666a01236f948bf2fc426c10513101012"
+  },
+  {
+    "path": "v0/data/skills/list-reminders.json",
+    "sha256": "2deb63ebcc0944b121a5198b159a1b5a948e82839d48e94cf83f83a1e22a88e9"
+  },
+  {
+    "path": "v0/data/skills/list-routines.json",
+    "sha256": "4c08850fa4acc627558818ea030c1cffe42d999fadb069eab8c4a970b7d58d41"
+  },
+  {
+    "path": "v0/data/skills/list-tasks.json",
+    "sha256": "7894f3179122acfa97a3debc20e7835e6836e51b0a2e3fcb2d43597fba703043"
+  },
+  {
+    "path": "v0/data/skills/log-habit.json",
+    "sha256": "59cea1cdb8f76af6e0d81e0e64b0a7c192518d64a37a5aa48391ee014c72ed99"
+  },
+  {
+    "path": "v0/data/skills/log-interaction.json",
+    "sha256": "f8e51a7af5167caa5b88684d6c7f999b361ec8254a1ae54dc206a28650671e88"
+  },
+  {
+    "path": "v0/data/skills/log-journal.json",
+    "sha256": "5f9bcc8c515ef1700383c850d557b346f485f49ad72c8f74a0541a71a334a86e"
+  },
+  {
+    "path": "v0/data/skills/log-meal.json",
+    "sha256": "32af844aa3524310cbe3c6d3896acc20bd38ecd0361aa5f581ec7d222bdc1fd5"
+  },
+  {
+    "path": "v0/data/skills/log-mood.json",
+    "sha256": "9e0a6f9145682448a8b6730ab8d1d96c71db12df6301ac2236d6c96645ad9c28"
+  },
+  {
+    "path": "v0/data/skills/log-plan.json",
+    "sha256": "6b70c0726f1a60a7a96b4aa1c91245eff20a9fbed888ad30060b762e70d54a28"
+  },
+  {
+    "path": "v0/data/skills/log-routine-session.json",
+    "sha256": "4af81bde623fdef2c1c64b15ab0730c0d02c741d51d6d76be3c831818e533134"
+  },
+  {
+    "path": "v0/data/skills/log-run.json",
+    "sha256": "2a724d7a0dc20203f5a7087a9fd91aadbd55f653c2c36aa918ed670401856def"
+  },
+  {
+    "path": "v0/data/skills/log-walk.json",
+    "sha256": "36a328c5db4383e27d0f3262991e12e03138574cabbc5b3a93cf7e72eaf037d7"
+  },
+  {
+    "path": "v0/data/skills/log-workout.json",
+    "sha256": "284c25d53f2e312dc97f612b7ae38e65cf8a62aa4839c6f8c11fa50f9d2faf6d"
+  },
+  {
+    "path": "v0/data/skills/neglected-contacts.json",
+    "sha256": "09f634a733e4635c9b1866ddd299d27ed9c1c5f6f9fdad4dd2a60dc00420dc78"
+  },
+  {
+    "path": "v0/data/skills/recall-fact-about.json",
+    "sha256": "b9e5287f28b865acf53eff0d94dd74a7e53056d07fbf0e81add6444a5ecf1bba"
+  },
+  {
+    "path": "v0/data/skills/recall-facts.json",
+    "sha256": "c5ee7f8b5b599ad28828c0da120bc48e870c8e7017e5e6f40af96feb36b67334"
+  },
+  {
+    "path": "v0/data/skills/recall-journal-on.json",
+    "sha256": "6de0afd9a44a0c5f4292e355324629bafdaddbc669ee48c49e767df340fe9f33"
+  },
+  {
+    "path": "v0/data/skills/recall-journal.json",
+    "sha256": "b6a2ad4ace4ea4adf51812836d737ee026eca6b2af7b2f729c54ae0f2d55f344"
+  },
+  {
+    "path": "v0/data/skills/recall-latest-journal.json",
+    "sha256": "48c9bfab16b6b4c13243ff658f21f1bbbef89712c1832a167e8fcb8649c77124"
+  },
+  {
+    "path": "v0/data/skills/recall-mood.json",
+    "sha256": "2be9911481f96ed216b692224642b40edcea705303c03c584e44e7bab166875e"
+  },
+  {
+    "path": "v0/data/skills/relation-between.json",
+    "sha256": "57044ea1ff614e5a76c8aad6fa364befe2c180d2bfb67235d39825aaac171d36"
+  },
+  {
+    "path": "v0/data/skills/remember-person-fact.json",
+    "sha256": "a29bfbb16441fd9e8428bfe73e2b833a0c02c97ee52f3f61947138c4115524b9"
+  },
+  {
+    "path": "v0/data/skills/remember-relationship.json",
+    "sha256": "3c12f9afe5d7a6c9ede490052c6a529496329a750cc4c203aeebbac892397b77"
+  },
+  {
+    "path": "v0/data/skills/remember-relative.json",
+    "sha256": "f2161096470c0c74d99c164f2ca46f53270a93787ebf030a348764141cd76769"
+  },
+  {
+    "path": "v0/data/skills/remember-trait.json",
+    "sha256": "bfcf7b325b962b5eb130f9f9d3864ccb0d88a8672222932bad5f4242dde61a1b"
+  },
+  {
+    "path": "v0/data/skills/remove-alias.json",
+    "sha256": "e77e51df5ab314da788e59c54152bdee2dc554f88839e656306d2ed5273830e5"
+  },
+  {
+    "path": "v0/data/skills/reschedule-reminder.json",
+    "sha256": "e73d875d72908aef50954440e06c9006cdd01623f70d595ca4e82d439b04abdb"
+  },
+  {
+    "path": "v0/data/skills/reschedule-task.json",
+    "sha256": "e4aa3bdf0bad78e5da507c612a68f2ae2e9753632b6517fe15ac62bc2a791943"
+  },
+  {
+    "path": "v0/data/skills/routine-streak.json",
+    "sha256": "979504c561e3f0a5e0b45695668c5e3ec198b6bae858f6fb5dc449b17c1abc02"
+  },
+  {
+    "path": "v0/data/skills/run-distance-this-month.json",
+    "sha256": "e47faf8dc3722603a4e6f2c3137ef97e2ea8fe5386491de34b40f7a732dea0a2"
+  },
+  {
+    "path": "v0/data/skills/run-distance-this-week.json",
+    "sha256": "bd630b3705426c708259d3a68dfc6205bfb1f77180388b2367d388c947fd6966"
+  },
+  {
+    "path": "v0/data/skills/run-streak.json",
+    "sha256": "5f30794a1cbf9eb1e34a0e0fd34ee8cae7fa3f280c36597425ea31b4f55dee6d"
+  },
+  {
+    "path": "v0/data/skills/set-alias.json",
+    "sha256": "5b16fdb87356ad77dbffcfcdd948c048d33beba6e1587d1a7a5bd8f4b3ce786a"
+  },
+  {
+    "path": "v0/data/skills/set-birthday.json",
+    "sha256": "b4a85c2a12410d4334fe36941391349cedea3d95208cf1d1302f10353334aa5e"
+  },
+  {
+    "path": "v0/data/skills/set-biweekly-reminder.json",
+    "sha256": "30b1fcd9ad7b3c3be8449d91a272aa40b4d3aee97870c3ea0fff4e60a31c09f2"
+  },
+  {
+    "path": "v0/data/skills/set-contact-date.json",
+    "sha256": "608240366b133f95aa2ae7c2ee8f9d37ee45a95be4c72ca016f2810855bf0d66"
+  },
+  {
+    "path": "v0/data/skills/set-daily-reminder.json",
+    "sha256": "1f2dda37d47b4b3e01e3723f5fdc4087cef0806cb2fa1b4d144ca8eb3b82690a"
+  },
+  {
+    "path": "v0/data/skills/set-goal.json",
+    "sha256": "05b4a151480378143597cf4b60ba493ea341bbaad90d1d6020ec7e97d99ab344"
+  },
+  {
+    "path": "v0/data/skills/set-monthly-date-reminder.json",
+    "sha256": "1050009b14f1884adfa580b095815f9388a97b6c27352f1f012b015b3d791637"
+  },
+  {
+    "path": "v0/data/skills/set-monthly-reminder.json",
+    "sha256": "c1aadd9ad0d514b93b500b9ed341fe56c293ad5771571f3e9d39afeae1975e79"
+  },
+  {
+    "path": "v0/data/skills/set-multiday-reminder.json",
+    "sha256": "b014bc45fc5c3b21ffa4bed359eca9c5f61d8a4016e74e117a1982c5a9a6003e"
+  },
+  {
+    "path": "v0/data/skills/set-reminder-on-day.json",
+    "sha256": "668ca072d925694663a207a7fc1ffd26313b4efb8e005581dc4354f16ad96bb5"
+  },
+  {
+    "path": "v0/data/skills/set-reminder.json",
+    "sha256": "98369a276aec3b5e5c093ae5c1e754d71edf6f146bad5b2237f207ade3f78c5e"
+  },
+  {
+    "path": "v0/data/skills/set-weekday-reminder.json",
+    "sha256": "f6862d6808b277ca78f6ba13c46cedf4e49c74fc518047a68da7ff85eed48d0c"
+  },
+  {
+    "path": "v0/data/skills/set-weekend-reminder.json",
+    "sha256": "1ccb3d4419942ebd26cf008ac00b725269d61000cdbed4bda8a7dec84be8c991"
+  },
+  {
+    "path": "v0/data/skills/set-weekly-reminder.json",
+    "sha256": "adbb1da0315180d5b398df2a5e21941d490301b70e974eb9fbb575bb98c94d51"
+  },
+  {
+    "path": "v0/data/skills/set-yearly-reminder.json",
+    "sha256": "1a653ffe389d9dfb011a988d1824dc108f2a10bc31186b018408e9a3c85d6776"
+  },
+  {
+    "path": "v0/data/skills/task-before-birthday.json",
+    "sha256": "fe37e85d1b1dcdf804ff91347982f717be1b1fddc33322b4e4f0700f39a72db4"
+  },
+  {
+    "path": "v0/data/skills/total-distance.json",
+    "sha256": "96466b180081e6d30333e5f5257f481af7e004e6ba4a6ab5caafbd8d6feb129b"
+  },
+  {
+    "path": "v0/data/skills/upcoming-birthdays.json",
+    "sha256": "6d35f86c1f045df905f662376ea7ff4118afcc7dac7ead9ca89b4aacfe646889"
+  },
+  {
+    "path": "v0/data/skills/upcoming-interaction.json",
+    "sha256": "520bf1853029498f78e68c1c010cd6168cad292976b28f3de09626bf316cd49c"
+  },
+  {
+    "path": "v0/data/skills/update-goal.json",
+    "sha256": "585c0a6d2e112b494cbac1a9f2ce97a6bf6acb15a13859733a9c500b206cff55"
+  },
+  {
+    "path": "v0/data/skills/walk-distance.json",
+    "sha256": "14b55363adacacf94ba91ad3f6710ab48fb96ad400f97cd535017816608497c1"
+  },
+  {
+    "path": "v0/data/skills/when-birthday.json",
+    "sha256": "0d0e6d464fd6098a5ccfef83cf491c4fa005b8d80358de734248fe5ad51fb9dd"
+  },
+  {
+    "path": "v0/data/skills/when-contact-date.json",
+    "sha256": "3de9dfbda70d79ef557d12b18c794b1c50ed8e2bd18a458a7d98ab3ae90cae96"
+  },
+  {
+    "path": "v0/data/templates/medication.json",
+    "sha256": "18069fa022df41b6ed97aa9fd2631219722f1cc91ba53d11983d457ecd14b3df"
+  },
+  {
+    "path": "v0/data/templates/reading.json",
+    "sha256": "5034513699b21d37d0e706317665abadd2b90727ad6b2ecfe46c5a34bef1ccd9"
+  },
+  {
+    "path": "v0/data/templates/steps.json",
+    "sha256": "b9fe12dd66253b3f920f5e9e8f2d23204005dabfdd6059188ee94ef4c96b3d10"
+  },
+  {
+    "path": "v0/data/templates/water.json",
+    "sha256": "a6b13590e539d4559866f2b148219d5f4698f25c74f7c6aa7b2fbc0ece600587"
+  },
+  {
+    "path": "v0/data/templates/weight.json",
+    "sha256": "5e8598d53ad0a544fce528b3deb5632e8ab383310e80e6bb9c117d1af715a5f3"
+  },
+  {
+    "path": "v0/data/types/area.json",
+    "sha256": "d77064f20dc6d7e83e811551bcf3db24519a609a24a61d47d338a74e6ef8d1ed"
+  },
+  {
+    "path": "v0/data/types/contact.json",
+    "sha256": "59080ce4fe13d9f54b13f9b5a7e3392ff7664d91a1f30423a5d452c9809bac65"
+  },
+  {
+    "path": "v0/data/types/contact_date.json",
+    "sha256": "e0d90875ccf5fa3c6e3d6173f16ccad8e59ce33def8efb78433d79efae17d077"
+  },
+  {
+    "path": "v0/data/types/contact_fact.json",
+    "sha256": "a3fa268822dba0a00161476e7584dc2ae301b350dcffa74e3ff703197289ca7b"
+  },
+  {
+    "path": "v0/data/types/contact_relationship.json",
+    "sha256": "7f58ff7b1394397910c650a6ff82e8e0c0753955ebff9bb7e18029e2d5660811"
+  },
+  {
+    "path": "v0/data/types/goal.json",
+    "sha256": "be0b376ff555c72d50fb5e1e9b0ba53048edc1bc161c662d2e694c8db6a758c1"
+  },
+  {
+    "path": "v0/data/types/habit.json",
+    "sha256": "dc427659f3f3314de59caeda848cbc4c06c576d3bfa717aa828c5066c58bd5a8"
+  },
+  {
+    "path": "v0/data/types/habit_checkin.json",
+    "sha256": "629015775e73d9b21a23f7ba71d3f5739bc451215078f5629d91edc979496bc6"
+  },
+  {
+    "path": "v0/data/types/interaction.json",
+    "sha256": "346433555e562dc76a3e32206542a246f935f6aa5faa78728eb5ffa494cb89bd"
+  },
+  {
+    "path": "v0/data/types/journal_entry.json",
+    "sha256": "8cf03758881f8c504d8f2c2cbcd6ea1610aadb9a3776cda002f03cbc48e21b51"
+  },
+  {
+    "path": "v0/data/types/meal.json",
+    "sha256": "1da1017af75230e6b5f689124c822eac23fb734d53a3c6870fe0b89f6c457ed7"
+  },
+  {
+    "path": "v0/data/types/mood.json",
+    "sha256": "954d36cff84750da0ec1b20e5ef54d8513e031962cab864e790484834810154a"
+  },
+  {
+    "path": "v0/data/types/project.json",
+    "sha256": "5eccd6738ebbb69225ec395d0aea5ad832234183e3360e3b8632012e9be0694e"
+  },
+  {
+    "path": "v0/data/types/reminder.json",
+    "sha256": "2d8485c08b59c54af497d8123688547ce918a59702daf0f850fb6ed2ac3fb1ba"
+  },
+  {
+    "path": "v0/data/types/routine.json",
+    "sha256": "34280a272027f935d11fe08dc25a512bc109ffbfa66f6df9e569d266600da095"
+  },
+  {
+    "path": "v0/data/types/routine_session.json",
+    "sha256": "f1b61022f9199c03316f7bcac6d9de6eba2846f71f87a24330060912ba2dc056"
+  },
+  {
+    "path": "v0/data/types/routine_step.json",
+    "sha256": "c9e2d1084d8abfb59c2a58884eb42f4bc9e4fe5f4154e232ffba50978388df0c"
+  },
+  {
+    "path": "v0/data/types/task.json",
+    "sha256": "86ca5a83071c91417fa901b5c160cf97d46ba165ce830018d3aa5fc58b6c2699"
+  },
+  {
+    "path": "v0/data/types/workout.json",
+    "sha256": "e9ddfe2d26a6204b0c1666f860697ba0f3e4fd4fc476032a1973bc7f8528040b"
+  },
+  {
+    "path": "v0/lib/automations.dart",
+    "sha256": "d81d54e71dc0d6eab95215e2835a0ea94f66009a045a984793a7f4217a3e1c1e"
+  },
+  {
+    "path": "v0/lib/capability_draft_store.dart",
+    "sha256": "adfac3299604b74812b83ee0acc441e79b68868c0ed896eb7f33268a81d7cfff"
+  },
+  {
+    "path": "v0/lib/claude.dart",
+    "sha256": "f8ae89e66d526702b97a0137a379095903534c2f256b8a83977281ed380d777c"
+  },
+  {
+    "path": "v0/lib/config.dart",
+    "sha256": "ef89406305546ca53ce0767324dc08641f4b66963422260cb4593bc43790704f"
+  },
+  {
+    "path": "v0/lib/content_search.dart",
+    "sha256": "8de2f14779eb7945e297fe89cf783ef4eed1a77a5bc44f030b095df501d8cb62"
+  },
+  {
+    "path": "v0/lib/conversation_ledger.dart",
+    "sha256": "fe142a9296a928023ba41bbd7020dbf94bf87d644dc86d33b6d6618ba2c77dd1"
+  },
+  {
+    "path": "v0/lib/cron.dart",
+    "sha256": "5697e853d1cd8a6bddb34cd62ee3d06e0c07cdaf26ce02fbc84c3e84279be884"
+  },
+  {
+    "path": "v0/lib/dates.dart",
+    "sha256": "a290584598682e0f750cf876342edcebe1d11186e4795aee3bf91f6310dde959"
+  },
+  {
+    "path": "v0/lib/embed.dart",
+    "sha256": "02fb2a05febfe17099a9c5ea6ab73a6d6cba46a61a02e42148cd0f5ed48e67f2"
+  },
+  {
+    "path": "v0/lib/execution_coordinator.dart",
+    "sha256": "0630558dd39d1c3d73f0b0ae01fd5c9c56ec084ae991290eb3bec077bde77269"
+  },
+  {
+    "path": "v0/lib/fixture_inputs.dart",
+    "sha256": "a4a132726c15415435cecaa63724aac46e917234587fdff34173b98adc248254"
+  },
+  {
+    "path": "v0/lib/generative.dart",
+    "sha256": "3d245c57f3664cccae692b61c50a312115035924da2cdd576d41253c84b202d7"
+  },
+  {
+    "path": "v0/lib/guide.dart",
+    "sha256": "0b97ddbeda2b5967c046d82f0534cfc8f95c998674d95f0c50a687862aea5df8"
+  },
+  {
+    "path": "v0/lib/habits.dart",
+    "sha256": "053b14ed3ee50c8796bdb3c88beccbde25f3d3ac545d46c87be2bbad1d34efff"
+  },
+  {
+    "path": "v0/lib/interpreter.dart",
+    "sha256": "9140759056734fea0c38ab4908b45bbf9c66872e883b39df25421943b6ea326b"
+  },
+  {
+    "path": "v0/lib/migration.dart",
+    "sha256": "554d5e25edb5e86a6ab3bdd50fb41d4494ee73748e6eec21ecad6e17b5d03674"
+  },
+  {
+    "path": "v0/lib/operation_center.dart",
+    "sha256": "8ad498b97ad74182347494812c7ca61f32baac5ac5b5d9399261bf4868522217"
+  },
+  {
+    "path": "v0/lib/people.dart",
+    "sha256": "cdc2cccba232b1b3e38f57597fa8b6f978281183838a1b5d343cc123be77ba6a"
+  },
+  {
+    "path": "v0/lib/plan_proposal.dart",
+    "sha256": "ac6bb752065cf665cdd64ccf6225eeab6bb3c92598d17e7b69dd37d15f33f6f8"
+  },
+  {
+    "path": "v0/lib/planner.dart",
+    "sha256": "1c070620e06ecebe7439232253b65d3c9b37d711c5b062f800f1b7719be9217e"
+  },
+  {
+    "path": "v0/lib/planning_artifact.dart",
+    "sha256": "11ebae43ab1f12e31c65a48ec795e0ef926d81adef42f5c8f800663e9fc0d5d4"
+  },
+  {
+    "path": "v0/lib/reference.dart",
+    "sha256": "40a583273dcf66ec1908d7244b72661e43ba480303c7b3cf34d00deb320cb722"
+  },
+  {
+    "path": "v0/lib/reminders.dart",
+    "sha256": "437816ae5b96a38610d25ad51fc6c28675c832594aa652f3f514313835708158"
+  },
+  {
+    "path": "v0/lib/replay_cloud.dart",
+    "sha256": "44e4d5e36d1cc42afc60cd860e86d1db6f992881f93db2854efa8ffc8bccbcd9"
+  },
+  {
+    "path": "v0/lib/router.dart",
+    "sha256": "a1c16086fa6ebda5483feca313da8d88fc26a7d65687c060b2a7548fc6c7a9eb"
+  },
+  {
+    "path": "v0/lib/routines.dart",
+    "sha256": "d8608090bf50fcea8e87a9610af800965fc3577ae37fed8632b6e88732304cde"
+  },
+  {
+    "path": "v0/lib/schema_registry.dart",
+    "sha256": "7c08c3468c5f6cec99921370bc06de379c365604f0c76bd69352c3310063697a"
+  },
+  {
+    "path": "v0/lib/session.dart",
+    "sha256": "576720bb5b0bc6734dd3d0f37cc85b56ef0e0d4c9685489412614d80ee5d8e6d"
+  },
+  {
+    "path": "v0/lib/storage_repository.dart",
+    "sha256": "7ccfd119a2d28745007f2fc1662e1d8ddaa3824e7905c1d420a1782f01a68787"
+  },
+  {
+    "path": "v0/lib/store.dart",
+    "sha256": "27f257ed0a47afce0d03264bca4752d7bc66181e269e2d2db5d7af030c63de0f"
+  },
+  {
+    "path": "v0/lib/turnlog.dart",
+    "sha256": "d3409cda9424aa3efc2fc390ba505fdcbd5678910e9b4a45b987c978292cc8b2"
+  },
+  {
+    "path": "v0/lib/value_codec.dart",
+    "sha256": "914a2a2ac85896cb1c5aa0c8a40a99697e338597a68b8593422b8182147fd1ea"
+  },
+  {
+    "path": "v0/lib/weekly_review.dart",
+    "sha256": "dfdfb6ba7853e72527c63686024cac6b0f6112a925fb713a0d540d7fc162df4b"
+  },
+  {
+    "path": "v0/pubspec.yaml",
+    "sha256": "634aee8985feb4557adcd59d32ff97f1e8eed17eadc92d3075fae8272f27c14d"
+  },
+  {
+    "path": "v0/test/annual_dates_test.dart",
+    "sha256": "e105af6ed06a6f46cec45bcfc20b36f407f87b9460bf1ae700b7ed4fbe2a62a3"
+  },
+  {
+    "path": "v0/test/authoring_clarity_test.dart",
+    "sha256": "5066a4e3b44976e8afe679e0c76d288c530d970ddd225cd32ffaa54f409ecfdb"
+  },
+  {
+    "path": "v0/test/automations_test.dart",
+    "sha256": "a5faa6af00799f8befadcc8d1ff81c1b244fe33dce4a5d4376231acb34a665d2"
+  },
+  {
+    "path": "v0/test/capability_draft_store_test.dart",
+    "sha256": "a7151b522a0974eddbcae657d56c74b9b74b0dd5ae41b87d780723111b8fc0d1"
+  },
+  {
+    "path": "v0/test/claude_test.dart",
+    "sha256": "492fd8811a07aeb667f03c276d24cabd2a0fe386b5fb69f29a9558008803e644"
+  },
+  {
+    "path": "v0/test/claude_transport_test.dart",
+    "sha256": "6111067a855eda52c502e3c11307193aa137defa9d141b7351952ef1ee701fac"
+  },
+  {
+    "path": "v0/test/cloud_result_test.dart",
+    "sha256": "be73c967374e57c082202ba7d25e4708d77e4d390658366080dc011cd422d72d"
+  },
+  {
+    "path": "v0/test/cloud_test.dart",
+    "sha256": "40b078c36dc3cdcb202a771ce81c420e796843ac76ab5b560774da8d412a561f"
+  },
+  {
+    "path": "v0/test/config_test.dart",
+    "sha256": "5232e89d234fde9efa90fee58194af7687fef3968caf63af4c94ecb5ea974aa7"
+  },
+  {
+    "path": "v0/test/conflict_naming_test.dart",
+    "sha256": "35a8f9193c4557a75ca7482e70514cfc97a24edfc6c25a7eb09a25beea278e33"
+  },
+  {
+    "path": "v0/test/conformance-baseline.txt",
+    "sha256": "68ca3fba3b7e864770cb61aeb306d4bd4354b68ab4dd38450860c5d823e42a53"
+  },
+  {
+    "path": "v0/test/content_search_test.dart",
+    "sha256": "d67caf5831f514bb89261843a1de69b21fa462bd5b2fb309fb4f64464e4af5cb"
+  },
+  {
+    "path": "v0/test/conversation_ledger_test.dart",
+    "sha256": "bb07e5c9b84af2faccca7f605ee46005ee27c1c3b06d719095c63cd42d66b77a"
+  },
+  {
+    "path": "v0/test/corrections_test.dart",
+    "sha256": "fed210a7ed01d32a67c106afe94c1a821b86755a343bae235f6a994967778211"
+  },
+  {
+    "path": "v0/test/coverage_check_test.dart",
+    "sha256": "691a684cd927814a548b44a4549fd267d6cefec50e416efd36d36e4466fe521b"
+  },
+  {
+    "path": "v0/test/cron_test.dart",
+    "sha256": "9e2d97dd793c9f5ddb48c38737d1b2ceb57ff2e0bba4a3826a56fd4595dde7f4"
+  },
+  {
+    "path": "v0/test/cross_restart_roundtrip_test.dart",
+    "sha256": "a088c4df5fb40c607b6e2ebe54c83a18affb7627dd1ef40d945112a29a585e75"
+  },
+  {
+    "path": "v0/test/data_edit_test.dart",
+    "sha256": "01376074b74301952ab980cb37c5a831384da9cadf0d58e99e4a50ace7ce59e5"
+  },
+  {
+    "path": "v0/test/durability_test.dart",
+    "sha256": "3d03d27efe1c98a3dd1e0c60e86dd725d37e0ecd25edc4f0340cc5fe5a38e900"
+  },
+  {
+    "path": "v0/test/durable_session_execution_test.dart",
+    "sha256": "9a8acaf9225e439455e66d7c9bb5b7a010fcf8dc9d2a4fd1504ca19f81363e91"
+  },
+  {
+    "path": "v0/test/embed_test.dart",
+    "sha256": "15090bdf850b132238727df0288344e4a60209997fe60257851864116c804b65"
+  },
+  {
+    "path": "v0/test/execution_coordinator_test.dart",
+    "sha256": "fe63881fb358a6e61023201d51f1e9f734ebd3d47d7bc23f41659c92fd346a9e"
+  },
+  {
+    "path": "v0/test/f07_nested_fact_test.dart",
+    "sha256": "cddee73d8f714e6e55f6b4b1bf8612f0a80cbc06790f5e2693c31fb5609d7758"
+  },
+  {
+    "path": "v0/test/figure_test.dart",
+    "sha256": "179168a28aa41d3430fd109496800520920f63856e805d25c7dfa5af6173471e"
+  },
+  {
+    "path": "v0/test/fixtures/cloud.json",
+    "sha256": "0599f96536196c13f199b196d46075ad4db09c38617b899c56b51cc18457c78e"
+  },
+  {
+    "path": "v0/test/generative_test.dart",
+    "sha256": "3c434da4c554db919ed4080bbcc9ed523da3ba5125d2f61069493873cfab3387"
+  },
+  {
+    "path": "v0/test/guide_test.dart",
+    "sha256": "fb91277d893658fb29f656942b9f69c0f3cfd087605ef27b141f84676cadc782"
+  },
+  {
+    "path": "v0/test/habits_test.dart",
+    "sha256": "0ab8a3b2fb22c4857aead7799ec49ecc05a6a607230c28331c4bcd16b9cfaeed"
+  },
+  {
+    "path": "v0/test/hardening_test.dart",
+    "sha256": "4d236e772871f9cec55dcc77274a703e663be1a9cd1fbe2f3cafb59ae03c88b7"
+  },
+  {
+    "path": "v0/test/helpers.dart",
+    "sha256": "c3adabcf305c009fb6605dcd5a9a0852e33a70abd7e81c62bbed7192a4d5c639"
+  },
+  {
+    "path": "v0/test/import_lint_test.dart",
+    "sha256": "23e6d1484422442e34151c7a711e0944829319c8517d7de319e71192ab94253b"
+  },
+  {
+    "path": "v0/test/interpreter_test.dart",
+    "sha256": "13e64cea06888df2cce281873980321595b17187b2f76da9ae5f9255ba134493"
+  },
+  {
+    "path": "v0/test/migration_test.dart",
+    "sha256": "c49b1ec2980f338957d64ce6284338d78fc9c6e39023ba4e56064a2b2f199ebd"
+  },
+  {
+    "path": "v0/test/operation_center_test.dart",
+    "sha256": "ffba6f7b7f4496d4a3bd1ba36480f6ac70d9b89790318dd34a036d5ebbf32ab4"
+  },
+  {
+    "path": "v0/test/people_test.dart",
+    "sha256": "fc2228eca3cac83589adff067bd995e3265a44d36b22e77648a80ca4513ac7a3"
+  },
+  {
+    "path": "v0/test/pipeline_test.dart",
+    "sha256": "72a9fd7fd32be3e572abfab742f2d195f948593432f29c2b3c10eecbc3585ab0"
+  },
+  {
+    "path": "v0/test/plan_proposal_test.dart",
+    "sha256": "601e4e0b29009a9467fd8a1d958cd2875dd2537730d63f482023d05b2d75ce07"
+  },
+  {
+    "path": "v0/test/planner_test.dart",
+    "sha256": "7ea73b7bf8eb236c530fa3c1a2dd85c364561c402e5c8ff1325eef0f9f7a46f7"
+  },
+  {
+    "path": "v0/test/planning_artifact_test.dart",
+    "sha256": "10eedb0fe12864da55b30c20f73e48ce086f70bb576bd7ea60e5cc354ab62e69"
+  },
+  {
+    "path": "v0/test/recurrence_dst_test.dart",
+    "sha256": "36926700ac908cda5640dcd374ff7d8cbda96d3d7b765b61f28bbd84d85db79f"
+  },
+  {
+    "path": "v0/test/reference_test.dart",
+    "sha256": "acae30a2a42e1890ad0d8436f5631506a17663082c0a53334649a1f603539ab6"
+  },
+  {
+    "path": "v0/test/relationship_health_test.dart",
+    "sha256": "5fdfc8e7bcd3abd2be0387f0d2c4e868297eebd8aabd9a5a347c78eef98c6f18"
+  },
+  {
+    "path": "v0/test/relationship_mutation_test.dart",
+    "sha256": "c11a85bee1756af03272f13f038090b5c3e8af3a0bb39629b69f3eebc779b75a"
+  },
+  {
+    "path": "v0/test/relationship_planner_test.dart",
+    "sha256": "d67678294e57894de27df846bbc8d2d2eb04325b9e747adbc7a92bf1f3d248b0"
+  },
+  {
+    "path": "v0/test/reminders_test.dart",
+    "sha256": "72bf7df4e46a8d662319cf71daf21a65bced49fa5ebf90248616ace86644d905"
+  },
+  {
+    "path": "v0/test/robustness_test.dart",
+    "sha256": "9782476d650154662982b851e36bdce94064e808723dc63ebbaf1859072bde10"
+  },
+  {
+    "path": "v0/test/router_test.dart",
+    "sha256": "89bc15d8178a1f57ade5aad7e072368eedd1f329cf3ff3c88a3733962df8382a"
+  },
+  {
+    "path": "v0/test/routine_review_test.dart",
+    "sha256": "8ddef8a4301ebe2c16de95d14139a5402808f5d0992482dad361d8d530e110c8"
+  },
+  {
+    "path": "v0/test/routines_test.dart",
+    "sha256": "3e6528a63639b186b783eeb1e8225fc5f208c81865ee16d4d2e0960a3ed1d635"
+  },
+  {
+    "path": "v0/test/schema_hydration_session_test.dart",
+    "sha256": "581b79166f16b67df02b2b03b833eaa1f9111763d7b26738f2a5a659b590a4a9"
+  },
+  {
+    "path": "v0/test/schema_registry_test.dart",
+    "sha256": "16240a33d9a3f3c0ac06f043ea96c609d29b513224c89880fe7e084aaa58b322"
+  },
+  {
+    "path": "v0/test/session_concurrency_test.dart",
+    "sha256": "e9cf53c8d6e673953274b0105690d43cc59e89822abe383adc95c87cdf954d73"
+  },
+  {
+    "path": "v0/test/session_test.dart",
+    "sha256": "a4ae9507b5cbf3a096d4a2884d4a645df70dad9e718ddc8a007e49e7c8dadda5"
+  },
+  {
+    "path": "v0/test/spec05a_test.dart",
+    "sha256": "49972b9d7e8760c1fe4c109f12bf6c81ebcc06082f6522a1a4e8c3d0a9bdd618"
+  },
+  {
+    "path": "v0/test/store_test.dart",
+    "sha256": "c82155ead85a0928f5216d3a6107fb0b0586553d9646414c83bc6a0e72cdd9df"
+  },
+  {
+    "path": "v0/test/sync_test.dart",
+    "sha256": "f13587c15d722254377ef98275d293d7bcd9ebed7dfffe22b59157d6095ec91c"
+  },
+  {
+    "path": "v0/test/turnlog_channel_test.dart",
+    "sha256": "ab070da14be8824862c07898c4fdfce4533525495447a63f3c8472f42601e63c"
+  },
+  {
+    "path": "v0/test/turnlog_test.dart",
+    "sha256": "a72e2dd3c468469c964c2bd9e55606dd33ce257a83b0e2c0b2c58dcfe0affba6"
+  },
+  {
+    "path": "v0/test/two_session_sync_test.dart",
+    "sha256": "dfb3179bc1ba514f85806eda01dcc6f1e8d96501afeb7ef3e8f8cf6929f32d0a"
+  },
+  {
+    "path": "v0/test/value_codec_test.dart",
+    "sha256": "93ae3923d1c6a494d1a84c4de148125904a8bf62124aa790af95563f9880ae3b"
+  },
+  {
+    "path": "v0/test/weekly_review_test.dart",
+    "sha256": "f2fb996d1f4f7d161565658657f2d2d73e2a7dc529abb49e126027b03224c5c5"
+  }
+]

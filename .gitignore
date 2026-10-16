@@ -1,12 +1,3 @@
-.tools/
-
-# Per-install CRDT device id — never commit (would make installs share a tie-break id)
-.device-id
-**/.device-id
-
-# Coverage output (Spec 09 gate)
-v0/coverage/
-
-# TestFlight API-key env (secrets — never commit)
-tool/.testflight.env
-.appstoreconnect/
+.DS_Store
+archive/*/local-worktree/
+.tmp/

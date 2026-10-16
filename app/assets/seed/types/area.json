@@ -1,9 +1,0 @@
-{
-  "typeId": "area",
-  "schemaVersion": 1,
-  "displayName": "Area",
-  "attributes": [
-    { "name": "name", "valueType": "text", "required": true },
-    { "name": "notes", "valueType": "text", "required": false }
-  ]
-}
