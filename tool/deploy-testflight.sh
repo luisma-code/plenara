@@ -31,5 +31,10 @@ xcrun altool --validate-app --type ios -f .build/testflight/export/Plenara.ipa \
 xcrun altool --upload-app --type ios -f .build/testflight/export/Plenara.ipa \
   --apiKey AQMT4FFHKW --apiIssuer 12ee92f1-bd97-4747-bc50-87c476d9eb9b \
   > .tmp/testflight/upload.log 2>&1
-printf 'Uploaded. Check processing with python3 tool/testflight.py status BUILD.\n'
-printf 'When VALID, distribute with python3 tool/testflight.py distribute BUILD.\n'
+BUILD_NUMBER=$(python3 - <<'PYBUILD'
+import plistlib
+p = '.build/testflight/Plenara.xcarchive/Products/Applications/Plenara.app/Info.plist'
+print(plistlib.load(open(p, 'rb'))['CFBundleVersion'])
+PYBUILD
+)
+python3 tool/testflight.py release "$BUILD_NUMBER"

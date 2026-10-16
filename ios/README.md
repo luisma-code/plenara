@@ -50,17 +50,22 @@ Logs record operations/errors without personal content.
 For remote delivery, use **TestFlight** through the existing Plenara App Store
 Connect app and its enrolled internal group. `bash tool/deploy-testflight.sh`
 archives optimized Release code, exports an App Store Connect IPA, validates,
-and uploads it. It uses the existing API key outside the repository. Run the
-precheck before uploading. Apple must finish processing before assignment:
+uploads it, waits for Apple processing, assigns the exact build to the existing
+internal group, and confirms `IN_BETA_TESTING`. This is the standing delivery
+default after validated app changes; no repeat permission is needed. It uses the
+existing API key outside the repository. Run precheck and commit/push first.
+For readback or resuming an already uploaded build:
 
 ```sh
 python3 tool/testflight.py status 1000
-python3 tool/testflight.py distribute 1000
+python3 tool/testflight.py release 1000
 ```
 
 The helper reads back bundle identity, the internal group, owner enrollment,
 exact build number, version 1.0.0 for iOS, processing status, group assignment,
 and beta availability. Do not equate upload completion with availability.
+The release waiter has a 20-minute ceiling and reports a processing blocker
+instead of claiming success. It refreshes API authentication on every read.
 Change the version check deliberately when releasing another marketing version.
 A future upload needs a new build number; do not upload the same build twice.
 Build/export/upload logs stay under `.tmp/testflight/`; the IPA is ignored

@@ -3,6 +3,7 @@
 
 python3 tool/testflight.py status [BUILD]
 python3 tool/testflight.py distribute BUILD
+python3 tool/testflight.py release BUILD  # wait, distribute, confirm testing
 Credentials stay outside the repository. JWTs are never printed.
 """
 import base64, json, time, subprocess, urllib.request, urllib.error, urllib.parse, os, sys, tempfile
@@ -36,14 +37,12 @@ def token():
     return (signing_input + b"." + b64(out[0] + out[1])).decode()
 
 
-TOKEN = token()
-
 
 def call(method, path, body=None):
     url = path if path.startswith("http") else BASE + path
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method, headers={
-        "Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"})
+        "Authorization": f"Bearer {token()}", "Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             raw = r.read()
@@ -68,7 +67,7 @@ def contract():
     return app, group, testers
 
 
-def status(version=None, distribute=False):
+def status(version=None, distribute=False, emit=True):
     app, group, testers = contract()
     path = f"/builds?filter[app]={APP_ID}&limit=20&sort=-uploadedDate"
     if version:
@@ -95,16 +94,46 @@ def status(version=None, distribute=False):
            "builds": [{"id": b["id"], "version": b["attributes"]["version"],
                        "processingState": b["attributes"]["processingState"],
                        "expired": b["attributes"]["expired"], "inGroup": b["id"] in ids,
-                       "betaDetail": call("GET", f"/builds/{b['id']}/buildBetaDetail")["data"]["attributes"]}
+                       "betaDetail": (call("GET", f"/builds/{b['id']}/buildBetaDetail")["data"]["attributes"]
+                                      if b["attributes"]["processingState"] == "VALID" else {})}
                       for b in builds]}
-    print(json.dumps(out, indent=2))
+    if emit:
+        print(json.dumps(out, indent=2))
     return out
+
+
+def release(version, timeout=1200, interval=30):
+    """Success requires Apple's positive testing readback, never elapsed time."""
+    deadline = time.monotonic() + timeout
+    while True:
+        snapshot = status(version, emit=False)
+        builds = snapshot["builds"]
+        if len(builds) > 1:
+            raise SystemExit("Ambiguous build number; no distribution attempted")
+        if builds:
+            build = builds[0]
+            if build["expired"] or build["processingState"] in ("FAILED", "INVALID"):
+                raise SystemExit("Apple rejected or expired this build; release stopped")
+            if build["processingState"] == "VALID":
+                snapshot = status(version, distribute=True, emit=False)
+                build = snapshot["builds"][0]
+                if build["inGroup"] and build["betaDetail"].get("internalBuildState") == "IN_BETA_TESTING":
+                    print(json.dumps(snapshot, indent=2))
+                    return snapshot
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise SystemExit("Apple has not confirmed TestFlight availability within the deadline")
+        print("Waiting for Apple's processing/testing status…", flush=True)
+        time.sleep(min(interval, remaining))
 
 
 if __name__ == "__main__":
     import urllib.parse
     command = sys.argv[1] if len(sys.argv) > 1 else "status"
     version = sys.argv[2] if len(sys.argv) > 2 else None
-    if command not in ("status", "distribute") or (command == "distribute" and not version):
+    if command not in ("status", "distribute", "release") or (command in ("distribute", "release") and not version):
         raise SystemExit(__doc__)
-    status(version, command == "distribute")
+    if command == "release":
+        release(version)
+    else:
+        status(version, command == "distribute")

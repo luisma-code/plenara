@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Quality gate for the fresh design repository; the previous app gate is archived.
+# Quality gate for native Plenara and its retained design reference.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 python3 - <<'PY'
@@ -25,6 +25,7 @@ fi
 export PATH="$(dirname "$NODE"):$PATH"
 export NODE_PATH="${NODE_PATH:-$RUNTIME/node/node_modules}"
 "$NODE" tool/check-design.cjs "$@"
+python3 tool/test_testflight.py
 bash tool/test-native.sh
 cp .tmp/latest-native-result.txt .tmp/latest-full-native-result.txt
 cp .tmp/native-memory.csv .tmp/full-native-memory.csv

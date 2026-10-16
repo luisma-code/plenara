@@ -18,8 +18,12 @@ Contacts import is explicit selection, never background address-book reading.
 Verification uses a dedicated simulator. Physical devices are install-only.
 Build and test in Release; keep logging useful without logging personal content.
 `ios/README.md` records build, verification, signing, deployment, and data paths.
-Prefer the configured TestFlight route for remote delivery; verify processing
-and assignment to the enrolled internal group before claiming availability.
+Luis authorizes automatic TestFlight delivery after every completed, validated
+app change: commit/push to main, upload a new build, wait for processing,
+release to the enrolled internal group, and verify testing availability.
+Do this without asking again. `tool/deploy-testflight.sh` owns that sequence
+after validation and commit/push. Installation/Automatic Updates on the
+remote iPhone remain controlled by TestFlight on that device.
 
 Run `bash tool/precheck.sh` before reporting repository work complete.
 Global user preferences continue to apply; no old project-local skill is active.

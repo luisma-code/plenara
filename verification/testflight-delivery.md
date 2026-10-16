@@ -27,3 +27,25 @@ Remote installation and launch on the owner’s iPhone cannot be observed from t
 The remote owner installs through the TestFlight app on their iPhone. No physical phone launch, automated test, or layout probe was performed.
 
 For repeatable operations, see [native delivery instructions](../ios/README.md). Upload logs and the signed IPA remain local under ignored `.tmp/testflight/` and `.build/testflight/` paths.
+
+## Automatic delivery preference
+
+Luis requested automatic pushes on October 16, 2026. The standing project
+instruction now authorizes TestFlight upload and release after every completed,
+validated app change, without asking again. The deployment command waits for
+Apple's actual status, assigns the exact build to the enrolled group, and
+requires `IN_BETA_TESTING` before success. It stops with a named blocker on
+rejection, expiration, or a 20-minute processing deadline.
+
+The release command was exercised against the existing live build 1000 and
+confirmed its availability without another binary upload. Three orchestration
+checks cover delayed processing, Apple rejection, and timeout. The complete
+precheck passed after the workflow change, including all 16 native checks and
+the additional denied-access Contacts journey. All three workflow checks rejected a
+known-broken premature-success control, then passed with the source restored.
+[Calibration record](testflight-automation-calibration.json).
+
+On-device automatic installation is a separate TestFlight setting controlled
+by the owner. In **TestFlight → Plenara**, turn on **Automatic Updates**.
+[Apple's TestFlight instructions](https://testflight.apple.com/) describe this
+setting. The remote deployment API cannot change that phone setting.
