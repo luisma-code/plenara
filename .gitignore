@@ -1,3 +1,6 @@
 .DS_Store
 archive/*/local-worktree/
 .tmp/
+.build/
+*.xcuserstate
+xcuserdata/

@@ -1,6 +1,6 @@
 # Plenara — a little closer
 
-**Design proposal · October 16, 2026 · for Luis’s review**
+**Approved design · October 16, 2026 · implementation requested by Luis**
 
 Plenara is a quiet place to care for your relationships. It helps you remember
 who you want to stay close to, make room for them, and carry the little details
@@ -9,8 +9,8 @@ friends. The app should turn that into an easy invitation to reconnect.
 
 [See the screen preview](preview.png) · [Full person page](person-details.png) · [Try the interactive prototype](prototype.html)
 
-The preview and prototype use fictional people. This proposal is the single
-home for the new design until review. The previous planner, designs, project
+The preview and prototype use fictional people. This document is the single
+home for the approved product design. The previous planner, designs, project
 skills, instructions, tests, and implementation have been archived; they place
 no constraints on this design. Global working preferences remain in effect.
 
@@ -25,7 +25,7 @@ have a thread to pick up instead of a blank page.
 This should feel like a thoughtful personal address book, with a gentle sense
 of time. Beautiful means calm, legible, and specific to the people you care
 about. Avoid relationship scores, streaks, competitive dashboards, and alarming
-“overdue” counters. These are proposed design choices, not constraints on Luis.
+“overdue” counters. Luis approved this direction; he can change any of these design choices.
 
 ## Three places, one simple structure
 
@@ -39,6 +39,9 @@ The opening screen answers “Who could I make a little room for?”
 - A nearby person you want to know better, with a concrete shared idea.
 - “Log a moment,” “Catch-up notes,” and “Another week” keep action simple.
 - A quiet all-clear state when nobody needs a reminder. No target to fill.
+- Explicit birthday and dated-note reminders appear with their person at the top
+  when due. Completing a dated thread clears its reminder and keeps the memory;
+  it never fabricates a connection.
 
 Distant people get opportunities to call, exchange voice notes, or plan ahead;
 local people get opportunities to meet. Distance changes the suggested method.
@@ -66,7 +69,7 @@ time together; it does not reward logging volume.
 Read from top to bottom in the order you need before contacting someone:
 
 1. **Who they are.** Photo, preferred name, city, local time if known, family or
-   friend, closeness, and local or far away.
+   friend, closeness, and local or far away. Birthdays are visible here when kept.
 2. **Your intention.** “A relationship I want to deepen.” A reversible choice
    independent of closeness: you can deepen a close bond or a new acquaintance.
 3. **Do something.** Log a moment; reach out using their preferred method.
@@ -117,7 +120,7 @@ Contacts notes. Do not silently write journal notes back to Contacts.
 “Healthy” is personal. The app uses a rhythm Luis chooses; elapsed time is a
 reminder signal, not a claim that the bond is unhealthy.
 
-**Suggested starting points, to be confirmed during setup:**
+**Starting suggestions, to be confirmed during setup:**
 
 | Closeness | Initial rhythm | If marked for deepening | Examples by distance |
 | --- | --- | --- | --- |
@@ -134,7 +137,7 @@ a move. Travelling can temporarily change how a connection is suggested.
 
 A manual rhythm always wins. Turning on Deepen offers a shorter interval; it
 never silently changes an existing interval. A custom rhythm is supported in
-the proposed app even though the browser prototype uses preset choices.
+the native app even though the browser prototype uses preset choices.
 
 For scheduling, use calendar dates in the owner’s time zone. A reminder becomes
 eligible once the interval has elapsed since the last confirmed connection.
@@ -229,16 +232,17 @@ than claiming native accessibility coverage.
 | Contact list with reminder badges | Familiar and cheap to build | Easily becomes an intimidating queue; makes distant friends disappear into a long list again |
 
 Keep the garden metaphor in a small line illustration rather than making it
-the navigation. Recommendation: review this warm editorial direction before
-selecting native architecture or expanding the product.
+the navigation. Luis approved the warm editorial direction and requested implementation.
+The native app uses SwiftUI, with the existing browser prototype as a visual
+reference rather than a web wrapper.
 
 For storage, an on-device personal journal is the smallest private first
 version, but needs an explicit backup/export path. Private iCloud sync would
 make device replacement easier at the cost of conflict and account handling.
 A hosted account service adds recovery and multi-platform flexibility but also
-an account flow, operational work, and a larger privacy boundary. Recommend
-local storage plus user-controlled export for the first usable version;
-decide on iCloud before relying on it for irreplaceable personal history.
+an account flow, operational work, and a larger privacy boundary. The first implementation uses
+local storage plus user-controlled export and restore. There is no automatic
+sync; the app explains the need to back up before changing phones.
 The prototype’s browser storage is demo convenience, not a chosen native
 storage architecture or a safe place for real relationship information.
 
@@ -260,7 +264,7 @@ connection. Export must include people, notes, rhythms, and dated moments in a
 readable format. These controls are part of the proposed native app, not all
 present in the design demo.
 
-## What the prototype actually does
+## The browser design reference
 
 Implemented and wired: three tabs; people search and filters; person pages;
 manual add/edit of basic person fields; intention toggling; preset rhythm
@@ -269,12 +273,42 @@ fictional selective contact import with repeat-import deduplication; a reminder
 explanation; and confirmed demo reset. Changes persist in this browser when
 storage is available. No network requests, remote fonts, or third-party assets.
 
-Design only: native Contacts, phone/message launching, notifications, birthday
-fields, custom intervals, pin/edit/archive notes, editing/deleting moments,
-approximate dates, awaiting-reply suppression, suggestion rotation, permanent
-pause, backup/export, dark mode, Dynamic Type, and native accessibility. These
-are not shipped features. No iPhone binary is being built or installed in this
-turn; the owner asked for the reset and design.
+The native implementation in `ios/` is separate from the reference. Relationship
+type, closeness, and distance start unset; importing never guesses family or
+friend status. It adds
+real Contacts selection and import review; call/message/email handoff; local
+notifications; birthdays; custom intervals; note pinning, editing and archiving;
+editable/deletable moments; an approximate initial connection date; outreach
+suppression; daily suggestion rotation; paused reminders; backup/export/restore;
+adaptive appearance; scalable text; and native accessibility labels.
+
+Contacts uses Apple’s `CNContactPickerViewController` for one-time selected
+contact access. It does not request persistent full or limited address-book
+access, so no permission-revocation watcher is necessary. Reimport is always
+user initiated. An application-owned UUID keeps each person stable. Selected contact IDs support
+deduplication, with a unique exact match of already imported name, communication
+details, city, birthday, and photo as a fallback when picker IDs change.
+Ambiguous matches start unselected and require an explicit choice to link an
+existing person or keep a separate person. There is
+no silent merge or ongoing contact refresh. Import never writes phone Contacts.
+[Apple documents this picker’s selected-contact access](https://developer.apple.com/documentation/contactsui/cncontactpickerviewcontroller).
+
+The journal is a versioned JSON file in Application Support, written atomically
+with file protection. A previous local save is retained for recovery. Journal
+state changes only after a successful disk write; a read failure leaves the
+original protected until recovery. Restoring a JSON backup is validated and
+requires confirmation before replacing current data. A readable text export is
+also available. JSON is the complete restorable representation, including photos.
+
+Reminder settings request system permission only on explicit enable. Weekly
+digests repeat; optional birthday and dated-note reminders are independently
+controlled. Quiet hours shift the scheduled time, and notification text contains
+no names or journal notes. At most 48 requests are scheduled, refreshed on data
+changes and foreground entry. Opening periodically refreshes the horizon for
+dated reminders. There is no background fetch or cloud scheduler.
+
+See [implementation verification](../verification/implementation.md) for the
+checks actually performed, screenshots, and physical-device delivery outcome.
 
 ## Reset and review record
 
@@ -289,11 +323,10 @@ This replaces the archived project rule “Plenara is Luis’s voice-first perso
 planner and relationship assistant” from the previous `AGENTS.md`. The
 recommendation is to retire that broader planner remit in favour of this
 relationship-focused product. No tasks, habits, voice-agent, or existing
-architecture is carried forward. This proposal remains open to Luis’s design
-review; the archive and clean project root are complete independently of that
-review.
+architecture is carried forward. Luis subsequently said “Looks beautiful, please implement,” approving the
+design and authorizing the native build. The old archive remains historical.
 
-## Verification of this design artifact
+## Historical verification of the browser design artifact
 
 Ran `bash tool/precheck.sh --capture` against the actual HTML in headless Chrome:
 all six browser journeys passed (saved connection and persistence, outreach,

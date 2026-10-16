@@ -1,10 +1,14 @@
 # Plenara
 
-A fresh iPhone app design for staying close to the people in your life.
+A quiet iPhone app for staying close to the people in your life.
 
-- [Product and interface proposal](design/relationship-app.md)
-- [Interactive prototype](design/prototype.html) — open in a browser; fictional data
-- [Screen preview](design/preview.png)
+- [Approved product and interface design](design/relationship-app.md)
+- [Native SwiftUI app and build guide](ios/README.md)
+- [Native verification and delivery record](verification/implementation.md)
+- [Original interactive design reference](design/prototype.html)
 - [Previous Plenara archive](archive/2026-10-16-reset/README.md)
 
-This is the design stage. No new native app has been built or installed.
+People, contact rhythms, deepening intentions, dated memories, and moments
+together. Selective Contacts import, opt-in local reminders, and private
+on-device storage with restorable and readable exports. No account or paid
+service is required.

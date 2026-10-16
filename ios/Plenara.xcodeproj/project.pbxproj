@@ -1,0 +1,562 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4BE37F9140A0A6515BAA2070 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3259977C97BB1AC732391513 /* Notifications.swift */; };
+		50DB402C2898F5DAF81BE6A0 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D892E5BA821A44C3BED59E30 /* SettingsView.swift */; };
+		544A888FBDF51452485DD258 /* Editors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46062D418D812EA72756096E /* Editors.swift */; };
+		5E0C15A501AFD911B34E1921 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 31506821D838E8564AC9360B /* Assets.xcassets */; };
+		6B40E425B1BA7AE2D3FD1E64 /* DemoData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D1D11A7FD899F84ACDF11A /* DemoData.swift */; };
+		72849E51928FC6FB4C0F6957 /* ContactsImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40965E43A7AC4763973F9A78 /* ContactsImport.swift */; };
+		7A17ECB951F484C7BDBE156E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9617528514025C89E6C55D94 /* Models.swift */; };
+		7D2ECDFA7A03D4FF49CF4FB1 /* PersonDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE61F2ED47AD1128A34BB26C /* PersonDetail.swift */; };
+		7F3372078336413BEDE5D6B1 /* JournalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B28D0FF869A94F695ADD840 /* JournalStore.swift */; };
+		82D50F12B084A3737B70414C /* JournalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F40AB01F659C846B9B6BDB61 /* JournalTests.swift */; };
+		9C359558B94ED0A6C1BB2B3C /* PlenaraUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8631E4EE0B53D88EC2989E17 /* PlenaraUITests.swift */; };
+		D6165C811F4E747EABCD7123 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB459AAF68DBE962D80CB313 /* Theme.swift */; };
+		DBCA29FCAFC6A4CB39DD9C43 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C514DC57F5FF6E1F5D9C630E /* HomeView.swift */; };
+		E41D5FBCD59F51F38A02077A /* PlenaraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EAF6FD728F0C5AE62AE4432 /* PlenaraApp.swift */; };
+		F9A5BD3658A41C8260ECEC21 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4D928B00C16235036BA3329D /* PrivacyInfo.xcprivacy */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5A2222D2A9C4A7A83E44CFB8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 591691CE8BDF76FBD9CAC8AC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 12323FDBEA49253808591EE6;
+			remoteInfo = Plenara;
+		};
+		A310FFA5AB9DA7CEC7CEC5E9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 591691CE8BDF76FBD9CAC8AC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 12323FDBEA49253808591EE6;
+			remoteInfo = Plenara;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		01D1D11A7FD899F84ACDF11A /* DemoData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoData.swift; sourceTree = "<group>"; };
+		31506821D838E8564AC9360B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3259977C97BB1AC732391513 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
+		32FEB418CD25255FBBF4121C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		40965E43A7AC4763973F9A78 /* ContactsImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactsImport.swift; sourceTree = "<group>"; };
+		46062D418D812EA72756096E /* Editors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Editors.swift; sourceTree = "<group>"; };
+		4D928B00C16235036BA3329D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		6B28D0FF869A94F695ADD840 /* JournalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalStore.swift; sourceTree = "<group>"; };
+		7EAF6FD728F0C5AE62AE4432 /* PlenaraApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlenaraApp.swift; sourceTree = "<group>"; };
+		8631E4EE0B53D88EC2989E17 /* PlenaraUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlenaraUITests.swift; sourceTree = "<group>"; };
+		9617528514025C89E6C55D94 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		AA4D11E966F2C342817B3F59 /* PlenaraTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PlenaraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AE61F2ED47AD1128A34BB26C /* PersonDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonDetail.swift; sourceTree = "<group>"; };
+		C514DC57F5FF6E1F5D9C630E /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		CB459AAF68DBE962D80CB313 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		D892E5BA821A44C3BED59E30 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		E0C8D1B233BB69925AAFCB9D /* Plenara.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Plenara.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F40AB01F659C846B9B6BDB61 /* JournalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalTests.swift; sourceTree = "<group>"; };
+		F7302B077E9D446EA3C6369E /* PlenaraUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PlenaraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		14F051BB97369F09566C6AB5 /* PlenaraTests */ = {
+			isa = PBXGroup;
+			children = (
+				F40AB01F659C846B9B6BDB61 /* JournalTests.swift */,
+			);
+			path = PlenaraTests;
+			sourceTree = "<group>";
+		};
+		2C99011AE9A1640892390AB7 /* PlenaraUITests */ = {
+			isa = PBXGroup;
+			children = (
+				8631E4EE0B53D88EC2989E17 /* PlenaraUITests.swift */,
+			);
+			path = PlenaraUITests;
+			sourceTree = "<group>";
+		};
+		77B414465E79E781EF66BB20 = {
+			isa = PBXGroup;
+			children = (
+				B5AB9381983361AF647A0F1F /* Plenara */,
+				14F051BB97369F09566C6AB5 /* PlenaraTests */,
+				2C99011AE9A1640892390AB7 /* PlenaraUITests */,
+				AD73E8A019610DFA20DC61BF /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AD73E8A019610DFA20DC61BF /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E0C8D1B233BB69925AAFCB9D /* Plenara.app */,
+				AA4D11E966F2C342817B3F59 /* PlenaraTests.xctest */,
+				F7302B077E9D446EA3C6369E /* PlenaraUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B5AB9381983361AF647A0F1F /* Plenara */ = {
+			isa = PBXGroup;
+			children = (
+				31506821D838E8564AC9360B /* Assets.xcassets */,
+				40965E43A7AC4763973F9A78 /* ContactsImport.swift */,
+				01D1D11A7FD899F84ACDF11A /* DemoData.swift */,
+				46062D418D812EA72756096E /* Editors.swift */,
+				C514DC57F5FF6E1F5D9C630E /* HomeView.swift */,
+				32FEB418CD25255FBBF4121C /* Info.plist */,
+				6B28D0FF869A94F695ADD840 /* JournalStore.swift */,
+				9617528514025C89E6C55D94 /* Models.swift */,
+				3259977C97BB1AC732391513 /* Notifications.swift */,
+				AE61F2ED47AD1128A34BB26C /* PersonDetail.swift */,
+				7EAF6FD728F0C5AE62AE4432 /* PlenaraApp.swift */,
+				4D928B00C16235036BA3329D /* PrivacyInfo.xcprivacy */,
+				D892E5BA821A44C3BED59E30 /* SettingsView.swift */,
+				CB459AAF68DBE962D80CB313 /* Theme.swift */,
+			);
+			path = Plenara;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		12323FDBEA49253808591EE6 /* Plenara */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9CAEBC98705E71B1DD85B134 /* Build configuration list for PBXNativeTarget "Plenara" */;
+			buildPhases = (
+				010CD8D1AE6A4C806AEA36FE /* Sources */,
+				6854CD2B22D567E465F917FA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Plenara;
+			packageProductDependencies = (
+			);
+			productName = Plenara;
+			productReference = E0C8D1B233BB69925AAFCB9D /* Plenara.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3828AD7B83A2D2F89E58972B /* PlenaraUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7313B4DAB4F92612A0990764 /* Build configuration list for PBXNativeTarget "PlenaraUITests" */;
+			buildPhases = (
+				31BFD1019AADEA7E540519D9 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1CD4729EA440780CBD8E8FFF /* PBXTargetDependency */,
+			);
+			name = PlenaraUITests;
+			packageProductDependencies = (
+			);
+			productName = PlenaraUITests;
+			productReference = F7302B077E9D446EA3C6369E /* PlenaraUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		67DD18EACE555023BA5ECB67 /* PlenaraTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E65EE5934881D80D1CF93469 /* Build configuration list for PBXNativeTarget "PlenaraTests" */;
+			buildPhases = (
+				33CCD998D02D220B3F81E25D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EBC9FB94AF05679A4836D74C /* PBXTargetDependency */,
+			);
+			name = PlenaraTests;
+			packageProductDependencies = (
+			);
+			productName = PlenaraTests;
+			productReference = AA4D11E966F2C342817B3F59 /* PlenaraTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		591691CE8BDF76FBD9CAC8AC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					12323FDBEA49253808591EE6 = {
+						DevelopmentTeam = 7V63BZ39HU;
+						ProvisioningStyle = Automatic;
+					};
+					3828AD7B83A2D2F89E58972B = {
+						DevelopmentTeam = 7V63BZ39HU;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 12323FDBEA49253808591EE6;
+					};
+					67DD18EACE555023BA5ECB67 = {
+						DevelopmentTeam = 7V63BZ39HU;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = E966714C889EB559ACB404BB /* Build configuration list for PBXProject "Plenara" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 77B414465E79E781EF66BB20;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = AD73E8A019610DFA20DC61BF /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				12323FDBEA49253808591EE6 /* Plenara */,
+				67DD18EACE555023BA5ECB67 /* PlenaraTests */,
+				3828AD7B83A2D2F89E58972B /* PlenaraUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		6854CD2B22D567E465F917FA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5E0C15A501AFD911B34E1921 /* Assets.xcassets in Resources */,
+				F9A5BD3658A41C8260ECEC21 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		010CD8D1AE6A4C806AEA36FE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				72849E51928FC6FB4C0F6957 /* ContactsImport.swift in Sources */,
+				6B40E425B1BA7AE2D3FD1E64 /* DemoData.swift in Sources */,
+				544A888FBDF51452485DD258 /* Editors.swift in Sources */,
+				DBCA29FCAFC6A4CB39DD9C43 /* HomeView.swift in Sources */,
+				7F3372078336413BEDE5D6B1 /* JournalStore.swift in Sources */,
+				7A17ECB951F484C7BDBE156E /* Models.swift in Sources */,
+				4BE37F9140A0A6515BAA2070 /* Notifications.swift in Sources */,
+				7D2ECDFA7A03D4FF49CF4FB1 /* PersonDetail.swift in Sources */,
+				E41D5FBCD59F51F38A02077A /* PlenaraApp.swift in Sources */,
+				50DB402C2898F5DAF81BE6A0 /* SettingsView.swift in Sources */,
+				D6165C811F4E747EABCD7123 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		31BFD1019AADEA7E540519D9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9C359558B94ED0A6C1BB2B3C /* PlenaraUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		33CCD998D02D220B3F81E25D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				82D50F12B084A3737B70414C /* JournalTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1CD4729EA440780CBD8E8FFF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 12323FDBEA49253808591EE6 /* Plenara */;
+			targetProxy = 5A2222D2A9C4A7A83E44CFB8 /* PBXContainerItemProxy */;
+		};
+		EBC9FB94AF05679A4836D74C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 12323FDBEA49253808591EE6 /* Plenara */;
+			targetProxy = A310FFA5AB9DA7CEC7CEC5E9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0E8270D14D1C62CF45CE5E95 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.plenara.plenaraApp.Tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plenara.app/Plenara";
+			};
+			name = Release;
+		};
+		4F5CE67A5158DB03C8732452 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Plenara/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.plenara.plenaraApp;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		692F7C0AA95B2C3A7C96B874 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1000;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 7V63BZ39HU;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		7FD0FEB2AC6A2A1703251882 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.plenara.plenaraApp.Tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plenara.app/Plenara";
+			};
+			name = Debug;
+		};
+		9868BDF613C342CD055DEC42 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.plenara.plenaraApp.UITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Plenara;
+			};
+			name = Release;
+		};
+		A51AA0825B1D62514A3E8226 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.plenara.plenaraApp.UITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Plenara;
+			};
+			name = Debug;
+		};
+		B8029CB66F344FA826A7ADCE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Plenara/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.plenara.plenaraApp;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		E2BB90F0A8770D64858F25BD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1000;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 7V63BZ39HU;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7313B4DAB4F92612A0990764 /* Build configuration list for PBXNativeTarget "PlenaraUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A51AA0825B1D62514A3E8226 /* Debug */,
+				9868BDF613C342CD055DEC42 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9CAEBC98705E71B1DD85B134 /* Build configuration list for PBXNativeTarget "Plenara" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4F5CE67A5158DB03C8732452 /* Debug */,
+				B8029CB66F344FA826A7ADCE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E65EE5934881D80D1CF93469 /* Build configuration list for PBXNativeTarget "PlenaraTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7FD0FEB2AC6A2A1703251882 /* Debug */,
+				0E8270D14D1C62CF45CE5E95 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E966714C889EB559ACB404BB /* Build configuration list for PBXProject "Plenara" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				692F7C0AA95B2C3A7C96B874 /* Debug */,
+				E2BB90F0A8770D64858F25BD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 591691CE8BDF76FBD9CAC8AC /* Project object */;
+}

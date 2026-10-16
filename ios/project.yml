@@ -1,0 +1,45 @@
+name: Plenara
+options:
+  deploymentTarget:
+    iOS: '18.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    DEVELOPMENT_TEAM: 7V63BZ39HU
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: '1'
+    MARKETING_VERSION: '1.0.0'
+    CURRENT_PROJECT_VERSION: 1000
+    IPHONEOS_DEPLOYMENT_TARGET: '18.0'
+targets:
+  Plenara:
+    type: application
+    platform: iOS
+    sources: [Plenara]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.plenara.plenaraApp
+        INFOPLIST_FILE: Plenara/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    scheme:
+      testTargets: [PlenaraTests, PlenaraUITests]
+      gatherCoverageData: true
+  PlenaraTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [PlenaraTests]
+    dependencies: [{target: Plenara}]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.plenara.plenaraApp.Tests
+  PlenaraUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [PlenaraUITests]
+    dependencies: [{target: Plenara}]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.plenara.plenaraApp.UITests

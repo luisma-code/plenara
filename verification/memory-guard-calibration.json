@@ -1,0 +1,6 @@
+{
+  "realAppStoppedWithOneKiBLimit": true,
+  "realAppContinuedWithDefault512MiBLimit": true,
+  "goodControlPeakRSSKiB": 242192,
+  "proof": "Guard routing and comparison; not a leak or device-resource claim."
+}

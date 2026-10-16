@@ -1,0 +1,20 @@
+{
+  "brokenCandidateRejected": true,
+  "failedTests": [
+    "testBackupRestoresNotesHistoryAndProtectsAgainstInvalidInput",
+    "testCalendarDaysAcrossDaylightSaving",
+    "testConnectionPersistsAndDeleteRecomputes",
+    "testCorruptJournalIsNotOverwritten",
+    "testDarkAndLargeTextNavigation",
+    "testDemoNavigationAndScreenshots",
+    "testFailedDiskWriteNeverPublishesUnsavedState",
+    "testImportDeduplicatesPreservesJournalAndCanLinkManualPerson",
+    "testManualPersonMemoryMomentAndReopen",
+    "testNativeContactPickerImportAndRepeat",
+    "testNotificationPermissionAndNativeSchedule",
+    "testOutreachDoesNotResetConnectionAndGivesReplySpace",
+    "testRemindersHonorQuietHoursAndDoNotExposePrivateNotes",
+    "testSnoozePauseUnknownContactAndRotation"
+  ],
+  "sourceRestoredAfterRun": true
+}

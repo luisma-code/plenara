@@ -1,0 +1,8 @@
+{
+  "rejectedBrokenControls": [
+    "Recovery must not overwrite a good previous save",
+    "Import must not assume that a family member is a friend",
+    "Dark mode must render a dark canvas"
+  ],
+  "sourcesRestored": true
+}

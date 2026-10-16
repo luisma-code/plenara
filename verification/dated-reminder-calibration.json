@@ -1,0 +1,7 @@
+{
+  "rejectedBrokenControls": [
+    "Pausing a person hides their dated reminders",
+    "Completing a dated reminder must keep the memory"
+  ],
+  "sourcesRestored": true
+}

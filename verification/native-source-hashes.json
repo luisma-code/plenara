@@ -1,0 +1,19 @@
+{
+  "ios/Plenara/Assets.xcassets/AppIcon.appiconset/Contents.json": "d93f046527ef836abb9875ec1ef3465b1230a7e414c00e54e07ed03b2d085159",
+  "ios/Plenara/Assets.xcassets/AppIcon.appiconset/Icon.png": "320c91c2035b4385b6682d55823d802e30b78282c6b92ba762f57b430678ef19",
+  "ios/Plenara/Assets.xcassets/Contents.json": "81c54324c918dd55789178a4a2d951210270d905af16c1428f6192d454f76c8f",
+  "ios/Plenara/ContactsImport.swift": "4ac72d263181dbbb696cb6cb23a3ced0721ff5defc6e0b429aec119bca39b014",
+  "ios/Plenara/DemoData.swift": "d157eb753a753d1d8415969ea48e1b1ec6062684fd4b9b6186b0a8ac7ce29436",
+  "ios/Plenara/Editors.swift": "50332e7e16854bdd378d5e9012e0e8ab3c9c046891c7f02335c0cbb7881332c3",
+  "ios/Plenara/HomeView.swift": "891103676976936e4670c1f2589cd56c91cb86bc3f7934eaf0e328602bac6fa2",
+  "ios/Plenara/Info.plist": "d8ef0acd51e613eef66c13c41d10ebf2e04ceee280e9e5acdeab926fa489a829",
+  "ios/Plenara/JournalStore.swift": "d526c7a3c60458b21ee52daa5d472d052bcf22ba549083d0c805ae6ca23586de",
+  "ios/Plenara/Models.swift": "862ca396871245e81c62839b3af1d8d66fc744083dd2e6dab142df7a302be7e1",
+  "ios/Plenara/Notifications.swift": "370881c942b9cef112a595676de492bf4eff9b7fe049059457e3c1436a135739",
+  "ios/Plenara/PersonDetail.swift": "788350b0c17816bf30716838f30ad34d434a939227c1319ab60ee9638b10f3b2",
+  "ios/Plenara/PlenaraApp.swift": "cef03293220dad322323e45e57f9f53d7328344f4c3ab1af58ec4580041c6b81",
+  "ios/Plenara/PrivacyInfo.xcprivacy": "cf6d2f4fe0ff5ab46608e153bf3458f5f0e853800c96318f5f8f81359e03a755",
+  "ios/Plenara/SettingsView.swift": "8d7df54cd716836a53627721f43178ab3a2f1606115b44a694355236ec279952",
+  "ios/Plenara/Theme.swift": "47e9a23f169f372c403691771ce1d0588d136a129acbdfc1b973332ae4e4eca9",
+  "ios/project.yml": "24646ff6eef75731a21cce10573ef91e53e243746c54a9e390e2eb18b771f552"
+}
