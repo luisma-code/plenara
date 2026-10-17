@@ -19,5 +19,5 @@ for name, path in [('native-tests.json', result), ('contacts-denied.json', Path(
     (dest / name).write_bytes(subprocess.check_output(['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', path, '--format', 'json']))
 files = list(Path('ios/Plenara').rglob('*')) + [Path('ios/project.yml')]
 (dest / 'source-hashes.json').write_text(json.dumps({str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(files) if p.is_file()}, indent=2) + '\n')
-shutil.copyfile('.tmp/full-native-memory.csv', dest / 'memory.csv')
+(dest / 'memory.csv').write_text(Path('.tmp/full-native-memory.csv').read_text())
 print('Exported six current native captures and Release verification evidence.')
