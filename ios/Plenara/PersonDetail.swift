@@ -154,7 +154,7 @@ struct MomentRow: View {
 struct MomentsView: View {
     @EnvironmentObject var store: JournalStore
     @State private var selecting = false
-        @State private var editing: Moment?
+    @State private var editing: Moment?
     var body: some View {
         ScrollView { VStack(alignment: .leading, spacing: 25) {
             HStack { Eyebrow(text: "A little history"); Spacer(); Button { selecting = true } label: { Image(systemName: "plus").frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Log a moment").disabled(store.journal.people.isEmpty) }
@@ -175,8 +175,26 @@ struct MomentsView: View {
 struct LogMomentFlow: View {
     @EnvironmentObject var store: JournalStore
     @State private var selectedID: UUID?
+    @State private var query = ""
+    var people: [Person] {
+        store.journal.people.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
     var body: some View {
         if let selectedID { MomentEditor(personID: selectedID) }
-        else { NavigationStack { List(store.journal.people.sorted { $0.name < $1.name }) { p in Button(p.name) { selectedID = p.id } }.navigationTitle("Who was it with?").toolbar { DismissButton() } } }
+        else {
+            NavigationStack {
+                List {
+                    ForEach(people) { p in
+                        Button { selectedID = p.id } label: {
+                            HStack(spacing: 13) { Avatar(person: p, size: 42); Text(p.name).foregroundStyle(Theme.ink); Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.muted) }.frame(minHeight: 52)
+                        }.accessibilityIdentifier("log-person-\(p.name)")
+                    }
+                    if people.isEmpty { Text("No one matches that name.").foregroundStyle(Theme.muted) }
+                }.searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Find someone")
+                    .scrollContentBackground(.hidden).background(Theme.paper)
+                    .navigationTitle("Who was it with?").navigationBarTitleDisplayMode(.inline).toolbar { DismissButton() }
+            }
+        }
     }
 }

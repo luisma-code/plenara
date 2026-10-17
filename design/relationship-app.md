@@ -37,7 +37,7 @@ The opening screen answers “Who could I make a little room for?”
   easier. Prefer a relationship marked for deepening when several are due.
 - Up to two more people whose chosen rhythm suggests it is time to reconnect.
 - A nearby person you want to know better, with a concrete shared idea.
-- “Log a moment,” “Catch-up notes,” and “Another week” keep action simple.
+- A global “Log a moment” and a person-specific “Log with [name]” make logging easy; “Catch-up notes” and “Another week” support the invitation.
 - A quiet all-clear state when nobody needs a reminder. No target to fill.
 - Explicit birthday and dated-note reminders appear with their person at the top
   when due. Completing a dated thread clears its reminder and keeps the memory;
@@ -64,9 +64,20 @@ An add button offers Contacts import and manual entry.
 ### Moments
 
 A personal history of calls, meals, visits, message exchanges, and little
-hellos. Entries are grouped by date, with the person, channel, a short optional
+hellos. Entries run newest first, with the person, date, channel, a short optional
 note, and whether you connected or simply reached out. This is a way to remember
 time together; it does not reward logging volume.
+
+Home has a prominent Log a moment button for any person, including those without
+a contact rhythm. A searchable person chooser leads to the same quick editor
+used on a person’s page and in Moments. Called, Texted, and Met are one-tap
+choices; video calls, voice notes, and email remain under Another way. The
+editor defaults to today and Connected. Notes are optional, and a moment can be
+saved without typing. The keyboard’s standard dictation microphone can fill the
+same editable note field; Plenara adds no speech recording or AI service.
+Connected and Reached out stay explicit so an unanswered text or missed call
+never silently becomes a catch-up. Date, notes, and channel remain editable.
+The existing local journal and contact import identity stay unchanged.
 
 ## A person’s page
 

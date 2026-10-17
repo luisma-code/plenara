@@ -1,0 +1,20 @@
+{
+  "controls": [
+    {
+      "control": "channel selection",
+      "rejected": true,
+      "message": "A one-tap channel choice must actually select Messages"
+    },
+    {
+      "control": "saved note",
+      "rejected": true,
+      "message": "The saved Messages and its note must survive reopening"
+    },
+    {
+      "control": "large text entry",
+      "rejected": true,
+      "message": "Quick logging must stay visible above the introduction at the largest text size"
+    }
+  ],
+  "sourceRestored": true
+}

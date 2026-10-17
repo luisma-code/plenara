@@ -30,6 +30,18 @@ journal. `--contact-fixture` seeds one fictional system contact only on a
 simulator with pre-granted contact access. These paths are not compiled into
 the physical-device binary. Production opens an empty journal.
 
+## Quick logging
+
+Home’s **Log a moment** opens a searchable people list. A person’s page and
+Moments use the same editor. Called, Texted, and Met select the channel directly;
+Another way keeps video calls, voice notes, and email available. Today and
+Connected are the defaults. Notes are optional and editable with the standard
+keyboard, including system dictation when enabled on the iPhone. Plenara does
+not record audio, request speech access, or call an AI service. Simulator checks
+verify text entry and persistence; they do not prove microphone dictation on a
+physical device. The Connected / Reached out control preserves the distinction
+between a catch-up and unanswered outreach.
+
 ## Data
 
 The live file is `Application Support/RelationshipJournal/journal-v1.json`.

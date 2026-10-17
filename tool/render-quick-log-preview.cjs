@@ -1,0 +1,12 @@
+const sharp = require('sharp');
+const width = 1800, height = 1530;
+const svg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="#E9E5E6"/><text x="54" y="77" font-family="Georgia,serif" font-size="52" fill="#302C39">A little moment, easily remembered.</text><text x="54" y="128" font-family="Helvetica,sans-serif" font-size="24" fill="#716B78">Choose someone. Called, texted, or met. A few words, if you like.</text><text x="54" y="1497" font-family="Helvetica,sans-serif" font-size="20" fill="#716B78">PLENARA / NATIVE IPHONE CAPTURES / FICTIONAL PEOPLE</text></svg>`);
+(async () => {
+  const layers = [];
+  for (const [i, name] of ['home', 'editor', 'history'].entries()) {
+    const input = await sharp(`verification/quick-log/${name}.png`).resize(540, 1174).png().toBuffer();
+    layers.push({ input, left: 54 + i * 576, top: 200 });
+  }
+  await sharp(svg).composite(layers).png().toFile('verification/quick-log/preview.png');
+  console.log('Rendered quick-log/preview.png from current native captures.');
+})().catch(error => { console.error(error); process.exitCode = 1; });

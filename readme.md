@@ -4,6 +4,7 @@ A quiet iPhone app for staying close to the people in your life.
 
 - [Approved product and interface design](design/relationship-app.md)
 - [Native SwiftUI app and build guide](ios/README.md)
+- [Quick calls, texts, visits, and notes](verification/quick-log/update.md)
 - [Independent relationship attributes and import preservation](verification/relationships/update.md)
 - [Native verification and delivery record](verification/implementation.md)
 - [Original interactive design reference](design/prototype.html)

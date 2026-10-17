@@ -166,25 +166,62 @@ struct MemoryEditor: View {
 struct MomentEditor: View {
     @EnvironmentObject var store: JournalStore
     @Environment(\.dismiss) var dismiss
+    @Environment(\.dynamicTypeSize) var typeSize
     let personID: UUID
     @State var moment: Moment
     @State private var deleting = false
+    @FocusState private var writingNote: Bool
     init(personID: UUID, moment: Moment? = nil) { self.personID = personID; _moment = State(initialValue: moment ?? Moment(personID: personID)) }
     var existing: Bool { store.journal.moments.contains { $0.id == moment.id } }
+    let quickChannels = [("Called", "Call", "phone"), ("Texted", "Messages", "message"), ("Met", "In person", "cup.and.saucer")]
     var body: some View {
         NavigationStack {
             Form {
-                Section { Text("A short note is plenty. Remember what mattered.").foregroundStyle(Theme.muted) }
-                Section {
-                    Picker("How did you connect?", selection: $moment.channel) { ForEach(Moment.channels, id: \.self) { Text($0) } }
-                    DatePicker("When?", selection: $moment.date, in: ...Date(), displayedComponents: .date)
-                    Picker("What happened?", selection: $moment.connected) { Text("Connected").tag(true); Text("Reached out").tag(false) }.accessibilityIdentifier("moment-status")
-                    Text("Only Connected resets your contact rhythm. An unanswered message can stay an outreach, with a little space for a reply.").font(.footnote).foregroundStyle(Theme.muted)
+                if let person = store.journal.people.first(where: { $0.id == personID }) {
+                    Section {
+                        HStack(spacing: 14) { Avatar(person: person); VStack(alignment: .leading, spacing: 4) { Eyebrow(text: "A little time with"); Text(person.name).font(Theme.title(25)) } }
+                            .accessibilityElement(children: .combine).accessibilityIdentifier("moment-person")
+                    }.listRowBackground(Color.clear)
                 }
-                Section("Anything to remember?") { TextField("What’s happening in their world?", text: $moment.note, axis: .vertical).lineLimit(3...10).accessibilityIdentifier("moment-note") }
+                Section {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 180 : 82))], spacing: 10) {
+                        ForEach(quickChannels, id: \.1) { label, channel, icon in
+                            Button { moment.channel = channel } label: {
+                                VStack(spacing: 8) { Image(systemName: icon).font(.title3); Text(label).font(.subheadline.weight(.semibold)) }
+                                    .frame(maxWidth: .infinity, minHeight: 76).padding(.vertical, 6)
+                                    .foregroundStyle(moment.channel == channel ? .white : Theme.ink)
+                                    .background(moment.channel == channel ? Theme.action : Theme.card, in: RoundedRectangle(cornerRadius: 16))
+                                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line))
+                            }.buttonStyle(.plain).accessibilityAddTraits(moment.channel == channel ? .isSelected : []).accessibilityIdentifier("channel-\(channel)")
+                        }
+                    }
+                    Menu {
+                        ForEach(Moment.channels.filter { channel in !quickChannels.contains { $0.1 == channel } }, id: \.self) { channel in
+                            Button(channel) { moment.channel = channel }
+                        }
+                    } label: { Label(quickChannels.contains { $0.1 == moment.channel } ? "Another way" : moment.channel, systemImage: "ellipsis.circle").font(.subheadline).frame(minHeight: 44) }
+                        .accessibilityIdentifier("moment-more-channels")
+                }.listRowBackground(Color.clear).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                Section {
+                    TextField("What would you like to remember?", text: $moment.note, prompt: Text("What would you like to remember?").foregroundStyle(Theme.muted), axis: .vertical)
+                        .lineLimit(3...8).focused($writingNote).accessibilityIdentifier("moment-note")
+                } header: { Text("A few words, if you like") } footer: {
+                    Label("Type a note, or tap the microphone on your keyboard to dictate.", systemImage: "mic").font(.footnote)
+                }
+                Section {
+                    DatePicker("When?", selection: $moment.date, in: ...Date(), displayedComponents: .date).accessibilityIdentifier("moment-date")
+                    Picker("What happened?", selection: $moment.connected) { Text("Connected").tag(true); Text("Reached out").tag(false) }
+                        .pickerStyle(.segmented).accessibilityIdentifier("moment-status")
+                } footer: {
+                    Text(moment.connected ? "You caught up. This counts toward your contact rhythm." : "A message or missed call without a catch-up. Your last connection stays as it was.")
+                }
                 if existing { Section { Button("Delete moment", role: .destructive) { deleting = true } } }
-            }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle(existing ? "Edit a moment" : "A moment together").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.buttonStyle(.automatic) }; ToolbarItem(placement: .confirmationAction) { Button("Save") { moment.note = moment.note.trimmingCharacters(in: .whitespacesAndNewlines); if store.save(moment) { dismiss() } }.buttonStyle(.automatic).accessibilityIdentifier("save-moment") } }
+            }.scrollDismissesKeyboard(.interactively).scrollContentBackground(.hidden).background(Theme.paper).navigationTitle(existing ? "Edit a moment" : "Log a moment").navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.buttonStyle(.automatic) }
+                    ToolbarItem(placement: .confirmationAction) { Button("Save") { moment.note = moment.note.trimmingCharacters(in: .whitespacesAndNewlines); if store.save(moment) { dismiss() } }.buttonStyle(.automatic).accessibilityIdentifier("save-moment") }
+                    ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { writingNote = false } }
+                }
                 .confirmationDialog("Delete this moment?", isPresented: $deleting, titleVisibility: .visible) { Button("Delete moment", role: .destructive) { store.deleteMoment(moment.id); if store.errorMessage == nil { dismiss() } } } message: { Text("Your last connection and reminders will be recalculated from the remaining history.") }
         }
     }

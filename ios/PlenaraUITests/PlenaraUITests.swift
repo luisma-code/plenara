@@ -149,6 +149,63 @@ final class PlenaraUITests: XCTestCase {
         app.buttons["Clear filters"].tap()
         XCTAssertTrue(app.buttons["person-Maya Imported"].exists); XCTAssertTrue(app.buttons["person-Alex Imported"].exists)
     }
+    func testQuickLogCallsTextsVisitsAndNotesSurviveReopen() throws {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo"]; app.launch()
+        for (channel, note) in [("Call", ""), ("Messages", "Ask about the new job"), ("In person", "Walked by the lake")] {
+            app.buttons["quick-log"].tap()
+            let search = app.searchFields.firstMatch
+            XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Sofia")
+            let person = app.buttons["log-person-Sofia Chen"]
+            XCTAssertTrue(person.waitForExistence(timeout: 5))
+            if channel == "Call" { attach("Quick person chooser") }
+            person.tap()
+            let choice = app.buttons["channel-\(channel)"]
+            XCTAssertTrue(choice.waitForExistence(timeout: 5)); XCTAssertGreaterThanOrEqual(choice.frame.height, 44); choice.tap()
+            XCTAssertTrue(choice.isSelected, "A one-tap channel choice must actually select \(channel)")
+            XCTAssertTrue(app.descendants(matching: .any)["moment-person"].firstMatch.label.contains("Sofia Chen"))
+            if channel == "Call" { attach("Quick moment editor") }
+            if !note.isEmpty { let field = app.textFields["moment-note"]; field.tap(); field.typeText(note) }
+            app.buttons["save-moment"].tap()
+            XCTAssertTrue(app.buttons["quick-log"].waitForExistence(timeout: 5))
+        }
+        // Cancelling a draft must not create a fourth entry.
+        app.buttons["quick-log"].tap(); app.buttons["log-person-Sofia Chen"].tap()
+        XCTAssertTrue(app.buttons["save-moment"].waitForExistence(timeout: 5)); app.buttons["Cancel"].tap()
+        app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch(); app.buttons["tab-2"].tap()
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Sofia Chen ·")).count, 4, "Three saves and one cancelled draft must add exactly three moments to Sofia’s existing history")
+        for (channel, note) in [("Call", ""), ("Messages", "Ask about the new job"), ("In person", "Walked by the lake")] {
+            let predicate = note.isEmpty ? NSPredicate(format: "label BEGINSWITH %@", "Sofia Chen · \(channel)") : NSPredicate(format: "label BEGINSWITH %@ AND label CONTAINS %@", "Sofia Chen · \(channel)", note)
+            let row = app.buttons.matching(predicate).firstMatch
+            for _ in 0..<4 { if row.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(row.exists, "The saved \(channel) and its note must survive reopening")
+        }
+        app.swipeDown(); attach("Quick moment history")
+        let text = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Ask about the new job")).firstMatch
+        text.tap(); let field = app.textFields["moment-note"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5)); XCTAssertEqual(field.value as? String, "Ask about the new job")
+        app.segmentedControls.buttons["Reached out"].tap(); app.buttons["save-moment"].tap()
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", "Ask about the new job", "Reached out")).firstMatch.waitForExistence(timeout: 5))
+    }
+    func testQuickLogDarkAndLargeText() throws {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo", "--dark"]; app.launch()
+        app.buttons["quick-log"].tap()
+        let search = app.searchFields.firstMatch; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Mum")
+        app.buttons["log-person-Mum"].tap()
+        XCTAssertTrue(app.buttons["channel-Messages"].waitForExistence(timeout: 5)); waitForRelationshipEditor(); attach("Dark quick moment")
+        app.buttons["Cancel"].tap()
+        app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]; app.launch()
+        let quickLog = app.buttons["quick-log"]
+        XCTAssertTrue(quickLog.isHittable && quickLog.frame.maxY <= app.buttons["tab-0"].frame.minY && quickLog.frame.minY >= 0, "Quick logging must stay visible above the introduction at the largest text size")
+        app.buttons["quick-log"].tap()
+        let largeSearch = app.searchFields.firstMatch
+        XCTAssertTrue(largeSearch.waitForExistence(timeout: 5)); largeSearch.tap(); largeSearch.typeText("Mum")
+        app.buttons["log-person-Mum"].tap()
+        let met = app.buttons["channel-In person"]
+        for _ in 0..<4 { if met.isHittable { break }; app.collectionViews.firstMatch.swipeUp() }
+        XCTAssertTrue(met.isHittable); met.tap(); XCTAssertTrue(met.isSelected); attach("Large quick moment")
+        app.buttons["save-moment"].tap()
+        XCTAssertTrue(app.buttons["quick-log"].waitForExistence(timeout: 5))
+    }
     func waitForRelationshipEditor() {
         let ready = XCTNSPredicateExpectation(predicate: NSPredicate { value, _ in
             guard let button = value as? XCUIElement else { return false }

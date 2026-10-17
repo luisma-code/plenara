@@ -4,6 +4,7 @@ struct HomeView: View {
     @EnvironmentObject var store: JournalStore
     var openSettings: () -> Void
     @State private var momentPerson: Person?
+    @State private var quickLogging = false
     @State private var adding = false
     var body: some View {
         ScrollView {
@@ -12,6 +13,10 @@ struct HomeView: View {
                     HStack(spacing: 7) { Image(systemName: "asterisk").foregroundStyle(Theme.plum); Text("plenara").font(Theme.title(25)) }
                     Spacer()
                     Button(action: openSettings) { Image(systemName: "bell").font(.title3).frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Settings and reminders")
+                }
+                if !store.journal.people.isEmpty {
+                    ActionButton(title: "Log a moment", icon: "square.and.pencil") { quickLogging = true }
+                        .accessibilityIdentifier("quick-log")
                 }
                 PageHeading(eyebrow: Date().formatted(.dateTime.weekday(.wide).month(.wide).day()), title: "A little closer.", subtitle: "Small moments keep your people close.\nWho’s on your mind today?")
                 if store.journal.people.isEmpty {
@@ -70,7 +75,8 @@ struct HomeView: View {
                     Text("A little attention, at your own pace.").font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity).padding(.vertical)
                 }
             }.padding(24)
-        }.sheet(item: $momentPerson) { MomentEditor(personID: $0.id) }
+        }.sheet(isPresented: $quickLogging) { LogMomentFlow() }
+            .sheet(item: $momentPerson) { MomentEditor(personID: $0.id) }
             .sheet(isPresented: $adding) { AddPeopleView() }
     }
     func hero(_ p: Person) -> some View {
@@ -96,7 +102,7 @@ struct HomeView: View {
             }
         }.overlay(alignment: .topTrailing) { PetalMotif().offset(x: 32, y: 38) }.clipShape(RoundedRectangle(cornerRadius: 25))
     }
-    func heroLog(_ p: Person) -> some View { ActionButton(title: "Log a moment") { momentPerson = p } }
+    func heroLog(_ p: Person) -> some View { ActionButton(title: "Log with \(p.name.components(separatedBy: " ").first ?? p.name)") { momentPerson = p } }
     func heroNotes(_ p: Person) -> some View { NavigationLink(value: p.id) { Text("Catch-up notes").font(.subheadline).frame(maxWidth: .infinity, minHeight: 48).padding(.horizontal, 10).background(Theme.card.opacity(0.5), in: RoundedRectangle(cornerRadius: 16)) }.buttonStyle(.plain) }
 }
 struct AddPeopleView: View {
