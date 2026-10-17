@@ -73,3 +73,28 @@ of leaks. App instances started for verification are terminated by the harness.
 
 [Native results](native-tests.json) · [Contacts-denied results](contacts-denied.json)
 · [Source hashes](source-hashes.json) · [Memory samples](memory.csv).
+
+## Signed device package
+
+The optimized 1.0.0 (1003) App Store Connect package passed strict signature
+verification. The exported app retains `com.plenara.plenaraApp` and the existing
+journal path, includes the quick notes UI, and contains neither simulator reset
+controls nor test fixtures. The app source is unchanged from the final Release
+verification. [Signed artifact record](device-artifact.json).
+
+The dedicated simulator was shut down after verification, and no Plenara app
+instance or memory watcher was left running. No physical phone was launched or
+tested. Remote installation remains controlled by TestFlight on the iPhone.
+
+## TestFlight delivery confirmed
+
+**1.0.0 (1003)** is available to the existing **Internal** group, with the owner
+enrolled. Apple reports **VALID**, not expired, assigned to the group, and
+**IN_BETA_TESTING**. Validation and upload completed without errors. Delivery UUID:
+`2b514a8d-c4db-412a-814c-ef7d5a19b773`. Release notes were updated and their exact content read back.
+
+[TestFlight availability](testflight-status.json) · [Release notes](release-notes.json).
+
+Implementation and verification are pushed to main. This delivery record is
+committed alongside the signed-package and TestFlight evidence. The remote
+iPhone’s installation state is not observable from this Mac.
