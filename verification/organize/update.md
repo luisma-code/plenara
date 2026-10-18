@@ -108,3 +108,24 @@ leaks. All app instances started for verification are terminated by the harness.
 
 [Native results](native-tests.json) · [Contacts-denied results](contacts-denied.json)
 · [Source hashes](source-hashes.json) · [Memory samples](memory.csv).
+
+## Signed delivery
+
+Source commit `45abc2a2fffe0361058468334dbdaab471bb5e8d` is on `main` and
+`origin/main`. The signed Release IPA is version **1.0.0 (1004)**. Its strict
+code signature verifies; simulator controls and test fixtures are absent.
+The optimized binary contains the organizing interface and preserves the
+existing journal filename and app identity. [Signed artifact checks](device-artifact.json).
+
+The final source hashes still match the tested code after archive/export.
+The dedicated simulator is shut down; process inspection found no remaining
+Plenara instances or memory watchers started by verification. No physical
+phone was launched or used for tests.
+
+Apple accepted the upload and processing completed. Fresh App Store Connect
+readback confirms build **1004** is valid, unexpired, attached to the existing
+Internal group, and `IN_BETA_TESTING`, with Luis enrolled.
+[TestFlight availability](testflight-status.json). The build's English
+[release notes](release-notes.json) were saved and read back exactly.
+TestFlight installation and Automatic Updates on the remote iPhone remain
+controlled on that device; this confirms testing availability, not installation.

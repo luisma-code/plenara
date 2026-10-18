@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "build": "1004",
+  "bundleId": "com.plenara.plenaraApp",
+  "ipaBytes": 1151476,
+  "ipaSha256": "3e080a6cca81c2fed3521ea769dc5f51cf4752c0ff916f03a6b7624e21bcec33",
+  "strictSignatureVerified": true,
+  "optimizedRelease": true,
+  "simulatorControlsAbsent": true,
+  "testFixturesAbsent": true,
+  "journalFilePreserved": "RelationshipJournal/journal-v1.json",
+  "organizeUIIncluded": true,
+  "appSourceCommit": "45abc2a2fffe0361058468334dbdaab471bb5e8d"
+}

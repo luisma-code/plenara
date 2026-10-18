@@ -1,0 +1,7 @@
+{
+  "build": "1004",
+  "buildId": "3c261b07-6ec0-48d3-8328-1ca97ab3757d",
+  "locale": "en-US",
+  "whatsNew": "Organize people quickly from People > Organize. Together selects people and applies shared relationship details, leaving other information unchanged. Quick sort handles one attribute at a time with Not set only and Skip. Undo reverses the latest organizing change. Existing imports, notes, history, and reminder rhythms are preserved.",
+  "readBackVerified": true
+}
