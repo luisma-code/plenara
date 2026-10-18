@@ -170,4 +170,51 @@ import Contacts
         XCTAssertEqual(ReminderPlan.make(j).map { $0.id }, before, "Needs care alone must not add notifications")
     }
 
+    func testOrganizationOnlyChangesChosenPeopleAndFieldsAndUndoPreservesNewNotes() throws {
+        let s = store(); XCTAssertTrue(s.restore(try legacyBytes()))
+        let original = s.journal, target = original.people[0].id
+        let receipt = try XCTUnwrap(s.organize([target], changes: [.connection: "Add Friend", .distance: "Far away", .closeness: "Close", .direction: "Keep it steady", .feeling: "Needs care"]))
+        XCTAssertEqual(receipt.peopleCount, 1)
+        var expected = original
+        expected.people[0].connectionKinds = ["Family", "Friend"]
+        expected.people[0].distance = "Far away"; expected.people[0].feelingChoice = "Needs care"
+        expected.people[0].closeness = "Close"; expected.people[0].directionChoice = "Keep it steady"
+        XCTAssertEqual(s.journal, expected, "Organizing must preserve unselected people, imported fields, notes, moments, and rhythms")
+        XCTAssertEqual(store().journal, expected, "The whole batch must survive reopening")
+        XCTAssertTrue(s.update { $0.people[0].notes.append(Memory(text: "A later note")) })
+        var undone = original; undone.people[0].notes = s.journal.people[0].notes
+        XCTAssertTrue(s.undoOrganization())
+        XCTAssertEqual(s.journal, undone, "Undo must restore only the edited attributes and preserve a later note")
+        XCTAssertNil(s.organizationUndo); XCTAssertEqual(store().journal, undone)
+        XCTAssertNotNil(s.organize([target], changes: [.connection: "Remove Family"]))
+        XCTAssertEqual(s.journal.people[0].connectionKinds, [])
+        XCTAssertTrue(s.undoOrganization()); XCTAssertEqual(s.journal, undone)
+    }
+    func testOrganizationUndoRejectsNewerChoicesAndRestoresNoDeletedPeople() throws {
+        let s = store(); XCTAssertTrue(s.restore(try legacyBytes())); let id = s.journal.people[0].id
+        XCTAssertNotNil(s.organize([id], changes: [.distance: "Far away"]))
+        XCTAssertTrue(s.update { $0.people[0].distance = "Not set" }); let newer = s.journal
+        XCTAssertFalse(s.undoOrganization(), "Undo must refuse to overwrite a newer choice")
+        XCTAssertEqual(s.journal, newer)
+        XCTAssertNotNil(s.organize([id], changes: [.distance: "Far away"]))
+        s.deletePerson(id); let deleted = s.journal
+        XCTAssertFalse(s.undoOrganization()); XCTAssertEqual(s.journal, deleted, "Undo must never recreate a deleted person")
+        XCTAssertTrue(s.restore(try legacyBytes())); XCTAssertNil(s.organizationUndo, "Restoring a backup invalidates an earlier organization undo")
+    }
+    func testOrganizationFailedSaveIsAtomicAndKeepsUndoAvailable() throws {
+        let s = store(); XCTAssertTrue(s.restore(try legacyBytes())); let ids = Set(s.journal.people.map(\.id))
+        XCTAssertNotNil(s.organize(ids, changes: [.distance: "Far away"]))
+        let before = s.journal, receipt = try XCTUnwrap(s.organizationUndo)
+        let bytes = try Data(contentsOf: s.file)
+        try FileManager.default.removeItem(at: s.file); try FileManager.default.createDirectory(at: s.file, withIntermediateDirectories: false)
+        XCTAssertNil(s.organize(ids, changes: [.closeness: "Inner circle"])); XCTAssertEqual(s.journal, before, "A failed batch must not publish any partial edits")
+        XCTAssertEqual(s.organizationUndo?.changes.count, receipt.changes.count)
+        XCTAssertFalse(s.undoOrganization()); XCTAssertEqual(s.journal, before); XCTAssertNotNil(s.organizationUndo)
+        try FileManager.default.removeItem(at: s.file); try bytes.write(to: s.file)
+        XCTAssertTrue(s.undoOrganization(), "An undo whose disk save failed must remain available for retry")
+        XCTAssertEqual(s.journal.people.map(\.distance), ["Nearby", "Far away"])
+        XCTAssertNil(s.organize([UUID()], changes: [.distance: "Nearby"]))
+        XCTAssertNil(s.organize(ids, changes: [.distance: "Somewhere"])); XCTAssertEqual(store().journal, s.journal)
+    }
+
 }

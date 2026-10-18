@@ -30,6 +30,17 @@ journal. `--contact-fixture` seeds one fictional system contact only on a
 simulator with pre-granted contact access. These paths are not compiled into
 the physical-device binary. Production opens an empty journal.
 
+## Organizing people
+
+People → **Organize** supports Together (search, select, then apply shared
+attributes) and Quick sort (one attribute per pass, with Not set only and Skip).
+The [approved design](../design/relationship-app.md#people) defines selection,
+No change, add/remove connection labels, and Undo semantics. Both modes use
+`JournalStore.organize`; all selected edits persist in one atomic write. Undo
+uses a short-lived receipt of changed fields, never a whole-person snapshot.
+It refuses conflicts, preserves unrelated newer edits, and is cleared by a
+successful backup restore. No contact import identity or journal schema changes.
+
 ## Quick logging
 
 Home’s **Log a moment** opens a searchable people list. A person’s page and

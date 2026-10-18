@@ -19,6 +19,7 @@
 		7D2ECDFA7A03D4FF49CF4FB1 /* PersonDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE61F2ED47AD1128A34BB26C /* PersonDetail.swift */; };
 		7F3372078336413BEDE5D6B1 /* JournalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B28D0FF869A94F695ADD840 /* JournalStore.swift */; };
 		82D50F12B084A3737B70414C /* JournalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F40AB01F659C846B9B6BDB61 /* JournalTests.swift */; };
+		904957FD95584AFBC54EFC5C /* Organization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7359E03E4BD8F1289E66FD65 /* Organization.swift */; };
 		9C359558B94ED0A6C1BB2B3C /* PlenaraUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8631E4EE0B53D88EC2989E17 /* PlenaraUITests.swift */; };
 		D6165C811F4E747EABCD7123 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB459AAF68DBE962D80CB313 /* Theme.swift */; };
 		DBCA29FCAFC6A4CB39DD9C43 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C514DC57F5FF6E1F5D9C630E /* HomeView.swift */; };
@@ -53,6 +54,7 @@
 		4D928B00C16235036BA3329D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		58D025A283E0AC76F0DBDCE5 /* journal-build-1001.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "journal-build-1001.json"; sourceTree = "<group>"; };
 		6B28D0FF869A94F695ADD840 /* JournalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalStore.swift; sourceTree = "<group>"; };
+		7359E03E4BD8F1289E66FD65 /* Organization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Organization.swift; sourceTree = "<group>"; };
 		7EAF6FD728F0C5AE62AE4432 /* PlenaraApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlenaraApp.swift; sourceTree = "<group>"; };
 		8631E4EE0B53D88EC2989E17 /* PlenaraUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlenaraUITests.swift; sourceTree = "<group>"; };
 		9617528514025C89E6C55D94 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -124,6 +126,7 @@
 				6B28D0FF869A94F695ADD840 /* JournalStore.swift */,
 				9617528514025C89E6C55D94 /* Models.swift */,
 				3259977C97BB1AC732391513 /* Notifications.swift */,
+				7359E03E4BD8F1289E66FD65 /* Organization.swift */,
 				AE61F2ED47AD1128A34BB26C /* PersonDetail.swift */,
 				7EAF6FD728F0C5AE62AE4432 /* PlenaraApp.swift */,
 				4D928B00C16235036BA3329D /* PrivacyInfo.xcprivacy */,
@@ -277,6 +280,7 @@
 				7F3372078336413BEDE5D6B1 /* JournalStore.swift in Sources */,
 				7A17ECB951F484C7BDBE156E /* Models.swift in Sources */,
 				4BE37F9140A0A6515BAA2070 /* Notifications.swift in Sources */,
+				904957FD95584AFBC54EFC5C /* Organization.swift in Sources */,
 				7D2ECDFA7A03D4FF49CF4FB1 /* PersonDetail.swift in Sources */,
 				E41D5FBCD59F51F38A02077A /* PlenaraApp.swift in Sources */,
 				50DB402C2898F5DAF81BE6A0 /* SettingsView.swift in Sources */,
@@ -385,7 +389,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1003;
+				CURRENT_PROJECT_VERSION = 1004;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 7V63BZ39HU;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -521,7 +525,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1003;
+				CURRENT_PROJECT_VERSION = 1004;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 7V63BZ39HU;
 				ENABLE_NS_ASSERTIONS = NO;

@@ -1,0 +1,25 @@
+{
+  "controls": [
+    {
+      "test": "PlenaraTests/JournalTests/testOrganizationOnlyChangesChosenPeopleAndFieldsAndUndoPreservesNewNotes",
+      "rejected": true,
+      "message": "Organizing must preserve unselected people, imported fields, notes, moments, and rhythms"
+    },
+    {
+      "test": "PlenaraTests/JournalTests/testOrganizationUndoRejectsNewerChoicesAndRestoresNoDeletedPeople",
+      "rejected": true,
+      "message": "Undo must refuse to overwrite a newer choice"
+    },
+    {
+      "test": "PlenaraTests/JournalTests/testOrganizationFailedSaveIsAtomicAndKeepsUndoAvailable",
+      "rejected": true,
+      "message": "A failed batch must not publish any partial edits"
+    },
+    {
+      "test": "PlenaraUITests/PlenaraUITests/testOrganizeQuickSortUnsetSkipUndoAndSave",
+      "rejected": true,
+      "message": "Setting a value must remove it from the Not set only view"
+    }
+  ],
+  "sourcesRestored": true
+}

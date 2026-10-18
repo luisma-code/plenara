@@ -54,12 +54,38 @@ closer, Needs care, Nearby, Far away, and Family. Choices from different
 dimensions combine: Family + Far away + Needs care narrows the list to all
 three. The Filters sheet exposes connection, distance, closeness, intention,
 and feeling independently, including unanswered profiles. Everyone clears all
-filters. Show the active combination and a reassuring empty state: no matches
+filters. A Clear action beside Filters also clears the combination. Show the active combination and a reassuring empty state: no matches
 does not mean the imported people disappeared.
 
 Each row has a photo or a warm initials avatar, name, location, and closeness.
 Growth and care intentions have small symbols with accessible text labels.
 An add button offers Contacts import and manual entry.
+
+**Organize** appears when there are people to organize, above the People
+introduction and reachable at large text sizes. One workspace has two modes:
+
+- **Together:** select individual people, or Select shown after searching by
+  name/city. Selection persists across searches, with a visible total and a
+  warning when selected people are outside the search. Clear selection clears
+  the entire selection. A shared-details sheet starts every attribute at No
+  change. Apply changes only chosen attributes for selected people, atomically.
+  Add/Remove Family and Friend preserve the other label; Family + Friend sets
+  both, and Not set clears only that attribute. Cancelling applies nothing.
+- **Quick sort:** choose one of the five attributes, then tap a value beside
+  each person to save immediately. The current value stays visible. Not set
+  only filters that chosen attribute; a newly answered person leaves that view.
+  Skip omits someone from the current pass without changing their journal.
+  Show skipped people brings them back; switching mode/attribute resets skips.
+
+Undo last organization reverses the last successful organizing action during
+the current app session, even after closing and reopening the workspace.
+It restores only attributes that actually changed, preserving later notes and
+other unrelated edits. If those attributes were edited again or a person was
+removed, Undo refuses the whole operation. It never recreates a deleted person.
+A failed batch or Undo does not publish partial changes or consume an earlier
+Undo. A backup restore clears the older Undo. Organizing never changes contact
+rhythms, dates, notes, contact links, or moments. It uses the same journal and
+atomic persistence path as individual editing; there is no schema migration.
 
 ### Moments
 

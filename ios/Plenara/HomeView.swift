@@ -131,6 +131,7 @@ struct PeopleView: View {
     @FocusState private var searchFocused: Bool
     @State private var filter = PeopleFilter()
     @State private var showingFilters = false
+    @State private var organizing = false
     @State private var adding = false
     @State private var importing = false
     let shortcuts = ["Everyone", "Grow closer", "Needs care", "Nearby", "Far away", "Family"]
@@ -162,12 +163,16 @@ struct PeopleView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 HStack { Eyebrow(text: "Your circle"); Spacer(); Button { adding = true } label: { Image(systemName: "plus").font(.title2).frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Add a person") }
+                if !store.journal.people.isEmpty {
+                Button { searchFocused = false; organizing = true } label: { Label("Organize", systemImage: "slider.horizontal.3").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 48).background(Theme.lavender, in: RoundedRectangle(cornerRadius: 16)) }.buttonStyle(.plain).accessibilityIdentifier("people-organize")
+                }
                 Text("Your people.").font(Theme.title()).tracking(-1.3)
                 Text("Different kinds of close. All in one place.").foregroundStyle(Theme.muted)
                 HStack { Image(systemName: "magnifyingglass"); TextField("Find someone", text: $query, prompt: Text("Find someone").foregroundStyle(Theme.muted)).focused($searchFocused).submitLabel(.search).onSubmit { searchFocused = false }.accessibilityIdentifier("people-search").autocorrectionDisabled() }.padding(14).background(Theme.line.opacity(0.6), in: RoundedRectangle(cornerRadius: 15))
                 HStack {
                     Text("\(filtered.count) \(filtered.count == 1 ? "person" : "people")").font(.footnote).foregroundStyle(Theme.muted).accessibilityIdentifier("people-count")
                     Spacer()
+                    if filter.isActive { Button("Clear") { filter = PeopleFilter() }.font(.subheadline).frame(minHeight: 44).accessibilityLabel("Clear filters").accessibilityIdentifier("people-clear-filters") }
                     Button { searchFocused = false; showingFilters = true } label: { Label("Filters", systemImage: "line.3.horizontal.decrease").font(.subheadline.weight(.semibold)).frame(minHeight: 44) }.accessibilityIdentifier("people-filters")
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -181,13 +186,12 @@ struct PeopleView: View {
                 }
                 if filtered.isEmpty {
                     QuietEmpty(title: filter.isActive || !query.isEmpty ? "No one matches yet." : "Make room for someone.", message: filter.isActive || !query.isEmpty ? "Try another name or loosen a filter. Your people are still here." : "Add someone yourself, or choose a few people from Contacts.")
-                    if filter.isActive { Button("Clear filters") { filter = PeopleFilter() }.frame(minHeight: 44) }
                 }
                 VStack(spacing: 11) { ForEach(filtered) { p in NavigationLink(value: p.id) { PersonRow(person: p) }.buttonStyle(.plain).accessibilityIdentifier("person-\(p.name)") } }
                 ActionButton(title: "Import from Contacts", icon: "person.badge.plus", primary: false) { importing = true }
                 Text("Choose just the people you want to keep close.").font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity)
             }.padding(24)
-        }.scrollDismissesKeyboard(.interactively).sheet(isPresented: $showingFilters) { PeopleFiltersView(filter: $filter) }.sheet(isPresented: $adding) { PersonEditor(person: Person()) }.sheet(isPresented: $importing) { ImportContactsView() }
+        }.scrollDismissesKeyboard(.interactively).sheet(isPresented: $organizing) { OrganizePeopleView() }.sheet(isPresented: $showingFilters) { PeopleFiltersView(filter: $filter) }.sheet(isPresented: $adding) { PersonEditor(person: Person()) }.sheet(isPresented: $importing) { ImportContactsView() }
     }
 }
 struct DismissButton: ToolbarContent {

@@ -47,7 +47,7 @@ final class PlenaraUITests: XCTestCase {
     }
     func testNativeContactPickerImportAndRepeat() throws {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--contact-fixture"]; app.launch()
-        app.buttons["tab-1"].tap(); app.buttons["Import from Contacts"].tap(); app.buttons["Choose from Contacts"].tap()
+        app.buttons["tab-1"].tap(); openVisiblePeopleImport(); app.buttons["Choose from Contacts"].tap()
         let maya = app.collectionViews.staticTexts["Maya Plenara Test"].firstMatch
         XCTAssertTrue(maya.waitForExistence(timeout: 8), "The native picker must display the real seeded system contact")
         app.navigationBars["Contacts"].buttons["Done"].tap(); XCTAssertTrue(app.navigationBars["Contacts"].waitForNonExistence(timeout: 5))
@@ -57,7 +57,7 @@ final class PlenaraUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Import selected people"].waitForExistence(timeout: 5)); app.buttons["Import selected people"].tap(); app.alerts.buttons["Done"].tap()
         XCTAssertTrue(app.buttons["person-Maya Plenara Test"].waitForExistence(timeout: 5)); app.buttons["person-Maya Plenara Test"].tap()
         XCTAssertTrue(app.staticTexts["No regular reminder"].exists); XCTAssertTrue(app.staticTexts["Last contact not set"].exists)
-        app.buttons["tab-1"].tap(); app.buttons["Import from Contacts"].tap(); app.buttons["Choose from Contacts"].tap()
+        app.buttons["tab-1"].tap(); openVisiblePeopleImport(); app.buttons["Choose from Contacts"].tap()
         XCTAssertTrue(maya.waitForExistence(timeout: 5)); maya.tap(); app.navigationBars["Contacts"].buttons["Done"].tap(); XCTAssertTrue(app.navigationBars["Contacts"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Import selected people"].waitForExistence(timeout: 5)); attach("Repeat import review"); XCTAssertTrue(app.staticTexts["0 selected"].exists, "A previously imported contact must start unselected")
         app.switches.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap(); app.buttons["Import selected people"].tap(); app.alerts.buttons["Done"].tap()
@@ -146,7 +146,12 @@ final class PlenaraUITests: XCTestCase {
         app.buttons["people-filters"].tap(); attach("All relationship filters"); app.buttons["Close"].tap()
         shortcut("Grow closer")
         XCTAssertTrue(app.staticTexts["No one matches yet."].exists)
-        app.buttons["Clear filters"].tap()
+        app.swipeDown()
+        let clear = app.buttons["people-clear-filters"]
+        XCTAssertTrue(clear.isHittable && clear.frame.maxY < app.buttons["tab-1"].frame.minY, "Clear filters must be visible beside Filters")
+        clear.tap()
+        XCTAssertEqual(app.staticTexts["people-count"].label, "2 people", "Clearing filters must restore the complete imported list")
+        app.swipeUp()
         XCTAssertTrue(app.buttons["person-Maya Imported"].exists); XCTAssertTrue(app.buttons["person-Alex Imported"].exists)
     }
     func testQuickLogCallsTextsVisitsAndNotesSurviveReopen() throws {
@@ -205,6 +210,135 @@ final class PlenaraUITests: XCTestCase {
         XCTAssertTrue(met.isHittable); met.tap(); XCTAssertTrue(met.isSelected); attach("Large quick moment")
         app.buttons["save-moment"].tap()
         XCTAssertTrue(app.buttons["quick-log"].waitForExistence(timeout: 5))
+    }
+    func testOrganizeBulkSelectionCancelUndoAndImportedJournalReopen() throws {
+        let fixture = try XCTUnwrap(Bundle(for: PlenaraUITests.self).url(forResource: "journal-build-1001", withExtension: "json"))
+        app.terminate(); app.launchArguments = ["--ui-testing", "--legacy-fixture"]
+        app.launchEnvironment["PLENARA_LEGACY_JOURNAL"] = try Data(contentsOf: fixture).base64EncodedString(); app.launch()
+        openOrganizer()
+        let search = app.searchFields.firstMatch
+        search.tap(); search.typeText("Alex")
+        app.buttons["organize-person-Alex Imported"].tap()
+        search.tap(); search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "Maya")
+        XCTAssertTrue(app.staticTexts["organize-selection-count"].label.contains("outside this search"), "Selection outside a search must stay visible in the count")
+        app.buttons["organize-person-Maya Imported"].tap()
+        search.tap(); search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4))
+        XCTAssertEqual(app.staticTexts["organize-selection-count"].label, "2 selected")
+        app.buttons["organize-apply"].tap()
+        XCTAssertTrue(app.buttons["batch-save"].waitForExistence(timeout: 5)); XCTAssertFalse(app.buttons["batch-save"].isEnabled)
+        chooseOrganization("batch-Connection", "Add Friend"); chooseOrganization("batch-Distance", "Nearby"); chooseOrganization("batch-How it feels", "Needs care")
+        assertSharedDetailsHasNoKeyboardPanel()
+        attach("Organize shared details"); app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["organize-apply"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["organize-person-Alex Imported"].label.contains("Far away"), "Cancelling bulk choices must not save")
+        XCTAssertFalse(app.buttons["organize-undo"].exists)
+        attach("Organize selected people")
+        applyOrganizationBatch()
+        XCTAssertTrue(app.buttons["organize-undo"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["organize-person-Maya Imported"].label.contains("Family + Friend"), "Adding Friend must preserve Family")
+        XCTAssertTrue(app.buttons["organize-person-Alex Imported"].label.contains("Nearby"), "The shared distance must save for both selected people")
+        attach("Organized people and undo")
+        app.buttons["organize-undo"].tap()
+        XCTAssertTrue(app.buttons["organize-person-Alex Imported"].label.contains("Far away"), "Undo must restore the prior distance")
+        XCTAssertFalse(app.buttons["organize-person-Maya Imported"].label.contains("Family + Friend"))
+        app.buttons["organize-select-shown"].tap(); applyOrganizationBatch()
+        app.buttons["Close"].tap(); app.terminate(); app.launchEnvironment = [:]; app.launchArguments = ["--ui-testing"]; app.launch()
+        app.buttons["tab-1"].tap(); app.buttons["person-Maya Imported"].tap()
+        XCTAssertTrue(app.staticTexts["Family"].exists); XCTAssertTrue(app.staticTexts["Friend"].exists)
+        XCTAssertTrue(app.buttons["relationship-intention"].label.contains("Needs care"))
+        XCTAssertTrue(app.buttons["relationship-intention"].label.contains("Grow closer"), "An untouched intention must survive bulk organization")
+        let memory = app.staticTexts["Ask about the exhibition"]
+        for _ in 0..<4 { if memory.exists { break }; app.swipeUp() }
+        XCTAssertTrue(memory.exists, "Existing imported notes must survive bulk organization and reopening")
+    }
+    func testOrganizeQuickSortUnsetSkipUndoAndSave() throws {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo"]; app.launch(); openOrganizer()
+        app.segmentedControls.buttons["Quick sort"].tap()
+        chooseOrganization("organize-field", "What I want")
+        app.switches["organize-unset-only"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        let search = app.searchFields.firstMatch; search.tap(); search.typeText("Leo\n")
+        let grow = app.buttons["sort-Leo Park-Grow closer"]
+        XCTAssertTrue(grow.waitForExistence(timeout: 5)); XCTAssertGreaterThanOrEqual(grow.frame.height, 44)
+        attach("Quick sort unanswered")
+        grow.tap()
+        XCTAssertFalse(app.buttons["sort-skip-Leo Park"].exists, "Setting a value must remove it from the Not set only view")
+        app.buttons["organize-undo"].tap()
+        XCTAssertTrue(grow.waitForExistence(timeout: 5), "Undo must return a person to the unanswered list")
+        app.buttons["sort-skip-Leo Park"].tap()
+        XCTAssertFalse(grow.exists, "Skip must leave this person out of the current pass")
+        app.buttons["Show skipped people"].tap(); XCTAssertTrue(grow.waitForExistence(timeout: 5))
+        grow.tap(); app.buttons["Close"].tap()
+        app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch(); app.buttons["tab-1"].tap()
+        app.buttons["Grow closer"].tap()
+        let leo = app.buttons["person-Leo Park"]
+        for _ in 0..<3 { if leo.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(leo.exists, "Quick-sort choices must persist and drive the real People filters")
+        leo.tap(); XCTAssertTrue(app.staticTexts["Far away"].exists)
+        XCTAssertTrue(app.buttons["relationship-intention"].label.contains("Needs care"), "Quick sorting intention must preserve feeling")
+        attach("Quick sorted profile")
+    }
+    func testOrganizeDarkAndLargeText() throws {
+        for (flag, label) in [(["--dark"], "Dark organizer"), (["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"], "Large text organizer")] {
+            app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo"] + flag; app.launch(); openOrganizer()
+            app.segmentedControls.buttons["Quick sort"].tap()
+            let nearby = app.buttons["sort-Amara Okafor-Nearby"]
+            for _ in 0..<5 { if nearby.isHittable && nearby.frame.maxY < app.frame.maxY - 100 { break }; app.descendants(matching: .any)["organize-list"].firstMatch.swipeUp() }
+            XCTAssertTrue(nearby.isHittable); nearby.tap(); attach(label)
+            app.buttons["Close"].tap(); XCTAssertTrue(app.buttons["people-organize"].waitForExistence(timeout: 5))
+        }
+    }
+    func sharedFormPanelColor() -> Double {
+        let image = app.screenshot().image
+        guard let cg = image.cgImage,
+              let crop = cg.cropping(to: CGRect(x: CGFloat(cg.width) * 0.0166, y: CGFloat(cg.height) * 0.8093, width: CGFloat(cg.width) * 0.0332, height: CGFloat(cg.height) * 0.0763)) else { return 255 }
+        var rgba = [UInt8](repeating: 0, count: 4)
+        let info = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+        guard let context = CGContext(data: &rgba, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: info) else { return 255 }
+        context.interpolationQuality = .high
+        context.draw(crop, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        return Double(Int(rgba[2]) - Int(rgba[0]))
+    }
+    func assertSharedDetailsHasNoKeyboardPanel() {
+        // This light iPhone simulator patch is warm paper without a keyboard,
+        // cool/neutral when the inherited keyboard paints below the form.
+        // Known broken/good native captures: B-R +0.25 / -3.16 (patch mean).
+        // AX keyboard existence misses the retained, inaccessible panel entirely.
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in self.sharedFormPanelColor() < -1 }, object: app)
+        let result = XCTWaiter.wait(for: [ready], timeout: 5)
+        print("Shared form rendered blue-minus-red: \(sharedFormPanelColor())")
+        XCTAssertEqual(result, .completed, "The search keyboard must close before shared details open")
+    }
+    func openVisiblePeopleImport() {
+        let entry = app.buttons["Import from Contacts"]
+        let bottom = app.buttons["tab-1"].frame.minY
+        for _ in 0..<6 {
+            if entry.exists && entry.isHittable && entry.frame.minY > 0 && entry.frame.maxY < bottom { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(entry.isHittable && entry.frame.minY > 0 && entry.frame.maxY < bottom, "The actual import button must be visible above the tab bar before tapping")
+        entry.tap()
+        XCTAssertTrue(app.buttons["Choose from Contacts"].waitForExistence(timeout: 5), "The visible import action must open the native import flow")
+    }
+    func openOrganizer() {
+        app.buttons["tab-1"].tap()
+        let entry = app.buttons["people-organize"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 5)); XCTAssertTrue(entry.isHittable && entry.frame.maxY < app.buttons["tab-1"].frame.minY, "Organize must be reachable above the People introduction")
+        entry.tap(); XCTAssertTrue(app.segmentedControls["organize-mode"].waitForExistence(timeout: 5))
+    }
+    func applyOrganizationBatch() {
+        app.buttons["organize-apply"].tap()
+        XCTAssertTrue(app.buttons["batch-save"].waitForExistence(timeout: 5))
+        chooseOrganization("batch-Connection", "Add Friend"); chooseOrganization("batch-Distance", "Nearby"); chooseOrganization("batch-How it feels", "Needs care")
+        app.buttons["batch-save"].tap()
+    }
+    func chooseOrganization(_ identifier: String, _ value: String) {
+        let control = app.buttons[identifier]
+        for _ in 0..<4 { if control.isHittable { break }; app.collectionViews.firstMatch.swipeUp() }
+        XCTAssertTrue(control.isHittable); control.tap()
+        // Native picker options live in the presented collection, while the
+        // covered People screen retains a shortcut with the same Nearby label.
+        let option = app.collectionViews.buttons[value].firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 5)); XCTAssertTrue(option.isHittable); option.tap()
     }
     func waitForRelationshipEditor() {
         let ready = XCTNSPredicateExpectation(predicate: NSPredicate { value, _ in

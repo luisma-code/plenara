@@ -6,6 +6,7 @@ import OSLog
     @Published private(set) var journal: Journal
     @Published var errorMessage: String?
     @Published private(set) var locked = false
+    @Published private(set) var organizationUndo: OrganizationReceipt?
     let file: URL
     let log = Logger(subsystem: "com.plenara.plenaraApp", category: "journal")
     // Foundation reference-date numbers round-trip subsecond dates losslessly.
@@ -61,8 +62,46 @@ import OSLog
     func deletePerson(_ id: UUID) { update { j in j.people.removeAll { $0.id == id }; j.moments.removeAll { $0.personID == id } } }
     func deleteMoment(_ id: UUID) { update { $0.moments.removeAll { $0.id == id } } }
     func restore(_ bytes: Data) -> Bool {
-        do { guard bytes.count < 50_000_000 else { throw JournalError.invalidBackup }; let loaded = try Self.readJournal(bytes); return persist(loaded) }
+        do { guard bytes.count < 50_000_000 else { throw JournalError.invalidBackup }; let loaded = try Self.readJournal(bytes); if persist(loaded) { organizationUndo = nil; return true }; return false }
         catch { errorMessage = "Couldn’t restore this backup. Nothing was replaced. \(error.localizedDescription)"; return false }
+    }
+    // Both organizing flows use this one atomic save; only selected attributes change.
+    func organize(_ ids: Set<UUID>, changes: [OrganizationField: String]) -> OrganizationReceipt? {
+        guard !ids.isEmpty, !changes.isEmpty,
+              ids.isSubset(of: Set(journal.people.map(\.id))),
+              changes.allSatisfy({ $0.key.bulkChoices.contains($0.value) || $0.key.choices.contains($0.value) }) else {
+            errorMessage = "Choose existing people and valid relationship details."; return nil
+        }
+        var edits: [OrganizationFieldChange] = []
+        var candidate = journal
+        for i in candidate.people.indices where ids.contains(candidate.people[i].id) {
+            for field in OrganizationField.allCases {
+                guard let choice = changes[field] else { continue }
+                let before = field.value(candidate.people[i])
+                field.set(choice, on: &candidate.people[i])
+                let after = field.value(candidate.people[i])
+                if before != after { edits.append(OrganizationFieldChange(personID: candidate.people[i].id, field: field, before: before, after: after)) }
+            }
+        }
+        guard !edits.isEmpty else { errorMessage = nil; return nil }
+        guard update({ $0 = candidate }) else { return nil }
+        let receipt = OrganizationReceipt(changes: edits)
+        organizationUndo = receipt
+        return receipt
+    }
+    @discardableResult func undoOrganization() -> Bool {
+        guard let receipt = organizationUndo else { return false }
+        // Refuse an outdated undo rather than overwrite a newer choice or restore a removed person.
+        guard receipt.changes.allSatisfy({ edit in
+            journal.people.first(where: { $0.id == edit.personID }).map { edit.field.value($0) == edit.after } ?? false
+        }) else { errorMessage = "These details have changed since organizing. Undo would overwrite a newer choice, so nothing was changed."; return false }
+        guard update({ j in
+            for edit in receipt.changes {
+                if let i = j.people.firstIndex(where: { $0.id == edit.personID }) { edit.field.set(edit.before, on: &j.people[i]) }
+            }
+        }) else { return false }
+        organizationUndo = nil
+        return true
     }
     func exportData() throws -> Data { guard !locked else { throw JournalError.unreadable("The saved journal could not be opened. Restore a backup before exporting.") }; return try Self.encoder.encode(journal) }
     func exportText() -> String {

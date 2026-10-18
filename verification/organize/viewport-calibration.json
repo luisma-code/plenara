@@ -1,0 +1,15 @@
+{
+  "controls": [
+    {
+      "test": "PlenaraUITests/PlenaraUITests/testExistingImportSurvivesUpgradeAndIndependentChoices",
+      "rejected": true,
+      "message": "Clearing filters must restore the complete imported list"
+    },
+    {
+      "test": "PlenaraUITests/PlenaraUITests/testNativeContactPickerImportAndRepeat",
+      "rejected": true,
+      "message": "The visible import action must open the native import flow"
+    }
+  ],
+  "sourceRestored": true
+}
