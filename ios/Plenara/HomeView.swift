@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var momentPerson: Person?
     @State private var quickLogging = false
     @State private var adding = false
+    @State private var showingAllSuggestions = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -42,15 +43,13 @@ struct HomeView: View {
                             }
                         }
                     }
-                    Text("Time to connect").font(Theme.title(25))
-                    let suggestions = store.journal.suggestions()
-                    if let featured = suggestions.first {
-                        hero(featured)
-                        ForEach(Array(suggestions.dropFirst())) { p in NavigationLink(value: p.id) { PersonRow(person: p, detail: connectionLabel(p, journal: store.journal)) }.buttonStyle(.plain) }
-                    } else {
-                        QuietEmpty(title: "Room to breathe.", message: "No one is due for a reminder. There’s always room for a hello just because.")
-                    }
-                    let growth = store.journal.people.first { $0.wantsToGrow && !$0.paused && !suggestions.map(\.id).contains($0.id) }
+                    let now = Date()
+                    let ranked = store.journal.rankedSuggestions(now: now)
+                    let suggestions = Array(ranked.prefix(3))
+                    ReconnectionSection(ranked: ranked, showingAllSuggestions: $showingAllSuggestions, logMoment: { momentPerson = $0 })
+                    let visibleIDs = Set((showingAllSuggestions ? ranked : suggestions).map(\.id))
+                    let context = store.journal.contextualSuggestions(excluding: visibleIDs, ranked: ranked, now: now)
+                    let growth = context.growth
                     if let local = growth {
                         Text("Make a little room").font(Theme.title(25))
                         NavigationLink(value: local.id) {
@@ -61,13 +60,13 @@ struct HomeView: View {
                                     Label("An idea for you two", systemImage: "arrow.right").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.plum)
                                 }
                             }
-                        }.buttonStyle(.plain)
+                        }.buttonStyle(.plain).accessibilityIdentifier("growth-\(local.name)")
                     }
-                    let care = store.journal.people.filter { $0.feelingChoice == "Needs care" && !$0.paused && !suggestions.map(\.id).contains($0.id) && $0.id != growth?.id }.sorted { $0.name < $1.name }
+                    let care = context.care
                     if !care.isEmpty {
                         Text("A little care").font(Theme.title(25))
                         Text("Relationships you’ve chosen to give some care. There’s no countdown.").font(.subheadline).foregroundStyle(Theme.muted)
-                        ForEach(Array(care.prefix(2))) { p in NavigationLink(value: p.id) { PersonRow(person: p, detail: p.intention.isEmpty ? "Needs care · at your own pace" : p.intention) }.buttonStyle(.plain) }
+                        ForEach(Array(care.prefix(2))) { p in NavigationLink(value: p.id) { PersonRow(person: p, detail: p.intention.isEmpty ? "Needs care · at your own pace" : p.intention) }.buttonStyle(.plain).accessibilityIdentifier("care-\(p.name)") }
                     }
                     if store.journal.people.contains(where: { $0.cadence == 0 || (store.journal.lastConnection($0) == nil && $0.reminderStart == nil) }) {
                         Text("Your people are here. Set a rhythm on their page whenever you’re ready for reminders.").font(.footnote).foregroundStyle(Theme.muted)
@@ -79,31 +78,7 @@ struct HomeView: View {
             .sheet(item: $momentPerson) { MomentEditor(personID: $0.id) }
             .sheet(isPresented: $adding) { AddPeopleView() }
     }
-    func hero(_ p: Person) -> some View {
-        Surface(color: Theme.lavender) {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Avatar(person: p, size: 68); Spacer()
-                    VStack(alignment: .trailing, spacing: 7) {
-                        if p.wantsToGrow { Label("Grow closer", systemImage: "leaf").font(.caption.weight(.semibold)).padding(9).background(Theme.card.opacity(0.75), in: Capsule()) }
-                        if p.feelingChoice == "Needs care" { Label("Needs care", systemImage: "heart").font(.caption.weight(.semibold)).padding(9).background(Theme.card.opacity(0.75), in: Capsule()) }
-                    }
-                }
-                NavigationLink(value: p.id) { Text(p.name).font(Theme.title(32)).multilineTextAlignment(.leading).frame(minHeight: 44).contentShape(Rectangle()) }.buttonStyle(.plain)
-                Text([p.city, connectionLabel(p, journal: store.journal)].filter { !$0.isEmpty }.joined(separator: " · ")).font(.subheadline).foregroundStyle(Theme.muted)
-                Text(p.notes.first(where: { !$0.archived && $0.pinned })?.text ?? p.notes.first(where: { !$0.archived })?.text ?? (p.distance == "Nearby" ? "Maybe a walk or coffee, and a little time together." : "A call or a voice note can make the distance feel smaller."))
-                ViewThatFits(in: .horizontal) {
-                    HStack { heroLog(p); heroNotes(p) }
-                    VStack { heroLog(p); heroNotes(p) }
-                }
-                Button("Another week") {
-                    var changed = p; changed.snoozeUntil = Calendar.current.date(byAdding: .day, value: 7, to: Date()); store.save(changed)
-                }.font(.footnote).underline().foregroundStyle(Theme.muted).frame(minHeight: 44)
-            }
-        }.overlay(alignment: .topTrailing) { PetalMotif().offset(x: 32, y: 38) }.clipShape(RoundedRectangle(cornerRadius: 25))
-    }
-    func heroLog(_ p: Person) -> some View { ActionButton(title: "Log with \(p.name.components(separatedBy: " ").first ?? p.name)") { momentPerson = p } }
-    func heroNotes(_ p: Person) -> some View { NavigationLink(value: p.id) { Text("Catch-up notes").font(.subheadline).frame(maxWidth: .infinity, minHeight: 48).padding(.horizontal, 10).background(Theme.card.opacity(0.5), in: RoundedRectangle(cornerRadius: 16)) }.buttonStyle(.plain) }
+
 }
 struct AddPeopleView: View {
     @EnvironmentObject var store: JournalStore

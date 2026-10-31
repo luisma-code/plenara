@@ -20,6 +20,22 @@ enum DemoData {
         }
         return j
     }
+    static func rankingJournal(now: Date = Date()) -> Journal {
+        func person(_ name: String, _ closeness: String, _ days: Int, _ rhythm: Int, growth: Bool = false) -> Person {
+            var p = Person(); p.name = name; p.closeness = closeness; p.cadence = rhythm; p.connectionKinds = ["Friend"]
+            p.baselineConnection = Calendar.current.date(byAdding: .day, value: -days, to: now)
+            p.directionChoice = growth ? "Grow closer" : "Keep it steady"; return p
+        }
+        var maya = person("Maya Inner", "Inner circle", 15, 7, growth: true); maya.feelingChoice = "Needs care"
+        let zoe = person("Zoe Inner", "Inner circle", 14, 7), nora = person("Nora Inner", "Inner circle", 8, 7), owen = person("Owen Inner", "Inner circle", 30, 30)
+        let leo = person("Leo Casual", "Casual", 360, 90)
+        var sofia = person("Sofia Close", "Close", 90, 30, growth: true); sofia.feelingChoice = "Needs care"
+        var snoozed = person("Avery Snoozed", "Inner circle", 90, 7, growth: true); snoozed.feelingChoice = "Needs care"; snoozed.snoozeUntil = Calendar.current.date(byAdding: .day, value: 5, to: now)
+        var reply = person("Blake Reply", "Inner circle", 90, 7, growth: true); reply.feelingChoice = "Needs care"
+        var journal = Journal(); journal.people = [leo, sofia, owen, nora, zoe, maya, snoozed, reply]
+        journal.moments = [Moment(personID: reply.id, date: Calendar.current.date(byAdding: .day, value: -2, to: now)!, connected: false)]
+        return journal
+    }
     static func seedSystemContact() {
         let store = CNContactStore()
         guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else { return }

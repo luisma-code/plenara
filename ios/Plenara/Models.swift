@@ -116,25 +116,62 @@ struct Journal: Codable, Equatable {
     func daysSince(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> Int {
         max(0, calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day ?? 0)
     }
+    // Shared suppression for due reminders and optional growth/care invitations.
+    private func invitationAllowed(_ p: Person, connection: Date?, outreach: Date?, now: Date, calendar: Calendar) -> Bool {
+        guard !p.paused, !(p.snoozeUntil.map { $0 > now } ?? false) else { return false }
+        return !(outreach.map { $0 > (connection ?? .distantPast) && daysSince($0, now: now, calendar: calendar) < 7 } ?? false)
+    }
     func isDue(_ p: Person, now: Date = Date(), calendar: Calendar = .current) -> Bool {
-        guard p.cadence > 0, !p.paused, !(p.snoozeUntil.map { $0 > now } ?? false), let anchor = lastConnection(p) ?? p.reminderStart else { return false }
-        if let outreach = lastOutreach(p), outreach > (lastConnection(p) ?? .distantPast), daysSince(outreach, now: now, calendar: calendar) < 7 { return false }
+        let connection = lastConnection(p)
+        guard p.cadence > 0, let anchor = connection ?? p.reminderStart,
+              invitationAllowed(p, connection: connection, outreach: lastOutreach(p), now: now, calendar: calendar) else { return false }
         return daysSince(anchor, now: now, calendar: calendar) >= p.cadence
     }
+    private func momentDates() -> (connections: [UUID: Date], outreach: [UUID: Date]) {
+        var connections: [UUID: Date] = [:], outreach: [UUID: Date] = [:]
+        for moment in moments {
+            if moment.connected { connections[moment.personID] = connections[moment.personID].map { max($0, moment.date) } ?? moment.date }
+            else { outreach[moment.personID] = outreach[moment.personID].map { max($0, moment.date) } ?? moment.date }
+        }
+        return (connections, outreach)
+    }
+    func rankedSuggestions(now: Date = Date(), calendar: Calendar = .current) -> [Person] {
+        let dates = momentDates()
+        // Index moments once, rather than rescan all history during every sort comparison.
+        let candidates = people.compactMap { p -> (person: Person, elapsed: Int)? in
+            let connection = [p.baselineConnection, dates.connections[p.id]].compactMap { $0 }.max()
+            guard p.cadence > 0, let anchor = connection ?? p.reminderStart,
+                  invitationAllowed(p, connection: connection, outreach: dates.outreach[p.id], now: now, calendar: calendar) else { return nil }
+            let elapsed = daysSince(anchor, now: now, calendar: calendar)
+            return elapsed >= p.cadence ? (p, elapsed) : nil
+        }
+        let tiers = ["Inner circle": 0, "Close": 1, "Casual": 2, "Not set": 3]
+        return candidates.sorted { left, right in
+            let l = left.person, r = right.person
+            if (l.closeness == "Inner circle") != (r.closeness == "Inner circle") { return l.closeness == "Inner circle" }
+            let ratioL = Double(left.elapsed) / Double(l.cadence), ratioR = Double(right.elapsed) / Double(r.cadence)
+            if ratioL != ratioR { return ratioL > ratioR }
+            if tiers[l.closeness] != tiers[r.closeness] { return (tiers[l.closeness] ?? 3) < (tiers[r.closeness] ?? 3) }
+            if l.wantsToGrow != r.wantsToGrow { return l.wantsToGrow }
+            return l.id.uuidString < r.id.uuidString
+        }.map(\.person)
+    }
     func suggestions(now: Date = Date(), calendar: Calendar = .current) -> [Person] {
-        let eligible = people.filter { isDue($0, now: now, calendar: calendar) }.sorted {
-            let l = Double(daysSince(lastConnection($0) ?? $0.reminderStart!, now: now, calendar: calendar)) / Double($0.cadence)
-            let r = Double(daysSince(lastConnection($1) ?? $1.reminderStart!, now: now, calendar: calendar)) / Double($1.cadence)
-            if l != r { return l > r }; if $0.wantsToGrow != $1.wantsToGrow { return $0.wantsToGrow }; return $0.id.uuidString < $1.id.uuidString
+        Array(rankedSuggestions(now: now, calendar: calendar).prefix(3))
+    }
+    func contextualSuggestions(excluding ids: Set<UUID>, ranked: [Person], now: Date = Date(), calendar: Calendar = .current) -> (growth: Person?, care: [Person]) {
+        let dates = momentDates()
+        let allowed = people.filter { p in
+            let connection = [p.baselineConnection, dates.connections[p.id]].compactMap { $0 }.max()
+            return !ids.contains(p.id) && invitationAllowed(p, connection: connection, outreach: dates.outreach[p.id], now: now, calendar: calendar)
+        }.sorted { l, r in
+            let order = l.name.localizedStandardCompare(r.name)
+            return order == .orderedSame ? l.id.uuidString < r.id.uuidString : order == .orderedAscending
         }
-        guard eligible.count > 3 else {
-            if let featured = eligible.first(where: \.wantsToGrow) { return [featured] + eligible.filter { $0.id != featured.id } }; return eligible
-        }
-        let day = calendar.dateComponents([.day], from: Date(timeIntervalSince1970: 0), to: calendar.startOfDay(for: now)).day ?? 0
-        // A rotating daily slice prevents one long gap from occupying the home forever.
-        let start = abs(day) % eligible.count
-        let slice = (0..<3).map { eligible[(start + $0) % eligible.count] }
-        return slice.sorted { $0.wantsToGrow && !$1.wantsToGrow }
+        let growers = allowed.filter(\.wantsToGrow)
+        let growIDs = Set(growers.map(\.id))
+        let growth = ranked.first { growIDs.contains($0.id) } ?? growers.first
+        return (growth, allowed.filter { $0.feelingChoice == "Needs care" && $0.id != growth?.id })
     }
     func history(_ id: UUID? = nil) -> [Moment] { moments.filter { id == nil || $0.personID == id }.sorted { $0.date > $1.date } }
     func validate() throws {

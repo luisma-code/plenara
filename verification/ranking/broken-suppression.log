@@ -1,0 +1,44 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261031-120239.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraTests/RankingTests/testContextCardsRespectSuppressionAndPreferDueGrowth"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261031-120239.xcresult
+
+2026-10-31 12:02:42.667609-0700 Plenara[92025:19547861] [journal] Journal opened; read-only: false
+2026-10-31 12:02:42.941527-0700 Plenara[92025:19547861] [reminders] Local reminders refreshed
+Test Suite 'Selected tests' started at 2026-10-31 12:02:42.960.
+Test Suite 'PlenaraTests.xctest' started at 2026-10-31 12:02:42.961.
+Test Suite 'RankingTests' started at 2026-10-31 12:02:42.961.
+Test Case '-[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth]' started.
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:88: error: -[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000004)") is not equal to ("Optional(00000000-0000-0000-0000-000000000003)") - The context growth card must prefer eligible due growth over alphabetical optional ideas
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:89: error: -[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth] : XCTAssertEqual failed: ("[00000000-0000-0000-0000-000000000002, 00000000-0000-0000-0000-000000000003]") is not equal to ("[00000000-0000-0000-0000-000000000002]") - Snoozed, paused, recent-outreach, and already shown people must not reappear as care invitations
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:92: error: -[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth] : XCTAssertTrue failed
+Test Case '-[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth]' failed (0.138 seconds).
+Test Suite 'RankingTests' failed at 2026-10-31 12:02:43.100.
+	 Executed 1 test, with 3 failures (0 unexpected) in 0.138 (0.139) seconds
+Test Suite 'PlenaraTests.xctest' failed at 2026-10-31 12:02:43.100.
+	 Executed 1 test, with 3 failures (0 unexpected) in 0.138 (0.139) seconds
+Test Suite 'Selected tests' failed at 2026-10-31 12:02:43.100.
+	 Executed 1 test, with 3 failures (0 unexpected) in 0.138 (0.140) seconds
+2026-10-31 12:02:43.105905-0700 Plenara[92025:19547861] [reminders] Local reminders refreshed
+2026-10-31 12:02:43.400 xcodebuild[92017:19547740]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-10-31 12:02:43.406 xcodebuild[92017:19547652] [MT] IDETestOperationsObserverDebug: 2.683 elapsed -- Testing started completed.
+2026-10-31 12:02:43.406 xcodebuild[92017:19547652] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-31 12:02:43.406 xcodebuild[92017:19547652] [MT] IDETestOperationsObserverDebug: 2.683 sec, +2.683 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261031-120239.xcresult
+
+Failing tests:
+	RankingTests.testContextCardsRespectSuppressionAndPreferDueGrowth()
+	RankingTests.testContextCardsRespectSuppressionAndPreferDueGrowth()
+	RankingTests.testContextCardsRespectSuppressionAndPreferDueGrowth()
+
+** TEST EXECUTE FAILED **
+
+Testing started

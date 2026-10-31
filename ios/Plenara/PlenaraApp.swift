@@ -21,6 +21,7 @@ import SwiftUI
         #endif
         let s = JournalStore(file: url)
         #if targetEnvironment(simulator)
+        if ProcessInfo.processInfo.arguments.contains("--ranking-demo"), s.journal.people.isEmpty { s.update { $0 = DemoData.rankingJournal() } }
         if ProcessInfo.processInfo.arguments.contains("--demo"), s.journal.people.isEmpty { s.update { $0 = DemoData.journal() } }
         if ProcessInfo.processInfo.arguments.contains("--contact-fixture") { DemoData.seedSystemContact() }
         #endif

@@ -1,0 +1,29 @@
+{
+  "controls": [
+    {
+      "control": "priority",
+      "test": "PlenaraTests/RankingTests/testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation",
+      "rejected": true,
+      "message": "A due inner-circle person must lead even when Close has growth intent and a longer relative gap"
+    },
+    {
+      "control": "suppression",
+      "test": "PlenaraTests/RankingTests/testContextCardsRespectSuppressionAndPreferDueGrowth",
+      "rejected": true,
+      "message": "The context growth card must prefer eligible due growth over alphabetical optional ideas"
+    },
+    {
+      "control": "expansion",
+      "test": "PlenaraUITests/PlenaraUITests/testHomeRankingFullListLogSnoozeAndReopen",
+      "rejected": true,
+      "message": "The full-list control must actually expand the complete ranking"
+    },
+    {
+      "control": "explanation",
+      "test": "PlenaraUITests/PlenaraUITests/testHomeRankingFullListLogSnoozeAndReopen",
+      "rejected": true,
+      "message": "Ranked rows must explain closeness and the chosen rhythm"
+    }
+  ],
+  "sourcesRestored": true
+}

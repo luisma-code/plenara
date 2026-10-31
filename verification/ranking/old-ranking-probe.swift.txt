@@ -1,0 +1,20 @@
+import Foundation
+var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(secondsFromGMT: 0)!
+let now = cal.date(from: DateComponents(year: 2026, month: 10, day: 31, hour: 12))!
+func person(_ id: Int, _ name: String, _ closeness: String, _ days: Int, _ rhythm: Int, _ grow: Bool = false) -> Person {
+    var p = Person(); p.id = UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", id))!
+    p.name = name; p.closeness = closeness; p.cadence = rhythm; p.baselineConnection = cal.date(byAdding: .day, value: -days, to: now)!; p.directionChoice = grow ? "Grow closer" : "Keep it steady"
+    return p
+}
+let inner = person(1, "Inner circle", "Inner circle", 14, 7)
+let close = person(2, "Close with growth", "Close", 30, 30, true)
+var small = Journal(); small.people = [inner, close]
+var control = small; control.people[1].directionChoice = "Keep it steady"
+var many = Journal(); many.people = [person(1, "Inner circle", "Inner circle", 90, 7)] + (2...6).map { person($0, "Other \($0)", "Close", 30, 30) }
+let rotation = (0..<6).map { offset -> [String: Any] in
+    let date = cal.date(byAdding: .day, value: offset, to: now)!
+    let names = many.suggestions(now: date, calendar: cal).map(\.name)
+    return ["dayOffset": offset, "suggested": names, "innerCirclePresent": names.contains("Inner circle")]
+}
+let output: [String: Any] = ["clock": "2026-10-31T12:00:00Z", "smallGrowthCase": small.suggestions(now: now, calendar: cal).map(\.name), "noGrowthControl": control.suggestions(now: now, calendar: cal).map(\.name), "rotation": rotation]
+print(String(data: try! JSONSerialization.data(withJSONObject: output, options: [.prettyPrinted, .sortedKeys]), encoding: .utf8)!)

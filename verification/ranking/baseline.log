@@ -1,0 +1,56 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261031-115059.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraTests/RankingTests/testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261031-115059.xcresult
+
+2026-10-31 11:51:05.726969-0700 Plenara[89286:19513801] [journal] Journal opened; read-only: false
+2026-10-31 11:51:06.099860-0700 Plenara[89286:19513945] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-10-31 11:51:06.125185-0700 Plenara[89286:19513801] [reminders] Local reminders refreshed
+2026-10-31 11:51:06.138639-0700 Plenara[89286:19513801] [reminders] Local reminders refreshed
+2026-10-31 11:51:06.177691-0700 Plenara[89286:19513945] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+Test Suite 'Selected tests' started at 2026-10-31 11:51:06.352.
+Test Suite 'PlenaraTests.xctest' started at 2026-10-31 11:51:06.352.
+Test Suite 'RankingTests' started at 2026-10-31 11:51:06.352.
+Test Case '-[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation]' started.
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:18: error: -[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000002)") is not equal to ("Optional(00000000-0000-0000-0000-000000000001)") - A due inner-circle person must lead even when Close has growth intent and a longer relative gap
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:22: error: -[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000005)") is not equal to ("Optional(00000000-0000-0000-0000-000000000001)") - Calendar rotation must never displace the due inner-circle leader
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:22: error: -[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000006)") is not equal to ("Optional(00000000-0000-0000-0000-000000000001)") - Calendar rotation must never displace the due inner-circle leader
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:22: error: -[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000007)") is not equal to ("Optional(00000000-0000-0000-0000-000000000001)") - Calendar rotation must never displace the due inner-circle leader
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:22: error: -[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000002)") is not equal to ("Optional(00000000-0000-0000-0000-000000000001)") - Calendar rotation must never displace the due inner-circle leader
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:22: error: -[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000003)") is not equal to ("Optional(00000000-0000-0000-0000-000000000001)") - Calendar rotation must never displace the due inner-circle leader
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:22: error: -[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000003)") is not equal to ("Optional(00000000-0000-0000-0000-000000000001)") - Calendar rotation must never displace the due inner-circle leader
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:22: error: -[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000004)") is not equal to ("Optional(00000000-0000-0000-0000-000000000001)") - Calendar rotation must never displace the due inner-circle leader
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:22: error: -[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000005)") is not equal to ("Optional(00000000-0000-0000-0000-000000000001)") - Calendar rotation must never displace the due inner-circle leader
+Test Case '-[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation]' failed (0.402 seconds).
+Test Suite 'RankingTests' failed at 2026-10-31 11:51:06.755.
+	 Executed 1 test, with 9 failures (0 unexpected) in 0.402 (0.403) seconds
+Test Suite 'PlenaraTests.xctest' failed at 2026-10-31 11:51:06.755.
+	 Executed 1 test, with 9 failures (0 unexpected) in 0.402 (0.403) seconds
+Test Suite 'Selected tests' failed at 2026-10-31 11:51:06.756.
+	 Executed 1 test, with 9 failures (0 unexpected) in 0.402 (0.404) seconds
+2026-10-31 11:51:07.064 xcodebuild[89261:19513474]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-10-31 11:51:07.072 xcodebuild[89261:19513344] [MT] IDETestOperationsObserverDebug: 4.515 elapsed -- Testing started completed.
+2026-10-31 11:51:07.072 xcodebuild[89261:19513344] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-31 11:51:07.072 xcodebuild[89261:19513344] [MT] IDETestOperationsObserverDebug: 4.515 sec, +4.515 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261031-115059.xcresult
+
+Failing tests:
+	RankingTests.testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation()
+	RankingTests.testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation()
+	RankingTests.testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation()
+	RankingTests.testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation()
+	RankingTests.testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation()
+	RankingTests.testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation()
+	RankingTests.testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation()
+
+** TEST EXECUTE FAILED **
+
+Testing started

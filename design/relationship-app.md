@@ -34,7 +34,7 @@ about. Avoid relationship scores, streaks, competitive dashboards, and alarming
 The opening screen answers “Who could I make a little room for?”
 
 - One prominent reconnection invitation, with a personal detail to make starting
-  easier. Prefer a relationship marked for deepening when several are due.
+  easier. Due inner-circle relationships take precedence; see the ranking policy below.
 - Up to two more people whose chosen rhythm suggests it is time to reconnect.
 - A nearby person you want to know better, with a concrete shared idea.
 - A global “Log a moment” and a person-specific “Log with [name]” make logging easy; “Catch-up notes” and “Another week” support the invitation.
@@ -202,12 +202,29 @@ eligible once the interval has elapsed since the last confirmed connection.
 Unknown last contact means “Last contact not set”; offer “roughly when?” or
 “start reminding me from today,” never fabricate history or call it overdue.
 
-Rank eligible people by proportion of their interval elapsed, then the
-explicit deepening intention; break ties deterministically. For a small daily
-set, surface at most three. Quietly rotate eligible people that weren’t shown
-so one long gap never monopolizes the screen. The prototype demonstrates the
-three-person cap and deepening preference; rotation is a native implementation
-detail, not implemented in the browser example.
+Luis approved the [Astra-reviewed ranking proposal](https://chatgpt.com/space/page_7ac81bc6f2b8819181b3d01e018f6619)
+on October 31, 2026. Among eligible people, put **Inner circle first**, then
+all other closeness values. Within each group, rank by the proportion of the
+chosen interval elapsed. Exact ties prefer Close, Casual, then Not set; next
+prefer Grow closer, then a stable identity. Growth never jumps ahead of a
+larger elapsed proportion or a due inner-circle person. A custom rhythm still
+controls eligibility, including for inner circle.
+
+Home shows the first three in that order, with factual closeness, last-contact,
+and chosen-rhythm context. **See everyone ready to reconnect** expands the
+complete ordered list in place; Show fewer collapses it. There is no daily
+rotation. Lower-ranked people can remain outside the first three until Luis
+connects, snoozes, changes a rhythm, or opens the complete list. This deliberately
+prioritizes predictable inner-circle precedence over automatic exposure.
+
+Growth and care invitations remain secondary. The same pause, snooze, and
+seven-day outreach suppression applies to them. Exclude people already shown in
+the primary/expanded list, then choose a due growth intention from the full
+ranking before optional alphabetical growth ideas. The care list is alphabetical
+and excludes the growth card too. Optional ideas do not enable or imply a due
+reminder. Explicit birthdays and dated-note threads remain a separate section;
+they keep their current date-specific eligibility and actions. The original
+browser prototype remains a historical visual reference with earlier ranking.
 
 A confirmed call, meet-up, or reciprocal exchange resets the interval. A sent
 message or unsuccessful call is an outreach; it does not reset connection time.
@@ -343,7 +360,7 @@ friend status. It adds
 real Contacts selection and import review; call/message/email handoff; local
 notifications; birthdays; custom intervals; note pinning, editing and archiving;
 editable/deletable moments; an approximate initial connection date; outreach
-suppression; daily suggestion rotation; paused reminders; backup/export/restore;
+suppression; inner-circle priority and an expandable complete list; paused reminders; backup/export/restore;
 adaptive appearance; scalable text; and native accessibility labels.
 
 Contacts uses Apple’s `CNContactPickerViewController` for one-time selected

@@ -87,6 +87,10 @@ func connectionLabel(_ p: Person, journal: Journal) -> String {
     return days == 0 ? "Connected today" : days == 1 ? "Connected yesterday" : "\(approximate)\(days) days since connecting"
 }
 
+func suggestionReason(_ p: Person, journal: Journal) -> String {
+    ([p.closeness == "Not set" ? nil : p.closeness].compactMap { $0 } + [connectionLabel(p, journal: journal), rhythmLabel(p.cadence)]).joined(separator: " · ")
+}
+
 struct PetalMotif: View {
     var body: some View {
         ZStack { ForEach([0.0, 60.0, 120.0], id: \.self) { angle in Ellipse().stroke(Theme.plum.opacity(0.16), lineWidth: 0.7).frame(width: 65, height: 145).rotationEffect(.degrees(angle)) } }

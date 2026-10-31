@@ -4,6 +4,7 @@ A quiet iPhone app for staying close to the people in your life.
 
 - [Approved product and interface design](design/relationship-app.md)
 - [Native SwiftUI app and build guide](ios/README.md)
+- [Inner-circle priority and complete reconnection list](verification/ranking/update.md)
 - [Focus on people who still need assessment](verification/assessment/update.md)
 - [Organizing people together or one attribute at a time](verification/organize/update.md)
 - [Quick calls, texts, visits, and notes](verification/quick-log/update.md)

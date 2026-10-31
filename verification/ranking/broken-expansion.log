@@ -1,0 +1,114 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261031-120301.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/PlenaraUITests/testHomeRankingFullListLogSnoozeAndReopen"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261031-120301.xcresult
+
+2026-10-31 12:03:05.187091-0700 PlenaraUITests-Runner[92128:19549243] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-10-31 12:03:05.979.
+Test Suite 'PlenaraUITests.xctest' started at 2026-10-31 12:03:05.979.
+Test Suite 'PlenaraUITests' started at 2026-10-31 12:03:05.980.
+Test Case '-[PlenaraUITests.PlenaraUITests testHomeRankingFullListLogSnoozeAndReopen]' started.
+    t =     0.00s Start Test at 2026-10-31 12:03:05.980
+    t =     0.05s Set Up
+    t =     0.06s     Open com.plenara.plenaraApp
+    t =     0.06s         Launch com.plenara.plenaraApp
+2026-10-31 12:03:06.269 xcodebuild[92116:19549037] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-31 12:03:06.269 xcodebuild[92116:19549037] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[92128]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x106eb8310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x106334398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.18s             Setting up automation session
+    t =     2.03s             Wait for com.plenara.plenaraApp to idle
+    t =     3.51s Terminate com.plenara.plenaraApp:92141
+    t =     4.54s Open com.plenara.plenaraApp
+    t =     4.54s     Launch com.plenara.plenaraApp
+2026-10-31 12:03:10.521 xcodebuild[92116:19549037] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-31 12:03:10.521 xcodebuild[92116:19549037] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     4.76s         Setting up automation session
+    t =     5.68s         Wait for com.plenara.plenaraApp to idle
+    t =     7.17s Waiting 5.0s for "suggestion-hero-Maya Inner" Button to exist
+    t =     8.22s     Checking `Expect predicate `existsNoRetry == 1` for object "suggestion-hero-Maya Inner" Button`
+    t =     8.22s         Checking existence of `"suggestion-hero-Maya Inner" Button`
+    t =     8.31s Find the "suggestion-reason-Maya Inner" StaticText
+    t =     8.35s Find the "suggestion-reason-Maya Inner" StaticText
+    t =     8.39s Find the "suggestion-reason-Maya Inner" StaticText
+    t =     8.41s Checking existence of `"suggestion-Owen Inner" Button`
+    t =     8.43s Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.56s Added attachment named 'Ranked Home'
+    t =     8.56s Find the "tab-0" Button
+    t =     8.59s Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.60s Checking existence of `"suggestions-expand" Button`
+    t =     8.62s Find the "suggestions-expand" Button
+    t =     8.66s Checking existence of `"suggestions-expand" Button`
+    t =     8.68s Find the "suggestions-expand" Button
+    t =     8.71s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 431.0) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 80.0) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =     8.71s     Wait for com.plenara.plenaraApp to idle
+    t =     8.72s     Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.74s     Check for interrupting elements affecting "Plenara" Application
+    t =     8.77s     Synthesize event
+    t =     8.77s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.79s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.81s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.82s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.84s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.86s     Wait for com.plenara.plenaraApp to idle
+    t =     9.87s Checking existence of `"suggestions-expand" Button`
+    t =     9.90s Find the "suggestions-expand" Button
+    t =     9.94s Find the "suggestions-expand" Button
+    t =     9.97s Checking existence of `"suggestions-expand" Button`
+    t =    10.00s Find the "suggestions-expand" Button
+    t =    10.02s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 431.0) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 80.0) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    10.02s     Wait for com.plenara.plenaraApp to idle
+    t =    10.03s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.04s     Check for interrupting elements affecting "Plenara" Application
+    t =    10.07s     Synthesize event
+    t =    10.07s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.08s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.10s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.12s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.14s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.16s     Wait for com.plenara.plenaraApp to idle
+    t =    11.49s Checking existence of `"suggestions-expand" Button`
+    t =    11.52s Find the "suggestions-expand" Button
+    t =    11.56s Find the "suggestions-expand" Button
+    t =    11.60s Find the "suggestions-expand" Button
+Home action frame: (24.0, 441.3333333333333, 260.66666666666663, 44.0), viewport: (0.0, 80.0, 402.0, 702.0)
+    t =    11.64s Checking existence of `"suggestions-expand" Button`
+    t =    11.67s Find the "suggestions-expand" Button
+    t =    11.71s Find the "suggestions-expand" Button
+    t =    11.74s Find the "suggestions-expand" Button
+    t =    11.76s Tap "suggestions-expand" Button
+    t =    11.76s     Wait for com.plenara.plenaraApp to idle
+    t =    11.77s     Find the "suggestions-expand" Button
+    t =    11.80s     Check for interrupting elements affecting "suggestions-expand" Button
+    t =    11.82s     Synthesize event
+    t =    12.12s     Wait for com.plenara.plenaraApp to idle
+    t =    12.12s Find the "suggestions-expand" Button
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/PlenaraUITests.swift:224: error: -[PlenaraUITests.PlenaraUITests testHomeRankingFullListLogSnoozeAndReopen] : XCTAssertEqual failed: ("Optional("Collapsed")") is not equal to ("Optional("Expanded")") - The full-list control must actually expand the complete ranking
+    t =    12.22s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testHomeRankingFullListLogSnoozeAndReopen]' failed (12.447 seconds).
+Test Suite 'PlenaraUITests' failed at 2026-10-31 12:03:18.427.
+	 Executed 1 test, with 1 failure (0 unexpected) in 12.447 (12.448) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-10-31 12:03:18.428.
+	 Executed 1 test, with 1 failure (0 unexpected) in 12.447 (12.449) seconds
+Test Suite 'Selected tests' failed at 2026-10-31 12:03:18.429.
+	 Executed 1 test, with 1 failure (0 unexpected) in 12.447 (12.450) seconds
+2026-10-31 12:03:18.763 xcodebuild[92116:19549107]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-10-31 12:03:18.771 xcodebuild[92116:19549037] [MT] IDETestOperationsObserverDebug: 15.155 elapsed -- Testing started completed.
+2026-10-31 12:03:18.771 xcodebuild[92116:19549037] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-31 12:03:18.771 xcodebuild[92116:19549037] [MT] IDETestOperationsObserverDebug: 15.155 sec, +15.155 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261031-120301.xcresult
+
+Failing tests:
+	PlenaraUITests.testHomeRankingFullListLogSnoozeAndReopen()
+
+** TEST EXECUTE FAILED **
+
+Testing started

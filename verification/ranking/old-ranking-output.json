@@ -1,0 +1,67 @@
+{
+  "clock" : "2026-10-31T12:00:00Z",
+  "noGrowthControl" : [
+    "Inner circle",
+    "Close with growth"
+  ],
+  "rotation" : [
+    {
+      "dayOffset" : 0,
+      "innerCirclePresent" : false,
+      "suggested" : [
+        "Other 4",
+        "Other 5",
+        "Other 6"
+      ]
+    },
+    {
+      "dayOffset" : 1,
+      "innerCirclePresent" : true,
+      "suggested" : [
+        "Other 5",
+        "Other 6",
+        "Inner circle"
+      ]
+    },
+    {
+      "dayOffset" : 2,
+      "innerCirclePresent" : true,
+      "suggested" : [
+        "Other 6",
+        "Inner circle",
+        "Other 2"
+      ]
+    },
+    {
+      "dayOffset" : 3,
+      "innerCirclePresent" : true,
+      "suggested" : [
+        "Inner circle",
+        "Other 2",
+        "Other 3"
+      ]
+    },
+    {
+      "dayOffset" : 4,
+      "innerCirclePresent" : false,
+      "suggested" : [
+        "Other 2",
+        "Other 3",
+        "Other 4"
+      ]
+    },
+    {
+      "dayOffset" : 5,
+      "innerCirclePresent" : false,
+      "suggested" : [
+        "Other 3",
+        "Other 4",
+        "Other 5"
+      ]
+    }
+  ],
+  "smallGrowthCase" : [
+    "Close with growth",
+    "Inner circle"
+  ]
+}

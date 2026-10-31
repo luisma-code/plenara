@@ -211,6 +211,71 @@ final class PlenaraUITests: XCTestCase {
         app.buttons["save-moment"].tap()
         XCTAssertTrue(app.buttons["quick-log"].waitForExistence(timeout: 5))
     }
+    func testHomeRankingFullListLogSnoozeAndReopen() throws {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--ranking-demo"]; app.launch()
+        let hero = app.buttons["suggestion-hero-Maya Inner"]
+        XCTAssertTrue(hero.waitForExistence(timeout: 5), "The most relatively stale due inner-circle person must lead Home")
+        let reason = app.staticTexts["suggestion-reason-Maya Inner"]
+        XCTAssertTrue(reason.label.contains("Inner circle") && reason.label.contains("15 days") && reason.label.contains("Every week"))
+        XCTAssertFalse(app.buttons["suggestion-Owen Inner"].exists, "Only three primary suggestions appear before expanding")
+        attach("Ranked Home")
+        let expand = app.buttons["suggestions-expand"]; scrollHomeTo(expand)
+        XCTAssertEqual(expand.value as? String, "Collapsed"); expand.tap()
+        XCTAssertEqual(expand.value as? String, "Expanded", "The full-list control must actually expand the complete ranking")
+        let owen = app.buttons["suggestion-Owen Inner"], leo = app.buttons["suggestion-Leo Casual"], sofia = app.buttons["suggestion-Sofia Close"]
+        scrollHomeTo(sofia)
+        XCTAssertTrue(owen.exists && leo.exists && sofia.exists, "The complete ordered list must expose everyone ready to reconnect")
+        XCTAssertLessThan(owen.frame.minY, leo.frame.minY, "All due inner-circle people precede the ordinary group")
+        XCTAssertLessThan(leo.frame.minY, sofia.frame.minY, "A very stale casual friend precedes a barely-less-stale close friend regardless of growth")
+        XCTAssertTrue(leo.label.contains("Casual") && leo.label.contains("About every 3 months"), "Ranked rows must explain closeness and the chosen rhythm")
+        XCTAssertFalse(app.buttons["growth-Sofia Close"].exists, "Expanded suggestions must not duplicate a person in a growth card")
+        attach("Complete ranked list")
+        scrollHomeTo(owen); owen.tap(); app.buttons["Log a moment"].tap(); app.buttons["save-moment"].tap()
+        app.buttons["Your people"].tap()
+        XCTAssertEqual(app.buttons["suggestions-expand"].value as? String, "Expanded", "Returning from a person must preserve the expanded workspace")
+        XCTAssertFalse(owen.exists, "A confirmed connection must immediately remove that person from the ready list")
+        let snooze = app.buttons["Another week"]; scrollHomeTo(snooze); snooze.tap()
+        XCTAssertTrue(app.buttons["suggestion-hero-Zoe Inner"].exists, "Snoozing the leader must promote the next inner-circle person")
+        XCTAssertFalse(app.buttons["growth-Maya Inner"].exists); XCTAssertFalse(app.buttons["care-Maya Inner"].exists)
+        app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch()
+        XCTAssertTrue(app.buttons["suggestion-hero-Zoe Inner"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["suggestion-hero-Maya Inner"].exists)
+        XCTAssertFalse(app.buttons["growth-Maya Inner"].exists); XCTAssertFalse(app.buttons["care-Maya Inner"].exists)
+        XCTAssertFalse(app.buttons["growth-Avery Snoozed"].exists); XCTAssertFalse(app.buttons["care-Blake Reply"].exists)
+        attach("Ranked Home after snooze")
+    }
+    func testRankedHomeDarkAndLargeText() throws {
+        for (flags, label) in [(["--dark"], "Dark ranked Home"), (["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"], "Large ranked Home")] {
+            app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--ranking-demo"] + flags; app.launch()
+            let hero = app.buttons["suggestion-hero-Maya Inner"]; scrollHomeTo(hero)
+            XCTAssertTrue(hero.exists)
+            attach(label)
+            let expand = app.buttons["suggestions-expand"]; scrollHomeTo(expand); XCTAssertGreaterThanOrEqual(expand.frame.height, 44); expand.tap()
+            let owen = app.buttons["suggestion-Owen Inner"]; scrollHomeTo(owen); XCTAssertTrue(owen.isHittable)
+            attach(label + " expanded")
+            scrollHomeTo(expand); expand.tap(); XCTAssertEqual(expand.value as? String, "Collapsed")
+        }
+    }
+    func scrollHomeTo(_ element: XCUIElement) {
+        let bottom = app.buttons["tab-0"].frame.minY
+        let viewport = CGRect(x: 0, y: 80, width: app.frame.width, height: bottom - 80)
+        func visible() -> Bool {
+            guard element.exists && element.isHittable else { return false }
+            let frame = element.frame
+            // A long accessibility row can exceed one screen while remaining readable and tappable by scrolling.
+            return frame.height > viewport.height ? frame.intersection(viewport).height >= 88 : frame.minY >= viewport.minY && frame.maxY <= viewport.maxY
+        }
+        for _ in 0..<16 {
+            if visible() { break }
+            let delta = element.exists ? element.frame.midY - viewport.midY : viewport.height / 2
+            let distance = max(-viewport.height / 2, min(viewport.height / 2, delta))
+            let start = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: viewport.midX, dy: viewport.midY))
+            let end = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: viewport.midX, dy: viewport.midY - distance))
+            start.press(forDuration: 0.05, thenDragTo: end)
+        }
+        print("Home action frame: \(element.frame), viewport: \(viewport)")
+        XCTAssertTrue(visible(), "The Home control must have a visible usable area above the tab bar before tapping")
+    }
     func testOrganizeBulkSelectionCancelUndoAndImportedJournalReopen() throws {
         let fixture = try XCTUnwrap(Bundle(for: PlenaraUITests.self).url(forResource: "journal-build-1001", withExtension: "json"))
         app.terminate(); app.launchArguments = ["--ui-testing", "--legacy-fixture"]

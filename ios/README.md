@@ -30,6 +30,16 @@ journal. `--contact-fixture` seeds one fictional system contact only on a
 simulator with pre-granted contact access. These paths are not compiled into
 the physical-device binary. Production opens an empty journal.
 
+## Home suggestions
+
+The [approved ranking policy](../design/relationship-app.md#stay-close) is
+implemented by `Journal.rankedSuggestions`, with `suggestions` returning the
+first three. `ReconnectionSection` provides the leading invitation, factual
+reasons, and in-place expansion. `Journal.contextualSuggestions` keeps secondary
+growth/care invitations consistent with the shared suppression gate. Neither
+classification nor optional ideas turn on a contact rhythm. There is no new
+journal schema or storage path. [Verification and delivery](../verification/ranking/update.md).
+
 ## Organizing people
 
 People → **Organize** supports Together (search, select, then apply shared

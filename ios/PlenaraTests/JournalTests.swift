@@ -27,7 +27,7 @@ import Contacts
         XCTAssertFalse(j.isDue(p), "Recent outreach leaves room for a reply")
         XCTAssertTrue(j.isDue(p, now: Date().addingTimeInterval(8 * 86400)))
     }
-    func testSnoozePauseUnknownContactAndRotation() {
+    func testSnoozePauseUnknownContactAndStableSuggestions() {
         var j = Journal(); var p = Person(); p.name = "New friend"; p.cadence = 7; j.people = [p]
         XCTAssertFalse(j.isDue(p), "An imported person has no fabricated contact history")
         p.reminderStart = Date().addingTimeInterval(-14 * 86400); XCTAssertTrue(j.isDue(p))
@@ -36,7 +36,7 @@ import Contacts
         p.paused = false
         j.people = (0..<6).map { i in var q = p; q.id = UUID(); q.name = "Friend \(i)"; return q }
         let today = j.suggestions(); let tomorrow = j.suggestions(now: Calendar.current.date(byAdding: .day, value: 1, to: Date())!)
-        XCTAssertEqual(today.count, 3); XCTAssertNotEqual(Set(today.map(\.id)), Set(tomorrow.map(\.id)), "Suggestions must rotate rather than strand a distant friend")
+        XCTAssertEqual(today.count, 3); XCTAssertEqual(today.map(\.id), tomorrow.map(\.id), "Unchanged relative priorities must not rotate away on a new day")
     }
     func testCalendarDaysAcrossDaylightSaving() {
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/New_York")!
