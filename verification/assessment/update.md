@@ -105,3 +105,33 @@ is shut down; no physical phone was launched. After preserving archive and logs,
 completed packaging caches were removed. Total consolidated logical removal
 is now 655.4 MiB, without claiming net filesystem
 or free-disk change. Final tested source hashes still match.
+
+## Agreement accepted; delivery resumed, October 31
+
+Luis replied “Done” after reviewing the updated agreement. Retrying the existing
+`tool/deploy-testflight.sh` workflow with the same API credential succeeded in
+archive and distribution export. The previous certificate diagnostic cleared
+with no credential or certificate replacement. App sources still match the
+previously verified 29-test Release candidate, so the unchanged app was packaged
+without repeating that complete simulator run.
+
+The exported **1.0.0 (1005)** IPA's strict code signature verifies. It contains
+the assessment controls and existing journal path; simulator fixtures and
+UI-testing controls are absent. Its optimized Release build and exact IPA hash
+are recorded in [signed artifact checks](device-artifact.json). The extraction
+used for inspection was temporary and removed immediately.
+
+Upload and Apple processing succeeded. Fresh authenticated readback confirms
+build **1005** is valid, unexpired, assigned to the existing Internal group, and
+`IN_BETA_TESTING`, with Luis enrolled. [Confirmed TestFlight delivery](testflight-delivered.json).
+The English [release notes](release-notes.json) were saved and read back exactly.
+The previous failed export and empty-build readback remain above as historical
+evidence. This confirms remote testing availability; iPhone installation and
+Automatic Updates remain controlled by TestFlight on that device.
+
+After successful delivery, completed retry compiler/product caches were removed,
+retaining the latest signed IPA, archive, and logs. This retry removed
+85.7 MiB of logical bytes; the cumulative
+[consolidation ledger](consolidation.json) includes the exact paths/hashes.
+All tested app source hashes still match. No simulator or physical app was
+launched during this delivery retry.

@@ -11209,9 +11209,1282 @@
           "sha256": "061f988f4af2f33d7f7f869b8e72ebb4acdc028bf9f1548d513f101c08e5449d"
         }
       ]
+    },
+    {
+      "stage": "successful TestFlight retry",
+      "path": ".build/testflight-derived/SDKStatCaches.noindex",
+      "bytes": 1489900,
+      "files": [
+        {
+          "path": ".build/testflight-derived/SDKStatCaches.noindex/iphoneos26.5-23F81a-688ef53f1462e2c8f657fdc38a81448f32daed1954a7d5dd0789fcaf2a9bb78b.sdkstatcache",
+          "bytes": 1489900,
+          "sha256": "6cb2826e8241911d76f67d54011b51795f70c85e8377978c483436140e691a33"
+        }
+      ]
+    },
+    {
+      "stage": "successful TestFlight retry",
+      "path": ".build/testflight-derived/ModuleCache.noindex",
+      "bytes": 69986479,
+      "files": [
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/AVFAudio-2334EZ46GUB6.pcm",
+          "bytes": 39364,
+          "sha256": "ac89b220fc502bd0370c52d137cef4460a603603c5af5fdfb9c25a6580e599ee"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/AVFoundation-2AUPY0AEGATJU.pcm",
+          "bytes": 73956,
+          "sha256": "5957a80e397f023fbcd90793f79882f1a2685327662abecb951dbe68a90b6e8f"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/AVRouting-1K6BUCSQ2O9VO.pcm",
+          "bytes": 26852,
+          "sha256": "db0178cb9d00da56224f1245508a08da45e36c251c4831848b7098ce0540d308"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Accessibility-VYIYGZ1KCPTG.pcm",
+          "bytes": 28036,
+          "sha256": "8016b8179ed301f5173783d15f063eab36fa3817212f28341f440d32cda21735"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/AppIntents-1UOPI5F48NGST.pcm",
+          "bytes": 24400,
+          "sha256": "568372aeefc6a95542846a58e7021a450d364add1446e467f146229cfcd3611a"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/AudioToolbox-3H4PQBZ2BPMV0.pcm",
+          "bytes": 50256,
+          "sha256": "7a1943049ddc953b52f750ed12872ff5191610109500d40e7a1eeefa4a9ff435"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CFNetwork-3VZ00SBW9UDLT.pcm",
+          "bytes": 28748,
+          "sha256": "e68cfaa3425aef4403cc26d0814888e8868683e65b4c1dff1d1af178087ea753"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Contacts-2A1JWH33BHS2T.pcm",
+          "bytes": 31568,
+          "sha256": "7ce5d9a9af7f20df2e7e3963fc8e020547adaed48547bd8bd22c71c64e233c63"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/ContactsUI-2WZ27RNOTNOGJ.pcm",
+          "bytes": 25996,
+          "sha256": "fc31a995fbda1663d40db6282a741c7f589d7d1f7c069770ae1f88603896589c"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreAudio-20K2WMDSV1E89.pcm",
+          "bytes": 24352,
+          "sha256": "bd69b50cc9cd0a21fe774c44a51831b5101a2c303b403c36ee7df8388f23aa7c"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreAudioTypes-1ETKI5Y28STCO.pcm",
+          "bytes": 26988,
+          "sha256": "6b4f8d17cde209e3f1195f33fb4854b843ce66da463cc37e9e97793defe8d9dc"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreData-XJQ92PAYABTK.pcm",
+          "bytes": 43784,
+          "sha256": "23487916ad52ff18e08938372b0d2d74fac9701fe23b0ffd0cfee65d648795d0"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreFoundation-37X8IICWG4GXC.pcm",
+          "bytes": 88036,
+          "sha256": "314bedf756586912aaf426ab837a0cff7ba1cf6f377a82c91474f9ec92d71ab5"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreGraphics-25IP4C82UPPLD.pcm",
+          "bytes": 45748,
+          "sha256": "a9af1777783e4d1f3278a9506635b74e932775cb91f9d60319d3bf058916dab8"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreImage-3L9CQQ6A7TCR0.pcm",
+          "bytes": 37488,
+          "sha256": "f213bb069687860cff48e2c3385498132c8b85185807585b115c19d36236a5d3"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreLocation-VZUYM1OSMQAN.pcm",
+          "bytes": 32048,
+          "sha256": "6a5c566e370265b8690d1bddf1edfd8ce01d635f9992380be0832039294a1866"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreMIDI-2UWHPE6IY1OIG.pcm",
+          "bytes": 36068,
+          "sha256": "7dc176850e9e617e6d0f7879d0cffe478b38eba83e5f488a8ebfb0089711aded"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreMedia-341GI990B5WUQ.pcm",
+          "bytes": 55844,
+          "sha256": "63ed60b750895fd96711f62b99f57def088389789d141ab2bf309458b1942a48"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreSpotlight-A63AOBV4EU3K.pcm",
+          "bytes": 30324,
+          "sha256": "354d9e82ee2f0b56b5cf56738987c09d85ff73e5e7d2a8128404d1462bffdf96"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreText-2W4I4866F1XUU.pcm",
+          "bytes": 35992,
+          "sha256": "e039817a235ce64ef0b929b2fbddbb37cfd4ccd77c42cbc0590cfbc44e5c3504"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreTransferable-1FV9BTC0RO92Y.pcm",
+          "bytes": 24464,
+          "sha256": "2536330be5a55334270b9b9e2744db06aaa2ddfde0263a960db7938ce2c11cb4"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/CoreVideo-Y9NN4HRX4EA6.pcm",
+          "bytes": 38376,
+          "sha256": "4ea54913f55b2b29008895dac432bad1b3d7c7488625f3a45750180b00b02177"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Darwin-1OFLEA9ZNG66V.pcm",
+          "bytes": 949304,
+          "sha256": "8d520510edd76874a146d2e07c37fcafe2b991bc4909531c035707a459f0c02c"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/DataDetection-FPOLXKI2VN5P.pcm",
+          "bytes": 25036,
+          "sha256": "2639f06ab0ef17df3a92de4efb178faf03bd07de3b3af6e777613a1c8932ecc2"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/DeveloperToolsSupport-36OU6Y0XAG0KU.pcm",
+          "bytes": 23560,
+          "sha256": "9a51f513ecae651b52ec65e29a502fd3544a734cebbd7f6720f596b741c1f9fc"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Dispatch-1X6URTB9E8RUM.pcm",
+          "bytes": 54688,
+          "sha256": "4ea376986a2b4acf4b0d61a9b81eaffba19cbb8fc1cc0732293c9b643321f7cc"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/ExtensionFoundation-U1QYXTIM7B1G.pcm",
+          "bytes": 24576,
+          "sha256": "c91d7d97f646befa0a40a244e89c654a74e065a2494d6a1f0d68fbbd4bf8e42e"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/FileProvider-T774CZ3W5EC4.pcm",
+          "bytes": 35368,
+          "sha256": "054f49b1524425d2c875260cc6d576c6d27f71bebd522c7236791ec5edeb948f"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Foundation-2F3RS29RVO43N.pcm",
+          "bytes": 102568,
+          "sha256": "dc4a428db710f9edd54a0d54202898ee11c8d85be577bb2e93edf53be3852ca0"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/IOSurface-2B2LL3EZFNKGD.pcm",
+          "bytes": 29644,
+          "sha256": "1ec5240a939907375a4db234a9081519498384963596aa90f5401c6518a3f8eb"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/ImageIO-3C4G1THIQO10A.pcm",
+          "bytes": 33156,
+          "sha256": "7d451c3e0d28b8c1ebd143440e4e59fe9865cb4d79a1a707dcdca7ab24ba8e0f"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/MachO-9495KAFXRAS3.pcm",
+          "bytes": 66868,
+          "sha256": "c4439828563a045dafa277f0b5bb1ed173f0ca14c39fc15cb2698e7cee29ad25"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/MediaToolbox-13OC1X30ZZDJC.pcm",
+          "bytes": 26596,
+          "sha256": "2b4b5f6821d010c901118136402ba2bf90e4c0cb7c91bba18823ad247b235bc9"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Metal-3LH43RI0LKAY2.pcm",
+          "bytes": 54504,
+          "sha256": "ab211e1395f0d34de7f0b5d168c6709ad5daf609d300d7df209951e85e228276"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Network-28XA1UONKOENJ.pcm",
+          "bytes": 47220,
+          "sha256": "9b9bb64ddcc563c5cc3b6aeb501c71237ad4ee4c7272c6571c90fb43587c9ae6"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/OSLog-1KNQL9EL8FTS4.pcm",
+          "bytes": 26760,
+          "sha256": "26febb780fd65a5a8e74b3039ff8b7b4f4db2bc09d238d6b88b6d5e23dbbdede"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/ObjectiveC-1UEBW0A0EREAA.pcm",
+          "bytes": 40708,
+          "sha256": "854648e52c827869af26a60fa8d06fe64e0d6c840498ab77ac6644441cc3268d"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/OpenGLES-JKMY7ULN98NY.pcm",
+          "bytes": 147860,
+          "sha256": "c320ba6f87dea68e2318ac2532cb00e7d15ccb371b9b6bbfb158cf72262e51b8"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Photos-2I0CCBS7Y7S5T.pcm",
+          "bytes": 35048,
+          "sha256": "0ccc0449535fa5a35892b53cc3e1e7cadb9b6fc4ea05948fdbe9a1af4450f819"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/PhotosUI-I1W98ZGF2OH1.pcm",
+          "bytes": 27932,
+          "sha256": "dfbf1e707793c02bb30dca7a2d9dcb9d8f05ef4f3868cd4a1c153e3076d662c7"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/QuartzCore-Y7GOSU46RGS6.pcm",
+          "bytes": 40636,
+          "sha256": "b676f59a8ec4d4fe5d09ccc8e96b70445e62a1ba58a94ff341fdca0b820ea2a6"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/RelevanceKit-W79WXUJ83XO.pcm",
+          "bytes": 24420,
+          "sha256": "b1aa1785c726a69ac6132c235015b0f1867edeea2a6a1123fa80bbe7a7422dc2"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Security-214O5KQZCOW3N.pcm",
+          "bytes": 34372,
+          "sha256": "9d513127bbbc9ed8921045e217eb151b89eb8f1f082747f68fb5975d61e82002"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Spatial-1YJJ97VK0KQQD.pcm",
+          "bytes": 37484,
+          "sha256": "6769ecd7d69bcff6598e427869951dad0636369d52bc254dac9d0f13cf160e19"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/SwiftShims-2T96M38N78LYI.pcm",
+          "bytes": 44284,
+          "sha256": "ecd1d295b23d59cc915a312f2db8c3e3614575412bab41278d803765577d200c"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/SwiftUI-25BYL3T0ZY6OS.pcm",
+          "bytes": 25284,
+          "sha256": "ecff1a9a52b940205ff16973fe0eec987cc8f32a0dfa884303e531f9466f38e1"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/SwiftUICore-3JB4L0XNR41M.pcm",
+          "bytes": 26520,
+          "sha256": "533feb30d93eb6ae8f3ad66e0759fe2a2da3976571ae3910fb41e83700942f36"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/Symbols-1ISEBPMDXMM84.pcm",
+          "bytes": 24624,
+          "sha256": "f04fad378ed7a50e02e6ef698cfcad411890cee79d43cec1f79bdc53ec05c466"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/UIKit-20DMB2SBYC6QF.pcm",
+          "bytes": 148352,
+          "sha256": "3c4c97541d28f9a949029cc72d5dd67d9459ca01a1bdfc010d47c625bcb2b31c"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/UIUtilities-QI5IHAMY5FF5.pcm",
+          "bytes": 25800,
+          "sha256": "91cdace423728afc691ec589519800dc4319154a732371fbb8afe7cccdb851d3"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/UniformTypeIdentifiers-NIJJOGSJVL5K.pcm",
+          "bytes": 27612,
+          "sha256": "48c947b94c0dea553ae474a3a0a76e6be76d92e16aec7a31a33fabe08efb8be9"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/UserNotifications-3LNW6BZ5467YU.pcm",
+          "bytes": 28324,
+          "sha256": "5713ef646418b2bc6773c81d0896fc47bada514a472e90e9ce0a4da3607067cb"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/XPC-1MMP28LPSD7RZ.pcm",
+          "bytes": 45692,
+          "sha256": "1465423321fd6eebdbe87faa10532ddcd0cc44230cf6705ca51a60e9ca9816c5"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_AvailabilityInternal-3D4U9ULTH0M7F.pcm",
+          "bytes": 448408,
+          "sha256": "a0b761d5b5840d06738d87985d33b31d3a6fe9d187f4869f8d91b880e58e5021"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_Builtin_float-2OQWMRBVRD4OJ.pcm",
+          "bytes": 29412,
+          "sha256": "69c253b2039dc362a23f25ad134b46ec269dbe39b894e571ff9af2878fccab12"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_Builtin_intrinsics-2OQWMRBVRD4OJ.pcm",
+          "bytes": 1049848,
+          "sha256": "eff50f911ffd1e26d0378dcfb043165ce2780c0e5c0382175cae73ef318a9c18"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_Builtin_inttypes-2OQWMRBVRD4OJ.pcm",
+          "bytes": 24280,
+          "sha256": "5b3b1a0a8a1a348cbc3321fe7f54dba1810c14895cbca27dae8e8b9af03ca39e"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_Builtin_limits-2OQWMRBVRD4OJ.pcm",
+          "bytes": 26112,
+          "sha256": "ee8c9178f6d05add3f7e18aa6120925e99446dfd1e0b2647be7f61c66111e291"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_Builtin_stdarg-2OQWMRBVRD4OJ.pcm",
+          "bytes": 25860,
+          "sha256": "7f29e817b5d0ff63c762f281d3eec6c25507d0ab4cf3627c727bf5b35e1adb8e"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_Builtin_stdatomic-2OQWMRBVRD4OJ.pcm",
+          "bytes": 30384,
+          "sha256": "43c54ff965a9b684b52d6d75efc7deecc49dba209babcdf5a30216038fa9bf7a"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_Builtin_stdbool-2OQWMRBVRD4OJ.pcm",
+          "bytes": 23964,
+          "sha256": "79309f5c9e7d53915fa4d729e02e911121fc7cfbc947f6dc5b6666fba990229d"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_Builtin_stddef-2OQWMRBVRD4OJ.pcm",
+          "bytes": 26732,
+          "sha256": "38ca0c890f5014ce2d59c6852fef7ae0f91da3d08352db5015a53d1b125182a8"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_Builtin_stdint-2OQWMRBVRD4OJ.pcm",
+          "bytes": 23884,
+          "sha256": "df6fe747d2b652675d019dbac010d717ba5edb8d5a794149e0906cd04b6a95d3"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_Builtin_tgmath-2OQWMRBVRD4OJ.pcm",
+          "bytes": 24240,
+          "sha256": "0944de40a4e94be702b4adfdb47936c06129359e52bdae04d10984d456e8ebb9"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_DarwinFoundation1-3D4U9ULTH0M7F.pcm",
+          "bytes": 196724,
+          "sha256": "c305074853777752c10011205b4bfafae3c9e3c2bba46db3a8fe4374d9afd578"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_DarwinFoundation2-14SXWNMU3ZLCS.pcm",
+          "bytes": 111776,
+          "sha256": "46f4d7bfeac502e8c05ec325676ed05651aa322590a50b7ca1b596b6c76c61b5"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_DarwinFoundation3-2IM218WH22V57.pcm",
+          "bytes": 121960,
+          "sha256": "000976c7a995e49770b0f217b24422bf43f9eb1590c20a0c2e878956bf2dd06b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_LocationEssentials-FBH4ON0QR2HP.pcm",
+          "bytes": 25716,
+          "sha256": "e66d42ca7115b0742651c0d40cd4d1281701dc379c7e9bf20d44055d5da1a881"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/_SwiftConcurrencyShims-2T96M38N78LYI.pcm",
+          "bytes": 23724,
+          "sha256": "fca2372effaee5f4a0e929c6a4d468d5ecb9fc58a6b109e34e459d5724245b8b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/dnssd-3MYIK13BDFARJ.pcm",
+          "bytes": 26540,
+          "sha256": "27a176c22b4014c1c7a43a2bcaf48d3cc64e69bc13f79692b9f281f1172ae098"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/os-37IYMT9ECYAT.pcm",
+          "bytes": 62192,
+          "sha256": "807310e82c4bfc1c7695548e948f3145d82e0f5dfa846f4179f0c7cd31f425ae"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/os_object-37IYMT9ECYAT.pcm",
+          "bytes": 31784,
+          "sha256": "21c89baf02b67c704060185d13e92501633419c6b1008acf1ef8a0af142a5c5f"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/os_workgroup-37IYMT9ECYAT.pcm",
+          "bytes": 30676,
+          "sha256": "8d57dae45f8897a1ee800ec2cc09f3ec2f8a342767af9466c7a09f505a1fa3cb"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/ptrauth-2OQWMRBVRD4OJ.pcm",
+          "bytes": 29328,
+          "sha256": "9bd2fdad564175318ffdaa2a4111eca2bcc54b1459250bec952bfd1090f3c44d"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/ptrcheck-2OQWMRBVRD4OJ.pcm",
+          "bytes": 26508,
+          "sha256": "6b3ec9bab589fd508b97d19b552b919aa4483a38e964181be427a1ac790bc1ff"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/simd-13M3YWLLAT6AX.pcm",
+          "bytes": 47736,
+          "sha256": "14b0c63497e16b522b85617f668c68962f862b5bf7313a6d5b7687a8030cf642"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/2SZ0T12HLAAAF/sys_types-14SXWNMU3ZLCS.pcm",
+          "bytes": 23756,
+          "sha256": "2da9c12c9d800851e17c0bf773a28e473780c620178332ee3459418263623776"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/AVFAudio-4ZLR3CVTYWRS17G0HPGSQZLUQ.pcm",
+          "bytes": 1289008,
+          "sha256": "d16a695c7756313c88981a421e49ce197b1f1e9b295b4142d1219235ec8cfe6d"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/AVFoundation-E9VZENA67KKKTRGLH9BQ2S2M2.pcm",
+          "bytes": 6207096,
+          "sha256": "de6b3cac23900d2cd457aeb64731736b066449120fc4c591281c244c6acb22bd"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/AVRouting-169GUHJGA3M7B26E59MP49LJ5.pcm",
+          "bytes": 116680,
+          "sha256": "3c5e25a0ccaf8f906f5fa6d63a02c5ddce87865fb81b37df59acc15e000c6871"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Accessibility-186YZVPTZF1TD7FBUNR1QSWJM.pcm",
+          "bytes": 281424,
+          "sha256": "b37fcd40eae5a29bc88771feba8816c7245090a211baad22dcd4e0d1d1c543f3"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/AppIntents-CY7T6LMAV0QUUHPHUCJ7982QE.pcm",
+          "bytes": 52872,
+          "sha256": "fe99f10e44964300acf2375b43578acd11f7e1ce311b6cdd3f407ecc16a00bf5"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/AudioToolbox-4NYMS05WACSQZY04VZFDF61U0.pcm",
+          "bytes": 1553408,
+          "sha256": "33b37785da149a961c3ed1fa21bdf21c45db961931e3dbe98258c25e09c0dd6b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CFNetwork-D6SOXA48K4TCYPTW2KZSX8OBK.pcm",
+          "bytes": 342984,
+          "sha256": "6a2d91eec878e8fde891ef286c010a2b892410485239de1ca0e67db2b6bd2cf1"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Contacts-2CWOHJV98A600LMTJ75HCI8VQ.pcm",
+          "bytes": 452512,
+          "sha256": "ec6f65fb7f3a594fc9ddb186c77a4078b46b4563e9065540ea69a2b1c08025de"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/ContactsUI-7DV0T9FDSALTT6RRZFNCWDS7C.pcm",
+          "bytes": 103784,
+          "sha256": "447cc50b9b54ed4dae088df84109286fe0f0c63252112776f718ed564814c096"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreAudio-D94G7H2EFQTPEDJLSH9GT7XF1.pcm",
+          "bytes": 50400,
+          "sha256": "7ae49036ddf7ab317b02c9b2b3760ec9a700f78f2ec13f484817b813fe7aac7c"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreAudioTypes-EG36GQ1UHROLKMRX5KVJA2S6F.pcm",
+          "bytes": 252528,
+          "sha256": "404520af97cf57fa76f14c722f79e7b014c75ae6de2e571d5097ca774303e5d9"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreData-OZCY4LMPHBQYS098BVRZRD8X.pcm",
+          "bytes": 857648,
+          "sha256": "c7112c2c9d5b5076225842d8505e1d26d3206e5622e903e9317bed2849f4a4cd"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreFoundation-7B7CNMGSCHQBYPEQBW0GD904L.pcm",
+          "bytes": 1333568,
+          "sha256": "926f8bb7075504b6f88f7bd5aa42a942242ae45fa40a406e87b6b29c901c6828"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreGraphics-4BEJFD3IHAUQCND8ZLRC0VZY7.pcm",
+          "bytes": 963808,
+          "sha256": "70fed7578f7cc11d54748b98f1a19ae4335a0da5f8b3ade1b1557068fccb9fe7"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreImage-CIRE9L4FVPSAHM3HFV6Y2NJL8.pcm",
+          "bytes": 1293712,
+          "sha256": "5910526bc220b1c23bf998edd05ecf3d73b904706ff34b99afc3108474ed3552"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreLocation-8SE6DIY0SQMRMOWEV7XOZX3N4.pcm",
+          "bytes": 436960,
+          "sha256": "6bbb193488d2ac68bed79a199d9c7b00a6b7d472927c24b80d1edeb2781a3a9c"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreMIDI-DB1F5ORHXBV5IPF1RGUAQVJAT.pcm",
+          "bytes": 641184,
+          "sha256": "f5c8f9143e58870efd5709f32b7fd767ffe295dcd506be0e48a5e4256090a245"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreMedia-8Y1XU6LXB6AOPGKRJWDTVI3ZH.pcm",
+          "bytes": 1474032,
+          "sha256": "a898f06fa2335d21e4516b4293435eefe4c6e604520339978066dd72c44dfc5b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreSpotlight-7886B01YAWBQQGHMUTQFHBK77.pcm",
+          "bytes": 361472,
+          "sha256": "ba5fd822bf5020b58dd9406bc64a7fd9379cb728fc7ee1a08cb2f08f5ebb2419"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreText-A1R7RNIEK6KLWSZW104CKV333.pcm",
+          "bytes": 1024680,
+          "sha256": "a9bf206812a30b6a5d12606bca6f5b1f5ebdf3e4e1344555e8d90eb2e09d2c00"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreTransferable-80RRS0YVO2IWT1D1PPETVP596.pcm",
+          "bytes": 53192,
+          "sha256": "4cb08a779e019fa5b7271ef56acc376e945d5339b9ac7b75331957087b92deba"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/CoreVideo-360X7RPJAP5BH2GMQ5WGHDCXY.pcm",
+          "bytes": 400504,
+          "sha256": "308d0725a08ed8537a2a5c75f06acd713059e1bed1bce260f51b706f6cf4758b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Darwin-DH7UWB74B0IG09PWBRS4PMXA1.pcm",
+          "bytes": 3969072,
+          "sha256": "3be765d5b7d5b96d34cd8832614e77c56777765e493577944913ec5aff2d196e"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/DataDetection-C8EMTTE9JVWM0YPT5T831N75X.pcm",
+          "bytes": 80592,
+          "sha256": "67a4bc572652f22fbbcb9753903e9a08edb8cc9da0e68bbd4a041ec7a68776c3"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/DeveloperToolsSupport-4CU8A9UHF18HEKLOFYGB4FIKN.pcm",
+          "bytes": 36344,
+          "sha256": "892f927fa4da8d13933c9b885f8b1f7ac80b94a0327430cea94e18794bcd6909"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Dispatch-NW6WZMBQI8T5PODIWD4IO18G.pcm",
+          "bytes": 308992,
+          "sha256": "9da5b678ecc64abb4fd240c8467a7a4622e25ea8ccdaf0f7659eddca4f09e135"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/ExtensionFoundation-5E2MTSBN2QXEBQNJZ1LB9MCR6.pcm",
+          "bytes": 43216,
+          "sha256": "c60ca7d410d648f95a0fabee6a008fd9a72011be20febb167df32bfa38b3b77b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/FileProvider-BH3YKJG97SLN39BOXNV0N9KXS.pcm",
+          "bytes": 528288,
+          "sha256": "ba1b10ad8cffb5783a793379a007a6bc55a36a858a84870510ff17d1048ce886"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Foundation-2RNHSOOJXGLMQX2RV8G0JM4YH.pcm",
+          "bytes": 5817424,
+          "sha256": "7d7f2c7d3fcedf95d66fe4919f31f359a2eac6a4f3094f42a377bcac8f223ca6"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/IOSurface-49JQTGZPIOPDKT4BID74LQREM.pcm",
+          "bytes": 223312,
+          "sha256": "9d6183571f3711b11de9a5c59d135659e6f0dc71180b540ed95933d7742050f0"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/ImageIO-57ELG9P2JBF8WR0M5HUBVERE8.pcm",
+          "bytes": 947760,
+          "sha256": "9f2b5ff5f2cacf485c4cdc062872fd2807d1d2fe678d7c8b40ad3d3e05ac0c06"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/MachO-8SLD5DLDISJCSX97DBQ82JJBS.pcm",
+          "bytes": 473976,
+          "sha256": "93f80e284b38428eedc7195e9f61d9858cc7390e14c4864b4f9ce2a69d2bc901"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/MediaToolbox-69071I4I3ERYFKKWX2SQQR3E.pcm",
+          "bytes": 85680,
+          "sha256": "066a56a5707d7645bfd7bee0a7bedd428788a22dfdfac3c128b91ce996ba9504"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Metal-BJSGOF0EWGD0HT3Y78Q3ZI81X.pcm",
+          "bytes": 2720368,
+          "sha256": "41fe0e9c6b99fc0ad406983b7782defe834c21d18c7c1134ff345973150c32d9"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Network-A1LDECTRZYPY9A3I0UP3KKNM9.pcm",
+          "bytes": 751064,
+          "sha256": "02251f858ff0a3a6c417d948f11aaca006daf285bebbe8e6a9f1c7533bdcd28b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/OSLog-C8JH1L7VIUB3LZYREQWW1JPBL.pcm",
+          "bytes": 153192,
+          "sha256": "d62d01b88e6c2f3edc210bb6113cad8b6753218b39b5ffb548644303a7323386"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/ObjectiveC-6EO71XWB7CEO57MDW2G3AV9JT.pcm",
+          "bytes": 303232,
+          "sha256": "58cc0f480a1afa97852f93cfe3ef96ac36fced41b56542770cea0b1ffb3565cf"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/OpenGLES-7Q6G6O6FOO9TQIUS6VDN3HTX3.pcm",
+          "bytes": 1082736,
+          "sha256": "66575a4c1892b0ae13fa5bef358fa9ca0aa93ed10ec91228a96c9b7d96ed0003"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Photos-DQD4882IMH4SW7Q64EVPUP45F.pcm",
+          "bytes": 759736,
+          "sha256": "8e79ebad76ad43a8e256ccd93c1f5aeab6944e6a1473e4c2bf6840a7b19c17b3"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/PhotosUI-BAQJMTIXJ6JN2M82AWN9UL0M3.pcm",
+          "bytes": 238768,
+          "sha256": "59752c39a5883d4dc8ebeeb901d9ac73d177852860ff2cc0be4c036f5b5e3b92"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/QuartzCore-30CPUU2URJH0DAY5FJO8DZBEV.pcm",
+          "bytes": 716864,
+          "sha256": "82f2249e0a7d591595201a12e1dfce554491c4d6a6d07a858de9fb2e131ac0b0"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/RelevanceKit-EOD0KA7Y0VZPL7OEA83SK8DEG.pcm",
+          "bytes": 52896,
+          "sha256": "503192b953657061d8f09da9d7b4a6811d78757e4fd69194c62c62c1e4e0f988"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Security-391XC8T4CNZ93WNVE49LXEXS8.pcm",
+          "bytes": 871472,
+          "sha256": "fbb7d01ef6afcddae678eff9e68aa0f247115be16f5fa12e82e35dad4cf4e517"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Session.modulevalidation",
+          "bytes": 175,
+          "sha256": "e47ef42da10242bd83f41a0bd0bcd010672574774923a592ccdb0b17dc20ac78"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Spatial-4N1WWX88RCH0BVWT6OT21OCF6.pcm",
+          "bytes": 2016504,
+          "sha256": "223d02b6a528ccaf65da51855b1b98f16f12306fe60cfeb037e5ed39d3b1be8b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/SwiftShims-4AX6HNOR1ZLX53WYQTCO7WT9R.pcm",
+          "bytes": 153816,
+          "sha256": "f68f3a953cfef655f7133cd85a2c4b795e44a46f5c7e090c0dc779ff6f9d3ae7"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/SwiftUI-66EEUYQD99E7N03RITDYO2FL1.pcm",
+          "bytes": 55680,
+          "sha256": "429b9217af03ad788f54698743d30b87eb0bb8042699bba3b077d98251dcf208"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/SwiftUICore-72A2QKV77WPDJYSBXBXKUZ3WG.pcm",
+          "bytes": 58160,
+          "sha256": "9b41973cfacc34b4f3fb10098d6829f08c1ea9b9749f0c7bd39edff8d79819f0"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/Symbols-31QMKA0VXS00609NJ8XL78RC2.pcm",
+          "bytes": 136728,
+          "sha256": "b6f57302690c0f87f872011dd22988eb01ca82bbb86cb104a5f14df626728683"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/UIKit-E1C36NT2BLYTYI4VVYBWKN5YG.pcm",
+          "bytes": 10782704,
+          "sha256": "238bbbb997fe4ba1c5e321ddaf5296317349df0c4139172357c5ff53372cd844"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/UIUtilities-32JTJQM2TJAQPOCBY3QN36K8T.pcm",
+          "bytes": 70848,
+          "sha256": "356524420f02d992ef0225793fc9ec7cab05b28813032aa8184a01000242cc34"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/UniformTypeIdentifiers-32KI3M2UTA3H9EUW6M0LE4J54.pcm",
+          "bytes": 229056,
+          "sha256": "ce6e22364d89e91af460401a618f9d679e55970fdf84b89f90d1ec0deb6fd08c"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/UserNotifications-4HMUAEPP123OYBMOBW4P2TM46.pcm",
+          "bytes": 290664,
+          "sha256": "b980efd6529997345ae3cff59efde3510e8bb22f04150349f8179265b36ad37a"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/XPC-8K4Z33YOT65KUKOWJAGEJ7822.pcm",
+          "bytes": 292944,
+          "sha256": "a2554b15b2171e1a338f807930658ac5e511c41acb64dc844c0651f7dbc00bb7"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_AvailabilityInternal-7GTTLEUZ2RC9IOMARUC3DKCLQ.pcm",
+          "bytes": 595832,
+          "sha256": "082be3aac1c4efa590a11e3c4ce045ee61477ec1976affbf9b7d91b6c0553b99"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_Builtin_float-TSU0W2SCFIV3XE6ND3QKB26X.pcm",
+          "bytes": 45680,
+          "sha256": "1a78b3fe22be9f7a2ffbe653110ffea6921f4e4f1e0bd4ece72b7eb56dd278af"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_Builtin_intrinsics-A6Z39OQI9KQN0QRR1OHCM2AJG.pcm",
+          "bytes": 3271664,
+          "sha256": "f147cab905210092000f882ed60d033a2420002fe38b0c25f81eba8324b8999b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_Builtin_inttypes-8ZFXD04F159J7K1ZSID2T4ZD9.pcm",
+          "bytes": 44176,
+          "sha256": "da1e2a23b277d088afc21bceb9c2681bd856dcc04e5693e70ec5ce5e726d130b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_Builtin_limits-9J4FCFJ5FHNGYVXW8KZBCDNHO.pcm",
+          "bytes": 44328,
+          "sha256": "c5992dbab9c487bf21918912c00daa933d56eb029a800a17712ea7c33d1c4c64"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_Builtin_stdarg-1Q0R8WL2QUC3YABUMU73EDOFY.pcm",
+          "bytes": 41400,
+          "sha256": "656e6a8251ba8b3c0b083c55911c9139e54ba01e8229b2e68dae77b6dc60561d"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_Builtin_stdatomic-B2ZZF77A1YAEXJ40IEC8YFZBM.pcm",
+          "bytes": 71992,
+          "sha256": "aef4b8f25a1da05ab63185dfc6795217237cd6ecf0b25d193549a25ea4b70c5b"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_Builtin_stdbool-5ZEGUYS5LJQOV7NVFNV939PYW.pcm",
+          "bytes": 38440,
+          "sha256": "76fa247f03f12a852fc8d53b0786a5f2c094f8448f93337f2a9c8e545188ea2e"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_Builtin_stddef-6927NX8S49CI8PZBOBN197LLN.pcm",
+          "bytes": 43176,
+          "sha256": "68683f63969e095ca439c739362886a23b3c7c1b0dd8297012e89675ad9ed3af"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_Builtin_stdint-1BGX7F4Z369NST1KPUA6B83QY.pcm",
+          "bytes": 43560,
+          "sha256": "a79ad2a17da0edc67f3a629a4a633d8007476c5a943b804b991490f8b859f820"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_Builtin_tgmath-COLB462V7T8FE62FCVJGYIJF5.pcm",
+          "bytes": 44296,
+          "sha256": "aed0fa6bb1309c9017d0e2c8481212c4ae2d7773bda7f9dba09fccc06ca10969"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_DarwinFoundation1-5N1YBJVOJ78VDH83L7X8HB2DP.pcm",
+          "bytes": 466168,
+          "sha256": "3fe036048edb4186cbfe92738107654943580503c57b48b41adb104e5ce72065"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_DarwinFoundation2-3FSRTVNJDIEVH5YEFMU0TIXE9.pcm",
+          "bytes": 492768,
+          "sha256": "f143e955aef51ea4ad68aada26ff48327d5e336e125113b7b96e281b9b274c62"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_DarwinFoundation3-4IQYLL729WVE5PX14EN3N7QNW.pcm",
+          "bytes": 629040,
+          "sha256": "2d128a272b268212d2bfd9c84e1c412893ef4175a3ab717defc95ce238c80ec4"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_LocationEssentials-DQ38D1EQJD1KIWANWG2YSRJXS.pcm",
+          "bytes": 92328,
+          "sha256": "58a663bc93e44e46a30a2bf519abc955a7d2be02fcc9d762a4dd9b1f5db481ef"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/_SwiftConcurrencyShims-2OQGK8SNJCWPSHC2WWOQRNHKC.pcm",
+          "bytes": 38640,
+          "sha256": "e4c0601124dc164227938677183e7969cceaba7d5374838a3385980f61b80c48"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/dnssd-3BPFU67WNXWY8XFJ0EQ8PAKFV.pcm",
+          "bytes": 139360,
+          "sha256": "b6de2148d11ac23f960805f927391800aa5527cbcafc8e0e672d4353a6452aa7"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/modules.timestamp",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/os-6JOC23XQEU5QAC08PXIBYCULJ.pcm",
+          "bytes": 169192,
+          "sha256": "3f86f0eb6d416fc0ebd0d227687913f6ea839bcf2f29cf650e0d53bf65c5b7bf"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/os_object-EL8QCR7LVNUJO70XYIVLLI5SD.pcm",
+          "bytes": 62112,
+          "sha256": "a9a7f199c3dc7a133efc0cfd1461cb2f0ec4f3abbc69cbd2205219046ce0d704"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/os_workgroup-5W3S1QX6LTSEGK1Q31REVJD14.pcm",
+          "bytes": 95552,
+          "sha256": "9feeed7fc8fafd39d8470dcc1103d44469e18624018db5479bf44dc71cd8907f"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/ptrauth-3ZQUF896BFVIA9D4R20T79HMA.pcm",
+          "bytes": 50440,
+          "sha256": "db0f24fda787bf7edd4d3da9244fc796c63ebed773e2a9e14315e6a0e08f0dbf"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/ptrcheck-6OS0VKK3QQ9GLNZJ2QVA9IRQ2.pcm",
+          "bytes": 41464,
+          "sha256": "f291d63975a7f849057709e73e74b88b45d6e9211bb38866629845b785a2ac85"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/simd-CXBXKXDP01GL5LCQUBJ8I16KX.pcm",
+          "bytes": 3960824,
+          "sha256": "bb67cff749ed7e9f0c833cd63af08bba8557845bc7cfae9806a8af20c5458af9"
+        },
+        {
+          "path": ".build/testflight-derived/ModuleCache.noindex/sys_types-2QE8FMR9QXA1FDQX1314NTL38.pcm",
+          "bytes": 43296,
+          "sha256": "2058fe81bf9752b6897254ad3a0d162ff05bb52a7236a6fb23237e172b15a328"
+        }
+      ]
+    },
+    {
+      "stage": "successful TestFlight retry",
+      "path": ".build/testflight-derived/CompilationCache.noindex",
+      "bytes": 16688,
+      "files": [
+        {
+          "path": ".build/testflight-derived/CompilationCache.noindex/generic/lock",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".build/testflight-derived/CompilationCache.noindex/generic/v1.1/v3.actions",
+          "bytes": 8304,
+          "sha256": "d84ad455b07c52377cf36f8dd38f5aae683ad24ca3b26411c0e5738acf8ff6f4"
+        },
+        {
+          "path": ".build/testflight-derived/CompilationCache.noindex/generic/v1.1/v3.actions.shared",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".build/testflight-derived/CompilationCache.noindex/generic/v1.1/v8.data",
+          "bytes": 96,
+          "sha256": "550dd74254232937f6bd8b60e4d1c573b968505cb8436773cc2bf9f465827959"
+        },
+        {
+          "path": ".build/testflight-derived/CompilationCache.noindex/generic/v1.1/v8.data.shared",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".build/testflight-derived/CompilationCache.noindex/generic/v1.1/v8.index",
+          "bytes": 8288,
+          "sha256": "187564af2c259bf0e71772c7d00bf7ea36185513802af96698be398994746295"
+        },
+        {
+          "path": ".build/testflight-derived/CompilationCache.noindex/generic/v1.1/v8.index.shared",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    {
+      "stage": "successful TestFlight retry",
+      "path": ".build/testflight-derived/Build",
+      "bytes": 18327680,
+      "files": [
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/BuildProductsPath/Release-iphoneos/Plenara.app.dSYM/Contents/Info.plist",
+          "bytes": 656,
+          "sha256": "669a1fc43c0c6798d5f6431dcd8d488a9f40a69bcd333b93c6beefa390498118"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/BuildProductsPath/Release-iphoneos/Plenara.app.dSYM/Contents/Resources/DWARF/Plenara",
+          "bytes": 7048632,
+          "sha256": "9d6774c61748fa5e39e3975134bca4860af0a927f495b01a512a79b346092cbb"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/BuildProductsPath/Release-iphoneos/Plenara.app.dSYM/Contents/Resources/Relocations/aarch64/Plenara.yml",
+          "bytes": 285,
+          "sha256": "fe5016e1d0b7955f65760c494a7be3031ec48e6125e6e1932b579f8cae129156"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/BuildProductsPath/Release-iphoneos/Plenara.swiftmodule/arm64-apple-ios.abi.json",
+          "bytes": 149,
+          "sha256": "4277ac6b49f8511196028a5ac20f5b1b1dfa754c24615d34068089f0b1739728"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/BuildProductsPath/Release-iphoneos/Plenara.swiftmodule/arm64-apple-ios.swiftdoc",
+          "bytes": 408,
+          "sha256": "cbe5ef0410af770e31785e3208ed94fcf01bd4fb205a9b03d3445569a2d0f9ed"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/BuildProductsPath/Release-iphoneos/Plenara.swiftmodule/arm64-apple-ios.swiftmodule",
+          "bytes": 427528,
+          "sha256": "09169635a8ac021c1f9fefd6f0878d2c7d3ce835821ca8c62582a81a14de60de"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara-f0c096400f11f715faeaabb571d065bc-VFS-iphoneos/all-product-headers.yaml",
+          "bytes": 49,
+          "sha256": "b7e056c85f6e2f66a633e7400ddda88868fad5ed81b8d4e9d53287984ca925fa"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/DerivedSources/Entitlements.plist",
+          "bytes": 388,
+          "sha256": "4999458f30d5a07aa4cd06e7d00a6b2761c017dea4753b474ecaf4c7318b80b5"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/DerivedSources/GeneratedAssetSymbols-Index.plist",
+          "bytes": 276,
+          "sha256": "b1a31aacaaa19cb7b724064391798d4b81a54e626d45cfb4c1ffbef08cec6e9c"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/DerivedSources/GeneratedAssetSymbols.h",
+          "bytes": 189,
+          "sha256": "27ee8b9fa1994fbde8144467fdb375fb4ea293038bb672f66b67d7387f799baa"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/DerivedSources/GeneratedAssetSymbols.swift",
+          "bytes": 575,
+          "sha256": "c3d8b6adb619f947dec2de308862af23882af003a02f6802c0a210c159f2ad7b"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/DerivedSources/Plenara-Swift.h",
+          "bytes": 13666,
+          "sha256": "311383e18c1ca8da6504559faf999f2c8dc4eceb106fccce7c13f2f29e65dce5"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/ContactsImport.o",
+          "bytes": 559592,
+          "sha256": "b5efd4380bb4ff65c8099df0bdcd74616a7b1854f7da42fc5c25f6b09745fb35"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/DemoData.o",
+          "bytes": 13392,
+          "sha256": "ea042b76ea9408535106c28ff83591c35d893efb70fd2eecdb95266876593dd2"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Editors.o",
+          "bytes": 1848104,
+          "sha256": "769242bb7cb32fa68ac322646c12bbbab2829ba4944f1127eecc0a3144e031fe"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata",
+          "bytes": 86,
+          "sha256": "f236de766fc1c4f3baf7553831ef9f4c67840409d56aa745b15b3c076cfa9c4a"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+          "bytes": 18360,
+          "sha256": "61ffb1579a8c61bd2530b29665f4ed8f16a5cc652b1174e60c18d91a8bfd885d"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/HomeView.o",
+          "bytes": 1315816,
+          "sha256": "508422244cda0cf7817e4a4c5ad3f4c558cc515adeb3d9a8f650744732b6548c"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/JournalStore.o",
+          "bytes": 219832,
+          "sha256": "59e2922c48192bc1aceb02ea522d9a8dc6356f6504e295c0c5af30c6f4960fc7"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Models.o",
+          "bytes": 474848,
+          "sha256": "681bae8446c493b8ce62ec871c22d66954cfe0626622fc19d5d98cb4911a7604"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Notifications.o",
+          "bytes": 180096,
+          "sha256": "40498fde5f4eda29ee9038382565b2672b088639f56f4d27db2c25911a5a3b38"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Organization.o",
+          "bytes": 1034376,
+          "sha256": "cbf2015115853c7ab08697f3c113bc91fc89d5ea85b0ba5245e70c5c3211a1fb"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/PersonDetail.o",
+          "bytes": 1279976,
+          "sha256": "7941ed967a964f098be1756addc7b907f215a4004a6e542d648fbe349fceebc1"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara-OutputFileMap.json",
+          "bytes": 11550,
+          "sha256": "2ae64efe4e36f77c6c502145e30d63254b2f34154b5b70e284dd14579b5f1582"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara-Swift.h",
+          "bytes": 13570,
+          "sha256": "c194e0ba747f5d2e1e7ddb6b94bd2b8d2a729baf38128df2d79838a3912362e4"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara-dependencies-1.json",
+          "bytes": 53935,
+          "sha256": "219b85270ae9b16a20afae22864dc0270ae52e6935342fd4577f12ea6017047d"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara-linker-args.resp",
+          "bytes": 12322,
+          "sha256": "9b560c3bb0586e607ba921a30e2ba9a3e98bca85f57a03cfedb8a3bda533f6b6"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara-primary.d",
+          "bytes": 454275,
+          "sha256": "33206f86d2c481a45c6f9db67abbcf8767d800aae8ab12440a1734809d05e2c7"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara-primary.dia",
+          "bytes": 268,
+          "sha256": "2c72d5afff8cce441f2f8299a18215b0bf79605aa7eb05839e38f7949b46c0e2"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara-primary.swiftconstvalues",
+          "bytes": 2,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara.LinkFileList",
+          "bytes": 3117,
+          "sha256": "69c6ddb0b9de0241520ac40f12deaf66434606897610a3cd9363f55e306a1e05"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara.SwiftConstValuesFileList",
+          "bytes": 259,
+          "sha256": "02c1eff87b447f20c602a5b2898903ffe1ad0730c1e456e88ee3782e2b4fda1f"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara.SwiftFileList",
+          "bytes": 1195,
+          "sha256": "ef158dbe74c4d9c4c44da7bc03e71e1f9a468019db441a396a6df75bf5ccd099"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara.abi.json",
+          "bytes": 149,
+          "sha256": "4277ac6b49f8511196028a5ac20f5b1b1dfa754c24615d34068089f0b1739728"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara.dependency-scan.dia",
+          "bytes": 268,
+          "sha256": "2c72d5afff8cce441f2f8299a18215b0bf79605aa7eb05839e38f7949b46c0e2"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara.swiftdoc",
+          "bytes": 408,
+          "sha256": "cbe5ef0410af770e31785e3208ed94fcf01bd4fb205a9b03d3445569a2d0f9ed"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara.swiftmodule",
+          "bytes": 427528,
+          "sha256": "09169635a8ac021c1f9fefd6f0878d2c7d3ce835821ca8c62582a81a14de60de"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara.swiftsourceinfo",
+          "bytes": 2948,
+          "sha256": "fd5f4eb1688d2a049c2054d52366f0dc53cd90c1e7be34ef7fbc69b6fed3998f"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/PlenaraApp.o",
+          "bytes": 365424,
+          "sha256": "787b7f727d5e5eff4ea91c444eda4d465be08320e3732e6cb2b0ffe1ea9d80eb"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara_const_extract_protocols.json",
+          "bytes": 340,
+          "sha256": "6cf900edb7742ddc71ca3dcdff826e5b19256680ea93f1ae108e98ed95da07fa"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Plenara_dependency_info.dat",
+          "bytes": 245842,
+          "sha256": "3e923111f90347ea97ecf90071693adacb659d2baacff6b1b079d5e0dafbaf15"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/SettingsView.o",
+          "bytes": 512672,
+          "sha256": "5d4ece11c64a2a7976b7f948ac5cb60c39355923950fb056baa41ef7e30142ee"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/Theme.o",
+          "bytes": 363912,
+          "sha256": "6e746c448bbcae9187f8c3f35de896fbcfaa12d4c8c27eb59281f69f61e1c8c1"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Objects-normal/arm64/supplementaryOutputs-1",
+          "bytes": 2263,
+          "sha256": "c096629db16ffa4e70665bf9b8cd78e783548561ec4bae535accbba76e93c16f"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Plenara-all-non-framework-target-headers.hmap",
+          "bytes": 121,
+          "sha256": "12ed03f05477a53a9fdc4a0af4e10c3954d23c914d83548dc9176139cfa66bd8"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Plenara-all-target-headers.hmap",
+          "bytes": 121,
+          "sha256": "12ed03f05477a53a9fdc4a0af4e10c3954d23c914d83548dc9176139cfa66bd8"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Plenara-generated-files.hmap",
+          "bytes": 398,
+          "sha256": "b06fd3d5745768ce6562d5e1d25e0f72e93379e9759c61e3efa47bd3a91bcd3d"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Plenara-own-target-headers.hmap",
+          "bytes": 121,
+          "sha256": "12ed03f05477a53a9fdc4a0af4e10c3954d23c914d83548dc9176139cfa66bd8"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Plenara-project-headers.hmap",
+          "bytes": 121,
+          "sha256": "12ed03f05477a53a9fdc4a0af4e10c3954d23c914d83548dc9176139cfa66bd8"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Plenara.DependencyMetadataFileList",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Plenara.DependencyStaticMetadataFileList",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Plenara.app.xcent",
+          "bytes": 388,
+          "sha256": "4999458f30d5a07aa4cd06e7d00a6b2761c017dea4753b474ecaf4c7318b80b5"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Plenara.app.xcent.der",
+          "bytes": 142,
+          "sha256": "5628a778fde194daf05f9bb449d0b2842634f694547285e3cc0a7759ccdf9bcb"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/Plenara.hmap",
+          "bytes": 121,
+          "sha256": "12ed03f05477a53a9fdc4a0af4e10c3954d23c914d83548dc9176139cfa66bd8"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/SwiftStdLibToolInputDependencies.dep",
+          "bytes": 220,
+          "sha256": "4e5f0304965be0393b59da199596d80fe2ac0942617d25ef227bf443762fd574"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/assetcatalog_dependencies",
+          "bytes": 1099,
+          "sha256": "1bdac5eec4367ac176fee2453917dbc18b898abd41b0e30618140348641f08cc"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/assetcatalog_dependencies_thinned",
+          "bytes": 1099,
+          "sha256": "1bdac5eec4367ac176fee2453917dbc18b898abd41b0e30618140348641f08cc"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/assetcatalog_generated_info.plist",
+          "bytes": 654,
+          "sha256": "aab2ddf8b932fb221a4ed203c6e1adaacd51a489d4716c767e1bf4821eeba7a4"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/assetcatalog_generated_info.plist_thinned",
+          "bytes": 654,
+          "sha256": "aab2ddf8b932fb221a4ed203c6e1adaacd51a489d4716c767e1bf4821eeba7a4"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/assetcatalog_output/thinned/AppIcon60x60@2x.png",
+          "bytes": 4976,
+          "sha256": "f9c5adc6f53d9c8ac152bc5ec83df40881e779e73174e5beaa313947cd379bbd"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png",
+          "bytes": 6218,
+          "sha256": "17a358ab48f9d98fbdae74a8c90bc89c27d01a253fdc7850438d1c76cf47f8f3"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/assetcatalog_output/thinned/Assets.car",
+          "bytes": 70536,
+          "sha256": "c87bbf737ccb6a4b6c53fa5ba1949c36ac1f864d908338c22c0ba181232c133e"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/Plenara.build/Release-iphoneos/Plenara.build/assetcatalog_signature",
+          "bytes": 5,
+          "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/36ea7b41b43cd922dd9b639b346c53d4",
+          "bytes": 1195,
+          "sha256": "ef158dbe74c4d9c4c44da7bc03e71e1f9a468019db441a396a6df75bf5ccd099"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/6dc3311b41f71bcc3098da93f4263270",
+          "bytes": 388,
+          "sha256": "4999458f30d5a07aa4cd06e7d00a6b2761c017dea4753b474ecaf4c7318b80b5"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/79e4a99871ecdb0f37ce6aa0c1530a59",
+          "bytes": 216562,
+          "sha256": "2707fb9a0d7745650a93bca7a2c60fd3bdf8bcda6e97553cb7c82a49c09f1d56"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/8bba4233626f64a7ea772bb94a08a1a9",
+          "bytes": 49,
+          "sha256": "b7e056c85f6e2f66a633e7400ddda88868fad5ed81b8d4e9d53287984ca925fa"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/8ea2db7a5c4188ab6003c909a4f8eff8",
+          "bytes": 340,
+          "sha256": "6cf900edb7742ddc71ca3dcdff826e5b19256680ea93f1ae108e98ed95da07fa"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/949c806f26b3df04a3e2826ac6a809f8",
+          "bytes": 259,
+          "sha256": "02c1eff87b447f20c602a5b2898903ffe1ad0730c1e456e88ee3782e2b4fda1f"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/d41d8cd98f00b204e9800998ecf8427e",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/da691d77910abf139c5a75c0443a7278",
+          "bytes": 3117,
+          "sha256": "69c6ddb0b9de0241520ac40f12deaf66434606897610a3cd9363f55e306a1e05"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/e75bc1838d2eb06b72a51c2fb546bd59",
+          "bytes": 11550,
+          "sha256": "2ae64efe4e36f77c6c502145e30d63254b2f34154b5b70e284dd14579b5f1582"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/ecba25265b77735efe907bb553e3bf78",
+          "bytes": 398,
+          "sha256": "b06fd3d5745768ce6562d5e1d25e0f72e93379e9759c61e3efa47bd3a91bcd3d"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/attachments/fd8314defc70a8778956f026c0ddfd19",
+          "bytes": 121,
+          "sha256": "12ed03f05477a53a9fdc4a0af4e10c3954d23c914d83548dc9176139cfa66bd8"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/build-request.json",
+          "bytes": 5027,
+          "sha256": "8b047ed14809ed355dddd44a0b31b40b02ead5c06fb0c9b1040cc5ff530d65fd"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/description.msgpack",
+          "bytes": 19907,
+          "sha256": "5a34b6e9c2e961b04ca215e7c33eb2d2b164a16e6f737b5591c7fc04966ae0e5"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/manifest.json",
+          "bytes": 245308,
+          "sha256": "05623abe00fe1eb03394a277022ff26bf16f9847668dce2151b26b8b34c658ac"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/target-graph.txt",
+          "bytes": 90,
+          "sha256": "c3290349c9c3eac413d52772a46e01d43eb0516904a7f58ce4f6ce8b681cf26b"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/16073848d88aa1a414efbbf4adb77737.xcbuilddata/task-store.msgpack",
+          "bytes": 165723,
+          "sha256": "af327d7de623dfce9cee93e4ea8e7dea4c9dbfb3e40d7550343fefcc65ce5e22"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/ArchiveIntermediates/Plenara/IntermediateBuildFilesPath/XCBuildData/build.db",
+          "bytes": 643072,
+          "sha256": "e157b53abc41f082bdef56fddfea1848447d050611da9cba9370fc22d58e67ca"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/XCBuildData/PIFCache/project/PROJECT@v11_mod=6a814b28f1b9746b4ce58a98d20b833c_hash=f0c096400f11f715faeaabb571d065bcplugins=1OJSG6M1FOV3XYQCBH7Z29RZ0FPR9XDE1-json",
+          "bytes": 8885,
+          "sha256": "92e1649f8a799dda7e9e29eb8ff07589d9991e5b2f76932acefa3cdadeba3acf"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/XCBuildData/PIFCache/target/TARGET@v11_hash=42f73200c705d976a335b23f40b04284-json",
+          "bytes": 2423,
+          "sha256": "166b3a89ab20b80cff5df5d90d00ef9e35ca8251dc7fc7ba142b261934e30dad"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/XCBuildData/PIFCache/target/TARGET@v11_hash=9844df3dac1ea88251ac93f0d89e6385-json",
+          "bytes": 4064,
+          "sha256": "ea9d691343b2a346c96aaabdb99c9eca143c7b37d605f9482f06683a6d360f9e"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/XCBuildData/PIFCache/target/TARGET@v11_hash=bd5b2c55d2557c714ac0194cd8c485f3-json",
+          "bytes": 2378,
+          "sha256": "10f1dbfd1ab3c54f50cf972068e97e6db5929cbdddf7666c1be4bd272ba06ed1"
+        },
+        {
+          "path": ".build/testflight-derived/Build/Intermediates.noindex/XCBuildData/PIFCache/workspace/WORKSPACE@v11_hash=7aab508d8da18ee3bff54cf6bf83d9ca_subobjects=e90bf4763428196cf598b359c606dc5f-json",
+          "bytes": 304,
+          "sha256": "061f988f4af2f33d7f7f869b8e72ebb4acdc028bf9f1548d513f101c08e5449d"
+        }
+      ]
     }
   ],
-  "logicalBytesRemoved": 687201094,
+  "logicalBytesRemoved": 777021841,
   "retainedNativeTestEvidence": [
     ".build/contacts-denied.xcresult",
     ".build/native-20261016-103420.xcresult",
@@ -11301,5 +12574,6 @@
   ],
   "latestUsableSimulatorBuild": ".build/simulator/Build/Products/Release-iphonesimulator/Plenara.app",
   "lastUsableDeviceArtifactKeptDuringReplacement": ".build/testflight/export/Plenara.ipa",
-  "retainedPendingDistributionArchive": ".build/testflight/Plenara.xcarchive"
+  "retainedPendingDistributionArchive": ".build/testflight/Plenara.xcarchive (1005 successfully distributed)",
+  "latestUsableSignedIPABuild": "1005"
 }
