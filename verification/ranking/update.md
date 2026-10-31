@@ -86,3 +86,33 @@ product, last usable device IPA, native results, logs, selected failure frame,
 old probe, and reviewed evidence were retained. [Consolidation ledger](consolidation.json).
 The dedicated simulator is shut down; no verification app processes remain.
 No normal application services or physical phone apps were stopped or launched.
+
+The reviewed native Home and complete-list images are also embedded on the
+[approved decision Page](https://chatgpt.com/space/page_7ac81bc6f2b8819181b3d01e018f6619).
+[Published image references and verified hashes](published-preview.json) bind
+those uploads to these exact final captures. Three unreferenced intermediate
+captures were removed in favor of their final versions; the selected failure
+frame remains preserved.
+
+## Signed delivery
+
+App source commit `91d814a8a204a2b4f567ed7c508c54067c5f7b7f` is pushed to `main`. The exported
+**1.0.0 (1006)** IPA verifies with strict code-signature checks and optimized
+Release code generation. It contains the complete-list interface and existing
+journal filename; simulator controls, ranking fixtures, and test bundles are
+absent. [Signed artifact checks and IPA hash](device-artifact.json).
+The packaged app's sources still match the final Release verification hashes.
+Apple validation and upload succeeded.
+
+Fresh App Store Connect readback confirms build **1006** is valid, unexpired,
+assigned to the enrolled Internal group, and `IN_BETA_TESTING`.
+[TestFlight availability](testflight-status.json). The English
+[release notes](release-notes.json) were saved and read back exactly.
+This establishes testing availability, not installation on the remote iPhone;
+TestFlight's installation and Automatic Updates remain controlled there.
+
+After delivery, completed packaging caches were consolidated too, retaining the
+latest signed IPA, archive, and logs. Total logical removal recorded in the
+ledger is 258.0 MiB; no free-disk or net directory-size
+claim is made. No phone app was launched as part of deployment. Final source
+hashes still match the tested candidate.

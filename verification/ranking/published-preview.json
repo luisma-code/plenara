@@ -1,0 +1,19 @@
+{
+  "pageUrl": "https://chatgpt.com/space/page_7ac81bc6f2b8819181b3d01e018f6619",
+  "images": [
+    {
+      "source": "verification/ranking/ranked-home.png",
+      "reference": "library-file:fde1_bGliZmlsZV9nM1lRYkZudnFuQmFKV3JrVl9QMEt3_FileDrive_0570178fab348191a8cf3088d5d23a4c",
+      "sha256": "262a653572a2664730f52841453bffa72955860d253990b61e40bffa67fb2531",
+      "byteSize": 259042,
+      "accessConfirmed": true
+    },
+    {
+      "source": "verification/ranking/complete-ranked-list.png",
+      "reference": "library-file:fde1_bGliZmlsZV85ZzJCdFExUkF5bHNDaE0zZlNqLXhR_FileDrive_0570178fab348191a8cf3088d5d23a4c",
+      "sha256": "1871cde038562a1ab5f9a005205302a113ba2c22dd44d4b3899398639bc843a6",
+      "byteSize": 265873,
+      "accessConfirmed": true
+    }
+  ]
+}
