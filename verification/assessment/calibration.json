@@ -1,0 +1,7 @@
+{
+  "mutation": "Together keeps all people while the assessment toggle stays enabled",
+  "test": "testOrganizeNeedsAssessmentFilterBatchUndoAndReopen",
+  "rejected": true,
+  "failure": "Fully assessed people must be hidden",
+  "sourcesRestored": true
+}

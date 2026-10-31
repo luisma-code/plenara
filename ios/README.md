@@ -34,6 +34,10 @@ the physical-device binary. Production opens an empty journal.
 
 People → **Organize** supports Together (search, select, then apply shared
 attributes) and Quick sort (one attribute per pass, with Not set only and Skip).
+Together defaults to Needs assessment only, with Any detail or a specific
+missing dimension. Quick sort defaults to Not set only for its chosen dimension.
+Both can show everyone again; assessment derives from saved classification
+values, with no new journal fields or migration.
 The [approved design](../design/relationship-app.md#people) defines selection,
 No change, add/remove connection labels, and Undo semantics. Both modes use
 `JournalStore.organize`; all selected edits persist in one atomic write. Undo

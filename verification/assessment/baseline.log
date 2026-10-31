@@ -1,0 +1,96 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261031-105943.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/PlenaraUITests/testOrganizeNeedsAssessmentFilterBatchUndoAndReopen"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261031-105943.xcresult
+
+2026-10-31 10:59:50.421629-0700 PlenaraUITests-Runner[74128:19364794] [Default] Running tests...
+objc[74128]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109ba4310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x109228398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-10-31 10:59:55.697.
+Test Suite 'PlenaraUITests.xctest' started at 2026-10-31 10:59:55.698.
+Test Suite 'PlenaraUITests' started at 2026-10-31 10:59:55.698.
+Test Case '-[PlenaraUITests.PlenaraUITests testOrganizeNeedsAssessmentFilterBatchUndoAndReopen]' started.
+    t =     0.00s Start Test at 2026-10-31 10:59:55.699
+    t =     0.24s Set Up
+    t =     0.26s     Open com.plenara.plenaraApp
+    t =     0.26s         Launch com.plenara.plenaraApp
+2026-10-31 10:59:56.207 xcodebuild[74099:19364263] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-31 10:59:56.207 xcodebuild[74099:19364263] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.78s             Setting up automation session
+    t =     2.73s             Wait for com.plenara.plenaraApp to idle
+    t =     4.31s Terminate com.plenara.plenaraApp:74186
+    t =     5.40s Open com.plenara.plenaraApp
+    t =     5.40s     Launch com.plenara.plenaraApp
+2026-10-31 11:00:01.100 xcodebuild[74099:19364263] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-31 11:00:01.100 xcodebuild[74099:19364263] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     5.62s         Setting up automation session
+    t =     6.57s         Wait for com.plenara.plenaraApp to idle
+    t =     8.08s Tap "tab-1" Button
+    t =     8.08s     Wait for com.plenara.plenaraApp to idle
+    t =     8.08s     Find the "tab-1" Button
+    t =     8.17s     Check for interrupting elements affecting "tab-1" Button
+    t =     8.22s     Synthesize event
+    t =     8.64s     Wait for com.plenara.plenaraApp to idle
+    t =     8.64s Waiting 5.0s for "people-organize" Button to exist
+    t =     9.68s     Checking `Expect predicate `existsNoRetry == 1` for object "people-organize" Button`
+    t =     9.69s         Checking existence of `"people-organize" Button`
+    t =     9.72s Find the "people-organize" Button
+    t =     9.76s Find the "people-organize" Button
+    t =     9.79s Find the "tab-1" Button
+    t =     9.81s Tap "people-organize" Button
+    t =     9.81s     Wait for com.plenara.plenaraApp to idle
+    t =     9.82s     Find the "people-organize" Button
+    t =     9.84s     Check for interrupting elements affecting "people-organize" Button
+    t =     9.87s     Synthesize event
+    t =    10.16s     Wait for com.plenara.plenaraApp to idle
+    t =    10.30s Waiting 5.0s for "organize-mode" SegmentedControl to exist
+    t =    11.36s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-mode" SegmentedControl`
+    t =    11.36s         Checking existence of `"organize-mode" SegmentedControl`
+    t =    11.49s Waiting 5.0s for "organize-needs-assessment" Switch to exist
+    t =    12.54s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-needs-assessment" Switch`
+    t =    12.54s         Checking existence of `"organize-needs-assessment" Switch`
+    t =    12.61s         Capturing element debug description
+    t =    13.55s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-needs-assessment" Switch`
+    t =    13.56s         Checking existence of `"organize-needs-assessment" Switch`
+    t =    13.62s         Capturing element debug description
+    t =    14.55s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-needs-assessment" Switch`
+    t =    14.56s         Checking existence of `"organize-needs-assessment" Switch`
+    t =    14.63s         Capturing element debug description
+    t =    15.58s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-needs-assessment" Switch`
+    t =    15.58s         Checking existence of `"organize-needs-assessment" Switch`
+    t =    15.64s         Capturing element debug description
+    t =    16.49s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-needs-assessment" Switch`
+    t =    16.49s         Checking existence of `"organize-needs-assessment" Switch`
+    t =    16.58s         Capturing element debug description
+    t =    16.58s     Checking existence of `"organize-needs-assessment" Switch`
+    t =    16.69s Collecting debug information to assist test failure triage
+    t =    16.69s     Requesting snapshot of accessibility hierarchy for app with pid 74202
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/PlenaraUITests.swift:257: error: -[PlenaraUITests.PlenaraUITests testOrganizeNeedsAssessmentFilterBatchUndoAndReopen] : XCTAssertTrue failed - Together must offer a filter for people who still need assessment
+    t =    17.42s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testOrganizeNeedsAssessmentFilterBatchUndoAndReopen]' failed (17.838 seconds).
+Test Suite 'PlenaraUITests' failed at 2026-10-31 11:00:13.537.
+	 Executed 1 test, with 1 failure (0 unexpected) in 17.838 (17.839) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-10-31 11:00:13.538.
+	 Executed 1 test, with 1 failure (0 unexpected) in 17.838 (17.840) seconds
+Test Suite 'Selected tests' failed at 2026-10-31 11:00:13.538.
+	 Executed 1 test, with 1 failure (0 unexpected) in 17.838 (17.841) seconds
+2026-10-31 11:00:14.263 xcodebuild[74099:19364399]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-10-31 11:00:14.283 xcodebuild[74099:19364263] [MT] IDETestOperationsObserverDebug: 27.573 elapsed -- Testing started completed.
+2026-10-31 11:00:14.283 xcodebuild[74099:19364263] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-31 11:00:14.283 xcodebuild[74099:19364263] [MT] IDETestOperationsObserverDebug: 27.573 sec, +27.573 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261031-105943.xcresult
+
+Failing tests:
+	PlenaraUITests.testOrganizeNeedsAssessmentFilterBatchUndoAndReopen()
+
+** TEST EXECUTE FAILED **
+
+Testing started

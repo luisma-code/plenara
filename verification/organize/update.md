@@ -129,3 +129,11 @@ Internal group, and `IN_BETA_TESTING`, with Luis enrolled.
 [release notes](release-notes.json) were saved and read back exactly.
 TestFlight installation and Automatic Updates on the remote iPhone remain
 controlled on that device; this confirms testing availability, not installation.
+
+## Validation-media consolidation, October 31
+
+The original [broken](focus-broken.png) and [restored](focus-passed.png) shared-form
+frames used for the keyboard pixel calibration are now committed explicitly.
+Redundant attachment exports and extracted device packages were removed after
+retaining these controls and the existing reviewed captures. Native xcresult
+evidence and logs remain available. [Consolidation ledger](../assessment/consolidation.json).

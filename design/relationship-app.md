@@ -64,16 +64,23 @@ An add button offers Contacts import and manual entry.
 **Organize** appears when there are people to organize, above the People
 introduction and reachable at large text sizes. One workspace has two modes:
 
-- **Together:** select individual people, or Select shown after searching by
-  name/city. Selection persists across searches, with a visible total and a
-  warning when selected people are outside the search. Clear selection clears
-  the entire selection. A shared-details sheet starts every attribute at No
+- **Together:** starts with **Needs assessment only** enabled. **Missing detail**
+  can mean Any detail (at least one of the five dimensions is Not set) or a
+  specific dimension. Already answered people disappear from the chosen filter
+  immediately after saving; Undo brings them back when their answer is cleared.
+  Turn the filter off to show everyone. Classification values define assessment;
+  filtering never stores a second completion flag or changes anyone's journal.
+  Select individual people, or Select shown after searching by name/city and
+  filtering. Selection persists across searches and filters, with a visible
+  total and a warning when selected people are outside the current view.
+  Clear selection clears the entire selection. A shared-details sheet starts every attribute at No
   change. Apply changes only chosen attributes for selected people, atomically.
   Add/Remove Family and Friend preserve the other label; Family + Friend sets
   both, and Not set clears only that attribute. Cancelling applies nothing.
 - **Quick sort:** choose one of the five attributes, then tap a value beside
   each person to save immediately. The current value stays visible. Not set
-  only filters that chosen attribute; a newly answered person leaves that view.
+  only starts enabled and filters that chosen attribute; a newly answered person
+  leaves that view. Turn it off to revisit existing answers.
   Skip omits someone from the current pass without changing their journal.
   Show skipped people brings them back; switching mode/attribute resets skips.
 

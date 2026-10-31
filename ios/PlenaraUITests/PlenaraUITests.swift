@@ -216,11 +216,12 @@ final class PlenaraUITests: XCTestCase {
         app.terminate(); app.launchArguments = ["--ui-testing", "--legacy-fixture"]
         app.launchEnvironment["PLENARA_LEGACY_JOURNAL"] = try Data(contentsOf: fixture).base64EncodedString(); app.launch()
         openOrganizer()
+        app.switches["organize-needs-assessment"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         let search = app.searchFields.firstMatch
         search.tap(); search.typeText("Alex")
         app.buttons["organize-person-Alex Imported"].tap()
         search.tap(); search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "Maya")
-        XCTAssertTrue(app.staticTexts["organize-selection-count"].label.contains("outside this search"), "Selection outside a search must stay visible in the count")
+        XCTAssertTrue(app.staticTexts["organize-selection-count"].label.contains("outside this view"), "Selection outside a search must stay visible in the count")
         app.buttons["organize-person-Maya Imported"].tap()
         search.tap(); search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4))
         XCTAssertEqual(app.staticTexts["organize-selection-count"].label, "2 selected")
@@ -251,11 +252,45 @@ final class PlenaraUITests: XCTestCase {
         for _ in 0..<4 { if memory.exists { break }; app.swipeUp() }
         XCTAssertTrue(memory.exists, "Existing imported notes must survive bulk organization and reopening")
     }
+    func testOrganizeNeedsAssessmentFilterBatchUndoAndReopen() throws {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo"]; app.launch(); openOrganizer()
+        let filter = app.switches["organize-needs-assessment"]
+        XCTAssertTrue(filter.waitForExistence(timeout: 5), "Together must offer a filter for people who still need assessment")
+        XCTAssertEqual(filter.value as? String, "1", "Organize must start focused on unanswered people")
+        XCTAssertTrue(app.buttons["organize-person-Leo Park"].exists)
+        XCTAssertFalse(app.buttons["organize-person-Amara Okafor"].exists, "Fully assessed people must be hidden")
+        attach("Assessment remaining")
+        chooseOrganization("organize-missing-detail", "Distance")
+        XCTAssertFalse(app.buttons["organize-person-Leo Park"].exists, "A person with distance set must be hidden from missing distance")
+        XCTAssertTrue(app.buttons["Show everyone"].exists)
+        app.buttons["Show everyone"].tap()
+        XCTAssertEqual(filter.value as? String, "0")
+        XCTAssertTrue(app.buttons["organize-person-Amara Okafor"].exists, "Show everyone must restore assessed people")
+        filter.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        chooseOrganization("organize-missing-detail", "What I want")
+        XCTAssertTrue(app.buttons["organize-person-Leo Park"].exists)
+        XCTAssertFalse(app.buttons["organize-person-Amara Okafor"].exists)
+        attach("Assessment specific detail")
+        app.buttons["organize-select-shown"].tap(); app.buttons["organize-apply"].tap()
+        chooseOrganization("batch-What I want", "Grow closer"); app.buttons["batch-save"].tap()
+        XCTAssertFalse(app.buttons["organize-person-Leo Park"].exists, "A saved assessment must leave the filtered list immediately")
+        attach("Assessment complete")
+        app.buttons["organize-undo"].tap()
+        XCTAssertTrue(app.buttons["organize-person-Leo Park"].exists, "Undo must put an unanswered person back in the assessment list")
+        app.buttons["organize-select-shown"].tap(); app.buttons["organize-apply"].tap()
+        chooseOrganization("batch-What I want", "Grow closer"); app.buttons["batch-save"].tap()
+        app.buttons["Close"].tap(); app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch(); openOrganizer()
+        XCTAssertFalse(app.buttons["organize-person-Leo Park"].exists, "Previously saved assessments must stay filtered after reopening")
+        XCTAssertTrue(app.buttons["Show everyone"].exists)
+        app.buttons["Show everyone"].tap()
+        XCTAssertTrue(app.buttons["organize-person-Leo Park"].exists, "Filtering must never remove a person from the journal")
+        app.buttons["Close"].tap()
+    }
     func testOrganizeQuickSortUnsetSkipUndoAndSave() throws {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo"]; app.launch(); openOrganizer()
         app.segmentedControls.buttons["Quick sort"].tap()
         chooseOrganization("organize-field", "What I want")
-        app.switches["organize-unset-only"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        XCTAssertEqual(app.switches["organize-unset-only"].value as? String, "1", "Quick sort must start with unanswered people")
         let search = app.searchFields.firstMatch; search.tap(); search.typeText("Leo\n")
         let grow = app.buttons["sort-Leo Park-Grow closer"]
         XCTAssertTrue(grow.waitForExistence(timeout: 5)); XCTAssertGreaterThanOrEqual(grow.frame.height, 44)
@@ -280,7 +315,17 @@ final class PlenaraUITests: XCTestCase {
     func testOrganizeDarkAndLargeText() throws {
         for (flag, label) in [(["--dark"], "Dark organizer"), (["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"], "Large text organizer")] {
             app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo"] + flag; app.launch(); openOrganizer()
-            app.segmentedControls.buttons["Quick sort"].tap()
+            chooseOrganization("organize-missing-detail", "What I want")
+            let unanswered = app.buttons["organize-person-Leo Park"]
+            let list = app.descendants(matching: .any)["organize-list"].firstMatch
+            for _ in 0..<6 { if unanswered.isHittable && unanswered.frame.maxY < app.buttons["organize-apply"].frame.minY { break }; list.swipeUp() }
+            XCTAssertTrue(unanswered.isHittable && unanswered.frame.maxY < app.buttons["organize-apply"].frame.minY, "Unassessed people must be reachable below the filters at every text size")
+            unanswered.tap(); XCTAssertTrue(app.buttons["organize-apply"].isEnabled)
+            attach(label + " assessment")
+            let quick = app.segmentedControls.buttons["Quick sort"]
+            for _ in 0..<6 { if quick.isHittable && quick.frame.minY > 0 { break }; list.swipeDown() }
+            quick.tap()
+            app.switches["organize-unset-only"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
             let nearby = app.buttons["sort-Amara Okafor-Nearby"]
             for _ in 0..<5 { if nearby.isHittable && nearby.frame.maxY < app.frame.maxY - 100 { break }; app.descendants(matching: .any)["organize-list"].firstMatch.swipeUp() }
             XCTAssertTrue(nearby.isHittable); nearby.tap(); attach(label)

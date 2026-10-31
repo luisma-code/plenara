@@ -53,14 +53,18 @@ struct OrganizePeopleView: View {
     @FocusState private var searchFocused: Bool
     @State private var selected: Set<UUID> = []
     @State private var field: OrganizationField = .distance
-    @State private var unsetOnly = false
+    @State private var unsetOnly = true
+    @State private var needsAssessmentOnly = true
+    @State private var missingDetail: OrganizationField? = nil
     @State private var skipped: Set<UUID> = []
     @State private var editingBatch = false
     @State private var status = ""
     var people: [Person] {
         store.journal.people.filter { p in
             (query.isEmpty || "\(p.name) \(p.city)".localizedCaseInsensitiveContains(query)) &&
-            (mode != "Quick sort" || ((!unsetOnly || field.value(p) == "Not set") && !skipped.contains(p.id)))
+            (mode == "Together"
+                ? (!needsAssessmentOnly || (missingDetail.map { $0.value(p) == "Not set" } ?? OrganizationField.allCases.contains { $0.value(p) == "Not set" }))
+                : ((!unsetOnly || field.value(p) == "Not set") && !skipped.contains(p.id)))
         }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
     var body: some View {
@@ -72,7 +76,7 @@ struct OrganizePeopleView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text(query.isEmpty ? "All clear here." : "No one matches that search.").font(Theme.title(25))
                             Text("Your people are still here. Change the search or show everyone to continue.").foregroundStyle(Theme.muted)
-                            Button("Show everyone") { query = ""; unsetOnly = false; skipped = [] }
+                            Button("Show everyone") { query = ""; unsetOnly = false; needsAssessmentOnly = false; skipped = [] }
                         }.padding(.vertical, 12)
                     }
                     ForEach(people) { person in
@@ -101,13 +105,21 @@ struct OrganizePeopleView: View {
         VStack(alignment: .leading, spacing: 12) {
             Picker("Organize mode", selection: $mode) { Text("Together").tag("Together"); Text("Quick sort").tag("Quick sort") }.pickerStyle(.segmented).accessibilityIdentifier("organize-mode")
             if mode == "Together" {
+                Toggle("Needs assessment only", isOn: $needsAssessmentOnly).accessibilityIdentifier("organize-needs-assessment")
+                if needsAssessmentOnly {
+                    Picker("Missing detail", selection: $missingDetail) {
+                        Text("Any detail").tag(Optional<OrganizationField>.none)
+                        ForEach(OrganizationField.allCases) { Text($0.rawValue).tag(Optional($0)) }
+                    }.accessibilityIdentifier("organize-missing-detail")
+                    Text(missingDetail == nil ? "Shows people with at least one detail not set." : "Shows people with this detail not set.").font(.footnote).foregroundStyle(Theme.muted)
+                }
                 Text("Select people, then change only the details they share.").font(.subheadline).foregroundStyle(Theme.muted)
                 HStack {
                     Button("Select shown (\(people.count))") { selected.formUnion(people.map(\.id)) }.disabled(people.isEmpty).accessibilityIdentifier("organize-select-shown")
                     Spacer()
                     Button("Clear selection") { selected = [] }.disabled(selected.isEmpty)
                 }.font(.subheadline).frame(minHeight: 44)
-                Text("\(selected.count) selected\(selected.subtracting(Set(people.map(\.id))).isEmpty ? "" : " · includes people outside this search")").font(.footnote).foregroundStyle(Theme.muted).accessibilityIdentifier("organize-selection-count")
+                Text("\(selected.count) selected\(selected.subtracting(Set(people.map(\.id))).isEmpty ? "" : " · includes people outside this view")").font(.footnote).foregroundStyle(Theme.muted).accessibilityIdentifier("organize-selection-count")
             } else {
                 Picker("Sort by", selection: $field) { ForEach(OrganizationField.allCases) { Text($0.rawValue).tag($0) } }.accessibilityIdentifier("organize-field")
                 Toggle("Not set only", isOn: $unsetOnly).accessibilityIdentifier("organize-unset-only")
