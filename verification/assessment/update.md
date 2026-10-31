@@ -67,3 +67,41 @@ usable simulator product and previous signed device artifact were retained, as
 were native xcresults, logs, source, authored assets, and reviewed captures.
 [Removed paths, hashes, and retained evidence](consolidation.json). No required
 application services were stopped. Temporary test harnesses exited.
+
+## Delivery blocked by account-holder agreement acceptance
+
+Implementation source commit `f8ee402` is pushed to `main`. The automatic
+`tool/deploy-testflight.sh` sequence built and archived optimized Release
+**1.0.0 (1005)** successfully, but Apple's distribution export stopped with:
+
+```text
+error: exportArchive Unable to process request - PLA Update available
+error: exportArchive No signing certificate "iOS Distribution" found
+```
+
+[Exact export log](testflight-export.log) · [Candidate archive checks](device-archive.json)
+· [Fresh TestFlight readback: no build 1005 uploaded](testflight-status.json).
+
+A fresh App Store Connect API read with the existing credential succeeds and
+confirms owner enrollment and build 1004 still available. This is an Apple
+account agreement block, not a session sandbox or established missing-credential
+problem. The certificate error is retained as a secondary export diagnostic;
+distribution signing must be retried after agreement acceptance before deciding
+whether an independent certificate problem remains.
+
+Apple states that the Account Holder must accept updated license terms and
+that unsigned updates can pause automatic signing and TestFlight.
+[Apple roles and agreement requirements](https://developer.apple.com/help/account/access/roles/) ·
+[Apple access troubleshooting](https://developer.apple.com/help/account/access/resolving-access-issues/).
+Luis must review and accept the update at
+[Apple Developer Account](https://developer.apple.com/account/). No license
+agreement was accepted on his behalf.
+
+The candidate archive signature verifies, simulator fixture controls are absent,
+and the binary contains the assessment UI and existing journal path. Build
+1004's signed IPA remains the last usable distribution artifact while 1005's
+validated archive is retained pending export. Temporary simulator verification
+is shut down; no physical phone was launched. After preserving archive and logs,
+completed packaging caches were removed. Total consolidated logical removal
+is now 655.4 MiB, without claiming net filesystem
+or free-disk change. Final tested source hashes still match.

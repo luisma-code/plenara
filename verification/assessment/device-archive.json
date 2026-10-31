@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "build": "1005",
+  "bundleId": "com.plenara.plenaraApp",
+  "archiveSignatureVerified": true,
+  "optimizedRelease": true,
+  "simulatorControlsAbsent": true,
+  "journalFilePreserved": "RelationshipJournal/journal-v1.json",
+  "assessmentUIIncluded": true,
+  "appSourceCommit": "f8ee402a73fec4ffbfcfc64d6c1c0b44f9624d17",
+  "archiveBinarySha256": "6267ec37718ab6811ed5d0f15195127f37c5e14f4bd58718f8254fac3ec33d09",
+  "distributionExportSucceeded": false,
+  "lastUsableSignedIPABuild": "1004",
+  "blocker": "Apple exportArchive: Unable to process request - PLA Update available; secondary error: No signing certificate iOS Distribution found",
+  "apiAuthenticationReadSucceeded": true
+}

@@ -1,0 +1,7 @@
+2026-10-31 11:17:59.760 xcodebuild[79818:19426334] [MT] IDEDistribution: -[IDEDistributionLogging _createLoggingBundleAtPath:]: Created bundle at path "/var/folders/w6/7h7tcyq174ggtk9_vy5sjhbm0000gq/T/Plenara_2026-10-31_11-17-59.757.xcdistributionlogs".
+error: exportArchive Unable to process request - PLA Update available
+
+error: exportArchive No signing certificate "iOS Distribution" found
+
+** EXPORT FAILED **
+

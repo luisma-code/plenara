@@ -1,0 +1,11 @@
+{
+  "appId": "6795650460",
+  "bundleId": "com.plenara.plenaraApp",
+  "group": {
+    "id": "23726f32-08a5-4c99-9470-5eecd52760ea",
+    "name": "Internal",
+    "internal": true
+  },
+  "ownerEnrolled": true,
+  "builds": []
+}
