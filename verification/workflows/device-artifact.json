@@ -1,0 +1,42 @@
+{
+  "sourceCommit": "4bac27858fdcf4ae8119deb967b01af47403dde5",
+  "version": "1.0.0",
+  "build": "1008",
+  "bundleId": "com.plenara.plenaraApp",
+  "deviceFamily": [
+    1
+  ],
+  "minimumOS": "18.0",
+  "orientations": [
+    "UIInterfaceOrientationPortrait",
+    "UIInterfaceOrientationLandscapeLeft",
+    "UIInterfaceOrientationLandscapeRight"
+  ],
+  "ipaBytes": 1468925,
+  "ipaSHA256": "8a97c56b41200b9752d9284a30707cdcb769ea9790583b303971242ee08a8bba",
+  "exportedSignatureVerified": true,
+  "getTaskAllow": false,
+  "applicationIdentifier": "7V63BZ39HU.com.plenara.plenaraApp",
+  "optimizedReleaseFlagsVerified": true,
+  "simulatorArgumentsAbsent": [
+    "--contact-demo",
+    "--contact-fixture",
+    "--contact-handoff-fixture",
+    "--contact-unavailable-fixture",
+    "--dark",
+    "--dated-demo",
+    "--demo",
+    "--legacy-fixture",
+    "--ranking-demo",
+    "--reset",
+    "--rhythm-demo",
+    "--ui-testing"
+  ],
+  "testBundlesAndLegacyFixturesAbsent": true,
+  "testedSourceHashesStillMatch": true,
+  "supportedPlatforms": [
+    "iPhoneOS"
+  ],
+  "platformName": "iphoneos",
+  "scannerControl": "device-scanner-control.json"
+}

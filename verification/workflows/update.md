@@ -100,9 +100,28 @@ these corrected test instruments together.
 checks, six TestFlight-tool tests, two calibration-runner tests, **39 native unit
 and 22 native UI tests**, plus the separate Contacts-denied import repeat.
 [Structured result](verification.json) · [complete gate output](final-precheck.txt).
-All native checks used Release on the dedicated iOS26.5 simulator. The bounded
+All native checks used Release on the dedicated iOS 26.5 simulator. The bounded
 memory guard remained active; the measured peak and source hashes are recorded
 with the result. All nine workflow previews were refreshed from the final green
 native run. No automated verification ran on a physical phone.
 
-TestFlight1008 delivery is being completed from the committed, pushed source.
+## Delivered
+
+**TestFlight 1.0.0 (1008) is available to the enrolled Internal group.** Apple
+reports `VALID` and `IN_BETA_TESTING`; the upload delivery UUID matches the
+App Store build ID. Release notes were saved and read back for this exact app,
+build and locale. [Delivery record](delivery.json) · [fresh TestFlight status](testflight-status.json) · [release notes](release-notes.json).
+
+The app source is committed and pushed on `main` at
+[`4bac278`](https://github.com/luisma-code/plenara/commit/4bac27858fdcf4ae8119deb967b01af47403dde5).
+The exported iPhone artifact passed strict signature, identity, platform,
+optimization, simulator-marker, fixture and test-bundle checks; all tested
+source hashes still matched after archive/export. [Signed artifact audit](device-artifact.json).
+
+The dedicated simulator and all owned app/test monitoring processes are stopped.
+Temporary media, extraction copies and completed compiler buffers were removed;
+the latest simulator products, signed archive and IPA remain. Native result
+bundles, raw logs, selected diagnostic frames and nine reviewed previews are
+retained as test evidence. [Consolidation record](consolidation.json).
+TestFlight installation and Automatic Updates remain controlled on the iPhone;
+no physical app was launched by this work.

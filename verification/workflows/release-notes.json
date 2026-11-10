@@ -1,0 +1,9 @@
+{
+  "build": "1008",
+  "buildId": "c98a4d4d-905b-4e11-b8e3-a69c60a85ccf",
+  "locale": "en-US",
+  "whatsNew": "Log a dinner, walk or other social event once, including everyone who was there and what you did. The same event appears in every attendee's history.\n\nReach out directly from Home or a person's page, then confirm what happened when you return. Opening another app never counts as contact by itself.\n\nChoose optional contact rhythms for several people, with existing rhythms protected and Undo available.\n\nAfter logging a moment, keep something for next time, or resolve or postpone an existing conversation thread. Resolving preserves the original memory.\n\nExisting people, imported contacts, notes and history are preserved across the update.",
+  "readBackVerified": true,
+  "appScopeVerified": true,
+  "schemaSource": "https://developer.apple.com/documentation/appstoreconnectapi/post-v1-betabuildlocalizations"
+}

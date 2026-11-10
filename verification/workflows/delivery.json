@@ -1,0 +1,17 @@
+{
+  "sourceCommit": "4bac27858fdcf4ae8119deb967b01af47403dde5",
+  "version": "1.0.0",
+  "build": "1008",
+  "uploadDeliveryUUID": "c98a4d4d-905b-4e11-b8e3-a69c60a85ccf",
+  "appStoreBuildIDMatchesUploadUUID": true,
+  "appleValidationSucceeded": true,
+  "appleUploadSucceeded": true,
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "ownerEnrolled": true,
+  "inConfiguredInternalGroup": true,
+  "releaseNotesReadBackVerified": true,
+  "distributionRoute": "TestFlight",
+  "physicalDeviceAutomatedTesting": false,
+  "physicalAppLaunched": false
+}

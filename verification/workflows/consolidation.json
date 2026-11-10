@@ -1,0 +1,94 @@
+{
+  "retainedNativeScreens": 9,
+  "retainedFailureFrames": [
+    "organize-selection-failure.png",
+    "quick-sort-covered-row.png"
+  ],
+  "screensManifest": "screens.json",
+  "rawLogsAndMemoryTracesRetained": true,
+  "nativeResultBundlesRetainedAsTestEvidence": true,
+  "removedWorkingBuffers": [
+    {
+      "path": ".tmp/workflow-contact-attachments",
+      "bytes": 366055
+    },
+    {
+      "path": ".tmp/workflow-custom-attachments",
+      "bytes": 35244757
+    },
+    {
+      "path": ".tmp/workflow-custom-second-attachments",
+      "bytes": 31977943
+    },
+    {
+      "path": ".tmp/workflow-final-attachments",
+      "bytes": 13339232
+    },
+    {
+      "path": ".tmp/workflow-first-attachments",
+      "bytes": 26670567
+    },
+    {
+      "path": ".tmp/workflow-frame-module-cache",
+      "bytes": 81831537
+    },
+    {
+      "path": ".tmp/workflow-full-second-attachments",
+      "bytes": 34508052
+    },
+    {
+      "path": ".tmp/workflow-refinement-attachments",
+      "bytes": 33148686
+    },
+    {
+      "path": ".tmp/workflow-second-attachments",
+      "bytes": 30177191
+    },
+    {
+      "path": ".tmp/workflow-selection-failure-attachments",
+      "bytes": 18943587
+    },
+    {
+      "path": ".tmp/workflow-visual-attachments",
+      "bytes": 1177513
+    },
+    {
+      "path": ".tmp/workflows-fixture",
+      "bytes": 330235
+    },
+    {
+      "path": ".tmp/workflow-exported-ipa",
+      "bytes": 6929099
+    }
+  ],
+  "removedWorkingBufferBytes": 314644454,
+  "dedicatedSimulatorShutDown": true,
+  "removedCompilerBuildBuffers": [
+    {
+      "path": ".build/testflight-derived",
+      "bytes": 94434927
+    },
+    {
+      "path": ".build/simulator/Build/Intermediates.noindex",
+      "bytes": 29683053
+    },
+    {
+      "path": ".build/simulator/ModuleCache.noindex",
+      "bytes": 96747594
+    },
+    {
+      "path": ".build/simulator/CompilationCache.noindex",
+      "bytes": 16688
+    },
+    {
+      "path": ".build/simulator/SDKStatCaches.noindex",
+      "bytes": 1541572
+    }
+  ],
+  "removedCompilerBuildBufferBytes": 222423834,
+  "retainedLatestProducts": [
+    ".build/simulator/Build/Products/Release-iphonesimulator",
+    ".build/testflight/Plenara.xcarchive",
+    ".build/testflight/export/Plenara.ipa"
+  ]
+}
