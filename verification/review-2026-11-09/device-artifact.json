@@ -1,0 +1,30 @@
+{
+  "sourceCommit": "9cc44fee2ccbf8af5aba87381ccad6b41ec56f8c",
+  "version": "1.0.0",
+  "build": "1007",
+  "bundleId": "com.plenara.plenaraApp",
+  "deviceFamily": [
+    1
+  ],
+  "minimumOS": "18.0",
+  "orientations": [
+    "UIInterfaceOrientationPortrait",
+    "UIInterfaceOrientationLandscapeLeft",
+    "UIInterfaceOrientationLandscapeRight"
+  ],
+  "ipaBytes": 1179323,
+  "ipaSHA256": "6026f2b8535323d435c66e272cf68d594f72d0d4b43fe15f3ddab9a62eb296cb",
+  "exportedSignatureVerified": true,
+  "getTaskAllow": false,
+  "applicationIdentifier": "7V63BZ39HU.com.plenara.plenaraApp",
+  "optimizedReleaseFlagsVerified": true,
+  "simulatorArgumentsAbsent": [
+    "--ui-testing",
+    "--demo",
+    "--contact-fixture",
+    "--legacy-fixture",
+    "--ranking-demo"
+  ],
+  "testBundlesAndLegacyFixtureAbsent": true,
+  "testedSourceHashesStillMatch": true
+}

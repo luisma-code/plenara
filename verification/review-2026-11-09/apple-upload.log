@@ -1,0 +1,9 @@
+Running altool at path '/Applications/Xcode.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+2026-11-09 18:49:19.859  INFO: [ContentDelivery.Uploader.AF503C300] 
+==========================================
+UPLOAD SUCCEEDED with no errors
+Delivery UUID: d3acd6cb-644b-45ff-a536-1b148d7ce82a
+Transferred 1179323 bytes in 0.144 seconds (8.2MB/s, 65.311Mbps)
+==========================================
+No errors uploading archive at '.build/testflight/export/Plenara.ipa'.

@@ -1,0 +1,271 @@
+{
+  "appId": "6795650460",
+  "bundleId": "com.plenara.plenaraApp",
+  "group": {
+    "id": "23726f32-08a5-4c99-9470-5eecd52760ea",
+    "name": "Internal",
+    "internal": true
+  },
+  "ownerEnrolled": true,
+  "builds": [
+    {
+      "id": "2e911e83-cda6-47dd-b7ae-ccac1348028e",
+      "version": "1006",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "897c303c-5068-47b0-81eb-1af4508b0da7",
+      "version": "1005",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "3c261b07-6ec0-48d3-8328-1ca97ab3757d",
+      "version": "1004",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "2b514a8d-c4db-412a-814c-ef7d5a19b773",
+      "version": "1003",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "5d0d50df-1387-4184-97a6-49e4003054d2",
+      "version": "1002",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "68d609ee-6576-49cd-8e73-5715bb0c41f8",
+      "version": "1001",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "8833f59e-243a-4485-b20c-c5da5edaa1f1",
+      "version": "1000",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "d6a7afa9-b5e8-41a4-8dee-8ff72cafa410",
+      "version": "19",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "e564d9b7-3b49-4b83-898d-cbba2696eb79",
+      "version": "18",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "83ba8820-2a42-4ca3-a3dd-c5fa657eb4aa",
+      "version": "17",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "159d5db0-040a-4acc-a93b-bcf58dca8bd6",
+      "version": "16",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "9ac1baf9-ad66-4ffb-9a76-1cf814967976",
+      "version": "15",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "e4027b5d-b1a4-4628-bf40-0db975db2493",
+      "version": "14",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "b6ad1736-c878-4953-8f91-18333585e06a",
+      "version": "13",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "b02c38c3-31f8-4971-8c68-514a1b82c7d5",
+      "version": "12",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "f2e100b5-27e4-4930-b8e3-9de4928bbaba",
+      "version": "11",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "4b35a77b-662d-4746-9ffd-9b4110685fdf",
+      "version": "10",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "874a5e82-4506-4d07-9744-03aec99583a2",
+      "version": "9",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    },
+    {
+      "id": "a73f5383-3ed2-4a98-aa6e-f02f62774bf2",
+      "version": "8",
+      "processingState": "VALID",
+      "expired": true,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "EXPIRED",
+        "externalBuildState": "EXPIRED"
+      }
+    }
+  ]
+}
+⚙️  Generating plists...
+⚙️  Generating project...
+⚙️  Writing project...
+Created project at /Users/luisma.code/Documents/code/plenara/plenara/ios/Plenara.xcodeproj
+Waiting for Apple's processing/testing status…
+Waiting for Apple's processing/testing status…
+Waiting for Apple's processing/testing status…
+{
+  "appId": "6795650460",
+  "bundleId": "com.plenara.plenaraApp",
+  "group": {
+    "id": "23726f32-08a5-4c99-9470-5eecd52760ea",
+    "name": "Internal",
+    "internal": true
+  },
+  "ownerEnrolled": true,
+  "builds": [
+    {
+      "id": "d3acd6cb-644b-45ff-a536-1b148d7ce82a",
+      "version": "1007",
+      "processingState": "VALID",
+      "expired": false,
+      "inGroup": true,
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "IN_BETA_TESTING",
+        "externalBuildState": "READY_FOR_BETA_SUBMISSION"
+      }
+    }
+  ]
+}

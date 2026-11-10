@@ -8,5 +8,30 @@
     "large-person.png": "244d31a5844bb58ac088fd2b43ce0172a1ee70c847e63734ae67d7edabfb439e",
     "home.png": "81a7aec06032a9a40fbe4bc1a52fa916e377e988fe7d33cd033cab234e317c47",
     "dark-home.png": "abf5deead410d33ebc55248aa42194598b448ed60b962a959c08672f0aadf9bb"
+  },
+  "completedSimulatorCachesRemoved": [
+    {
+      "path": ".build/simulator/Build/Intermediates.noindex",
+      "logicalBytes": 24213884
+    },
+    {
+      "path": ".build/simulator/ModuleCache.noindex",
+      "logicalBytes": 91771506
+    },
+    {
+      "path": ".build/simulator/CompilationCache.noindex",
+      "logicalBytes": 16688
+    }
+  ],
+  "buildProductsRetained": ".build/simulator/Build/Products; all immutable xcresult evidence retained",
+  "exportedIPAVerificationScratchRemoved": {
+    "path": ".tmp/review-device-package",
+    "logicalBytes": 5549099,
+    "retained": "Exact signed IPA retained at .build/testflight/export/Plenara.ipa; signature/metadata/hash checks in device-artifact.json"
+  },
+  "completedPackagingCacheRemoved": {
+    "path": ".build/testflight-derived",
+    "logicalBytes": 90253197,
+    "retained": "Latest signed archive and IPA remain under .build/testflight; all validation and delivery evidence retained"
   }
 }
