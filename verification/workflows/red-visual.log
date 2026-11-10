@@ -1,0 +1,224 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-203329.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/WorkflowUITests/testOptionalNextTimeMemoryResolveAndLater" "-only-testing:PlenaraUITests/WorkflowUITests/testSocialEventDarkAndLargeText"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-09 20:33:30.213 xcodebuild[76180:33703203] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-203329.xcresult
+
+2026-11-09 20:33:30.220 xcodebuild[76180:33703203] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:33:33.089 xcodebuild[76180:33703203] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:33:38.187421-0800 PlenaraUITests-Runner[76255:33703970] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-09 20:33:39.171.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 20:33:39.172.
+Test Suite 'WorkflowUITests' started at 2026-11-09 20:33:39.173.
+Test Case '-[PlenaraUITests.WorkflowUITests testOptionalNextTimeMemoryResolveAndLater]' started.
+    t =     0.00s Start Test at 2026-11-09 20:33:39.174
+    t =     0.06s Set Up
+    t =     0.06s Open com.plenara.plenaraApp
+    t =     0.06s     Launch com.plenara.plenaraApp
+2026-11-09 20:33:40.155 xcodebuild[76180:33703203] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:33:40.155 xcodebuild[76180:33703203] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[76255]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109408310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1088b0398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     2.75s         Setting up automation session
+    t =     3.73s         Wait for com.plenara.plenaraApp to idle
+    t =     5.52s Tap "quick-log" Button
+    t =     5.52s     Wait for com.plenara.plenaraApp to idle
+    t =     5.53s     Find the "quick-log" Button
+    t =     6.14s     Check for interrupting elements affecting "quick-log" Button
+    t =     6.25s     Synthesize event
+    t =     6.60s     Wait for com.plenara.plenaraApp to idle
+    t =     6.83s Tap "log-person-Sofia Chen" Button
+    t =     6.83s     Wait for com.plenara.plenaraApp to idle
+    t =     7.33s     Find the "log-person-Sofia Chen" Button
+    t =     7.55s     Check for interrupting elements affecting "log-person-Sofia Chen" Button
+    t =     7.66s     Synthesize event
+    t =     7.96s     Wait for com.plenara.plenaraApp to idle
+    t =     8.12s Tap "save-moment" Button
+    t =     8.12s     Wait for com.plenara.plenaraApp to idle
+    t =     8.12s     Find the "save-moment" Button
+    t =     8.36s     Check for interrupting elements affecting "save-moment" Button
+    t =     8.46s     Synthesize event
+    t =     8.78s     Wait for com.plenara.plenaraApp to idle
+    t =     9.61s Tap "moment-follow-through" Button
+    t =     9.61s     Wait for com.plenara.plenaraApp to idle
+    t =     9.61s     Find the "moment-follow-through" Button
+    t =     9.65s     Check for interrupting elements affecting "moment-follow-through" Button
+    t =     9.70s     Synthesize event
+    t =    10.00s     Wait for com.plenara.plenaraApp to idle
+    t =    10.45s Waiting 5.0s for "thread-add-Sofia Chen" Button to exist
+    t =    11.51s     Checking `Expect predicate `existsNoRetry == 1` for object "thread-add-Sofia Chen" Button`
+    t =    11.51s         Checking existence of `"thread-add-Sofia Chen" Button`
+    t =    11.61s Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.65s Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.69s Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.73s Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.76s Checking existence of `"tab-0" Button`
+    t =    11.85s Find the "tab-0" Button
+    t =    11.98s Checking existence of `Keyboard (First Match)`
+    t =    12.37s Checking existence of `Button (First Match)`
+    t =    12.78s Find the Button (First Match)
+    t =    13.16s Find the "thread-resolve-97BE7C7D-7024-4568-B62C-56D7AC58AB5A" Button
+    t =    13.36s Tap "thread-resolve-97BE7C7D-7024-4568-B62C-56D7AC58AB5A" Button
+    t =    13.36s     Wait for com.plenara.plenaraApp to idle
+    t =    13.36s     Find the "thread-resolve-97BE7C7D-7024-4568-B62C-56D7AC58AB5A" Button
+    t =    13.68s     Check for interrupting elements affecting "thread-resolve-97BE7C7D-7024-4568-B62C-56D7AC58AB5A" Button
+    t =    13.73s     Synthesize event
+    t =    14.05s     Wait for com.plenara.plenaraApp to idle
+    t =    14.22s Tap "Resolve and unpin" Button
+    t =    14.22s     Wait for com.plenara.plenaraApp to idle
+    t =    14.70s     Find the "Resolve and unpin" Button
+    t =    14.79s     Check for interrupting elements affecting "Resolve and unpin" Button
+    t =    14.86s     Synthesize event
+    t =    15.15s     Wait for com.plenara.plenaraApp to idle
+    t =    15.54s Tap "thread-add-Sofia Chen" Button
+    t =    15.54s     Wait for com.plenara.plenaraApp to idle
+    t =    16.15s     Find the "thread-add-Sofia Chen" Button
+    t =    16.28s     Check for interrupting elements affecting "thread-add-Sofia Chen" Button
+    t =    16.35s     Synthesize event
+    t =    16.71s     Wait for com.plenara.plenaraApp to idle
+    t =    17.09s Waiting 5.0s for "memory-text" TextField to exist
+    t =    18.18s     Checking `Expect predicate `existsNoRetry == 1` for object "memory-text" TextField`
+    t =    18.18s         Checking existence of `"memory-text" TextField`
+    t =    18.41s Tap "memory-text" TextField
+    t =    18.41s     Wait for com.plenara.plenaraApp to idle
+    t =    18.41s     Find the "memory-text" TextField
+    t =    18.56s     Check for interrupting elements affecting "memory-text" TextField
+    t =    18.68s     Synthesize event
+    t =    19.00s     Wait for com.plenara.plenaraApp to idle
+    t =    20.06s Type 'Ask about the summ...' into "memory-text" TextField
+    t =    20.06s     Wait for com.plenara.plenaraApp to idle
+    t =    20.10s     Find the "memory-text" TextField
+    t =    20.26s     Check for interrupting elements affecting "memory-text" TextField
+    t =    20.35s     Synthesize event
+    t =    21.08s     Wait for com.plenara.plenaraApp to idle
+    t =    21.08s Tap "save-memory" Button
+    t =    21.08s     Wait for com.plenara.plenaraApp to idle
+    t =    21.09s     Find the "save-memory" Button
+    t =    21.32s     Check for interrupting elements affecting "save-memory" Button
+    t =    21.41s     Synthesize event
+    t =    21.72s     Wait for com.plenara.plenaraApp to idle
+    t =    22.55s Waiting 5.0s for "Ask about the summer exhibition" StaticText to exist
+    t =    23.61s     Checking `Expect predicate `existsNoRetry == 1` for object "Ask about the summer exhibition" StaticText`
+    t =    23.61s         Checking existence of `"Ask about the summer exhibition" StaticText`
+    t =    23.67s Checking existence of `"Thread resolved. The memory is still here." StaticText`
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/WorkflowUITests.swift:107: error: -[PlenaraUITests.WorkflowUITests testOptionalNextTimeMemoryResolveAndLater] : XCTAssertFalse failed - A new thread action must clear the previous resolution notice
+    t =    24.03s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testOptionalNextTimeMemoryResolveAndLater]' failed (24.336 seconds).
+Test Case '-[PlenaraUITests.WorkflowUITests testSocialEventDarkAndLargeText]' started.
+    t =     0.00s Start Test at 2026-11-09 20:34:03.511
+    t =     0.03s Set Up
+    t =     0.03s Open com.plenara.plenaraApp
+    t =     0.03s     Launch com.plenara.plenaraApp
+    t =     0.03s         Terminate com.plenara.plenaraApp:76362
+2026-11-09 20:34:04.559 xcodebuild[76180:33703203] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:34:04.559 xcodebuild[76180:33703203] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     2.10s         Setting up automation session
+    t =     4.79s         Wait for com.plenara.plenaraApp to idle
+    t =     6.48s Tap "log-social-event" Button
+    t =     6.48s     Wait for com.plenara.plenaraApp to idle
+    t =     6.49s     Find the "log-social-event" Button
+    t =     6.57s     Check for interrupting elements affecting "log-social-event" Button
+    t =     6.60s     Synthesize event
+    t =     6.90s     Wait for com.plenara.plenaraApp to idle
+    t =     7.13s Waiting 5.0s for "event-people" Button to exist
+    t =     8.21s     Checking `Expect predicate `existsNoRetry == 1` for object "event-people" Button`
+    t =     8.21s         Checking existence of `"event-people" Button`
+    t =     8.35s Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.51s Added attachment named 'Dark shared-event editor'
+    t =     8.51s Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.56s Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.60s Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.64s Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.68s Checking existence of `"tab-0" Button`
+    t =     8.76s Find the "tab-0" Button
+    t =     8.85s Checking existence of `Keyboard (First Match)`
+    t =     8.97s Checking existence of `"event-people" Button`
+    t =     9.04s Find the "event-people" Button
+    t =     9.11s Find the "event-people" Button
+    t =     9.18s Tap "event-people" Button
+    t =     9.19s     Wait for com.plenara.plenaraApp to idle
+    t =     9.19s     Find the "event-people" Button
+    t =     9.35s     Check for interrupting elements affecting "event-people" Button
+    t =     9.42s     Synthesize event
+    t =     9.71s     Wait for com.plenara.plenaraApp to idle
+    t =    10.43s Waiting 5.0s for SearchField (First Match) to exist
+    t =    11.51s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    11.51s         Checking existence of `SearchField (First Match)`
+    t =    11.57s Tap SearchField (First Match)
+    t =    11.57s     Wait for com.plenara.plenaraApp to idle
+    t =    11.57s     Find the SearchField (First Match)
+    t =    11.78s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    11.87s     Synthesize event
+    t =    12.17s     Wait for com.plenara.plenaraApp to idle
+    t =    12.42s Find the "Find someone" SearchField
+    t =    12.87s Find the "Find someone" SearchField
+    t =    13.47s Type 'Mum
+' into "Find someone" SearchField
+    t =    13.47s     Wait for com.plenara.plenaraApp to idle
+    t =    13.48s     Find the "Find someone" SearchField
+    t =    14.17s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    14.30s     Synthesize event
+    t =    14.58s     Wait for com.plenara.plenaraApp to idle
+    t =    14.93s Tap "event-guest-Mum" Button
+    t =    14.93s     Wait for com.plenara.plenaraApp to idle
+    t =    14.94s     Find the "event-guest-Mum" Button
+    t =    15.06s     Check for interrupting elements affecting "event-guest-Mum" Button
+    t =    15.14s     Synthesize event
+    t =    15.43s     Wait for com.plenara.plenaraApp to idle
+    t =    15.44s Tap "event-people-done" Button
+    t =    15.44s     Wait for com.plenara.plenaraApp to idle
+    t =    15.44s     Find the "event-people-done" Button
+    t =    15.56s     Check for interrupting elements affecting "event-people-done" Button
+    t =    15.72s     Synthesize event
+    t =    16.02s     Wait for com.plenara.plenaraApp to idle
+    t =    16.41s Find the "save-event" Button
+    t =    16.64s Tap "save-event" Button
+    t =    16.64s     Wait for com.plenara.plenaraApp to idle
+    t =    16.64s     Find the "save-event" Button
+    t =    16.77s     Check for interrupting elements affecting "save-event" Button
+    t =    16.89s     Synthesize event
+    t =    17.23s     Wait for com.plenara.plenaraApp to idle
+    t =    18.15s Waiting 5.0s for "moment-follow-through" Button to exist
+    t =    19.16s     Checking `Expect predicate `existsNoRetry == 1` for object "moment-follow-through" Button`
+    t =    19.16s         Checking existence of `"moment-follow-through" Button`
+    t =    19.19s Find the Target Application 'com.plenara.plenaraApp'
+    t =    19.33s Added attachment named 'Dark shared-event editor saved'
+    t =    19.33s Terminate com.plenara.plenaraApp:76670
+    t =    20.39s Open com.plenara.plenaraApp
+    t =    20.39s     Launch com.plenara.plenaraApp
+2026-11-09 20:34:23.909 xcodebuild[76180:33703203] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:34:23.909 xcodebuild[76180:33703203] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    20.61s         Setting up automation session
+    t =    21.70s         Wait for com.plenara.plenaraApp to idle
+    t =    25.05s Find the "log-social-event" Button
+    t =    26.33s Find the Target Application 'com.plenara.plenaraApp'
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/WorkflowUITests.swift:121: error: -[PlenaraUITests.WorkflowUITests testSocialEventDarkAndLargeText] : XCTAssertGreaterThan failed: ("174.0") is not greater than ("321.6") - Accessibility Home actions need full width
+    t =    26.39s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testSocialEventDarkAndLargeText]' failed (26.719 seconds).
+Test Suite 'WorkflowUITests' failed at 2026-11-09 20:34:30.231.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 51.055 (51.059) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-09 20:34:30.233.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 51.055 (51.061) seconds
+Test Suite 'Selected tests' failed at 2026-11-09 20:34:30.234.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 51.055 (51.063) seconds
+2026-11-09 20:34:30.831 xcodebuild[76180:33703981]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-09 20:34:30.857 xcodebuild[76180:33703203] [MT] IDETestOperationsObserverDebug: 57.763 elapsed -- Testing started completed.
+2026-11-09 20:34:30.857 xcodebuild[76180:33703203] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 20:34:30.857 xcodebuild[76180:33703203] [MT] IDETestOperationsObserverDebug: 57.763 sec, +57.763 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-203329.xcresult
+
+Failing tests:
+	WorkflowUITests.testOptionalNextTimeMemoryResolveAndLater()
+	WorkflowUITests.testSocialEventDarkAndLargeText()
+
+** TEST EXECUTE FAILED **
+
+Testing started

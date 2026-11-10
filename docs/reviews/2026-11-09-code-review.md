@@ -2,6 +2,8 @@
 
 **November 9, 2026 · Astra review, with independent integration/tooling review · native build 1007**
 
+Subsequent decision: Luis approved the recommended product changes and shared social events. Their implementation and verification are recorded separately in [Relationship workflows and social events](../../verification/workflows/update.md). This review remains the record of build 1007.
+
 The review found and corrected defects in reminder selection, calendar interpretation, contact matching, backup validation/restoration, readable export, validation cost, and TestFlight pagination. It also repaired two stale negative-control scripts. Product improvements are proposed separately in [Making Plenara more effective at staying close](2026-11-09-relationship-effectiveness-proposal.md); none of those product changes is included in this fix.
 
 This is a review of the active native app, tests, configuration, and supporting tools. It is not a claim of exhaustive formal verification or proof that using the app improves relationships.

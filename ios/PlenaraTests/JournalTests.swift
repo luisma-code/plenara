@@ -284,15 +284,20 @@ import UserNotifications
     func testLargeSelfExportedBackupCanBeRestored() throws {
         // A bounded synthetic note crosses the former 50 MB restore-only limit.
         // Keep the actual production export/restore path; do not pad unrelated JSON.
-        let original = store(); var person = Person(); person.name = "Large journal"
-        person.notes = [Memory(text: String(repeating: "x", count: 50_000_001))]
-        XCTAssertTrue(original.save(person))
-        let bytes = try autoreleasepool { try original.exportData() }
+        let personID = UUID()
+        // Release the exporter and its encoding temporaries before restoring.
+        // The memory guard covers the production path, not two retained journals.
+        let bytes = try autoreleasepool {
+            let original = store(); var person = Person(); person.id = personID; person.name = "Large journal"
+            person.notes = [Memory(text: String(repeating: "x", count: 50_000_001))]
+            XCTAssertTrue(original.save(person))
+            return try original.exportData()
+        }
         XCTAssertGreaterThan(bytes.count, 50_000_000)
         let restored = JournalStore(file: root.appendingPathComponent("large-restored.json"))
         XCTAssertTrue(restored.restore(bytes), "A backup produced by Plenara must remain restorable regardless of its encoded size")
         XCTAssertEqual(restored.journal.people.first?.notes.first?.text.count, 50_000_001)
-        XCTAssertEqual(restored.journal.people.first?.id, person.id)
+        XCTAssertEqual(restored.journal.people.first?.id, personID)
     }
 
 }

@@ -1,0 +1,247 @@
+Optional(Attributes: Application, 0x11387fe80, pid: 49830, label: 'Plenara'
+Element subtree:
+ →Application, 0x11387fe80, pid: 49830, label: 'Plenara'
+    Window (Main), 0x11387c8c0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x11387da40, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x11387cb40, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x11387c000, {{-402.0, -874.0}, {1206.0, 2622.0}}
+          Other, 0x11387c140, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x11387c280, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x11387c3c0, {{0.0, 0.0}, {402.0, 874.0}}
+                Other, 0x11387d040, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x11387d180, {{0.0, 0.0}, {402.0, 874.0}}
+                    Other, 0x11387d2c0, {{0.0, 0.0}, {402.0, 874.0}}
+                      Other, 0x11387d400, {{0.0, 0.0}, {402.0, 874.0}}
+                        ScrollView, 0x11387d540, {{0.0, 0.0}, {402.0, 874.0}}
+                          Other, 0x11387d680, {{0.0, 62.0}, {402.0, 1127.7}}
+                            StaticText, 0x11387d7c0, {{24.0, 102.3}, {94.0, 13.3}}, label: 'YOUR CIRCLE'
+                            Button, 0x11387de00, {{332.0, 86.0}, {46.0, 46.0}}, identifier: 'plus', label: 'Add a person'
+                            Button, 0x11387df40, {{24.0, 154.0}, {354.0, 48.0}}, identifier: 'people-organize', label: 'Organize'
+                              Image, 0x11387e080, {{157.0, 171.3}, {15.7, 13.3}}, identifier: 'slider.horizontal.3', label: 'Edit'
+                              StaticText, 0x11387e1c0, {{157.0, 169.0}, {90.0, 18.0}}, label: 'Organize'
+                            Button, 0x11387e580, {{24.0, 224.0}, {154.3, 44.0}}, identifier: 'people-rhythm-setup', label: 'Set contact rhythms'
+                            StaticText, 0x11387e6c0, {{24.0, 290.0}, {208.0, 45.7}}, label: 'Your people.'
+                            StaticText, 0x11387e800, {{24.0, 357.7}, {304.0, 20.3}}, label: 'Different kinds of close. All in one place.'
+                            Image, 0x11387e940, {{40.0, 416.7}, {16.3, 16.7}}, identifier: 'magnifyingglass', label: 'Search'
+                            TextField, 0x11387ea80, {{66.3, 414.0}, {297.7, 22.0}}, identifier: 'people-search', placeholderValue: 'Find someone'
+                            StaticText, 0x11387ebc0, {{24.0, 486.2}, {53.0, 15.7}}, identifier: 'people-count', label: '5 people'
+                            Button, 0x11387ed00, {{306.0, 472.0}, {72.0, 44.0}}, identifier: 'people-filters', label: 'Filters'
+                              Image, 0x11387fc00, {{308.0, 489.3}, {15.3, 9.3}}, identifier: 'line.3.horizontal.decrease', label: 'Filter'
+                              StaticText, 0x11387e300, {{306.0, 472.0}, {72.0, 44.0}}, label: 'Filters'
+                            ScrollView, 0x11387c500, {{24.0, 538.0}, {354.0, 44.0}}, identifier: 'people-shortcuts'
+                              Other, 0x11387c640, {{24.0, 538.0}, {596.7, 44.0}}
+                                Button, 0x11387c780, {{23.5, 537.5}, {94.3, 45.0}}, identifier: 'filter-Everyone', label: 'Everyone', Selected
+                                Button, 0x11387db80, {{124.8, 537.5}, {113.0, 45.0}}, identifier: 'filter-Grow closer', label: 'Grow closer'
+                                Button, 0x11387dcc0, {{244.8, 537.5}, {109.0, 45.0}}, identifier: 'filter-Needs care', label: 'Needs care'
+                                Button, 0x11387cdc0, {{360.8, 537.5}, {80.7, 45.0}}, identifier: 'filter-Nearby', label: 'Nearby'
+                                Button, 0x11387cf00, {{448.5, 537.5}, {91.0, 45.0}}, identifier: 'filter-Far away', label: 'Far away'
+                                Button, 0x11387ee40, {{546.5, 537.5}, {74.7, 45.0}}, identifier: 'filter-Family', label: 'Family'
+                            Button, 0x11387ef80, {{24.0, 604.0}, {354.0, 82.0}}, identifier: 'person-Amara Okafor', label: 'Amara Okafor, Grow closer, Oakland · Casual'
+                              StaticText, 0x11387f0c0, {{40.0, 620.0}, {50.0, 50.0}}, label: 'AO'
+                              StaticText, 0x11387f200, {{103.0, 623.3}, {110.0, 20.3}}, label: 'Amara Okafor'
+                              Image, 0x11387f340, {{222.3, 625.7}, {17.7, 15.7}}, identifier: 'leaf', label: 'Grow closer'
+                              StaticText, 0x11387f480, {{103.0, 648.7}, {115.0, 18.0}}, label: 'Oakland · Casual'
+                              Image, 0x11387f5c0, {{355.3, 639.7}, {6.0, 10.3}}, identifier: 'chevron.right', label: 'Forward'
+                            Button, 0x11387f700, {{24.0, 697.0}, {354.0, 82.0}}, identifier: 'person-Daniel Rivera', label: 'Daniel Rivera, San Francisco · Close'
+                              StaticText, 0x11387f840, {{40.0, 713.0}, {50.0, 50.0}}, label: 'DR'
+                              StaticText, 0x11387f980, {{103.0, 716.3}, {103.3, 20.3}}, label: 'Daniel Rivera'
+                              StaticText, 0x11387fd40, {{103.0, 741.7}, {147.3, 18.0}}, label: 'San Francisco · Close'
+                              Image, 0x10328be80, {{355.3, 732.7}, {6.0, 10.3}}, identifier: 'chevron.right', label: 'Forward'
+                            Button, 0x10328b0c0, {{24.0, 790.0}, {354.0, 82.0}}, identifier: 'person-Leo Park', label: 'Leo Park, Needs care, Seattle · Casual'
+                              StaticText, 0x10328b200, {{40.0, 806.0}, {50.0, 50.0}}, label: 'LP'
+                              StaticText, 0x10328b340, {{103.0, 809.3}, {68.7, 20.3}}, label: 'Leo Park'
+                              Image, 0x10328b480, {{181.7, 812.0}, {16.7, 15.3}}, identifier: 'heart', label: 'Needs care'
+                              StaticText, 0x10328b5c0, {{103.0, 834.7}, {106.7, 18.0}}, label: 'Seattle · Casual'
+                              Image, 0x10328b700, {{355.3, 826.0}, {6.0, 10.3}}, identifier: 'chevron.right', label: 'Forward'
+                            Button, 0x10328b840, {{24.0, 883.0}, {354.0, 82.0}}, identifier: 'person-Mum', label: 'Mum, Madrid, Spain · Inner circle'
+                              StaticText, 0x10328b980, {{40.0, 899.0}, {50.0, 50.0}}, label: 'M'
+                              StaticText, 0x10328bac0, {{103.0, 902.3}, {40.0, 20.3}}, label: 'Mum'
+                              StaticText, 0x10328bc00, {{103.0, 927.7}, {182.3, 18.0}}, label: 'Madrid, Spain · Inner circle'
+                              Image, 0x10328bd40, {{355.3, 919.0}, {6.0, 10.3}}, identifier: 'chevron.right', label: 'Forward'
+                            Button, 0x113a2c000, {{24.0, 976.0}, {354.0, 82.0}}, identifier: 'person-Sofia Chen', label: 'Sofia Chen, Grow closer, Brooklyn, New York · Close'
+                              StaticText, 0x113a2c140, {{40.0, 992.0}, {50.0, 50.0}}, label: 'SC'
+                              StaticText, 0x113a2c280, {{103.0, 995.3}, {86.3, 20.3}}, label: 'Sofia Chen'
+                              Image, 0x113a2c3c0, {{198.7, 997.7}, {17.7, 15.7}}, identifier: 'leaf', label: 'Grow closer'
+                              StaticText, 0x113a2c500, {{103.0, 1020.7}, {184.3, 18.0}}, label: 'Brooklyn, New York · Close'
+                              Image, 0x113a2c640, {{355.3, 1012.0}, {6.0, 10.3}}, identifier: 'chevron.right', label: 'Forward'
+                            Button, 0x113a2c780, {{24.0, 1080.0}, {354.0, 48.0}}, label: 'Import from Contacts'
+                              Image, 0x113a2c8c0, {{113.7, 1095.7}, {17.7, 17.3}}, identifier: 'person.badge.plus', label: 'person.badge.plus'
+                              StaticText, 0x113a2ca00, {{24.0, 1080.0}, {354.0, 48.0}}, label: 'Import from Contacts'
+                            StaticText, 0x113a2cb40, {{58.2, 1150.0}, {285.7, 15.7}}, label: 'Choose just the people you want to keep close.'
+                          Other, 0x113a2cc80, {{369.0, 62.0}, {30.0, 750.0}}, label: 'Vertical scroll bar, 2 pages', value: 0%
+                            Other, 0x113a2cdc0, {{396.0, 65.0}, {3.0, 531.3}}
+                          Other, 0x113a2cf00, {{369.0, 62.0}, {30.0, 750.0}}, label: 'Vertical scroll bar, 2 pages', value: 0%
+                            Other, 0x113a2d040, {{396.0, 65.0}, {3.0, 531.3}}
+                Other, 0x113a2d180, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x113a2d2c0, {{0.0, 0.0}, {402.0, 874.0}}
+              Button, 0x113a2d400, {{0.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-0', label: 'Stay close'
+                Image, 0x113a2d540, {{56.0, 791.7}, {22.3, 20.7}}, identifier: 'heart', label: 'Love'
+                StaticText, 0x113a2d680, {{39.8, 818.8}, {54.3, 13.3}}, label: 'Stay close'
+              Button, 0x113a2d7c0, {{134.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-1', label: 'People', Selected
+                Image, 0x113a2d900, {{185.3, 790.3}, {33.7, 23.0}}, identifier: 'person.2', label: 'person.2'
+                StaticText, 0x113a2da40, {{182.3, 820.3}, {37.3, 13.3}}, label: 'People'
+              Button, 0x113a2db80, {{268.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-2', label: 'Moments'
+                Image, 0x113a2dcc0, {{321.3, 790.3}, {25.3, 23.0}}, identifier: 'clock.arrow.circlepath', label: 'clock.arrow.circlepath'
+                StaticText, 0x113a2de00, {{310.7, 820.0}, {48.7, 13.3}}, label: 'Moments'
+      Other, 0x113a2df40, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x113a2e080, {{-402.0, -874.0}, {1206.0, 2622.0}}
+        Other, 0x113a2e1c0, {{0.0, 62.0}, {402.0, 812.0}}
+          Other, 0x113a2e300, {{0.0, 62.0}, {402.0, 812.0}}
+            Other, 0x113a2e440, {{0.0, 62.0}, {402.0, 812.0}}
+              Other, 0x113a2e580, {{0.0, 62.0}, {402.0, 812.0}}
+                Other, 0x113a2e6c0, {{0.0, 62.0}, {402.0, 812.0}}
+                  Other, 0x113a2e800, {{0.0, 62.0}, {402.0, 812.0}}
+                    NavigationBar, 0x113a2e940, {{0.0, 78.0}, {402.0, 60.0}}, identifier: 'Find your rhythms'
+                      SearchField, 0x113a2ea80, {{16.0, 86.0}, {315.0, 44.0}}, label: 'Find a person or place', placeholderValue: 'Find a person or place', value: Sofia
+                        Image, 0x113a2ebc0, {{28.0, 98.3}, {20.3, 18.7}}, identifier: 'magnifyingglass', label: 'Search'
+                        Button, 0x113a2ed00, {{296.7, 98.7}, {19.7, 19.0}}, label: 'Clear text'
+                      Button, 0x113a2ee40, {{342.0, 86.0}, {44.0, 44.0}}, label: 'Close'
+                    Other, 0x113a2ef80, {{0.0, 62.0}, {402.0, 812.0}}
+                      Other, 0x113a2f0c0, {{0.0, 62.0}, {402.0, 812.0}}
+                        Other, 0x113a2f200, {{0.0, 62.0}, {402.0, 812.0}}
+                          Other, 0x113a2f340, {{0.0, 62.0}, {402.0, 812.0}}
+                            CollectionView, 0x113a2f480, {{0.0, 62.0}, {402.0, 812.0}}
+                              Other, 0x113a2f5c0, {{-16.0, -1694.3}, {434.0, 1925.0}}
+                              Cell, 0x113a2f700, {{16.0, -35.3}, {370.0, 94.3}}
+                                Other, 0x113a2f840, {{16.0, -35.3}, {370.0, 94.3}}
+                                  Other, 0x113a2f980, {{16.0, -35.3}, {370.0, 94.3}}
+                                Other, 0x113a2fac0, {{16.0, -35.3}, {370.0, 94.3}}
+                                  Other, 0x113a2fc00, {{16.0, -35.3}, {370.0, 94.3}}
+                                    Other, 0x113a2fd40, {{16.0, -35.3}, {370.0, 94.3}}
+                                      StaticText, 0x113a2fe80, {{16.0, -35.3}, {370.0, 94.3}}, label: 'Choose who you’d like a rhythm with. Nothing is selected and no reminder starts until you apply your choices.'
+                              Other, 0x113a4c000, {{0.0, 62.0}, {402.0, 812.0}}
+                                Other, 0x113a4c140, {{0.0, 62.0}, {402.0, 132.8}}
+                              Other, 0x113a4c280, {{0.0, 62.0}, {402.0, 812.0}}
+                                Other, 0x113a4c3c0, {{0.0, 62.0}, {402.0, 132.8}}
+                                  Image, 0x113a4c500, {{-120.0, -66.0}, {642.0, 256.0}}, identifier: 'AdditionalDimmingOverlay'
+                                  Other, 0x113a4c640, {{0.0, 62.0}, {402.0, 132.8}}
+                                    Other, 0x113a4c780, {{0.0, 62.0}, {402.0, 132.8}}
+                                  Other, 0x113a4c8c0, {{0.0, 62.0}, {402.0, 132.8}}
+                                    Other, 0x113a4ca00, {{0.0, 62.0}, {402.0, 132.8}}
+                                    Other, 0x113a4cb40, {{0.0, 62.0}, {402.0, 132.8}}
+                              Cell, 0x113a4cc80, {{16.0, 59.0}, {370.0, 72.3}}
+                                Other, 0x113a4cdc0, {{16.0, 59.0}, {370.0, 72.3}}
+                                  Other, 0x113a4cf00, {{16.0, 59.0}, {370.0, 72.3}}
+                                Other, 0x113a4d040, {{16.0, 59.0}, {370.0, 72.3}}
+                                  Other, 0x113a4d180, {{16.0, 59.0}, {370.0, 72.3}}
+                                    Other, 0x113a4d2c0, {{16.0, 59.0}, {370.0, 72.3}}
+                                      Switch, 0x113a4d400, {{16.0, 59.0}, {370.0, 72.3}}, identifier: 'rhythm-include-existing', label: 'Include people with existing rhythms', value: 0
+                                        StaticText, 0x113a4d540, {{32.0, 74.0}, {152.3, 42.3}}, label: 'Include people with existing rhythms'
+                                        Switch, 0x113a4d680, {{309.0, 81.3}, {63.0, 28.0}}, value: 0
+                              Cell, 0x113a4d7c0, {{16.0, 131.3}, {370.0, 81.7}}
+                                Other, 0x113a4d900, {{16.0, 131.3}, {370.0, 81.7}}
+                                  Other, 0x113a4da40, {{16.0, 131.3}, {370.0, 81.7}}
+                                Other, 0x113a4db80, {{16.0, 131.3}, {370.0, 81.7}}
+                                  Other, 0x113a4dcc0, {{16.0, 131.3}, {370.0, 81.7}}
+                                    Other, 0x113a4de00, {{16.0, 131.3}, {370.0, 81.7}}
+                                      StaticText, 0x113a4df40, {{16.0, 131.3}, {370.0, 81.7}}, label: 'Existing rhythms are shown beside each name. They stay as they are unless you explicitly include and select them.'
+                              Other, 0x113a4e080, {{32.0, 130.3}, {338.0, 1.0}}
+                              Other, 0x113a4e1c0, {{-16.0, 230.7}, {434.0, 298.0}}
+                              Cell, 0x113a4e300, {{16.0, 230.7}, {370.0, 40.3}}
+                                Other, 0x113a4e440, {{16.0, 230.7}, {370.0, 40.3}}
+                                Other, 0x113a4e580, {{16.0, 230.7}, {370.0, 40.3}}
+                                  Other, 0x113a4e6c0, {{16.0, 230.7}, {370.0, 40.3}}
+                                    Other, 0x113a4e800, {{16.0, 230.7}, {370.0, 40.3}}
+                                      StaticText, 0x113a4e940, {{16.0, 230.7}, {370.0, 40.3}}, label: 'Your choice'
+                              Cell, 0x113a4ea80, {{16.0, 270.7}, {370.0, 52.0}}
+                                Other, 0x113a4ebc0, {{16.0, 270.7}, {370.0, 52.0}}
+                                  Other, 0x113a4ed00, {{16.0, 270.7}, {370.0, 52.0}}
+                                Other, 0x113a4ee40, {{16.0, 270.7}, {370.0, 52.0}}
+                                  Other, 0x113a4ef80, {{16.0, 270.7}, {370.0, 52.0}}
+                                    Other, 0x113a4f0c0, {{16.0, 270.7}, {370.0, 52.0}}
+                                      StaticText, 0x113a4f200, {{32.0, 286.5}, {118.7, 20.3}}, label: 'Contact rhythm'
+                                      Button, 0x113a4f340, {{32.0, 279.7}, {338.0, 34.3}}, identifier: 'setup-rhythm-cadence', label: 'Contact rhythm, Every 2 weeks'
+                                        StaticText, 0x113a4f480, {{244.7, 286.7}, {109.0, 20.3}}, label: 'Every 2 weeks'
+                              Cell, 0x113a4f5c0, {{16.0, 323.0}, {370.0, 52.0}}
+                                Other, 0x113a4f700, {{16.0, 323.0}, {370.0, 52.0}}
+                                  Other, 0x113a4f840, {{16.0, 323.0}, {370.0, 52.0}}
+                                Other, 0x113a4f980, {{16.0, 323.0}, {370.0, 52.0}}
+                                  Other, 0x113a4fac0, {{16.0, 323.0}, {370.0, 52.0}}
+                                    Other, 0x113a4fc00, {{16.0, 323.0}, {370.0, 52.0}}
+                                      StaticText, 0x113a4fd40, {{32.0, 338.8}, {104.7, 20.3}}, label: 'Every 14 days'
+                                      Stepper, 0x113a4fe80, {{32.0, 333.0}, {338.0, 32.0}}, identifier: 'setup-rhythm-custom', label: 'Every 14 days', value: 14
+                                        Button, 0x113a54000, {{276.0, 333.0}, {47.0, 32.0}}, identifier: 'setup-rhythm-custom-Decrement', label: 'Every 14 days, Decrement', value: 14
+                                        Button, 0x113a54140, {{323.0, 333.0}, {47.0, 32.0}}, identifier: 'setup-rhythm-custom-Increment', label: 'Every 14 days, Increment', value: 14
+                              Other, 0x113a54280, {{32.0, 322.0}, {338.0, 1.0}}
+                              Cell, 0x113a543c0, {{16.0, 375.0}, {370.0, 72.3}}
+                                Other, 0x113a54500, {{16.0, 375.0}, {370.0, 72.3}}
+                                  Other, 0x113a54640, {{16.0, 375.0}, {370.0, 72.3}}
+                                Other, 0x113a54780, {{16.0, 375.0}, {370.0, 72.3}}
+                                  Other, 0x113a548c0, {{16.0, 375.0}, {370.0, 72.3}}
+                                    Other, 0x113a54a00, {{16.0, 375.0}, {370.0, 72.3}}
+                                      Switch, 0x113a54b40, {{16.0, 375.0}, {370.0, 72.3}}, identifier: 'setup-approximate', label: 'Set an approximate earlier connection', value: 0
+                                        StaticText, 0x113a54c80, {{32.0, 390.0}, {151.3, 42.3}}, label: 'Set an approximate earlier connection'
+                                        Switch, 0x113a54dc0, {{309.0, 397.3}, {63.0, 28.0}}, value: 0
+                              Other, 0x113a54f00, {{32.0, 374.0}, {338.0, 1.0}}
+                              Cell, 0x113a55040, {{16.0, 447.3}, {370.0, 63.7}}
+                                Other, 0x113a55180, {{16.0, 447.3}, {370.0, 63.7}}
+                                  Other, 0x113a552c0, {{16.0, 447.3}, {370.0, 63.7}}
+                                Other, 0x113a55400, {{16.0, 447.3}, {370.0, 63.7}}
+                                  Other, 0x113a55540, {{16.0, 447.3}, {370.0, 63.7}}
+                                    Other, 0x113a55680, {{16.0, 447.3}, {370.0, 63.7}}
+                                      StaticText, 0x113a557c0, {{16.0, 447.3}, {370.0, 63.7}}, label: 'For people with no known connection, reminders start from today. This does not invent a conversation.'
+                              Other, 0x113a55900, {{32.0, 446.3}, {338.0, 1.0}}
+                              Other, 0x113a55a40, {{-16.0, 528.3}, {434.0, 1914.0}}
+                              Cell, 0x113a55b80, {{16.0, 528.3}, {370.0, 40.3}}
+                                Other, 0x113a55cc0, {{16.0, 528.3}, {370.0, 40.3}}
+                                Other, 0x113a55e00, {{16.0, 528.3}, {370.0, 40.3}}
+                                  Other, 0x113a55f40, {{16.0, 528.3}, {370.0, 40.3}}
+                                    Other, 0x113a56080, {{16.0, 528.3}, {370.0, 40.3}}
+                                      StaticText, 0x113a561c0, {{16.0, 528.3}, {370.0, 40.3}}, label: 'Choose your people'
+                              Cell, 0x113a56300, {{16.0, 568.7}, {370.0, 52.0}}
+                                Other, 0x113a56440, {{16.0, 568.7}, {370.0, 52.0}}
+                                  Other, 0x113a56580, {{16.0, 568.7}, {370.0, 52.0}}
+                                Other, 0x113a566c0, {{16.0, 568.7}, {370.0, 52.0}}
+                                  Other, 0x113a56800, {{16.0, 568.7}, {370.0, 52.0}}
+                                    Other, 0x113a56940, {{16.0, 568.7}, {370.0, 52.0}}
+                                      StaticText, 0x113a56a80, {{16.0, 568.7}, {370.0, 52.0}}, identifier: 'setup-rhythm-selection', label: '1 selected'
+                              Cell, 0x113a56bc0, {{16.0, 620.7}, {370.0, 78.0}}
+                                Other, 0x113a56d00, {{16.0, 620.7}, {370.0, 78.0}}
+                                  Other, 0x113a56e40, {{16.0, 620.7}, {370.0, 78.0}}
+                                Other, 0x113a56f80, {{16.0, 620.7}, {370.0, 78.0}}
+                                  Other, 0x113a570c0, {{16.0, 620.7}, {370.0, 78.0}}
+                                    Other, 0x113a57200, {{16.0, 620.7}, {370.0, 78.0}}
+                                      Button, 0x113a57340, {{16.0, 620.7}, {370.0, 78.0}}, identifier: 'rhythm-person-Sofia Chen', label: 'Sofia Chen, No regular reminder', value: Selected, Selected
+                                        StaticText, 0x113a57480, {{32.0, 638.7}, {42.0, 42.0}}, label: 'SC'
+                                        StaticText, 0x113a575c0, {{86.0, 639.2}, {83.0, 20.3}}, label: 'Sofia Chen'
+                                        StaticText, 0x113a57700, {{86.0, 664.5}, {121.0, 15.7}}, label: 'No regular reminder'
+                                        Image, 0x113a57840, {{351.7, 651.3}, {17.0, 17.0}}, identifier: 'checkmark.circle.fill', label: 'Selected', Selected
+                              Other, 0x113a57980, {{32.0, 619.7}, {338.0, 1.0}}
+                              Cell, 0x113a57ac0, {{16.0, 698.7}, {370.0, 74.0}}
+                                Other, 0x113a57c00, {{16.0, 698.7}, {370.0, 74.0}}
+                                  Other, 0x113a57d40, {{16.0, 698.7}, {370.0, 74.0}}
+                                Other, 0x113a57e80, {{16.0, 698.7}, {370.0, 74.0}}
+                                  Other, 0x113a60000, {{16.0, 698.7}, {370.0, 74.0}}
+                                    Other, 0x113a60140, {{16.0, 698.7}, {370.0, 74.0}}
+                                      Button, 0x113a60280, {{16.0, 698.7}, {370.0, 74.0}}, label: 'Clear selection'
+                              Other, 0x113a603c0, {{42.8, 697.7}, {327.2, 1.0}}
+                              Cell, 0x113a60500, {{16.0, 772.7}, {370.0, 45.7}}
+                                Other, 0x113a60640, {{16.0, 772.7}, {370.0, 45.7}}
+                                Other, 0x113a60780, {{16.0, 772.7}, {370.0, 45.7}}
+                                  Other, 0x113a608c0, {{16.0, 772.7}, {370.0, 45.7}}
+                                    Other, 0x113a60a00, {{16.0, 772.7}, {370.0, 45.7}}
+                                      StaticText, 0x113a60b40, {{16.0, 772.7}, {370.0, 45.7}}, label: 'Selections stay selected while searching. Apply uses all selected people, including those outside this search.'
+                              Other, 0x113a60c80, {{369.0, 138.0}, {30.0, 614.0}}, label: 'Vertical scroll bar, 2 pages', value: 76%
+                                Other, 0x113a60dc0, {{396.0, 263.7}, {3.0, 477.0}}
+                              Other, 0x113a60f00, {{369.0, 138.0}, {30.0, 614.0}}, label: 'Vertical scroll bar, 2 pages', value: 76%
+                                Other, 0x113a61040, {{396.0, 263.7}, {3.0, 477.0}}
+                            Button, 0x113a61180, {{16.0, 776.0}, {302.0, 48.0}}, identifier: 'apply-rhythm', label: 'Apply rhythm (1)'
+                              Image, 0x113a612c0, {{96.7, 793.7}, {13.3, 13.0}}, identifier: 'checkmark', label: 'Selected', Selected
+                              StaticText, 0x113a61400, {{16.0, 776.0}, {302.0, 48.0}}, label: 'Apply rhythm (1)'
+                            Button, 0x113a61540, {{334.0, 778.0}, {44.0, 44.0}}, identifier: 'rhythm-done', label: 'Done'
+                        Other, 0x113a61680, {{0.0, 62.0}, {402.0, 812.0}}
+                          Other, 0x113a617c0, {{0.0, 62.0}, {402.0, 812.0}}
+                            Other, 0x113a61900, {{0.0, 62.0}, {402.0, 812.0}}
+                    Other, 0x113a61a40, {{0.0, 62.0}, {402.0, 812.0}}
+                      Other, 0x113a61b80, {{0.0, 62.0}, {402.0, 812.0}}
+    Window, 0x113a61cc0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x113a61e00, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x113a61f40, {{0.0, 0.0}, {402.0, 874.0}}
+Path to element:
+ →Application, 0x11387fe80, pid: 49830, label: 'Plenara'
+Query chain:
+ →Find: Target Application 'com.plenara.plenaraApp'
+  Output: {
+    Application, 0x113a62080, pid: 49830, label: 'Plenara'
+  }
+)

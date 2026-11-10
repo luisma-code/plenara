@@ -1,0 +1,92 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-194136.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/WorkflowUITests/testAttendeeSearchKeepsDoneReachable"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-194136.xcresult
+
+2026-11-09 19:41:41.808118-0800 PlenaraUITests-Runner[45298:33404084] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-09 19:41:42.705.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 19:41:42.706.
+Test Suite 'WorkflowUITests' started at 2026-11-09 19:41:42.706.
+Test Case '-[PlenaraUITests.WorkflowUITests testAttendeeSearchKeepsDoneReachable]' started.
+    t =     0.00s Start Test at 2026-11-09 19:41:42.707
+    t =     0.06s Set Up
+    t =     0.06s Open com.plenara.plenaraApp
+    t =     0.06s     Launch com.plenara.plenaraApp
+2026-11-09 19:41:42.976 xcodebuild[45271:33403755] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:41:42.976 xcodebuild[45271:33403755] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[45298]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10b418310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a00c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.22s         Setting up automation session
+    t =     2.08s         Wait for com.plenara.plenaraApp to idle
+    t =     3.87s Tap "tab-2" Button
+    t =     3.87s     Wait for com.plenara.plenaraApp to idle
+    t =     3.87s     Find the "tab-2" Button
+    t =     3.96s     Check for interrupting elements affecting "tab-2" Button
+    t =     3.98s     Synthesize event
+    t =     4.28s     Wait for com.plenara.plenaraApp to idle
+    t =     4.28s Tap "log-social-event" Button
+    t =     4.28s     Wait for com.plenara.plenaraApp to idle
+    t =     4.28s     Find the "log-social-event" Button
+    t =     4.31s     Check for interrupting elements affecting "log-social-event" Button
+    t =     4.33s     Synthesize event
+    t =     4.62s     Wait for com.plenara.plenaraApp to idle
+    t =     4.83s Tap "event-people" Button
+    t =     4.83s     Wait for com.plenara.plenaraApp to idle
+    t =     5.33s     Find the "event-people" Button
+    t =     5.46s     Check for interrupting elements affecting "event-people" Button
+    t =     5.50s     Synthesize event
+    t =     5.79s     Wait for com.plenara.plenaraApp to idle
+    t =     6.27s Waiting 5.0s for SearchField (First Match) to exist
+    t =     7.33s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =     7.33s         Checking existence of `SearchField (First Match)`
+    t =     7.38s Tap SearchField (First Match)
+    t =     7.38s     Wait for com.plenara.plenaraApp to idle
+    t =     7.38s     Find the SearchField (First Match)
+    t =     7.53s     Check for interrupting elements affecting "Find someone" SearchField
+    t =     7.67s     Synthesize event
+    t =     7.99s     Wait for com.plenara.plenaraApp to idle
+    t =     8.32s Find the "Find someone" SearchField
+    t =     8.65s Find the "Find someone" SearchField
+    t =     8.76s Type 'Sofia
+' into "Find someone" SearchField
+    t =     8.77s     Wait for com.plenara.plenaraApp to idle
+    t =     8.80s     Find the "Find someone" SearchField
+    t =     8.90s     Check for interrupting elements affecting "Find someone" SearchField
+    t =     9.01s     Synthesize event
+    t =     9.31s     Wait for com.plenara.plenaraApp to idle
+    t =     9.55s Tap "event-guest-Sofia Chen" Button
+    t =     9.55s     Wait for com.plenara.plenaraApp to idle
+    t =     9.55s     Find the "event-guest-Sofia Chen" Button
+    t =     9.62s     Check for interrupting elements affecting "event-guest-Sofia Chen" Button
+    t =     9.68s     Synthesize event
+    t =     9.98s     Wait for com.plenara.plenaraApp to idle
+    t =     9.98s Checking existence of `"event-people-done" Button`
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/WorkflowUITests.swift:29: error: -[PlenaraUITests.WorkflowUITests testAttendeeSearchKeepsDoneReachable] : XCTAssertTrue failed - Searching must keep Done reachable
+    t =    10.14s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testAttendeeSearchKeepsDoneReachable]' failed (10.464 seconds).
+Test Suite 'WorkflowUITests' failed at 2026-11-09 19:41:53.172.
+	 Executed 1 test, with 1 failure (0 unexpected) in 10.464 (10.466) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-09 19:41:53.172.
+	 Executed 1 test, with 1 failure (0 unexpected) in 10.464 (10.467) seconds
+Test Suite 'Selected tests' failed at 2026-11-09 19:41:53.173.
+	 Executed 1 test, with 1 failure (0 unexpected) in 10.464 (10.468) seconds
+2026-11-09 19:41:53.583 xcodebuild[45271:33403904]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-09 19:41:53.593 xcodebuild[45271:33403755] [MT] IDETestOperationsObserverDebug: 13.586 elapsed -- Testing started completed.
+2026-11-09 19:41:53.593 xcodebuild[45271:33403755] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 19:41:53.593 xcodebuild[45271:33403755] [MT] IDETestOperationsObserverDebug: 13.586 sec, +13.586 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-194136.xcresult
+
+Failing tests:
+	WorkflowUITests.testAttendeeSearchKeepsDoneReachable()
+
+** TEST EXECUTE FAILED **
+
+Testing started

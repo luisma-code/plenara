@@ -1,0 +1,11 @@
+{
+  "beforeProductionFix": true,
+  "bothNewAssertionsRejectedOldBehavior": true,
+  "expectedFailures": [
+    "A new thread action must clear the previous resolution notice",
+    "Accessibility Home actions need full width"
+  ],
+  "oldAccessibilityButtonWidthPoints": 174,
+  "requiredMinimumWidthPoints": 321.6,
+  "log": "red-visual.log"
+}

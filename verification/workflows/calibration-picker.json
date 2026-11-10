@@ -1,0 +1,14 @@
+{
+  "mode": "picker",
+  "faults": [
+    [
+      "SocialEvents.swift",
+      ".safeAreaInset(edge: .bottom) {\n                    ActionButton(title: \"Done\", icon: \"checkmark\") { dismiss() }.accessibilityIdentifier(\"event-people-done\").padding(16).background(Theme.paper)\n                }",
+      ".toolbar { ToolbarItem(placement: .confirmationAction) { Button(\"Done\") { dismiss() }.accessibilityIdentifier(\"event-people-done\") } }"
+    ]
+  ],
+  "rejected": true,
+  "expectedFailures": [
+    "Searching must keep Done reachable"
+  ]
+}

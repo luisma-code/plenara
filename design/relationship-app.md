@@ -112,6 +112,20 @@ Connected and Reached out stay explicit so an unanswered text or missed call
 never silently becomes a catch-up. Date, notes, and channel remain editable.
 The existing local journal and contact import identity stay unchanged.
 
+## Following through and social events
+
+Luis approved Astra’s three recommended improvements on November 9, 2026, and added: “let me add a social events where I can include multiple people and describe what we did,” such as dinner with five friends. The [approved decision](../docs/reviews/2026-11-09-relationship-effectiveness-proposal.md) records alternatives and reasoning; this section owns the resulting behavior.
+
+Home’s featured invitation includes Reach out, alongside the existing logging, context and snooze actions. The shared contact chooser also serves a person’s page. It lists the saved preferred method first, shows each available number/email distinctly, and opens contact editing when none is saved. Opening another app never creates a moment. A local reach-out draft survives interruption; returning offers We connected, I reached out, or Nothing to record. Only an explicit saved moment confirms contact. Dismissal discards the draft without recording history, and a handled draft cannot be recorded twice. A device that cannot open the communication app explains that nothing was recorded.
+
+After import, offer Choose contact rhythms and Not now. Rhythm setup is also accessible from Home and People. Start with no people selected and no cadence selected. A searchable list preserves selections across searches. Existing rhythms are visible and protected unless the user explicitly includes and selects them. Apply the chosen interval in one atomic write. Unknown connection history remains unknown when starting reminders from today; an explicitly chosen approximate earlier connection supplies a separate starting point. Existing recorded connections are preserved. Undo last rhythm setup restores changed rhythm fields, preserves unrelated later edits, and refuses conflicts or removed people. Backup restoration clears the older Undo.
+
+After saving a moment, a dismissible next-time invitation leaves the ordinary app usable. Opening it offers a new memory and the attendees’ pinned or due threads. Keep changes nothing. Resolve clears the follow-up date and lets the user keep or remove the pin; the original note remains. Later changes only that thread’s date. These steps are optional and never create another connection or turn on notifications.
+
+Home and Moments offer Log a social event. Choose one or more existing people with a searchable attendee picker, a date, optional event name, channel, and description of what happened. An unnamed event is called Time together. A saved event represents a confirmed shared connection with every selected person. Store one event with one stable identity: it appears once in Moments and in each attendee’s timeline. Editing the event, date, description or guest list updates the same record everywhere and recomputes each affected person’s last connection. Cancelling creates nothing. Deleting the event removes it from all attendees’ histories; deleting one person retains the event for the remaining people and removes it only when no attendees remain. Shared-event deletion explains its effect before confirmation.
+
+Old journals retain their app identity and storage path. Shared guests and event names are additive optional moment fields; old single-person moments still decode unchanged. The shared decoder serves startup, restore, and recovery. Opening an old file leaves its bytes unchanged. The first successful update retains a protected before-workflow recovery copy, and later saves do not replace it. Existing before-relationship recovery bytes remain untouched. Both JSON and readable exports carry shared-event context. A frozen journal produced by the build-1007 model supplements the existing build-1001 upgrade fixture.
+
 ## A person’s page
 
 Read from top to bottom in the order you need before contacting someone:

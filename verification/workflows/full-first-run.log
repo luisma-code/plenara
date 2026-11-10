@@ -1,0 +1,1151 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-200142.xcresult CODE_SIGNING_ALLOWED=NO test-without-building
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-09 20:01:43.408 xcodebuild[56209:33510903] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-200142.xcresult
+
+2026-11-09 20:01:43.420 xcodebuild[56209:33510903] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:01:46.423 xcodebuild[56209:33510903] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:01:53.630738-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:54.848966-0800 Plenara[56324:33512308] [reminders] Local reminders refreshed
+2026-11-09 20:01:54.858372-0800 Plenara[56324:33512308] [reminders] Local reminders refreshed
+Test Suite 'All tests' started at 2026-11-09 20:01:54.906.
+Test Suite 'PlenaraTests.xctest' started at 2026-11-09 20:01:54.907.
+Test Suite 'JournalTests' started at 2026-11-09 20:01:54.907.
+Test Case '-[PlenaraTests.JournalTests testAmbiguousImportedIdentityRequiresExplicitLink]' started.
+Test Case '-[PlenaraTests.JournalTests testAmbiguousImportedIdentityRequiresExplicitLink]' passed (0.004 seconds).
+Test Case '-[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal]' started.
+2026-11-09 20:01:54.913535-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:54.919747-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal]' passed (0.011 seconds).
+Test Case '-[PlenaraTests.JournalTests testBackupRestoresNotesHistoryAndProtectsAgainstInvalidInput]' started.
+2026-11-09 20:01:54.924960-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:54.925767-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:54.928018-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:54.928604-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:54.929112-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testBackupRestoresNotesHistoryAndProtectsAgainstInvalidInput]' passed (0.034 seconds).
+Test Case '-[PlenaraTests.JournalTests testCalendarDaysAcrossDaylightSaving]' started.
+Test Case '-[PlenaraTests.JournalTests testCalendarDaysAcrossDaylightSaving]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testConnectionPersistsAndDeleteRecomputes]' started.
+2026-11-09 20:01:54.960655-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:54.961547-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:54.962504-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:54.963452-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:54.963704-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:54.964666-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testConnectionPersistsAndDeleteRecomputes]' passed (0.005 seconds).
+Test Case '-[PlenaraTests.JournalTests testCorruptJournalIsNotOverwritten]' started.
+2026-11-09 20:01:54.966423-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: true
+2026-11-09 20:01:54.966851-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testCorruptJournalIsNotOverwritten]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.JournalTests testDatedRemindersHaveVisiblePersonContext]' started.
+Test Case '-[PlenaraTests.JournalTests testDatedRemindersHaveVisiblePersonContext]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testFailedDiskWriteNeverPublishesUnsavedState]' started.
+2026-11-09 20:01:54.969211-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:54.971012-0800 Plenara[56324:33512308] [journal] Journal save failed
+Test Case '-[PlenaraTests.JournalTests testFailedDiskWriteNeverPublishesUnsavedState]' passed (0.003 seconds).
+Test Case '-[PlenaraTests.JournalTests testFeelingsAndIntentionsNeverCreateOrAlterReminderRhythms]' started.
+Test Case '-[PlenaraTests.JournalTests testFeelingsAndIntentionsNeverCreateOrAlterReminderRhythms]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testImportDeduplicatesPreservesJournalAndCanLinkManualPerson]' started.
+Test Case '-[PlenaraTests.JournalTests testImportDeduplicatesPreservesJournalAndCanLinkManualPerson]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testIndependentClassificationAndCombinedFilters]' started.
+Test Case '-[PlenaraTests.JournalTests testIndependentClassificationAndCombinedFilters]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testLargeSelfExportedBackupCanBeRestored]' started.
+2026-11-09 20:01:54.976982-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:55.653165-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:55.776336-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:55.949748-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testLargeSelfExportedBackupCanBeRestored]' passed (1.044 seconds).
+Test Case '-[PlenaraTests.JournalTests testOrganizationFailedSaveIsAtomicAndKeepsUndoAvailable]' started.
+2026-11-09 20:01:56.019196-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.020249-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.022559-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.031149-0800 Plenara[56324:33512308] [journal] Journal save failed
+2026-11-09 20:01:56.031532-0800 Plenara[56324:33512308] [journal] Journal save failed
+2026-11-09 20:01:56.033023-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.033265-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.JournalTests testOrganizationFailedSaveIsAtomicAndKeepsUndoAvailable]' passed (0.015 seconds).
+Test Case '-[PlenaraTests.JournalTests testOrganizationOnlyChangesChosenPeopleAndFieldsAndUndoPreservesNewNotes]' started.
+2026-11-09 20:01:56.034635-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.035288-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.036276-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.036473-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.037393-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.038295-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.038473-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.039409-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.041088-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testOrganizationOnlyChangesChosenPeopleAndFieldsAndUndoPreservesNewNotes]' passed (0.007 seconds).
+Test Case '-[PlenaraTests.JournalTests testOrganizationUndoRejectsNewerChoicesAndRestoresNoDeletedPeople]' started.
+2026-11-09 20:01:56.042296-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.042846-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.043782-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.044687-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.045527-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.047289-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.048271-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testOrganizationUndoRejectsNewerChoicesAndRestoresNoDeletedPeople]' passed (0.007 seconds).
+Test Case '-[PlenaraTests.JournalTests testOutreachDoesNotResetConnectionAndGivesReplySpace]' started.
+Test Case '-[PlenaraTests.JournalTests testOutreachDoesNotResetConnectionAndGivesReplySpace]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders]' started.
+2026-11-09 20:01:56.050434-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.052494-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders]' passed (0.003 seconds).
+Test Case '-[PlenaraTests.JournalTests testReminderCalendarPreservesNonGregorianFollowUp]' started.
+Test Case '-[PlenaraTests.JournalTests testReminderCalendarPreservesNonGregorianFollowUp]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.JournalTests testReminderCapacityKeepsNearestDatesAcrossKinds]' started.
+Test Case '-[PlenaraTests.JournalTests testReminderCapacityKeepsNearestDatesAcrossKinds]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.JournalTests testRemindersHonorQuietHoursAndDoNotExposePrivateNotes]' started.
+Test Case '-[PlenaraTests.JournalTests testRemindersHonorQuietHoursAndDoNotExposePrivateNotes]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testSnoozePauseUnknownContactAndStableSuggestions]' started.
+Test Case '-[PlenaraTests.JournalTests testSnoozePauseUnknownContactAndStableSuggestions]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testUpgradePreservesImportedJournalAndOriginalFile]' started.
+2026-11-09 20:01:56.059861-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.061331-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.062460-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.063236-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.063424-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.063513-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.063967-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.064855-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testUpgradePreservesImportedJournalAndOriginalFile]' passed (0.007 seconds).
+Test Suite 'JournalTests' passed at 2026-11-09 20:01:56.066.
+	 Executed 22 tests, with 0 failures (0 unexpected) in 1.152 (1.159) seconds
+Test Suite 'RankingTests' started at 2026-11-09 20:01:56.066.
+Test Case '-[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth]' started.
+Test Case '-[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth]' passed (0.007 seconds).
+Test Case '-[PlenaraTests.RankingTests testEligibilityHonorsCustomRhythmsUnknownHistoryAndReplySpace]' started.
+Test Case '-[PlenaraTests.RankingTests testEligibilityHonorsCustomRhythmsUnknownHistoryAndReplySpace]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.RankingTests testFullOrderUsesTwoGroupsRatiosAndExactTies]' started.
+Test Case '-[PlenaraTests.RankingTests testFullOrderUsesTwoGroupsRatiosAndExactTies]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation]' started.
+Test Case '-[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.RankingTests testMomentsAndNotesRecomputeRealPriorityWithoutInventingContact]' started.
+Test Case '-[PlenaraTests.RankingTests testMomentsAndNotesRecomputeRealPriorityWithoutInventingContact]' passed (0.000 seconds).
+Test Suite 'RankingTests' passed at 2026-11-09 20:01:56.077.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.010 (0.011) seconds
+Test Suite 'WorkflowTests' started at 2026-11-09 20:01:56.077.
+Test Case '-[PlenaraTests.WorkflowTests testBuild1007UpgradeKeepsImportsAndRecoveryBytes]' started.
+2026-11-09 20:01:56.078850-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.080725-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.081666-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.081936-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.082019-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.082655-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testBuild1007UpgradeKeepsImportsAndRecoveryBytes]' passed (0.006 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testContactRoutesPreferUserChoiceAndKeepAddressesDistinct]' started.
+Test Case '-[PlenaraTests.WorkflowTests testContactRoutesPreferUserChoiceAndKeepAddressesDistinct]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testFailedHandoffConfirmationRetainsDraftAndNoMoment]' started.
+2026-11-09 20:01:56.084830-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.085264-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.087102-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.089263-0800 Plenara[56324:33512308] [journal] Journal save failed
+2026-11-09 20:01:56.089693-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.090589-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.090729-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.090864-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testFailedHandoffConfirmationRetainsDraftAndNoMoment]' passed (0.007 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testFiveGuestEventIsOneRecordAndRecomputesEveryHistory]' started.
+2026-11-09 20:01:56.092141-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.092648-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.093747-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.094286-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.094358-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.095018-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.096423-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.097595-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.098733-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testFiveGuestEventIsOneRecordAndRecomputesEveryHistory]' passed (0.008 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testGroupValidationAndFailedSaveAreAtomic]' started.
+2026-11-09 20:01:56.099957-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.100475-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.100547-0800 Plenara[56324:33512308] [journal] Journal save failed
+2026-11-09 20:01:56.100594-0800 Plenara[56324:33512308] [journal] Journal save failed
+2026-11-09 20:01:56.101394-0800 Plenara[56324:33512308] [journal] Journal save failed
+2026-11-09 20:01:56.101921-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testGroupValidationAndFailedSaveAreAtomic]' passed (0.003 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testHandoffSurvivesReopenAndRequiresExactlyOneConfirmedSave]' started.
+2026-11-09 20:01:56.103027-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.103464-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.104328-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.104488-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.105395-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.106252-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.107113-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.107264-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.107398-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testHandoffSurvivesReopenAndRequiresExactlyOneConfirmedSave]' passed (0.005 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome]' started.
+2026-11-09 20:01:56.108474-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.108895-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.109675-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.109823-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.110676-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.111240-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.111635-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.112595-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.112749-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.113794-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome]' passed (0.006 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmSetupRequiresChoiceAndUndoPreservesOtherEdits]' started.
+2026-11-09 20:01:56.115144-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.115660-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.116713-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.118654-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.119553-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.120777-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.121645-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmSetupRequiresChoiceAndUndoPreservesOtherEdits]' passed (0.007 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoAndSetupFailureDoNotPublishOrConsumeReceipt]' started.
+2026-11-09 20:01:56.122752-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.123132-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.123851-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.134837-0800 Plenara[56324:33512308] [journal] Journal save failed
+2026-11-09 20:01:56.135268-0800 Plenara[56324:33512308] [journal] Journal save failed
+2026-11-09 20:01:56.136492-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.137374-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.138167-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoAndSetupFailureDoNotPublishOrConsumeReceipt]' passed (0.016 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoOnlyRestoresFieldsItChanged]' started.
+2026-11-09 20:01:56.139444-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.139833-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.140622-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.141361-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.142110-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoOnlyRestoresFieldsItChanged]' passed (0.004 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testThreadsResolveAndPostponeWithoutChangingMemoryOrConnection]' started.
+2026-11-09 20:01:56.143254-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.143694-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.144491-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.145285-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.145431-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testThreadsResolveAndPostponeWithoutChangingMemoryOrConnection]' passed (0.003 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testUnchangedRhythmDoesNotPretendToReplaceEarlierUndo]' started.
+2026-11-09 20:01:56.146432-0800 Plenara[56324:33512308] [journal] Journal opened; read-only: false
+2026-11-09 20:01:56.146806-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.147582-0800 Plenara[56324:33512308] [journal] Journal committed
+2026-11-09 20:01:56.148448-0800 Plenara[56324:33512308] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testUnchangedRhythmDoesNotPretendToReplaceEarlierUndo]' passed (0.003 seconds).
+Test Suite 'WorkflowTests' passed at 2026-11-09 20:01:56.149.
+	 Executed 12 tests, with 0 failures (0 unexpected) in 0.069 (0.072) seconds
+Test Suite 'PlenaraTests.xctest' passed at 2026-11-09 20:01:56.149.
+	 Executed 39 tests, with 0 failures (0 unexpected) in 1.230 (1.242) seconds
+Test Suite 'All tests' passed at 2026-11-09 20:01:56.149.
+	 Executed 39 tests, with 0 failures (0 unexpected) in 1.230 (1.243) seconds
+2026-11-09 20:01:57.485604-0800 PlenaraUITests-Runner[56387:33513040] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-11-09 20:01:58.396.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 20:01:58.396.
+Test Suite 'PlenaraUITests' started at 2026-11-09 20:01:58.396.
+Test Case '-[PlenaraUITests.PlenaraUITests testDarkAndLargeTextNavigation]' started.
+    t =     0.00s Start Test at 2026-11-09 20:01:58.397
+    t =     0.08s Set Up
+    t =     0.08s     Open com.plenara.plenaraApp
+    t =     0.08s         Launch com.plenara.plenaraApp
+2026-11-09 20:01:58.743 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:01:58.743 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[56387]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10ae84310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a718398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     0.65s             Setting up automation session
+    t =     1.46s             Wait for com.plenara.plenaraApp to idle
+    t =     2.88s Terminate com.plenara.plenaraApp:56400
+    t =     3.89s Open com.plenara.plenaraApp
+    t =     3.89s     Launch com.plenara.plenaraApp
+2026-11-09 20:02:02.297 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:02:02.297 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     4.32s         Setting up automation session
+    t =     5.70s         Wait for com.plenara.plenaraApp to idle
+    t =     7.33s Waiting 5.0s for "A little closer." StaticText to exist
+    t =     8.39s     Checking `Expect predicate `existsNoRetry == 1` for object "A little closer." StaticText`
+    t =     8.39s         Checking existence of `"A little closer." StaticText`
+    t =     8.73s Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.00s Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.18s Added attachment named 'Dark Stay close'
+    t =     9.18s Tap "tab-1" Button
+    t =     9.18s     Wait for com.plenara.plenaraApp to idle
+    t =     9.19s     Find the "tab-1" Button
+    t =     9.35s     Check for interrupting elements affecting "tab-1" Button
+    t =     9.46s     Synthesize event
+    t =     9.81s     Wait for com.plenara.plenaraApp to idle
+    t =     9.83s Swipe up Target Application 'com.plenara.plenaraApp'
+    t =     9.83s     Wait for com.plenara.plenaraApp to idle
+    t =     9.83s     Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.87s     Check for interrupting elements affecting "Plenara" Application
+    t =     9.93s     Synthesize event
+    t =    10.36s     Wait for com.plenara.plenaraApp to idle
+    t =    11.01s Tap "person-Sofia Chen" Button
+    t =    11.01s     Wait for com.plenara.plenaraApp to idle
+    t =    11.02s     Find the "person-Sofia Chen" Button
+    t =    11.05s     Check for interrupting elements affecting "person-Sofia Chen" Button
+    t =    11.07s     Synthesize event
+    t =    11.37s     Wait for com.plenara.plenaraApp to idle
+    t =    11.80s Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.92s Added attachment named 'Dark person'
+    t =    11.92s Tap "relationship-intention" Button
+    t =    11.92s     Wait for com.plenara.plenaraApp to idle
+    t =    11.92s     Find the "relationship-intention" Button
+    t =    11.96s     Check for interrupting elements affecting "relationship-intention" Button
+    t =    11.98s     Synthesize event
+    t =    12.28s     Wait for com.plenara.plenaraApp to idle
+    t =    13.51s Checking `Expect predicate `BLOCKPREDICATE(0x10c6edb30)` for object "Cancel" Button`
+    t =    13.51s     Find the "Cancel" Button
+    t =    13.74s     Find the "Cancel" Button
+    t =    13.80s Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.95s Added attachment named 'Dark relationship choices'
+    t =    13.95s Tap "Cancel" Button
+    t =    13.95s     Wait for com.plenara.plenaraApp to idle
+    t =    13.95s     Find the "Cancel" Button
+    t =    14.01s     Check for interrupting elements affecting "Cancel" Button
+    t =    14.06s     Synthesize event
+    t =    14.36s     Wait for com.plenara.plenaraApp to idle
+    t =    15.12s Terminate com.plenara.plenaraApp:56421
+    t =    16.21s Open com.plenara.plenaraApp
+    t =    16.21s     Launch com.plenara.plenaraApp
+2026-11-09 20:02:14.621 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:02:14.621 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    16.68s         Setting up automation session
+    t =    18.16s         Wait for com.plenara.plenaraApp to idle
+    t =    20.14s Waiting 5.0s for "tab-1" Button to exist
+    t =    21.24s     Checking `Expect predicate `existsNoRetry == 1` for object "tab-1" Button`
+    t =    21.24s         Checking existence of `"tab-1" Button`
+    t =    21.41s Tap "tab-1" Button
+    t =    21.41s     Wait for com.plenara.plenaraApp to idle
+    t =    21.41s     Find the "tab-1" Button
+    t =    21.44s     Check for interrupting elements affecting "tab-1" Button
+    t =    21.46s     Synthesize event
+    t =    21.76s     Wait for com.plenara.plenaraApp to idle
+    t =    21.78s Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.00s Added attachment named 'Large text People'
+    t =    22.00s Tap "people-search" TextField
+    t =    22.00s     Wait for com.plenara.plenaraApp to idle
+    t =    22.01s     Find the "people-search" TextField
+    t =    22.07s     Check for interrupting elements affecting "people-search" TextField
+    t =    22.13s     Synthesize event
+    t =    22.43s     Wait for com.plenara.plenaraApp to idle
+    t =    22.43s Type 'Sofia
+' into "people-search" TextField
+    t =    22.43s     Wait for com.plenara.plenaraApp to idle
+    t =    22.44s     Find the "people-search" TextField
+    t =    22.47s     Check for interrupting elements affecting "people-search" TextField
+    t =    22.50s     Synthesize event
+    t =    22.51s         Get number of matches for: Elements containing elements matching predicate 'hasKeyboardFocus == 1'
+    t =    22.55s         Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    22.60s         Find: Descendants matching type TextField
+    t =    22.60s         Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    22.67s         Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    22.70s         Find: Descendants matching type TextField
+    t =    22.70s         Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    22.71s         Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    22.75s         Find: Descendants matching type TextField
+    t =    22.75s         Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    22.82s         Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    22.86s         Find: Descendants matching type TextField
+    t =    22.86s         Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    22.95s         Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    22.99s         Find: Descendants matching type TextField
+    t =    22.99s         Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    22.99s         Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    23.03s         Find: Descendants matching type TextField
+    t =    23.04s         Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    23.11s         Failed: Neither element nor any descendant has keyboard focus. Event dispatch snapshot: TextField, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Element debug description:
+Attributes: TextField, 0x10c78c280, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Element subtree:
+ →TextField, 0x10c78c280, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Path to element:
+ →Application, 0x10c555180, pid: 56529, label: 'Plenara'
+  ↳Window (Main), 0x10c5561c0, {{0.0, 0.0}, {402.0, 874.0}}
+   ↳Other, 0x10c556440, {{0.0, 0.0}, {402.0, 874.0}}
+    ↳Other, 0x10c556580, {{0.0, 0.0}, {402.0, 874.0}}
+     ↳Other, 0x10c5566c0, {{0.0, 0.0}, {402.0, 874.0}}
+      ↳Other, 0x10c556800, {{0.0, 0.0}, {402.0, 874.0}}
+       ↳Other, 0x10c556940, {{0.0, 0.0}, {402.0, 874.0}}
+        ↳Other, 0x10c556a80, {{0.0, 0.0}, {402.0, 874.0}}
+         ↳Other, 0x10c556bc0, {{0.0, 0.0}, {402.0, 874.0}}
+          ↳Other, 0x10c556d00, {{0.0, 0.0}, {402.0, 874.0}}
+           ↳Other, 0x10c556e40, {{0.0, 0.0}, {402.0, 874.0}}
+            ↳ScrollView, 0x10c556f80, {{0.0, 0.0}, {402.0, 874.0}}
+             ↳Other, 0x10c5570c0, {{0.0, 62.0}, {402.0, 3115.7}}
+              ↳TextField, 0x10c78c280, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Query chain:
+ →Find: Target Application 'com.plenara.plenaraApp'
+  Output: {
+    Application, 0x118cf8b40, pid: 56529, label: 'Plenara'
+  }
+  ↪︎Find: Descendants matching type TextField
+    Output: {
+      TextField, 0x118cec000, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+    }
+    ↪︎Find: Elements matching predicate '"people-search" IN identifiers'
+      Output: {
+        TextField, 0x10c7a2940, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+      }
+
+    t =    23.11s     Wait for com.plenara.plenaraApp to idle
+    t =    24.13s     Retrying `Type 'Sofia
+' into "people-search" TextField` (attempt #2)
+    t =    24.13s         Wait for com.plenara.plenaraApp to idle
+    t =    24.13s         Find the "people-search" TextField
+    t =    24.16s         Check for interrupting elements affecting "people-search" TextField
+    t =    24.18s         Synthesize event
+    t =    24.18s             Get number of matches for: Elements containing elements matching predicate 'hasKeyboardFocus == 1'
+    t =    24.21s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    24.24s             Find: Descendants matching type TextField
+    t =    24.24s             Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    24.28s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    24.32s             Find: Descendants matching type TextField
+    t =    24.32s             Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    24.32s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    24.36s             Find: Descendants matching type TextField
+    t =    24.36s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    24.41s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    24.45s             Find: Descendants matching type TextField
+    t =    24.45s             Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    24.52s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    24.56s             Find: Descendants matching type TextField
+    t =    24.56s             Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    24.56s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    24.59s             Find: Descendants matching type TextField
+    t =    24.60s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    24.64s             Failed: Neither element nor any descendant has keyboard focus. Event dispatch snapshot: TextField, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Element debug description:
+Attributes: TextField, 0x10c556e40, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Element subtree:
+ →TextField, 0x10c556e40, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Path to element:
+ →Application, 0x10c5575c0, pid: 56529, label: 'Plenara'
+  ↳Window (Main), 0x10c555cc0, {{0.0, 0.0}, {402.0, 874.0}}
+   ↳Other, 0x10c557480, {{0.0, 0.0}, {402.0, 874.0}}
+    ↳Other, 0x10c557340, {{0.0, 0.0}, {402.0, 874.0}}
+     ↳Other, 0x10c557200, {{0.0, 0.0}, {402.0, 874.0}}
+      ↳Other, 0x10c555f40, {{0.0, 0.0}, {402.0, 874.0}}
+       ↳Other, 0x10c555e00, {{0.0, 0.0}, {402.0, 874.0}}
+        ↳Other, 0x10c555680, {{0.0, 0.0}, {402.0, 874.0}}
+         ↳Other, 0x10c555b80, {{0.0, 0.0}, {402.0, 874.0}}
+          ↳Other, 0x10c555a40, {{0.0, 0.0}, {402.0, 874.0}}
+           ↳Other, 0x10c555900, {{0.0, 0.0}, {402.0, 874.0}}
+            ↳ScrollView, 0x10c5557c0, {{0.0, 0.0}, {402.0, 874.0}}
+             ↳Other, 0x10c555540, {{0.0, 62.0}, {402.0, 3115.7}}
+              ↳TextField, 0x10c556e40, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Query chain:
+ →Find: Target Application 'com.plenara.plenaraApp'
+  Output: {
+    Application, 0x118cca580, pid: 56529, label: 'Plenara'
+  }
+  ↪︎Find: Descendants matching type TextField
+    Output: {
+      TextField, 0x118ceee40, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+    }
+    ↪︎Find: Elements matching predicate '"people-search" IN identifiers'
+      Output: {
+        TextField, 0x10c7a03c0, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+      }
+
+    t =    24.65s         Wait for com.plenara.plenaraApp to idle
+    t =    25.66s     Retrying `Type 'Sofia
+' into "people-search" TextField` (attempt #3)
+    t =    25.66s         Wait for com.plenara.plenaraApp to idle
+    t =    25.66s         Find the "people-search" TextField
+    t =    25.70s         Check for interrupting elements affecting "people-search" TextField
+    t =    25.73s         Synthesize event
+    t =    25.73s             Get number of matches for: Elements containing elements matching predicate 'hasKeyboardFocus == 1'
+    t =    25.76s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    25.79s             Find: Descendants matching type TextField
+    t =    25.79s             Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    25.84s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    25.88s             Find: Descendants matching type TextField
+    t =    25.88s             Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    25.88s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    25.91s             Find: Descendants matching type TextField
+    t =    25.91s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    25.96s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    25.99s             Find: Descendants matching type TextField
+    t =    25.99s             Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    26.03s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    26.07s             Find: Descendants matching type TextField
+    t =    26.07s             Find: Elements matching predicate '"people-search" IN identifiers'
+    t =    26.07s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    26.10s             Find: Descendants matching type TextField
+    t =    26.10s             Requesting snapshot of accessibility hierarchy for app with pid 56529
+    t =    26.16s             Failed: Neither element nor any descendant has keyboard focus. Event dispatch snapshot: TextField, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Element debug description:
+Attributes: TextField, 0x10c78d180, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Element subtree:
+ →TextField, 0x10c78d180, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Path to element:
+ →Application, 0x118d0fd40, pid: 56529, label: 'Plenara'
+  ↳Window (Main), 0x118d0c3c0, {{0.0, 0.0}, {402.0, 874.0}}
+   ↳Other, 0x118d0c280, {{0.0, 0.0}, {402.0, 874.0}}
+    ↳Other, 0x118d0c640, {{0.0, 0.0}, {402.0, 874.0}}
+     ↳Other, 0x118d0c140, {{0.0, 0.0}, {402.0, 874.0}}
+      ↳Other, 0x118d0c000, {{0.0, 0.0}, {402.0, 874.0}}
+       ↳Other, 0x118d0f0c0, {{0.0, 0.0}, {402.0, 874.0}}
+        ↳Other, 0x118d0ee40, {{0.0, 0.0}, {402.0, 874.0}}
+         ↳Other, 0x10c78c000, {{0.0, 0.0}, {402.0, 874.0}}
+          ↳Other, 0x10c78c8c0, {{0.0, 0.0}, {402.0, 874.0}}
+           ↳Other, 0x10c78c140, {{0.0, 0.0}, {402.0, 874.0}}
+            ↳ScrollView, 0x10c78c280, {{0.0, 0.0}, {402.0, 874.0}}
+             ↳Other, 0x10c78c3c0, {{0.0, 62.0}, {402.0, 3115.7}}
+              ↳TextField, 0x10c78d180, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Query chain:
+ →Find: Target Application 'com.plenara.plenaraApp'
+  Output: {
+    Application, 0x118cca440, pid: 56529, label: 'Plenara'
+  }
+  ↪︎Find: Descendants matching type TextField
+    Output: {
+      TextField, 0x10c7a3700, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+    }
+    ↪︎Find: Elements matching predicate '"people-search" IN identifiers'
+      Output: {
+        TextField, 0x118d0f5c0, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+      }
+
+    t =    26.17s         Wait for com.plenara.plenaraApp to idle
+    t =    26.17s     Requesting snapshot of accessibility hierarchy for app with pid 56529
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/PlenaraUITests.swift:95: error: -[PlenaraUITests.PlenaraUITests testDarkAndLargeTextNavigation] : Failed to synthesize event: Neither element nor any descendant has keyboard focus. Event dispatch snapshot: TextField, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Element debug description:
+Attributes: TextField, 0x10c78d180, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Element subtree:
+ →TextField, 0x10c78d180, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Path to element:
+ →Application, 0x118d0fd40, pid: 56529, label: 'Plenara'
+  ↳Window (Main), 0x118d0c3c0, {{0.0, 0.0}, {402.0, 874.0}}
+   ↳Other, 0x118d0c280, {{0.0, 0.0}, {402.0, 874.0}}
+    ↳Other, 0x118d0c640, {{0.0, 0.0}, {402.0, 874.0}}
+     ↳Other, 0x118d0c140, {{0.0, 0.0}, {402.0, 874.0}}
+      ↳Other, 0x118d0c000, {{0.0, 0.0}, {402.0, 874.0}}
+       ↳Other, 0x118d0f0c0, {{0.0, 0.0}, {402.0, 874.0}}
+        ↳Other, 0x118d0ee40, {{0.0, 0.0}, {402.0, 874.0}}
+         ↳Other, 0x10c78c000, {{0.0, 0.0}, {402.0, 874.0}}
+          ↳Other, 0x10c78c8c0, {{0.0, 0.0}, {402.0, 874.0}}
+           ↳Other, 0x10c78c140, {{0.0, 0.0}, {402.0, 874.0}}
+            ↳ScrollView, 0x10c78c280, {{0.0, 0.0}, {402.0, 874.0}}
+             ↳Other, 0x10c78c3c0, {{0.0, 62.0}, {402.0, 3115.7}}
+              ↳TextField, 0x10c78d180, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+Query chain:
+ →Find: Target Application 'com.plenara.plenaraApp'
+  Output: {
+    Application, 0x118cca440, pid: 56529, label: 'Plenara'
+  }
+  ↪︎Find: Descendants matching type TextField
+    Output: {
+      TextField, 0x10c7a3700, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+    }
+    ↪︎Find: Elements matching predicate '"people-search" IN identifiers'
+      Output: {
+        TextField, 0x118d0f5c0, {{108.7, 784.0}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone', value: Find someone
+      }
+
+    t =    26.52s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testDarkAndLargeTextNavigation]' failed (26.827 seconds).
+Test Case '-[PlenaraUITests.PlenaraUITests testDatedReminderContext]' started.
+    t =     0.00s Start Test at 2026-11-09 20:02:25.226
+    t =     0.05s Set Up
+    t =     0.06s         Open com.plenara.plenaraApp
+    t =     0.06s             Launch com.plenara.plenaraApp
+    t =     0.06s                 Terminate com.plenara.plenaraApp:56529
+2026-11-09 20:02:26.335 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:02:26.335 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     4.45s                 Setting up automation session
+    t =     6.22s                 Wait for com.plenara.plenaraApp to idle
+    t =    20.22s     Terminate com.plenara.plenaraApp:56629
+    t =    22.26s     Open com.plenara.plenaraApp
+    t =    22.27s         Launch com.plenara.plenaraApp
+2026-11-09 20:02:47.550 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:02:47.551 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    27.45s             Setting up automation session
+    t =    29.12s             Wait for com.plenara.plenaraApp to idle
+    t =    31.98s     Waiting 5.0s for "dated-Mum" Button to exist
+    t =    33.03s         Checking `Expect predicate `existsNoRetry == 1` for object "dated-Mum" Button`
+    t =    33.03s             Checking existence of `"dated-Mum" Button`
+    t =    33.31s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    33.53s Added attachment named 'Dated reminders'
+    t =    33.53s     Tap "dated-Mum" Button
+    t =    33.53s         Wait for com.plenara.plenaraApp to idle
+    t =    33.53s         Find the "dated-Mum" Button
+    t =    33.60s         Check for interrupting elements affecting "dated-Mum" Button
+    t =    33.67s         Synthesize event
+    t =    34.00s         Wait for com.plenara.plenaraApp to idle
+    t =    34.18s     Waiting 5.0s for "birthday-info" StaticText to exist
+    t =    35.23s         Checking `Expect predicate `existsNoRetry == 1` for object "birthday-info" StaticText`
+    t =    35.23s             Checking existence of `"birthday-info" StaticText`
+    t =    35.46s     Tap "tab-0" Button
+    t =    35.46s         Wait for com.plenara.plenaraApp to idle
+    t =    35.57s         Find the "tab-0" Button
+    t =    35.76s         Check for interrupting elements affecting "tab-0" Button
+    t =    35.97s         Synthesize event
+    t =    36.29s         Wait for com.plenara.plenaraApp to idle
+    t =    36.68s     Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    36.68s         Wait for com.plenara.plenaraApp to idle
+    t =    36.69s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.72s         Check for interrupting elements affecting "Plenara" Application
+    t =    36.78s         Synthesize event
+    t =    37.22s         Wait for com.plenara.plenaraApp to idle
+    t =    39.34s     Tap "Picked up this thread" Button
+    t =    39.34s         Wait for com.plenara.plenaraApp to idle
+    t =    39.35s         Find the "Picked up this thread" Button
+    t =    39.64s         Check for interrupting elements affecting "Picked up this thread" Button
+    t =    39.73s         Synthesize event
+    t =    40.06s         Wait for com.plenara.plenaraApp to idle
+    t =    40.11s     Checking existence of `"dated-Sofia Chen" Button`
+    t =    40.20s     Checking existence of `"Her ceramics show opens in November. Ask how the pieces are coming along." StaticText`
+    t =    40.32s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testDatedReminderContext]' passed (40.686 seconds).
+Test Case '-[PlenaraUITests.PlenaraUITests testDemoNavigationAndScreenshots]' started.
+    t =     0.00s Start Test at 2026-11-09 20:03:05.916
+    t =     0.06s Set Up
+    t =     0.06s         Open com.plenara.plenaraApp
+    t =     0.06s             Launch com.plenara.plenaraApp
+    t =     0.06s                 Terminate com.plenara.plenaraApp:56761
+2026-11-09 20:03:10.142 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:03:10.152 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     5.96s                 Setting up automation session
+    t =     6.79s                 Wait for com.plenara.plenaraApp to idle
+    t =     8.57s     Terminate com.plenara.plenaraApp:56985
+    t =    11.65s     Open com.plenara.plenaraApp
+    t =    11.65s         Launch com.plenara.plenaraApp
+2026-11-09 20:03:17.831 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:03:17.832 xcodebuild[56209:33510903] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    12.55s             Setting up automation session
+    t =    13.88s             Wait for com.plenara.plenaraApp to idle
+    t =    15.80s     Waiting 5.0s for "A little closer." StaticText to exist
+Testing started
+In flight operation:   <DVTOperationGroup: 0xc67db5380; state = AREfc>
+     <DVTOperationGroup: 0xc67db4c00; state = AREfc>
+         <DVTOperation: 0xc67bd1f40; name = 'Remove Log If Needed', state = aReFc>
+         <DVTOperationGroup: 0xc67db4d80; state = AREfc>
+             <DVTOperationGroup: 0xc67db5080; state = AREfc>
+                 <DVTOperation: 0xc67de3c00; state = aReFc>
+                 <IDESchemeActionResultOperation: 0xc67592400; state = Arefc>
+                 <DVTOperation: 0xc67de3e80; state = arefc>
+                 <__DVTSwiftAsyncOperation: 0xc67593c00; state = AReFc>
+                 <__DVTSwiftAsyncOperation: 0xc67db5200; state = AReFc>
+                 <DVTOperation: 0xc67de3d40; state = aReFc>
+                 <DVTOperationGroup: 0xc67593480; state = AREf!c, blocking { Blocking finish to clean up test session. }>
+                     <DVTOperation: 0xc67de2f80; state = aReFc>
+                     <XCTHOperationGroup: 0xc67591e00>
+                         <XCTHOperationGroup: 0xc67592100>
+                             <XCTHOperationGroup: 0xc67593180>
+                                 <XCTHOperationGroup: 0xc67593780>{name = 'com.apple.dt.xctest.target-runner'}(Finishing blocked for reasons:
+  waiting for workers to materialize
+  )
+                                     <XCTHOperationGroup: 0xc67db5e00>
+                                         <XCTHOperationGroup: 0xc67db7000>
+                                             <IDERunOperation: 0xc67db6e80; state = aReF!c, blocking { XCTHTestOperationCoordinator processing delay, Blocking finish to allow restarting of crashed test operations., Waiting for -runningDidFinish call. }>
+                                             worker: <IDERunOperationWorkerGroup: 0xc6597ad00, unfinished subworkers : 
+					<_IDEInstalliPhoneSimulatorWorker: 0xc66c6bde0 -- ExtensionIdentifier: Xcode.IDEiPhoneSimulatorSupport.DeviceService.Install>
+					<IDELaunchiPhoneSimulatorLauncher: 0xc658ff3a0 -- ExtensionIdentifier: Xcode.IDEiPhoneSimulatorSupport.Launch>
+				 >
+
+                                             tracker: <IDEExecutionOperationTracker: 0xc67e46220: Testing workspace Plenara with scheme Plenara
+	subtrackers=(
+    "<IDEExecutionRunnableTracker: 0xc66a7fae0: subtrackers=none>",
+    "<IDEExecutionRunnableTracker: 0xc65138b40: subtrackers=none>"
+)>
+
+                             <XCTHOperation: 0xc67de3ac0>
+                 <__DVTSwiftAsyncOperation: 0xc67593a80; state = AReFc>
+                 <__DVTSwiftAsyncOperation: 0xc67593d80; state = AReFc>
+                 <DVTOperation: 0xc67bd17c0; state = arefc>
+             <_DVTAsyncBlockOperation: 0xc67bd1e00; name = 'Download and merge code coverage profiles', state = Arefc>
+             <XCTHCoverageReportGenerationOperation: 0xc675be4c0>{name = 'Generate coverage report'}
+         <_IDETestingFinalizeLogsOperation: 0xc67bd2080; name = 'Finalize test log', state = aref!c, blocking { waiting for test log to finish recording }>
+In flight operation:   <IDERunOperation: 0xc67db4900; state = aReF!c, blocking { Waiting for -runningDidFinish call. }>
+  worker: <IDERunOperationWorkerGroup: 0xc63434300, unfinished subworkers : 
+					<_IDEInstalliPhoneSimulatorWorker: 0xc66c840a0 -- ExtensionIdentifier: Xcode.IDEiPhoneSimulatorSupport.DeviceService.Install>
+					<IDELaunchiPhoneSimulatorLauncher: 0xc659eb2c0 -- ExtensionIdentifier: Xcode.IDEiPhoneSimulatorSupport.Launch>
+				 >
+
+  tracker: <IDEExecutionOperationTracker: 0xc694a1340: Launch application com.plenara.plenaraApp for UI testing.
+	subtrackers=(
+    "<IDEExecutionRunnableTracker: 0xc6513aa60: subtrackers=none>"
+)>
+
+<DVTOperationGroup: 0xc67db5380; state = AREfc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[DVTOperationGroup init] (in DVTFoundation)
+  2   +[DVTOperationGroup operationGroupWithSuboperations:] (in DVTFoundation)
+  3   -[IDEScheme _groupAndImposeDependenciesForOrderedOperations:] (in IDEFoundation)
+  4   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  5   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  6   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  9   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 10   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 14   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 15   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 16   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 17   main (in xcodebuild)
+ 18   start (in dyld)
+
+<DVTOperationGroup: 0xc67db4c00; state = AREfc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[DVTOperationGroup init] (in DVTFoundation)
+  2   +[DVTOperationGroup operationGroupWithSuboperations:] (in DVTFoundation)
+  3   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  4   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<DVTOperation: 0xc67bd1f40; name = 'Remove Log If Needed', state = aReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDETestSchemeAction _removeLogIfNeededOperationWithLogStore:logRecord:buildOperation:] (in IDEFoundation)
+  3   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  4   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<DVTOperationGroup: 0xc67db4d80; state = AREfc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[DVTOperationGroup init] (in DVTFoundation)
+  2   +[DVTOperationGroup operationGroupWithSuboperations:] (in DVTFoundation)
+  3   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  4   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<DVTOperationGroup: 0xc67db5080; state = AREfc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[DVTOperationGroup init] (in DVTFoundation)
+  2   +[DVTOperationGroup operationGroupWithSuboperations:] (in DVTFoundation)
+  3   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  4   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<DVTOperation: 0xc67de3c00; state = aReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  3   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  4   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<IDESchemeActionResultOperation: 0xc67592400; state = Arefc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[IDESchemeActionResultOperation schemeActionResultOperationWithSchemeActionRecord:trackingExecutionOfOperation:actionCallbackBlock:schemeActionResultComputationBlock:] (in IDEFoundation)
+  2   -[IDETestRunSession testOperationForTestRunSpecificationGroups:executionEnvironment:invocationRecord:actionRecord:schemeIdentifier:outSchemeActionResultOperation:launchParametersBlock:actionCallbackBlock:error:] (in IDEFoundation)
+  3   -[IDETestManager testOperationForTestRunSpecificationGroups:executionEnvironment:runDestinationPool:invocationRecord:actionRecord:schemeIdentifier:outSchemeActionResultOperation:launchParametersBlock:actionCallbackBlock:error:] (in IDEFoundation)
+  4   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  5   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  6   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  7   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+ 10   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 11   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 15   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 16   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 17   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 18   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 19   main (in xcodebuild)
+ 20   start (in dyld)
+
+<DVTOperation: 0xc67de3e80; state = arefc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  3   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  4   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<__DVTSwiftAsyncOperation: 0xc67593c00; state = AReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   @objc DVTAsyncOperation.init() (in DVTFoundation)
+  2   @objc static DVTOperation.operationWithMainThreadBlock(_:) (in DVTFoundation)
+  3   -[IDESchemeAction _setUpOperationsForPackageLoadingInWorkspace:handlePreActionsActivityLogSection:isCleanOperation:] (in IDEFoundation)
+  4   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  5   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  7   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  8   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+ 10   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+ 11   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 12   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 15   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 16   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 17   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 18   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 19   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 20   main (in xcodebuild)
+ 21   start (in dyld)
+
+<__DVTSwiftAsyncOperation: 0xc67db5200; state = AReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   @objc DVTAsyncOperation.init() (in DVTFoundation)
+  2   @objc static DVTOperation.operationWithMainThreadBlock(_:) (in DVTFoundation)
+  3   -[IDESchemeAction _setUpOperationsForPackageLoadingInWorkspace:handlePreActionsActivityLogSection:isCleanOperation:] (in IDEFoundation)
+  4   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  5   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  7   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  8   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+ 10   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+ 11   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 12   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 15   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 16   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 17   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 18   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 19   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 20   main (in xcodebuild)
+ 21   start (in dyld)
+
+<DVTOperation: 0xc67de3d40; state = aReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  3   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  4   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<DVTOperationGroup: 0xc67593480; state = AREf!c> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[DVTOperationGroup init] (in DVTFoundation)
+  2   -[IDETestRunSession testOperationForTestRunSpecificationGroups:executionEnvironment:invocationRecord:actionRecord:schemeIdentifier:outSchemeActionResultOperation:launchParametersBlock:actionCallbackBlock:error:] (in IDEFoundation)
+  3   -[IDETestManager testOperationForTestRunSpecificationGroups:executionEnvironment:runDestinationPool:invocationRecord:actionRecord:schemeIdentifier:outSchemeActionResultOperation:launchParametersBlock:actionCallbackBlock:error:] (in IDEFoundation)
+  4   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  5   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  6   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  7   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+ 10   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 11   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 15   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 16   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 17   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 18   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 19   main (in xcodebuild)
+ 20   start (in dyld)
+
+<DVTOperation: 0xc67de2f80; state = aReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDETestRunSession testOperationForTestRunSpecificationGroups:executionEnvironment:invocationRecord:actionRecord:schemeIdentifier:outSchemeActionResultOperation:launchParametersBlock:actionCallbackBlock:error:] (in IDEFoundation)
+  3   -[IDETestManager testOperationForTestRunSpecificationGroups:executionEnvironment:runDestinationPool:invocationRecord:actionRecord:schemeIdentifier:outSchemeActionResultOperation:launchParametersBlock:actionCallbackBlock:error:] (in IDEFoundation)
+  4   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  5   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  6   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  7   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+ 10   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 11   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 15   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 16   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 17   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 18   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 19   main (in xcodebuild)
+ 20   start (in dyld)
+
+<IDERunOperation: 0xc67db6e80; state = aReF!c> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[IDERunOperation initWithWorker:] (in IDEFoundation)
+  2   +[IDETestRunnerLaunchOperationFactory testRunOperationWithLaunchParameters:testRunSpecification:testConfiguration:executionEnvironment:schemeActionRecord:runDestination:localDeviceRunDestination:error:] (in IDEFoundation)
+  3   __110+[IDETestRunnerLaunchOperationFactory makeLaunchOperationProviderWithExecutionEnvironment:schemeActionRecord:]_block_invoke (in IDEFoundation)
+  4   thunk for @escaping @callee_unowned @convention(block) (@unowned XCTHRunDestination, @unowned XCTHTestRunSpecification, @unowned XCTestConfiguration, @unowned XCTHLaunchParameters, @unowned AutoreleasingUnsafeMutablePointer<NSError?>?) -> (@autoreleased (NSOperation & XCTHRunOperation)?) (in XCTHarness)
+  5   thunk for @escaping @callee_guaranteed (@guaranteed XCTHRunDestination, @guaranteed XCTHTestRunSpecification, @guaranteed XCTestConfiguration, @guaranteed XCTHLaunchParameters, @unowned AutoreleasingUnsafeMutablePointer<NSError?>?) -> (@owned (NSOperation & XCTHRunOperation)?) (in XCTHarness)
+  6   -[XCTHTestRunner _testRunOperationWithError:] (in XCTHarness)
+  7   -[XCTHTestRunner _addTestRunOperation:] (in XCTHarness)
+  8   -[XCTHTestRunner testOperationWithError:] (in XCTHarness)
+  9   -[XCTHTestTargetRunner workerWasProvided:] (in XCTHarness)
+ 10   __40-[XCTHTestTargetRunner requestNewWorker]_block_invoke (in XCTHarness)
+ 11   __45-[XCTHFuture observeFinishOnQueue:withBlock:]_block_invoke_2 (in XCTHarness)
+ 12   __XCTHAsyncPerformBlockOnMainRunLoop_block_invoke (in XCTHarness)
+ 13   __CFRUNLOOP_IS_CALLING_OUT_TO_A_BLOCK__ (in CoreFoundation)
+ 14   __CFRunLoopDoBlocks (in CoreFoundation)
+ 15   __CFRunLoopRun (in CoreFoundation)
+ 16   _CFRunLoopRunSpecificWithOptions (in CoreFoundation)
+ 17   CFRunLoopRun (in CoreFoundation)
+ 18   -[Xcode3CommandLineBuildTool waitForBuildWithBuildLog:buildActionTimingSection:executionEnvironment:title:operationToEnqueue:error:] (in Xcode3Core)
+ 19   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 20   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 21   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 22   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 23   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 24   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 25   main (in xcodebuild)
+ 26   start (in dyld)
+
+<__DVTSwiftAsyncOperation: 0xc67593a80; state = AReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   @objc DVTAsyncOperation.init() (in DVTFoundation)
+  2   static DVTOperation.awaiting(_:) (in DVTFoundation)
+  3   @objc static IDESchemeAction.operationToWaitForFinishedLoadingOperation(of:) (in IDEFoundation)
+  4   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  5   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  7   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  8   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+ 10   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+ 11   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 12   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 15   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 16   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 17   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 18   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 19   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 20   main (in xcodebuild)
+ 21   start (in dyld)
+
+<__DVTSwiftAsyncOperation: 0xc67593d80; state = AReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   @objc DVTAsyncOperation.init() (in DVTFoundation)
+  2   static DVTOperation.awaiting(_:) (in DVTFoundation)
+  3   @objc static IDESchemeAction.operationToWaitForFinishedLoadingOperation(of:) (in IDEFoundation)
+  4   -[IDESchemeAction _setUpOperationsForPackageLoadingInWorkspace:handlePreActionsActivityLogSection:isCleanOperation:] (in IDEFoundation)
+  5   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  6   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  7   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  8   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  9   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+ 11   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+ 12   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 13   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 15   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 16   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 17   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 18   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 19   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 20   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 21   main (in xcodebuild)
+ 22   start (in dyld)
+
+<DVTOperation: 0xc67bd17c0; state = arefc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  3   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  4   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<_DVTAsyncBlockOperation: 0xc67bd1e00; name = 'Download and merge code coverage profiles', state = Arefc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[_DVTAsyncBlockOperation initWithBlock:] (in DVTFoundation)
+  2   +[DVTOperation(DVTConveniences) operationWithAsynchronousBlock:] (in DVTFoundation)
+  3   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  4   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<_IDETestingFinalizeLogsOperation: 0xc67bd2080; name = 'Finalize test log', state = aref!c> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDETestSchemeAction _finalizeLogOperationWithRecorder:launchLogsSectionRecorder:] (in IDEFoundation)
+  3   -[IDETestSchemeAction testOperationWithSchemeOperationParameters:testManager:buildOperation:buildParameters:schemeCommand:actionRecord:testPlanRunSpecifications:deviceAvailableChecker:outError:actionCallbackBlock:] (in IDEFoundation)
+  4   -[IDEScheme(TestSchemeAction) executionOperationForTestSchemeActionWithOperationParameters:command:buildOperationVariantSpecifiers:buildOperationGroup:schemeActionResult:buildParameters:shouldOnlyBuild:runDestination:orderedOperations:schemeActionRecord:deviceAvailableChecker:actionCallbackBlock:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme(TestSchemeAction) schemeTestActionOperationForSchemeOperationParameters:onlyBuild:buildLog:deviceAvailableChecker:buildParameters:shouldBuild:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildAndActionTaskForSchemeOperationParameters:shouldBuild:onlyBuild:buildParameters:buildLog:deviceAvailableChecker:restorePersistedBuildResults:dontActuallyRunCommands:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool(TestSchemeAction) buildForTestSchemeCommandWantsSkip:buildAction:isProjectBuild:title:buildLog:isMoreDestinationsPending:runDestinations:runDestination:schemeCommand:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xc
+
+*** If you believe this error represents a bug, please attach the result bundle at /Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-200142.xcresult
+
+    t =    16.83s         Checking `Expect predicate `existsNoRetry == 1` for object "A little closer." StaticText`
+    t =    16.83s             Checking existence of `"A little closer." StaticText`
+2026-11-09 20:03:23.407 xcodebuild[56209:33511033]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-09 20:03:23.527 xcodebuild[56209:33510903] [MT] IDETestOperationsObserverDebug: 97.101 elapsed -- Testing started completed.
+2026-11-09 20:03:23.528 xcodebuild[56209:33510903] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 20:03:23.528 xcodebuild[56209:33510903] [MT] IDETestOperationsObserverDebug: 97.101 sec, +97.101 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-200142.xcresult
+
+** TEST EXECUTE INTERRUPTED **
+
+2026-11-09 20:03:54.716 xcodebuild[56209:33510903] [MT] IDEResultKit: Warning: While writing a result bundle to /Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-200142.xcresult, not all contents have been imported, as the Staging directory still contains the following files/directories: ["1_Test"]
+Error saving invocation record to resultBundlePath:Error Domain=IDEFoundationErrorDomain Code=12 "The result bundle could not be saved due to an error: Could not write the 1_Test action log because the log hasn't finished recording after waiting 30 seconds." UserInfo={NSLocalizedDescription=The result bundle could not be saved due to an error: Could not write the 1_Test action log because the log hasn't finished recording after waiting 30 seconds., NSUnderlyingError=0xc698441b0 {Error Domain=IDEFoundationErrorDomain Code=10 "Could not write the 1_Test action log because the log hasn't finished recording after waiting 30 seconds." UserInfo={NSLocalizedDescription=Could not write the 1_Test action log because the log hasn't finished recording after waiting 30 seconds.}}}
+ode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<IDERunOperation: 0xc67db4900; state = aReF!c> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[IDERunOperation initWithWorker:] (in IDEFoundation)
+  2   -[IDERunDestination runOperationForLaunchSession:error:] (in IDEFoundation)
+  3   -[IDETargetAppLaunchCoordinator launchProcessWithParameters:token:completion:] (in IDEFoundation)
+  4   -[IDETargetAppLaunchCoordinator launchProcessWithParameters:completion:] (in IDEFoundation)
+  5   -[XCTHTestOperationCoordinator testRunnerSession:launchProcessWithParameters:completion:] (in XCTHarness)
+  6   __91-[XCTTestRunnerSession _XCT_launchProcessWithPath:bundleID:arguments:environmentVariables:]_block_invoke (in XCTDaemonControl)
+  7   _dispatch_call_block_and_release (in libdispatch.dylib)
+  8   _dispatch_client_callout (in libdispatch.dylib)
+  9   _dispatch_main_queue_drain.cold.6 (in libdispatch.dylib)
+ 10   _dispatch_main_queue_drain (in libdispatch.dylib)
+ 11   _dispatch_main_queue_callback_4CF (in libdispatch.dylib)
+ 12   __CFRUNLOOP_IS_SERVICING_THE_MAIN_DISPATCH_QUEUE__ (in CoreFoundation)
+ 13   __CFRunLoopRun (in CoreFoundation)
+ 14   _CFRunLoopRunSpecificWithOptions (in CoreFoundation)
+ 15   CFRunLoopRun (in CoreFoundation)
+ 16   -[Xcode3CommandLineBuildTool waitForBuildWithBuildLog:buildActionTimingSection:executionEnvironment:title:operationToEnqueue:error:] (in Xcode3Core)
+ 17   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 18   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 19   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 20   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 21   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 22   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 23   main (in xcodebuild)
+ 24   start (in dyld)
+

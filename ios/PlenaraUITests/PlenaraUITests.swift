@@ -10,20 +10,20 @@ final class PlenaraUITests: XCTestCase {
         app.buttons["save-person"].tap()
         let setupFinished = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: app.buttons["tab-1"])
         XCTAssertEqual(XCTWaiter.wait(for: [setupFinished], timeout: 5), .completed, "Finishing setup must return to the app")
-        app.buttons["tab-1"].tap(); app.buttons["person-Julia Test"].tap()
+        app.buttons["tab-1"].tap(); tapVisible(app.buttons["person-Julia Test"], app: app)
         app.buttons["Add a note"].tap(); let memory = app.textFields["memory-text"]; memory.tap(); memory.typeText("Ask about the exhibition")
         app.buttons["save-memory"].tap()
         app.swipeUp(); XCTAssertTrue(app.buttons["memory-row"].firstMatch.waitForExistence(timeout: 5)); app.swipeDown()
         app.buttons["Log a moment"].tap(); app.buttons["save-moment"].tap()
         XCTAssertTrue(app.staticTexts["Connected today"].waitForExistence(timeout: 5))
-        app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch(); app.buttons["tab-1"].tap(); app.buttons["person-Julia Test"].tap()
+        app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch(); app.buttons["tab-1"].tap(); tapVisible(app.buttons["person-Julia Test"], app: app)
         XCTAssertTrue(app.staticTexts["Connected today"].waitForExistence(timeout: 5)); app.swipeUp(); XCTAssertTrue(app.staticTexts["Ask about the exhibition"].firstMatch.exists)
     }
     func testDemoNavigationAndScreenshots() throws {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo"]; app.launch()
-        XCTAssertTrue(app.staticTexts["A little closer."].waitForExistence(timeout: 5)); XCTAssertGreaterThanOrEqual(app.buttons["tab-1"].frame.height, 44); XCTAssertGreaterThanOrEqual(app.buttons["Log a moment"].frame.height, 44); XCTAssertGreaterThanOrEqual(app.buttons["Another week"].frame.height, 44); attach("Stay close")
+        XCTAssertTrue(app.staticTexts["A little closer."].waitForExistence(timeout: 5)); assertMinimumTapHeight(app.buttons["tab-1"]); assertMinimumTapHeight(app.buttons["Log a moment"]); assertMinimumTapHeight(app.buttons["Another week"]); attach("Stay close")
         app.buttons["tab-1"].tap(); attach("People"); app.buttons["Far away"].tap(); XCTAssertTrue(app.buttons["person-Sofia Chen"].exists); XCTAssertFalse(app.buttons["person-Daniel Rivera"].exists)
-        app.buttons["Everyone"].tap(); app.swipeUp(); app.buttons["person-Sofia Chen"].tap(); XCTAssertTrue(app.staticTexts["Sofia Chen"].firstMatch.waitForExistence(timeout: 5)); attach("Person")
+        app.buttons["Everyone"].tap(); app.swipeUp(); tapVisible(app.buttons["person-Sofia Chen"], app: app); XCTAssertTrue(app.staticTexts["Sofia Chen"].firstMatch.waitForExistence(timeout: 5)); attach("Person")
         app.swipeUp(); attach("Person notes"); app.buttons["tab-2"].tap(); XCTAssertTrue(app.staticTexts["Time well spent."].exists); attach("Moments")
         app.buttons["tab-0"].tap(); app.buttons["Settings and reminders"].tap(); XCTAssertTrue(app.buttons["Export a restorable backup"].exists); attach("Settings"); app.buttons["Export a restorable backup"].tap()
         let export = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"].buttons["Save"]
@@ -54,13 +54,13 @@ final class PlenaraUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Choose from Contacts"].waitForExistence(timeout: 5), "Finishing without a selection must keep the import screen available")
         app.buttons["Choose from Contacts"].tap(); XCTAssertTrue(maya.waitForExistence(timeout: 5))
         maya.tap(); app.navigationBars["Contacts"].buttons["Done"].tap(); XCTAssertTrue(app.navigationBars["Contacts"].waitForNonExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Import selected people"].waitForExistence(timeout: 5)); app.buttons["Import selected people"].tap(); app.alerts.buttons["Done"].tap()
-        XCTAssertTrue(app.buttons["person-Maya Plenara Test"].waitForExistence(timeout: 5)); app.buttons["person-Maya Plenara Test"].tap()
+        XCTAssertTrue(app.buttons["Import selected people"].waitForExistence(timeout: 5)); app.buttons["Import selected people"].tap(); app.buttons["import-rhythm-setup"].tap(); XCTAssertTrue(app.staticTexts["setup-rhythm-selection"].waitForExistence(timeout: 5)); XCTAssertEqual(app.staticTexts["setup-rhythm-selection"].label, "0 selected"); app.buttons["rhythm-done"].tap()
+        XCTAssertTrue(app.buttons["person-Maya Plenara Test"].waitForExistence(timeout: 5)); tapVisible(app.buttons["person-Maya Plenara Test"], app: app)
         XCTAssertTrue(app.staticTexts["No regular reminder"].exists); XCTAssertTrue(app.staticTexts["Last contact not set"].exists)
         app.buttons["tab-1"].tap(); openVisiblePeopleImport(); app.buttons["Choose from Contacts"].tap()
         XCTAssertTrue(maya.waitForExistence(timeout: 5)); maya.tap(); app.navigationBars["Contacts"].buttons["Done"].tap(); XCTAssertTrue(app.navigationBars["Contacts"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Import selected people"].waitForExistence(timeout: 5)); attach("Repeat import review"); XCTAssertTrue(app.staticTexts["0 selected"].exists, "A previously imported contact must start unselected")
-        app.switches.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap(); app.buttons["Import selected people"].tap(); app.alerts.buttons["Done"].tap()
+        app.switches.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap(); app.buttons["Import selected people"].tap(); app.buttons["import-not-now"].tap()
         XCTAssertEqual(app.buttons.matching(identifier: "person-Maya Plenara Test").count, 1)
 
     }
@@ -88,15 +88,14 @@ final class PlenaraUITests: XCTestCase {
     func testDarkAndLargeTextNavigation() throws {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo", "--dark"]; app.launch()
         XCTAssertTrue(app.staticTexts["A little closer."].waitForExistence(timeout: 5)); assertDarkBackground(); attach("Dark Stay close")
-        app.buttons["tab-1"].tap(); app.swipeUp(); app.buttons["person-Sofia Chen"].tap(); attach("Dark person")
+        app.buttons["tab-1"].tap(); app.swipeUp(); tapVisible(app.buttons["person-Sofia Chen"], app: app); attach("Dark person")
         app.buttons["relationship-intention"].tap(); waitForRelationshipEditor(); attach("Dark relationship choices"); app.buttons["Cancel"].tap()
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]; app.launch()
         XCTAssertTrue(app.buttons["tab-1"].waitForExistence(timeout: 5)); app.buttons["tab-1"].tap(); attach("Large text People")
-        let search = app.textFields["people-search"]; search.tap(); search.typeText("Sofia\n")
-        app.swipeUp(); app.buttons["person-Sofia Chen"].tap(); XCTAssertTrue(app.buttons["relationship-intention"].waitForExistence(timeout: 5)); attach("Large text person")
+        let search = app.textFields["people-search"]; tapVisible(search, app: app); XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "The visible People search must receive keyboard focus"); search.typeText("Sofia\n")
+        tapVisible(app.buttons["person-Sofia Chen"], app: app); XCTAssertTrue(app.buttons["relationship-intention"].waitForExistence(timeout: 5)); attach("Large text person")
         let relationship = app.buttons["relationship-intention"]
-        for _ in 0..<4 { if relationship.isHittable { break }; app.swipeUp() }
-        XCTAssertTrue(relationship.isHittable); relationship.tap(); waitForRelationshipEditor()
+        tapVisible(relationship, app: app); waitForRelationshipEditor()
         XCTAssertTrue(app.buttons["feeling-choice"].waitForExistence(timeout: 5)); attach("Large text relationship choices")
         app.buttons["Cancel"].tap()
         app.buttons["tab-0"].tap(); XCTAssertTrue(app.staticTexts["A little closer."].exists)
@@ -109,7 +108,7 @@ final class PlenaraUITests: XCTestCase {
         app.buttons["tab-1"].tap()
         XCTAssertTrue(app.buttons["person-Maya Imported"].waitForExistence(timeout: 5), "The previous-version import must open without reimporting")
         XCTAssertTrue(app.buttons["person-Alex Imported"].exists)
-        app.buttons["person-Maya Imported"].tap()
+        tapVisible(app.buttons["person-Maya Imported"], app: app)
         let intention = app.buttons["relationship-intention"]
         XCTAssertTrue(intention.waitForExistence(timeout: 5)); XCTAssertTrue(intention.label.contains("Grow closer"))
         XCTAssertFalse(intention.label.contains("Feels good")); XCTAssertFalse(intention.label.contains("Needs care"))
@@ -130,7 +129,7 @@ final class PlenaraUITests: XCTestCase {
         attach("About your relationship")
         app.buttons["save-person"].tap()
         app.terminate(); app.launchArguments = ["--ui-testing"]; app.launchEnvironment = [:]; app.launch()
-        app.buttons["tab-1"].tap(); app.buttons["person-Maya Imported"].tap()
+        app.buttons["tab-1"].tap(); tapVisible(app.buttons["person-Maya Imported"], app: app)
         XCTAssertTrue(app.staticTexts["Family"].exists); XCTAssertTrue(app.staticTexts["Friend"].exists); XCTAssertTrue(app.staticTexts["Casual"].exists); XCTAssertTrue(app.staticTexts["Far away"].exists)
         XCTAssertTrue(intention.label.contains("Keep it steady")); XCTAssertTrue(intention.label.contains("Needs care"))
         attach("Updated relationship profile")
@@ -165,7 +164,7 @@ final class PlenaraUITests: XCTestCase {
             if channel == "Call" { attach("Quick person chooser") }
             person.tap()
             let choice = app.buttons["channel-\(channel)"]
-            XCTAssertTrue(choice.waitForExistence(timeout: 5)); XCTAssertGreaterThanOrEqual(choice.frame.height, 44); choice.tap()
+            XCTAssertTrue(choice.waitForExistence(timeout: 5)); assertMinimumTapHeight(choice); choice.tap()
             XCTAssertTrue(choice.isSelected, "A one-tap channel choice must actually select \(channel)")
             XCTAssertTrue(app.descendants(matching: .any)["moment-person"].firstMatch.label.contains("Sofia Chen"))
             if channel == "Call" { attach("Quick moment editor") }
@@ -186,7 +185,7 @@ final class PlenaraUITests: XCTestCase {
         }
         app.swipeDown(); attach("Quick moment history")
         let text = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Ask about the new job")).firstMatch
-        text.tap(); let field = app.textFields["moment-note"]
+        tapVisible(text, app: app); let field = app.textFields["moment-note"]
         XCTAssertTrue(field.waitForExistence(timeout: 5)); XCTAssertEqual(field.value as? String, "Ask about the new job")
         app.segmentedControls.buttons["Reached out"].tap(); app.buttons["save-moment"].tap()
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", "Ask about the new job", "Reached out")).firstMatch.waitForExistence(timeout: 5))
@@ -250,7 +249,7 @@ final class PlenaraUITests: XCTestCase {
             let hero = app.buttons["suggestion-hero-Maya Inner"]; scrollHomeTo(hero)
             XCTAssertTrue(hero.exists)
             attach(label)
-            let expand = app.buttons["suggestions-expand"]; scrollHomeTo(expand); XCTAssertGreaterThanOrEqual(expand.frame.height, 44); expand.tap()
+            let expand = app.buttons["suggestions-expand"]; scrollHomeTo(expand); assertMinimumTapHeight(expand); expand.tap()
             let owen = app.buttons["suggestion-Owen Inner"]; scrollHomeTo(owen); XCTAssertTrue(owen.isHittable)
             attach(label + " expanded")
             scrollHomeTo(expand); expand.tap(); XCTAssertEqual(expand.value as? String, "Collapsed")
@@ -282,13 +281,13 @@ final class PlenaraUITests: XCTestCase {
         app.launchEnvironment["PLENARA_LEGACY_JOURNAL"] = try Data(contentsOf: fixture).base64EncodedString(); app.launch()
         openOrganizer()
         app.switches["organize-needs-assessment"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
-        let search = app.searchFields.firstMatch
-        search.tap(); search.typeText("Alex")
-        app.buttons["organize-person-Alex Imported"].tap()
-        search.tap(); search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "Maya")
-        XCTAssertTrue(app.staticTexts["organize-selection-count"].label.contains("outside this view"), "Selection outside a search must stay visible in the count")
-        app.buttons["organize-person-Maya Imported"].tap()
-        search.tap(); search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4))
+        searchAndSubmit("Alex", app: app)
+        tapVisible(app.buttons["organize-person-Alex Imported"], app: app)
+        searchAndSubmit("Maya", app: app)
+        let outside = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "outside this view"), object: app.staticTexts["organize-selection-count"])
+        XCTAssertEqual(XCTWaiter.wait(for: [outside], timeout: 5), .completed, "Selection outside a search must stay visible in the count")
+        tapVisible(app.buttons["organize-person-Maya Imported"], app: app)
+        searchAndSubmit("", app: app)
         XCTAssertEqual(app.staticTexts["organize-selection-count"].label, "2 selected")
         app.buttons["organize-apply"].tap()
         XCTAssertTrue(app.buttons["batch-save"].waitForExistence(timeout: 5)); XCTAssertFalse(app.buttons["batch-save"].isEnabled)
@@ -309,7 +308,7 @@ final class PlenaraUITests: XCTestCase {
         XCTAssertFalse(app.buttons["organize-person-Maya Imported"].label.contains("Family + Friend"))
         app.buttons["organize-select-shown"].tap(); applyOrganizationBatch()
         app.buttons["Close"].tap(); app.terminate(); app.launchEnvironment = [:]; app.launchArguments = ["--ui-testing"]; app.launch()
-        app.buttons["tab-1"].tap(); app.buttons["person-Maya Imported"].tap()
+        app.buttons["tab-1"].tap(); tapVisible(app.buttons["person-Maya Imported"], app: app)
         XCTAssertTrue(app.staticTexts["Family"].exists); XCTAssertTrue(app.staticTexts["Friend"].exists)
         XCTAssertTrue(app.buttons["relationship-intention"].label.contains("Needs care"))
         XCTAssertTrue(app.buttons["relationship-intention"].label.contains("Grow closer"), "An untouched intention must survive bulk organization")
@@ -358,7 +357,7 @@ final class PlenaraUITests: XCTestCase {
         XCTAssertEqual(app.switches["organize-unset-only"].value as? String, "1", "Quick sort must start with unanswered people")
         let search = app.searchFields.firstMatch; search.tap(); search.typeText("Leo\n")
         let grow = app.buttons["sort-Leo Park-Grow closer"]
-        XCTAssertTrue(grow.waitForExistence(timeout: 5)); XCTAssertGreaterThanOrEqual(grow.frame.height, 44)
+        XCTAssertTrue(grow.waitForExistence(timeout: 5)); assertMinimumTapHeight(grow)
         attach("Quick sort unanswered")
         grow.tap()
         XCTAssertFalse(app.buttons["sort-skip-Leo Park"].exists, "Setting a value must remove it from the Not set only view")
@@ -371,9 +370,8 @@ final class PlenaraUITests: XCTestCase {
         app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch(); app.buttons["tab-1"].tap()
         app.buttons["Grow closer"].tap()
         let leo = app.buttons["person-Leo Park"]
-        for _ in 0..<3 { if leo.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(leo.exists, "Quick-sort choices must persist and drive the real People filters")
-        leo.tap(); XCTAssertTrue(app.staticTexts["Far away"].exists)
+        tapVisible(leo, app: app); XCTAssertTrue(app.staticTexts["Far away"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["relationship-intention"].label.contains("Needs care"), "Quick sorting intention must preserve feeling")
         attach("Quick sorted profile")
     }

@@ -1,0 +1,58 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "BB42F29A-928B-4B9E-BD39-160B70249D4F",
+        "deviceName" : "Plenara verification",
+        "modelName" : "iPhone 16 Pro",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 60,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "Plenara · Built with macOS 26.6.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1794284654.197,
+  "passedTests" : 60,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1794283629.943,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "PlenaraUITests",
+      "testIdentifier" : 51,
+      "testIdentifierString" : "PlenaraUITests/testOrganizeQuickSortUnsetSkipUndoAndSave()",
+      "testIdentifierURL" : "test://com.apple.xcode/Plenara/PlenaraUITests/PlenaraUITests/testOrganizeQuickSortUnsetSkipUndoAndSave",
+      "testName" : "testOrganizeQuickSortUnsetSkipUndoAndSave()"
+    }
+  ],
+  "title" : "Test - Plenara",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "15% of duration",
+      "text" : "1 longest test run with outlier durations exceeding 132.14s (three standard deviations)"
+    },
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "86% of duration",
+      "text" : "1 longest test run with outlier durations exceeding 0.53s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 61
+}

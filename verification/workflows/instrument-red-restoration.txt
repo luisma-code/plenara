@@ -1,0 +1,16 @@
+F
+======================================================================
+FAIL: test_interrupt_restores_sources_and_reaps_owned_runner (__main__.CalibrationInterruptionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/w6/7h7tcyq174ggtk9_vy5sjhbm0000gq/T/tmpbrdsg7az/tool/test_calibrate_workflows.py", line 30, in test_interrupt_restores_sources_and_reaps_owned_runner
+    for p,text in originals.items(): self.assertEqual(p.read_text(),text)
+AssertionError: '[personID]\n' != '[personID] + (additionalPersonIDs ?? [])\n'
+- [personID]
++ [personID] + (additionalPersonIDs ?? [])
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.288s
+
+FAILED (failures=1)

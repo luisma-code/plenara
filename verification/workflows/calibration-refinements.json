@@ -1,0 +1,32 @@
+{
+  "mode": "refinements",
+  "faults": [
+    [
+      "WorkflowModels.swift",
+      "date: date, channel: channel",
+      "date: Date(), channel: channel"
+    ],
+    [
+      "RhythmSetup.swift",
+      "[3, 7, 14, 21, 30, 60, 90, cadence]",
+      "[3, 7, 14, 21, 30, 60, 90]"
+    ],
+    [
+      "JournalStore.swift",
+      "        guard !changes.isEmpty else { errorMessage = \"These people already have this rhythm. Nothing was changed.\"; return false }\n        guard update({ $0 = candidate }) else { return false }\n        rhythmUndo = RhythmReceipt(changes: changes)",
+      "        guard update({ $0 = candidate }) else { return false }\n        if !changes.isEmpty { rhythmUndo = RhythmReceipt(changes: changes) }"
+    ],
+    [
+      "PlenaraApp.swift",
+      "offerContact(draft) }\n        }",
+      "/* return offer deliberately disconnected */ }\n        }"
+    ]
+  ],
+  "rejected": true,
+  "expectedFailures": [
+    "testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome",
+    "testUnchangedRhythmDoesNotPretendToReplaceEarlierUndo",
+    "The picker must name a custom rhythm",
+    "Returning from a selected route must offer confirmation"
+  ]
+}

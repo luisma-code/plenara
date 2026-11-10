@@ -21,7 +21,11 @@ Use `PLENARA_CONTACTS_DENIED=1` with `tool/test-native.sh` for that mode.
 It samples app RSS and stops it above 512 MiB; this is a
 bounded safeguard, not proof of device memory behavior or absence of leaks.
 It terminates the app it started. Test results and builds are under `.build/`;
-local logs are under `.tmp/`.
+local logs are under `.tmp/`. Each run replaces the owned simulator UI-test
+runner installation and executes the architecture-specific `.xctestrun` manifest
+with verified Release product paths. The recorded test context hashes both test
+executables. A result with zero executed tests is rejected; the runner and app
+are stopped at cleanup.
 
 The simulator-only launch arguments `--ui-testing --reset --demo` provide
 fictional people for UI checks. `--dark` supplies an actual dark trait for
@@ -71,6 +75,29 @@ verify text entry and persistence; they do not prove microphone dictation on a
 physical device. The Connected / Reached out control preserves the distinction
 between a catch-up and unanswered outreach.
 
+## Relationship follow-through and shared events
+
+The [approved product behavior](../design/relationship-app.md#following-through-and-social-events)
+owns Home outreach, optional rhythm setup, next-time memories, and shared social events.
+`ReachOutButton` uses the same contact routes on Home and a person’s page.
+Its selected route waits for the chooser’s dismissal before opening the external app.
+A persisted draft is separate from confirmed history; background/active scene events
+only offer review. Apple's [URL completion](https://developer.apple.com/documentation/swiftui/openurlaction/callasfunction(_:completion:))
+indicates whether the URL can open, never whether contact occurred.
+
+`JournalStore.save` commits one shared moment and all guest references atomically.
+`participantIDs` is the common membership path for history, last connection, outreach,
+ranking, validation, editing, deletion, and export. Removing a person retains other
+attendees’ shared event. Rhythm setup and thread actions use the same atomic store;
+Undo receipts contain only changed rhythm fields.
+
+The simulator-only `--rhythm-demo` supplies fictional people without configured rhythms.
+`--contact-demo --contact-handoff-fixture` replaces only the external URL boundary;
+UI tests drive real background/foreground events, confirmation, storage, and reopening.
+`--contact-unavailable-fixture` makes that boundary reject the request. None of these
+paths or flags is compiled into the physical-device app. They do not send messages
+or establish that an external communication was delivered.
+
 ## Data
 
 The live file is `Application Support/RelationshipJournal/journal-v1.json`.
@@ -80,9 +107,15 @@ is the shared old/new decoding, migration, and validation path for startup,
 backup import, and recovery. New attributes decode optionally. The original
 bytes are not rewritten on open. The first edit retains a protected
 `.before-relationship-update` copy which later saves never replace; Settings
-can recover it after confirmation. The frozen fictional build-1001 journal in
-`PlenaraTests/Fixtures/` exercises preservation in unit and UI tests. It is
-packaged into test bundles only, never the production app.
+can recover it after confirmation. The frozen fictional build-1001 journal and build-1007 model export in
+`PlenaraTests/Fixtures/` exercise upgrade preservation in unit tests; the build-1001
+fixture is also driven through the native UI. Fixtures are packaged into test
+bundles only, never the production app.
+Additive optional workflow fields preserve old single-person moments. The first successful
+edit of a pre-workflow file retains `.before-workflow-update` bytes, independently of
+the earlier relationship recovery file. Settings can recover either after confirmation.
+The journal schema number, bundle identity, and file path remain unchanged.
+
 This distinct path does not read or migrate the previous app’s planner data.
 Writes are atomic, protected until the first device unlock, and retain one
 previous save. A damaged file is left untouched and editing is blocked until

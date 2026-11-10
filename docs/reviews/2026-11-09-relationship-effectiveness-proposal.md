@@ -1,20 +1,20 @@
 # Making Plenara more effective at staying close
 
-**Proposal for Luis’s approval · November 9, 2026 · Astra review**
+**Approved by Luis · November 9, 2026 · Astra review**
 
-Nothing in this proposal has been implemented. The separate code review fixes correctness problems in the existing app. This document proposes changes to the product experience and remains the single review document until Luis chooses a direction.
+Luis approved the three recommended changes by asking “Add Astra’s suggestions,” and additionally requested shared social events, such as a dinner with five friends. The approved behavior is now owned by [the product design](../../design/relationship-app.md#following-through-and-social-events). This decision document preserves the options and reasoning considered; alternatives below were not selected merely by appearing in the comparison.
 
 ## Recommendation
 
 Make the next approved iteration help someone **choose a person, reach out, and carry one useful thread forward**. Keep the private, personal journal, optional rhythms, and distinction between contact and unanswered outreach. Prioritize easier action and rhythm setup before adding more classification, dashboards, or automation.
 
-Plenara already remembers people well. Its main weakness is the gap between remembering and doing: its most prominent actions record a conversation that has already happened, while contacting the person requires going deeper into the app. A new import also starts with no rhythms, correctly, but leaves the user to discover and configure them one person at a time. These are observations of the current implementation, not measured claims about Luis’s behavior.
+At the build-1007 review, Plenara remembered people well, but its most prominent actions recorded conversations that had already happened. Contacting someone required going deeper into the app. Imports correctly started without rhythms, but users had to discover and configure them one person at a time. The following table records that pre-change implementation; these observations were not measured claims about Luis’s behavior.
 
 A useful research signal is that people can underestimate how much another person appreciates an unexpected check-in. Liu and colleagues found that pattern in preregistered experiments. That supports exploring an easier invitation to act; it does **not** establish that a particular Plenara feature improves relationships or that any particular person wants contact. [Primary study](https://www.apa.org/pubs/journals/releases/psp-pspi0000402.pdf).
 
-## What works today, and what is missing
+## What worked at the build-1007 review, and which gaps prompted this decision
 
-| Current experience | Actually wired today | Gap or consequence |
+| Experience at review | Actually wired in build 1007 | Gap or consequence |
 | --- | --- | --- |
 | Remember who is ready to reconnect | `Journal.rankedSuggestions` feeds Home, with inner-circle priority, elapsed rhythm, recent-outreach suppression, pause and snooze; the full due list can expand | Works when a rhythm exists. Imported people begin with no rhythm and no invented connection date, so a large untouched import produces few useful invitations |
 | Remember what matters | Person pages show a pinned/current note, personal context, dated notes, and history | A note can be read and edited, but a logged conversation has no nearby way to resolve a discussed thread or save the next one |
@@ -24,7 +24,7 @@ A useful research signal is that people can underestimate how much another perso
 | Remember important dates | Birthday appears on the day; due/overdue dated threads appear on Home; opt-in notifications are scheduled locally | There is little advance notice for a card, gift, trip, or planned catch-up. Old unresolved threads can occupy the top of Home indefinitely |
 | Keep the journal safe | Atomic local writes, local previous-save recovery, frozen legacy upgrade coverage, complete JSON export/restore | Export is manual; moving or losing the phone before exporting can lose newer context. Backup readiness is not visible during ordinary use |
 
-## Proposed first iteration
+## Approved first iteration
 
 ### 1. Turn the main invitation into an easy contact action
 
@@ -32,7 +32,7 @@ On the featured Home card, offer **Reach out to [name]** alongside **Log a momen
 
 On returning from the external app, offer a dismissible, optional choice: **We connected**, **I reached out**, **Nothing to record**. The app must never interpret opening Messages, elapsed time outside Plenara, or returning to the foreground as proof of contact. A draft should survive interruption without creating history; the user confirms any moment. Avoid asking again after a dismissed handoff.
 
-This changes the Home action emphasis in the approved design, which currently specifies a global Log and person-specific Log. Keep both logging paths; the proposal adds the missing initiation path and gives it appropriate prominence. Cost: a shared contact-action component, return-state handling, cancellation tests, and accessibility verification. No server, scraping, message access, or new paid dependency.
+This expands the build-1007 design’s global Log and person-specific Log with an initiation path. Both logging paths remain part of the approved design. Cost: a shared contact-action component, return-state handling, cancellation tests, and accessibility verification. No server, scraping, message access, or new paid dependency.
 
 ### 2. Make opt-in rhythms easy to establish
 
@@ -66,9 +66,9 @@ Costs below describe relative engineering and ongoing complexity, not a delivery
 
 No excluded vendor is required to deliver these options. An open-ended AI provider selection is not part of this proposal; any future selection must show relevant options and mark Musk-associated vendors excluded by Luis’s vendor policy.
 
-## What approval would mean
+## Decision
 
-Approve the first iteration as a coherent product change: direct contact from Home, explicit optional rhythm setup, and an optional thread step after logging. Luis can instead choose only the first two, choose an upcoming-dates view first, or keep the current product. Those are real product tradeoffs, not correctness work being deferred.
+Luis chose the first iteration as a coherent product change: direct contact from Home, explicit optional rhythm setup, and an optional thread step after logging. He also chose shared social-event logging with multiple attendees and a description. Upcoming-date views, sync, widgets, AI, and other alternatives remain comparison options rather than part of this approval.
 
 Implementation should retain the five optional independent relationship attributes, the current ranking policy, and no automatic notification from feeling. Any new field would need old/new decoding and upgrade preservation before adoption. The recommended first iteration can mostly reuse existing data; a persistent handoff draft should stay outside confirmed history.
 

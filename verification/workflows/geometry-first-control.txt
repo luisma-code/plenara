@@ -1,0 +1,5 @@
+Restored all source bytes; rebuild the candidate before delivery.
+Traceback (most recent call last):
+  File "/Users/luisma.code/Documents/code/plenara/plenara/tool/calibrate-workflows.py", line 70, in <module>
+    assert code != 0, "Broken production behavior unexpectedly passed"
+AssertionError: Broken production behavior unexpectedly passed

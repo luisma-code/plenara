@@ -2,9 +2,12 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var store: JournalStore
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var openSettings: () -> Void
     @State private var momentPerson: Person?
     @State private var quickLogging = false
+    @State private var socialEvent = false
+    @State private var rhythmSetup = false
     @State private var adding = false
     @State private var showingAllSuggestions = false
     var body: some View {
@@ -16,8 +19,10 @@ struct HomeView: View {
                     Button(action: openSettings) { Image(systemName: "bell").font(.title3).frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Settings and reminders")
                 }
                 if !store.journal.people.isEmpty {
-                    ActionButton(title: "Log a moment", icon: "square.and.pencil") { quickLogging = true }
-                        .accessibilityIdentifier("quick-log")
+                    LazyVGrid(columns: dynamicTypeSize.isAccessibilitySize ? [GridItem(.flexible())] : [GridItem(.adaptive(minimum: 150))], spacing: 10) {
+                        ActionButton(title: "Log a moment", icon: "square.and.pencil") { quickLogging = true }.accessibilityIdentifier("quick-log")
+                        ActionButton(title: "Log a social event", icon: "person.3", primary: false) { socialEvent = true }.accessibilityIdentifier("log-social-event")
+                    }
                 }
                 PageHeading(eyebrow: Date().formatted(.dateTime.weekday(.wide).month(.wide).day()), title: "A little closer.", subtitle: "Small moments keep your people close.\nWho’s on your mind today?")
                 if store.journal.people.isEmpty {
@@ -46,7 +51,7 @@ struct HomeView: View {
                     let now = Date()
                     let ranked = store.journal.rankedSuggestions(now: now)
                     let suggestions = Array(ranked.prefix(3))
-                    ReconnectionSection(ranked: ranked, showingAllSuggestions: $showingAllSuggestions, logMoment: { momentPerson = $0 })
+                    ReconnectionSection(ranked: ranked, showingAllSuggestions: $showingAllSuggestions, logMoment: { momentPerson = $0 }, setupRhythms: { rhythmSetup = true })
                     let visibleIDs = Set((showingAllSuggestions ? ranked : suggestions).map(\.id))
                     let context = store.journal.contextualSuggestions(excluding: visibleIDs, ranked: ranked, now: now)
                     let growth = context.growth
@@ -69,7 +74,7 @@ struct HomeView: View {
                         ForEach(Array(care.prefix(2))) { p in NavigationLink(value: p.id) { PersonRow(person: p, detail: p.intention.isEmpty ? "Needs care · at your own pace" : p.intention) }.buttonStyle(.plain).accessibilityIdentifier("care-\(p.name)") }
                     }
                     if store.journal.people.contains(where: { $0.cadence == 0 || (store.journal.lastConnection($0) == nil && $0.reminderStart == nil) }) {
-                        Text("Your people are here. Set a rhythm on their page whenever you’re ready for reminders.").font(.footnote).foregroundStyle(Theme.muted)
+                        Button("Choose contact rhythms") { rhythmSetup = true }.font(.subheadline.weight(.semibold)).frame(minHeight: 44).accessibilityIdentifier("home-rhythm-setup")
                     }
                     Text("A little attention, at your own pace.").font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity).padding(.vertical)
                 }
@@ -77,6 +82,8 @@ struct HomeView: View {
         }.sheet(isPresented: $quickLogging) { LogMomentFlow() }
             .sheet(item: $momentPerson) { MomentEditor(personID: $0.id) }
             .sheet(isPresented: $adding) { AddPeopleView() }
+            .sheet(isPresented: $socialEvent) { SocialEventEditor() }
+            .sheet(isPresented: $rhythmSetup) { RhythmSetupView() }
     }
 
 }
@@ -109,6 +116,7 @@ struct PeopleView: View {
     @State private var organizing = false
     @State private var adding = false
     @State private var importing = false
+    @State private var settingRhythms = false
     let shortcuts = ["Everyone", "Grow closer", "Needs care", "Nearby", "Far away", "Family"]
     var filtered: [Person] {
         store.journal.people.filter { p in
@@ -140,6 +148,7 @@ struct PeopleView: View {
                 HStack { Eyebrow(text: "Your circle"); Spacer(); Button { adding = true } label: { Image(systemName: "plus").font(.title2).frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Add a person") }
                 if !store.journal.people.isEmpty {
                 Button { searchFocused = false; organizing = true } label: { Label("Organize", systemImage: "slider.horizontal.3").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 48).background(Theme.lavender, in: RoundedRectangle(cornerRadius: 16)) }.buttonStyle(.plain).accessibilityIdentifier("people-organize")
+                Button("Set contact rhythms") { searchFocused = false; settingRhythms = true }.frame(minHeight: 44).accessibilityIdentifier("people-rhythm-setup")
                 }
                 Text("Your people.").font(Theme.title()).tracking(-1.3)
                 Text("Different kinds of close. All in one place.").foregroundStyle(Theme.muted)
@@ -166,7 +175,7 @@ struct PeopleView: View {
                 ActionButton(title: "Import from Contacts", icon: "person.badge.plus", primary: false) { importing = true }
                 Text("Choose just the people you want to keep close.").font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity)
             }.padding(24)
-        }.scrollDismissesKeyboard(.interactively).sheet(isPresented: $organizing) { OrganizePeopleView() }.sheet(isPresented: $showingFilters) { PeopleFiltersView(filter: $filter) }.sheet(isPresented: $adding) { PersonEditor(person: Person()) }.sheet(isPresented: $importing) { ImportContactsView() }
+        }.scrollDismissesKeyboard(.interactively).sheet(isPresented: $organizing) { OrganizePeopleView() }.sheet(isPresented: $showingFilters) { PeopleFiltersView(filter: $filter) }.sheet(isPresented: $adding) { PersonEditor(person: Person()) }.sheet(isPresented: $importing) { ImportContactsView() }.sheet(isPresented: $settingRhythms) { RhythmSetupView() }
     }
 }
 struct DismissButton: ToolbarContent {

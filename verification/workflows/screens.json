@@ -1,0 +1,50 @@
+{
+  "nativeResult": ".build/native-20261109-211420.xcresult",
+  "captures": [
+    {
+      "file": "verification/workflows/screens/return-from-reaching-out.png",
+      "test": "WorkflowUITests/testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen()",
+      "sha256": "66b49c7129900a07d1096883cffa20b065725039333a07ebe86cc10c0ab58550"
+    },
+    {
+      "file": "verification/workflows/screens/preferred-contact-routes.png",
+      "test": "WorkflowUITests/testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen()",
+      "sha256": "dbdd538717699689b7a364832b71af65b0c7b2453a754908726c7c861ec21d88"
+    },
+    {
+      "file": "verification/workflows/screens/chosen-contact-rhythm.png",
+      "test": "WorkflowUITests/testOptionalCustomRhythmSetupPreservesUnknownHistoryAndUndo()",
+      "sha256": "e2bd06e483a417f487574611ab716cca6b0ffa0d363967f8b6c575349580d52f"
+    },
+    {
+      "file": "verification/workflows/screens/conversation-threads-for-next-time.png",
+      "test": "WorkflowUITests/testOptionalNextTimeMemoryResolveAndLater()",
+      "sha256": "20ab758e19a21ba1d5b220bdb9e9e21b85e754f1388a52bebf8f5820da3d6ac3"
+    },
+    {
+      "file": "verification/workflows/screens/saved-shared-dinner.png",
+      "test": "WorkflowUITests/testSharedDinnerFivePeopleEditReopenAndCancel()",
+      "sha256": "94b9e6166ca9ec98c082e27e973c673c5e27c582f164dddd06073c97e03674f2"
+    },
+    {
+      "file": "verification/workflows/screens/large-shared-event-editor-saved.png",
+      "test": "WorkflowUITests/testSocialEventDarkAndLargeText()",
+      "sha256": "c76d9eb4070b949f5223962f0e4aee341285cd5d9512c74f7aea21413b76dae8"
+    },
+    {
+      "file": "verification/workflows/screens/large-shared-event-editor.png",
+      "test": "WorkflowUITests/testSocialEventDarkAndLargeText()",
+      "sha256": "38e122bb017d6dfbd6ea03c17898e4bb2a1c3d2eb6f30043a50031db6d8cf370"
+    },
+    {
+      "file": "verification/workflows/screens/dark-shared-event-editor-saved.png",
+      "test": "WorkflowUITests/testSocialEventDarkAndLargeText()",
+      "sha256": "c5a7b941ccae34ca2df672aa1371aaeec6c115d25cbb267cb375fc95879869bc"
+    },
+    {
+      "file": "verification/workflows/screens/dark-shared-event-editor.png",
+      "test": "WorkflowUITests/testSocialEventDarkAndLargeText()",
+      "sha256": "51177eb3b966941a761b1a97f158caeb53bf9ec11287ae84f6f04123e256440a"
+    }
+  ]
+}

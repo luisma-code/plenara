@@ -1,0 +1,9 @@
+{
+  "knownNonDeviceArtifact": "current Release simulator app",
+  "simulatorPlatformDetected": [
+    "iPhoneSimulator"
+  ],
+  "longSimulatorOnlyMarkerDetected": "--contact-handoff-fixture",
+  "testBundleDetected": true,
+  "deviceAuditMustRejectTheseProperties": true
+}

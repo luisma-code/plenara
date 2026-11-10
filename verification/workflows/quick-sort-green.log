@@ -1,0 +1,229 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-202656.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/PlenaraUITests/testOrganizeQuickSortUnsetSkipUndoAndSave"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-09 20:27:03.705 xcodebuild[72489:33666769] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-202656.xcresult
+
+2026-11-09 20:27:03.717 xcodebuild[72489:33666769] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:27:07.175 xcodebuild[72489:33666769] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:27:15.143083-0800 PlenaraUITests-Runner[72689:33668596] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-09 20:27:16.086.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 20:27:16.087.
+Test Suite 'PlenaraUITests' started at 2026-11-09 20:27:16.087.
+Test Case '-[PlenaraUITests.PlenaraUITests testOrganizeQuickSortUnsetSkipUndoAndSave]' started.
+    t =     0.00s Start Test at 2026-11-09 20:27:16.088
+    t =     0.12s Set Up
+    t =     0.12s     Open com.plenara.plenaraApp
+    t =     0.12s         Launch com.plenara.plenaraApp
+2026-11-09 20:27:16.701 xcodebuild[72489:33666769] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:27:16.701 xcodebuild[72489:33666769] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[72689]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10b274310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a670398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     2.05s             Setting up automation session
+    t =     3.03s             Wait for com.plenara.plenaraApp to idle
+    t =     4.93s Terminate com.plenara.plenaraApp:72777
+    t =     5.96s Open com.plenara.plenaraApp
+    t =     5.96s     Launch com.plenara.plenaraApp
+2026-11-09 20:27:22.211 xcodebuild[72489:33666769] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:27:22.211 xcodebuild[72489:33666769] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     7.45s         Setting up automation session
+    t =     9.04s         Wait for com.plenara.plenaraApp to idle
+    t =    11.09s Tap "tab-1" Button
+    t =    11.09s     Wait for com.plenara.plenaraApp to idle
+    t =    11.09s     Find the "tab-1" Button
+    t =    11.23s     Check for interrupting elements affecting "tab-1" Button
+    t =    11.28s     Synthesize event
+    t =    11.60s     Wait for com.plenara.plenaraApp to idle
+    t =    11.67s Waiting 5.0s for "people-organize" Button to exist
+    t =    12.73s     Checking `Expect predicate `existsNoRetry == 1` for object "people-organize" Button`
+    t =    12.73s         Checking existence of `"people-organize" Button`
+    t =    12.76s Find the "people-organize" Button
+    t =    12.82s Find the "people-organize" Button
+    t =    12.84s Find the "tab-1" Button
+    t =    12.87s Tap "people-organize" Button
+    t =    12.87s     Wait for com.plenara.plenaraApp to idle
+    t =    12.88s     Find the "people-organize" Button
+    t =    12.91s     Check for interrupting elements affecting "people-organize" Button
+    t =    12.94s     Synthesize event
+    t =    13.23s     Wait for com.plenara.plenaraApp to idle
+    t =    13.51s Waiting 5.0s for "organize-mode" SegmentedControl to exist
+    t =    14.56s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-mode" SegmentedControl`
+    t =    14.56s         Checking existence of `"organize-mode" SegmentedControl`
+    t =    14.72s Tap "Quick sort" Button
+    t =    14.72s     Wait for com.plenara.plenaraApp to idle
+    t =    14.73s     Find the "Quick sort" Button
+    t =    14.78s     Check for interrupting elements affecting "Quick sort" Button
+    t =    14.84s     Synthesize event
+    t =    15.13s     Wait for com.plenara.plenaraApp to idle
+    t =    16.27s Find the "organize-field" Button
+    t =    16.34s Find the "organize-field" Button
+    t =    16.40s Tap "organize-field" Button
+    t =    16.40s     Wait for com.plenara.plenaraApp to idle
+    t =    16.40s     Find the "organize-field" Button
+    t =    16.45s     Check for interrupting elements affecting "organize-field" Button
+    t =    16.50s     Synthesize event
+    t =    16.80s     Wait for com.plenara.plenaraApp to idle
+    t =    18.12s Waiting 5.0s for "What I want" Button to exist
+    t =    19.20s     Checking `Expect predicate `existsNoRetry == 1` for object "What I want" Button`
+    t =    21.24s         Checking existence of `"What I want" Button`
+    t =    21.46s Find the "What I want" Button
+    t =    21.75s Tap "What I want" Button
+    t =    21.75s     Wait for com.plenara.plenaraApp to idle
+    t =    21.76s     Find the "What I want" Button
+    t =    22.07s     Check for interrupting elements affecting "What I want" Button
+    t =    22.21s     Synthesize event
+    t =    22.51s     Wait for com.plenara.plenaraApp to idle
+    t =    24.02s Find the "organize-unset-only" Switch
+    t =    24.33s Tap SearchField (First Match)
+    t =    24.33s     Wait for com.plenara.plenaraApp to idle
+    t =    24.34s     Find the SearchField (First Match)
+    t =    24.55s     Check for interrupting elements affecting "Find people by name or city" SearchField
+    t =    24.75s     Synthesize event
+    t =    25.07s     Wait for com.plenara.plenaraApp to idle
+    t =    25.40s Type 'Leo
+' into "Find people by name or city" SearchField
+    t =    25.40s     Wait for com.plenara.plenaraApp to idle
+    t =    25.89s     Find the "Find people by name or city" SearchField
+    t =    27.16s     Check for interrupting elements affecting "Find people by name or city" SearchField
+    t =    27.37s     Synthesize event
+    t =    27.65s     Wait for com.plenara.plenaraApp to idle
+    t =    27.95s Waiting 5.0s for "sort-Leo Park-Grow closer" Button to exist
+    t =    29.01s     Checking `Expect predicate `existsNoRetry == 1` for object "sort-Leo Park-Grow closer" Button`
+    t =    29.01s         Checking existence of `"sort-Leo Park-Grow closer" Button`
+    t =    29.07s Find the "sort-Leo Park-Grow closer" Button
+    t =    29.13s Find the Target Application 'com.plenara.plenaraApp'
+    t =    29.27s Added attachment named 'Quick sort unanswered'
+    t =    29.27s Tap "sort-Leo Park-Grow closer" Button
+    t =    29.28s     Wait for com.plenara.plenaraApp to idle
+    t =    29.35s     Find the "sort-Leo Park-Grow closer" Button
+    t =    29.41s     Check for interrupting elements affecting "sort-Leo Park-Grow closer" Button
+    t =    29.45s     Synthesize event
+    t =    29.74s     Wait for com.plenara.plenaraApp to idle
+    t =    29.75s Checking existence of `"sort-skip-Leo Park" Button`
+    t =    29.82s Tap "organize-undo" Button
+    t =    29.82s     Wait for com.plenara.plenaraApp to idle
+    t =    29.82s     Find the "organize-undo" Button
+    t =    29.88s     Check for interrupting elements affecting "organize-undo" Button
+    t =    29.96s     Synthesize event
+    t =    30.27s     Wait for com.plenara.plenaraApp to idle
+    t =    30.27s Waiting 5.0s for "sort-Leo Park-Grow closer" Button to exist
+    t =    31.33s     Checking `Expect predicate `existsNoRetry == 1` for object "sort-Leo Park-Grow closer" Button`
+    t =    31.33s         Checking existence of `"sort-Leo Park-Grow closer" Button`
+    t =    31.46s Tap "sort-skip-Leo Park" Button
+    t =    31.46s     Wait for com.plenara.plenaraApp to idle
+    t =    31.46s     Find the "sort-skip-Leo Park" Button
+    t =    31.54s     Check for interrupting elements affecting "sort-skip-Leo Park" Button
+    t =    31.64s     Synthesize event
+    t =    31.95s     Wait for com.plenara.plenaraApp to idle
+    t =    31.95s Checking existence of `"sort-Leo Park-Grow closer" Button`
+    t =    32.00s Tap "Show skipped people" Button
+    t =    32.00s     Wait for com.plenara.plenaraApp to idle
+    t =    32.00s     Find the "Show skipped people" Button
+    t =    32.06s     Check for interrupting elements affecting "Show skipped people" Button
+    t =    32.12s     Synthesize event
+    t =    32.42s     Wait for com.plenara.plenaraApp to idle
+    t =    32.42s Waiting 5.0s for "sort-Leo Park-Grow closer" Button to exist
+    t =    33.46s     Checking `Expect predicate `existsNoRetry == 1` for object "sort-Leo Park-Grow closer" Button`
+    t =    33.46s         Checking existence of `"sort-Leo Park-Grow closer" Button`
+    t =    33.51s Tap "sort-Leo Park-Grow closer" Button
+    t =    33.51s     Wait for com.plenara.plenaraApp to idle
+    t =    33.52s     Find the "sort-Leo Park-Grow closer" Button
+    t =    33.56s     Check for interrupting elements affecting "sort-Leo Park-Grow closer" Button
+    t =    33.60s     Synthesize event
+    t =    33.90s     Wait for com.plenara.plenaraApp to idle
+    t =    33.90s Tap "Close" Button
+    t =    33.91s     Wait for com.plenara.plenaraApp to idle
+    t =    33.93s     Find the "Close" Button
+    t =    34.01s     Check for interrupting elements affecting "Close" Button
+    t =    34.05s     Synthesize event
+    t =    34.35s     Wait for com.plenara.plenaraApp to idle
+    t =    35.25s Terminate com.plenara.plenaraApp:72801
+    t =    36.27s Open com.plenara.plenaraApp
+    t =    36.27s     Launch com.plenara.plenaraApp
+2026-11-09 20:27:52.525 xcodebuild[72489:33666769] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:27:52.535 xcodebuild[72489:33666769] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    37.28s         Setting up automation session
+    t =    38.34s         Wait for com.plenara.plenaraApp to idle
+    t =    40.77s Tap "tab-1" Button
+    t =    40.78s     Wait for com.plenara.plenaraApp to idle
+    t =    40.82s     Find the "tab-1" Button
+    t =    41.04s     Check for interrupting elements affecting "tab-1" Button
+    t =    41.11s     Synthesize event
+    t =    41.44s     Wait for com.plenara.plenaraApp to idle
+    t =    41.45s Tap "Grow closer" Button
+    t =    41.45s     Wait for com.plenara.plenaraApp to idle
+    t =    41.45s     Find the "Grow closer" Button
+    t =    41.57s     Check for interrupting elements affecting "filter-Grow closer" Button
+    t =    41.63s     Synthesize event
+    t =    41.93s     Wait for com.plenara.plenaraApp to idle
+    t =    41.93s Checking existence of `"person-Leo Park" Button`
+    t =    42.05s Find the Target Application 'com.plenara.plenaraApp'
+    t =    42.09s Find the Target Application 'com.plenara.plenaraApp'
+    t =    42.12s Find the Target Application 'com.plenara.plenaraApp'
+    t =    42.15s Find the Target Application 'com.plenara.plenaraApp'
+    t =    42.20s Checking existence of `"tab-0" Button`
+    t =    42.30s Find the "tab-0" Button
+    t =    42.41s Find the "tab-0" Button
+    t =    42.46s Checking existence of `Keyboard (First Match)`
+    t =    42.64s Checking existence of `"person-Leo Park" Button`
+    t =    42.72s Find the "person-Leo Park" Button
+    t =    42.76s Find the "person-Leo Park" Button
+    t =    42.92s Find the "person-Leo Park" Button
+    t =    43.18s Find the Target Application 'com.plenara.plenaraApp'
+    t =    43.25s Find the Target Application 'com.plenara.plenaraApp'
+    t =    43.29s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 624.3) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 265.8) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    43.29s     Wait for com.plenara.plenaraApp to idle
+    t =    43.29s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    43.31s     Check for interrupting elements affecting "Plenara" Application
+    t =    43.34s     Synthesize event
+    t =    43.34s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    43.36s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    43.39s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    43.41s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    43.44s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    44.52s     Wait for com.plenara.plenaraApp to idle
+    t =    44.97s Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.00s Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.04s Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.06s Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.09s Checking existence of `"tab-0" Button`
+    t =    45.12s Find the "tab-0" Button
+    t =    45.15s Find the "tab-0" Button
+    t =    45.18s Checking existence of `Keyboard (First Match)`
+    t =    45.23s Checking existence of `"person-Leo Park" Button`
+    t =    45.26s Find the "person-Leo Park" Button
+    t =    45.29s Find the "person-Leo Park" Button
+    t =    45.32s Tap "person-Leo Park" Button
+    t =    45.32s     Wait for com.plenara.plenaraApp to idle
+    t =    45.32s     Find the "person-Leo Park" Button
+    t =    45.35s     Check for interrupting elements affecting "person-Leo Park" Button
+    t =    45.37s     Synthesize event
+    t =    45.66s     Wait for com.plenara.plenaraApp to idle
+    t =    45.76s Waiting 5.0s for "Far away" StaticText to exist
+    t =    46.80s     Checking `Expect predicate `existsNoRetry == 1` for object "Far away" StaticText`
+    t =    46.81s         Checking existence of `"Far away" StaticText`
+    t =    46.84s Find the "relationship-intention" Button
+    t =    46.95s Find the Target Application 'com.plenara.plenaraApp'
+    t =    47.08s Added attachment named 'Quick sorted profile'
+    t =    47.08s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testOrganizeQuickSortUnsetSkipUndoAndSave]' passed (47.443 seconds).
+Test Suite 'PlenaraUITests' passed at 2026-11-09 20:28:03.532.
+	 Executed 1 test, with 0 failures (0 unexpected) in 47.443 (47.445) seconds
+Test Suite 'PlenaraUITests.xctest' passed at 2026-11-09 20:28:03.533.
+	 Executed 1 test, with 0 failures (0 unexpected) in 47.443 (47.446) seconds
+Test Suite 'Selected tests' passed at 2026-11-09 20:28:03.534.
+	 Executed 1 test, with 0 failures (0 unexpected) in 47.443 (47.448) seconds
+2026-11-09 20:28:03.923 xcodebuild[72489:33666769] [MT] IDETestOperationsObserverDebug: 56.741 elapsed -- Testing started completed.
+2026-11-09 20:28:03.923 xcodebuild[72489:33666769] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 20:28:03.923 xcodebuild[72489:33666769] [MT] IDETestOperationsObserverDebug: 56.741 sec, +56.741 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-202656.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

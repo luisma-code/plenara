@@ -9,14 +9,12 @@ struct PersonDetail: View {
     @State private var editing = false
     @State private var rhythm = false
     @State private var logging = false
-    @State private var reach = false
     @State private var deleting = false
     @State private var showArchived = false
     @State private var editingMemory: Memory?
     @State private var editingMoment: Moment?
     @State private var addMemory = false
     @State private var intentionEditing = false
-    @State private var contactError = false
     var person: Person? { store.journal.people.first { $0.id == id } }
     var body: some View {
         Group {
@@ -25,14 +23,17 @@ struct PersonDetail: View {
                     VStack(alignment: .leading, spacing: 24) {
                         HStack { Button { dismiss() } label: { Label(typeSize.isAccessibilitySize ? "Back" : "Your people", systemImage: "chevron.left").font(.subheadline).frame(minHeight: 44) }; Spacer(); Button("Edit") { editing = true }.frame(minHeight: 44) }
                         header(p)
-                        HStack { ActionButton(title: "Log a moment") { logging = true }; ActionButton(title: "Reach out", icon: "message", primary: false) { reach = true } }
+                        ViewThatFits(in: .horizontal) {
+                            HStack { ActionButton(title: "Log a moment") { logging = true }; ReachOutButton(person: p, compact: true) }
+                            VStack { ActionButton(title: "Log a moment") { logging = true }; ReachOutButton(person: p, compact: true) }
+                        }
                         catchUp(p)
                         rhythmCard(p)
                         HStack { Text("Little things to remember").font(Theme.title(25)); Spacer(); Button { addMemory = true } label: { Image(systemName: "plus").frame(width: 44, height: 44) }.accessibilityLabel("Add a note") }
                         memories(p)
                         Text("Time together").font(Theme.title(25))
                         if store.journal.history(p.id).isEmpty { Text("Your calls, coffees, and little hellos will collect here.").foregroundStyle(Theme.muted) }
-                        ForEach(store.journal.history(p.id)) { m in Button { editingMoment = m } label: { MomentRow(moment: m, name: nil) }.buttonStyle(.plain).accessibilityIdentifier("moment-row") }
+                        ForEach(store.journal.history(p.id)) { m in Button { editingMoment = m } label: { MomentRow(moment: m, name: m.isSocialEvent ? store.journal.participantNames(m, excluding: p.id) : nil) }.buttonStyle(.plain).accessibilityIdentifier("moment-row") }
                         Button("Remove this person", role: .destructive) { deleting = true }.font(.footnote).frame(minHeight: 44).frame(maxWidth: .infinity).padding(.top)
                     }.padding(24)
                 }
@@ -42,24 +43,13 @@ struct PersonDetail: View {
                 .sheet(isPresented: $logging) { MomentEditor(personID: p.id) }
                 .sheet(isPresented: $addMemory) { MemoryEditor(personID: p.id, memory: Memory()) }
                 .sheet(item: $editingMemory) { MemoryEditor(personID: p.id, memory: $0) }
-                .sheet(item: $editingMoment) { MomentEditor(personID: p.id, moment: $0) }
-                .confirmationDialog("Reach out to \(p.name)", isPresented: $reach, titleVisibility: .visible) {
-                    ForEach(p.phones, id: \.self) { phone in
-                        Button("Message \(phone)") { contact("sms", phone) }
-                        Button("Call \(phone)") { contact("tel", phone) }
-                        Button("FaceTime \(phone)") { contact("facetime", phone) }
-                    }
-                    ForEach(p.emails, id: \.self) { email in Button("Email \(email)") { contact("mailto", email) } }
-                    Button("Edit contact methods") { editing = true }
-                    Button("Cancel", role: .cancel) { }
-                } message: { Text(p.phones.isEmpty && p.emails.isEmpty ? "Add a phone number or email to reach out." : "Preferred: \(p.preferredMethod). Opening a contact method won’t mark a connection. Log it when you’ve caught up.") }
+                .sheet(item: $editingMoment) { MomentEditingView(moment: $0) }
                 .confirmationDialog("Remove \(p.name)?", isPresented: $deleting, titleVisibility: .visible) {
                     Button("Remove person and journal", role: .destructive) { store.deletePerson(p.id); if store.errorMessage == nil { dismiss() } }
                     Button("Cancel", role: .cancel) { }
-                } message: { Text("This removes their notes and moments from Plenara. Their phone contact is untouched. Export a backup first to keep a copy.") }
+                } message: { Text("This removes their notes and individual moments from Plenara. Shared events remain for the other attendees. Their phone contact is untouched. Export a backup first to keep a copy.") }
             } else { QuietEmpty(title: "This person was removed.", message: "Your other relationships are still here.").padding() }
         }.background(Theme.paper).toolbar(.hidden, for: .navigationBar)
-            .alert("Contact method unavailable", isPresented: $contactError) { Button("OK") {} } message: { Text("This device couldn’t open that app. You can copy the number or email from Edit.") }
     }
     func header(_ p: Person) -> some View {
         VStack(spacing: 14) {
@@ -131,20 +121,16 @@ struct PersonDetail: View {
             if p.notes.contains(where: \.archived) { Button(showArchived ? "Hide archived notes" : "Show archived notes") { showArchived.toggle() }.font(.footnote).frame(minHeight: 44) }
         }
     }
-    func contact(_ scheme: String, _ raw: String) {
-        let value = scheme == "mailto" ? raw : raw.filter { $0.isNumber || $0 == "+" }
-        guard let encoded = value.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed), let url = URL(string: "\(scheme):\(encoded)") else { contactError = true; return }
-        openURL(url) { accepted in if !accepted { contactError = true } }
-    }
 }
 struct MomentRow: View {
     var moment: Moment
     var name: String?
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
-            Image(systemName: moment.connected ? "heart" : "message").frame(width: 36, height: 36).background(Theme.lavender, in: Circle()).foregroundStyle(Theme.plum)
+            Image(systemName: moment.isSocialEvent ? "person.3" : moment.connected ? "heart" : "message").frame(width: 36, height: 36).background(Theme.lavender, in: Circle()).foregroundStyle(Theme.plum)
             VStack(alignment: .leading, spacing: 6) {
-                Text([name, moment.channel].compactMap { $0 }.joined(separator: " · ")).font(.subheadline.weight(.semibold))
+                Text([moment.isSocialEvent ? moment.eventTitle ?? "Time together" : name, moment.channel].compactMap { $0 }.joined(separator: " · ")).font(.subheadline.weight(.semibold))
+                if moment.isSocialEvent, let name, !name.isEmpty { Text("With \(name)").font(.subheadline).foregroundStyle(Theme.muted) }
                 Text("\(moment.date.formatted(date: .abbreviated, time: .omitted)) · \(moment.connected ? "Connected" : "Reached out")").font(.caption).foregroundStyle(Theme.muted)
                 if !moment.note.isEmpty { Text(moment.note).font(.body).lineSpacing(3) }
             }.frame(maxWidth: .infinity, alignment: .leading)
@@ -155,20 +141,24 @@ struct MomentsView: View {
     @EnvironmentObject var store: JournalStore
     @State private var selecting = false
     @State private var editing: Moment?
+    @State private var socialEvent = false
     var body: some View {
         ScrollView { VStack(alignment: .leading, spacing: 25) {
             HStack { Eyebrow(text: "A little history"); Spacer(); Button { selecting = true } label: { Image(systemName: "plus").frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Log a moment").disabled(store.journal.people.isEmpty) }
             Text("Time well spent.").font(Theme.title()).tracking(-1.3)
             Text("The calls, coffees, and little hellos\nthat make a life together.").foregroundStyle(Theme.muted).lineSpacing(4)
+            Button { socialEvent = true } label: { Label("Log a social event", systemImage: "person.3").frame(minHeight: 44) }.disabled(store.journal.people.isEmpty).accessibilityIdentifier("log-social-event")
             Divider()
             if store.journal.moments.isEmpty { QuietEmpty(title: "A little history starts here.", message: "After a call, a coffee, or a proper catch-up, keep a moment to remember.") }
             ForEach(store.journal.history()) { m in VStack(alignment: .leading, spacing: 3) {
-                Button { editing = m } label: { MomentRow(moment: m, name: store.journal.people.first { $0.id == m.personID }?.name) }.buttonStyle(.plain)
-                NavigationLink(value: m.personID) { Text("View person →").font(.subheadline.weight(.semibold)).frame(minHeight: 44) }.padding(.leading, 50)
+                Button { editing = m } label: { MomentRow(moment: m, name: store.journal.participantNames(m)) }.buttonStyle(.plain).accessibilityIdentifier("history-moment-\(m.id)")
+                ForEach(m.participantIDs, id: \.self) { id in
+                    NavigationLink(value: id) { Text(m.isSocialEvent ? "View \(store.journal.people.first { $0.id == id }?.name ?? "person") →" : "View person →").font(.subheadline.weight(.semibold)).frame(minHeight: 44) }.padding(.leading, 50)
+                }
             } }
         }.padding(24) }.sheet(isPresented: $selecting) {
             LogMomentFlow()
-        }.sheet(item: $editing) { MomentEditor(personID: $0.personID, moment: $0) }
+        }.sheet(item: $editing) { MomentEditingView(moment: $0) }.sheet(isPresented: $socialEvent) { SocialEventEditor() }
     }
 }
 

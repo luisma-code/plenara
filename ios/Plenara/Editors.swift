@@ -168,10 +168,11 @@ struct MomentEditor: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.dynamicTypeSize) var typeSize
     let personID: UUID
+    var handoffID: UUID?
     @State var moment: Moment
     @State private var deleting = false
     @FocusState private var writingNote: Bool
-    init(personID: UUID, moment: Moment? = nil) { self.personID = personID; _moment = State(initialValue: moment ?? Moment(personID: personID)) }
+    init(personID: UUID, moment: Moment? = nil, handoffID: UUID? = nil) { self.personID = personID; self.handoffID = handoffID; _moment = State(initialValue: moment ?? Moment(personID: personID)) }
     var existing: Bool { store.journal.moments.contains { $0.id == moment.id } }
     let quickChannels = [("Called", "Call", "phone"), ("Texted", "Messages", "message"), ("Met", "In person", "cup.and.saucer")]
     var body: some View {
@@ -219,7 +220,7 @@ struct MomentEditor: View {
             }.scrollDismissesKeyboard(.interactively).scrollContentBackground(.hidden).background(Theme.paper).navigationTitle(existing ? "Edit a moment" : "Log a moment").navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.buttonStyle(.automatic) }
-                    ToolbarItem(placement: .confirmationAction) { Button("Save") { moment.note = moment.note.trimmingCharacters(in: .whitespacesAndNewlines); if store.save(moment) { dismiss() } }.buttonStyle(.automatic).accessibilityIdentifier("save-moment") }
+                    ToolbarItem(placement: .confirmationAction) { Button("Save") { moment.note = moment.note.trimmingCharacters(in: .whitespacesAndNewlines); if store.save(moment, completingHandoff: handoffID) { dismiss() } }.buttonStyle(.automatic).accessibilityIdentifier("save-moment") }
                     ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { writingNote = false } }
                 }
                 .confirmationDialog("Delete this moment?", isPresented: $deleting, titleVisibility: .visible) { Button("Delete moment", role: .destructive) { store.deleteMoment(moment.id); if store.errorMessage == nil { dismiss() } } } message: { Text("Your last connection and reminders will be recalculated from the remaining history.") }

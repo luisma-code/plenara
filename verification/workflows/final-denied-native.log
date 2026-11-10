@@ -1,0 +1,248 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-212913.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/PlenaraUITests/testNativeContactPickerImportAndRepeat"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-09 21:29:14.254 xcodebuild[5475:33977623] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-212913.xcresult
+
+2026-11-09 21:29:14.259 xcodebuild[5475:33977623] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 21:29:15.704 xcodebuild[5475:33977623] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 21:29:17.178286-0800 PlenaraUITests-Runner[5490:33977911] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-09 21:29:17.839.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 21:29:17.839.
+Test Suite 'PlenaraUITests' started at 2026-11-09 21:29:17.840.
+Test Case '-[PlenaraUITests.PlenaraUITests testNativeContactPickerImportAndRepeat]' started.
+    t =     0.00s Start Test at 2026-11-09 21:29:17.840
+    t =     0.04s Set Up
+2026-11-09 21:29:18.368 xcodebuild[5475:33977623] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 21:29:18.368 xcodebuild[5475:33977623] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.05s     Open com.plenara.plenaraApp
+    t =     0.05s         Launch com.plenara.plenaraApp
+objc[5490]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1070f0310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x106994398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     3.32s             Setting up automation session
+    t =     5.34s             Wait for com.plenara.plenaraApp to idle
+    t =     7.17s Terminate com.plenara.plenaraApp:5519
+    t =     8.22s Open com.plenara.plenaraApp
+    t =     8.23s     Launch com.plenara.plenaraApp
+2026-11-09 21:29:26.067 xcodebuild[5475:33977623] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 21:29:26.068 xcodebuild[5475:33977623] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     8.48s         Setting up automation session
+    t =     9.51s         Wait for com.plenara.plenaraApp to idle
+    t =    11.97s Tap "tab-1" Button
+    t =    11.97s     Wait for com.plenara.plenaraApp to idle
+    t =    11.98s     Find the "tab-1" Button
+    t =    12.05s     Check for interrupting elements affecting "tab-1" Button
+    t =    12.08s     Synthesize event
+    t =    12.38s     Wait for com.plenara.plenaraApp to idle
+    t =    12.39s Find the "tab-1" Button
+    t =    12.43s Checking existence of `"Import from Contacts" Button`
+    t =    12.45s Find the "Import from Contacts" Button
+    t =    12.49s Find the "Import from Contacts" Button
+    t =    12.51s Find the "Import from Contacts" Button
+    t =    12.56s Find the "Import from Contacts" Button
+    t =    12.60s Find the "Import from Contacts" Button
+    t =    12.70s Find the "Import from Contacts" Button
+    t =    12.75s Tap "Import from Contacts" Button
+    t =    12.75s     Wait for com.plenara.plenaraApp to idle
+    t =    12.75s     Find the "Import from Contacts" Button
+    t =    12.77s     Check for interrupting elements affecting "Import from Contacts" Button
+    t =    12.80s     Synthesize event
+    t =    13.09s     Wait for com.plenara.plenaraApp to idle
+    t =    13.61s Waiting 5.0s for "Choose from Contacts" Button to exist
+    t =    14.64s     Checking `Expect predicate `existsNoRetry == 1` for object "Choose from Contacts" Button`
+    t =    14.64s         Checking existence of `"Choose from Contacts" Button`
+    t =    14.70s Tap "Choose from Contacts" Button
+    t =    14.70s     Wait for com.plenara.plenaraApp to idle
+    t =    14.70s     Find the "Choose from Contacts" Button
+    t =    14.73s     Check for interrupting elements affecting "Choose from Contacts" Button
+    t =    14.76s     Synthesize event
+    t =    15.05s     Wait for com.plenara.plenaraApp to idle
+    t =    15.41s Waiting 8.0s for "Maya Plenara Test" StaticText to exist
+    t =    16.46s     Checking `Expect predicate `existsNoRetry == 1` for object "Maya Plenara Test" StaticText`
+    t =    16.46s         Checking existence of `"Maya Plenara Test" StaticText`
+    t =    16.51s         Capturing element debug description
+    t =    17.44s     Checking `Expect predicate `existsNoRetry == 1` for object "Maya Plenara Test" StaticText`
+    t =    17.44s         Checking existence of `"Maya Plenara Test" StaticText`
+    t =    17.66s         Capturing element debug description
+    t =    18.42s     Checking `Expect predicate `existsNoRetry == 1` for object "Maya Plenara Test" StaticText`
+    t =    18.42s         Checking existence of `"Maya Plenara Test" StaticText`
+    t =    18.74s Tap "Done" Button
+    t =    18.74s     Wait for com.plenara.plenaraApp to idle
+    t =    18.76s     Find the "Done" Button
+    t =    18.90s     Check for interrupting elements affecting "Done" Button
+    t =    19.00s     Synthesize event
+    t =    19.31s     Wait for com.plenara.plenaraApp to idle
+    t =    19.69s Waiting 5.0s for "Contacts" NavigationBar to not exist
+    t =    20.74s     Checking `Expect predicate `existsNoRetry == 0` for object "Contacts" NavigationBar`
+    t =    20.74s         Checking existence of `"Contacts" NavigationBar`
+    t =    20.78s Waiting 5.0s for "Choose from Contacts" Button to exist
+    t =    21.83s     Checking `Expect predicate `existsNoRetry == 1` for object "Choose from Contacts" Button`
+    t =    21.83s         Checking existence of `"Choose from Contacts" Button`
+    t =    21.87s Tap "Choose from Contacts" Button
+    t =    21.87s     Wait for com.plenara.plenaraApp to idle
+    t =    21.87s     Find the "Choose from Contacts" Button
+    t =    21.90s     Check for interrupting elements affecting "Choose from Contacts" Button
+    t =    21.93s     Synthesize event
+    t =    22.21s     Wait for com.plenara.plenaraApp to idle
+    t =    22.59s Waiting 5.0s for "Maya Plenara Test" StaticText to exist
+    t =    23.66s     Checking `Expect predicate `existsNoRetry == 1` for object "Maya Plenara Test" StaticText`
+    t =    23.66s         Checking existence of `"Maya Plenara Test" StaticText`
+    t =    23.75s Tap "Maya Plenara Test" StaticText
+    t =    23.75s     Wait for com.plenara.plenaraApp to idle
+    t =    23.75s     Find the "Maya Plenara Test" StaticText
+    t =    23.83s     Check for interrupting elements affecting "Maya Plenara Test" StaticText
+    t =    23.89s     Synthesize event
+    t =    24.18s     Wait for com.plenara.plenaraApp to idle
+    t =    24.19s Tap "Done" Button
+    t =    24.19s     Wait for com.plenara.plenaraApp to idle
+    t =    24.19s     Find the "Done" Button
+    t =    24.26s     Check for interrupting elements affecting "Done" Button
+    t =    24.32s     Synthesize event
+    t =    24.61s     Wait for com.plenara.plenaraApp to idle
+    t =    24.96s Waiting 5.0s for "Contacts" NavigationBar to not exist
+    t =    26.02s     Checking `Expect predicate `existsNoRetry == 0` for object "Contacts" NavigationBar`
+    t =    26.02s         Checking existence of `"Contacts" NavigationBar`
+    t =    26.06s Waiting 5.0s for "Import selected people" Button to exist
+    t =    27.11s     Checking `Expect predicate `existsNoRetry == 1` for object "Import selected people" Button`
+    t =    27.11s         Checking existence of `"Import selected people" Button`
+    t =    27.15s Tap "Import selected people" Button
+    t =    27.15s     Wait for com.plenara.plenaraApp to idle
+    t =    27.15s     Find the "Import selected people" Button
+    t =    27.32s     Check for interrupting elements affecting "Import selected people" Button
+    t =    27.36s     Synthesize event
+    t =    27.65s     Wait for com.plenara.plenaraApp to idle
+    t =    27.66s Tap "import-rhythm-setup" Button
+    t =    27.66s     Wait for com.plenara.plenaraApp to idle
+    t =    27.66s     Find the "import-rhythm-setup" Button
+    t =    27.71s     Check for interrupting elements affecting "import-rhythm-setup" Button
+    t =    27.74s     Synthesize event
+    t =    28.03s     Wait for com.plenara.plenaraApp to idle
+    t =    28.21s Waiting 5.0s for "setup-rhythm-selection" StaticText to exist
+    t =    29.27s     Checking `Expect predicate `existsNoRetry == 1` for object "setup-rhythm-selection" StaticText`
+    t =    29.27s         Checking existence of `"setup-rhythm-selection" StaticText`
+    t =    29.37s Find the "setup-rhythm-selection" StaticText
+    t =    29.44s Tap "rhythm-done" Button
+    t =    29.44s     Wait for com.plenara.plenaraApp to idle
+    t =    29.44s     Find the "rhythm-done" Button
+    t =    29.50s     Check for interrupting elements affecting "rhythm-done" Button
+    t =    29.56s     Synthesize event
+    t =    29.84s     Wait for com.plenara.plenaraApp to idle
+    t =    30.21s Waiting 5.0s for "person-Maya Plenara Test" Button to exist
+    t =    31.24s     Checking `Expect predicate `existsNoRetry == 1` for object "person-Maya Plenara Test" Button`
+    t =    31.24s         Checking existence of `"person-Maya Plenara Test" Button`
+    t =    31.27s Find the Target Application 'com.plenara.plenaraApp'
+    t =    31.28s Find the Target Application 'com.plenara.plenaraApp'
+    t =    31.30s Find the Target Application 'com.plenara.plenaraApp'
+    t =    31.31s Find the Target Application 'com.plenara.plenaraApp'
+    t =    31.32s Checking existence of `"tab-0" Button`
+    t =    31.34s Find the "tab-0" Button
+    t =    31.37s Find the "tab-0" Button
+    t =    31.39s Checking existence of `Keyboard (First Match)`
+    t =    31.42s Checking existence of `"person-Maya Plenara Test" Button`
+    t =    31.43s Find the "person-Maya Plenara Test" Button
+    t =    31.46s Find the "person-Maya Plenara Test" Button
+    t =    31.48s Tap "person-Maya Plenara Test" Button
+    t =    31.49s     Wait for com.plenara.plenaraApp to idle
+    t =    31.49s     Find the "person-Maya Plenara Test" Button
+    t =    31.51s     Check for interrupting elements affecting "person-Maya Plenara Test" Button
+    t =    31.52s     Synthesize event
+    t =    31.81s     Wait for com.plenara.plenaraApp to idle
+    t =    32.25s Checking existence of `"No regular reminder" StaticText`
+    t =    32.27s Checking existence of `"Last contact not set" StaticText`
+    t =    32.30s Tap "tab-1" Button
+    t =    32.30s     Wait for com.plenara.plenaraApp to idle
+    t =    32.30s     Find the "tab-1" Button
+    t =    32.32s     Check for interrupting elements affecting "tab-1" Button
+    t =    32.34s     Synthesize event
+    t =    32.63s     Wait for com.plenara.plenaraApp to idle
+    t =    32.95s Find the "tab-1" Button
+    t =    33.06s Checking existence of `"Import from Contacts" Button`
+    t =    33.08s Find the "Import from Contacts" Button
+    t =    33.11s Find the "Import from Contacts" Button
+    t =    33.13s Find the "Import from Contacts" Button
+    t =    33.22s Find the "Import from Contacts" Button
+    t =    33.25s Find the "Import from Contacts" Button
+    t =    33.29s Find the "Import from Contacts" Button
+    t =    33.50s Tap "Import from Contacts" Button
+    t =    33.51s     Wait for com.plenara.plenaraApp to idle
+    t =    33.51s     Find the "Import from Contacts" Button
+    t =    33.56s     Check for interrupting elements affecting "Import from Contacts" Button
+    t =    33.59s     Synthesize event
+    t =    33.90s     Wait for com.plenara.plenaraApp to idle
+    t =    34.31s Waiting 5.0s for "Choose from Contacts" Button to exist
+    t =    35.37s     Checking `Expect predicate `existsNoRetry == 1` for object "Choose from Contacts" Button`
+    t =    35.38s         Checking existence of `"Choose from Contacts" Button`
+    t =    35.42s Tap "Choose from Contacts" Button
+    t =    35.42s     Wait for com.plenara.plenaraApp to idle
+    t =    35.42s     Find the "Choose from Contacts" Button
+    t =    35.45s     Check for interrupting elements affecting "Choose from Contacts" Button
+    t =    35.48s     Synthesize event
+    t =    35.78s     Wait for com.plenara.plenaraApp to idle
+    t =    36.12s Waiting 5.0s for "Maya Plenara Test" StaticText to exist
+    t =    37.17s     Checking `Expect predicate `existsNoRetry == 1` for object "Maya Plenara Test" StaticText`
+    t =    37.17s         Checking existence of `"Maya Plenara Test" StaticText`
+    t =    37.27s Tap "Maya Plenara Test" StaticText
+    t =    37.27s     Wait for com.plenara.plenaraApp to idle
+    t =    37.27s     Find the "Maya Plenara Test" StaticText
+    t =    37.36s     Check for interrupting elements affecting "Maya Plenara Test" StaticText
+    t =    37.41s     Synthesize event
+    t =    37.71s     Wait for com.plenara.plenaraApp to idle
+    t =    37.72s Tap "Done" Button
+    t =    37.72s     Wait for com.plenara.plenaraApp to idle
+    t =    37.72s     Find the "Done" Button
+    t =    37.78s     Check for interrupting elements affecting "Done" Button
+    t =    37.84s     Synthesize event
+    t =    38.14s     Wait for com.plenara.plenaraApp to idle
+    t =    38.46s Waiting 5.0s for "Contacts" NavigationBar to not exist
+    t =    39.51s     Checking `Expect predicate `existsNoRetry == 0` for object "Contacts" NavigationBar`
+    t =    39.51s         Checking existence of `"Contacts" NavigationBar`
+    t =    39.54s Waiting 5.0s for "Import selected people" Button to exist
+    t =    40.56s     Checking `Expect predicate `existsNoRetry == 1` for object "Import selected people" Button`
+    t =    40.56s         Checking existence of `"Import selected people" Button`
+    t =    40.59s Find the Target Application 'com.plenara.plenaraApp'
+    t =    40.72s Added attachment named 'Repeat import review'
+    t =    40.72s Checking existence of `"0 selected" StaticText`
+    t =    40.76s Tap Switch (First Match)[0.90, 0.50]
+    t =    40.76s     Wait for com.plenara.plenaraApp to idle
+    t =    40.76s     Find the Switch (First Match)
+    t =    40.82s     Check for interrupting elements affecting "MP, Maya Plenara Test" Switch
+    t =    40.85s     Synthesize event
+    t =    40.85s         Find the "MP, Maya Plenara Test" Switch
+    t =    40.90s         Find the "MP, Maya Plenara Test" Switch
+    t =    40.95s         Find the "MP, Maya Plenara Test" Switch
+    t =    41.28s     Wait for com.plenara.plenaraApp to idle
+    t =    42.59s Tap "Import selected people" Button
+    t =    42.59s     Wait for com.plenara.plenaraApp to idle
+    t =    42.60s     Find the "Import selected people" Button
+    t =    42.63s     Check for interrupting elements affecting "Import selected people" Button
+    t =    42.67s     Synthesize event
+    t =    42.96s     Wait for com.plenara.plenaraApp to idle
+    t =    42.96s Tap "import-not-now" Button
+    t =    42.96s     Wait for com.plenara.plenaraApp to idle
+    t =    42.96s     Find the "import-not-now" Button
+    t =    43.01s     Check for interrupting elements affecting "import-not-now" Button
+    t =    43.04s     Synthesize event
+    t =    43.33s     Wait for com.plenara.plenaraApp to idle
+    t =    43.67s Get number of matches for: Elements matching predicate '"person-Maya Plenara Test" IN identifiers'
+    t =    43.70s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testNativeContactPickerImportAndRepeat]' passed (44.026 seconds).
+Test Suite 'PlenaraUITests' passed at 2026-11-09 21:30:01.868.
+	 Executed 1 test, with 0 failures (0 unexpected) in 44.026 (44.028) seconds
+Test Suite 'PlenaraUITests.xctest' passed at 2026-11-09 21:30:01.869.
+	 Executed 1 test, with 0 failures (0 unexpected) in 44.026 (44.029) seconds
+Test Suite 'Selected tests' passed at 2026-11-09 21:30:01.870.
+	 Executed 1 test, with 0 failures (0 unexpected) in 44.026 (44.031) seconds
+2026-11-09 21:30:02.313 xcodebuild[5475:33977623] [MT] IDETestOperationsObserverDebug: 46.607 elapsed -- Testing started completed.
+2026-11-09 21:30:02.313 xcodebuild[5475:33977623] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 21:30:02.313 xcodebuild[5475:33977623] [MT] IDETestOperationsObserverDebug: 46.607 sec, +46.607 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-212913.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

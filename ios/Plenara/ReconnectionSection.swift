@@ -7,6 +7,7 @@ struct ReconnectionSection: View {
     let ranked: [Person]
     @Binding var showingAllSuggestions: Bool
     var logMoment: (Person) -> Void
+    var setupRhythms: () -> Void
     var body: some View {
         let suggestions = Array(ranked.prefix(3))
         VStack(alignment: .leading, spacing: 24) {
@@ -23,7 +24,12 @@ struct ReconnectionSection: View {
                     }
                 }
             } else {
-                QuietEmpty(title: "Room to breathe.", message: "No one is due for a reminder. There’s always room for a hello just because.")
+                if !store.journal.people.contains(where: { $0.cadence > 0 }) {
+                    QuietEmpty(title: "Choose a rhythm, when you’re ready.", message: "Your people are here. Choose who you’d like reminders for; importing never starts them.")
+                    Button("Set up contact rhythms", action: setupRhythms).frame(minHeight: 44).accessibilityIdentifier("empty-rhythm-setup")
+                } else {
+                    QuietEmpty(title: "Room to breathe.", message: "No one is due for a reminder. There’s always room for a hello just because.")
+                }
             }
         }
     }
@@ -58,6 +64,7 @@ struct ReconnectionSection: View {
                     HStack { heroLog(p); heroNotes(p) }
                     VStack { heroLog(p); heroNotes(p) }
                 }
+                ReachOutButton(person: p)
                 Button("Another week") {
                     var changed = p; changed.snoozeUntil = Calendar.current.date(byAdding: .day, value: 7, to: Date()); store.save(changed)
                 }.font(.footnote).underline().foregroundStyle(Theme.muted).frame(minHeight: 44)

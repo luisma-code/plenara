@@ -1,0 +1,116 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-205636.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/PlenaraUITests/testRankedHomeDarkAndLargeText"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-09 20:56:38.084 xcodebuild[91648:33850325] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-205636.xcresult
+
+2026-11-09 20:56:38.090 xcodebuild[91648:33850325] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:56:41.366 xcodebuild[91648:33850325] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:56:43.332 xcodebuild[91648:33850325] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:56:43.776 xcodebuild[91648:33850325] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:56:47.204711-0800 PlenaraUITests-Runner[91713:33851452] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-09 20:56:48.261.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 20:56:48.263.
+Test Suite 'PlenaraUITests' started at 2026-11-09 20:56:48.263.
+Test Case '-[PlenaraUITests.PlenaraUITests testRankedHomeDarkAndLargeText]' started.
+    t =     0.00s Start Test at 2026-11-09 20:56:48.264
+    t =     0.08s Set Up
+    t =     0.09s     Open com.plenara.plenaraApp
+    t =     0.09s         Launch com.plenara.plenaraApp
+2026-11-09 20:56:48.951 xcodebuild[91648:33850325] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:56:48.951 xcodebuild[91648:33850325] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[91713]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109d78310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a64c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     4.70s             Setting up automation session
+    t =     5.78s             Wait for com.plenara.plenaraApp to idle
+    t =     7.40s Terminate com.plenara.plenaraApp:91795
+    t =     8.42s Open com.plenara.plenaraApp
+    t =     8.42s     Launch com.plenara.plenaraApp
+2026-11-09 20:56:56.691 xcodebuild[91648:33850325] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:56:56.691 xcodebuild[91648:33850325] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     8.86s         Setting up automation session
+    t =     9.86s         Wait for com.plenara.plenaraApp to idle
+    t =    11.52s Find the "tab-0" Button
+    t =    11.67s Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.74s Checking existence of `"suggestion-hero-Maya Inner" Button`
+    t =    11.85s Find the "suggestion-hero-Maya Inner" Button
+    t =    12.03s Find the "suggestion-hero-Maya Inner" Button
+    t =    12.18s Find the "suggestion-hero-Maya Inner" Button
+Home action frame: (45.0, 541.0, 164.33333333333334, 44.0), viewport: (0.0, 80.0, 402.0, 702.0)
+    t =    12.34s Checking existence of `"suggestion-hero-Maya Inner" Button`
+    t =    12.38s Find the "suggestion-hero-Maya Inner" Button
+    t =    12.44s Find the "suggestion-hero-Maya Inner" Button
+    t =    12.49s Checking existence of `"suggestion-hero-Maya Inner" Button`
+    t =    12.52s Find the Target Application 'com.plenara.plenaraApp'
+    t =    12.66s Added attachment named 'Dark ranked Home'
+    t =    12.66s Find the "tab-0" Button
+    t =    12.71s Find the Target Application 'com.plenara.plenaraApp'
+    t =    12.73s Checking existence of `"suggestions-expand" Button`
+    t =    12.77s Find the "suggestions-expand" Button
+    t =    12.81s Checking existence of `"suggestions-expand" Button`
+    t =    12.86s Find the "suggestions-expand" Button
+    t =    12.90s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 431.0) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 80.0) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    12.90s     Wait for com.plenara.plenaraApp to idle
+    t =    12.90s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    12.92s     Check for interrupting elements affecting "Plenara" Application
+    t =    13.00s     Synthesize event
+    t =    13.00s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.02s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.05s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.08s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.12s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.15s     Wait for com.plenara.plenaraApp to idle
+    t =    14.16s Checking existence of `"suggestions-expand" Button`
+    t =    14.22s Find the "suggestions-expand" Button
+    t =    14.35s Find the "suggestions-expand" Button
+    t =    14.42s Checking existence of `"suggestions-expand" Button`
+    t =    14.46s Find the "suggestions-expand" Button
+    t =    14.50s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 431.0) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 80.0) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    14.50s     Wait for com.plenara.plenaraApp to idle
+    t =    14.50s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.53s     Check for interrupting elements affecting "Plenara" Application
+    t =    14.56s     Synthesize event
+    t =    14.56s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.58s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.61s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.63s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.65s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    15.67s     Wait for com.plenara.plenaraApp to idle
+    t =    15.68s Checking existence of `"suggestions-expand" Button`
+    t =    15.74s Find the "suggestions-expand" Button
+    t =    15.79s Find the "suggestions-expand" Button
+    t =    15.82s Find the "suggestions-expand" Button
+Home action frame: (24.0, 520.0, 260.66666666666663, 43.0), viewport: (0.0, 80.0, 402.0, 702.0)
+    t =    15.86s Checking existence of `"suggestions-expand" Button`
+    t =    15.89s Find the "suggestions-expand" Button
+    t =    15.93s Find the "suggestions-expand" Button
+    t =    15.96s Find the "suggestions-expand" Button
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/PlenaraUITests.swift:252: error: -[PlenaraUITests.PlenaraUITests testRankedHomeDarkAndLargeText] : XCTAssertGreaterThanOrEqual failed: ("43.000001") is less than ("44.0") - Touch targets must be at least 44 points
+    t =    16.13s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testRankedHomeDarkAndLargeText]' failed (26.083 seconds).
+Test Suite 'PlenaraUITests' failed at 2026-11-09 20:57:14.348.
+	 Executed 1 test, with 1 failure (0 unexpected) in 26.083 (26.085) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-09 20:57:14.350.
+	 Executed 1 test, with 1 failure (0 unexpected) in 26.083 (26.088) seconds
+Test Suite 'Selected tests' failed at 2026-11-09 20:57:14.352.
+	 Executed 1 test, with 1 failure (0 unexpected) in 26.083 (26.090) seconds
+2026-11-09 20:57:14.865 xcodebuild[91648:33855524]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-09 20:57:14.874 xcodebuild[91648:33850325] [MT] IDETestOperationsObserverDebug: 33.492 elapsed -- Testing started completed.
+2026-11-09 20:57:14.874 xcodebuild[91648:33850325] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 20:57:14.874 xcodebuild[91648:33850325] [MT] IDETestOperationsObserverDebug: 33.492 sec, +33.492 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-205636.xcresult
+
+Failing tests:
+	PlenaraUITests.testRankedHomeDarkAndLargeText()
+
+** TEST EXECUTE FAILED **
+
+Testing started

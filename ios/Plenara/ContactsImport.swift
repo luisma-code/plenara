@@ -89,10 +89,16 @@ struct ImportContactsView: View {
     @State private var links: [UUID: UUID] = [:]
     @State private var separatePeople: Set<UUID> = []
     @State private var imported = false
+    @State private var settingRhythms = false
     var body: some View {
         NavigationStack {
             ScrollView { VStack(alignment: .leading, spacing: 22) {
-                PageHeading(eyebrow: "Your circle", title: candidates.isEmpty ? "Choose your\npeople." : "A little closer.", subtitle: candidates.isEmpty ? "Select a few people from your contacts. You decide who comes into Plenara." : "Review the people you’ve chosen. You can set closeness and a rhythm on their page later.")
+                if imported {
+                    PageHeading(eyebrow: "Your circle", title: "Your people\nare here.", subtitle: "No reminders were started. Choose who you’d like a rhythm with, or leave it for another time.")
+                    ActionButton(title: "Choose contact rhythms", icon: "heart") { settingRhythms = true }.accessibilityIdentifier("import-rhythm-setup")
+                    Button("Not now") { dismiss() }.frame(minHeight: 44).accessibilityIdentifier("import-not-now")
+                } else {
+                PageHeading(eyebrow: "Your circle", title: candidates.isEmpty ? "Choose your\npeople." : "A little closer.", subtitle: candidates.isEmpty ? "Select a few people from your contacts. You decide who comes into Plenara." : "Review the people you’ve chosen. After importing, you can choose optional contact rhythms or leave setup for later.")
                 if candidates.isEmpty {
                     ActionButton(title: "Choose from Contacts", icon: "person.crop.circle.badge.plus") { picking = true }
                     Text("Apple’s picker shares only the contacts you select. It works without full address-book access, including when broader access is denied.").font(.footnote).foregroundStyle(Theme.muted)
@@ -105,9 +111,10 @@ struct ImportContactsView: View {
                     }.disabled(selection.isEmpty || candidates.contains { selection.contains($0.id) && !ready($0) })
                     Button("Choose different contacts") { picking = true }.frame(minHeight: 44)
                 }
+                }
             }.padding(24) }.background(Theme.paper).navigationBarTitleDisplayMode(.inline).toolbar { DismissButton() }
                 .sheet(isPresented: $picking) { ContactPicker(selected: { people in candidates = people; selection = Set(people.filter { ContactImport.existing($0, in: store.journal.people) == nil && ContactImport.possibleMatches($0, in: store.journal.people).isEmpty }.map(\.id)); links = [:]; separatePeople = []; picking = false }, cancelled: { picking = false }) }
-                .alert("Your people are here", isPresented: $imported) { Button("Done") { dismiss() } } message: { Text("Set a rhythm whenever you’re ready. No reminders were started by importing.") }
+                .sheet(isPresented: $settingRhythms, onDismiss: { dismiss() }) { RhythmSetupView() }
         }
     }
     func ready(_ c: Person) -> Bool {

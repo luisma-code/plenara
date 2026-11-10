@@ -1,0 +1,257 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-195630.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/WorkflowUITests/testOptionalCustomRhythmSetupPreservesUnknownHistoryAndUndo"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-195630.xcresult
+
+2026-11-09 19:56:41.472754-0800 PlenaraUITests-Runner[53539:33482200] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-09 19:56:42.321.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 19:56:42.321.
+Test Suite 'WorkflowUITests' started at 2026-11-09 19:56:42.321.
+Test Case '-[PlenaraUITests.WorkflowUITests testOptionalCustomRhythmSetupPreservesUnknownHistoryAndUndo]' started.
+    t =     0.00s Start Test at 2026-11-09 19:56:42.322
+    t =     0.07s Set Up
+    t =     0.07s Open com.plenara.plenaraApp
+    t =     0.07s     Launch com.plenara.plenaraApp
+2026-11-09 19:56:42.639 xcodebuild[53461:33481186] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:56:42.639 xcodebuild[53461:33481186] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[53539]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1082a0310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10831c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     2.68s         Setting up automation session
+    t =     4.49s         Wait for com.plenara.plenaraApp to idle
+    t =     7.23s Tap "tab-1" Button
+    t =     7.23s     Wait for com.plenara.plenaraApp to idle
+    t =     7.23s     Find the "tab-1" Button
+    t =     7.37s     Check for interrupting elements affecting "tab-1" Button
+    t =     7.40s     Synthesize event
+    t =     7.70s     Wait for com.plenara.plenaraApp to idle
+    t =     7.73s Tap "people-rhythm-setup" Button
+    t =     7.73s     Wait for com.plenara.plenaraApp to idle
+    t =     7.73s     Find the "people-rhythm-setup" Button
+    t =     7.78s     Check for interrupting elements affecting "people-rhythm-setup" Button
+    t =     7.81s     Synthesize event
+    t =     8.10s     Wait for com.plenara.plenaraApp to idle
+    t =     8.37s Waiting 5.0s for "setup-rhythm-selection" StaticText to exist
+    t =     9.42s     Checking `Expect predicate `existsNoRetry == 1` for object "setup-rhythm-selection" StaticText`
+    t =     9.42s         Checking existence of `"setup-rhythm-selection" StaticText`
+    t =     9.53s Find the "setup-rhythm-selection" StaticText
+    t =     9.59s Waiting 5.0s for SearchField (First Match) to exist
+    t =    10.65s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    10.65s         Checking existence of `SearchField (First Match)`
+    t =    10.69s Tap SearchField (First Match)
+    t =    10.69s     Wait for com.plenara.plenaraApp to idle
+    t =    10.69s     Find the SearchField (First Match)
+    t =    10.72s     Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    10.78s     Synthesize event
+    t =    11.07s     Wait for com.plenara.plenaraApp to idle
+    t =    11.42s Find the "Find a person or place" SearchField
+    t =    11.48s Find the "Find a person or place" SearchField
+    t =    11.52s Type 'Mum
+' into "Find a person or place" SearchField
+    t =    11.52s     Wait for com.plenara.plenaraApp to idle
+    t =    11.93s     Find the "Find a person or place" SearchField
+    t =    11.99s     Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    12.07s     Synthesize event
+    t =    12.34s     Wait for com.plenara.plenaraApp to idle
+    t =    12.68s Find the "rhythm-person-Mum" Button
+    t =    12.84s Waiting 5.0s for SearchField (First Match) to exist
+    t =    13.87s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    13.87s         Checking existence of `SearchField (First Match)`
+    t =    13.90s Tap SearchField (First Match)
+    t =    13.90s     Wait for com.plenara.plenaraApp to idle
+    t =    13.90s     Find the SearchField (First Match)
+    t =    13.95s     Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    14.00s     Synthesize event
+    t =    14.29s     Wait for com.plenara.plenaraApp to idle
+    t =    14.61s Find the "Find a person or place" SearchField
+    t =    14.67s Find the "Find a person or place" SearchField
+    t =    14.74s Type '' into "Find a person or place" SearchField
+    t =    14.74s     Wait for com.plenara.plenaraApp to idle
+    t =    14.74s     Find the "Find a person or place" SearchField
+    t =    14.80s     Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    14.86s     Synthesize event
+    t =    15.10s     Wait for com.plenara.plenaraApp to idle
+    t =    15.11s Type 'Sofia
+' into "Find a person or place" SearchField
+    t =    15.11s     Wait for com.plenara.plenaraApp to idle
+    t =    15.11s     Find the "Find a person or place" SearchField
+    t =    15.16s     Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    15.22s     Synthesize event
+    t =    15.52s     Wait for com.plenara.plenaraApp to idle
+    t =    15.74s Find the Target Application 'com.plenara.plenaraApp'
+    t =    15.77s Checking existence of `"tab-0" Button`
+    t =    15.82s Find the "tab-0" Button
+    t =    15.89s Find the Target Application 'com.plenara.plenaraApp'
+    t =    15.93s Checking existence of `"rhythm-person-Sofia Chen" Button`
+    t =    15.98s Find the "rhythm-person-Sofia Chen" Button
+    t =    16.04s Find the "rhythm-person-Sofia Chen" Button
+    t =    16.11s Press Target Application 'com.plenara.plenaraApp'[0.50, 0.64] for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.50, 0.39] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    16.11s     Wait for com.plenara.plenaraApp to idle
+    t =    16.11s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    16.15s     Check for interrupting elements affecting "Plenara" Application
+    t =    16.20s     Synthesize event
+    t =    16.20s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    16.24s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    16.28s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    16.31s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    16.36s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    17.13s     Wait for com.plenara.plenaraApp to idle
+    t =    17.22s Find the Target Application 'com.plenara.plenaraApp'
+    t =    17.27s Checking existence of `"tab-0" Button`
+    t =    17.32s Find the "tab-0" Button
+    t =    17.39s Find the Target Application 'com.plenara.plenaraApp'
+    t =    17.43s Checking existence of `"rhythm-person-Sofia Chen" Button`
+    t =    17.49s Find the "rhythm-person-Sofia Chen" Button
+    t =    17.55s Find the "rhythm-person-Sofia Chen" Button
+    t =    17.63s Tap "rhythm-person-Sofia Chen" Button
+    t =    17.63s     Wait for com.plenara.plenaraApp to idle
+    t =    18.26s     Find the "rhythm-person-Sofia Chen" Button
+    t =    18.33s     Check for interrupting elements affecting "rhythm-person-Sofia Chen" Button
+    t =    18.38s     Synthesize event
+    t =    18.67s     Wait for com.plenara.plenaraApp to idle
+    t =    18.68s Find the "setup-rhythm-cadence" Button
+    t =    18.74s Tap "setup-rhythm-cadence" Button
+    t =    18.74s     Wait for com.plenara.plenaraApp to idle
+    t =    18.74s     Find the "setup-rhythm-cadence" Button
+    t =    18.80s     Check for interrupting elements affecting "setup-rhythm-cadence" Button
+    t =    18.92s     Synthesize event
+    t =    19.23s     Wait for com.plenara.plenaraApp to idle
+    t =    20.58s Tap "Every 2 weeks" Button
+    t =    20.58s     Wait for com.plenara.plenaraApp to idle
+    t =    20.58s     Find the "Every 2 weeks" Button
+    t =    20.64s     Check for interrupting elements affecting "Every 2 weeks" Button
+    t =    20.74s     Synthesize event
+    t =    21.05s     Wait for com.plenara.plenaraApp to idle
+    t =    22.59s Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.65s Checking existence of `"tab-0" Button`
+    t =    22.71s Find the "tab-0" Button
+    t =    22.79s Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.83s Checking existence of `"setup-rhythm-custom-Increment" Button`
+    t =    22.89s Find the "setup-rhythm-custom-Increment" Button
+    t =    22.95s Find the "setup-rhythm-custom-Increment" Button
+    t =    23.16s Tap "setup-rhythm-custom-Increment" Button
+    t =    23.16s     Wait for com.plenara.plenaraApp to idle
+    t =    23.16s     Find the "setup-rhythm-custom-Increment" Button
+    t =    23.22s     Check for interrupting elements affecting "setup-rhythm-custom-Increment" Button
+    t =    23.27s     Synthesize event
+    t =    23.56s     Wait for com.plenara.plenaraApp to idle
+    t =    23.57s Find the "setup-rhythm-cadence" Button
+    t =    23.64s Find the "setup-rhythm-cadence" Button
+    t =    23.70s Find the Target Application 'com.plenara.plenaraApp'
+    t =    23.74s Checking existence of `"tab-0" Button`
+    t =    23.82s Find the "tab-0" Button
+    t =    23.89s Find the Target Application 'com.plenara.plenaraApp'
+    t =    23.93s Checking existence of `"apply-rhythm" Button`
+    t =    23.99s Find the "apply-rhythm" Button
+    t =    24.05s Find the "apply-rhythm" Button
+    t =    24.12s Tap "apply-rhythm" Button
+    t =    24.12s     Wait for com.plenara.plenaraApp to idle
+    t =    24.12s     Find the "apply-rhythm" Button
+    t =    24.18s     Check for interrupting elements affecting "apply-rhythm" Button
+    t =    24.23s     Synthesize event
+    t =    24.53s     Wait for com.plenara.plenaraApp to idle
+    t =    24.56s Waiting 5.0s for "rhythm-saved" StaticText to exist
+    t =    25.58s     Checking `Expect predicate `existsNoRetry == 1` for object "rhythm-saved" StaticText`
+    t =    25.59s         Checking existence of `"rhythm-saved" StaticText`
+    t =    25.65s Find the Target Application 'com.plenara.plenaraApp'
+    t =    25.80s Added attachment named 'Chosen contact rhythm'
+    t =    25.80s Tap "rhythm-done" Button
+    t =    25.80s     Wait for com.plenara.plenaraApp to idle
+    t =    25.81s     Find the "rhythm-done" Button
+    t =    25.87s     Check for interrupting elements affecting "rhythm-done" Button
+    t =    25.93s     Synthesize event
+    t =    26.22s     Wait for com.plenara.plenaraApp to idle
+    t =    26.62s Tap "people-search" TextField
+    t =    26.62s     Wait for com.plenara.plenaraApp to idle
+    t =    26.63s     Find the "people-search" TextField
+    t =    26.65s     Check for interrupting elements affecting "people-search" TextField
+    t =    26.67s     Synthesize event
+    t =    26.97s     Wait for com.plenara.plenaraApp to idle
+    t =    27.26s Type 'Sofia
+' into "people-search" TextField
+    t =    27.26s     Wait for com.plenara.plenaraApp to idle
+    t =    27.26s     Find the "people-search" TextField
+    t =    27.34s     Check for interrupting elements affecting "people-search" TextField
+    t =    27.38s     Synthesize event
+    t =    27.68s     Wait for com.plenara.plenaraApp to idle
+    t =    27.91s Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.92s Checking existence of `"tab-0" Button`
+    t =    27.94s Find the "tab-0" Button
+    t =    28.02s Find the "tab-0" Button
+    t =    28.04s Checking existence of `"person-Sofia Chen" Button`
+    t =    28.09s Find the "person-Sofia Chen" Button
+    t =    28.12s Find the "person-Sofia Chen" Button
+    t =    28.16s Tap "person-Sofia Chen" Button
+    t =    28.16s     Wait for com.plenara.plenaraApp to idle
+    t =    28.16s     Find the "person-Sofia Chen" Button
+    t =    28.18s     Check for interrupting elements affecting "person-Sofia Chen" Button
+    t =    28.20s     Synthesize event
+    t =    28.49s     Wait for com.plenara.plenaraApp to idle
+    t =    28.98s Checking existence of `"Every 15 days" StaticText`
+    t =    29.01s Checking existence of `"Last contact not set" StaticText`
+    t =    29.04s Tap "tab-1" Button
+    t =    29.04s     Wait for com.plenara.plenaraApp to idle
+    t =    29.05s     Find the "tab-1" Button
+    t =    29.15s     Check for interrupting elements affecting "tab-1" Button
+    t =    29.18s     Synthesize event
+    t =    29.47s     Wait for com.plenara.plenaraApp to idle
+    t =    29.78s Tap "people-rhythm-setup" Button
+    t =    29.78s     Wait for com.plenara.plenaraApp to idle
+    t =    29.78s     Find the "people-rhythm-setup" Button
+    t =    29.88s     Check for interrupting elements affecting "people-rhythm-setup" Button
+    t =    29.90s     Synthesize event
+    t =    30.20s     Wait for com.plenara.plenaraApp to idle
+    t =    30.65s Find the Target Application 'com.plenara.plenaraApp'
+    t =    30.72s Checking existence of `"tab-0" Button`
+    t =    30.80s Find the "tab-0" Button
+    t =    30.87s Find the Target Application 'com.plenara.plenaraApp'
+    t =    30.91s Checking existence of `"undo-rhythm" Button`
+    t =    30.97s Find the "undo-rhythm" Button
+    t =    31.03s Find the "undo-rhythm" Button
+    t =    31.10s Tap "undo-rhythm" Button
+    t =    31.11s     Wait for com.plenara.plenaraApp to idle
+    t =    31.11s     Find the "undo-rhythm" Button
+    t =    31.26s     Check for interrupting elements affecting "undo-rhythm" Button
+    t =    31.32s     Synthesize event
+    t =    31.61s     Wait for com.plenara.plenaraApp to idle
+    t =    31.61s Tap "rhythm-done" Button
+    t =    31.61s     Wait for com.plenara.plenaraApp to idle
+    t =    31.61s     Find the "rhythm-done" Button
+    t =    31.69s     Check for interrupting elements affecting "rhythm-done" Button
+    t =    31.75s     Synthesize event
+    t =    32.05s     Wait for com.plenara.plenaraApp to idle
+    t =    32.42s Find the Target Application 'com.plenara.plenaraApp'
+    t =    32.45s Checking existence of `"tab-0" Button`
+    t =    32.50s Find the "tab-0" Button
+    t =    32.55s Find the "tab-0" Button
+    t =    32.60s Checking existence of `"person-Sofia Chen" Button`
+    t =    32.64s Find the "person-Sofia Chen" Button
+    t =    32.67s Find the "person-Sofia Chen" Button
+    t =    32.75s Tap "person-Sofia Chen" Button
+    t =    32.75s     Wait for com.plenara.plenaraApp to idle
+    t =    32.76s     Find the "person-Sofia Chen" Button
+    t =    32.87s     Check for interrupting elements affecting "person-Sofia Chen" Button
+    t =    32.93s     Synthesize event
+    t =    33.29s     Wait for com.plenara.plenaraApp to idle
+    t =    33.63s Checking existence of `"No regular reminder" StaticText`
+    t =    33.67s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testOptionalCustomRhythmSetupPreservesUnknownHistoryAndUndo]' passed (34.004 seconds).
+Test Suite 'WorkflowUITests' passed at 2026-11-09 19:57:16.327.
+	 Executed 1 test, with 0 failures (0 unexpected) in 34.004 (34.005) seconds
+Test Suite 'PlenaraUITests.xctest' passed at 2026-11-09 19:57:16.328.
+	 Executed 1 test, with 0 failures (0 unexpected) in 34.004 (34.006) seconds
+Test Suite 'Selected tests' passed at 2026-11-09 19:57:16.328.
+	 Executed 1 test, with 0 failures (0 unexpected) in 34.004 (34.007) seconds
+2026-11-09 19:57:16.763 xcodebuild[53461:33481186] [MT] IDETestOperationsObserverDebug: 37.296 elapsed -- Testing started completed.
+2026-11-09 19:57:16.763 xcodebuild[53461:33481186] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 19:57:16.763 xcodebuild[53461:33481186] [MT] IDETestOperationsObserverDebug: 37.296 sec, +37.296 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-195630.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

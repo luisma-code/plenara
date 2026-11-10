@@ -1,0 +1,242 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-200541.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/PlenaraUITests/testDarkAndLargeTextNavigation"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-09 20:05:44.531 xcodebuild[58390:33533183] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-200541.xcresult
+
+2026-11-09 20:05:44.537 xcodebuild[58390:33533183] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:05:46.667 xcodebuild[58390:33533183] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:05:47.175 xcodebuild[58390:33533183] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-09 20:05:49.389044-0800 PlenaraUITests-Runner[58435:33533799] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-09 20:05:50.364.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 20:05:50.365.
+Test Suite 'PlenaraUITests' started at 2026-11-09 20:05:50.365.
+Test Case '-[PlenaraUITests.PlenaraUITests testDarkAndLargeTextNavigation]' started.
+    t =     0.00s Start Test at 2026-11-09 20:05:50.366
+    t =     0.06s Set Up
+    t =     0.06s     Open com.plenara.plenaraApp
+    t =     0.06s         Launch com.plenara.plenaraApp
+2026-11-09 20:05:50.650 xcodebuild[58390:33533183] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:05:50.650 xcodebuild[58390:33533183] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[58435]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1069f8310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x106a70398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.16s             Setting up automation session
+    t =     2.15s             Wait for com.plenara.plenaraApp to idle
+    t =     4.32s Terminate com.plenara.plenaraApp:58455
+    t =     5.41s Open com.plenara.plenaraApp
+    t =     5.41s     Launch com.plenara.plenaraApp
+2026-11-09 20:05:55.824 xcodebuild[58390:33533183] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:05:55.824 xcodebuild[58390:33533183] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     5.89s         Setting up automation session
+    t =     7.01s         Wait for com.plenara.plenaraApp to idle
+    t =     8.74s Waiting 5.0s for "A little closer." StaticText to exist
+    t =     9.81s     Checking `Expect predicate `existsNoRetry == 1` for object "A little closer." StaticText`
+    t =     9.81s         Checking existence of `"A little closer." StaticText`
+    t =     9.93s Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.16s Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.28s Added attachment named 'Dark Stay close'
+    t =    10.28s Tap "tab-1" Button
+    t =    10.28s     Wait for com.plenara.plenaraApp to idle
+    t =    10.28s     Find the "tab-1" Button
+    t =    10.31s     Check for interrupting elements affecting "tab-1" Button
+    t =    10.34s     Synthesize event
+    t =    10.64s     Wait for com.plenara.plenaraApp to idle
+    t =    10.66s Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    10.66s     Wait for com.plenara.plenaraApp to idle
+    t =    10.66s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.69s     Check for interrupting elements affecting "Plenara" Application
+    t =    10.71s     Synthesize event
+    t =    11.13s     Wait for com.plenara.plenaraApp to idle
+    t =    11.78s Tap "person-Sofia Chen" Button
+    t =    11.78s     Wait for com.plenara.plenaraApp to idle
+    t =    11.79s     Find the "person-Sofia Chen" Button
+    t =    11.82s     Check for interrupting elements affecting "person-Sofia Chen" Button
+    t =    11.84s     Synthesize event
+    t =    12.13s     Wait for com.plenara.plenaraApp to idle
+    t =    12.62s Find the Target Application 'com.plenara.plenaraApp'
+    t =    12.74s Added attachment named 'Dark person'
+    t =    12.74s Tap "relationship-intention" Button
+    t =    12.74s     Wait for com.plenara.plenaraApp to idle
+    t =    12.74s     Find the "relationship-intention" Button
+    t =    12.77s     Check for interrupting elements affecting "relationship-intention" Button
+    t =    12.79s     Synthesize event
+    t =    13.08s     Wait for com.plenara.plenaraApp to idle
+    t =    14.26s Checking `Expect predicate `BLOCKPREDICATE(0x11301d380)` for object "Cancel" Button`
+    t =    14.26s     Find the "Cancel" Button
+    t =    14.45s     Find the "Cancel" Button
+    t =    14.51s Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.68s Added attachment named 'Dark relationship choices'
+    t =    14.68s Tap "Cancel" Button
+    t =    14.68s     Wait for com.plenara.plenaraApp to idle
+    t =    14.69s     Find the "Cancel" Button
+    t =    14.79s     Check for interrupting elements affecting "Cancel" Button
+    t =    14.88s     Synthesize event
+    t =    15.23s     Wait for com.plenara.plenaraApp to idle
+    t =    15.89s Terminate com.plenara.plenaraApp:58479
+    t =    16.97s Open com.plenara.plenaraApp
+    t =    16.97s     Launch com.plenara.plenaraApp
+2026-11-09 20:06:07.337 xcodebuild[58390:33533183] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 20:06:07.337 xcodebuild[58390:33533183] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    17.39s         Setting up automation session
+    t =    18.30s         Wait for com.plenara.plenaraApp to idle
+    t =    19.93s Waiting 5.0s for "tab-1" Button to exist
+    t =    20.98s     Checking `Expect predicate `existsNoRetry == 1` for object "tab-1" Button`
+    t =    20.98s         Checking existence of `"tab-1" Button`
+    t =    21.08s Tap "tab-1" Button
+    t =    21.08s     Wait for com.plenara.plenaraApp to idle
+    t =    21.08s     Find the "tab-1" Button
+    t =    21.15s     Check for interrupting elements affecting "tab-1" Button
+    t =    21.18s     Synthesize event
+    t =    21.48s     Wait for com.plenara.plenaraApp to idle
+    t =    21.48s Find the Target Application 'com.plenara.plenaraApp'
+    t =    21.67s Added attachment named 'Large text People'
+    t =    21.67s Find the Target Application 'com.plenara.plenaraApp'
+    t =    21.70s Find the Target Application 'com.plenara.plenaraApp'
+    t =    21.71s Find the Target Application 'com.plenara.plenaraApp'
+    t =    21.73s Find the Target Application 'com.plenara.plenaraApp'
+    t =    21.75s Checking existence of `"tab-0" Button`
+    t =    21.80s Find the "tab-0" Button
+    t =    21.98s Find the "tab-0" Button
+    t =    22.01s Checking existence of `Keyboard (First Match)`
+    t =    22.10s Checking existence of `"people-search" TextField`
+    t =    22.13s Find the "people-search" TextField
+    t =    22.18s Find the "people-search" TextField
+    t =    22.35s Find the "people-search" TextField
+    t =    22.42s Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.45s Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.47s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 624.3) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 265.8) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    22.47s     Wait for com.plenara.plenaraApp to idle
+    t =    22.48s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.50s     Check for interrupting elements affecting "Plenara" Application
+    t =    22.54s     Synthesize event
+    t =    22.54s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.56s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.58s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.60s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.64s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    23.68s     Wait for com.plenara.plenaraApp to idle
+    t =    23.68s Find the Target Application 'com.plenara.plenaraApp'
+    t =    23.74s Find the Target Application 'com.plenara.plenaraApp'
+    t =    23.77s Find the Target Application 'com.plenara.plenaraApp'
+    t =    23.80s Find the Target Application 'com.plenara.plenaraApp'
+    t =    23.82s Checking existence of `"tab-0" Button`
+    t =    23.86s Find the "tab-0" Button
+    t =    23.92s Find the "tab-0" Button
+    t =    23.98s Checking existence of `Keyboard (First Match)`
+    t =    24.09s Checking existence of `"people-search" TextField`
+    t =    24.12s Find the "people-search" TextField
+    t =    24.17s Find the "people-search" TextField
+    t =    24.20s Tap "people-search" TextField
+    t =    24.20s     Wait for com.plenara.plenaraApp to idle
+    t =    24.20s     Find the "people-search" TextField
+    t =    24.23s     Check for interrupting elements affecting "people-search" TextField
+    t =    24.26s     Synthesize event
+    t =    24.56s     Wait for com.plenara.plenaraApp to idle
+    t =    24.96s Waiting 5.0s for Keyboard (First Match) to exist
+    t =    26.01s     Checking `Expect predicate `existsNoRetry == 1` for object Keyboard (First Match)`
+    t =    26.01s         Checking existence of `Keyboard (First Match)`
+    t =    26.08s Type 'Sofia
+' into "people-search" TextField
+    t =    26.08s     Wait for com.plenara.plenaraApp to idle
+    t =    26.16s     Find the "people-search" TextField
+    t =    26.25s     Check for interrupting elements affecting "people-search" TextField
+    t =    26.28s     Synthesize event
+    t =    26.58s     Wait for com.plenara.plenaraApp to idle
+    t =    26.81s Find the Target Application 'com.plenara.plenaraApp'
+    t =    26.84s Find the Target Application 'com.plenara.plenaraApp'
+    t =    26.86s Find the Target Application 'com.plenara.plenaraApp'
+    t =    26.88s Find the Target Application 'com.plenara.plenaraApp'
+    t =    26.91s Checking existence of `"tab-0" Button`
+    t =    26.93s Find the "tab-0" Button
+    t =    26.97s Find the "tab-0" Button
+    t =    27.00s Checking existence of `Keyboard (First Match)`
+    t =    27.04s Checking existence of `"person-Sofia Chen" Button`
+    t =    27.08s Find the "person-Sofia Chen" Button
+    t =    27.10s Find the "person-Sofia Chen" Button
+    t =    27.14s Find the "person-Sofia Chen" Button
+    t =    27.18s Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.23s Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.27s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 624.3) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 265.8) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    27.27s     Wait for com.plenara.plenaraApp to idle
+    t =    27.28s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.30s     Check for interrupting elements affecting "Plenara" Application
+    t =    27.32s     Synthesize event
+    t =    27.33s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.34s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.36s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.37s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.40s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    28.43s     Wait for com.plenara.plenaraApp to idle
+    t =    28.43s Find the Target Application 'com.plenara.plenaraApp'
+    t =    28.45s Find the Target Application 'com.plenara.plenaraApp'
+    t =    28.46s Find the Target Application 'com.plenara.plenaraApp'
+    t =    28.48s Find the Target Application 'com.plenara.plenaraApp'
+    t =    28.49s Checking existence of `"tab-0" Button`
+    t =    28.55s Find the "tab-0" Button
+    t =    28.62s Find the "tab-0" Button
+    t =    28.66s Checking existence of `Keyboard (First Match)`
+    t =    28.77s Checking existence of `"person-Sofia Chen" Button`
+    t =    28.80s Find the "person-Sofia Chen" Button
+    t =    28.83s Find the "person-Sofia Chen" Button
+    t =    28.87s Tap "person-Sofia Chen" Button
+    t =    28.87s     Wait for com.plenara.plenaraApp to idle
+    t =    28.87s     Find the "person-Sofia Chen" Button
+    t =    28.89s     Check for interrupting elements affecting "person-Sofia Chen" Button
+    t =    28.92s     Synthesize event
+    t =    29.21s     Wait for com.plenara.plenaraApp to idle
+    t =    29.70s Waiting 5.0s for "relationship-intention" Button to exist
+    t =    30.74s     Checking `Expect predicate `existsNoRetry == 1` for object "relationship-intention" Button`
+    t =    30.74s         Checking existence of `"relationship-intention" Button`
+    t =    30.80s Find the Target Application 'com.plenara.plenaraApp'
+    t =    30.92s Added attachment named 'Large text person'
+    t =    30.92s Find the "relationship-intention" Button
+    t =    30.98s Find the "relationship-intention" Button
+    t =    31.03s Tap "relationship-intention" Button
+    t =    31.03s     Wait for com.plenara.plenaraApp to idle
+    t =    31.03s     Find the "relationship-intention" Button
+    t =    31.06s     Check for interrupting elements affecting "relationship-intention" Button
+    t =    31.09s     Synthesize event
+    t =    31.40s     Wait for com.plenara.plenaraApp to idle
+    t =    32.57s Checking `Expect predicate `BLOCKPREDICATE(0x113345f50)` for object "Cancel" Button`
+    t =    32.58s     Find the "Cancel" Button
+    t =    32.69s     Find the "Cancel" Button
+    t =    32.76s Waiting 5.0s for "feeling-choice" Button to exist
+    t =    33.79s     Checking `Expect predicate `existsNoRetry == 1` for object "feeling-choice" Button`
+    t =    33.79s         Checking existence of `"feeling-choice" Button`
+    t =    33.89s Find the Target Application 'com.plenara.plenaraApp'
+    t =    34.06s Added attachment named 'Large text relationship choices'
+    t =    34.06s Tap "Cancel" Button
+    t =    34.06s     Wait for com.plenara.plenaraApp to idle
+    t =    34.07s     Find the "Cancel" Button
+    t =    34.16s     Check for interrupting elements affecting "Cancel" Button
+    t =    34.23s     Synthesize event
+    t =    34.53s     Wait for com.plenara.plenaraApp to idle
+    t =    35.18s Tap "tab-0" Button
+    t =    35.18s     Wait for com.plenara.plenaraApp to idle
+    t =    35.19s     Find the "tab-0" Button
+    t =    35.23s     Check for interrupting elements affecting "tab-0" Button
+    t =    35.26s     Synthesize event
+    t =    35.56s     Wait for com.plenara.plenaraApp to idle
+    t =    35.93s Checking existence of `"A little closer." StaticText`
+    t =    35.98s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testDarkAndLargeTextNavigation]' passed (36.324 seconds).
+Test Suite 'PlenaraUITests' passed at 2026-11-09 20:06:26.691.
+	 Executed 1 test, with 0 failures (0 unexpected) in 36.324 (36.326) seconds
+Test Suite 'PlenaraUITests.xctest' passed at 2026-11-09 20:06:26.692.
+	 Executed 1 test, with 0 failures (0 unexpected) in 36.324 (36.327) seconds
+Test Suite 'Selected tests' passed at 2026-11-09 20:06:26.693.
+	 Executed 1 test, with 0 failures (0 unexpected) in 36.324 (36.329) seconds
+2026-11-09 20:06:27.195 xcodebuild[58390:33533183] [MT] IDETestOperationsObserverDebug: 40.491 elapsed -- Testing started completed.
+2026-11-09 20:06:27.195 xcodebuild[58390:33533183] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 20:06:27.195 xcodebuild[58390:33533183] [MT] IDETestOperationsObserverDebug: 40.491 sec, +40.491 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-200541.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

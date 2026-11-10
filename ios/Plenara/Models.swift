@@ -85,6 +85,12 @@ struct Moment: Identifiable, Codable, Equatable {
     var channel = "Call"
     var connected = true
     var note = ""
+    // Keep the original owner key so every old journal remains readable.
+    // One shared record, never one duplicated moment per guest.
+    var additionalPersonIDs: [UUID]?
+    var eventTitle: String?
+    var participantIDs: [UUID] { [personID] + (additionalPersonIDs ?? []) }
+    var isSocialEvent: Bool { eventTitle != nil || !(additionalPersonIDs ?? []).isEmpty }
     static let channels = ["Call", "Video call", "In person", "Messages", "Voice notes", "Email"]
 }
 struct Preferences: Codable, Equatable {
@@ -103,6 +109,8 @@ struct Preferences: Codable, Equatable {
 }
 struct Journal: Codable, Equatable {
     var schemaVersion = 1
+    var workflowVersion: Int? = 1
+    var pendingContact: ContactDraft?
     var people: [Person] = []
     var moments: [Moment] = []
     var preferences = Preferences()
@@ -110,9 +118,9 @@ struct Journal: Codable, Equatable {
         for i in people.indices { people[i].migrateRelationshipFields() }
     }
     func lastConnection(_ p: Person) -> Date? {
-        ([p.baselineConnection].compactMap { $0 } + moments.filter { $0.personID == p.id && $0.connected }.map(\.date)).max()
+        ([p.baselineConnection].compactMap { $0 } + moments.filter { $0.participantIDs.contains(p.id) && $0.connected }.map(\.date)).max()
     }
-    func lastOutreach(_ p: Person) -> Date? { moments.filter { $0.personID == p.id && !$0.connected }.map(\.date).max() }
+    func lastOutreach(_ p: Person) -> Date? { moments.filter { $0.participantIDs.contains(p.id) && !$0.connected }.map(\.date).max() }
     func daysSince(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> Int {
         max(0, calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day ?? 0)
     }
@@ -130,8 +138,10 @@ struct Journal: Codable, Equatable {
     private func momentDates() -> (connections: [UUID: Date], outreach: [UUID: Date]) {
         var connections: [UUID: Date] = [:], outreach: [UUID: Date] = [:]
         for moment in moments {
-            if moment.connected { connections[moment.personID] = connections[moment.personID].map { max($0, moment.date) } ?? moment.date }
-            else { outreach[moment.personID] = outreach[moment.personID].map { max($0, moment.date) } ?? moment.date }
+            for id in moment.participantIDs {
+                if moment.connected { connections[id] = connections[id].map { max($0, moment.date) } ?? moment.date }
+                else { outreach[id] = outreach[id].map { max($0, moment.date) } ?? moment.date }
+            }
         }
         return (connections, outreach)
     }
@@ -173,18 +183,22 @@ struct Journal: Codable, Equatable {
         let growth = ranked.first { growIDs.contains($0.id) } ?? growers.first
         return (growth, allowed.filter { $0.feelingChoice == "Needs care" && $0.id != growth?.id })
     }
-    func history(_ id: UUID? = nil) -> [Moment] { moments.filter { id == nil || $0.personID == id }.sorted { $0.date > $1.date } }
+    func history(_ id: UUID? = nil) -> [Moment] { moments.filter { id.map($0.participantIDs.contains) ?? true }.sorted { $0.date > $1.date } }
+    func participantNames(_ moment: Moment, excluding id: UUID? = nil) -> String {
+        moment.participantIDs.filter { $0 != id }.compactMap { guest in people.first { $0.id == guest }?.name }.joined(separator: ", ")
+    }
     func validate() throws {
         let personIDs = Set(people.map(\.id))
         let noteIDs = people.flatMap { $0.notes.map(\.id) }
         guard Set(noteIDs).count == noteIDs.count,
-              schemaVersion == 1, people.count <= 10000, moments.count <= 200000,
+              schemaVersion == 1, (workflowVersion == nil || workflowVersion == 1), people.count <= 10000, moments.count <= 200000,
               personIDs.count == people.count, Set(moments.map(\.id)).count == moments.count,
               people.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (0...3650).contains($0.cadence) && (0...12).contains($0.birthdayMonth) && (0...31).contains($0.birthdayDay) && ($0.timeZone.isEmpty || TimeZone(identifier: $0.timeZone) != nil) &&
                   Set($0.connectionKinds).isSubset(of: Set(Person.connectionOptions)) &&
                   Person.closenessOptions.contains($0.closeness) && Person.distanceOptions.contains($0.distance) &&
                   Person.directionOptions.contains($0.directionChoice) && Person.feelingOptions.contains($0.feelingChoice) }),
-              moments.allSatisfy({ m in personIDs.contains(m.personID) && m.date <= Date().addingTimeInterval(60) }),
+              moments.allSatisfy({ m in Set(m.participantIDs).count == m.participantIDs.count && Set(m.participantIDs).isSubset(of: personIDs) && m.date <= Date().addingTimeInterval(60) }),
+              pendingContact.map({ personIDs.contains($0.personID) && Moment.channels.contains($0.channel) }) ?? true,
               (1...7).contains(preferences.weekday), (0...23).contains(preferences.hour), (0...59).contains(preferences.minute),
               (0...23).contains(preferences.quietStart), (0...23).contains(preferences.quietEnd), preferences.quietStart != preferences.quietEnd
         else { throw JournalError.invalidBackup }

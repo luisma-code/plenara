@@ -1,0 +1,5 @@
+{
+  "wrongButValidBuild": "1007",
+  "expectedBuild": "1008",
+  "rejectedBeforeMutation": true
+}

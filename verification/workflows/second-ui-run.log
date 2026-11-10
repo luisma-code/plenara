@@ -1,0 +1,1240 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-192812.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/WorkflowUITests"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-192812.xcresult
+
+2026-11-09 19:29:05.635746-0800 PlenaraUITests-Runner[39379:33338688] [Default] Running tests...
+2026-11-09 19:29:05.727449-0800 PlenaraUITests-Runner[39379:33339430] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+    t =      nans Interface orientation changed to Portrait
+2026-11-09 19:29:07.024394-0800 PlenaraUITests-Runner[39379:33339431] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+Test Suite 'Selected tests' started at 2026-11-09 19:29:07.072.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 19:29:07.073.
+Test Suite 'WorkflowUITests' started at 2026-11-09 19:29:07.073.
+Test Case '-[PlenaraUITests.WorkflowUITests testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen]' started.
+    t =     0.00s Start Test at 2026-11-09 19:29:07.073
+    t =     0.15s Set Up
+    t =     0.16s Open com.plenara.plenaraApp
+    t =     0.16s     Launch com.plenara.plenaraApp
+2026-11-09 19:29:08.178 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:29:08.178 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[39379]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1089ac310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1081fc398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =    10.75s         Setting up automation session
+    t =    13.90s         Wait for com.plenara.plenaraApp to idle
+    t =    15.85s Waiting 6.0s for "reach-out-Sofia Chen" Button to exist
+    t =    16.91s     Checking `Expect predicate `existsNoRetry == 1` for object "reach-out-Sofia Chen" Button`
+    t =    16.91s         Checking existence of `"reach-out-Sofia Chen" Button`
+    t =    17.09s Find the "reach-out-Sofia Chen" Button
+    t =    17.15s Find the "reach-out-Sofia Chen" Button
+    t =    17.19s Find the Target Application 'com.plenara.plenaraApp'
+    t =    17.23s Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    17.23s     Wait for com.plenara.plenaraApp to idle
+    t =    17.23s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    17.27s     Check for interrupting elements affecting "Plenara" Application
+    t =    17.31s     Synthesize event
+    t =    17.75s     Wait for com.plenara.plenaraApp to idle
+    t =    19.85s Find the "reach-out-Sofia Chen" Button
+    t =    19.89s Find the "reach-out-Sofia Chen" Button
+    t =    19.94s Find the Target Application 'com.plenara.plenaraApp'
+    t =    19.98s Find the "reach-out-Sofia Chen" Button
+    t =    20.03s Tap "reach-out-Sofia Chen" Button
+    t =    20.03s     Wait for com.plenara.plenaraApp to idle
+    t =    20.03s     Find the "reach-out-Sofia Chen" Button
+    t =    20.06s     Check for interrupting elements affecting "reach-out-Sofia Chen" Button
+    t =    20.09s     Synthesize event
+    t =    20.38s     Wait for com.plenara.plenaraApp to idle
+    t =    20.53s Waiting 5.0s for "contact-route-Email-sofia@example.invalid" Button to exist
+    t =    21.58s     Checking `Expect predicate `existsNoRetry == 1` for object "contact-route-Email-sofia@example.invalid" Button`
+    t =    21.76s         Checking existence of `"contact-route-Email-sofia@example.invalid" Button`
+    t =    23.67s Find the Target Application 'com.plenara.plenaraApp'
+    t =    35.39s Added attachment named 'Preferred contact routes'
+    t =    35.39s Tap "contact-route-Email-sofia@example.invalid" Button
+    t =    35.39s     Wait for com.plenara.plenaraApp to idle
+    t =    35.39s     Find the "contact-route-Email-sofia@example.invalid" Button
+    t =    36.15s     Check for interrupting elements affecting "contact-route-Email-sofia@example.invalid" Button
+    t =    36.20s     Synthesize event
+    t =    36.84s     Wait for com.plenara.plenaraApp to idle
+    t =    58.60s Waiting 5.0s for "review-contact-draft" Button to exist
+    t =    59.64s     Checking `Expect predicate `existsNoRetry == 1` for object "review-contact-draft" Button`
+    t =    59.65s         Checking existence of `"review-contact-draft" Button`
+    t =    63.86s         Capturing element debug description
+    t =    63.86s     Checking existence of `"review-contact-draft" Button`
+    t =    95.47s     Checking existence of `"review-contact-draft" Button` (retry 1)
+    t =   119.86s Checking existence of `"handoff-connected" Button`
+    t =   120.90s Pressing Home button
+    t =   122.01s Open com.plenara.plenaraApp
+    t =   122.01s     Activate com.plenara.plenaraApp
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/WorkflowUITests.swift:73: error: -[PlenaraUITests.WorkflowUITests testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen] : Failed to launch com.plenara.plenaraApp: Timed out attempting to launch app.
+    t =   154.38s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen]' failed (154.762 seconds).
+Test Case '-[PlenaraUITests.WorkflowUITests testOptionalNextTimeMemoryResolveAndLater]' started.
+    t =     0.00s Start Test at 2026-11-09 19:31:41.837
+    t =     0.06s Set Up
+    t =     0.06s         Open com.plenara.plenaraApp
+    t =     0.06s             Launch com.plenara.plenaraApp
+    t =     0.06s                 Terminate com.plenara.plenaraApp:39525
+2026-11-09 19:31:43.936 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:31:43.936 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     2.52s                 Setting up automation session
+    t =     5.43s                 Wait for com.plenara.plenaraApp to idle
+    t =    10.32s         Tap "quick-log" Button
+    t =    10.32s             Wait for com.plenara.plenaraApp to idle
+    t =    10.33s             Find the "quick-log" Button
+    t =    17.38s             Check for interrupting elements affecting "quick-log" Button
+    t =    17.52s             Synthesize event
+    t =    17.86s             Wait for com.plenara.plenaraApp to idle
+    t =    18.89s         Tap "log-person-Sofia Chen" Button
+    t =    18.89s             Wait for com.plenara.plenaraApp to idle
+    t =    19.41s             Find the "log-person-Sofia Chen" Button
+    t =    19.56s             Check for interrupting elements affecting "log-person-Sofia Chen" Button
+    t =    19.63s             Synthesize event
+    t =    19.92s             Wait for com.plenara.plenaraApp to idle
+    t =    20.13s         Tap "save-moment" Button
+    t =    20.13s             Wait for com.plenara.plenaraApp to idle
+    t =    20.14s             Find the "save-moment" Button
+    t =    20.27s             Check for interrupting elements affecting "save-moment" Button
+    t =    20.33s             Synthesize event
+    t =    20.63s             Wait for com.plenara.plenaraApp to idle
+    t =    21.47s         Tap "moment-follow-through" Button
+    t =    21.47s             Wait for com.plenara.plenaraApp to idle
+    t =    21.47s             Find the "moment-follow-through" Button
+    t =    21.49s             Check for interrupting elements affecting "moment-follow-through" Button
+    t =    21.52s             Synthesize event
+    t =    21.81s             Wait for com.plenara.plenaraApp to idle
+    t =    22.48s         Waiting 5.0s for "thread-add-Sofia Chen" Button to exist
+    t =    23.51s             Checking `Expect predicate `existsNoRetry == 1` for object "thread-add-Sofia Chen" Button`
+    t =    23.52s                 Checking existence of `"thread-add-Sofia Chen" Button`
+    t =    23.58s         Waiting 6.0s for Button (First Match) to exist
+    t =    24.61s             Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    24.61s                 Checking existence of `Button (First Match)`
+    t =    24.78s         Find the Button (First Match)
+    t =    24.87s         Find the "thread-resolve-F0983D6F-9C32-4BE4-9FE9-039948DC6C31" Button
+    t =    24.96s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    24.99s         Find the "thread-resolve-F0983D6F-9C32-4BE4-9FE9-039948DC6C31" Button
+    t =    25.07s         Tap "thread-resolve-F0983D6F-9C32-4BE4-9FE9-039948DC6C31" Button
+    t =    25.07s             Wait for com.plenara.plenaraApp to idle
+    t =    25.07s             Find the "thread-resolve-F0983D6F-9C32-4BE4-9FE9-039948DC6C31" Button
+    t =    25.14s             Check for interrupting elements affecting "thread-resolve-F0983D6F-9C32-4BE4-9FE9-039948DC6C31" Button
+    t =    25.21s             Synthesize event
+    t =    25.53s             Wait for com.plenara.plenaraApp to idle
+    t =    25.73s         Tap "Resolve and unpin" Button
+    t =    25.73s             Wait for com.plenara.plenaraApp to idle
+    t =    26.21s             Find the "Resolve and unpin" Button
+    t =    26.30s             Check for interrupting elements affecting "Resolve and unpin" Button
+    t =    26.34s             Synthesize event
+    t =    26.64s             Wait for com.plenara.plenaraApp to idle
+    t =    27.02s         Tap "thread-add-Sofia Chen" Button
+    t =    27.02s             Wait for com.plenara.plenaraApp to idle
+    t =    27.14s             Find the "thread-add-Sofia Chen" Button
+    t =    27.20s             Check for interrupting elements affecting "thread-add-Sofia Chen" Button
+    t =    27.26s             Synthesize event
+    t =    27.55s             Wait for com.plenara.plenaraApp to idle
+    t =    27.80s         Waiting 5.0s for "memory-text" TextField to exist
+    t =    28.86s             Checking `Expect predicate `existsNoRetry == 1` for object "memory-text" TextField`
+    t =    28.86s                 Checking existence of `"memory-text" TextField`
+    t =    28.97s         Tap "memory-text" TextField
+    t =    28.97s             Wait for com.plenara.plenaraApp to idle
+    t =    28.97s             Find the "memory-text" TextField
+    t =    29.04s             Check for interrupting elements affecting "memory-text" TextField
+    t =    29.10s             Synthesize event
+    t =    29.38s             Wait for com.plenara.plenaraApp to idle
+    t =    31.68s         Type 'Ask about the summ...' into "memory-text" TextField
+    t =    31.68s             Wait for com.plenara.plenaraApp to idle
+    t =    32.06s             Find the "memory-text" TextField
+    t =    32.21s             Check for interrupting elements affecting "memory-text" TextField
+    t =    32.29s             Synthesize event
+    t =    33.02s             Wait for com.plenara.plenaraApp to idle
+    t =    33.04s         Tap "save-memory" Button
+    t =    33.04s             Wait for com.plenara.plenaraApp to idle
+    t =    33.04s             Find the "save-memory" Button
+    t =    33.15s             Check for interrupting elements affecting "save-memory" Button
+    t =    33.23s             Synthesize event
+    t =    33.55s             Wait for com.plenara.plenaraApp to idle
+    t =    34.39s         Waiting 5.0s for "Ask about the summer exhibition" StaticText to exist
+    t =    35.43s             Checking `Expect predicate `existsNoRetry == 1` for object "Ask about the summer exhibition" StaticText`
+    t =    35.43s                 Checking existence of `"Ask about the summer exhibition" StaticText`
+    t =    35.49s         Waiting 6.0s for Button (First Match) to exist
+    t =    36.53s             Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    36.53s                 Checking existence of `Button (First Match)`
+    t =    36.63s         Find the Button (First Match)
+    t =    36.70s         Find the "thread-later-CE381846-1175-4156-816E-AD6CF1EED235" Button
+    t =    36.78s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.82s         Find the "thread-later-CE381846-1175-4156-816E-AD6CF1EED235" Button
+    t =    36.90s         Tap "thread-later-CE381846-1175-4156-816E-AD6CF1EED235" Button
+    t =    36.90s             Wait for com.plenara.plenaraApp to idle
+    t =    36.90s             Find the "thread-later-CE381846-1175-4156-816E-AD6CF1EED235" Button
+    t =    36.98s             Check for interrupting elements affecting "thread-later-CE381846-1175-4156-816E-AD6CF1EED235" Button
+    t =    37.03s             Synthesize event
+    t =    37.33s             Wait for com.plenara.plenaraApp to idle
+    t =    37.79s         Tap "save-thread-date" Button
+    t =    37.79s             Wait for com.plenara.plenaraApp to idle
+    t =    37.79s             Find the "save-thread-date" Button
+    t =    37.89s             Check for interrupting elements affecting "save-thread-date" Button
+    t =    37.98s             Synthesize event
+    t =    38.30s             Wait for com.plenara.plenaraApp to idle
+    t =    39.11s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    39.36s Added attachment named 'Conversation threads for next time'
+    t =    39.36s         Checking existence of `StaticText (First Match)`
+    t =    39.45s         Tap "Close" Button
+    t =    39.45s             Wait for com.plenara.plenaraApp to idle
+    t =    39.46s             Find the "Close" Button
+    t =    39.51s             Check for interrupting elements affecting "Close" Button
+    t =    39.57s             Synthesize event
+    t =    39.88s             Wait for com.plenara.plenaraApp to idle
+    t =    40.63s         Tap "Dismiss next-time suggestion" Button
+    t =    40.63s             Wait for com.plenara.plenaraApp to idle
+    t =    40.64s             Find the "Dismiss next-time suggestion" Button
+    t =    40.67s             Check for interrupting elements affecting "xmark" Button
+    t =    40.70s             Synthesize event
+    t =    41.02s             Wait for com.plenara.plenaraApp to idle
+    t =    41.02s         Tap "tab-1" Button
+    t =    41.02s             Wait for com.plenara.plenaraApp to idle
+    t =    41.06s             Find the "tab-1" Button
+    t =    41.17s             Check for interrupting elements affecting "tab-1" Button
+    t =    41.22s             Synthesize event
+    t =    41.52s             Wait for com.plenara.plenaraApp to idle
+    t =    41.59s         Tap "people-search" TextField
+    t =    41.59s             Wait for com.plenara.plenaraApp to idle
+    t =    41.60s             Find the "people-search" TextField
+    t =    41.63s             Check for interrupting elements affecting "people-search" TextField
+    t =    41.67s             Synthesize event
+    t =    41.96s             Wait for com.plenara.plenaraApp to idle
+    t =    42.31s         Type 'Sofia
+' into "people-search" TextField
+    t =    42.31s             Wait for com.plenara.plenaraApp to idle
+    t =    42.31s             Find the "people-search" TextField
+    t =    42.37s             Check for interrupting elements affecting "people-search" TextField
+    t =    42.44s             Synthesize event
+    t =    42.76s             Wait for com.plenara.plenaraApp to idle
+    t =    43.00s         Waiting 6.0s for "person-Sofia Chen" Button to exist
+    t =    44.10s             Checking `Expect predicate `existsNoRetry == 1` for object "person-Sofia Chen" Button`
+    t =    44.10s                 Checking existence of `"person-Sofia Chen" Button`
+    t =    44.13s         Find the "person-Sofia Chen" Button
+    t =    44.17s         Find the "person-Sofia Chen" Button
+    t =    44.20s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    44.22s         Find the "person-Sofia Chen" Button
+    t =    44.26s         Tap "person-Sofia Chen" Button
+    t =    44.26s             Wait for com.plenara.plenaraApp to idle
+    t =    44.26s             Find the "person-Sofia Chen" Button
+    t =    44.29s             Check for interrupting elements affecting "person-Sofia Chen" Button
+    t =    44.31s             Synthesize event
+    t =    44.61s             Wait for com.plenara.plenaraApp to idle
+    t =    45.06s         Checking existence of `"Connected today" StaticText`
+    t =    45.14s         Find the "Her ceramics show opens in November. Ask how the pieces are coming along." StaticText
+    t =    45.35s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    45.35s             Wait for com.plenara.plenaraApp to idle
+    t =    45.35s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.37s             Check for interrupting elements affecting "Plenara" Application
+    t =    45.41s             Synthesize event
+    t =    45.83s             Wait for com.plenara.plenaraApp to idle
+    t =    48.06s         Find the "Her ceramics show opens in November. Ask how the pieces are coming along." StaticText
+    t =    48.59s         Checking existence of `"Her ceramics show opens in November. Ask how the pieces are coming along." StaticText`
+    t =    48.82s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testOptionalNextTimeMemoryResolveAndLater]' passed (49.535 seconds).
+Test Case '-[PlenaraUITests.WorkflowUITests testOptionalRhythmSetupPreservesUnknownHistoryAndUndo]' started.
+    t =     0.01s Start Test at 2026-11-09 19:32:31.380
+    t =     0.07s Set Up
+    t =     0.07s         Open com.plenara.plenaraApp
+    t =     0.08s             Launch com.plenara.plenaraApp
+    t =     0.08s                 Terminate com.plenara.plenaraApp:40813
+2026-11-09 19:32:32.470 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:32:32.470 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     3.15s                 Setting up automation session
+    t =     8.63s                 Wait for com.plenara.plenaraApp to idle
+    t =    11.12s         Tap "tab-1" Button
+    t =    11.12s             Wait for com.plenara.plenaraApp to idle
+    t =    11.12s             Find the "tab-1" Button
+    t =    11.50s             Check for interrupting elements affecting "tab-1" Button
+    t =    11.53s             Synthesize event
+    t =    11.82s             Wait for com.plenara.plenaraApp to idle
+    t =    16.18s         Tap "people-rhythm-setup" Button
+    t =    16.18s             Wait for com.plenara.plenaraApp to idle
+    t =    16.18s             Find the "people-rhythm-setup" Button
+    t =    16.24s             Check for interrupting elements affecting "people-rhythm-setup" Button
+    t =    16.27s             Synthesize event
+    t =    16.56s             Wait for com.plenara.plenaraApp to idle
+    t =    20.58s         Waiting 5.0s for "setup-rhythm-selection" StaticText to exist
+    t =    21.61s             Checking `Expect predicate `existsNoRetry == 1` for object "setup-rhythm-selection" StaticText`
+    t =    21.61s                 Checking existence of `"setup-rhythm-selection" StaticText`
+    t =    21.77s         Find the "setup-rhythm-selection" StaticText
+    t =    21.84s         Waiting 5.0s for SearchField (First Match) to exist
+    t =    22.85s             Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    22.86s                 Checking existence of `SearchField (First Match)`
+    t =    22.88s         Tap SearchField (First Match)
+    t =    22.88s             Wait for com.plenara.plenaraApp to idle
+    t =    22.89s             Find the SearchField (First Match)
+    t =    22.92s             Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    22.97s             Synthesize event
+    t =    23.27s             Wait for com.plenara.plenaraApp to idle
+    t =    24.19s         Find the "Find a person or place" SearchField
+    t =    24.26s         Find the "Find a person or place" SearchField
+    t =    24.31s         Type 'Mum
+' into "Find a person or place" SearchField
+    t =    24.31s             Wait for com.plenara.plenaraApp to idle
+    t =    24.68s             Find the "Find a person or place" SearchField
+    t =    24.75s             Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    24.86s             Synthesize event
+    t =    25.13s             Wait for com.plenara.plenaraApp to idle
+    t =    25.50s         Find the "rhythm-person-Mum" Button
+    t =    25.56s         Waiting 5.0s for SearchField (First Match) to exist
+    t =    26.61s             Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    26.61s                 Checking existence of `SearchField (First Match)`
+    t =    26.63s         Tap SearchField (First Match)
+    t =    26.63s             Wait for com.plenara.plenaraApp to idle
+    t =    26.64s             Find the SearchField (First Match)
+    t =    26.66s             Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    26.71s             Synthesize event
+    t =    27.02s             Wait for com.plenara.plenaraApp to idle
+    t =    27.34s         Find the "Find a person or place" SearchField
+    t =    27.40s         Find the "Find a person or place" SearchField
+    t =    27.44s         Type '' into "Find a person or place" SearchField
+    t =    27.44s             Wait for com.plenara.plenaraApp to idle
+    t =    27.45s             Find the "Find a person or place" SearchField
+    t =    27.49s             Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    27.55s             Synthesize event
+    t =    27.81s             Wait for com.plenara.plenaraApp to idle
+    t =    27.81s         Type 'Sofia
+' into "Find a person or place" SearchField
+    t =    27.81s             Wait for com.plenara.plenaraApp to idle
+    t =    27.81s             Find the "Find a person or place" SearchField
+    t =    27.86s             Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    27.93s             Synthesize event
+    t =    28.22s             Wait for com.plenara.plenaraApp to idle
+    t =    28.46s         Waiting 6.0s for "rhythm-person-Sofia Chen" Button to exist
+    t =    29.49s             Checking `Expect predicate `existsNoRetry == 1` for object "rhythm-person-Sofia Chen" Button`
+    t =    29.49s                 Checking existence of `"rhythm-person-Sofia Chen" Button`
+    t =    29.60s         Find the "rhythm-person-Sofia Chen" Button
+    t =    29.68s         Find the "rhythm-person-Sofia Chen" Button
+    t =    29.75s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    29.79s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    29.79s             Wait for com.plenara.plenaraApp to idle
+    t =    29.79s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    29.83s             Check for interrupting elements affecting "Plenara" Application
+    t =    29.89s             Synthesize event
+    t =    30.31s             Wait for com.plenara.plenaraApp to idle
+    t =    31.09s         Find the "rhythm-person-Sofia Chen" Button
+    t =    31.20s         Find the "rhythm-person-Sofia Chen" Button
+    t =    31.29s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    31.33s         Find the "rhythm-person-Sofia Chen" Button
+    t =    31.40s         Tap "rhythm-person-Sofia Chen" Button
+    t =    31.40s             Wait for com.plenara.plenaraApp to idle
+    t =    31.41s             Find the "rhythm-person-Sofia Chen" Button
+    t =    31.47s             Check for interrupting elements affecting "rhythm-person-Sofia Chen" Button
+    t =    31.55s             Synthesize event
+    t =    31.85s             Wait for com.plenara.plenaraApp to idle
+    t =    32.05s         Find the "setup-rhythm-cadence" Button
+    t =    32.20s         Tap "setup-rhythm-cadence" Button
+    t =    32.20s             Wait for com.plenara.plenaraApp to idle
+    t =    32.20s             Find the "setup-rhythm-cadence" Button
+    t =    32.26s             Check for interrupting elements affecting "setup-rhythm-cadence" Button
+    t =    32.42s             Synthesize event
+    t =    32.72s             Wait for com.plenara.plenaraApp to idle
+    t =    34.28s         Tap "Every 2 weeks" Button
+    t =    34.28s             Wait for com.plenara.plenaraApp to idle
+    t =    34.29s             Find the "Every 2 weeks" Button
+    t =    34.33s             Check for interrupting elements affecting "Every 2 weeks" Button
+    t =    34.40s             Synthesize event
+    t =    34.70s             Wait for com.plenara.plenaraApp to idle
+    t =    36.42s         Waiting 6.0s for "apply-rhythm" Button to exist
+    t =    37.45s             Checking `Expect predicate `existsNoRetry == 1` for object "apply-rhythm" Button`
+    t =    37.46s                 Checking existence of `"apply-rhythm" Button`
+    t =    37.68s         Find the "apply-rhythm" Button
+    t =    37.75s         Find the "apply-rhythm" Button
+    t =    37.82s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    37.86s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    37.86s             Wait for com.plenara.plenaraApp to idle
+    t =    37.86s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    37.90s             Check for interrupting elements affecting "Plenara" Application
+    t =    37.95s             Synthesize event
+    t =    38.37s             Wait for com.plenara.plenaraApp to idle
+    t =    38.85s         Find the "apply-rhythm" Button
+    t =    38.91s         Find the "apply-rhythm" Button
+    t =    38.98s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    39.02s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    39.02s             Wait for com.plenara.plenaraApp to idle
+    t =    39.02s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    39.06s             Check for interrupting elements affecting "Plenara" Application
+    t =    39.11s             Synthesize event
+    t =    39.52s             Wait for com.plenara.plenaraApp to idle
+    t =    40.43s         Find the "apply-rhythm" Button
+    t =    40.50s         Find the "apply-rhythm" Button
+    t =    40.56s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    40.60s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    40.60s             Wait for com.plenara.plenaraApp to idle
+    t =    40.60s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    40.64s             Check for interrupting elements affecting "Plenara" Application
+    t =    40.69s             Synthesize event
+    t =    41.11s             Wait for com.plenara.plenaraApp to idle
+    t =    41.91s         Find the "apply-rhythm" Button
+    t =    42.05s         Find the "apply-rhythm" Button
+    t =    42.21s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    42.27s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    42.27s             Wait for com.plenara.plenaraApp to idle
+    t =    42.61s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    42.71s             Check for interrupting elements affecting "Plenara" Application
+    t =    42.76s             Synthesize event
+    t =    43.22s             Wait for com.plenara.plenaraApp to idle
+    t =    43.68s         Find the "apply-rhythm" Button
+    t =    43.77s         Find the "apply-rhythm" Button
+    t =    43.84s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    43.91s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    43.91s             Wait for com.plenara.plenaraApp to idle
+    t =    43.91s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    44.04s             Check for interrupting elements affecting "Plenara" Application
+    t =    44.15s             Synthesize event
+    t =    44.59s             Wait for com.plenara.plenaraApp to idle
+    t =    45.08s         Find the "apply-rhythm" Button
+    t =    45.21s         Find the "apply-rhythm" Button
+    t =    45.29s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.33s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    45.33s             Wait for com.plenara.plenaraApp to idle
+    t =    45.34s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.38s             Check for interrupting elements affecting "Plenara" Application
+    t =    45.44s             Synthesize event
+    t =    45.86s             Wait for com.plenara.plenaraApp to idle
+    t =    46.35s         Find the "apply-rhythm" Button
+    t =    46.42s         Find the "apply-rhythm" Button
+    t =    46.50s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    46.55s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    46.55s             Wait for com.plenara.plenaraApp to idle
+    t =    46.55s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    46.59s             Check for interrupting elements affecting "Plenara" Application
+    t =    46.65s             Synthesize event
+    t =    47.07s             Wait for com.plenara.plenaraApp to idle
+    t =    47.94s         Find the "apply-rhythm" Button
+    t =    48.04s         Find the "apply-rhythm" Button
+    t =    48.44s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    48.48s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    48.48s             Wait for com.plenara.plenaraApp to idle
+    t =    48.48s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    48.53s             Check for interrupting elements affecting "Plenara" Application
+    t =    48.60s             Synthesize event
+    t =    49.03s             Wait for com.plenara.plenaraApp to idle
+    t =    49.88s         Find the "apply-rhythm" Button
+    t =    49.97s         Find the "apply-rhythm" Button
+    t =    50.04s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    50.08s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    50.08s             Wait for com.plenara.plenaraApp to idle
+    t =    50.08s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    50.12s             Check for interrupting elements affecting "Plenara" Application
+    t =    50.18s             Synthesize event
+    t =    50.61s             Wait for com.plenara.plenaraApp to idle
+    t =    51.10s         Find the "apply-rhythm" Button
+    t =    51.19s         Tap "apply-rhythm" Button
+    t =    51.19s             Wait for com.plenara.plenaraApp to idle
+    t =    51.19s             Find the "apply-rhythm" Button
+    t =    51.26s             Check for interrupting elements affecting "apply-rhythm" Button
+    t =    51.32s             Synthesize event
+    t =    51.61s             Wait for com.plenara.plenaraApp to idle
+    t =    52.28s         Waiting 5.0s for "rhythm-saved" StaticText to exist
+    t =    53.31s             Checking `Expect predicate `existsNoRetry == 1` for object "rhythm-saved" StaticText`
+    t =    53.31s                 Checking existence of `"rhythm-saved" StaticText`
+    t =    53.37s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    53.54s Added attachment named 'Chosen contact rhythm'
+    t =    53.55s         Tap "rhythm-done" Button
+    t =    53.55s             Wait for com.plenara.plenaraApp to idle
+    t =    53.55s             Find the "rhythm-done" Button
+    t =    53.61s             Check for interrupting elements affecting "rhythm-done" Button
+    t =    53.68s             Synthesize event
+    t =    53.98s             Wait for com.plenara.plenaraApp to idle
+    t =    54.35s         Tap "people-search" TextField
+    t =    54.35s             Wait for com.plenara.plenaraApp to idle
+    t =    54.37s             Find the "people-search" TextField
+    t =    54.40s             Check for interrupting elements affecting "people-search" TextField
+    t =    54.43s             Synthesize event
+    t =    54.72s             Wait for com.plenara.plenaraApp to idle
+    t =    55.01s         Type 'Sofia
+' into "people-search" TextField
+    t =    55.01s             Wait for com.plenara.plenaraApp to idle
+    t =    55.01s             Find the "people-search" TextField
+    t =    55.10s             Check for interrupting elements affecting "people-search" TextField
+    t =    55.14s             Synthesize event
+    t =    55.63s             Wait for com.plenara.plenaraApp to idle
+    t =    55.68s         Waiting 6.0s for "person-Sofia Chen" Button to exist
+    t =    56.71s             Checking `Expect predicate `existsNoRetry == 1` for object "person-Sofia Chen" Button`
+    t =    56.71s                 Checking existence of `"person-Sofia Chen" Button`
+    t =    56.76s         Find the "person-Sofia Chen" Button
+    t =    56.81s         Find the "person-Sofia Chen" Button
+    t =    56.85s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    56.87s         Find the "person-Sofia Chen" Button
+    t =    56.91s         Tap "person-Sofia Chen" Button
+    t =    56.91s             Wait for com.plenara.plenaraApp to idle
+    t =    56.91s             Find the "person-Sofia Chen" Button
+    t =    56.93s             Check for interrupting elements affecting "person-Sofia Chen" Button
+    t =    56.97s             Synthesize event
+    t =    57.26s             Wait for com.plenara.plenaraApp to idle
+    t =    57.75s         Checking existence of `"Every 2 weeks" StaticText`
+    t =    57.79s         Checking existence of `"Last contact not set" StaticText`
+    t =    57.83s         Tap "tab-1" Button
+    t =    57.83s             Wait for com.plenara.plenaraApp to idle
+    t =    57.83s             Find the "tab-1" Button
+    t =    57.87s             Check for interrupting elements affecting "tab-1" Button
+    t =    57.90s             Synthesize event
+    t =    58.20s             Wait for com.plenara.plenaraApp to idle
+    t =    58.53s         Tap "people-rhythm-setup" Button
+    t =    58.53s             Wait for com.plenara.plenaraApp to idle
+    t =    58.54s             Find the "people-rhythm-setup" Button
+    t =    58.57s             Check for interrupting elements affecting "people-rhythm-setup" Button
+    t =    58.61s             Synthesize event
+    t =    58.91s             Wait for com.plenara.plenaraApp to idle
+    t =    58.92s         Waiting 6.0s for "undo-rhythm" Button to exist
+    t =    59.97s             Checking `Expect predicate `existsNoRetry == 1` for object "undo-rhythm" Button`
+    t =    59.97s                 Checking existence of `"undo-rhythm" Button`
+    t =    60.07s         Find the "undo-rhythm" Button
+    t =    60.15s         Find the "undo-rhythm" Button
+    t =    60.31s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    60.35s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    60.35s             Wait for com.plenara.plenaraApp to idle
+    t =    60.36s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    60.40s             Check for interrupting elements affecting "Plenara" Application
+    t =    60.47s             Synthesize event
+    t =    60.89s             Wait for com.plenara.plenaraApp to idle
+    t =    62.67s         Find the "undo-rhythm" Button
+    t =    62.81s         Find the "undo-rhythm" Button
+    t =    62.88s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    62.96s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    62.96s             Wait for com.plenara.plenaraApp to idle
+    t =    62.96s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    63.05s             Check for interrupting elements affecting "Plenara" Application
+    t =    63.14s             Synthesize event
+    t =    63.69s             Wait for com.plenara.plenaraApp to idle
+    t =    64.38s         Find the "undo-rhythm" Button
+    t =    64.46s         Find the "undo-rhythm" Button
+    t =    64.52s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    64.57s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    64.57s             Wait for com.plenara.plenaraApp to idle
+    t =    64.57s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    64.61s             Check for interrupting elements affecting "Plenara" Application
+    t =    64.67s             Synthesize event
+    t =    65.09s             Wait for com.plenara.plenaraApp to idle
+    t =    65.90s         Find the "undo-rhythm" Button
+    t =    65.96s         Find the "undo-rhythm" Button
+    t =    66.02s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    66.06s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    66.06s             Wait for com.plenara.plenaraApp to idle
+    t =    66.07s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    66.11s             Check for interrupting elements affecting "Plenara" Application
+    t =    66.16s             Synthesize event
+    t =    66.60s             Wait for com.plenara.plenaraApp to idle
+    t =    67.40s         Find the "undo-rhythm" Button
+    t =    67.47s         Find the "undo-rhythm" Button
+    t =    67.55s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    67.60s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    67.60s             Wait for com.plenara.plenaraApp to idle
+    t =    67.60s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    67.64s             Check for interrupting elements affecting "Plenara" Application
+    t =    67.70s             Synthesize event
+    t =    68.12s             Wait for com.plenara.plenaraApp to idle
+    t =    68.62s         Find the "undo-rhythm" Button
+    t =    68.68s         Find the "undo-rhythm" Button
+    t =    68.74s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    68.78s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    68.78s             Wait for com.plenara.plenaraApp to idle
+    t =    68.79s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    68.83s             Check for interrupting elements affecting "Plenara" Application
+    t =    68.90s             Synthesize event
+    t =    69.32s             Wait for com.plenara.plenaraApp to idle
+    t =    70.16s         Find the "undo-rhythm" Button
+    t =    70.34s         Find the "undo-rhythm" Button
+    t =    70.55s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    70.65s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    70.65s             Wait for com.plenara.plenaraApp to idle
+    t =    70.65s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    70.73s             Check for interrupting elements affecting "Plenara" Application
+    t =    70.84s             Synthesize event
+    t =    71.28s             Wait for com.plenara.plenaraApp to idle
+    t =    72.22s         Find the "undo-rhythm" Button
+    t =    72.29s         Find the "undo-rhythm" Button
+    t =    72.35s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    72.39s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    72.39s             Wait for com.plenara.plenaraApp to idle
+    t =    72.40s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    72.44s             Check for interrupting elements affecting "Plenara" Application
+    t =    72.49s             Synthesize event
+    t =    72.92s             Wait for com.plenara.plenaraApp to idle
+    t =    73.69s         Find the "undo-rhythm" Button
+    t =    73.76s         Find the "undo-rhythm" Button
+    t =    73.83s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    73.88s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    73.88s             Wait for com.plenara.plenaraApp to idle
+    t =    73.88s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    73.93s             Check for interrupting elements affecting "Plenara" Application
+    t =    73.98s             Synthesize event
+    t =    74.40s             Wait for com.plenara.plenaraApp to idle
+    t =    75.20s         Find the "undo-rhythm" Button
+    t =    75.28s         Tap "undo-rhythm" Button
+    t =    75.28s             Wait for com.plenara.plenaraApp to idle
+    t =    75.28s             Find the "undo-rhythm" Button
+    t =    75.34s             Check for interrupting elements affecting "undo-rhythm" Button
+    t =    75.39s             Synthesize event
+    t =    75.68s             Wait for com.plenara.plenaraApp to idle
+    t =    75.70s         Tap "rhythm-done" Button
+    t =    75.70s             Wait for com.plenara.plenaraApp to idle
+    t =    75.82s             Find the "rhythm-done" Button
+    t =    75.97s             Check for interrupting elements affecting "rhythm-done" Button
+    t =    76.04s             Synthesize event
+    t =    76.33s             Wait for com.plenara.plenaraApp to idle
+    t =    76.75s         Waiting 6.0s for "person-Sofia Chen" Button to exist
+    t =    77.79s             Checking `Expect predicate `existsNoRetry == 1` for object "person-Sofia Chen" Button`
+    t =    77.80s                 Checking existence of `"person-Sofia Chen" Button`
+    t =    77.85s         Find the "person-Sofia Chen" Button
+    t =    78.12s         Find the "person-Sofia Chen" Button
+    t =    78.37s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    78.39s         Find the "person-Sofia Chen" Button
+    t =    78.46s         Tap "person-Sofia Chen" Button
+    t =    78.46s             Wait for com.plenara.plenaraApp to idle
+    t =    78.47s             Find the "person-Sofia Chen" Button
+    t =    78.55s             Check for interrupting elements affecting "person-Sofia Chen" Button
+    t =    78.60s             Synthesize event
+    t =    78.92s             Wait for com.plenara.plenaraApp to idle
+    t =    79.34s         Checking existence of `"No regular reminder" StaticText`
+    t =    79.50s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testOptionalRhythmSetupPreservesUnknownHistoryAndUndo]' passed (80.004 seconds).
+Test Case '-[PlenaraUITests.WorkflowUITests testSharedDinnerFivePeopleEditReopenAndCancel]' started.
+    t =     0.00s Start Test at 2026-11-09 19:33:51.386
+    t =     0.07s Set Up
+    t =     0.07s         Open com.plenara.plenaraApp
+    t =     0.07s             Launch com.plenara.plenaraApp
+    t =     0.07s                 Terminate com.plenara.plenaraApp:41143
+2026-11-09 19:33:52.687 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:33:52.687 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     2.08s                 Setting up automation session
+    t =     3.76s                 Wait for com.plenara.plenaraApp to idle
+    t =     5.90s         Tap "log-social-event" Button
+    t =     5.90s             Wait for com.plenara.plenaraApp to idle
+    t =     5.90s             Find the "log-social-event" Button
+    t =     6.03s             Check for interrupting elements affecting "log-social-event" Button
+    t =     6.10s             Synthesize event
+    t =     6.42s             Wait for com.plenara.plenaraApp to idle
+    t =     6.83s         Waiting 5.0s for "event-title" TextField to exist
+    t =     7.85s             Checking `Expect predicate `existsNoRetry == 1` for object "event-title" TextField`
+    t =     7.86s                 Checking existence of `"event-title" TextField`
+    t =     8.15s         Tap "event-title" TextField
+    t =     8.15s             Wait for com.plenara.plenaraApp to idle
+    t =     8.15s             Find the "event-title" TextField
+    t =     8.42s             Check for interrupting elements affecting "event-title" TextField
+    t =     8.66s             Synthesize event
+    t =     9.06s             Wait for com.plenara.plenaraApp to idle
+    t =     9.94s         Type 'Friday dinner' into "event-title" TextField
+    t =     9.94s             Wait for com.plenara.plenaraApp to idle
+    t =    10.34s             Find the "event-title" TextField
+    t =    10.51s             Check for interrupting elements affecting "event-title" TextField
+    t =    10.58s             Synthesize event
+    t =    10.99s             Wait for com.plenara.plenaraApp to idle
+    t =    10.99s         Tap "event-note" TextField
+    t =    10.99s             Wait for com.plenara.plenaraApp to idle
+    t =    10.99s             Find the "event-note" TextField
+    t =    11.21s             Check for interrupting elements affecting "event-note" TextField
+    t =    11.28s             Synthesize event
+    t =    11.57s             Wait for com.plenara.plenaraApp to idle
+    t =    11.58s         Type 'Made pasta and pla...' into "event-note" TextField
+    t =    11.58s             Wait for com.plenara.plenaraApp to idle
+    t =    11.58s             Find the "event-note" TextField
+    t =    11.65s             Check for interrupting elements affecting "event-note" TextField
+    t =    11.72s             Synthesize event
+    t =    12.57s             Wait for com.plenara.plenaraApp to idle
+    t =    12.83s         Tap "event-people" Button
+    t =    12.83s             Wait for com.plenara.plenaraApp to idle
+    t =    12.83s             Find the "event-people" Button
+    t =    12.92s             Check for interrupting elements affecting "event-people" Button
+    t =    12.99s             Synthesize event
+    t =    13.30s             Wait for com.plenara.plenaraApp to idle
+    t =    15.81s         Waiting 5.0s for SearchField (First Match) to exist
+    t =    16.86s             Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    16.88s                 Checking existence of `SearchField (First Match)`
+    t =    17.13s         Tap SearchField (First Match)
+    t =    17.13s             Wait for com.plenara.plenaraApp to idle
+    t =    17.13s             Find the SearchField (First Match)
+    t =    17.99s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    18.42s             Synthesize event
+    t =    19.01s             Wait for com.plenara.plenaraApp to idle
+    t =    19.78s         Find the "Find someone" SearchField
+    t =    20.94s         Find the "Find someone" SearchField
+    t =    21.11s         Type 'Amara Okafor
+' into "Find someone" SearchField
+    t =    21.11s             Wait for com.plenara.plenaraApp to idle
+    t =    21.11s             Find the "Find someone" SearchField
+    t =    21.29s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    21.39s             Synthesize event
+    t =    21.82s             Wait for com.plenara.plenaraApp to idle
+    t =    22.10s         Waiting 5.0s for "event-guest-Amara Okafor" Button to exist
+    t =    23.14s             Checking `Expect predicate `existsNoRetry == 1` for object "event-guest-Amara Okafor" Button`
+    t =    23.15s                 Checking existence of `"event-guest-Amara Okafor" Button`
+    t =    23.23s         Tap "event-guest-Amara Okafor" Button
+    t =    23.23s             Wait for com.plenara.plenaraApp to idle
+    t =    23.24s             Find the "event-guest-Amara Okafor" Button
+    t =    23.32s             Check for interrupting elements affecting "event-guest-Amara Okafor" Button
+    t =    23.40s             Synthesize event
+    t =    23.73s             Wait for com.plenara.plenaraApp to idle
+    t =    23.73s         Find the "event-guest-Amara Okafor" Button
+    t =    23.84s         Waiting 5.0s for SearchField (First Match) to exist
+    t =    24.86s             Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    24.86s                 Checking existence of `SearchField (First Match)`
+    t =    24.97s         Tap SearchField (First Match)
+    t =    24.97s             Wait for com.plenara.plenaraApp to idle
+    t =    24.98s             Find the SearchField (First Match)
+    t =    25.14s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    25.24s             Synthesize event
+    t =    25.54s             Wait for com.plenara.plenaraApp to idle
+    t =    31.26s         Find the "Find someone" SearchField
+    t =    31.48s         Find the "Find someone" SearchField
+    t =    31.62s         Type '' into "Find someone" SearchField
+    t =    31.62s             Wait for com.plenara.plenaraApp to idle
+    t =    31.86s             Find the "Find someone" SearchField
+    t =    32.04s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    32.36s             Synthesize event
+    t =    32.80s             Wait for com.plenara.plenaraApp to idle
+    t =    33.10s         Type 'Daniel Rivera
+' into "Find someone" SearchField
+    t =    33.10s             Wait for com.plenara.plenaraApp to idle
+    t =    33.10s             Find the "Find someone" SearchField
+    t =    33.19s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    33.30s             Synthesize event
+    t =    33.74s             Wait for com.plenara.plenaraApp to idle
+    t =    34.01s         Waiting 5.0s for "event-guest-Daniel Rivera" Button to exist
+    t =    35.05s             Checking `Expect predicate `existsNoRetry == 1` for object "event-guest-Daniel Rivera" Button`
+    t =    35.05s                 Checking existence of `"event-guest-Daniel Rivera" Button`
+    t =    35.23s         Tap "event-guest-Daniel Rivera" Button
+    t =    35.23s             Wait for com.plenara.plenaraApp to idle
+    t =    35.23s             Find the "event-guest-Daniel Rivera" Button
+    t =    35.33s             Check for interrupting elements affecting "event-guest-Daniel Rivera" Button
+    t =    35.45s             Synthesize event
+    t =    35.76s             Wait for com.plenara.plenaraApp to idle
+    t =    35.76s         Find the "event-guest-Daniel Rivera" Button
+    t =    35.91s         Waiting 5.0s for SearchField (First Match) to exist
+    t =    36.93s             Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    36.93s                 Checking existence of `SearchField (First Match)`
+    t =    36.99s         Tap SearchField (First Match)
+    t =    36.99s             Wait for com.plenara.plenaraApp to idle
+    t =    36.99s             Find the SearchField (First Match)
+    t =    37.05s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    37.13s             Synthesize event
+    t =    37.44s             Wait for com.plenara.plenaraApp to idle
+    t =    37.77s         Find the "Find someone" SearchField
+    t =    37.86s         Find the "Find someone" SearchField
+    t =    37.93s         Type '' into "Find someone" SearchField
+    t =    37.93s             Wait for com.plenara.plenaraApp to idle
+    t =    37.93s             Find the "Find someone" SearchField
+    t =    38.00s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    38.08s             Synthesize event
+    t =    38.50s             Wait for com.plenara.plenaraApp to idle
+    t =    38.57s         Type 'Leo Park
+' into "Find someone" SearchField
+    t =    38.57s             Wait for com.plenara.plenaraApp to idle
+    t =    38.58s             Find the "Find someone" SearchField
+    t =    38.65s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    38.73s             Synthesize event
+    t =    39.08s             Wait for com.plenara.plenaraApp to idle
+    t =    39.31s         Waiting 5.0s for "event-guest-Leo Park" Button to exist
+    t =    40.35s             Checking `Expect predicate `existsNoRetry == 1` for object "event-guest-Leo Park" Button`
+    t =    40.35s                 Checking existence of `"event-guest-Leo Park" Button`
+    t =    40.42s         Tap "event-guest-Leo Park" Button
+    t =    40.42s             Wait for com.plenara.plenaraApp to idle
+    t =    40.43s             Find the "event-guest-Leo Park" Button
+    t =    40.49s             Check for interrupting elements affecting "event-guest-Leo Park" Button
+    t =    40.55s             Synthesize event
+    t =    40.85s             Wait for com.plenara.plenaraApp to idle
+    t =    40.85s         Find the "event-guest-Leo Park" Button
+    t =    40.92s         Waiting 5.0s for SearchField (First Match) to exist
+    t =    41.95s             Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    41.95s                 Checking existence of `SearchField (First Match)`
+    t =    42.01s         Tap SearchField (First Match)
+    t =    42.01s             Wait for com.plenara.plenaraApp to idle
+    t =    42.01s             Find the SearchField (First Match)
+    t =    42.06s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    42.13s             Synthesize event
+    t =    42.42s             Wait for com.plenara.plenaraApp to idle
+    t =    42.71s         Find the "Find someone" SearchField
+    t =    42.93s         Find the "Find someone" SearchField
+    t =    43.01s         Type '' into "Find someone" SearchField
+    t =    43.01s             Wait for com.plenara.plenaraApp to idle
+    t =    43.01s             Find the "Find someone" SearchField
+    t =    43.23s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    43.32s             Synthesize event
+    t =    43.76s             Wait for com.plenara.plenaraApp to idle
+    t =    44.31s         Type 'Mum
+' into "Find someone" SearchField
+    t =    44.31s             Wait for com.plenara.plenaraApp to idle
+    t =    44.35s             Find the "Find someone" SearchField
+    t =    44.46s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    44.63s             Synthesize event
+    t =    44.92s             Wait for com.plenara.plenaraApp to idle
+    t =    45.15s         Waiting 5.0s for "event-guest-Mum" Button to exist
+    t =    46.21s             Checking `Expect predicate `existsNoRetry == 1` for object "event-guest-Mum" Button`
+    t =    46.23s                 Checking existence of `"event-guest-Mum" Button`
+    t =    46.35s         Tap "event-guest-Mum" Button
+    t =    46.35s             Wait for com.plenara.plenaraApp to idle
+    t =    46.35s             Find the "event-guest-Mum" Button
+    t =    46.42s             Check for interrupting elements affecting "event-guest-Mum" Button
+    t =    46.48s             Synthesize event
+    t =    46.78s             Wait for com.plenara.plenaraApp to idle
+    t =    46.78s         Find the "event-guest-Mum" Button
+    t =    46.85s         Waiting 5.0s for SearchField (First Match) to exist
+    t =    47.88s             Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    47.88s                 Checking existence of `SearchField (First Match)`
+    t =    47.91s         Tap SearchField (First Match)
+    t =    47.91s             Wait for com.plenara.plenaraApp to idle
+    t =    47.91s             Find the SearchField (First Match)
+    t =    47.95s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    48.01s             Synthesize event
+    t =    48.30s             Wait for com.plenara.plenaraApp to idle
+    t =    48.61s         Find the "Find someone" SearchField
+    t =    48.68s         Find the "Find someone" SearchField
+    t =    48.74s         Type '' into "Find someone" SearchField
+    t =    48.74s             Wait for com.plenara.plenaraApp to idle
+    t =    48.74s             Find the "Find someone" SearchField
+    t =    48.82s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    48.90s             Synthesize event
+    t =    49.26s             Wait for com.plenara.plenaraApp to idle
+    t =    49.27s         Type 'Sofia Chen
+' into "Find someone" SearchField
+    t =    49.27s             Wait for com.plenara.plenaraApp to idle
+    t =    49.27s             Find the "Find someone" SearchField
+    t =    49.50s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    49.59s             Synthesize event
+    t =    49.98s             Wait for com.plenara.plenaraApp to idle
+    t =    50.22s         Waiting 5.0s for "event-guest-Sofia Chen" Button to exist
+    t =    51.24s             Checking `Expect predicate `existsNoRetry == 1` for object "event-guest-Sofia Chen" Button`
+    t =    51.25s                 Checking existence of `"event-guest-Sofia Chen" Button`
+    t =    51.32s         Tap "event-guest-Sofia Chen" Button
+    t =    51.32s             Wait for com.plenara.plenaraApp to idle
+    t =    51.32s             Find the "event-guest-Sofia Chen" Button
+    t =    51.39s             Check for interrupting elements affecting "event-guest-Sofia Chen" Button
+    t =    51.45s             Synthesize event
+    t =    51.74s             Wait for com.plenara.plenaraApp to idle
+    t =    51.75s         Find the "event-guest-Sofia Chen" Button
+    t =    51.83s         Tap "event-people-done" Button
+    t =    51.83s             Wait for com.plenara.plenaraApp to idle
+    t =    51.83s             Find the "event-people-done" Button
+    t =    51.91s             Check for interrupting elements affecting "event-people-done" Button
+    t =    51.98s             Synthesize event
+    t =    52.27s             Wait for com.plenara.plenaraApp to idle
+    t =    52.28s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    52.55s Added attachment named 'Five-person dinner draft'
+    t =    52.55s         Tap "save-event" Button
+    t =    52.55s             Wait for com.plenara.plenaraApp to idle
+    t =    52.79s             Find the "save-event" Button
+    t =    52.88s             Check for interrupting elements affecting "save-event" Button
+    t =    52.96s             Synthesize event
+    t =    53.26s             Wait for com.plenara.plenaraApp to idle
+    t =    54.10s         Waiting 5.0s for "moment-follow-through" Button to exist
+    t =    55.16s             Checking `Expect predicate `existsNoRetry == 1` for object "moment-follow-through" Button`
+    t =    55.16s                 Checking existence of `"moment-follow-through" Button`
+    t =    55.22s         Tap "Dismiss next-time suggestion" Button
+    t =    55.22s             Wait for com.plenara.plenaraApp to idle
+    t =    55.23s             Find the "Dismiss next-time suggestion" Button
+    t =    55.26s             Check for interrupting elements affecting "xmark" Button
+    t =    55.29s             Synthesize event
+    t =    55.60s             Wait for com.plenara.plenaraApp to idle
+    t =    55.60s         Tap "tab-2" Button
+    t =    55.60s             Wait for com.plenara.plenaraApp to idle
+    t =    55.60s             Find the "tab-2" Button
+    t =    55.63s             Check for interrupting elements affecting "tab-2" Button
+    t =    55.66s             Synthesize event
+    t =    55.95s             Wait for com.plenara.plenaraApp to idle
+    t =    55.96s         Waiting 5.0s for Button (First Match) to exist
+    t =    57.00s             Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    57.00s                 Checking existence of `Button (First Match)`
+    t =    57.03s         Get number of matches for: Elements matching predicate 'identifier BEGINSWITH "history-moment-" AND label CONTAINS "Friday dinner"'
+    t =    57.17s         Find the Button (First Match)
+    t =    57.24s         Find the "history-moment-27CF3A27-4C3B-4E00-BF20-7AE76FC0EA2D" Button
+    t =    57.28s         Find the "history-moment-27CF3A27-4C3B-4E00-BF20-7AE76FC0EA2D" Button
+    t =    57.33s         Find the "history-moment-27CF3A27-4C3B-4E00-BF20-7AE76FC0EA2D" Button
+    t =    57.37s         Find the "history-moment-27CF3A27-4C3B-4E00-BF20-7AE76FC0EA2D" Button
+    t =    57.44s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    57.62s Added attachment named 'Saved shared dinner'
+    t =    57.63s         Tap "history-moment-27CF3A27-4C3B-4E00-BF20-7AE76FC0EA2D" Button
+    t =    57.63s             Wait for com.plenara.plenaraApp to idle
+    t =    57.64s             Find the "history-moment-27CF3A27-4C3B-4E00-BF20-7AE76FC0EA2D" Button
+    t =    57.68s             Check for interrupting elements affecting "history-moment-27CF3A27-4C3B-4E00-BF20-7AE76FC0EA2D" Button
+    t =    57.71s             Synthesize event
+    t =    58.04s             Wait for com.plenara.plenaraApp to idle
+    t =    58.12s         Waiting 5.0s for "event-note" TextField to exist
+    t =    59.16s             Checking `Expect predicate `existsNoRetry == 1` for object "event-note" TextField`
+    t =    59.16s                 Checking existence of `"event-note" TextField`
+    t =    59.32s         Tap "event-note" TextField
+    t =    59.32s             Wait for com.plenara.plenaraApp to idle
+    t =    59.32s             Find the "event-note" TextField
+    t =    59.45s             Check for interrupting elements affecting "event-note" TextField
+    t =    59.51s             Synthesize event
+    t =    59.81s             Wait for com.plenara.plenaraApp to idle
+    t =    60.17s         Type ' and dessert' into "event-note" TextField
+    t =    60.17s             Wait for com.plenara.plenaraApp to idle
+    t =    60.54s             Find the "event-note" TextField
+    t =    60.65s             Check for interrupting elements affecting "event-note" TextField
+    t =    60.78s             Synthesize event
+    t =    61.21s             Wait for com.plenara.plenaraApp to idle
+    t =    61.21s         Tap "event-people" Button
+    t =    61.21s             Wait for com.plenara.plenaraApp to idle
+    t =    61.21s             Find the "event-people" Button
+    t =    61.30s             Check for interrupting elements affecting "event-people" Button
+    t =    61.37s             Synthesize event
+    t =    61.77s             Wait for com.plenara.plenaraApp to idle
+    t =    62.46s         Waiting 5.0s for SearchField (First Match) to exist
+    t =    63.51s             Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    63.51s                 Checking existence of `SearchField (First Match)`
+    t =    63.55s         Tap SearchField (First Match)
+    t =    63.55s             Wait for com.plenara.plenaraApp to idle
+    t =    63.56s             Find the SearchField (First Match)
+    t =    63.59s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    63.67s             Synthesize event
+    t =    63.96s             Wait for com.plenara.plenaraApp to idle
+    t =    64.37s         Find the "Find someone" SearchField
+    t =    64.46s         Find the "Find someone" SearchField
+    t =    64.53s         Type 'Leo Park
+' into "Find someone" SearchField
+    t =    64.53s             Wait for com.plenara.plenaraApp to idle
+    t =    64.53s             Find the "Find someone" SearchField
+    t =    64.59s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    64.67s             Synthesize event
+    t =    65.02s             Wait for com.plenara.plenaraApp to idle
+    t =    65.23s         Tap "event-guest-Leo Park" Button
+    t =    65.23s             Wait for com.plenara.plenaraApp to idle
+    t =    65.23s             Find the "event-guest-Leo Park" Button
+    t =    65.31s             Check for interrupting elements affecting "event-guest-Leo Park" Button
+    t =    65.37s             Synthesize event
+    t =    65.66s             Wait for com.plenara.plenaraApp to idle
+    t =    65.66s         Tap "event-people-done" Button
+    t =    65.66s             Wait for com.plenara.plenaraApp to idle
+    t =    65.67s             Find the "event-people-done" Button
+    t =    65.73s             Check for interrupting elements affecting "event-people-done" Button
+    t =    65.79s             Synthesize event
+    t =    66.08s             Wait for com.plenara.plenaraApp to idle
+    t =    66.54s         Tap "save-event" Button
+    t =    66.54s             Wait for com.plenara.plenaraApp to idle
+    t =    66.55s             Find the "save-event" Button
+    t =    66.67s             Check for interrupting elements affecting "save-event" Button
+    t =    66.74s             Synthesize event
+    t =    67.06s             Wait for com.plenara.plenaraApp to idle
+    t =    67.85s         Terminate com.plenara.plenaraApp:41598
+    t =    69.90s         Open com.plenara.plenaraApp
+    t =    69.90s             Launch com.plenara.plenaraApp
+2026-11-09 19:35:01.332 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:35:01.332 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    70.41s                 Setting up automation session
+    t =    71.60s                 Wait for com.plenara.plenaraApp to idle
+    t =    73.24s         Tap "tab-2" Button
+    t =    73.25s             Wait for com.plenara.plenaraApp to idle
+    t =    73.25s             Find the "tab-2" Button
+    t =    73.32s             Check for interrupting elements affecting "tab-2" Button
+    t =    73.34s             Synthesize event
+    t =    73.64s             Wait for com.plenara.plenaraApp to idle
+    t =    73.64s         Waiting 5.0s for Button (First Match) to exist
+    t =    74.68s             Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    74.68s                 Checking existence of `Button (First Match)`
+    t =    74.71s         Find the Button (First Match)
+    t =    74.73s         Find the "history-moment-27CF3A27-4C3B-4E00-BF20-7AE76FC0EA2D" Button
+    t =    74.74s         Tap "log-social-event" Button
+    t =    74.74s             Wait for com.plenara.plenaraApp to idle
+    t =    74.75s             Find the "log-social-event" Button
+    t =    74.77s             Check for interrupting elements affecting "log-social-event" Button
+    t =    74.80s             Synthesize event
+    t =    75.08s             Wait for com.plenara.plenaraApp to idle
+    t =    75.31s         Waiting 5.0s for "save-event" Button to exist
+    t =    76.33s             Checking `Expect predicate `existsNoRetry == 1` for object "save-event" Button`
+    t =    76.33s                 Checking existence of `"save-event" Button`
+    t =    76.47s         Find the "save-event" Button
+    t =    76.52s         Tap "event-title" TextField
+    t =    76.52s             Wait for com.plenara.plenaraApp to idle
+    t =    76.53s             Find the "event-title" TextField
+    t =    76.58s             Check for interrupting elements affecting "event-title" TextField
+    t =    76.63s             Synthesize event
+    t =    76.93s             Wait for com.plenara.plenaraApp to idle
+    t =    77.09s         Type 'Cancelled dinner' into "event-title" TextField
+    t =    77.09s             Wait for com.plenara.plenaraApp to idle
+    t =    77.46s             Find the "event-title" TextField
+    t =    77.55s             Check for interrupting elements affecting "event-title" TextField
+    t =    77.63s             Synthesize event
+    t =    78.15s             Wait for com.plenara.plenaraApp to idle
+    t =    78.16s         Tap "Cancel" Button
+    t =    78.16s             Wait for com.plenara.plenaraApp to idle
+    t =    78.16s             Find the "Cancel" Button
+    t =    78.28s             Check for interrupting elements affecting "Cancel" Button
+    t =    78.35s             Synthesize event
+    t =    78.66s             Wait for com.plenara.plenaraApp to idle
+    t =    79.32s         Checking existence of `Button (First Match)`
+    t =    79.52s         Waiting 6.0s for "View Sofia Chen →" Button to exist
+    t =    80.55s             Checking `Expect predicate `existsNoRetry == 1` for object "View Sofia Chen →" Button`
+    t =    80.55s                 Checking existence of `"View Sofia Chen →" Button`
+    t =    80.59s         Find the "View Sofia Chen →" Button
+    t =    80.62s         Find the "View Sofia Chen →" Button
+    t =    80.66s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    80.69s         Find the "View Sofia Chen →" Button
+    t =    80.75s         Tap "View Sofia Chen →" Button
+    t =    80.75s             Wait for com.plenara.plenaraApp to idle
+    t =    80.75s             Find the "View Sofia Chen →" Button
+    t =    80.80s             Check for interrupting elements affecting "View Sofia Chen →" Button
+    t =    80.84s             Synthesize event
+    t =    81.13s             Wait for com.plenara.plenaraApp to idle
+    t =    81.62s         Waiting 5.0s for "Connected today" StaticText to exist
+    t =    82.63s             Checking `Expect predicate `existsNoRetry == 1` for object "Connected today" StaticText`
+    t =    82.63s                 Checking existence of `"Connected today" StaticText`
+    t =    82.72s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testSharedDinnerFivePeopleEditReopenAndCancel]' passed (83.098 seconds).
+Test Case '-[PlenaraUITests.WorkflowUITests testSocialEventDarkAndLargeText]' started.
+    t =     0.00s Start Test at 2026-11-09 19:35:14.485
+    t =     0.05s Set Up
+    t =     0.05s         Open com.plenara.plenaraApp
+    t =     0.06s             Launch com.plenara.plenaraApp
+    t =     0.06s                 Terminate com.plenara.plenaraApp:42134
+2026-11-09 19:35:15.620 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:35:15.621 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.57s                 Setting up automation session
+    t =     2.73s                 Wait for com.plenara.plenaraApp to idle
+    t =     4.42s         Tap "log-social-event" Button
+    t =     4.42s             Wait for com.plenara.plenaraApp to idle
+    t =     4.42s             Find the "log-social-event" Button
+    t =     4.51s             Check for interrupting elements affecting "log-social-event" Button
+    t =     4.54s             Synthesize event
+    t =     4.83s             Wait for com.plenara.plenaraApp to idle
+    t =     5.07s         Waiting 5.0s for "event-people" Button to exist
+    t =     6.12s             Checking `Expect predicate `existsNoRetry == 1` for object "event-people" Button`
+    t =     6.12s                 Checking existence of `"event-people" Button`
+    t =     6.30s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     6.58s Added attachment named 'Dark shared-event editor'
+    t =     6.59s         Waiting 6.0s for "event-people" Button to exist
+    t =     7.61s             Checking `Expect predicate `existsNoRetry == 1` for object "event-people" Button`
+    t =     7.62s                 Checking existence of `"event-people" Button`
+    t =     7.82s         Find the "event-people" Button
+    t =     7.90s         Find the "event-people" Button
+    t =     8.00s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.08s         Find the "event-people" Button
+    t =     8.15s         Tap "event-people" Button
+    t =     8.16s             Wait for com.plenara.plenaraApp to idle
+    t =     8.16s             Find the "event-people" Button
+    t =     8.22s             Check for interrupting elements affecting "event-people" Button
+    t =     8.30s             Synthesize event
+    t =     8.61s             Wait for com.plenara.plenaraApp to idle
+    t =     9.86s         Waiting 5.0s for SearchField (First Match) to exist
+    t =    10.89s             Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    10.89s                 Checking existence of `SearchField (First Match)`
+    t =    10.93s         Tap SearchField (First Match)
+    t =    10.93s             Wait for com.plenara.plenaraApp to idle
+    t =    10.94s             Find the SearchField (First Match)
+    t =    10.97s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    11.05s             Synthesize event
+    t =    11.35s             Wait for com.plenara.plenaraApp to idle
+    t =    11.61s         Find the "Find someone" SearchField
+    t =    11.68s         Find the "Find someone" SearchField
+    t =    11.75s         Type 'Mum
+' into "Find someone" SearchField
+    t =    11.75s             Wait for com.plenara.plenaraApp to idle
+    t =    12.11s             Find the "Find someone" SearchField
+    t =    12.17s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    12.25s             Synthesize event
+    t =    12.52s             Wait for com.plenara.plenaraApp to idle
+    t =    12.75s         Tap "event-guest-Mum" Button
+    t =    12.75s             Wait for com.plenara.plenaraApp to idle
+    t =    12.75s             Find the "event-guest-Mum" Button
+    t =    12.83s             Check for interrupting elements affecting "event-guest-Mum" Button
+    t =    12.89s             Synthesize event
+    t =    13.18s             Wait for com.plenara.plenaraApp to idle
+    t =    13.19s         Tap "event-people-done" Button
+    t =    13.19s             Wait for com.plenara.plenaraApp to idle
+    t =    13.19s             Find the "event-people-done" Button
+    t =    13.26s             Check for interrupting elements affecting "event-people-done" Button
+    t =    13.33s             Synthesize event
+    t =    13.62s             Wait for com.plenara.plenaraApp to idle
+    t =    14.03s         Find the "save-event" Button
+    t =    14.10s         Tap "save-event" Button
+    t =    14.10s             Wait for com.plenara.plenaraApp to idle
+    t =    14.10s             Find the "save-event" Button
+    t =    14.17s             Check for interrupting elements affecting "save-event" Button
+    t =    14.23s             Synthesize event
+    t =    14.53s             Wait for com.plenara.plenaraApp to idle
+    t =    15.36s         Waiting 5.0s for "moment-follow-through" Button to exist
+    t =    16.40s             Checking `Expect predicate `existsNoRetry == 1` for object "moment-follow-through" Button`
+    t =    16.40s                 Checking existence of `"moment-follow-through" Button`
+    t =    16.44s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    16.58s Added attachment named 'Dark shared-event editor saved'
+    t =    16.58s         Terminate com.plenara.plenaraApp:42228
+    t =    17.60s         Open com.plenara.plenaraApp
+    t =    17.60s             Launch com.plenara.plenaraApp
+2026-11-09 19:35:32.083 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:35:32.083 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    17.82s                 Setting up automation session
+    t =    18.99s                 Wait for com.plenara.plenaraApp to idle
+    t =    20.60s         Tap "log-social-event" Button
+    t =    20.60s             Wait for com.plenara.plenaraApp to idle
+    t =    20.61s             Find the "log-social-event" Button
+    t =    20.68s             Check for interrupting elements affecting "log-social-event" Button
+    t =    20.71s             Synthesize event
+    t =    21.00s             Wait for com.plenara.plenaraApp to idle
+    t =    21.18s         Waiting 5.0s for "event-people" Button to exist
+    t =    22.21s             Checking `Expect predicate `existsNoRetry == 1` for object "event-people" Button`
+    t =    22.21s                 Checking existence of `"event-people" Button`
+    t =    22.33s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.52s Added attachment named 'Large shared-event editor'
+    t =    22.53s         Waiting 6.0s for "event-people" Button to exist
+    t =    23.55s             Checking `Expect predicate `existsNoRetry == 1` for object "event-people" Button`
+    t =    23.55s                 Checking existence of `"event-people" Button`
+    t =    23.68s         Find the "event-people" Button
+    t =    23.78s         Find the "event-people" Button
+    t =    23.88s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    23.92s         Find the "event-people" Button
+    t =    23.99s         Tap "event-people" Button
+    t =    23.99s             Wait for com.plenara.plenaraApp to idle
+    t =    23.99s             Find the "event-people" Button
+    t =    24.05s             Check for interrupting elements affecting "event-people" Button
+    t =    24.15s             Synthesize event
+    t =    24.50s             Wait for com.plenara.plenaraApp to idle
+    t =    24.54s         Waiting 5.0s for SearchField (First Match) to exist
+    t =    25.58s             Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    25.58s                 Checking existence of `SearchField (First Match)`
+    t =    25.66s         Tap SearchField (First Match)
+    t =    25.66s             Wait for com.plenara.plenaraApp to idle
+    t =    25.66s             Find the SearchField (First Match)
+    t =    25.69s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    25.76s             Synthesize event
+    t =    26.05s             Wait for com.plenara.plenaraApp to idle
+    t =    26.30s         Find the "Find someone" SearchField
+    t =    26.40s         Find the "Find someone" SearchField
+    t =    26.47s         Type 'Mum
+' into "Find someone" SearchField
+    t =    26.47s             Wait for com.plenara.plenaraApp to idle
+    t =    26.80s             Find the "Find someone" SearchField
+    t =    26.93s             Check for interrupting elements affecting "Find someone" SearchField
+    t =    27.10s             Synthesize event
+    t =    27.38s             Wait for com.plenara.plenaraApp to idle
+    t =    27.40s         Tap "event-guest-Mum" Button
+    t =    27.40s             Wait for com.plenara.plenaraApp to idle
+    t =    27.80s             Find the "event-guest-Mum" Button
+    t =    27.91s             Check for interrupting elements affecting "event-guest-Mum" Button
+    t =    27.99s             Synthesize event
+    t =    28.28s             Wait for com.plenara.plenaraApp to idle
+    t =    28.28s         Tap "event-people-done" Button
+    t =    28.28s             Wait for com.plenara.plenaraApp to idle
+    t =    28.28s             Find the "event-people-done" Button
+    t =    28.36s             Check for interrupting elements affecting "event-people-done" Button
+    t =    28.42s             Synthesize event
+    t =    28.72s             Wait for com.plenara.plenaraApp to idle
+    t =    29.09s         Find the "save-event" Button
+    t =    29.16s         Tap "save-event" Button
+    t =    29.16s             Wait for com.plenara.plenaraApp to idle
+    t =    29.17s             Find the "save-event" Button
+    t =    29.22s             Check for interrupting elements affecting "save-event" Button
+    t =    29.27s             Synthesize event
+    t =    29.56s             Wait for com.plenara.plenaraApp to idle
+    t =    30.37s         Waiting 5.0s for "moment-follow-through" Button to exist
+    t =    31.41s             Checking `Expect predicate `existsNoRetry == 1` for object "moment-follow-through" Button`
+    t =    31.41s                 Checking existence of `"moment-follow-through" Button`
+    t =    31.44s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    31.55s Added attachment named 'Large shared-event editor saved'
+    t =    31.55s         Terminate com.plenara.plenaraApp:42323
+    t =    32.61s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testSocialEventDarkAndLargeText]' passed (32.737 seconds).
+Test Case '-[PlenaraUITests.WorkflowUITests testUnavailableContactAndDismissedDraftCreateNoHistory]' started.
+    t =     0.00s Start Test at 2026-11-09 19:35:47.222
+    t =     0.03s Set Up
+    t =     0.03s         Open com.plenara.plenaraApp
+    t =     0.03s             Launch com.plenara.plenaraApp
+2026-11-09 19:35:47.303 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:35:47.304 xcodebuild[39094:33333104] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.61s                 Setting up automation session
+    t =     1.91s                 Wait for com.plenara.plenaraApp to idle
+    t =     3.69s         Waiting 6.0s for "reach-out-Sofia Chen" Button to exist
+    t =     4.71s             Checking `Expect predicate `existsNoRetry == 1` for object "reach-out-Sofia Chen" Button`
+    t =     4.71s                 Checking existence of `"reach-out-Sofia Chen" Button`
+    t =     4.79s         Find the "reach-out-Sofia Chen" Button
+    t =     4.83s         Find the "reach-out-Sofia Chen" Button
+    t =     4.86s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.88s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =     4.88s             Wait for com.plenara.plenaraApp to idle
+    t =     4.89s             Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.90s             Check for interrupting elements affecting "Plenara" Application
+    t =     4.93s             Synthesize event
+    t =     5.35s             Wait for com.plenara.plenaraApp to idle
+    t =     7.50s         Find the "reach-out-Sofia Chen" Button
+    t =     7.54s         Find the "reach-out-Sofia Chen" Button
+    t =     7.58s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =     7.58s             Wait for com.plenara.plenaraApp to idle
+    t =     7.58s             Find the Target Application 'com.plenara.plenaraApp'
+    t =     7.60s             Check for interrupting elements affecting "Plenara" Application
+    t =     7.62s             Synthesize event
+    t =     8.04s             Wait for com.plenara.plenaraApp to idle
+    t =     8.52s         Find the "reach-out-Sofia Chen" Button
+    t =     8.56s         Find the "reach-out-Sofia Chen" Button
+    t =     8.59s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =     8.59s             Wait for com.plenara.plenaraApp to idle
+    t =     8.59s             Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.62s             Check for interrupting elements affecting "Plenara" Application
+    t =     8.69s             Synthesize event
+    t =     9.12s             Wait for com.plenara.plenaraApp to idle
+    t =     9.60s         Find the "reach-out-Sofia Chen" Button
+    t =     9.63s         Find the "reach-out-Sofia Chen" Button
+    t =     9.67s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =     9.67s             Wait for com.plenara.plenaraApp to idle
+    t =     9.68s             Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.75s             Check for interrupting elements affecting "Plenara" Application
+    t =     9.79s             Synthesize event
+    t =    10.21s             Wait for com.plenara.plenaraApp to idle
+    t =    10.70s         Find the "reach-out-Sofia Chen" Button
+    t =    10.73s         Find the "reach-out-Sofia Chen" Button
+    t =    10.77s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    10.77s             Wait for com.plenara.plenaraApp to idle
+    t =    10.77s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.79s             Check for interrupting elements affecting "Plenara" Application
+    t =    10.82s             Synthesize event
+    t =    11.25s             Wait for com.plenara.plenaraApp to idle
+    t =    11.74s         Find the "reach-out-Sofia Chen" Button
+    t =    11.84s         Find the "reach-out-Sofia Chen" Button
+    t =    11.88s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    11.88s             Wait for com.plenara.plenaraApp to idle
+    t =    11.89s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.91s             Check for interrupting elements affecting "Plenara" Application
+    t =    11.94s             Synthesize event
+    t =    12.36s             Wait for com.plenara.plenaraApp to idle
+    t =    12.86s         Find the "reach-out-Sofia Chen" Button
+    t =    13.04s         Find the "reach-out-Sofia Chen" Button
+    t =    13.12s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    13.12s             Wait for com.plenara.plenaraApp to idle
+    t =    13.12s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.14s             Check for interrupting elements affecting "Plenara" Application
+    t =    13.18s             Synthesize event
+    t =    13.63s             Wait for com.plenara.plenaraApp to idle
+    t =    14.08s         Find the "reach-out-Sofia Chen" Button
+    t =    14.12s         Find the "reach-out-Sofia Chen" Button
+    t =    14.15s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    14.15s             Wait for com.plenara.plenaraApp to idle
+    t =    14.15s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.17s             Check for interrupting elements affecting "Plenara" Application
+    t =    14.20s             Synthesize event
+    t =    14.63s             Wait for com.plenara.plenaraApp to idle
+    t =    15.12s         Find the "reach-out-Sofia Chen" Button
+    t =    15.15s         Find the "reach-out-Sofia Chen" Button
+    t =    15.18s         Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    15.18s             Wait for com.plenara.plenaraApp to idle
+    t =    15.19s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    15.21s             Check for interrupting elements affecting "Plenara" Application
+    t =    15.23s             Synthesize event
+    t =    15.65s             Wait for com.plenara.plenaraApp to idle
+    t =    16.15s         Find the "reach-out-Sofia Chen" Button
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/WorkflowUITests.swift:16: error: -[PlenaraUITests.WorkflowUITests testUnavailableContactAndDismissedDraftCreateNoHistory] : XCTAssertTrue failed - The action must be reachable in the visible interface
+    t =    16.20s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testUnavailableContactAndDismissedDraftCreateNoHistory]' failed (16.450 seconds).
+Test Suite 'WorkflowUITests' failed at 2026-11-09 19:36:03.672.
+	 Executed 6 tests, with 2 failures (0 unexpected) in 416.586 (416.600) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-09 19:36:03.674.
+	 Executed 6 tests, with 2 failures (0 unexpected) in 416.586 (416.601) seconds
+Test Suite 'Selected tests' failed at 2026-11-09 19:36:03.674.
+	 Executed 6 tests, with 2 failures (0 unexpected) in 416.586 (416.603) seconds
+2026-11-09 19:36:04.305 xcodebuild[39094:33368321]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-09 19:36:04.438 xcodebuild[39094:33333104] [MT] IDETestOperationsObserverDebug: 461.150 elapsed -- Testing started completed.
+2026-11-09 19:36:04.439 xcodebuild[39094:33333104] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 19:36:04.439 xcodebuild[39094:33333104] [MT] IDETestOperationsObserverDebug: 461.150 sec, +461.150 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-192812.xcresult
+
+Failing tests:
+	WorkflowUITests.testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen()
+	WorkflowUITests.testUnavailableContactAndDismissedDraftCreateNoHistory()
+
+** TEST EXECUTE FAILED **
+
+Testing started

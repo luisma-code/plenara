@@ -1,0 +1,211 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-191105.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraTests"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-191105.xcresult
+
+2026-11-09 19:11:19.620699-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:19.996366-0800 Plenara[28843:33222025] [reminders] Local reminders refreshed
+2026-11-09 19:11:20.007736-0800 Plenara[28843:33222025] [reminders] Local reminders refreshed
+Test Suite 'All tests' started at 2026-11-09 19:11:20.365.
+Test Suite 'PlenaraTests.xctest' started at 2026-11-09 19:11:20.365.
+Test Suite 'JournalTests' started at 2026-11-09 19:11:20.365.
+Test Case '-[PlenaraTests.JournalTests testAmbiguousImportedIdentityRequiresExplicitLink]' started.
+Test Case '-[PlenaraTests.JournalTests testAmbiguousImportedIdentityRequiresExplicitLink]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal]' started.
+2026-11-09 19:11:20.369133-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:20.372557-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal]' passed (0.007 seconds).
+Test Case '-[PlenaraTests.JournalTests testBackupRestoresNotesHistoryAndProtectsAgainstInvalidInput]' started.
+2026-11-09 19:11:20.376395-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:20.376931-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:20.378475-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:20.378664-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:20.379074-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testBackupRestoresNotesHistoryAndProtectsAgainstInvalidInput]' passed (0.006 seconds).
+Test Case '-[PlenaraTests.JournalTests testCalendarDaysAcrossDaylightSaving]' started.
+Test Case '-[PlenaraTests.JournalTests testCalendarDaysAcrossDaylightSaving]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testConnectionPersistsAndDeleteRecomputes]' started.
+2026-11-09 19:11:20.383689-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:20.384188-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:20.384996-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:20.385837-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:20.386048-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:20.386888-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testConnectionPersistsAndDeleteRecomputes]' passed (0.004 seconds).
+Test Case '-[PlenaraTests.JournalTests testCorruptJournalIsNotOverwritten]' started.
+2026-11-09 19:11:20.388438-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: true
+2026-11-09 19:11:20.388838-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testCorruptJournalIsNotOverwritten]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.JournalTests testDatedRemindersHaveVisiblePersonContext]' started.
+Test Case '-[PlenaraTests.JournalTests testDatedRemindersHaveVisiblePersonContext]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testFailedDiskWriteNeverPublishesUnsavedState]' started.
+2026-11-09 19:11:20.391041-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:20.391884-0800 Plenara[28843:33222025] [journal] Journal save failed
+Test Case '-[PlenaraTests.JournalTests testFailedDiskWriteNeverPublishesUnsavedState]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.JournalTests testFeelingsAndIntentionsNeverCreateOrAlterReminderRhythms]' started.
+Test Case '-[PlenaraTests.JournalTests testFeelingsAndIntentionsNeverCreateOrAlterReminderRhythms]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testImportDeduplicatesPreservesJournalAndCanLinkManualPerson]' started.
+Test Case '-[PlenaraTests.JournalTests testImportDeduplicatesPreservesJournalAndCanLinkManualPerson]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testIndependentClassificationAndCombinedFilters]' started.
+Test Case '-[PlenaraTests.JournalTests testIndependentClassificationAndCombinedFilters]' passed (0.000 seconds).
+Test Case '-[PlenaraTests.JournalTests testLargeSelfExportedBackupCanBeRestored]' started.
+2026-11-09 19:11:20.395095-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.113841-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.275639-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.510691-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testLargeSelfExportedBackupCanBeRestored]' passed (1.203 seconds).
+Test Case '-[PlenaraTests.JournalTests testOrganizationFailedSaveIsAtomicAndKeepsUndoAvailable]' started.
+2026-11-09 19:11:21.602210-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.603718-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.616664-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.626466-0800 Plenara[28843:33222025] [journal] Journal save failed
+2026-11-09 19:11:21.626904-0800 Plenara[28843:33222025] [journal] Journal save failed
+2026-11-09 19:11:21.628239-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.628437-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.JournalTests testOrganizationFailedSaveIsAtomicAndKeepsUndoAvailable]' passed (0.028 seconds).
+Test Case '-[PlenaraTests.JournalTests testOrganizationOnlyChangesChosenPeopleAndFieldsAndUndoPreservesNewNotes]' started.
+2026-11-09 19:11:21.629687-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.630252-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.631178-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.631368-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.632243-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.633161-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.633338-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.634210-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.635138-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testOrganizationOnlyChangesChosenPeopleAndFieldsAndUndoPreservesNewNotes]' passed (0.006 seconds).
+Test Case '-[PlenaraTests.JournalTests testOrganizationUndoRejectsNewerChoicesAndRestoresNoDeletedPeople]' started.
+2026-11-09 19:11:21.636272-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.636804-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.637646-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.638548-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.639392-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.640418-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.641306-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testOrganizationUndoRejectsNewerChoicesAndRestoresNoDeletedPeople]' passed (0.006 seconds).
+Test Case '-[PlenaraTests.JournalTests testOutreachDoesNotResetConnectionAndGivesReplySpace]' started.
+Test Case '-[PlenaraTests.JournalTests testOutreachDoesNotResetConnectionAndGivesReplySpace]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders]' started.
+2026-11-09 19:11:21.643183-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.643987-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.JournalTests testReminderCalendarPreservesNonGregorianFollowUp]' started.
+Test Case '-[PlenaraTests.JournalTests testReminderCalendarPreservesNonGregorianFollowUp]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.JournalTests testReminderCapacityKeepsNearestDatesAcrossKinds]' started.
+Test Case '-[PlenaraTests.JournalTests testReminderCapacityKeepsNearestDatesAcrossKinds]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.JournalTests testRemindersHonorQuietHoursAndDoNotExposePrivateNotes]' started.
+Test Case '-[PlenaraTests.JournalTests testRemindersHonorQuietHoursAndDoNotExposePrivateNotes]' passed (0.000 seconds).
+Test Case '-[PlenaraTests.JournalTests testSnoozePauseUnknownContactAndStableSuggestions]' started.
+Test Case '-[PlenaraTests.JournalTests testSnoozePauseUnknownContactAndStableSuggestions]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testUpgradePreservesImportedJournalAndOriginalFile]' started.
+2026-11-09 19:11:21.653800-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.656413-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.657535-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.658258-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.658439-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.658519-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.658975-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.659825-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testUpgradePreservesImportedJournalAndOriginalFile]' passed (0.008 seconds).
+Test Suite 'JournalTests' passed at 2026-11-09 19:11:21.661.
+	 Executed 22 tests, with 0 failures (0 unexpected) in 1.284 (1.295) seconds
+Test Suite 'RankingTests' started at 2026-11-09 19:11:21.661.
+Test Case '-[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth]' started.
+Test Case '-[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth]' passed (0.009 seconds).
+Test Case '-[PlenaraTests.RankingTests testEligibilityHonorsCustomRhythmsUnknownHistoryAndReplySpace]' started.
+Test Case '-[PlenaraTests.RankingTests testEligibilityHonorsCustomRhythmsUnknownHistoryAndReplySpace]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.RankingTests testFullOrderUsesTwoGroupsRatiosAndExactTies]' started.
+Test Case '-[PlenaraTests.RankingTests testFullOrderUsesTwoGroupsRatiosAndExactTies]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation]' started.
+Test Case '-[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.RankingTests testMomentsAndNotesRecomputeRealPriorityWithoutInventingContact]' started.
+Test Case '-[PlenaraTests.RankingTests testMomentsAndNotesRecomputeRealPriorityWithoutInventingContact]' passed (0.001 seconds).
+Test Suite 'RankingTests' passed at 2026-11-09 19:11:21.696.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.012 (0.035) seconds
+Test Suite 'WorkflowTests' started at 2026-11-09 19:11:21.696.
+Test Case '-[PlenaraTests.WorkflowTests testBuild1007UpgradeKeepsImportsAndRecoveryBytes]' started.
+2026-11-09 19:11:21.697699-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.699502-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.700465-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.700727-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.700801-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.701409-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testBuild1007UpgradeKeepsImportsAndRecoveryBytes]' passed (0.006 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testContactRoutesPreferUserChoiceAndKeepAddressesDistinct]' started.
+Test Case '-[PlenaraTests.WorkflowTests testContactRoutesPreferUserChoiceAndKeepAddressesDistinct]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testFiveGuestEventIsOneRecordAndRecomputesEveryHistory]' started.
+2026-11-09 19:11:21.770655-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.771348-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.772561-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.773152-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.773270-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.773933-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.775243-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.776280-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.777364-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testFiveGuestEventIsOneRecordAndRecomputesEveryHistory]' passed (0.075 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testGroupValidationAndFailedSaveAreAtomic]' started.
+2026-11-09 19:11:21.871650-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.873038-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:21.873308-0800 Plenara[28843:33222025] [journal] Journal save failed
+2026-11-09 19:11:21.873450-0800 Plenara[28843:33222025] [journal] Journal save failed
+2026-11-09 19:11:21.875275-0800 Plenara[28843:33222025] [journal] Journal save failed
+2026-11-09 19:11:21.876149-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testGroupValidationAndFailedSaveAreAtomic]' passed (0.098 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testHandoffSurvivesReopenAndRequiresExactlyOneConfirmedSave]' started.
+2026-11-09 19:11:21.877356-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:21.878104-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.004709-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.005010-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:22.006063-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.007045-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.007914-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.008085-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:22.008228-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testHandoffSurvivesReopenAndRequiresExactlyOneConfirmedSave]' passed (0.132 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmSetupRequiresChoiceAndUndoPreservesOtherEdits]' started.
+2026-11-09 19:11:22.009659-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:22.024136-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.025292-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.027245-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.028207-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.029118-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.029971-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmSetupRequiresChoiceAndUndoPreservesOtherEdits]' passed (0.021 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoAndSetupFailureDoNotPublishOrConsumeReceipt]' started.
+2026-11-09 19:11:22.031284-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:22.031690-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.032471-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.067108-0800 Plenara[28843:33222025] [journal] Journal save failed
+2026-11-09 19:11:22.067559-0800 Plenara[28843:33222025] [journal] Journal save failed
+2026-11-09 19:11:22.068788-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.069672-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.070504-0800 Plenara[28843:33222025] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoAndSetupFailureDoNotPublishOrConsumeReceipt]' passed (0.040 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testThreadsResolveAndPostponeWithoutChangingMemoryOrConnection]' started.
+2026-11-09 19:11:22.071836-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+2026-11-09 19:11:22.072229-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.072952-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.073773-0800 Plenara[28843:33222025] [journal] Journal committed
+2026-11-09 19:11:22.073930-0800 Plenara[28843:33222025] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testThreadsResolveAndPostponeWithoutChangingMemoryOrConnection]' passed (0.003 seconds).
+Test Suite 'WorkflowTests' passed at 2026-11-09 19:11:22.082.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.376 (0.386) seconds
+Test Suite 'PlenaraTests.xctest' passed at 2026-11-09 19:11:22.082.
+	 Executed 35 tests, with 0 failures (0 unexpected) in 1.672 (1.716) seconds
+Test Suite 'All tests' passed at 2026-11-09 19:11:22.082.
+	 Executed 35 tests, with 0 failures (0 unexpected) in 1.672 (1.717) seconds
+2026-11-09 19:11:22.448 xcodebuild[28699:33220193] [MT] IDETestOperationsObserverDebug: 8.334 elapsed -- Testing started completed.
+2026-11-09 19:11:22.448 xcodebuild[28699:33220193] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 19:11:22.448 xcodebuild[28699:33220193] [MT] IDETestOperationsObserverDebug: 8.334 sec, +8.334 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-191105.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -1,0 +1,12 @@
+[
+  {
+    "fault": "stale-log",
+    "rejected": true,
+    "isolatedTemporaryFilesOnly": true
+  },
+  {
+    "fault": "restoration",
+    "rejected": true,
+    "isolatedTemporaryFilesOnly": true
+  }
+]

@@ -1,0 +1,21 @@
+
+======================================================================
+FAIL: test_build_failure_cannot_reuse_an_old_red_test_log (__main__.CalibrationInterruptionTests) (runner='calibrate-workflows.py')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/w6/7h7tcyq174ggtk9_vy5sjhbm0000gq/T/tmpborm587z/tool/test_calibrate_workflows.py", line 54, in test_build_failure_cannot_reuse_an_old_red_test_log
+    self.assertNotEqual(result.returncode,0)
+AssertionError: 0 == 0
+
+======================================================================
+FAIL: test_build_failure_cannot_reuse_an_old_red_test_log (__main__.CalibrationInterruptionTests) (runner='calibrate-quick-log.py')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/w6/7h7tcyq174ggtk9_vy5sjhbm0000gq/T/tmpborm587z/tool/test_calibrate_workflows.py", line 55, in test_build_failure_cannot_reuse_an_old_red_test_log
+    self.assertIn('FileNotFoundError',result.stdout.decode(), 'A build failure must never be accepted using an earlier test log')
+AssertionError: 'FileNotFoundError' not found in 'Rejected: channel selection\nRejected: saved note\nRestored source. Rebuild and run precheck before delivery.\nTraceback (most recent call last):\n  File "/private/var/folders/w6/7h7tcyq174ggtk9_vy5sjhbm0000gq/T/tmpfyr6dcu2/tool/calibrate-quick-log.py", line 25, in <module>\n    start = text.index(\'                if !store.journal.people.isEmpty {\')\nValueError: substring not found\n' : A build failure must never be accepted using an earlier test log
+
+----------------------------------------------------------------------
+Ran 1 test in 0.484s
+
+FAILED (failures=2)

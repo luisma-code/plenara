@@ -1,0 +1,22 @@
+PASS: 926 archived files verified; old app, CI, and project guidance inert
+Prototype SHA-256: 03fee857911c6114c68b6387e3372ba26a10393f493de405a690811e50f8d718
+PASS connection
+PASS outreach
+PASS people
+PASS import
+PASS notes
+PASS snooze
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.051s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.563s
+
+OK
+⚙️  Generating plists...
+⚙️  Generating project...
+⚙️  Writing project...
+Created project at /Users/luisma.code/Documents/code/plenara/plenara/ios/Plenara.xcodeproj

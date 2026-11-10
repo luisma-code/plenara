@@ -1,0 +1,384 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-195834.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraTests/WorkflowTests" "-only-testing:PlenaraUITests/WorkflowUITests/testOptionalCustomRhythmSetupPreservesUnknownHistoryAndUndo" "-only-testing:PlenaraUITests/WorkflowUITests/testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-195834.xcresult
+
+2026-11-09 19:58:40.137626-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.739264-0800 Plenara[54384:33491472] [reminders] Local reminders refreshed
+2026-11-09 19:58:40.752784-0800 Plenara[54384:33491472] [reminders] Local reminders refreshed
+Test Suite 'Selected tests' started at 2026-11-09 19:58:40.762.
+Test Suite 'PlenaraTests.xctest' started at 2026-11-09 19:58:40.763.
+Test Suite 'WorkflowTests' started at 2026-11-09 19:58:40.763.
+Test Case '-[PlenaraTests.WorkflowTests testBuild1007UpgradeKeepsImportsAndRecoveryBytes]' started.
+2026-11-09 19:58:40.770479-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.774039-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.775078-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.775389-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.775480-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.776125-0800 Plenara[54384:33491472] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testBuild1007UpgradeKeepsImportsAndRecoveryBytes]' passed (0.013 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testContactRoutesPreferUserChoiceAndKeepAddressesDistinct]' started.
+Test Case '-[PlenaraTests.WorkflowTests testContactRoutesPreferUserChoiceAndKeepAddressesDistinct]' passed (0.009 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testFailedHandoffConfirmationRetainsDraftAndNoMoment]' started.
+2026-11-09 19:58:40.788135-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.790683-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.792668-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.796467-0800 Plenara[54384:33491472] [journal] Journal save failed
+2026-11-09 19:58:40.797318-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.798247-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.798406-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.798537-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testFailedHandoffConfirmationRetainsDraftAndNoMoment]' passed (0.012 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testFiveGuestEventIsOneRecordAndRecomputesEveryHistory]' started.
+2026-11-09 19:58:40.805588-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.806318-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.807553-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.809911-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.810018-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.810709-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.813116-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.814354-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.815395-0800 Plenara[54384:33491472] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testFiveGuestEventIsOneRecordAndRecomputesEveryHistory]' passed (0.017 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testGroupValidationAndFailedSaveAreAtomic]' started.
+2026-11-09 19:58:40.816861-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.817335-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.820257-0800 Plenara[54384:33491472] [journal] Journal save failed
+2026-11-09 19:58:40.820374-0800 Plenara[54384:33491472] [journal] Journal save failed
+2026-11-09 19:58:40.821421-0800 Plenara[54384:33491472] [journal] Journal save failed
+2026-11-09 19:58:40.821927-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testGroupValidationAndFailedSaveAreAtomic]' passed (0.006 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testHandoffSurvivesReopenAndRequiresExactlyOneConfirmedSave]' started.
+2026-11-09 19:58:40.823186-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.823676-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.824586-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.824760-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.825836-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.826676-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.827483-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.827624-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.827763-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testHandoffSurvivesReopenAndRequiresExactlyOneConfirmedSave]' passed (0.006 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome]' started.
+2026-11-09 19:58:40.829019-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:40.829505-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.830327-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:40.830498-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/WorkflowTests.swift:148: error: -[PlenaraTests.WorkflowTests testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome] : XCTAssertEqual failed: ("2026-11-10 03:58:40 +0000") is not equal to ("2026-11-08 03:58:40 +0000") - An overnight draft must default to its original date
+2026-11-09 19:58:41.090985-0800 Plenara[54384:33491472] [journal] Journal committed
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/WorkflowTests.swift:150: error: -[PlenaraTests.WorkflowTests testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome] : XCTAssertEqual failed: ("Optional(2026-11-10 03:58:40 +0000)") is not equal to ("Optional(2026-11-08 03:58:40 +0000)")
+2026-11-09 19:58:41.093680-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:41.094156-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.095053-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.095241-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/WorkflowTests.swift:148: error: -[PlenaraTests.WorkflowTests testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome] : XCTAssertEqual failed: ("2026-11-10 03:58:41 +0000") is not equal to ("2026-11-08 03:58:41 +0000") - An overnight draft must default to its original date
+2026-11-09 19:58:41.098475-0800 Plenara[54384:33491472] [journal] Journal committed
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/WorkflowTests.swift:150: error: -[PlenaraTests.WorkflowTests testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome] : XCTAssertEqual failed: ("Optional(2026-11-10 03:58:41 +0000)") is not equal to ("Optional(2026-11-08 03:58:41 +0000)")
+Test Case '-[PlenaraTests.WorkflowTests testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome]' failed (0.271 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmSetupRequiresChoiceAndUndoPreservesOtherEdits]' started.
+2026-11-09 19:58:41.100684-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:41.101238-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.102283-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.104973-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.105960-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.106942-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.107882-0800 Plenara[54384:33491472] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmSetupRequiresChoiceAndUndoPreservesOtherEdits]' passed (0.008 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoAndSetupFailureDoNotPublishOrConsumeReceipt]' started.
+2026-11-09 19:58:41.109101-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:41.109546-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.110427-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.119903-0800 Plenara[54384:33491472] [journal] Journal save failed
+2026-11-09 19:58:41.120378-0800 Plenara[54384:33491472] [journal] Journal save failed
+2026-11-09 19:58:41.122899-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.123821-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.124695-0800 Plenara[54384:33491472] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoAndSetupFailureDoNotPublishOrConsumeReceipt]' passed (0.017 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoOnlyRestoresFieldsItChanged]' started.
+2026-11-09 19:58:41.126036-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:41.126434-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.127222-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.128121-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.128887-0800 Plenara[54384:33491472] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoOnlyRestoresFieldsItChanged]' passed (0.004 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testThreadsResolveAndPostponeWithoutChangingMemoryOrConnection]' started.
+2026-11-09 19:58:41.130046-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:41.130430-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.131234-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.132160-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.132309-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testThreadsResolveAndPostponeWithoutChangingMemoryOrConnection]' passed (0.003 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testUnchangedRhythmDoesNotPretendToReplaceEarlierUndo]' started.
+2026-11-09 19:58:41.133483-0800 Plenara[54384:33491472] [journal] Journal opened; read-only: false
+2026-11-09 19:58:41.133874-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.134706-0800 Plenara[54384:33491472] [journal] Journal committed
+2026-11-09 19:58:41.135643-0800 Plenara[54384:33491472] [journal] Journal committed
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/WorkflowTests.swift:159: error: -[PlenaraTests.WorkflowTests testUnchangedRhythmDoesNotPretendToReplaceEarlierUndo] : XCTAssertFalse failed - An unchanged batch must not report a new save
+2026-11-09 19:58:41.137334-0800 Plenara[54384:33491472] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testUnchangedRhythmDoesNotPretendToReplaceEarlierUndo]' failed (0.005 seconds).
+Test Suite 'WorkflowTests' failed at 2026-11-09 19:58:41.138.
+	 Executed 12 tests, with 5 failures (0 unexpected) in 0.371 (0.375) seconds
+Test Suite 'PlenaraTests.xctest' failed at 2026-11-09 19:58:41.138.
+	 Executed 12 tests, with 5 failures (0 unexpected) in 0.371 (0.375) seconds
+Test Suite 'Selected tests' failed at 2026-11-09 19:58:41.138.
+	 Executed 12 tests, with 5 failures (0 unexpected) in 0.371 (0.376) seconds
+2026-11-09 19:58:42.280577-0800 PlenaraUITests-Runner[54402:33491741] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-09 19:58:42.913.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 19:58:42.914.
+Test Suite 'WorkflowUITests' started at 2026-11-09 19:58:42.914.
+Test Case '-[PlenaraUITests.WorkflowUITests testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen]' started.
+    t =     0.00s Start Test at 2026-11-09 19:58:42.915
+    t =     0.06s Set Up
+    t =     0.06s Open com.plenara.plenaraApp
+    t =     0.06s     Launch com.plenara.plenaraApp
+2026-11-09 19:58:43.210 xcodebuild[54368:33491218] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:58:43.210 xcodebuild[54368:33491218] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.61s         Setting up automation session
+objc[54402]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1068f4310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10668c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.46s         Wait for com.plenara.plenaraApp to idle
+    t =     3.01s Find the Target Application 'com.plenara.plenaraApp'
+    t =     3.20s Checking existence of `"tab-0" Button`
+    t =     3.31s Find the "tab-0" Button
+    t =     3.50s Find the "tab-0" Button
+    t =     3.64s Checking existence of `"reach-out-Sofia Chen" Button`
+    t =     3.71s Find the "reach-out-Sofia Chen" Button
+    t =     3.76s Find the "reach-out-Sofia Chen" Button
+    t =     3.83s Press Target Application 'com.plenara.plenaraApp'[0.50, 0.64] for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.50, 0.39] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =     3.83s     Wait for com.plenara.plenaraApp to idle
+    t =     3.83s     Find the Target Application 'com.plenara.plenaraApp'
+    t =     3.86s     Check for interrupting elements affecting "Plenara" Application
+    t =     3.92s     Synthesize event
+    t =     3.92s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     3.94s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     3.96s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     3.98s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.00s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.76s     Wait for com.plenara.plenaraApp to idle
+    t =     4.76s Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.79s Checking existence of `"tab-0" Button`
+    t =     4.82s Find the "tab-0" Button
+    t =     4.86s Find the "tab-0" Button
+    t =     4.90s Checking existence of `"reach-out-Sofia Chen" Button`
+    t =     4.92s Find the "reach-out-Sofia Chen" Button
+    t =     4.97s Find the "reach-out-Sofia Chen" Button
+    t =     5.07s Tap "reach-out-Sofia Chen" Button
+    t =     5.07s     Wait for com.plenara.plenaraApp to idle
+    t =     5.08s     Find the "reach-out-Sofia Chen" Button
+    t =     5.12s     Check for interrupting elements affecting "reach-out-Sofia Chen" Button
+    t =     5.15s     Synthesize event
+    t =     5.44s     Wait for com.plenara.plenaraApp to idle
+    t =     5.56s Waiting 5.0s for "contact-route-Email-sofia@example.invalid" Button to exist
+    t =     6.61s     Checking `Expect predicate `existsNoRetry == 1` for object "contact-route-Email-sofia@example.invalid" Button`
+    t =     6.61s         Checking existence of `"contact-route-Email-sofia@example.invalid" Button`
+    t =     6.74s Find the Target Application 'com.plenara.plenaraApp'
+    t =     6.94s Added attachment named 'Preferred contact routes'
+    t =     6.94s Tap "contact-route-Email-sofia@example.invalid" Button
+    t =     6.94s     Wait for com.plenara.plenaraApp to idle
+    t =     6.95s     Find the "contact-route-Email-sofia@example.invalid" Button
+    t =     7.01s     Check for interrupting elements affecting "contact-route-Email-sofia@example.invalid" Button
+    t =     7.06s     Synthesize event
+    t =     7.36s     Wait for com.plenara.plenaraApp to idle
+    t =     7.74s Waiting 5.0s for "review-contact-draft" Button to exist
+    t =     8.78s     Checking `Expect predicate `existsNoRetry == 1` for object "review-contact-draft" Button`
+    t =     8.78s         Checking existence of `"review-contact-draft" Button`
+    t =     8.81s Checking existence of `"handoff-connected" Button`
+    t =     8.85s Pressing Home button
+    t =     9.32s Wait for com.plenara.plenaraApp to become Running Background
+    t =     9.92s Open com.plenara.plenaraApp
+    t =     9.92s     Activate com.plenara.plenaraApp
+    t =     9.99s         Wait for com.plenara.plenaraApp to idle
+    t =    10.07s Waiting 8.0s for "handoff-outreach" Button to exist
+    t =    11.13s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    11.13s         Checking existence of `"handoff-outreach" Button`
+    t =    11.17s         Capturing element debug description
+    t =    12.13s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    12.13s         Checking existence of `"handoff-outreach" Button`
+    t =    12.16s         Capturing element debug description
+    t =    13.11s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    13.11s         Checking existence of `"handoff-outreach" Button`
+    t =    13.14s         Capturing element debug description
+    t =    14.10s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    14.10s         Checking existence of `"handoff-outreach" Button`
+    t =    14.14s         Capturing element debug description
+    t =    15.09s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    15.09s         Checking existence of `"handoff-outreach" Button`
+    t =    15.18s         Capturing element debug description
+    t =    16.11s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    16.12s         Checking existence of `"handoff-outreach" Button`
+    t =    16.16s         Capturing element debug description
+    t =    17.10s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    17.10s         Checking existence of `"handoff-outreach" Button`
+    t =    17.16s         Capturing element debug description
+    t =    18.07s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    18.07s         Checking existence of `"handoff-outreach" Button`
+    t =    18.10s         Capturing element debug description
+    t =    18.10s     Checking existence of `"handoff-outreach" Button`
+    t =    18.13s Collecting debug information to assist test failure triage
+    t =    18.13s     Requesting snapshot of accessibility hierarchy for app with pid 54420
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/WorkflowUITests.swift:92: error: -[PlenaraUITests.WorkflowUITests testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen] : XCTAssertTrue failed - Returning from a selected route must offer confirmation, never infer contact
+    t =    18.27s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen]' failed (18.528 seconds).
+Test Case '-[PlenaraUITests.WorkflowUITests testOptionalCustomRhythmSetupPreservesUnknownHistoryAndUndo]' started.
+    t =     0.00s Start Test at 2026-11-09 19:59:01.444
+    t =     0.03s Set Up
+    t =     0.03s Open com.plenara.plenaraApp
+    t =     0.03s     Launch com.plenara.plenaraApp
+    t =     0.03s         Terminate com.plenara.plenaraApp:54420
+2026-11-09 19:59:02.496 xcodebuild[54368:33491218] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:59:02.496 xcodebuild[54368:33491218] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.27s         Setting up automation session
+    t =     3.45s         Wait for com.plenara.plenaraApp to idle
+    t =     6.99s Tap "tab-1" Button
+    t =     6.99s     Wait for com.plenara.plenaraApp to idle
+    t =     7.01s     Find the "tab-1" Button
+    t =     7.19s     Check for interrupting elements affecting "tab-1" Button
+    t =     7.26s     Synthesize event
+    t =     7.70s     Wait for com.plenara.plenaraApp to idle
+    t =     8.01s Tap "people-rhythm-setup" Button
+    t =     8.01s     Wait for com.plenara.plenaraApp to idle
+    t =     8.01s     Find the "people-rhythm-setup" Button
+    t =     8.12s     Check for interrupting elements affecting "people-rhythm-setup" Button
+    t =     8.17s     Synthesize event
+    t =     8.53s     Wait for com.plenara.plenaraApp to idle
+    t =     9.39s Waiting 5.0s for "setup-rhythm-selection" StaticText to exist
+    t =    10.45s     Checking `Expect predicate `existsNoRetry == 1` for object "setup-rhythm-selection" StaticText`
+    t =    10.45s         Checking existence of `"setup-rhythm-selection" StaticText`
+    t =    10.82s Find the "setup-rhythm-selection" StaticText
+    t =    11.01s Waiting 5.0s for SearchField (First Match) to exist
+    t =    12.03s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    12.03s         Checking existence of `SearchField (First Match)`
+    t =    12.08s Tap SearchField (First Match)
+    t =    12.09s     Wait for com.plenara.plenaraApp to idle
+    t =    12.09s     Find the SearchField (First Match)
+    t =    12.14s     Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    12.23s     Synthesize event
+    t =    12.54s     Wait for com.plenara.plenaraApp to idle
+    t =    13.13s Find the "Find a person or place" SearchField
+    t =    13.31s Find the "Find a person or place" SearchField
+    t =    13.43s Type 'Mum
+' into "Find a person or place" SearchField
+    t =    13.43s     Wait for com.plenara.plenaraApp to idle
+    t =    13.64s     Find the "Find a person or place" SearchField
+    t =    13.69s     Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    13.77s     Synthesize event
+    t =    14.04s     Wait for com.plenara.plenaraApp to idle
+    t =    14.36s Find the "rhythm-person-Mum" Button
+    t =    14.45s Waiting 5.0s for SearchField (First Match) to exist
+    t =    15.46s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    15.46s         Checking existence of `SearchField (First Match)`
+    t =    15.48s Tap SearchField (First Match)
+    t =    15.48s     Wait for com.plenara.plenaraApp to idle
+    t =    15.48s     Find the SearchField (First Match)
+    t =    15.51s     Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    15.56s     Synthesize event
+    t =    15.85s     Wait for com.plenara.plenaraApp to idle
+    t =    16.15s Find the "Find a person or place" SearchField
+    t =    16.37s Find the "Find a person or place" SearchField
+    t =    16.42s Type '' into "Find a person or place" SearchField
+    t =    16.42s     Wait for com.plenara.plenaraApp to idle
+    t =    16.42s     Find the "Find a person or place" SearchField
+    t =    16.49s     Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    16.54s     Synthesize event
+    t =    16.79s     Wait for com.plenara.plenaraApp to idle
+    t =    16.79s Type 'Sofia
+' into "Find a person or place" SearchField
+    t =    16.79s     Wait for com.plenara.plenaraApp to idle
+    t =    16.80s     Find the "Find a person or place" SearchField
+    t =    16.90s     Check for interrupting elements affecting "Find a person or place" SearchField
+    t =    16.96s     Synthesize event
+    t =    17.26s     Wait for com.plenara.plenaraApp to idle
+    t =    17.48s Find the Target Application 'com.plenara.plenaraApp'
+    t =    17.52s Checking existence of `"tab-0" Button`
+    t =    17.58s Find the "tab-0" Button
+    t =    17.64s Find the Target Application 'com.plenara.plenaraApp'
+    t =    17.68s Checking existence of `"rhythm-person-Sofia Chen" Button`
+    t =    17.73s Find the "rhythm-person-Sofia Chen" Button
+    t =    17.78s Find the "rhythm-person-Sofia Chen" Button
+    t =    17.85s Press Target Application 'com.plenara.plenaraApp'[0.50, 0.64] for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.50, 0.39] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    17.85s     Wait for com.plenara.plenaraApp to idle
+    t =    17.86s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    17.92s     Check for interrupting elements affecting "Plenara" Application
+    t =    18.08s     Synthesize event
+    t =    18.08s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    18.12s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    18.17s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    18.21s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    18.25s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    19.03s     Wait for com.plenara.plenaraApp to idle
+    t =    19.11s Find the Target Application 'com.plenara.plenaraApp'
+    t =    19.23s Checking existence of `"tab-0" Button`
+    t =    19.34s Find the "tab-0" Button
+    t =    19.44s Find the Target Application 'com.plenara.plenaraApp'
+    t =    19.49s Checking existence of `"rhythm-person-Sofia Chen" Button`
+    t =    19.58s Find the "rhythm-person-Sofia Chen" Button
+    t =    19.73s Find the "rhythm-person-Sofia Chen" Button
+    t =    19.88s Tap "rhythm-person-Sofia Chen" Button
+    t =    19.88s     Wait for com.plenara.plenaraApp to idle
+    t =    20.15s     Find the "rhythm-person-Sofia Chen" Button
+    t =    20.31s     Check for interrupting elements affecting "rhythm-person-Sofia Chen" Button
+    t =    20.45s     Synthesize event
+    t =    20.86s     Wait for com.plenara.plenaraApp to idle
+    t =    20.87s Find the "setup-rhythm-cadence" Button
+    t =    20.94s Tap "setup-rhythm-cadence" Button
+    t =    20.94s     Wait for com.plenara.plenaraApp to idle
+    t =    20.94s     Find the "setup-rhythm-cadence" Button
+    t =    21.01s     Check for interrupting elements affecting "setup-rhythm-cadence" Button
+    t =    21.27s     Synthesize event
+    t =    21.56s     Wait for com.plenara.plenaraApp to idle
+    t =    22.91s Tap "Every 2 weeks" Button
+    t =    22.91s     Wait for com.plenara.plenaraApp to idle
+    t =    22.92s     Find the "Every 2 weeks" Button
+    t =    22.95s     Check for interrupting elements affecting "Every 2 weeks" Button
+    t =    23.01s     Synthesize event
+    t =    23.30s     Wait for com.plenara.plenaraApp to idle
+    t =    24.84s Find the Target Application 'com.plenara.plenaraApp'
+    t =    24.88s Checking existence of `"tab-0" Button`
+    t =    24.94s Find the "tab-0" Button
+    t =    25.01s Find the Target Application 'com.plenara.plenaraApp'
+    t =    25.05s Checking existence of `"setup-rhythm-custom-Increment" Button`
+    t =    25.10s Find the "setup-rhythm-custom-Increment" Button
+    t =    25.16s Find the "setup-rhythm-custom-Increment" Button
+    t =    25.22s Tap "setup-rhythm-custom-Increment" Button
+    t =    25.22s     Wait for com.plenara.plenaraApp to idle
+    t =    25.23s     Find the "setup-rhythm-custom-Increment" Button
+    t =    25.28s     Check for interrupting elements affecting "setup-rhythm-custom-Increment" Button
+    t =    25.33s     Synthesize event
+    t =    25.62s     Wait for com.plenara.plenaraApp to idle
+    t =    25.62s Find the "setup-rhythm-cadence" Button
+    t =    25.69s Find the "setup-rhythm-cadence" Button
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/WorkflowUITests.swift:75: error: -[PlenaraUITests.WorkflowUITests testOptionalCustomRhythmSetupPreservesUnknownHistoryAndUndo] : XCTAssertTrue failed - The picker must name a custom rhythm
+    t =    25.75s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testOptionalCustomRhythmSetupPreservesUnknownHistoryAndUndo]' failed (26.010 seconds).
+Test Suite 'WorkflowUITests' failed at 2026-11-09 19:59:27.454.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 44.538 (44.540) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-09 19:59:27.455.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 44.538 (44.541) seconds
+Test Suite 'Selected tests' failed at 2026-11-09 19:59:27.456.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 44.538 (44.543) seconds
+2026-11-09 19:59:28.004 xcodebuild[54368:33491310]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-09 19:59:28.011 xcodebuild[54368:33491218] [MT] IDETestOperationsObserverDebug: 50.389 elapsed -- Testing started completed.
+2026-11-09 19:59:28.011 xcodebuild[54368:33491218] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 19:59:28.011 xcodebuild[54368:33491218] [MT] IDETestOperationsObserverDebug: 50.389 sec, +50.389 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-195834.xcresult
+
+Failing tests:
+	WorkflowTests.testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome()
+	WorkflowTests.testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome()
+	WorkflowTests.testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome()
+	WorkflowTests.testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome()
+	WorkflowTests.testUnchangedRhythmDoesNotPretendToReplaceEarlierUndo()
+	WorkflowUITests.testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen()
+	WorkflowUITests.testOptionalCustomRhythmSetupPreservesUnknownHistoryAndUndo()
+
+** TEST EXECUTE FAILED **
+
+Testing started

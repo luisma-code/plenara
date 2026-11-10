@@ -1,0 +1,25 @@
+{
+  "mode": "geometry",
+  "faults": [
+    [
+      "ReconnectionSection.swift",
+      ".frame(minHeight: 44).accessibilityIdentifier(\"suggestions-expand\")",
+      ".frame(height: 43).accessibilityIdentifier(\"suggestions-expand\")"
+    ],
+    [
+      "Theme.swift",
+      "configuration.label.frame(minWidth: 44, minHeight: 44)",
+      "configuration.label.frame(minWidth: 44, minHeight: 43)"
+    ]
+  ],
+  "rejected": true,
+  "expectedFailures": [
+    "Touch targets must be at least 44 points"
+  ],
+  "minimumPoints": 44,
+  "tolerancePoints": 1e-06,
+  "observedGoodHeightPoints": 43.99999999999994,
+  "undersizedHeightPoints": 43,
+  "undersizedNativeTargetRejected": true,
+  "bothProductionPathsRestored": true
+}

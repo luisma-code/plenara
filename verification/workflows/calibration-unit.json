@@ -1,0 +1,38 @@
+{
+  "mode": "unit",
+  "faults": [
+    [
+      "Models.swift",
+      "[personID] + (additionalPersonIDs ?? [])",
+      "[personID]"
+    ],
+    [
+      "JournalStore.swift",
+      "try old.write(to: beforeWorkflowUpdate,",
+      "try Data(\"broken recovery\".utf8).write(to: beforeWorkflowUpdate,"
+    ],
+    [
+      "JournalStore.swift",
+      "candidate.people[i].cadence = cadence",
+      "candidate.people[i].cadence = 3"
+    ],
+    [
+      "JournalStore.swift",
+      "if id != nil { j.pendingContact = nil }",
+      "if id != nil { /* deliberately retain handled draft */ }"
+    ],
+    [
+      "JournalStore.swift",
+      "j.people[i].notes[n].followUp = followUp;",
+      "j.people[i].notes[n].followUp = nil;"
+    ]
+  ],
+  "rejected": true,
+  "expectedFailures": [
+    "testFiveGuestEventIsOneRecordAndRecomputesEveryHistory",
+    "testBuild1007UpgradeKeepsImportsAndRecoveryBytes",
+    "testRhythmSetupRequiresChoiceAndUndoPreservesOtherEdits",
+    "testHandoffSurvivesReopenAndRequiresExactlyOneConfirmedSave",
+    "testThreadsResolveAndPostponeWithoutChangingMemoryOrConnection"
+  ]
+}

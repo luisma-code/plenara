@@ -26,6 +26,7 @@ export PATH="$(dirname "$NODE"):$PATH"
 export NODE_PATH="${NODE_PATH:-$RUNTIME/node/node_modules}"
 "$NODE" tool/check-design.cjs "$@"
 python3 tool/test_testflight.py
+python3 tool/test_calibrate_workflows.py
 bash tool/test-native.sh
 cp .tmp/latest-native-result.txt .tmp/latest-full-native-result.txt
 cp .tmp/native-memory.csv .tmp/full-native-memory.csv

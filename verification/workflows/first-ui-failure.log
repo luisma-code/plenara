@@ -1,0 +1,491 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-191832.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraTests" "-only-testing:PlenaraUITests/WorkflowUITests/testSharedDinnerFivePeopleEditReopenAndCancel"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-191832.xcresult
+
+2026-11-09 19:18:58.604188-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:19:00.125117-0800 Plenara[33299:33270379] [reminders] Local reminders refreshed
+2026-11-09 19:19:00.194527-0800 Plenara[33299:33270379] [reminders] Local reminders refreshed
+Test Suite 'All tests' started at 2026-11-09 19:19:19.225.
+Test Suite 'PlenaraTests.xctest' started at 2026-11-09 19:20:50.495.
+Test Suite 'JournalTests' started at 2026-11-09 19:21:02.251.
+Test Case '-[PlenaraTests.JournalTests testAmbiguousImportedIdentityRequiresExplicitLink]' started.
+Test Case '-[PlenaraTests.JournalTests testAmbiguousImportedIdentityRequiresExplicitLink]' passed (0.473 seconds).
+Test Case '-[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal]' started.
+2026-11-09 19:21:05.299415-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:06.799058-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal]' passed (1.508 seconds).
+Test Case '-[PlenaraTests.JournalTests testBackupRestoresNotesHistoryAndProtectsAgainstInvalidInput]' started.
+2026-11-09 19:21:06.808832-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:06.810112-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:06.813412-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:06.815431-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:06.816549-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testBackupRestoresNotesHistoryAndProtectsAgainstInvalidInput]' passed (13.970 seconds).
+Test Case '-[PlenaraTests.JournalTests testCalendarDaysAcrossDaylightSaving]' started.
+Test Case '-[PlenaraTests.JournalTests testCalendarDaysAcrossDaylightSaving]' passed (0.821 seconds).
+Test Case '-[PlenaraTests.JournalTests testConnectionPersistsAndDeleteRecomputes]' started.
+2026-11-09 19:21:24.043215-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:24.046530-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:24.048894-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:24.050048-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:24.051726-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:24.052791-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testConnectionPersistsAndDeleteRecomputes]' passed (0.011 seconds).
+Test Case '-[PlenaraTests.JournalTests testCorruptJournalIsNotOverwritten]' started.
+2026-11-09 19:21:24.055798-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: true
+2026-11-09 19:21:24.056401-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testCorruptJournalIsNotOverwritten]' passed (0.004 seconds).
+Test Case '-[PlenaraTests.JournalTests testDatedRemindersHaveVisiblePersonContext]' started.
+Test Case '-[PlenaraTests.JournalTests testDatedRemindersHaveVisiblePersonContext]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testFailedDiskWriteNeverPublishesUnsavedState]' started.
+2026-11-09 19:21:24.059527-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:24.061052-0800 Plenara[33299:33270379] [journal] Journal save failed
+Test Case '-[PlenaraTests.JournalTests testFailedDiskWriteNeverPublishesUnsavedState]' passed (0.003 seconds).
+Test Case '-[PlenaraTests.JournalTests testFeelingsAndIntentionsNeverCreateOrAlterReminderRhythms]' started.
+Test Case '-[PlenaraTests.JournalTests testFeelingsAndIntentionsNeverCreateOrAlterReminderRhythms]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testImportDeduplicatesPreservesJournalAndCanLinkManualPerson]' started.
+Test Case '-[PlenaraTests.JournalTests testImportDeduplicatesPreservesJournalAndCanLinkManualPerson]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testIndependentClassificationAndCombinedFilters]' started.
+Test Case '-[PlenaraTests.JournalTests testIndependentClassificationAndCombinedFilters]' passed (0.000 seconds).
+Test Case '-[PlenaraTests.JournalTests testLargeSelfExportedBackupCanBeRestored]' started.
+2026-11-09 19:21:24.065163-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:24.730376-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:24.842089-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:25.025301-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testLargeSelfExportedBackupCanBeRestored]' passed (1.033 seconds).
+Test Case '-[PlenaraTests.JournalTests testOrganizationFailedSaveIsAtomicAndKeepsUndoAvailable]' started.
+2026-11-09 19:21:25.098373-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:25.100434-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.759877-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.806077-0800 Plenara[33299:33270379] [journal] Journal save failed
+2026-11-09 19:21:25.806541-0800 Plenara[33299:33270379] [journal] Journal save failed
+2026-11-09 19:21:25.808126-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.808637-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.JournalTests testOrganizationFailedSaveIsAtomicAndKeepsUndoAvailable]' passed (0.711 seconds).
+Test Case '-[PlenaraTests.JournalTests testOrganizationOnlyChangesChosenPeopleAndFieldsAndUndoPreservesNewNotes]' started.
+2026-11-09 19:21:25.809914-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:25.811349-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.812329-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.812506-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:25.813479-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.822244-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.822564-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:25.824136-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.826030-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testOrganizationOnlyChangesChosenPeopleAndFieldsAndUndoPreservesNewNotes]' passed (0.017 seconds).
+Test Case '-[PlenaraTests.JournalTests testOrganizationUndoRejectsNewerChoicesAndRestoresNoDeletedPeople]' started.
+2026-11-09 19:21:25.827323-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:25.828025-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.829038-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.830091-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.854388-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.855598-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:25.856580-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testOrganizationUndoRejectsNewerChoicesAndRestoresNoDeletedPeople]' passed (0.030 seconds).
+Test Case '-[PlenaraTests.JournalTests testOutreachDoesNotResetConnectionAndGivesReplySpace]' started.
+Test Case '-[PlenaraTests.JournalTests testOutreachDoesNotResetConnectionAndGivesReplySpace]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders]' started.
+2026-11-09 19:21:25.858543-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:25.859188-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.JournalTests testReminderCalendarPreservesNonGregorianFollowUp]' started.
+Test Case '-[PlenaraTests.JournalTests testReminderCalendarPreservesNonGregorianFollowUp]' passed (0.004 seconds).
+Test Case '-[PlenaraTests.JournalTests testReminderCapacityKeepsNearestDatesAcrossKinds]' started.
+Test Case '-[PlenaraTests.JournalTests testReminderCapacityKeepsNearestDatesAcrossKinds]' passed (0.003 seconds).
+Test Case '-[PlenaraTests.JournalTests testRemindersHonorQuietHoursAndDoNotExposePrivateNotes]' started.
+Test Case '-[PlenaraTests.JournalTests testRemindersHonorQuietHoursAndDoNotExposePrivateNotes]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testSnoozePauseUnknownContactAndStableSuggestions]' started.
+Test Case '-[PlenaraTests.JournalTests testSnoozePauseUnknownContactAndStableSuggestions]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.JournalTests testUpgradePreservesImportedJournalAndOriginalFile]' started.
+2026-11-09 19:21:26.003196-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.007443-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.014580-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.015886-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.016285-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.016553-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.017715-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.020064-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.JournalTests testUpgradePreservesImportedJournalAndOriginalFile]' passed (0.021 seconds).
+Test Suite 'JournalTests' passed at 2026-11-09 19:21:26.022.
+	 Executed 22 tests, with 0 failures (0 unexpected) in 18.615 (23.771) seconds
+Test Suite 'RankingTests' started at 2026-11-09 19:21:26.023.
+Test Case '-[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth]' started.
+Test Case '-[PlenaraTests.RankingTests testContextCardsRespectSuppressionAndPreferDueGrowth]' passed (0.219 seconds).
+Test Case '-[PlenaraTests.RankingTests testEligibilityHonorsCustomRhythmsUnknownHistoryAndReplySpace]' started.
+Test Case '-[PlenaraTests.RankingTests testEligibilityHonorsCustomRhythmsUnknownHistoryAndReplySpace]' passed (0.003 seconds).
+Test Case '-[PlenaraTests.RankingTests testFullOrderUsesTwoGroupsRatiosAndExactTies]' started.
+Test Case '-[PlenaraTests.RankingTests testFullOrderUsesTwoGroupsRatiosAndExactTies]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation]' started.
+Test Case '-[PlenaraTests.RankingTests testInnerCircleCannotBeDisplacedByGrowthOrCalendarRotation]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.RankingTests testMomentsAndNotesRecomputeRealPriorityWithoutInventingContact]' started.
+Test Case '-[PlenaraTests.RankingTests testMomentsAndNotesRecomputeRealPriorityWithoutInventingContact]' passed (0.001 seconds).
+Test Suite 'RankingTests' passed at 2026-11-09 19:21:26.250.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.224 (0.228) seconds
+Test Suite 'WorkflowTests' started at 2026-11-09 19:21:26.251.
+Test Case '-[PlenaraTests.WorkflowTests testBuild1007UpgradeKeepsImportsAndRecoveryBytes]' started.
+2026-11-09 19:21:26.298863-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.303614-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.305107-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.305413-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.305500-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.306103-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testBuild1007UpgradeKeepsImportsAndRecoveryBytes]' passed (0.015 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testContactRoutesPreferUserChoiceAndKeepAddressesDistinct]' started.
+Test Case '-[PlenaraTests.WorkflowTests testContactRoutesPreferUserChoiceAndKeepAddressesDistinct]' passed (0.002 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testFailedHandoffConfirmationRetainsDraftAndNoMoment]' started.
+2026-11-09 19:21:26.354194-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.354865-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.382941-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.384093-0800 Plenara[33299:33270379] [journal] Journal save failed
+2026-11-09 19:21:26.384744-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.385608-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.386061-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.386245-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testFailedHandoffConfirmationRetainsDraftAndNoMoment]' passed (0.079 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testFiveGuestEventIsOneRecordAndRecomputesEveryHistory]' started.
+2026-11-09 19:21:26.389643-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.390176-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.391210-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.391752-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.391826-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.392445-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.393705-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.394764-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.405001-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testFiveGuestEventIsOneRecordAndRecomputesEveryHistory]' passed (0.016 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testGroupValidationAndFailedSaveAreAtomic]' started.
+2026-11-09 19:21:26.406420-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.407122-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.407236-0800 Plenara[33299:33270379] [journal] Journal save failed
+2026-11-09 19:21:26.407295-0800 Plenara[33299:33270379] [journal] Journal save failed
+2026-11-09 19:21:26.408209-0800 Plenara[33299:33270379] [journal] Journal save failed
+2026-11-09 19:21:26.408668-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testGroupValidationAndFailedSaveAreAtomic]' passed (0.003 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testHandoffSurvivesReopenAndRequiresExactlyOneConfirmedSave]' started.
+2026-11-09 19:21:26.412816-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.413285-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.414116-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.414654-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.415528-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.416341-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.417963-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.418143-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.418296-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testHandoffSurvivesReopenAndRequiresExactlyOneConfirmedSave]' passed (0.007 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmSetupRequiresChoiceAndUndoPreservesOtherEdits]' started.
+2026-11-09 19:21:26.472659-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.473258-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.474321-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.477311-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.478309-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.479305-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.480196-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmSetupRequiresChoiceAndUndoPreservesOtherEdits]' passed (0.009 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoAndSetupFailureDoNotPublishOrConsumeReceipt]' started.
+2026-11-09 19:21:26.495502-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.496556-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.498655-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.508392-0800 Plenara[33299:33270379] [journal] Journal save failed
+2026-11-09 19:21:26.508837-0800 Plenara[33299:33270379] [journal] Journal save failed
+2026-11-09 19:21:26.510160-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.510960-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.511817-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoAndSetupFailureDoNotPublishOrConsumeReceipt]' passed (0.032 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoOnlyRestoresFieldsItChanged]' started.
+2026-11-09 19:21:26.514613-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.515148-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.515982-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.516792-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.522358-0800 Plenara[33299:33270379] [journal] Journal committed
+Test Case '-[PlenaraTests.WorkflowTests testRhythmUndoOnlyRestoresFieldsItChanged]' passed (0.009 seconds).
+Test Case '-[PlenaraTests.WorkflowTests testThreadsResolveAndPostponeWithoutChangingMemoryOrConnection]' started.
+2026-11-09 19:21:26.523695-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+2026-11-09 19:21:26.524117-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.525201-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.526110-0800 Plenara[33299:33270379] [journal] Journal committed
+2026-11-09 19:21:26.526252-0800 Plenara[33299:33270379] [journal] Journal opened; read-only: false
+Test Case '-[PlenaraTests.WorkflowTests testThreadsResolveAndPostponeWithoutChangingMemoryOrConnection]' passed (0.004 seconds).
+Test Suite 'WorkflowTests' passed at 2026-11-09 19:21:26.527.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.176 (0.276) seconds
+Test Suite 'PlenaraTests.xctest' passed at 2026-11-09 19:21:26.567.
+	 Executed 37 tests, with 0 failures (0 unexpected) in 19.015 (36.072) seconds
+Test Suite 'All tests' passed at 2026-11-09 19:21:26.567.
+	 Executed 37 tests, with 0 failures (0 unexpected) in 19.015 (127.342) seconds
+2026-11-09 19:21:35.049031-0800 PlenaraUITests-Runner[35001:33285689] [Default] Running tests...
+objc[35001]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x105fbc310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x105f44398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-09 19:21:52.596.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 19:21:52.600.
+Test Suite 'WorkflowUITests' started at 2026-11-09 19:21:52.600.
+Test Case '-[PlenaraUITests.WorkflowUITests testSharedDinnerFivePeopleEditReopenAndCancel]' started.
+    t =     0.01s Start Test at 2026-11-09 19:21:52.610
+    t =     0.62s Set Up
+    t =     0.68s Open com.plenara.plenaraApp
+    t =     0.69s     Launch com.plenara.plenaraApp
+2026-11-09 19:21:54.706 xcodebuild[33210:33268891] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:21:54.707 xcodebuild[33210:33268891] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    19.57s         Setting up automation session
+    t =    21.14s         Wait for com.plenara.plenaraApp to idle
+    t =    25.21s Tap "log-social-event" Button
+    t =    25.22s     Wait for com.plenara.plenaraApp to idle
+    t =    25.31s     Find the "log-social-event" Button
+    t =    25.80s     Check for interrupting elements affecting "log-social-event" Button
+    t =    25.94s     Synthesize event
+    t =    26.39s     Wait for com.plenara.plenaraApp to idle
+    t =    27.80s Waiting 5.0s for "event-title" TextField to exist
+    t =    28.83s     Checking `Expect predicate `existsNoRetry == 1` for object "event-title" TextField`
+    t =    28.83s         Checking existence of `"event-title" TextField`
+    t =    29.03s Tap "event-title" TextField
+    t =    29.03s     Wait for com.plenara.plenaraApp to idle
+    t =    29.04s     Find the "event-title" TextField
+    t =    29.12s     Check for interrupting elements affecting "event-title" TextField
+    t =    29.21s     Synthesize event
+    t =    29.56s     Wait for com.plenara.plenaraApp to idle
+    t =    30.95s Type 'Friday dinner' into "event-title" TextField
+    t =    30.95s     Wait for com.plenara.plenaraApp to idle
+    t =    31.31s     Find the "event-title" TextField
+    t =    31.43s     Check for interrupting elements affecting "event-title" TextField
+    t =    31.53s     Synthesize event
+    t =    31.95s     Wait for com.plenara.plenaraApp to idle
+    t =    31.96s Tap "event-note" TextField
+    t =    31.96s     Wait for com.plenara.plenaraApp to idle
+    t =    31.96s     Find the "event-note" TextField
+    t =    32.07s     Check for interrupting elements affecting "event-note" TextField
+    t =    32.16s     Synthesize event
+    t =    32.48s     Wait for com.plenara.plenaraApp to idle
+    t =    32.54s Type 'Made pasta and pla...' into "event-note" TextField
+    t =    32.54s     Wait for com.plenara.plenaraApp to idle
+    t =    32.67s     Find the "event-note" TextField
+    t =    32.94s     Check for interrupting elements affecting "event-note" TextField
+    t =    33.19s     Synthesize event
+    t =    34.08s     Wait for com.plenara.plenaraApp to idle
+    t =    34.09s Tap "event-people" Button
+    t =    34.09s     Wait for com.plenara.plenaraApp to idle
+    t =    34.09s     Find the "event-people" Button
+    t =    34.23s     Check for interrupting elements affecting "event-people" Button
+    t =    34.40s     Synthesize event
+    t =    34.71s     Wait for com.plenara.plenaraApp to idle
+    t =    51.65s Waiting 5.0s for SearchField (First Match) to exist
+    t =    52.65s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    53.45s         Checking existence of `SearchField (First Match)`
+    t =    54.04s Tap SearchField (First Match)
+    t =    54.04s     Wait for com.plenara.plenaraApp to idle
+    t =    54.04s     Find the SearchField (First Match)
+    t =    54.44s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    55.82s     Synthesize event
+    t =    57.00s     Wait for com.plenara.plenaraApp to idle
+    t =    57.30s Find the "Find someone" SearchField
+    t =    57.53s Find the "Find someone" SearchField
+    t =    57.61s Type 'Amara Okafor
+' into "Find someone" SearchField
+    t =    57.61s     Wait for com.plenara.plenaraApp to idle
+    t =    57.81s     Find the "Find someone" SearchField
+    t =    57.88s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    57.98s     Synthesize event
+    t =    58.41s     Wait for com.plenara.plenaraApp to idle
+    t =    58.68s Waiting 5.0s for "event-guest-Amara Okafor" Button to exist
+    t =    59.69s     Checking `Expect predicate `existsNoRetry == 1` for object "event-guest-Amara Okafor" Button`
+    t =    59.69s         Checking existence of `"event-guest-Amara Okafor" Button`
+    t =    60.00s Tap "event-guest-Amara Okafor" Button
+    t =    60.00s     Wait for com.plenara.plenaraApp to idle
+    t =    60.01s     Find the "event-guest-Amara Okafor" Button
+    t =    60.14s     Check for interrupting elements affecting "event-guest-Amara Okafor" Button
+    t =    60.23s     Synthesize event
+    t =    60.53s     Wait for com.plenara.plenaraApp to idle
+    t =    60.53s Find the "event-guest-Amara Okafor" Button
+    t =    60.62s Waiting 5.0s for SearchField (First Match) to exist
+    t =    61.69s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    61.69s         Checking existence of `SearchField (First Match)`
+    t =    61.79s Tap SearchField (First Match)
+    t =    61.79s     Wait for com.plenara.plenaraApp to idle
+    t =    61.79s     Find the SearchField (First Match)
+    t =    61.89s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    62.04s     Synthesize event
+    t =    62.36s     Wait for com.plenara.plenaraApp to idle
+    t =    63.23s Find the "Find someone" SearchField
+    t =    63.38s Find the "Find someone" SearchField
+    t =    63.45s Type '' into "Find someone" SearchField
+    t =    63.45s     Wait for com.plenara.plenaraApp to idle
+    t =    63.62s     Find the "Find someone" SearchField
+    t =    63.74s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    63.82s     Synthesize event
+    t =    64.23s     Wait for com.plenara.plenaraApp to idle
+    t =    64.50s Type 'Daniel Rivera
+' into "Find someone" SearchField
+    t =    64.50s     Wait for com.plenara.plenaraApp to idle
+    t =    64.51s     Find the "Find someone" SearchField
+    t =    64.64s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    64.74s     Synthesize event
+    t =    65.18s     Wait for com.plenara.plenaraApp to idle
+    t =    65.41s Waiting 5.0s for "event-guest-Daniel Rivera" Button to exist
+    t =    66.61s     Checking `Expect predicate `existsNoRetry == 1` for object "event-guest-Daniel Rivera" Button`
+    t =    66.64s         Checking existence of `"event-guest-Daniel Rivera" Button`
+    t =    66.95s Tap "event-guest-Daniel Rivera" Button
+    t =    66.95s     Wait for com.plenara.plenaraApp to idle
+    t =    67.02s     Find the "event-guest-Daniel Rivera" Button
+    t =    67.18s     Check for interrupting elements affecting "event-guest-Daniel Rivera" Button
+    t =    67.25s     Synthesize event
+    t =    67.55s     Wait for com.plenara.plenaraApp to idle
+    t =    67.55s Find the "event-guest-Daniel Rivera" Button
+    t =    67.79s Waiting 5.0s for SearchField (First Match) to exist
+    t =    68.81s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    68.81s         Checking existence of `SearchField (First Match)`
+    t =    68.85s Tap SearchField (First Match)
+    t =    68.85s     Wait for com.plenara.plenaraApp to idle
+    t =    68.85s     Find the SearchField (First Match)
+    t =    68.98s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    69.05s     Synthesize event
+    t =    69.37s     Wait for com.plenara.plenaraApp to idle
+    t =    69.73s Find the "Find someone" SearchField
+    t =    69.91s Find the "Find someone" SearchField
+    t =    69.98s Type '' into "Find someone" SearchField
+    t =    69.98s     Wait for com.plenara.plenaraApp to idle
+    t =    69.98s     Find the "Find someone" SearchField
+    t =    70.04s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    70.18s     Synthesize event
+    t =    70.59s     Wait for com.plenara.plenaraApp to idle
+    t =    70.61s Type 'Leo Park
+' into "Find someone" SearchField
+    t =    70.61s     Wait for com.plenara.plenaraApp to idle
+    t =    70.61s     Find the "Find someone" SearchField
+    t =    70.68s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    70.81s     Synthesize event
+    t =    71.16s     Wait for com.plenara.plenaraApp to idle
+    t =    71.38s Waiting 5.0s for "event-guest-Leo Park" Button to exist
+    t =    72.41s     Checking `Expect predicate `existsNoRetry == 1` for object "event-guest-Leo Park" Button`
+    t =    72.41s         Checking existence of `"event-guest-Leo Park" Button`
+    t =    72.49s Tap "event-guest-Leo Park" Button
+    t =    72.49s     Wait for com.plenara.plenaraApp to idle
+    t =    72.50s     Find the "event-guest-Leo Park" Button
+    t =    72.56s     Check for interrupting elements affecting "event-guest-Leo Park" Button
+    t =    72.62s     Synthesize event
+    t =    72.91s     Wait for com.plenara.plenaraApp to idle
+    t =    72.91s Find the "event-guest-Leo Park" Button
+    t =    73.06s Waiting 5.0s for SearchField (First Match) to exist
+    t =    74.09s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    74.09s         Checking existence of `SearchField (First Match)`
+    t =    74.13s Tap SearchField (First Match)
+    t =    74.13s     Wait for com.plenara.plenaraApp to idle
+    t =    74.13s     Find the SearchField (First Match)
+    t =    74.17s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    74.23s     Synthesize event
+    t =    74.53s     Wait for com.plenara.plenaraApp to idle
+    t =    74.82s Find the "Find someone" SearchField
+    t =    74.92s Find the "Find someone" SearchField
+    t =    74.98s Type '' into "Find someone" SearchField
+    t =    74.98s     Wait for com.plenara.plenaraApp to idle
+    t =    74.98s     Find the "Find someone" SearchField
+    t =    75.06s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    75.13s     Synthesize event
+    t =    75.47s     Wait for com.plenara.plenaraApp to idle
+    t =    75.47s Type 'Mum
+' into "Find someone" SearchField
+    t =    75.47s     Wait for com.plenara.plenaraApp to idle
+    t =    75.47s     Find the "Find someone" SearchField
+    t =    75.57s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    75.65s     Synthesize event
+    t =    75.91s     Wait for com.plenara.plenaraApp to idle
+    t =    76.21s Waiting 5.0s for "event-guest-Mum" Button to exist
+    t =    77.23s     Checking `Expect predicate `existsNoRetry == 1` for object "event-guest-Mum" Button`
+    t =    77.24s         Checking existence of `"event-guest-Mum" Button`
+    t =    77.41s Tap "event-guest-Mum" Button
+    t =    77.41s     Wait for com.plenara.plenaraApp to idle
+    t =    77.44s     Find the "event-guest-Mum" Button
+    t =    77.58s     Check for interrupting elements affecting "event-guest-Mum" Button
+    t =    77.66s     Synthesize event
+    t =    77.96s     Wait for com.plenara.plenaraApp to idle
+    t =    77.96s Find the "event-guest-Mum" Button
+    t =    78.03s Waiting 5.0s for SearchField (First Match) to exist
+    t =    79.06s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =    79.06s         Checking existence of `SearchField (First Match)`
+    t =    79.10s Tap SearchField (First Match)
+    t =    79.10s     Wait for com.plenara.plenaraApp to idle
+    t =    79.10s     Find the SearchField (First Match)
+    t =    79.14s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    79.20s     Synthesize event
+    t =    79.49s     Wait for com.plenara.plenaraApp to idle
+    t =    79.81s Find the "Find someone" SearchField
+    t =    79.88s Find the "Find someone" SearchField
+    t =    79.94s Type '' into "Find someone" SearchField
+    t =    79.94s     Wait for com.plenara.plenaraApp to idle
+    t =    79.94s     Find the "Find someone" SearchField
+    t =    80.07s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    80.15s     Synthesize event
+    t =    80.41s     Wait for com.plenara.plenaraApp to idle
+    t =    80.42s Type 'Sofia Chen
+' into "Find someone" SearchField
+    t =    80.42s     Wait for com.plenara.plenaraApp to idle
+    t =    80.42s     Find the "Find someone" SearchField
+    t =    80.53s     Check for interrupting elements affecting "Find someone" SearchField
+    t =    80.61s     Synthesize event
+    t =    80.99s     Wait for com.plenara.plenaraApp to idle
+    t =    81.23s Waiting 5.0s for "event-guest-Sofia Chen" Button to exist
+    t =    82.29s     Checking `Expect predicate `existsNoRetry == 1` for object "event-guest-Sofia Chen" Button`
+    t =    82.29s         Checking existence of `"event-guest-Sofia Chen" Button`
+    t =    82.40s Tap "event-guest-Sofia Chen" Button
+    t =    82.40s     Wait for com.plenara.plenaraApp to idle
+    t =    82.41s     Find the "event-guest-Sofia Chen" Button
+    t =    82.48s     Check for interrupting elements affecting "event-guest-Sofia Chen" Button
+    t =    82.54s     Synthesize event
+    t =    82.96s     Wait for com.plenara.plenaraApp to idle
+    t =    83.04s Find the "event-guest-Sofia Chen" Button
+    t =    83.18s Tap "event-people-done" Button
+    t =    83.18s     Wait for com.plenara.plenaraApp to idle
+    t =    83.19s     Find the "event-people-done" Button
+    t =    84.34s         Find the "event-people-done" Button (retry 1)
+    t =    85.48s         Find the "event-people-done" Button (retry 2)
+    t =    85.60s Requesting snapshot of accessibility hierarchy for app with pid 35302
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/WorkflowUITests.swift:32: error: -[PlenaraUITests.WorkflowUITests testSharedDinnerFivePeopleEditReopenAndCancel] : Failed to tap "event-people-done" Button: No matches found for Elements matching predicate '"event-people-done" IN identifiers' from input {(
+    Button, identifier: 'tab-0', label: 'Stay close', Selected,
+    Button, identifier: 'tab-1', label: 'People',
+    Button, identifier: 'tab-2', label: 'Moments',
+    Button, label: 'Close',
+    Button, label: 'Clear text',
+    Button, label: 'Cancel',
+    Button, identifier: 'save-event', label: 'Save',
+    Button, identifier: 'bell', label: 'Settings and reminders',
+    Button, identifier: 'suggestion-hero-Sofia Chen', label: 'Sofia Chen',
+    Button, label: 'Log with Sofia',
+    Button, label: 'Catch-up notes',
+    Button, identifier: 'reach-out-Sofia Chen', label: 'Reach out to Sofia',
+    Button, label: 'Another week',
+    Button, identifier: 'suggestion-Daniel Rivera', label: 'Daniel Rivera, Close · 26 days since connecting · Every 21 days',
+    Button, identifier: 'growth-Amara Okafor', label: 'Amara is nearby., A connection you’d like to grow, We both want to try the bookshop café on Telegraph., An idea for you two',
+    Button, identifier: 'care-Leo Park', label: 'Leo Park, Needs care, We’ve drifted; I’d like to reconnect.',
+    Button, identifier: 'home-rhythm-setup', label: 'Choose contact rhythms',
+    Button, identifier: 'quick-log', label: 'Log a moment',
+    Button, identifier: 'log-social-event', label: 'Log a social event',
+    Button, identifier: 'event-people', label: '5 people included, Amara Okafor, Daniel Rivera, Leo Park, Mum, Sofia Chen',
+    Button, label: 'How did you get together?, In person',
+    Button, identifier: 'event-guest-Sofia Chen', label: 'Sofia Chen', value: Selected, Selected,
+    Button, label: 'Date Picker', value: Nov 9, 2026
+)}
+    t =    96.27s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testSharedDinnerFivePeopleEditReopenAndCancel]' failed (97.125 seconds).
+Test Suite 'WorkflowUITests' failed at 2026-11-09 19:23:29.736.
+	 Executed 1 test, with 1 failure (0 unexpected) in 97.125 (97.136) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-09 19:23:29.736.
+	 Executed 1 test, with 1 failure (0 unexpected) in 97.125 (97.137) seconds
+Test Suite 'Selected tests' failed at 2026-11-09 19:23:29.737.
+	 Executed 1 test, with 1 failure (0 unexpected) in 97.125 (97.141) seconds
+2026-11-09 19:23:30.680 xcodebuild[33210:33296481]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-09 19:23:30.724 xcodebuild[33210:33268891] [MT] IDETestOperationsObserverDebug: 294.621 elapsed -- Testing started completed.
+2026-11-09 19:23:30.725 xcodebuild[33210:33268891] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 19:23:30.725 xcodebuild[33210:33268891] [MT] IDETestOperationsObserverDebug: 294.621 sec, +294.621 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-191832.xcresult
+
+Failing tests:
+	WorkflowUITests.testSharedDinnerFivePeopleEditReopenAndCancel()
+
+** TEST EXECUTE FAILED **
+
+Testing started

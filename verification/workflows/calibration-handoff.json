@@ -1,0 +1,14 @@
+{
+  "mode": "handoff",
+  "faults": [
+    [
+      "PlenaraApp.swift",
+      "offerContact(draft) }\n        }",
+      "/* return offer deliberately disconnected */ }\n        }"
+    ]
+  ],
+  "rejected": true,
+  "expectedFailures": [
+    "Returning from a selected route must offer confirmation"
+  ]
+}

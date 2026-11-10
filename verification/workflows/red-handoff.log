@@ -1,0 +1,127 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-194224.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/WorkflowUITests/testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-194224.xcresult
+
+2026-11-09 19:42:32.066420-0800 PlenaraUITests-Runner[45630:33407709] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-09 19:42:33.026.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-09 19:42:33.026.
+Test Suite 'WorkflowUITests' started at 2026-11-09 19:42:33.026.
+Test Case '-[PlenaraUITests.WorkflowUITests testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen]' started.
+    t =     0.00s Start Test at 2026-11-09 19:42:33.027
+    t =     0.06s Set Up
+    t =     0.06s Open com.plenara.plenaraApp
+    t =     0.06s     Launch com.plenara.plenaraApp
+2026-11-09 19:42:33.281 xcodebuild[45571:33407072] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-09 19:42:33.281 xcodebuild[45571:33407072] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[45630]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x108c80310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x108170398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.08s         Setting up automation session
+    t =     1.87s         Wait for com.plenara.plenaraApp to idle
+    t =     3.65s Find the Target Application 'com.plenara.plenaraApp'
+    t =     3.79s Checking existence of `"tab-0" Button`
+    t =     3.84s Find the "tab-0" Button
+    t =     3.90s Find the "tab-0" Button
+    t =     3.94s Checking existence of `"reach-out-Sofia Chen" Button`
+    t =     3.98s Find the "reach-out-Sofia Chen" Button
+    t =     4.02s Find the "reach-out-Sofia Chen" Button
+    t =     4.13s Press Target Application 'com.plenara.plenaraApp'[0.50, 0.64] for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.50, 0.39] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =     4.13s     Wait for com.plenara.plenaraApp to idle
+    t =     4.14s     Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.18s     Check for interrupting elements affecting "Plenara" Application
+    t =     4.21s     Synthesize event
+    t =     4.21s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.24s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.27s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.29s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.32s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     5.08s     Wait for com.plenara.plenaraApp to idle
+    t =     5.08s Find the Target Application 'com.plenara.plenaraApp'
+    t =     5.10s Checking existence of `"tab-0" Button`
+    t =     5.13s Find the "tab-0" Button
+    t =     5.16s Find the "tab-0" Button
+    t =     5.20s Checking existence of `"reach-out-Sofia Chen" Button`
+    t =     5.23s Find the "reach-out-Sofia Chen" Button
+    t =     5.26s Find the "reach-out-Sofia Chen" Button
+    t =     5.30s Tap "reach-out-Sofia Chen" Button
+    t =     5.30s     Wait for com.plenara.plenaraApp to idle
+    t =     5.31s     Find the "reach-out-Sofia Chen" Button
+    t =     5.33s     Check for interrupting elements affecting "reach-out-Sofia Chen" Button
+    t =     5.36s     Synthesize event
+    t =     5.66s     Wait for com.plenara.plenaraApp to idle
+    t =     5.71s Waiting 5.0s for "contact-route-Email-sofia@example.invalid" Button to exist
+    t =     6.75s     Checking `Expect predicate `existsNoRetry == 1` for object "contact-route-Email-sofia@example.invalid" Button`
+    t =     6.76s         Checking existence of `"contact-route-Email-sofia@example.invalid" Button`
+    t =     6.85s Find the Target Application 'com.plenara.plenaraApp'
+    t =     7.01s Added attachment named 'Preferred contact routes'
+    t =     7.01s Tap "contact-route-Email-sofia@example.invalid" Button
+    t =     7.01s     Wait for com.plenara.plenaraApp to idle
+    t =     7.01s     Find the "contact-route-Email-sofia@example.invalid" Button
+    t =     7.07s     Check for interrupting elements affecting "contact-route-Email-sofia@example.invalid" Button
+    t =     7.12s     Synthesize event
+    t =     7.41s     Wait for com.plenara.plenaraApp to idle
+    t =     7.79s Waiting 5.0s for "review-contact-draft" Button to exist
+    t =     8.85s     Checking `Expect predicate `existsNoRetry == 1` for object "review-contact-draft" Button`
+    t =     8.85s         Checking existence of `"review-contact-draft" Button`
+    t =     8.89s Checking existence of `"handoff-connected" Button`
+    t =     8.91s Pressing Home button
+    t =     9.37s Open com.plenara.plenaraApp
+    t =     9.37s     Activate com.plenara.plenaraApp
+    t =     9.95s         Wait for com.plenara.plenaraApp to idle
+    t =    10.01s Waiting 8.0s for "handoff-outreach" Button to exist
+    t =    11.06s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    11.06s         Checking existence of `"handoff-outreach" Button`
+    t =    11.09s         Capturing element debug description
+    t =    12.03s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    12.04s         Checking existence of `"handoff-outreach" Button`
+    t =    12.11s         Capturing element debug description
+    t =    13.07s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    13.07s         Checking existence of `"handoff-outreach" Button`
+    t =    13.10s         Capturing element debug description
+    t =    14.06s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    14.06s         Checking existence of `"handoff-outreach" Button`
+    t =    14.08s         Capturing element debug description
+    t =    15.03s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    15.03s         Checking existence of `"handoff-outreach" Button`
+    t =    15.06s         Capturing element debug description
+    t =    16.07s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    16.07s         Checking existence of `"handoff-outreach" Button`
+    t =    16.10s         Capturing element debug description
+    t =    17.04s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    17.04s         Checking existence of `"handoff-outreach" Button`
+    t =    17.12s         Capturing element debug description
+    t =    18.02s     Checking `Expect predicate `existsNoRetry == 1` for object "handoff-outreach" Button`
+    t =    18.02s         Checking existence of `"handoff-outreach" Button`
+    t =    18.05s         Capturing element debug description
+    t =    18.05s     Checking existence of `"handoff-outreach" Button`
+    t =    18.07s Collecting debug information to assist test failure triage
+    t =    18.07s     Requesting snapshot of accessibility hierarchy for app with pid 45650
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/WorkflowUITests.swift:88: error: -[PlenaraUITests.WorkflowUITests testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen] : XCTAssertTrue failed - Returning from a selected route must offer confirmation, never infer contact
+    t =    18.18s Tear Down
+Test Case '-[PlenaraUITests.WorkflowUITests testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen]' failed (18.443 seconds).
+Test Suite 'WorkflowUITests' failed at 2026-11-09 19:42:51.471.
+	 Executed 1 test, with 1 failure (0 unexpected) in 18.443 (18.445) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-09 19:42:51.472.
+	 Executed 1 test, with 1 failure (0 unexpected) in 18.443 (18.446) seconds
+Test Suite 'Selected tests' failed at 2026-11-09 19:42:51.472.
+	 Executed 1 test, with 1 failure (0 unexpected) in 18.443 (18.447) seconds
+2026-11-09 19:42:51.897 xcodebuild[45571:33407318]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-09 19:42:51.909 xcodebuild[45571:33407072] [MT] IDETestOperationsObserverDebug: 22.384 elapsed -- Testing started completed.
+2026-11-09 19:42:51.909 xcodebuild[45571:33407072] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 19:42:51.909 xcodebuild[45571:33407072] [MT] IDETestOperationsObserverDebug: 22.384 sec, +22.384 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-194224.xcresult
+
+Failing tests:
+	WorkflowUITests.testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen()
+
+** TEST EXECUTE FAILED **
+
+Testing started

@@ -1,0 +1,20 @@
+{
+  "build": "1008",
+  "configuration": "Release",
+  "simulator": "BB42F29A-928B-4B9E-BD39-160B70249D4F",
+  "simulatorOS": "iOS26.5",
+  "nativeUnitTests": 39,
+  "nativeUITests": 22,
+  "nativePassed": 61,
+  "nativeFailed": 0,
+  "contactsDeniedRepeatPassed": 1,
+  "archiveHashesVerified": 926,
+  "designReferenceChecksPassed": 6,
+  "testflightToolTestsPassed": 6,
+  "calibrationRunnerTestsPassed": 2,
+  "observedPeakRSSKiB": 397232,
+  "memoryLimitKiB": 524288,
+  "testedSourceStillMatches": true,
+  "fullResult": ".build/native-20261109-211420.xcresult",
+  "deniedResult": ".build/native-20261109-212913.xcresult"
+}

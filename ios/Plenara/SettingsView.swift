@@ -69,6 +69,15 @@ struct SettingsView: View {
                             } catch { statusMessage = "The before-update backup couldn’t be opened. Your current journal is untouched." }
                         }
                     }
+                    if FileManager.default.fileExists(atPath: store.beforeWorkflowUpdate.path) {
+                        Button("Recover before social-events update") {
+                            do {
+                                let bytes = try Data(contentsOf: store.beforeWorkflowUpdate)
+                                let previous = try JournalStore.readJournal(bytes)
+                                pendingRestore = bytes; restoreName = "\(previous.people.count) people and \(previous.moments.count) moments from before the social-events update"; confirmRestore = true
+                            } catch { statusMessage = "The before-update backup couldn’t be opened. Your current journal is untouched." }
+                        }
+                    }
                     Text("Save the backup somewhere you trust, such as your private iCloud Drive. Backups include your personal notes and contact details. A readable journal is for reading; the JSON backup is for restoring.").font(.footnote).foregroundStyle(Theme.muted)
                     if store.locked { Text("Your journal couldn’t be opened and remains protected. Restore a backup to resume editing.").foregroundStyle(.red) }
                 } header: { Text("Keep your memories safe") } footer: { Text("On-device storage is not sync. Removing the app can remove the journal. Export regularly, and before changing phones.") }
