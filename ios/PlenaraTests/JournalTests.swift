@@ -1,5 +1,6 @@
 import XCTest
 import Contacts
+import UserNotifications
 @testable import Plenara
 
 @MainActor final class JournalTests: XCTestCase {
@@ -215,6 +216,83 @@ import Contacts
         XCTAssertEqual(s.journal.people.map(\.distance), ["Nearby", "Far away"])
         XCTAssertNil(s.organize([UUID()], changes: [.distance: "Nearby"]))
         XCTAssertNil(s.organize(ids, changes: [.distance: "Somewhere"])); XCTAssertEqual(store().journal, s.journal)
+    }
+
+    func testReminderCapacityKeepsNearestDatesAcrossKinds() throws {
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 1, day: 1, hour: 9))!
+        var journal = Journal(); journal.preferences.notifications = true; journal.preferences.birthdays = true; journal.preferences.followUps = true
+        journal.people = (0..<60).map { index in
+            var person = Person(); person.name = "Friend \(index)"; person.birthdayMonth = 12; person.birthdayDay = 1; person.birthdayReminder = true; return person
+        }
+        let soon = Memory(text: "Tomorrow's thread", followUp: calendar.date(byAdding: .day, value: 1, to: now))
+        journal.people[0].notes = [soon]
+        journal.people[59].birthdayMonth = 1; journal.people[59].birthdayDay = 3
+        let plans = ReminderPlan.make(journal, now: now, calendar: calendar)
+        XCTAssertEqual(plans.count, 48)
+        XCTAssertEqual(plans.first?.id, "weekly")
+        XCTAssertEqual(plans.dropFirst().first?.id, "followup-\(soon.id)", "A near-term follow-up must not be displaced by distant birthdays")
+        XCTAssertTrue(plans.contains { $0.id == "birthday-\(journal.people[59].id)" }, "An imminent birthday must survive the capacity limit regardless of UUID")
+        XCTAssertTrue(plans.allSatisfy { $0.components.calendar?.identifier == calendar.identifier }, "Notification components must preserve the calendar used to calculate them")
+    }
+
+    func testAmbiguousImportedIdentityRequiresExplicitLink() {
+        var first = Person(); first.name = "One journal"; first.sourceContactID = "shared-id"; first.phones = ["5551234"]
+        var second = first; second.id = UUID(); second.name = "Separate journal"
+        var incoming = first; incoming.id = UUID()
+        XCTAssertNil(ContactImport.existing(incoming, in: [first, second]), "A source ID shared by deliberately separate people cannot silently choose the first journal")
+        XCTAssertEqual(Set(ContactImport.possibleMatches(incoming, in: [first, second]).map(\.id)), [first.id, second.id])
+        incoming.name = "A new contact name"; incoming.phones = ["5559999"]; incoming.emails = ["new@example.test"]
+        XCTAssertEqual(Set(ContactImport.possibleMatches(incoming, in: [first, second]).map(\.id)), [first.id, second.id], "A shared source ID still requires review after every contact field changes")
+        var journal = Journal(); journal.people = [first, second]
+        incoming.name = "Reviewed refresh"
+        ContactImport.apply(incoming, to: second.id, journal: &journal)
+        XCTAssertEqual(journal.people[0], first)
+        XCTAssertEqual(journal.people[1].name, incoming.name)
+    }
+
+    func testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal() throws {
+        let saved = store(); var person = Person(); person.name = "Preserved person"; person.notes = [Memory(text: "Keep this")]
+        XCTAssertTrue(saved.save(person)); let before = saved.journal; let bytes = try Data(contentsOf: saved.file)
+        var malformed = before; var other = person; other.id = UUID(); other.name = "Other person"; malformed.people.append(other)
+        XCTAssertFalse(saved.restore(try JournalStore.encoder.encode(malformed)), "Duplicate note identities collide in reminders and must be rejected before restore")
+        XCTAssertEqual(saved.journal, before); XCTAssertEqual(try Data(contentsOf: saved.file), bytes)
+    }
+
+    func testReadableExportIncludesContextAndDatedReminders() throws {
+        let saved = store(); var person = Person(); person.name = "Exported friend"; person.pronunciation = "May-ah"; person.relationshipDetail = "University friend"
+        person.timeZone = "Europe/Madrid"; person.preferredMethod = "Email"; person.birthdayMonth = 2; person.birthdayDay = 29; person.birthdayReminder = true
+        person.baselineConnection = Date(timeIntervalSince1970: 1700000000); person.baselineApproximate = true; person.reminderStart = Date(timeIntervalSince1970: 1700000000); person.snoozeUntil = Date(timeIntervalSince1970: 1800000000)
+        person.notes = [Memory(text: "Ask about the move", pinned: true, followUp: Date(timeIntervalSince1970: 1800000000))]
+        XCTAssertTrue(saved.save(person)); let exported = saved.exportText()
+        for expected in ["May-ah", "University friend", "Europe/Madrid", "Preferred way: Email", "Birthday: 02-29", "Birthday reminder: true", "Starting connection:", "approximate: true", "Rhythm starts:", "Snoozed until:", "[pinned]", "Follow up:"] {
+            XCTAssertTrue(exported.contains(expected), "Readable export omitted \(expected)")
+        }
+    }
+
+    func testReminderCalendarPreservesNonGregorianFollowUp() throws {
+        var calendar = Calendar(identifier: .japanese); calendar.timeZone = .current
+        let now = Date(), due = calendar.date(byAdding: .day, value: 5, to: Date())!
+        var person = Person(); person.name = "A friend"; person.notes = [Memory(text: "A thread", followUp: due)]
+        var journal = Journal(); journal.people = [person]; journal.preferences.notifications = true; journal.preferences.followUps = true
+        let plan = try XCTUnwrap(ReminderPlan.make(journal, now: now, calendar: calendar).first { !$0.repeats })
+        let trigger = UNCalendarNotificationTrigger(dateMatching: plan.components, repeats: false)
+        let expected = calendar.date(bySettingHour: 10, minute: 0, second: 0, of: due)
+        XCTAssertEqual(trigger.nextTriggerDate(), expected, "A follow-up's year and era must be interpreted using the calendar that produced them")
+    }
+
+    func testLargeSelfExportedBackupCanBeRestored() throws {
+        // A bounded synthetic note crosses the former 50 MB restore-only limit.
+        // Keep the actual production export/restore path; do not pad unrelated JSON.
+        let original = store(); var person = Person(); person.name = "Large journal"
+        person.notes = [Memory(text: String(repeating: "x", count: 50_000_001))]
+        XCTAssertTrue(original.save(person))
+        let bytes = try autoreleasepool { try original.exportData() }
+        XCTAssertGreaterThan(bytes.count, 50_000_000)
+        let restored = JournalStore(file: root.appendingPathComponent("large-restored.json"))
+        XCTAssertTrue(restored.restore(bytes), "A backup produced by Plenara must remain restorable regardless of its encoded size")
+        XCTAssertEqual(restored.journal.people.first?.notes.first?.text.count, 50_000_001)
+        XCTAssertEqual(restored.journal.people.first?.id, person.id)
     }
 
 }

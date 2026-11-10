@@ -40,6 +40,10 @@ growth/care invitations consistent with the shared suppression gate. Neither
 classification nor optional ideas turn on a contact rhythm. There is no new
 journal schema or storage path. [Verification and delivery](../verification/ranking/update.md).
 
+The notification schedule reserves one slot for the weekly invitation and selects
+the nearest 47 birthday/follow-up dates together. A distant birthday cannot
+displace an earlier dated note; reopening refreshes that finite horizon.
+
 ## Organizing people
 
 People → **Organize** supports Together (search, select, then apply shared
@@ -84,11 +88,15 @@ Writes are atomic, protected until the first device unlock, and retain one
 previous save. A damaged file is left untouched and editing is blocked until
 recovery. Settings can restore an exported JSON backup or recover the previous
 local save after confirmation. Readable exports are additional convenience;
-restoration uses the complete JSON representation.
+restoration uses the complete JSON representation. Startup and restore use the
+same structural validation, with no restore-only byte limit that could reject
+a backup exported by this app. Large journals are decoded in memory.
 
 Contacts are selected through Apple’s picker without requiring broad access.
 Reimport is manual, reviewed, and preserves relationship notes/history.
 No Contacts writes, analytics, remote model calls, or account service exist.
+When deliberately separate people share a selected contact ID, reimport requires
+an explicit link even if the contact’s name and communication details changed.
 Logs record operations/errors without personal content.
 
 ## Delivery

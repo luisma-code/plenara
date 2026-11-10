@@ -1,0 +1,86 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261109-181950.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraTests/JournalTests/testReminderCapacityKeepsNearestDatesAcrossKinds" "-only-testing:PlenaraTests/JournalTests/testAmbiguousImportedIdentityRequiresExplicitLink" "-only-testing:PlenaraTests/JournalTests/testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal" "-only-testing:PlenaraTests/JournalTests/testReadableExportIncludesContextAndDatedReminders"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-181950.xcresult
+
+2026-11-09 18:19:58.051351-0800 Plenara[99421:32977641] [journal] Journal opened; read-only: false
+2026-11-09 18:19:58.466455-0800 Plenara[99421:32977896] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-11-09 18:19:58.490977-0800 Plenara[99421:32977641] [reminders] Local reminders refreshed
+2026-11-09 18:19:58.504886-0800 Plenara[99421:32977641] [reminders] Local reminders refreshed
+Test Suite 'Selected tests' started at 2026-11-09 18:19:58.526.
+Test Suite 'PlenaraTests.xctest' started at 2026-11-09 18:19:58.526.
+Test Suite 'JournalTests' started at 2026-11-09 18:19:58.527.
+Test Case '-[PlenaraTests.JournalTests testAmbiguousImportedIdentityRequiresExplicitLink]' started.
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:242: error: -[PlenaraTests.JournalTests testAmbiguousImportedIdentityRequiresExplicitLink] : XCTAssertNil failed: "Person(id: B6FAC05C-DA30-4EE2-9D02-FBF011EE7F88, name: "One journal", pronunciation: "", relationship: "Not set", relationshipDetail: "", closeness: "Not set", city: "", distance: "Not set", timeZone: "", deepen: false, connections: nil, direction: nil, feeling: nil, previousCloseness: nil, intention: "", cadence: 0, paused: false, snoozeUntil: nil, baselineConnection: nil, baselineApproximate: false, reminderStart: nil, sourceContactID: Optional("shared-id"), phones: ["5551234"], emails: [], preferredMethod: "Message", photo: nil, birthdayMonth: 0, birthdayDay: 0, birthdayReminder: false, notes: [], created: 2026-11-10 02:19:58 +0000)" - A source ID shared by deliberately separate people cannot silently choose the first journal
+Test Case '-[PlenaraTests.JournalTests testAmbiguousImportedIdentityRequiresExplicitLink]' failed (0.467 seconds).
+Test Case '-[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal]' started.
+2026-11-09 18:19:58.995698-0800 Plenara[99421:32977641] [journal] Journal opened; read-only: false
+2026-11-09 18:19:58.999203-0800 Plenara[99421:32977641] [journal] Journal committed
+2026-11-09 18:19:59.000463-0800 Plenara[99421:32977641] [journal] Journal committed
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:255: error: -[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal] : XCTAssertFalse failed - Duplicate note identities collide in reminders and must be rejected before restore
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:256: error: -[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal] : XCTAssertEqual failed: ("Journal(schemaVersion: 1, people: [Plenara.Person(id: B30CBAEA-1049-4C87-B177-FF9E716ADB8B, name: "Preserved person", pronunciation: "", relationship: "Not set", relationshipDetail: "", closeness: "Not set", city: "", distance: "Not set", timeZone: "", deepen: false, connections: Optional([]), direction: Optional("Not set"), feeling: Optional("Not set"), previousCloseness: nil, intention: "", cadence: 0, paused: false, snoozeUntil: nil, baselineConnection: nil, baselineApproximate: false, reminderStart: nil, sourceContactID: nil, phones: [], emails: [], preferredMethod: "Message", photo: nil, birthdayMonth: 0, birthdayDay: 0, birthdayReminder: false, notes: [Plenara.Memory(id: 7049EA8E-D8FB-40A5-AF84-1A445AAC3F4F, text: "Keep this", category: "On their mind", date: 2026-11-10 02:19:58 +0000, pinned: false, archived: false, followUp: nil)], created: 2026-11-10 02:19:58 +0000), Plenara.Person(id: 3CBD62ED-852F-4D9A-B11D-811F2307FEBC, name: "Other person", pronunciation: "", relationship: "Not set", relationshipDetail: "", closeness: "Not set", city: "", distance: "Not set", timeZone: "", deepen: false, connections: Optional([]), direction: Optional("Not set"), feeling: Optional("Not set"), previousCloseness: nil, intention: "", cadence: 0, paused: false, snoozeUntil: nil, baselineConnection: nil, baselineApproximate: false, reminderStart: nil, sourceContactID: nil, phones: [], emails: [], preferredMethod: "Message", photo: nil, birthdayMonth: 0, birthdayDay: 0, birthdayReminder: false, notes: [Plenara.Memory(id: 7049EA8E-D8FB-40A5-AF84-1A445AAC3F4F, text: "Keep this", category: "On their mind", date: 2026-11-10 02:19:58 +0000, pinned: false, archived: false, followUp: nil)], created: 2026-11-10 02:19:58 +0000)], moments: [], preferences: Plenara.Preferences(notifications: false, weekday: 1, hour: 10, minute: 0, quietStart: 21, quietEnd: 8, birthdays: false, followUps: false))") is not equal to ("Journal(schemaVersion: 1, people: [Plenara.Person(id: B30CBAEA-1049-4C87-B177-FF9E716ADB8B, name: "Preserved person", pronunciation: "", relationship: "Not set", relationshipDetail: "", closeness: "Not set", city: "", distance: "Not set", timeZone: "", deepen: false, connections: Optional([]), direction: Optional("Not set"), feeling: Optional("Not set"), previousCloseness: nil, intention: "", cadence: 0, paused: false, snoozeUntil: nil, baselineConnection: nil, baselineApproximate: false, reminderStart: nil, sourceContactID: nil, phones: [], emails: [], preferredMethod: "Message", photo: nil, birthdayMonth: 0, birthdayDay: 0, birthdayReminder: false, notes: [Plenara.Memory(id: 7049EA8E-D8FB-40A5-AF84-1A445AAC3F4F, text: "Keep this", category: "On their mind", date: 2026-11-10 02:19:58 +0000, pinned: false, archived: false, followUp: nil)], created: 2026-11-10 02:19:58 +0000)], moments: [], preferences: Plenara.Preferences(notifications: false, weekday: 1, hour: 10, minute: 0, quietStart: 21, quietEnd: 8, birthdays: false, followUps: false))")
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:256: error: -[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal] : XCTAssertEqual failed: ("2280 bytes") is not equal to ("1275 bytes")
+Test Case '-[PlenaraTests.JournalTests testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal]' failed (0.023 seconds).
+Test Case '-[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders]' started.
+2026-11-09 18:19:59.017859-0800 Plenara[99421:32977641] [journal] Journal opened; read-only: false
+2026-11-09 18:19:59.018552-0800 Plenara[99421:32977641] [journal] Journal committed
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted May-ah
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted University friend
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted Europe/Madrid
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted Preferred way: Email
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted Birthday: 02-29
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted Birthday reminder: true
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted Starting connection:
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted approximate: true
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted Rhythm starts:
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted Snoozed until:
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted [pinned]
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:266: error: -[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders] : XCTAssertTrue failed - Readable export omitted Follow up:
+Test Case '-[PlenaraTests.JournalTests testReadableExportIncludesContextAndDatedReminders]' failed (0.011 seconds).
+Test Case '-[PlenaraTests.JournalTests testReminderCapacityKeepsNearestDatesAcrossKinds]' started.
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:233: error: -[PlenaraTests.JournalTests testReminderCapacityKeepsNearestDatesAcrossKinds] : XCTAssertEqual failed: ("Optional("birthday-01851BCB-7B86-40F5-95FB-96489148D12B")") is not equal to ("Optional("followup-AB5D50D6-03D7-43D5-93DF-1A16F0C655EC")") - A near-term follow-up must not be displaced by distant birthdays
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/JournalTests.swift:235: error: -[PlenaraTests.JournalTests testReminderCapacityKeepsNearestDatesAcrossKinds] : XCTAssertTrue failed - Notification components must preserve the calendar used to calculate them
+Test Case '-[PlenaraTests.JournalTests testReminderCapacityKeepsNearestDatesAcrossKinds]' failed (0.002 seconds).
+Test Suite 'JournalTests' failed at 2026-11-09 18:19:59.031.
+	 Executed 4 tests, with 18 failures (0 unexpected) in 0.503 (0.505) seconds
+Test Suite 'PlenaraTests.xctest' failed at 2026-11-09 18:19:59.031.
+	 Executed 4 tests, with 18 failures (0 unexpected) in 0.503 (0.505) seconds
+Test Suite 'Selected tests' failed at 2026-11-09 18:19:59.032.
+	 Executed 4 tests, with 18 failures (0 unexpected) in 0.503 (0.506) seconds
+2026-11-09 18:19:59.329 xcodebuild[99391:32977206]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-09 18:19:59.336 xcodebuild[99391:32976968] [MT] IDETestOperationsObserverDebug: 5.009 elapsed -- Testing started completed.
+2026-11-09 18:19:59.336 xcodebuild[99391:32976968] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-09 18:19:59.336 xcodebuild[99391:32976968] [MT] IDETestOperationsObserverDebug: 5.009 sec, +5.009 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261109-181950.xcresult
+
+Failing tests:
+	JournalTests.testAmbiguousImportedIdentityRequiresExplicitLink()
+	JournalTests.testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal()
+	JournalTests.testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal()
+	JournalTests.testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReadableExportIncludesContextAndDatedReminders()
+	JournalTests.testReminderCapacityKeepsNearestDatesAcrossKinds()
+	JournalTests.testReminderCapacityKeepsNearestDatesAcrossKinds()
+
+** TEST EXECUTE FAILED **
+
+Testing started

@@ -1,0 +1,76 @@
+{
+  "outcome": "No product rendering defect. Original screenshot pixels contain all three labels; apparent disappearance occurred in image-preview inspection. No app code or capture timing changed.",
+  "inputSHA256": {
+    "home": "81a7aec06032a9a40fbe4bc1a52fa916e377e988fe7d33cd033cab234e317c47",
+    "dark-home": "abf5deead410d33ebc55248aa42194598b448ed60b962a959c08672f0aadf9bb"
+  },
+  "imageDimensions": [
+    1206,
+    2622
+  ],
+  "regions": {
+    "quickLogText": {
+      "rectPixels": [
+        490,
+        490,
+        940,
+        600
+      ],
+      "measurements": {
+        "home": {
+          "paintedForegroundPixels": 3010,
+          "inMemoryErasedLabelControlPixels": 0,
+          "controlRejected": true
+        },
+        "dark-home": {
+          "paintedForegroundPixels": 3010,
+          "inMemoryErasedLabelControlPixels": 0,
+          "controlRejected": true
+        }
+      },
+      "lightAndDarkPixelsIdentical": true
+    },
+    "heroLogText": {
+      "rectPixels": [
+        245,
+        2150,
+        580,
+        2265
+      ],
+      "measurements": {
+        "home": {
+          "paintedForegroundPixels": 3215,
+          "inMemoryErasedLabelControlPixels": 0,
+          "controlRejected": true
+        },
+        "dark-home": {
+          "paintedForegroundPixels": 3178,
+          "inMemoryErasedLabelControlPixels": 0,
+          "controlRejected": true
+        }
+      },
+      "lightAndDarkPixelsIdentical": false
+    },
+    "avatarInitials": {
+      "rectPixels": [
+        180,
+        1395,
+        300,
+        1515
+      ],
+      "measurements": {
+        "home": {
+          "paintedForegroundPixels": 1626,
+          "inMemoryErasedLabelControlPixels": 0,
+          "controlRejected": true
+        },
+        "dark-home": {
+          "paintedForegroundPixels": 1626,
+          "inMemoryErasedLabelControlPixels": 0,
+          "controlRejected": true
+        }
+      },
+      "lightAndDarkPixelsIdentical": true
+    }
+  }
+}

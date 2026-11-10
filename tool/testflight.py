@@ -52,16 +52,39 @@ def call(method, path, body=None):
         raise SystemExit(f"{method} {url} -> {e.code}\n{detail}")
 
 
+def collection(path):
+    """Read every page, including owners/assignments outside the first page.
+
+    Apple documents links.next at:
+    https://developer.apple.com/documentation/appstoreconnectapi/pageddocumentlinks
+    """
+    result, visited = [], set()
+    while path:
+        url = (path if urllib.parse.urlsplit(path).scheme else
+               'https://api.appstoreconnect.apple.com' + path if path.startswith('/v1/') else
+               BASE + '/' + path.lstrip('/'))
+        parsed = urllib.parse.urlsplit(url)
+        if (parsed.scheme != 'https' or parsed.netloc != 'api.appstoreconnect.apple.com'
+                or not parsed.path.startswith('/v1/') or url in visited):
+            raise SystemExit('Invalid or repeated App Store Connect pagination link; no further request attempted')
+        visited.add(url)
+        response = call('GET', path)
+        result.extend(response['data'])
+        next_path = response.get('links', {}).get('next')
+        path = urllib.parse.urljoin(url, next_path) if next_path else None
+    return result
+
+
 def contract():
     app = call("GET", f"/apps/{APP_ID}")["data"]
     if app["attributes"]["bundleId"] != BUNDLE_ID:
         raise SystemExit("App identity mismatch; no distribution attempted")
-    gs = [g for g in call("GET", f"/apps/{APP_ID}/betaGroups")["data"]
+    gs = [g for g in collection(f"/apps/{APP_ID}/betaGroups")
           if g["attributes"]["name"] == GROUP_NAME and g["attributes"]["isInternalGroup"]]
     if len(gs) != 1:
         raise SystemExit("Expected one existing internal group; no distribution attempted")
     group = gs[0]
-    testers = call("GET", f"/betaGroups/{group['id']}/betaTesters")["data"]
+    testers = collection(f"/betaGroups/{group['id']}/betaTesters")
     if not any(t["attributes"].get("email") == "luisma.webaccounts@gmail.com" for t in testers):
         raise SystemExit("Owner is not enrolled; no distribution attempted")
     return app, group, testers
@@ -72,7 +95,8 @@ def status(version=None, distribute=False, emit=True):
     path = f"/builds?filter[app]={APP_ID}&limit=20&sort=-uploadedDate"
     if version:
         path += "&filter[version]=" + urllib.parse.quote(version, safe="")
-    builds = call("GET", path)["data"]
+    # The unfiltered status intentionally shows only the latest twenty builds.
+    builds = collection(path) if version else call("GET", path)["data"]
     if distribute:
         if not version or len(builds) != 1:
             raise SystemExit("Choose one exact existing build; nothing distributed")
@@ -82,11 +106,11 @@ def status(version=None, distribute=False, emit=True):
         prerelease = call("GET", f"/builds/{b['id']}/preReleaseVersion")["data"]["attributes"]
         if prerelease["version"] != "1.0.0" or prerelease["platform"] != "IOS":
             raise SystemExit("Expected native reset version 1.0.0 for iOS; nothing distributed")
-        attached = call("GET", f"/betaGroups/{group['id']}/relationships/builds")["data"]
+        attached = collection(f"/betaGroups/{group['id']}/relationships/builds")
         if not any(x["id"] == b["id"] for x in attached):
             call("POST", f"/betaGroups/{group['id']}/relationships/builds",
                  {"data": [{"type": "builds", "id": b["id"]}]})
-    attached = call("GET", f"/betaGroups/{group['id']}/relationships/builds")["data"]
+    attached = collection(f"/betaGroups/{group['id']}/relationships/builds")
     ids = {b["id"] for b in attached}
     out = {"appId": app["id"], "bundleId": BUNDLE_ID,
            "group": {"id": group["id"], "name": GROUP_NAME, "internal": True},

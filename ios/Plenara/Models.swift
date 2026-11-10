@@ -175,13 +175,16 @@ struct Journal: Codable, Equatable {
     }
     func history(_ id: UUID? = nil) -> [Moment] { moments.filter { id == nil || $0.personID == id }.sorted { $0.date > $1.date } }
     func validate() throws {
-        guard schemaVersion == 1, people.count <= 10000, moments.count <= 200000,
-              Set(people.map(\.id)).count == people.count, Set(moments.map(\.id)).count == moments.count,
+        let personIDs = Set(people.map(\.id))
+        let noteIDs = people.flatMap { $0.notes.map(\.id) }
+        guard Set(noteIDs).count == noteIDs.count,
+              schemaVersion == 1, people.count <= 10000, moments.count <= 200000,
+              personIDs.count == people.count, Set(moments.map(\.id)).count == moments.count,
               people.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (0...3650).contains($0.cadence) && (0...12).contains($0.birthdayMonth) && (0...31).contains($0.birthdayDay) && ($0.timeZone.isEmpty || TimeZone(identifier: $0.timeZone) != nil) &&
                   Set($0.connectionKinds).isSubset(of: Set(Person.connectionOptions)) &&
                   Person.closenessOptions.contains($0.closeness) && Person.distanceOptions.contains($0.distance) &&
                   Person.directionOptions.contains($0.directionChoice) && Person.feelingOptions.contains($0.feelingChoice) }),
-              moments.allSatisfy({ m in people.contains { $0.id == m.personID } && m.date <= Date().addingTimeInterval(60) }),
+              moments.allSatisfy({ m in personIDs.contains(m.personID) && m.date <= Date().addingTimeInterval(60) }),
               (1...7).contains(preferences.weekday), (0...23).contains(preferences.hour), (0...59).contains(preferences.minute),
               (0...23).contains(preferences.quietStart), (0...23).contains(preferences.quietEnd), preferences.quietStart != preferences.quietEnd
         else { throw JournalError.invalidBackup }

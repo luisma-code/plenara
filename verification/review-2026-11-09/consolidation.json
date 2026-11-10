@@ -1,0 +1,12 @@
+{
+  "removedPath": ".tmp/review-final-attachments",
+  "logicalBytes": 11183834,
+  "files": 47,
+  "retained": "Four reviewed PNGs in verification/review-2026-11-09 plus immutable native xcresult bundles and exported test summaries",
+  "retainedHashes": {
+    "backup-export.png": "a103d66152d125a2217258091b45312dd83eb964a59ea7aa09303ca376598c53",
+    "large-person.png": "244d31a5844bb58ac088fd2b43ce0172a1ee70c847e63734ae67d7edabfb439e",
+    "home.png": "81a7aec06032a9a40fbe4bc1a52fa916e377e988fe7d33cd033cab234e317c47",
+    "dark-home.png": "abf5deead410d33ebc55248aa42194598b448ed60b962a959c08672f0aadf9bb"
+  }
+}

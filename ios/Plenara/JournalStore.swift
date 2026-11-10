@@ -62,7 +62,7 @@ import OSLog
     func deletePerson(_ id: UUID) { update { j in j.people.removeAll { $0.id == id }; j.moments.removeAll { $0.personID == id } } }
     func deleteMoment(_ id: UUID) { update { $0.moments.removeAll { $0.id == id } } }
     func restore(_ bytes: Data) -> Bool {
-        do { guard bytes.count < 50_000_000 else { throw JournalError.invalidBackup }; let loaded = try Self.readJournal(bytes); if persist(loaded) { organizationUndo = nil; return true }; return false }
+        do { let loaded = try Self.readJournal(bytes); if persist(loaded) { organizationUndo = nil; return true }; return false }
         catch { errorMessage = "Couldn’t restore this backup. Nothing was replaced. \(error.localizedDescription)"; return false }
     }
     // Both organizing flows use this one atomic save; only selected attributes change.
@@ -105,10 +105,12 @@ import OSLog
     }
     func exportData() throws -> Data { guard !locked else { throw JournalError.unreadable("The saved journal could not be opened. Restore a backup before exporting.") }; return try Self.encoder.encode(journal) }
     func exportText() -> String {
+        func dateText(_ date: Date?) -> String { date?.formatted(date: .long, time: .shortened) ?? "Not set" }
         var lines = ["# Plenara relationship journal", "Exported \(Date().formatted(date: .long, time: .shortened))", ""]
         for p in journal.people.sorted(by: { $0.name < $1.name }) {
             lines += ["## \(p.name)", "\(p.connectionKinds.joined(separator: " + ")) · \(p.closeness) · \(p.city) · \(p.distance)", "Contact rhythm: \(p.cadence) days; paused: \(p.paused)", "What I want: \(p.directionChoice); how it feels: \(p.feelingChoice)", "Context: \(p.intention)", "Earlier closeness description: \(p.previousCloseness ?? "None")", "Phone: \(p.phones.joined(separator: ", ")); email: \(p.emails.joined(separator: ", "))", ""]
-            lines += p.notes.map { "- [\($0.category)] \($0.text) (\($0.date.formatted(date: .abbreviated, time: .omitted)))\($0.archived ? " [archived]" : "")" }
+            lines += ["Pronunciation: \(p.pronunciation)", "Relationship detail: \(p.relationshipDetail)", "Time zone: \(p.timeZone.isEmpty ? "Not set" : p.timeZone)", "Preferred way: \(p.preferredMethod)", "Birthday: \(p.birthdayMonth > 0 && p.birthdayDay > 0 ? String(format: "%02d-%02d", p.birthdayMonth, p.birthdayDay) : "Not set")", "Birthday reminder: \(p.birthdayReminder)", "Starting connection: \(dateText(p.baselineConnection)); approximate: \(p.baselineApproximate)", "Rhythm starts: \(dateText(p.reminderStart))", "Snoozed until: \(dateText(p.snoozeUntil))", ""]
+            lines += p.notes.map { "- [\($0.category)] \($0.text) (\($0.date.formatted(date: .abbreviated, time: .omitted)))\($0.pinned ? " [pinned]" : "")\($0.archived ? " [archived]" : "")\($0.followUp.map { " · Follow up: \(dateText($0))" } ?? "")" }
             lines += historyText(p.id)
             lines.append("")
         }

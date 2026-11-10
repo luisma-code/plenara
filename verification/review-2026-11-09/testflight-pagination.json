@@ -1,0 +1,17 @@
+{
+  "defect": "TestFlight contract and assignment checks ignored collection pages after the first.",
+  "baseline": "Existing 3 TestFlight tests passed before the review.",
+  "red": "Paginated release regression failed against original production: Expected one existing internal group; no distribution attempted.",
+  "green": "6 Python tests passed after the fix.",
+  "calibration": "An in-memory production mutation that reinstated first-page-only reads was rejected by all 3 pagination tests. No workspace source mutation occurred.",
+  "liveReadback": {
+    "build": "1006",
+    "bundleId": "com.plenara.plenaraApp",
+    "ownerEnrolled": true,
+    "group": "Internal",
+    "processingState": "VALID",
+    "expired": true,
+    "inGroup": true
+  },
+  "reference": "https://developer.apple.com/documentation/appstoreconnectapi/pageddocumentlinks"
+}

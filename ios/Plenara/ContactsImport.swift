@@ -49,7 +49,12 @@ enum ContactImport {
         return p
     }
     static func existing(_ candidate: Person, in people: [Person]) -> Person? {
-        if let id = candidate.sourceContactID, let exact = people.first(where: { $0.sourceContactID == id }) { return exact }
+        if let id = candidate.sourceContactID {
+            let exact = people.filter { $0.sourceContactID == id }
+            // A user can deliberately keep separate journals for the same contact.
+            // A later refresh must ask which one, never silently choose the first.
+            if !exact.isEmpty { return exact.count == 1 ? exact[0] : nil }
+        }
         // One-time selections can have different IDs when broad access is denied.
         // Recognize only one previously imported, otherwise identical contact.
         func normalizedName(_ name: String) -> String { name.trimmingCharacters(in: .whitespacesAndNewlines).folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current) }
@@ -62,7 +67,7 @@ enum ContactImport {
     }
     static func possibleMatches(_ c: Person, in people: [Person]) -> [Person] {
         let phones = Set(c.phones.map { $0.filter(\.isNumber) }.filter { !$0.isEmpty }); let emails = Set(c.emails.map { $0.lowercased() })
-        return people.filter { $0.name.localizedCaseInsensitiveCompare(c.name) == .orderedSame || !phones.isDisjoint(with: $0.phones.map { $0.filter(\.isNumber) }) || !emails.isDisjoint(with: $0.emails.map { $0.lowercased() }) }
+        return people.filter { (c.sourceContactID != nil && $0.sourceContactID == c.sourceContactID) || $0.name.localizedCaseInsensitiveCompare(c.name) == .orderedSame || !phones.isDisjoint(with: $0.phones.map { $0.filter(\.isNumber) }) || !emails.isDisjoint(with: $0.emails.map { $0.lowercased() }) }
     }
     static func apply(_ c: Person, to id: UUID?, forceNew: Bool = false, journal: inout Journal) {
         let existingID = forceNew ? nil : (id ?? existing(c, in: journal.people)?.id)

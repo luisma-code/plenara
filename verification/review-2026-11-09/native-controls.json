@@ -1,0 +1,25 @@
+{
+  "revertedProductionDefectsRejected": [
+    "testAmbiguousImportedIdentityRequiresExplicitLink",
+    "testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal",
+    "testReadableExportIncludesContextAndDatedReminders",
+    "testReminderCapacityKeepsNearestDatesAcrossKinds",
+    "testReminderCalendarPreservesNonGregorianFollowUp",
+    "testLargeSelfExportedBackupCanBeRestored"
+  ],
+  "repairedHistoricalCalibrationSeamsRejected": [
+    "testSnoozePauseUnknownContactAndStableSuggestions",
+    "testFeelingsAndIntentionsNeverCreateOrAlterReminderRhythms"
+  ],
+  "failedTests": [
+    "testAmbiguousImportedIdentityRequiresExplicitLink",
+    "testBackupRejectsCollidingNoteIdentitiesWithoutReplacingJournal",
+    "testFeelingsAndIntentionsNeverCreateOrAlterReminderRhythms",
+    "testLargeSelfExportedBackupCanBeRestored",
+    "testReadableExportIncludesContextAndDatedReminders",
+    "testReminderCalendarPreservesNonGregorianFollowUp",
+    "testReminderCapacityKeepsNearestDatesAcrossKinds",
+    "testSnoozePauseUnknownContactAndStableSuggestions"
+  ],
+  "restoredSource": true
+}

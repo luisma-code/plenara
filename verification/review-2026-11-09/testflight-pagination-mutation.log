@@ -1,0 +1,49 @@
+test_release_resolves_group_owner_and_existing_assignment_on_later_pages (__main__.BrokenPaginationTests) ... ERROR
+test_duplicate_build_number_on_later_page_is_not_distributed (__main__.BrokenPaginationTests) ... ERROR
+test_pagination_rejects_cycles_and_foreign_hosts (__main__.BrokenPaginationTests) ... 
+======================================================================
+ERROR: test_release_resolves_group_owner_and_existing_assignment_on_later_pages (__main__.BrokenPaginationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "tool/test_testflight.py", line 90, in test_release_resolves_group_owner_and_existing_assignment_on_later_pages
+    result = self.release('1000')
+  File "tool/testflight.py (single-page mutation)", line 114, in release
+  File "tool/testflight.py (single-page mutation)", line 75, in status
+  File "tool/testflight.py (single-page mutation)", line 66, in contract
+SystemExit: Expected one existing internal group; no distribution attempted
+
+======================================================================
+ERROR: test_duplicate_build_number_on_later_page_is_not_distributed (__main__.BrokenPaginationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "tool/test_testflight.py", line 121, in test_duplicate_build_number_on_later_page_is_not_distributed
+    self.release('1000')
+  File "tool/testflight.py (single-page mutation)", line 123, in release
+  File "tool/testflight.py (single-page mutation)", line 80, in status
+  File "tool/testflight.py (single-page mutation)", line 56, in collection
+  File "tool/test_testflight.py", line 115, in paginated
+    response = apple(method, path, body)
+  File "tool/test_testflight.py", line 26, in __call__
+    self.state = next(self.states)
+StopIteration
+
+======================================================================
+FAIL: test_pagination_rejects_cycles_and_foreign_hosts (__main__.BrokenPaginationTests) (next_url='https://api.appstoreconnect.apple.com/v1/items')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "tool/test_testflight.py", line 106, in test_pagination_rejects_cycles_and_foreign_hosts
+    self.scope['collection']('/items')
+AssertionError: SystemExit not raised
+
+======================================================================
+FAIL: test_pagination_rejects_cycles_and_foreign_hosts (__main__.BrokenPaginationTests) (next_url='https://example.org/items')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "tool/test_testflight.py", line 106, in test_pagination_rejects_cycles_and_foreign_hosts
+    self.scope['collection']('/items')
+AssertionError: SystemExit not raised
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.035s
+
+FAILED (failures=2, errors=2)

@@ -4,6 +4,8 @@ A quiet iPhone app for staying close to the people in your life.
 
 - [Approved product and interface design](design/relationship-app.md)
 - [Native SwiftUI app and build guide](ios/README.md)
+- [Astra code review and correctness fixes](docs/reviews/2026-11-09-code-review.md)
+- [Relationship maintenance proposal — awaiting approval](docs/reviews/2026-11-09-relationship-effectiveness-proposal.md)
 - [Inner-circle priority and complete reconnection list](verification/ranking/update.md)
 - [Focus on people who still need assessment](verification/assessment/update.md)
 - [Organizing people together or one attribute at a time](verification/organize/update.md)

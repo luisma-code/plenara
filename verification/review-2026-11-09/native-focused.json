@@ -1,0 +1,28 @@
+{
+  "resultBundle": ".build/native-20261109-182743.xcresult",
+  "configuration": "Release",
+  "testsPassed": 27,
+  "testFailures": 0,
+  "largeSelfExportPayloadCharacters": 50000001,
+  "memoryLimitKiB": 524288,
+  "sampledPeakRSSKiB": 334080,
+  "limits": "RSS sampled every two seconds, not a peak-allocation measurement or physical-device/leak claim. Large backups are fully decoded in memory.",
+  "sourceSHA256": {
+    "ios/Plenara/ContactsImport.swift": "19e854cb80e90f8cc4205899397f3bb5fea6e66cf0846785bcccb463d0863332",
+    "ios/Plenara/DemoData.swift": "7785ea506d04cf782a8f5915a8fc75bab9d3213d6c4164875ccbc7b7284d9093",
+    "ios/Plenara/Editors.swift": "6bc041136c28653cd90a608ca8553853cdbb3bd416c3869b8b281c36d99ca826",
+    "ios/Plenara/HomeView.swift": "9d3446491b0bde0f4900638bfa7dbd15893677c855a3b15739dea00e9496605c",
+    "ios/Plenara/JournalStore.swift": "aeaa6092fdd6fd2cdb91846e7789ffc3bdcc6a02d1d0edd552f8fbcd9409d025",
+    "ios/Plenara/Models.swift": "c146b081505f750d1740bc3314c4529f17c145a5d3348472c24784144544a40e",
+    "ios/Plenara/Notifications.swift": "ad97157132afe339235b9ec9a449fd895dcaa7d0a4a9c0a23b4ecc5b56ddcafb",
+    "ios/Plenara/Organization.swift": "b221bbd2afd00988545b105568f4677daa105981c4693ed8c198b8a41b234e2a",
+    "ios/Plenara/PersonDetail.swift": "7790f0e1e2b25cc216a681f6a635bb08efe104d3f2b96fc3eb9f5872747ae597",
+    "ios/Plenara/PlenaraApp.swift": "8ec26183efa6d008c18349c301684bff6b05a7470c5d6c2ef194ba7aeaa02a4f",
+    "ios/Plenara/ReconnectionSection.swift": "a9dad5efe8b90686c724eb59944fc30df370224cafeec007c1416557a05031e6",
+    "ios/Plenara/SettingsView.swift": "818e6d74e0598affa53d43fdcde0fbe97dafe4cb234a6705cf4839926a0326b2",
+    "ios/Plenara/Theme.swift": "cf29acfe76c76b03ba94f4ce4a69e237cb2ba8b0b9f47b63ab4e211e79d8047f",
+    "ios/PlenaraTests/JournalTests.swift": "a38900b64c4f305161b315704316a16b2925e50ab5a176ff18ca8d19eb97a490",
+    "ios/PlenaraTests/RankingTests.swift": "fb79e50405cdfaad6c827fec786d6103913b1ce02dc143171ccc737ebd91d9bd",
+    "ios/project.yml": "cfcac4dcd43f8946833735098d1032c700bec0c1a30e503639a62938174bdfa4"
+  }
+}

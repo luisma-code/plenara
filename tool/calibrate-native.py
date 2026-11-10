@@ -18,7 +18,7 @@ try:
  replace('Models.swift',' && $0.connected','')
  replace('Models.swift','var reminders: [DatedReminder] = []','if true { return [] }; var reminders: [DatedReminder] = []')
  replace('Models.swift','max(0, calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day ?? 0)','0')
- replace('Models.swift','guard p.cadence > 0, !p.paused,','guard false, p.cadence > 0, !p.paused,')
+ replace('Models.swift','guard p.cadence > 0, let anchor = connection ?? p.reminderStart,','guard false, p.cadence > 0, let anchor = connection ?? p.reminderStart,',count=2)
  replace('Notifications.swift','guard p.notifications else { return [] }','// BROKEN CONTROL: ignore notification opt-in')
  replace('Notifications.swift','try await center.add(UNNotificationRequest(identifier: plan.id, content: content, trigger: trigger))','_ = trigger // BROKEN CONTROL: skip the OS scheduling call')
  replace('PlenaraApp.swift','            .navigationDestination(for: UUID.self) { PersonDetail(id: $0) }\n        }\n        .safeAreaInset','            .navigationDestination(for: UUID.self) { PersonDetail(id: $0) }\n        .safeAreaInset')

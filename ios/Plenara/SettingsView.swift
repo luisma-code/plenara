@@ -85,8 +85,6 @@ struct SettingsView: View {
                 .fileExporter(isPresented: $exporting, document: document, contentType: textExport ? .plainText : .json, defaultFilename: exportFilename) { result in switch result { case .success: statusMessage = "Your export was saved."; case .failure(let error): statusMessage = "Export couldn’t finish. \(error.localizedDescription)" } }
                 .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
                     do { let url = try result.get(); let scoped = url.startAccessingSecurityScopedResource(); defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                        let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-                        guard size < 50_000_000 else { throw JournalError.invalidBackup }
                         let bytes = try Data(contentsOf: url); let loaded = try JournalStore.readJournal(bytes)
                         pendingRestore = bytes; restoreName = "\(loaded.people.count) people and \(loaded.moments.count) moments"; confirmRestore = true
                     } catch { statusMessage = "That backup couldn’t be opened. Your current journal is untouched. \(error.localizedDescription)" }

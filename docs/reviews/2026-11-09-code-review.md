@@ -1,0 +1,70 @@
+# Plenara code review
+
+**November 9, 2026 · Astra review, with independent integration/tooling review · native build 1007**
+
+The review found and corrected defects in reminder selection, calendar interpretation, contact matching, backup validation/restoration, readable export, validation cost, and TestFlight pagination. It also repaired two stale negative-control scripts. Product improvements are proposed separately in [Making Plenara more effective at staying close](2026-11-09-relationship-effectiveness-proposal.md); none of those product changes is included in this fix.
+
+This is a review of the active native app, tests, configuration, and supporting tools. It is not a claim of exhaustive formal verification or proof that using the app improves relationships.
+
+## Findings and corrections
+
+| Priority | Finding and actual consequence | Correction and evidence |
+| --- | --- | --- |
+| High | The app could save and export a journal larger than 50 MB, but both the backup picker and restore rejected it. A backup produced by Plenara could therefore fail when needed for recovery. | Removed the restore-only size rejection from both paths. Startup and restore continue to use the shared decoder and structural validation. A real production save/export/restore test uses a bounded 50,000,001-character synthetic note, rather than irrelevant JSON padding. Original code rejects that backup; fixed code restores the note and person identity. This is an in-memory decoder, not a streaming one. |
+| Medium | The 48-notification limit was applied after UUID-ordered birthdays and before any dated follow-ups. With 47 birthday reminders, even tomorrow’s follow-up could disappear behind birthdays months away. | Reserve one weekly slot; order birthdays and follow-ups together by their next occurrence, with stable identity ties; take the nearest 47. Regression fills 60 birthday slots and proves an earlier note and near birthday survive. Existing opt-in, pause, quiet-hour, and privacy behavior stays on the same path. |
+| Medium | Dated notification components dropped the calendar and era used to calculate the date. A year from a Japanese calendar could be interpreted as a Gregorian year, producing no intended future trigger. | Preserve the calculation calendar and the follow-up era. A regression passes production components into Apple’s `UNCalendarNotificationTrigger` and compares its next trigger with the actual intended date. Safe optional date resolution replaces the follow-up force-unwrap. Birthday ordering uses strict matching rather than inventing a March 1 birthday from February 29. |
+| Medium | Deliberately separate people can share a Contacts source ID. Reimport selected the first matching journal silently. Simply removing that first-match behavior would still be insufficient when the contact’s name, number, and email all changed. | Exact source-ID matching succeeds only when unique. Shared source IDs remain possible matches even after all contact fields change, so the existing review screen requires an explicit link or separate-person choice. Regression verifies both candidate identities and refreshes only the explicitly chosen person. |
+| Medium | Restored JSON could contain the same note UUID for multiple people. Home/SwiftUI note identity and notification request IDs then collided. | Shared journal validation rejects duplicate note IDs across all people before replacement. Regression verifies both the in-memory journal and original disk bytes remain unchanged after rejected restore. Valid app-generated notes and the frozen old journal retain their identities. |
+| Medium | Readable export omitted pronunciation, relationship detail, time zone, preferred method, birthday/reminder choice, approximate starting connection, reminder start, snooze, pinning, and follow-up dates. The text export lost useful personal context and reminder meaning. | Include those user-facing fields and note states in the existing export. A regression checks distinctive values and labels; the JSON export remains the complete restorable representation, including photos. |
+| Medium | Every validation checked each moment’s owner by scanning all people. At the declared 10,000-person / 200,000-moment maxima this permitted up to two billion equality checks on a save, on the UI actor. | Build the person-ID set once and use membership lookup for moment ownership. This removes the unnecessary quadratic scan without changing accepted owners or the existing limits. No measured speedup is claimed. |
+| Medium | TestFlight group, tester, exact-build, and assignment reads ignored pagination. An enrolled owner or already-attached build on a later page could be missed; ambiguous build numbers could also escape the uniqueness check. | Follow Apple’s `links.next` for contract-critical collections, reject cycles and foreign-host links before another authenticated request, and retain the intentionally short unfiltered latest-build summary. Three new Python tests plus a first-page-only mutation establish the behavior; a live read confirms the configured app/group/owner contract. |
+| Low | `calibrate-native.py` and `calibrate-relationships.py` still referred to an eligibility guard removed during the ranking refactor. One also assumed mutating `isDue` exercised Home suggestions, although Home now uses `rankedSuggestions`. | Update the first mutation to the two real eligibility guards and the second to the ranked-candidate producer. Both replacement mutations were run against focused existing tests and rejected. All 13 literal needles in the combined calibrator match current source. |
+
+## Review coverage
+
+| Area | What was inspected | Result or practical boundary |
+| --- | --- | --- |
+| Persistence and upgrade | `Models.swift`, `JournalStore.swift`, frozen build-1001 fixture, read/edit/save/restore and organization receipts | Shared old/new decoding remains; identity and `RelationshipJournal/journal-v1.json` stay unchanged; before-update recovery is retained; failed disk writes do not publish. Valid previous-version fixture remains part of the Release suite. No new journal schema or migration. |
+| Reminder policy | Ranking, invitation suppression, notification plan, scheduling serialization, date reminders | Inner-circle and elapsed-rhythm policy preserved; feeling does not start notifications; outreach is distinct from connection. The manager has one serialized pending/running scheduling path, so queued refreshes are applied after in-flight adds. No separate scheduling-race defect was established. |
+| Contacts and media | Apple picker host/delegate, candidate matching, explicit import review, link/unlink, photo loading and thumbnailing | No background Contacts reads or journal writes into Contacts. Reimport preserves notes/history/rhythms; shared-ID ambiguity fixed. Photos remain local. Physical-device picker behavior is not established by simulator success. |
+| User flows | Home, reconnection cards, People filters, both organization modes, person page, editors, Moments, Settings | Flows are wired to production storage. Product gaps such as action emphasis and setup friction are identified in the separate approval proposal. These are not silently implemented as “bug fixes.” |
+| Configuration and privacy | XcodeGen, Info.plist, privacy manifest, target family, app identity, Release build paths | No network analytics, AI client, hosted account, or paid runtime dependency found in active app code. Simulator fixtures remain excluded from the physical-device binary. Useful operation/error logging avoids journal content. |
+| Verification and delivery | XCTest/XCUITest, precheck, calibration scripts, memory guard, TestFlight Python/shell, direct install, archive/reference checks | Review regressions and negative controls added; pagination fixed; stale calibration seams repaired. Main integration owns full Release precheck and authorized TestFlight delivery, recorded below. |
+| Historical material | Archive manifest and reference boundary, retained HTML reference and its checks | The archived planner is not active guidance or source. The original prototype deliberately retains its historical category model, marked as such in the current design. It is not the shipped app. |
+
+## Evidence from the focused review
+
+The first four new native regressions ran against unchanged production and produced **18 intended assertion failures**. After the final fixes, **all 27 native unit tests passed** in Release. A separate exclusive reversion run restored the original production defects and exercised the two repaired historical calibration seams: **all eight selected tests failed for their guarded behavior**, then fixed source was restored before rebuilding.
+
+- [Final focused Release result and source hashes](../../verification/review-2026-11-09/native-focused.json)
+- [Final focused result-bundle summary](../../verification/review-2026-11-09/native-focused-summary.json)
+- [Original failure log](../../verification/review-2026-11-09/native-original-red.log)
+- [Production-reversion failure log](../../verification/review-2026-11-09/native-reverted.log)
+- [Negative-control result](../../verification/review-2026-11-09/native-controls.json)
+- [Reversion memory samples](../../verification/review-2026-11-09/native-reverted-memory.csv)
+- [TestFlight pagination verification](../../verification/review-2026-11-09/testflight-pagination.json)
+- [Python first-page mutation rejection](../../verification/review-2026-11-09/testflight-pagination-mutation.log)
+
+The original failing XCTest run also logged an Xcode diagnostic-collection warning about locating `simctl`. The assertions and result bundle were produced, and the separate memory guard recorded live samples; this warning was from Xcode’s post-failure diagnostics, not the test failure or a failed memory guard. It is not counted as a product defect.
+
+During evidence consolidation, a shared latest-log path had already been reused by the next run. The mismatched scratch copies were removed, and the focused result was exported from its immutable result bundle instead. The live [ship-what-you-ran skill](/Users/luisma.code/.codex/skills/ship-what-you-ran/SKILL.md) now requires preserving run-owned evidence before handing off a shared verification slot; the guidance backup was validated, mirrored, and [committed and pushed separately](https://github.com/luisma-code/skills/commit/2e3317743db5f41446f02adbe34cf303c12593c5).
+
+The bounded large-backup check proves the former threshold defect and this fixture’s restoration, not unlimited practical capacity. Large journals are still fully encoded/decoded in memory, and validation happens after decoding. No device memory-ceiling or long-duration leak claim is made. Birthday/follow-up capacity remains finite and refreshes on data changes and foreground entry; the app does not acquire a background scheduler.
+
+## Screenshot inspection correction
+
+An image-preview inspection initially appeared to show missing logging labels and avatar initials. Reading the original PNG pixels showed both labels and initials present in light and dark captures; the global logging label and initials were pixel-identical across appearances. Reopening a single original image also displayed them correctly. A calibrated region check rejects an in-memory erased-label control and binds the measurements to the original screenshot hashes. This was an inspection/preview artifact, not an app defect; no production code, capture delay, or UI test was changed. [Pixel evidence](../../verification/review-2026-11-09/painted-label-diagnostic.json).
+
+The live [measure-then-fix skill](/Users/luisma.code/.codex/skills/measure-then-fix/SKILL.md) now requires checking original pixels and hashes and reopening a suspect image singly before attributing preview omissions to the app. The validated guidance was [mirrored and pushed](https://github.com/luisma-code/skills/commit/e792daa7501339c36bd8a28b9c491ec64aec1f53).
+
+## Final integration and delivery
+
+`bash tool/precheck.sh` passed on the final Release candidate: **42 native tests**, plus the separately repeated **Contacts import with broad access denied**. Six historical browser journeys, six TestFlight Python tests, and all 926 archived-file checks also passed. The dedicated simulator was an iPhone 16 Pro running iOS 26.5. The frozen build-1001 journal was upgraded, edited, and reopened by the native tests.
+
+- [Full native result](../../verification/review-2026-11-09/native-tests.json) · [Denied-access result](../../verification/review-2026-11-09/contacts-denied.json) · [Precheck output](../../verification/review-2026-11-09/precheck.log)
+- [Exact tested source hashes](../../verification/review-2026-11-09/source-hashes.json) · [Full-run memory samples](../../verification/review-2026-11-09/memory.csv) · [Denied-access memory samples](../../verification/review-2026-11-09/contacts-denied-memory.csv)
+- Reviewed current rendered captures: [Home](../../verification/review-2026-11-09/home.png), [dark Home](../../verification/review-2026-11-09/dark-home.png), [largest-text person](../../verification/review-2026-11-09/large-person.png), and [native backup export](../../verification/review-2026-11-09/backup-export.png).
+
+Full-run RSS samples peaked at **510.6 MiB** under the existing 512 MiB stop guard; the denied-access run peaked at **316.7 MiB**. The full-run high sample occurred during the synthetic large-backup test. Later UI launches remained below that value. These are two-second samples, not peak-allocation measurements, physical-device capacity, or a long-duration leak test. No physical phone was used for verification.
+
+The app remains version **1.0.0**, with delivery build **1007**. The product proposal remains unimplemented and requires Luis’s approval.

@@ -16,7 +16,7 @@ try:
  run(['-only-testing:PlenaraTests/JournalTests/testUpgradePreservesImportedJournalAndOriginalFile','-only-testing:PlenaraUITests/PlenaraUITests/testExistingImportSurvivesUpgradeAndIndependentChoices'],['A build 1001 import must remain readable after upgrade','The previous-version import must open without reimporting'])
  for p,b in original.items():p.write_bytes(b)
  p=paths[0];s=p.read_text();needle='try old.write(to: beforeRelationshipUpdate';assert needle in s;p.write_text(s.replace(needle,'try Data().write(to: beforeRelationshipUpdate',1))
- p=paths[1];s=p.read_text();needle='guard p.cadence > 0, !p.paused,';assert needle in s;s=s.replace(needle,'if p.feelingChoice == "Needs care" { return true }; '+needle,1)
+ p=paths[1];s=p.read_text();needle='let candidates = people.compactMap { p -> (person: Person, elapsed: Int)? in';assert needle in s;s=s.replace(needle,needle+'\n            if p.feelingChoice == "Needs care" { return (p, 1) }',1)
  a=s.index('struct PeopleFilter:');s=s[:a]+s[a:].replace(' &&\n',' ||\n',1);p.write_text(s)
  run(['-only-testing:PlenaraTests/JournalTests/testUpgradePreservesImportedJournalAndOriginalFile','-only-testing:PlenaraTests/JournalTests/testIndependentClassificationAndCombinedFilters','-only-testing:PlenaraTests/JournalTests/testFeelingsAndIntentionsNeverCreateOrAlterReminderRhythms'],['Keep a complete before-update recovery copy','Combined filters must require every dimension','A wish to grow or need for care must not start a reminder'])
  Path('verification/relationships/calibration.json').write_text(json.dumps({'rejectedControls':checks,'nativeSourcesRestored':True},indent=2)+'\n')
