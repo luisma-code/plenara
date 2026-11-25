@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-25",
+  "command": "bash tool/precheck.sh",
+  "exit_code": 0,
+  "reviewed_commit": "7c3015682bda70b39fda3ce356b5c3dd52755dc0",
+  "native_configuration": "Release",
+  "simulator_id": "BB42F29A-928B-4B9E-BD39-160B70249D4F",
+  "other_checks": {
+    "archive_files_verified": 926,
+    "historical_browser_journeys_passed": 6,
+    "testflight_python_tests_passed": 6,
+    "workflow_calibration_python_tests_passed": 2
+  },
+  "native": {
+    "full": {
+      "result": "Passed",
+      "passed_tests": 61,
+      "failed_tests": 0,
+      "local_result_bundle": ".build/native-20261125-140510.xcresult",
+      "sampled_peak_rss_mib": 403.4
+    },
+    "contacts_denied": {
+      "result": "Passed",
+      "passed_tests": 1,
+      "failed_tests": 0,
+      "local_result_bundle": ".build/native-20261125-141938.xcresult",
+      "sampled_peak_rss_mib": 348.8
+    }
+  },
+  "scope": "Baseline of unchanged application. Does not validate the proposed behavior, exact private journal, physical-device UI, or absence of memory leaks."
+}

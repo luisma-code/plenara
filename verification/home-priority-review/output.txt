@@ -1,0 +1,6 @@
+zero history | [] | Aaron
+zero history +7d | [] | Aaron
+connected Aaron today | [] | Aaron
+outreach Aaron today | [] | Zoe
+Aaron setup 21/7 and close family known 31/30 | ["Aaron", "Mei"] | Zoe
+add due inner-circle | ["Zoe", "Aaron", "Mei"] | nil
