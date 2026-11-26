@@ -1,0 +1,11 @@
+Running altool at path '/Applications/Xcode.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+2026-11-25 20:32:57.096  INFO: [ContentDelivery.Uploader.83EC48300] 
+==========================================
+VERIFY SUCCEEDED with no errors, 1 warning
+==========================================
+2026-11-25 20:32:57.097  WARN: [altool.83EC48300] SDK version issue. This app was built with the iOS 26.5 SDK. Starting April 2027, iOS and iPadOS apps must be built with the iOS 27 SDK or later, included in Xcode 27 or later, in order to be uploaded to App Store Connect or submitted for distribution. (90725)
+   server_warning : 
+      code : 90725
+      description : SDK version issue. This app was built with the iOS 26.5 SDK. Starting April 2027, iOS and iPadOS apps must be built with the iOS 27 SDK or later, included in Xcode 27 or later, in order to be uploaded to App Store Connect or submitted for distribution.
+No errors, 1 warnings, validating archive at '.build/testflight-candidate/export/Plenara.ipa'.

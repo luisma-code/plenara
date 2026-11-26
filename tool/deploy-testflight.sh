@@ -6,6 +6,8 @@ source tool/require-storage.sh
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_AQMT4FFHKW.p8"
 mkdir -p .tmp/testflight .build/testflight-candidate
+# A prior upload receipt must not appear to describe the current run.
+rm -f .tmp/testflight/archive.log .tmp/testflight/export.log .tmp/testflight/validate.log .tmp/testflight/upload.log
 python3 tool/testflight.py status
 (cd ios && xcodegen generate)
 xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release \

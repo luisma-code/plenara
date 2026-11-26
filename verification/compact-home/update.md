@@ -87,8 +87,9 @@ global guidance.
 
 ## Delivery status
 
-Build 1009 is prepared in project configuration. Release validation is complete. Main integration and TestFlight delivery are
-in progress; the release receipt below will establish actual beta availability.
+Build 1009 is prepared in project configuration. Release validation, main integration and TestFlight delivery are complete.
+Build 1009 is available to the enrolled internal tester, confirmed by the
+[release receipt](testflight.json).
 
 ## Deployment request and storage exception
 
@@ -138,3 +139,32 @@ passes packaging validation. See cleanup.json.
 The rendered-label lesson is now in the authoritative global ship-what-you-ran
 skill: inspect focused captures and resolved text color before the broad gate.
 It was validated and mirrored, committed and pushed in backup commit b4dad2b.
+
+## Release packaging and readback
+
+Implementation commit 400b2f4 was pushed to main and verified on the remote
+before tool/deploy-testflight.sh ran. The final build-1009 package passed Apple
+validation and upload. The final package receipt includes its IPA SHA-256 and
+source commit. A progress update initially misread a stale build-1008 upload
+log as current; the package identity check rejected that inference immediately.
+The mistake was corrected in chat before any availability claim. The current
+validation/upload outputs were then checked with fresh timestamps and build
+identity. Availability remains a separate App Store Connect readback.
+
+The final readback confirms build 1009 is VALID, unexpired, assigned to Internal,
+and IN_BETA_TESTING, with owner enrollment true and auto-notification enabled.
+Delivery uses the authorized remote TestFlight path. Installation and Automatic
+Updates on the iPhone are controlled by TestFlight on that device; no physical
+launch, test or installation readback is claimed.
+
+The deployment runner now invalidates its four previous step logs before a new
+run. This implements the existing global rule about stale success receipts
+rather than adding another rule. A seeded stale-output check proved all four
+logs disappear while the prior usable package remains; shell syntax and all six
+TestFlight-helper tests passed. The active runner was allowed to exit before
+editing its source. This tooling-only follow-up does not change the uploaded app.
+
+Selected native screenshots, both rendered-label controls, validation logs, source
+hashes and release receipts are committed evidence. Both dedicated simulators
+are shut down; no owned test host or memory watcher remains. Only the latest
+usable signed TestFlight package is retained.

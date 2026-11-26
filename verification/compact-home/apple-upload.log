@@ -1,0 +1,13 @@
+Running altool at path '/Applications/Xcode.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+2026-11-25 20:33:55.708  INFO: [ContentDelivery.Uploader.97C814300] 
+==========================================
+UPLOAD SUCCEEDED with no errors, 1 warning
+Delivery UUID: 03786997-7f21-4093-b430-614644ece7f1
+Transferred 1587968 bytes in 0.114 seconds (14.0MB/s, 111.847Mbps)
+==========================================
+2026-11-25 20:33:55.708  WARN: [altool.97C814300] SDK version issue. This app was built with the iOS 26.5 SDK. Starting April 2027, iOS and iPadOS apps must be built with the iOS 27 SDK or later, included in Xcode 27 or later, in order to be uploaded to App Store Connect or submitted for distribution. (90725)
+   server_warning : 
+      code : 90725
+      description : SDK version issue. This app was built with the iOS 26.5 SDK. Starting April 2027, iOS and iPadOS apps must be built with the iOS 27 SDK or later, included in Xcode 27 or later, in order to be uploaded to App Store Connect or submitted for distribution.
+No errors, 1 warnings, uploading archive at '.build/testflight/export/Plenara.ipa'.

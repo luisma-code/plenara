@@ -13,5 +13,8 @@
   "DTSDKName": "iphoneos26.5",
   "testBundlesIncluded": false,
   "simulatorDemoFlagsIncluded": false,
-  "userDefaultsReason": "CA92.1"
+  "userDefaultsReason": "CA92.1",
+  "ipaSHA256": "7f54a0bc00d2bb8b0cbb69ea794a6d84f5338ae58723585dbab768fd8c287b23",
+  "sourceCommit": "400b2f4b30548c109286c78e92a536bd78243ee6",
+  "validatedSourceHashes": "source-hashes.json"
 }
