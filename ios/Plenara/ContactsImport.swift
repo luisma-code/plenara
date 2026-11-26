@@ -94,18 +94,18 @@ struct ImportContactsView: View {
         NavigationStack {
             ScrollView { VStack(alignment: .leading, spacing: 22) {
                 if imported {
-                    PageHeading(eyebrow: "Your circle", title: "Your people\nare here.", subtitle: "No reminders were started. Choose who you’d like a rhythm with, or leave it for another time.")
-                    ActionButton(title: "Choose contact rhythms", icon: "heart") { settingRhythms = true }.accessibilityIdentifier("import-rhythm-setup")
+                    PageHeading(eyebrow: "People", title: "Contacts imported", subtitle: "Import is complete. Reminders stay off until you choose a schedule.")
+                    ActionButton(title: "Set up reminders", icon: "heart") { settingRhythms = true }.accessibilityIdentifier("import-rhythm-setup")
                     Button("Not now") { dismiss() }.frame(minHeight: 44).accessibilityIdentifier("import-not-now")
                 } else {
-                PageHeading(eyebrow: "Your circle", title: candidates.isEmpty ? "Choose your\npeople." : "A little closer.", subtitle: candidates.isEmpty ? "Select a few people from your contacts. You decide who comes into Plenara." : "Review the people you’ve chosen. After importing, you can choose optional contact rhythms or leave setup for later.")
+                PageHeading(eyebrow: "People", title: candidates.isEmpty ? "Choose contacts" : "Review contacts", subtitle: candidates.isEmpty ? "Select a few people from your contacts. You decide who comes into Plenara." : "Review the people you’ve chosen. After importing, you can choose optional contact rhythms or leave setup for later.")
                 if candidates.isEmpty {
                     ActionButton(title: "Choose from Contacts", icon: "person.crop.circle.badge.plus") { picking = true }
                     Text("Apple’s picker shares only the contacts you select. It works without full address-book access, including when broader access is denied.").font(.footnote).foregroundStyle(Theme.muted)
                 } else {
                     Text("\(selection.count) selected").font(.subheadline).foregroundStyle(Theme.muted)
                     ForEach(candidates) { c in candidateRow(c) }
-                    Text("Selected existing people have their name, phone, email, photo, city, and birthday refreshed from the contact shown above. Your notes, moments, intentions, time zone, and rhythm stay yours.").font(.footnote).foregroundStyle(Theme.muted)
+                    Text("Selected existing people have their name, phone, email, photo, city, and birthday refreshed from the contact shown above. Your notes, contact history, intentions, time zone and reminder interval are preserved.").font(.footnote).foregroundStyle(Theme.muted)
                     ActionButton(title: "Import selected people", icon: "checkmark") {
                         if store.update({ j in for c in candidates where selection.contains(c.id) { ContactImport.apply(c, to: links[c.id], forceNew: separatePeople.contains(c.id), journal: &j) } }) { imported = true }
                     }.disabled(selection.isEmpty || candidates.contains { selection.contains($0.id) && !ready($0) })

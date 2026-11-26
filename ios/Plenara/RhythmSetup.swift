@@ -20,13 +20,13 @@ struct RhythmSetupView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Choose who you’d like a rhythm with. Nothing is selected and no reminder starts until you apply your choices.").foregroundStyle(Theme.muted)
-                    Toggle("Include people with existing rhythms", isOn: $includeExisting).accessibilityIdentifier("rhythm-include-existing")
-                    Text("Existing rhythms are shown beside each name. They stay as they are unless you explicitly include and select them.").font(.footnote).foregroundStyle(Theme.muted)
+                    Text("Select people and a reminder interval. Nothing starts until you apply your choices.").foregroundStyle(Theme.muted)
+                    Toggle("Include existing reminders", isOn: $includeExisting).accessibilityIdentifier("rhythm-include-existing")
+                    Text("Existing intervals appear beside each name. Select Include existing reminders before changing them.").font(.footnote).foregroundStyle(Theme.muted)
                 }
                 Section("Your choice") {
-                    Picker("Contact rhythm", selection: $cadence) {
-                        Text("Choose a rhythm").tag(0)
+                    Picker("Reminder interval", selection: $cadence) {
+                        Text("Choose an interval").tag(0)
                         ForEach(Array(Set([3, 7, 14, 21, 30, 60, 90, cadence])).filter { $0 > 0 }.sorted(), id: \.self) { Text(rhythmLabel($0)).tag($0) }
                     }.accessibilityIdentifier("setup-rhythm-cadence")
                     if cadence > 0 { Stepper("Every \(cadence) days", value: $cadence, in: 1...3650).accessibilityIdentifier("setup-rhythm-custom") }
@@ -51,16 +51,16 @@ struct RhythmSetupView: View {
                 } header: { Text("Choose your people") } footer: { Text("Selections stay selected while searching. Apply uses all selected people, including those outside this search.") }
             }.searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Find a person or place")
                 .scrollDismissesKeyboard(.interactively).scrollContentBackground(.hidden).background(Theme.paper)
-                .navigationTitle("Find your rhythms").navigationBarTitleDisplayMode(.inline).toolbar { DismissButton() }
+                .navigationTitle("Reminder setup").navigationBarTitleDisplayMode(.inline).toolbar { DismissButton() }
                 .safeAreaInset(edge: .bottom) {
                     VStack(spacing: 6) {
-                        if savedCount > 0 { Text("Rhythm saved for \(savedCount) \(savedCount == 1 ? "person" : "people").").font(.footnote).accessibilityIdentifier("rhythm-saved") }
+                        if savedCount > 0 { Text("Reminders saved for \(savedCount) \(savedCount == 1 ? "person" : "people").").font(.footnote).accessibilityIdentifier("rhythm-saved") }
                         HStack {
-                            ActionButton(title: "Apply rhythm (\(selected.count))", icon: "checkmark") { apply() }
+                            ActionButton(title: "Apply reminders (\(selected.count))", icon: "checkmark") { apply() }
                                 .disabled(selected.isEmpty || cadence == 0).opacity(selected.isEmpty || cadence == 0 ? 0.5 : 1).accessibilityIdentifier("apply-rhythm")
                             Button("Done") { dismiss() }.frame(minWidth: 60, minHeight: 48).accessibilityIdentifier("rhythm-done")
                         }
-                        if store.rhythmUndo != nil { Button("Undo last rhythm setup") { if store.undoRhythm() { savedCount = 0 } }.frame(minHeight: 44).accessibilityIdentifier("undo-rhythm") }
+                        if store.rhythmUndo != nil { Button("Undo reminder setup") { if store.undoRhythm() { savedCount = 0 } }.frame(minHeight: 44).accessibilityIdentifier("undo-rhythm") }
                     }.padding(16).background(Theme.paper)
                 }
                 .onChange(of: includeExisting) { _, enabled in if !enabled { selected.subtract(store.journal.people.filter { $0.cadence > 0 }.map(\.id)) } }

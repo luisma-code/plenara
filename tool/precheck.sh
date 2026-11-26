@@ -2,6 +2,7 @@
 # Quality gate for native Plenara and its retained design reference.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+source tool/require-storage.sh
 python3 - <<'PY'
 import tarfile, hashlib, json
 from pathlib import Path

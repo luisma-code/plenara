@@ -1,0 +1,17 @@
+{
+  "CFBundleVersion": "1009",
+  "CFBundleShortVersionString": "1.0.0",
+  "CFBundleIdentifier": "com.plenara.plenaraApp",
+  "UIDeviceFamily": [
+    1
+  ],
+  "UISupportedInterfaceOrientations": [
+    "UIInterfaceOrientationPortrait",
+    "UIInterfaceOrientationLandscapeLeft",
+    "UIInterfaceOrientationLandscapeRight"
+  ],
+  "DTSDKName": "iphoneos26.5",
+  "testBundlesIncluded": false,
+  "simulatorDemoFlagsIncluded": false,
+  "userDefaultsReason": "CA92.1"
+}

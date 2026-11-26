@@ -2,6 +2,7 @@
 # Delivery only: build a signed Release app, then install. Never launch or test.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+source tool/require-storage.sh
 mkdir -p .tmp .build
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_AQMT4FFHKW.p8"

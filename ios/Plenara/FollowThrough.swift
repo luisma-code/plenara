@@ -13,7 +13,7 @@ struct WorkflowFeedbackBar: View {
             }.padding(.horizontal, 20).background(Theme.lavender)
         } else if let id = store.recentMomentID, store.journal.moments.contains(where: { $0.id == id }) {
             HStack {
-                Button { reviewMoment(id) } label: { Label(dynamicTypeSize.isAccessibilitySize ? "Saved · For next time" : "Saved · Keep something for next time", systemImage: "text.bubble").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }.accessibilityLabel("Saved. Keep something for next time").accessibilityIdentifier("moment-follow-through")
+                Button { reviewMoment(id) } label: { Label(dynamicTypeSize.isAccessibilitySize ? "Saved · For next time" : "Saved · Add a follow-up note", systemImage: "text.bubble").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }.accessibilityLabel("Saved. Add a follow-up note").accessibilityIdentifier("moment-follow-through")
                 Button { store.recentMomentID = nil } label: { Image(systemName: "xmark").frame(width: 44, height: 44) }.accessibilityLabel("Dismiss next-time suggestion")
             }.padding(.horizontal, 20).background(Theme.sage)
         }
@@ -42,7 +42,7 @@ struct FollowThroughView: View {
                     ForEach(moment.participantIDs, id: \.self) { id in
                         if let person = store.journal.people.first(where: { $0.id == id }) {
                             Section(person.name) {
-                                Button { status = nil; adding = MemoryEditTarget(personID: id, memory: Memory(pinned: true)) } label: { Label("Keep something for next time", systemImage: "plus.bubble") }.accessibilityIdentifier("thread-add-\(person.name)")
+                                Button { status = nil; adding = MemoryEditTarget(personID: id, memory: Memory(pinned: true)) } label: { Label("Add a follow-up note", systemImage: "plus.bubble") }.accessibilityIdentifier("thread-add-\(person.name)")
                                 let threads = person.notes.filter { !$0.archived && ($0.pinned || ($0.followUp.map { Calendar.current.startOfDay(for: $0) <= Calendar.current.startOfDay(for: Date()) } ?? false)) }
                                 ForEach(threads) { note in
                                     VStack(alignment: .leading, spacing: 10) {
@@ -94,7 +94,7 @@ struct ThreadDateEditor: View {
             Form {
                 Section { Text(target.memory.text); DatePicker("Pick it up on", selection: $date, in: Calendar.current.startOfDay(for: Date())..., displayedComponents: .date) }
                 Section { Text("Only this thread’s follow-up date changes. Notification choices stay as you set them.").font(.footnote).foregroundStyle(Theme.muted) }
-            }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle("A little later").navigationBarTitleDisplayMode(.inline)
+            }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle("Reschedule follow-up").navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.buttonStyle(.automatic) }
                     ToolbarItem(placement: .confirmationAction) { Button("Save") { if store.updateThread(personID: target.personID, noteID: target.id, followUp: date) { dismiss() } }.buttonStyle(.automatic).accessibilityIdentifier("save-thread-date") }

@@ -60,8 +60,11 @@ import OSLog
             return true
         } catch { errorMessage = "Couldn’t save your changes. Your previous journal is safe. \(error.localizedDescription)"; log.error("Journal save failed"); return false }
     }
-    @discardableResult func save(_ person: Person) -> Bool {
-        update { j in if let i = j.people.firstIndex(where: { $0.id == person.id }) { j.people[i] = person } else { j.people.append(person) } }
+    @discardableResult func save(_ person: Person, configuringReminders: Bool = false) -> Bool {
+        var candidate = person
+        let previous = journal.people.first { $0.id == person.id } ?? Person()
+        candidate.prepareReminderSave(previous: previous, knownConnection: journal.lastConnection(candidate), configuringReminders: configuringReminders)
+        return update { j in if let i = j.people.firstIndex(where: { $0.id == candidate.id }) { j.people[i] = candidate } else { j.people.append(candidate) } }
     }
     @discardableResult func save(_ moment: Moment, completingHandoff id: UUID? = nil) -> Bool {
         if let id {
@@ -109,7 +112,7 @@ import OSLog
     @discardableResult func setRhythm(_ ids: Set<UUID>, cadence: Int, anchor: RhythmAnchor, replaceExisting: Bool = false, now: Date = Date()) -> Bool {
         guard !ids.isEmpty, (1...3650).contains(cadence), ids.isSubset(of: Set(journal.people.map(\.id))),
               replaceExisting || !journal.people.contains(where: { ids.contains($0.id) && $0.cadence > 0 }) else {
-            errorMessage = "Choose people and a rhythm. Include existing rhythms explicitly before replacing them."; return false
+            errorMessage = "Choose people and an interval. Include existing reminders explicitly before replacing them."; return false
         }
         if case .approximate(let date) = anchor, date > now { errorMessage = "Choose a starting connection in the past."; return false }
         var candidate = journal; var changes: [RhythmEdit] = []
@@ -124,7 +127,7 @@ import OSLog
             let after = RhythmState(candidate.people[i])
             if before != after { changes.append(RhythmEdit(personID: candidate.people[i].id, before: before, after: after)) }
         }
-        guard !changes.isEmpty else { errorMessage = "These people already have this rhythm. Nothing was changed."; return false }
+        guard !changes.isEmpty else { errorMessage = "These reminder settings are already saved. Nothing was changed."; return false }
         guard update({ $0 = candidate }) else { return false }
         rhythmUndo = RhythmReceipt(changes: changes)
         return true
@@ -132,7 +135,7 @@ import OSLog
     @discardableResult func undoRhythm() -> Bool {
         guard let receipt = rhythmUndo else { return false }
         guard receipt.changes.allSatisfy({ edit in journal.people.first(where: { $0.id == edit.personID }).map { edit.canUndo($0) } ?? false }) else {
-            errorMessage = "These rhythms changed after setup. Undo would replace a newer choice, so nothing was changed."; return false
+            errorMessage = "These reminder settings changed after setup. Undo would replace a newer choice, so nothing was changed."; return false
         }
         guard update({ j in for edit in receipt.changes { if let i = j.people.firstIndex(where: { $0.id == edit.personID }) { edit.undo(on: &j.people[i]) } } }) else { return false }
         rhythmUndo = nil; return true
@@ -187,7 +190,7 @@ import OSLog
         func dateText(_ date: Date?) -> String { date?.formatted(date: .long, time: .shortened) ?? "Not set" }
         var lines = ["# Plenara relationship journal", "Exported \(Date().formatted(date: .long, time: .shortened))", ""]
         for p in journal.people.sorted(by: { $0.name < $1.name }) {
-            lines += ["## \(p.name)", "\(p.connectionKinds.joined(separator: " + ")) · \(p.closeness) · \(p.city) · \(p.distance)", "Contact rhythm: \(p.cadence) days; paused: \(p.paused)", "What I want: \(p.directionChoice); how it feels: \(p.feelingChoice)", "Context: \(p.intention)", "Earlier closeness description: \(p.previousCloseness ?? "None")", "Phone: \(p.phones.joined(separator: ", ")); email: \(p.emails.joined(separator: ", "))", ""]
+            lines += ["## \(p.name)", "\(p.connectionKinds.joined(separator: " + ")) · \(p.closeness) · \(p.city) · \(p.distance)", "Reminder interval: \(p.cadence) days; paused: \(p.paused)", "What I want: \(p.directionChoice); how it feels: \(p.feelingChoice)", "Context: \(p.intention)", "Earlier closeness description: \(p.previousCloseness ?? "None")", "Phone: \(p.phones.joined(separator: ", ")); email: \(p.emails.joined(separator: ", "))", ""]
             lines += ["Pronunciation: \(p.pronunciation)", "Relationship detail: \(p.relationshipDetail)", "Time zone: \(p.timeZone.isEmpty ? "Not set" : p.timeZone)", "Preferred way: \(p.preferredMethod)", "Birthday: \(p.birthdayMonth > 0 && p.birthdayDay > 0 ? String(format: "%02d-%02d", p.birthdayMonth, p.birthdayDay) : "Not set")", "Birthday reminder: \(p.birthdayReminder)", "Starting connection: \(dateText(p.baselineConnection)); approximate: \(p.baselineApproximate)", "Rhythm starts: \(dateText(p.reminderStart))", "Snoozed until: \(dateText(p.snoozeUntil))", ""]
             lines += p.notes.map { "- [\($0.category)] \($0.text) (\($0.date.formatted(date: .abbreviated, time: .omitted)))\($0.pinned ? " [pinned]" : "")\($0.archived ? " [archived]" : "")\($0.followUp.map { " · Follow up: \(dateText($0))" } ?? "")" }
             lines += historyText(p.id)

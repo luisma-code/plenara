@@ -1,0 +1,45 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261125-190400.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraTests/RankingTests/testColdStartStartsWithClosePeopleWithoutInventingHistory"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-25 19:04:02.517 xcodebuild[9988:8002882] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261125-190400.xcresult
+
+2026-11-25 19:04:02.523 xcodebuild[9988:8002882] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-25 19:04:04.381 xcodebuild[9988:8002882] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-25 19:04:08.173701-0800 Plenara[10090:8003475] [journal] Journal opened; read-only: false
+2026-11-25 19:04:08.555564-0800 Plenara[10090:8003668] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-11-25 19:04:08.579544-0800 Plenara[10090:8003475] [reminders] Local reminders refreshed
+2026-11-25 19:04:08.592319-0800 Plenara[10090:8003475] [reminders] Local reminders refreshed
+2026-11-25 19:04:08.636843-0800 Plenara[10090:8003664] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+Test Suite 'Selected tests' started at 2026-11-25 19:04:08.814.
+Test Suite 'PlenaraTests.xctest' started at 2026-11-25 19:04:08.815.
+Test Suite 'RankingTests' started at 2026-11-25 19:04:08.815.
+Test Case '-[PlenaraTests.RankingTests testColdStartStartsWithClosePeopleWithoutInventingHistory]' started.
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:19: error: -[PlenaraTests.RankingTests testColdStartStartsWithClosePeopleWithoutInventingHistory] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000001)") is not equal to ("Optional(00000000-0000-0000-0000-000000000002)") - Home must start with chosen closeness when contact history and reminders are missing, including Keep it steady
+Test Case '-[PlenaraTests.RankingTests testColdStartStartsWithClosePeopleWithoutInventingHistory]' failed (0.455 seconds).
+Test Suite 'RankingTests' failed at 2026-11-25 19:04:09.271.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.455 (0.456) seconds
+Test Suite 'PlenaraTests.xctest' failed at 2026-11-25 19:04:09.271.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.455 (0.456) seconds
+Test Suite 'Selected tests' failed at 2026-11-25 19:04:09.272.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.455 (0.457) seconds
+2026-11-25 19:04:09.602 xcodebuild[9988:8002888]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-25 19:04:09.613 xcodebuild[9988:8002882] [MT] IDETestOperationsObserverDebug: 5.221 elapsed -- Testing started completed.
+2026-11-25 19:04:09.613 xcodebuild[9988:8002882] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-25 19:04:09.613 xcodebuild[9988:8002882] [MT] IDETestOperationsObserverDebug: 5.221 sec, +5.221 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261125-190400.xcresult
+
+Failing tests:
+	RankingTests.testColdStartStartsWithClosePeopleWithoutInventingHistory()
+
+** TEST EXECUTE FAILED **
+
+Testing started

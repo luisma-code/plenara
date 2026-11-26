@@ -1,0 +1,20 @@
+[
+  {
+    "path": "/Volumes/MacExt/DeveloperData/projects/plenara/simulators/BB42F29A-928B-4B9E-BD39-160B70249D4F",
+    "logicalBytes": 3933204467,
+    "reason": "Failed external migration copy; original data restored and simulator consumer exercised"
+  },
+  {
+    "path": "/Volumes/MacExt/DeveloperData/projects/plenara/simulators/A7DB6C2C-908E-40CB-AB9D-63270EB0275B",
+    "logicalBytes": 18250024,
+    "reason": "Failed external migration copy; original data restored and simulator consumer exercised"
+  },
+  {
+    "path": "/Volumes/MacExt/DeveloperData/projects/plenara/build/iphone-compile",
+    "reason": "Compile-only product or superseded pre-label-fix candidate; signed prior usable TestFlight build retained"
+  },
+  {
+    "path": "/Volumes/MacExt/DeveloperData/projects/plenara/build/testflight-candidate",
+    "reason": "Compile-only product or superseded pre-label-fix candidate; signed prior usable TestFlight build retained"
+  }
+]

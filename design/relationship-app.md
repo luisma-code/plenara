@@ -29,23 +29,38 @@ about. Avoid relationship scores, streaks, competitive dashboards, and alarming
 
 ## Three places, one simple structure
 
-### Stay close
+### Home
 
-The opening screen answers “Who could I make a little room for?”
+Luis approved the compact Home preview on November 25, 2026, after the
+[Home priority review](../docs/reviews/2026-11-25-home-priority-review.md).
+Home answers “Who should I follow up with?” in one ranked, scrollable list.
 
-- One prominent reconnection invitation, with a personal detail to make starting
-  easier. Due inner-circle relationships take precedence; see the ranking policy below.
-- Up to two more people whose chosen rhythm suggests it is time to reconnect.
-- A nearby person you want to know better, with a concrete shared idea.
-- A global “Log a moment” and a person-specific “Log with [name]” make logging easy; “Catch-up notes” and “Another week” support the invitation.
-- A quiet all-clear state when nobody needs a reminder. No target to fill.
-- Explicit birthday and dated-note reminders appear with their person at the top
-  when due. Completing a dated thread clears its reminder and keeps the memory;
-  it never fabricates a connection.
+- Compact rows show a name, relationship/closeness and factual follow-up reason.
+  No featured person takes over the screen. Normal text fits about five people
+  above the tab bar; accessibility text can grow without clipping.
+- All, Family and Friends switch the relationship type. Family + Friend appears
+  under either type. Switching a type preserves the other filters.
+- Closeness and follow-up status are available directly. Filters adds search,
+  distance, desired direction and feeling. All selected dimensions apply together;
+  unanswered values remain filterable. Cancel discards draft choices. Show people
+  applies them. Reset and Show all suggestions provide a way out of empty results.
+- Follow-up status offers All suggestions, Due reminders and No contact history.
+  Sort offers Priority order, Closest first and Oldest contact first. Unknown
+  contact dates never act like infinitely old contact.
+- Home remembers these UI choices across reopening, separately from journal data.
+  Filtering never edits relationships, contact dates or reminder schedules.
+- Select a row to expand Reach out, Log contact, Later, a contact-date entry when
+  unknown, and View profile. Only the selected person needs that action space.
+  Later saves an explicitly chosen date. Opening a contact method still requires
+  the existing return-and-confirm flow before any contact is recorded.
+- Log contact offers One person and Group event. Home, People and History are the
+  three main tabs. Existing explicit birthday and dated-note reminders stay in a
+  separate compact section; completing a thread keeps its note and does not
+  record a conversation.
 
-Distant people get opportunities to call, exchange voice notes, or plan ahead;
-local people get opportunities to meet. Distance changes the suggested method.
-It does not imply that a distant friendship matters less.
+Product strings use Luis’s writing voice under `$write-like-luis`, including
+secondary screens, empty states, settings and notifications. The original
+browser prototype is a historical visual reference, not a source of current copy.
 
 ### People
 
@@ -94,16 +109,16 @@ Undo. A backup restore clears the older Undo. Organizing never changes contact
 rhythms, dates, notes, contact links, or moments. It uses the same journal and
 atomic persistence path as individual editing; there is no schema migration.
 
-### Moments
+### History
 
 A personal history of calls, meals, visits, message exchanges, and little
 hellos. Entries run newest first, with the person, date, channel, a short optional
 note, and whether you connected or simply reached out. This is a way to remember
 time together; it does not reward logging volume.
 
-Home has a prominent Log a moment button for any person, including those without
+Home has a Log contact menu with One person for anyone, including those without
 a contact rhythm. A searchable person chooser leads to the same quick editor
-used on a person’s page and in Moments. Called, Texted, and Met are one-tap
+used on a person’s page and in History. Called, Texted, and Met are one-tap
 choices; video calls, voice notes, and email remain under Another way. The
 editor defaults to today and Connected. Notes are optional, and a moment can be
 saved without typing. The keyboard’s standard dictation microphone can fill the
@@ -122,7 +137,7 @@ After import, offer Choose contact rhythms and Not now. Rhythm setup is also acc
 
 After saving a moment, a dismissible next-time invitation leaves the ordinary app usable. Opening it offers a new memory and the attendees’ pinned or due threads. Keep changes nothing. Resolve clears the follow-up date and lets the user keep or remove the pin; the original note remains. Later changes only that thread’s date. These steps are optional and never create another connection or turn on notifications.
 
-Home and Moments offer Log a social event. Choose one or more existing people with a searchable attendee picker, a date, optional event name, channel, and description of what happened. An unnamed event is called Time together. A saved event represents a confirmed shared connection with every selected person. Store one event with one stable identity: it appears once in Moments and in each attendee’s timeline. Editing the event, date, description or guest list updates the same record everywhere and recomputes each affected person’s last connection. Cancelling creates nothing. Deleting the event removes it from all attendees’ histories; deleting one person retains the event for the remaining people and removes it only when no attendees remain. Shared-event deletion explains its effect before confirmation.
+Home’s Log contact menu and History offer Group event. Choose one or more existing people with a searchable attendee picker, a date, optional event name, channel, and description of what happened. An unnamed event is called Time together. A saved event represents a confirmed shared connection with every selected person. Store one event with one stable identity: it appears once in History and in each attendee’s timeline. Editing the event, date, description or guest list updates the same record everywhere and recomputes each affected person’s last connection. Cancelling creates nothing. Deleting the event removes it from all attendees’ histories; deleting one person retains the event for the remaining people and removes it only when no attendees remain. Shared-event deletion explains its effect before confirmation.
 
 Old journals retain their app identity and storage path. Shared guests and event names are additive optional moment fields; old single-person moments still decode unchanged. The shared decoder serves startup, restore, and recovery. Opening an old file leaves its bytes unchanged. The first successful update retains a protected before-workflow recovery copy, and later saves do not replace it. Existing before-relationship recovery bytes remain untouched. Both JSON and readable exports carry shared-event context. A frozen journal produced by the build-1007 model supplements the existing build-1001 upgrade fixture.
 
@@ -138,7 +153,7 @@ Read from top to bottom in the order you need before contacting someone:
    A shared optional context note captures what you want to give attention to.
    Both choices can be cleared. A good relationship can still be one to grow;
    a close bond can need care without a change in desired closeness.
-3. **Do something.** Log a moment; reach out using their preferred method.
+3. **Do something.** Log contact; reach out using their preferred method.
 4. **Before you catch up.** A pinned fact or question: an upcoming show, a new
    job, a parent’s recovery, a topic to revisit. Written by you; no inference
    that an old fact is still current. Show when the note was made.
@@ -189,9 +204,8 @@ reminder signal, not a claim that the bond is unhealthy. Direction and feeling
 are user-authored answers, independent of connection, distance, and closeness.
 They start unset, including on import. Keep it steady is an intention, not a
 health assessment. Needs care does not lower closeness, change a rhythm, start
-a countdown, or add a notification. Home keeps Time to connect separate from
-small, explicit growth/care invitations, avoiding duplicate cards for the same
-person. Needs care is never ranked as urgent by the reminder algorithm.
+a countdown, or add a notification. Home labels due reminders and optional invitations within one filtered list,
+with one row per person. Needs care is never ranked as urgent by the reminder algorithm.
 
 **Starting suggestions, to be confirmed during setup:**
 
@@ -213,7 +227,7 @@ the native app even though the browser prototype uses preset choices.
 
 For scheduling, use calendar dates in the owner’s time zone. A reminder becomes
 eligible once the interval has elapsed since the last confirmed connection.
-Unknown last contact means “Last contact not set”; offer “roughly when?” or
+Unknown last contact means “No contact recorded”; offer “roughly when?” or
 “start reminding me from today,” never fabricate history or call it overdue.
 
 Luis approved the [Astra-reviewed ranking proposal](https://chatgpt.com/space/page_7ac81bc6f2b8819181b3d01e018f6619)
@@ -224,21 +238,31 @@ prefer Grow closer, then a stable identity. Growth never jumps ahead of a
 larger elapsed proportion or a due inner-circle person. A custom rhythm still
 controls eligibility, including for inner circle.
 
-Home shows the first three in that order, with factual closeness, last-contact,
-and chosen-rhythm context. **See everyone ready to reconnect** expands the
-complete ordered list in place; Show fewer collapses it. There is no daily
-rotation. Lower-ranked people can remain outside the first three until Luis
-connects, snoozes, changes a rhythm, or opens the complete list. This deliberately
-prioritizes predictable inner-circle precedence over automatic exposure.
+Under Priority order, the compact Home **Due reminders** filter exposes the complete due order,
+without a three-person cap or expansion gate. There is no daily rotation.
 
-Growth and care invitations remain secondary. The same pause, snooze, and
-seven-day outreach suppression applies to them. Exclude people already shown in
-the primary/expanded list, then choose a due growth intention from the full
-ranking before optional alphabetical growth ideas. The care list is alphabetical
-and excludes the growth card too. Optional ideas do not enable or imply a due
-reminder. Explicit birthdays and dated-note threads remain a separate section;
-they keep their current date-specific eligibility and actions. The original
-browser prototype remains a historical visual reference with earlier ranking.
+**All suggestions** combines due people with optional invitations. Use these
+priority groups, in order: due Inner circle; other eligible Inner circle/Close
+invitations; remaining due people in the due order above; Family with unanswered
+closeness; explicit growth/care invitations; remaining eligible people. Within
+non-due groups use closeness and stable identity, never alphabetical names.
+An explicit Casual classification is not promoted merely because someone is
+Family. Feeling does not create reminder urgency.
+
+Unknown contact or no chosen rhythm provides a starting invitation without
+inventing a conversation or enabling reminders. A known contact on an enabled,
+not-yet-due rhythm needs no starter invitation unless growth/care was explicitly
+chosen. A seven-calendar-day cooldown follows a recorded connection, including
+all attendees in a shared event. An actually due shorter chosen rhythm remains
+eligible. The shared pause, snooze and seven-day unanswered-outreach suppression
+applies to the whole follow-up list. No duplicate growth/care cards remain.
+
+Rows distinguish No contact recorded from Reminder due. Expanded reasons show
+the chosen interval, actual/approximate last contact, or the explicitly chosen
+reminder-start date. Changing a name or merely reopening never changes priority.
+Custom sorting/filtering narrows or reorders invitations without changing their
+eligibility or clock. When first enabling reminders from Off without known
+contact, start the clock today. Saving Off never plants or revives a clock.
 
 A confirmed call, meet-up, or reciprocal exchange resets the interval. A sent
 message or unsuccessful call is an outreach; it does not reset connection time.
@@ -337,7 +361,7 @@ storage architecture or a safe place for real relationship information.
 
 ## First usable app boundary
 
-Contacts import and manual people entry; relationship setup; home suggestions;
+Contacts import and manual people entry; relationship setup; Home follow-up list;
 search and filters; person page; editable notes and moments; adjustable rhythms;
 independent direction/feeling choices; opt-in reminders; export and deletion. The app opens
 existing communication tools rather than building its own messaging system.
@@ -374,7 +398,7 @@ friend status. It adds
 real Contacts selection and import review; call/message/email handoff; local
 notifications; birthdays; custom intervals; note pinning, editing and archiving;
 editable/deletable moments; an approximate initial connection date; outreach
-suppression; inner-circle priority and an expandable complete list; paused reminders; backup/export/restore;
+suppression; inner-circle priority and a complete filtered follow-up list; paused reminders; backup/export/restore;
 adaptive appearance; scalable text; and native accessibility labels.
 
 Contacts uses Apple’s `CNContactPickerViewController` for one-time selected

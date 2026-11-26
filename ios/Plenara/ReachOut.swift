@@ -5,16 +5,24 @@ struct ReachOutButton: View {
     @Environment(\.openURL) private var openURL
     let person: Person
     var compact = false
+    var dense = false
     @State private var choosing = false
     @State private var selected: ContactRoute?
     @State private var unavailable = false
     var body: some View {
-        ActionButton(title: compact ? "Reach out" : "Reach out to \(person.name.components(separatedBy: " ").first ?? person.name)", icon: "arrow.up.right.message") { choosing = true }
+        launcher
             .accessibilityIdentifier("reach-out-\(person.name)")
             .sheet(isPresented: $choosing, onDismiss: launchSelected) {
                 ContactRoutesView(personID: person.id) { route in selected = route; choosing = false }
             }
             .alert("Contact method unavailable", isPresented: $unavailable) { Button("OK") { } } message: { Text("This device couldn’t open that app. Nothing was recorded. You can review the number or email in Edit.") }
+    }
+    @ViewBuilder private var launcher: some View {
+        if dense {
+            Button("Reach out") { choosing = true }.buttonStyle(.plain).font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 48).foregroundStyle(.white).background(Theme.action, in: RoundedRectangle(cornerRadius: 12))
+        } else {
+            ActionButton(title: compact ? "Reach out" : "Reach out to \(person.name.components(separatedBy: " ").first ?? person.name)", icon: "arrow.up.right.message") { choosing = true }
+        }
     }
     private func launchSelected() {
         guard let route = selected else { return }; selected = nil
@@ -72,7 +80,7 @@ struct ContactReturnView: View {
                         Button("I reached out") { recording = draft.moment(connected: false) }.accessibilityIdentifier("handoff-outreach")
                         Button("Nothing to record") { if store.dismissContact(draft.id) { dismiss() } }.accessibilityIdentifier("handoff-discard")
                     } footer: { Text("An unanswered message or missed call is outreach. Only a confirmed catch-up changes your connection date.") }
-                }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle("A little follow-through").navigationBarTitleDisplayMode(.inline).toolbar { DismissButton() }
+                }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle("Record what happened").navigationBarTitleDisplayMode(.inline).toolbar { DismissButton() }
             }
         }
     }

@@ -1,0 +1,63 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261125-192721.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/CompactHomeUITests/testColdStartCompactFamilyAndCombinedFiltersSurviveReopen"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-25 19:27:22.686 xcodebuild[15387:8051911] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261125-192721.xcresult
+
+2026-11-25 19:27:22.691 xcodebuild[15387:8051911] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-25 19:27:24.075 xcodebuild[15387:8051911] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-25 19:27:25.583171-0800 PlenaraUITests-Runner[15397:8052100] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-25 19:27:26.380.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-25 19:27:26.380.
+Test Suite 'CompactHomeUITests' started at 2026-11-25 19:27:26.380.
+Test Case '-[PlenaraUITests.CompactHomeUITests testColdStartCompactFamilyAndCombinedFiltersSurviveReopen]' started.
+    t =     0.00s Start Test at 2026-11-25 19:27:26.381
+    t =     0.06s Set Up
+    t =     0.07s Open com.plenara.plenaraApp
+    t =     0.07s     Launch com.plenara.plenaraApp
+2026-11-25 19:27:26.638 xcodebuild[15387:8051911] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-25 19:27:26.638 xcodebuild[15387:8051911] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[15397]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x108bb8310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1053e4398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.17s         Setting up automation session
+    t =     1.94s         Wait for com.plenara.plenaraApp to idle
+    t =     3.54s Waiting 5.0s for "Follow up" StaticText to exist
+    t =     4.57s     Checking `Expect predicate `existsNoRetry == 1` for object "Follow up" StaticText`
+    t =     4.57s         Checking existence of `"Follow up" StaticText`
+    t =     4.67s Find the "home-type-All" Button
+    t =     4.83s Find the "home-type-Family" Button
+    t =     4.87s Find the "home-type-Friends" Button
+    t =     4.91s Find the "tab-0" Button
+    t =     4.94s Checking existence of `"home-person-Zoe Park" Button`
+    t =     4.98s Find the "home-person-Zoe Park" Button
+    t =     5.01s Find the "home-person-Zoe Park" Button
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/CompactHomeUITests.swift:18: error: -[PlenaraUITests.CompactHomeUITests testColdStartCompactFamilyAndCombinedFiltersSurviveReopen] : XCTAssertLessThanOrEqual failed: ("240.0") is greater than ("95.0") - Normal person rows must stay compact
+    t =     5.11s Tear Down
+    t =     5.11s     Terminate com.plenara.plenaraApp:15405
+Test Case '-[PlenaraUITests.CompactHomeUITests testColdStartCompactFamilyAndCombinedFiltersSurviveReopen]' failed (6.338 seconds).
+Test Suite 'CompactHomeUITests' failed at 2026-11-25 19:27:32.720.
+	 Executed 1 test, with 1 failure (0 unexpected) in 6.338 (6.339) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-25 19:27:32.720.
+	 Executed 1 test, with 1 failure (0 unexpected) in 6.338 (6.340) seconds
+Test Suite 'Selected tests' failed at 2026-11-25 19:27:32.720.
+	 Executed 1 test, with 1 failure (0 unexpected) in 6.338 (6.340) seconds
+2026-11-25 19:27:33.072 xcodebuild[15387:8051976]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-25 19:27:33.079 xcodebuild[15387:8051911] [MT] IDETestOperationsObserverDebug: 9.002 elapsed -- Testing started completed.
+2026-11-25 19:27:33.079 xcodebuild[15387:8051911] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-25 19:27:33.079 xcodebuild[15387:8051911] [MT] IDETestOperationsObserverDebug: 9.002 sec, +9.002 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261125-192721.xcresult
+
+Failing tests:
+	CompactHomeUITests.testColdStartCompactFamilyAndCombinedFiltersSurviveReopen()
+
+** TEST EXECUTE FAILED **
+
+Testing started

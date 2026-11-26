@@ -9,7 +9,7 @@ final class WorkflowUITests: XCTestCase {
         tapVisible(element, app: app, in: container)
     }
     func testAttendeeSearchKeepsDoneReachable() throws {
-        launch(); app.buttons["tab-2"].tap(); app.buttons["log-social-event"].tap()
+        launch(); app.buttons["tab-2"].tap(); if !app.buttons["log-social-event"].exists { app.buttons["quick-log"].tap() }; app.buttons["log-social-event"].tap()
         app.buttons["event-people"].tap(); search("Sofia"); app.buttons["event-guest-Sofia Chen"].tap()
         let done = app.buttons["event-people-done"]
         XCTAssertTrue(done.exists && done.isHittable, "Searching must keep Done reachable")
@@ -18,7 +18,7 @@ final class WorkflowUITests: XCTestCase {
     }
     func search(_ value: String) { searchAndSubmit(value, app: app) }
     func testSharedDinnerFivePeopleEditReopenAndCancel() throws {
-        launch(); app.buttons["log-social-event"].tap()
+        launch(); if !app.buttons["log-social-event"].exists { app.buttons["quick-log"].tap() }; app.buttons["log-social-event"].tap()
         let title = app.textFields["event-title"]; XCTAssertTrue(title.waitForExistence(timeout: 5)); title.tap(); title.typeText("Friday dinner")
         let note = app.textFields["event-note"]; note.tap(); note.typeText("Made pasta and planned our summer trips")
         app.buttons["event-people"].tap()
@@ -37,7 +37,7 @@ final class WorkflowUITests: XCTestCase {
         app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch(); app.buttons["tab-2"].tap()
         let reopened = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "history-moment-", "Friday dinner")).firstMatch
         XCTAssertTrue(reopened.waitForExistence(timeout: 5)); XCTAssertTrue(reopened.label.contains("dessert")); XCTAssertFalse(reopened.label.contains("Leo Park"), "An attendee removed by editing must leave the shared event")
-        app.buttons["log-social-event"].tap(); XCTAssertTrue(app.buttons["save-event"].waitForExistence(timeout: 5)); XCTAssertFalse(app.buttons["save-event"].isEnabled)
+        if !app.buttons["log-social-event"].exists { app.buttons["quick-log"].tap() }; app.buttons["log-social-event"].tap(); XCTAssertTrue(app.buttons["save-event"].waitForExistence(timeout: 5)); XCTAssertFalse(app.buttons["save-event"].isEnabled)
         app.textFields["event-title"].tap(); app.textFields["event-title"].typeText("Cancelled dinner"); app.buttons["Cancel"].tap()
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Cancelled dinner")).firstMatch.exists)
         visibleTap(app.buttons["View Sofia Chen →"])
@@ -57,14 +57,14 @@ final class WorkflowUITests: XCTestCase {
         visibleTap(app.buttons["apply-rhythm"]); XCTAssertTrue(app.staticTexts["rhythm-saved"].waitForExistence(timeout: 5)); attach("Chosen contact rhythm")
         app.buttons["rhythm-done"].tap()
         let peopleSearch = app.textFields["people-search"]; tapVisible(peopleSearch, app: app); XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5)); peopleSearch.typeText("Sofia\n"); visibleTap(app.buttons["person-Sofia Chen"])
-        XCTAssertTrue(app.staticTexts["Every 15 days"].exists); XCTAssertTrue(app.staticTexts["Last contact not set"].exists, "Rhythm setup must not manufacture a connection")
+        XCTAssertTrue(app.staticTexts["Every 15 days"].exists); XCTAssertTrue(app.staticTexts["No contact recorded"].exists, "Rhythm setup must not manufacture a connection")
         app.buttons["tab-1"].tap(); app.buttons["people-rhythm-setup"].tap(); visibleTap(app.buttons["undo-rhythm"])
         app.buttons["rhythm-done"].tap(); visibleTap(app.buttons["person-Sofia Chen"])
-        XCTAssertTrue(app.staticTexts["No regular reminder"].exists, "Undo must work after reopening rhythm setup")
+        XCTAssertTrue(app.staticTexts["Reminders off"].exists, "Undo must work after reopening rhythm setup")
     }
     func testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen() throws {
         launch(["--contact-demo", "--contact-handoff-fixture"])
-        visibleTap(app.buttons["reach-out-Sofia Chen"])
+        visibleTap(app.buttons["home-person-Sofia Chen"]); visibleTap(app.buttons["reach-out-Sofia Chen"])
         let email = app.buttons["contact-route-Email-sofia@example.invalid"]
         XCTAssertTrue(email.waitForExistence(timeout: 5)); attach("Preferred contact routes"); email.tap()
         XCTAssertTrue(app.buttons["review-contact-draft"].waitForExistence(timeout: 5), "Opening a route must preserve a draft before leaving")
@@ -82,11 +82,11 @@ final class WorkflowUITests: XCTestCase {
     }
     func testUnavailableContactAndDismissedDraftCreateNoHistory() throws {
         launch(["--contact-demo", "--contact-handoff-fixture", "--contact-unavailable-fixture"])
-        visibleTap(app.buttons["reach-out-Sofia Chen"]); app.buttons["contact-route-Email-sofia@example.invalid"].tap()
+        visibleTap(app.buttons["home-person-Sofia Chen"]); visibleTap(app.buttons["reach-out-Sofia Chen"]); app.buttons["contact-route-Email-sofia@example.invalid"].tap()
         XCTAssertTrue(app.alerts["Contact method unavailable"].waitForExistence(timeout: 6)); app.alerts.buttons["OK"].tap()
         XCTAssertFalse(app.buttons["review-contact-draft"].exists)
         app.terminate(); launch(["--contact-demo", "--contact-handoff-fixture"])
-        visibleTap(app.buttons["reach-out-Sofia Chen"]); app.buttons["contact-route-Email-sofia@example.invalid"].tap()
+        visibleTap(app.buttons["home-person-Sofia Chen"]); visibleTap(app.buttons["reach-out-Sofia Chen"]); app.buttons["contact-route-Email-sofia@example.invalid"].tap()
         XCTAssertTrue(app.buttons["review-contact-draft"].waitForExistence(timeout: 5))
         app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch()
         XCTAssertTrue(app.buttons["handoff-discard"].waitForExistence(timeout: 6), "An interrupted draft must be recoverable on cold launch")
@@ -94,7 +94,7 @@ final class WorkflowUITests: XCTestCase {
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "history-moment-")).count, 4, "Discarding a draft must leave the four original moments unchanged")
     }
     func testOptionalNextTimeMemoryResolveAndLater() throws {
-        launch(); app.buttons["quick-log"].tap(); app.buttons["log-person-Sofia Chen"].tap(); app.buttons["save-moment"].tap()
+        launch(); app.buttons["quick-log"].tap(); app.buttons["home-log-person"].tap(); app.buttons["log-person-Sofia Chen"].tap(); app.buttons["save-moment"].tap()
         app.buttons["moment-follow-through"].tap(); XCTAssertTrue(app.buttons["thread-add-Sofia Chen"].waitForExistence(timeout: 5))
         let resolve = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "thread-resolve-")).firstMatch
         visibleTap(resolve); app.buttons["Resolve and unpin"].tap()
@@ -114,9 +114,9 @@ final class WorkflowUITests: XCTestCase {
         for (flags, name) in [(["--dark"], "Dark shared-event editor"), (["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"], "Large shared-event editor")] {
             launch(flags)
             if name.hasPrefix("Large") {
-                XCTAssertGreaterThan(app.buttons["log-social-event"].frame.width, app.frame.width * 0.8, "Accessibility Home actions need full width")
+                assertMinimumTapHeight(app.buttons["quick-log"])
             }
-            app.buttons["log-social-event"].tap(); XCTAssertTrue(app.buttons["event-people"].waitForExistence(timeout: 5)); attach(name)
+            if !app.buttons["log-social-event"].exists { app.buttons["quick-log"].tap() }; app.buttons["log-social-event"].tap(); XCTAssertTrue(app.buttons["event-people"].waitForExistence(timeout: 5)); attach(name)
             visibleTap(app.buttons["event-people"]); search("Mum"); app.buttons["event-guest-Mum"].tap(); app.buttons["event-people-done"].tap()
             XCTAssertTrue(app.buttons["save-event"].isEnabled); app.buttons["save-event"].tap(); XCTAssertTrue(app.buttons["moment-follow-through"].waitForExistence(timeout: 5)); attach(name + " saved")
             app.terminate()

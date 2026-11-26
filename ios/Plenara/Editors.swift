@@ -60,13 +60,13 @@ struct PersonEditor: View {
                     Text("Keep other important dates as dated notes on their page.").font(.footnote).foregroundStyle(Theme.muted)
                 }
                 Section {
-                    Picker("Contact rhythm", selection: $person.cadence) {
+                    Picker("Reminder interval", selection: $person.cadence) {
                         ForEach(Array(Set([0, 3, 7, 14, 21, 30, 60, 90, person.cadence])).sorted(), id: \.self) { Text(rhythmLabel($0)).tag($0) }
                     }
                     let suggested = Person.suggestedCadence(person.closeness, deepen: person.wantsToGrow)
                     if suggested > 0 && suggested != person.cadence { Button("Use suggestion: \(rhythmLabel(suggested).lowercased())") { person.cadence = suggested } }
-                    if person.cadence > 0 && person.baselineConnection == nil && store.journal.lastConnection(person) == nil { Text("Reminders start from today. This won’t mark a connection. You can set your last contact or a custom rhythm on their page.").font(.footnote).foregroundStyle(Theme.muted) }
-                } header: { Text("A gentle rhythm") } footer: { Text("Optional. Importing or adding someone never starts reminders unless you choose a rhythm.") }
+                    if person.cadence > 0 && person.baselineConnection == nil && store.journal.lastConnection(person) == nil { Text("Reminders use the last recorded contact or their chosen start date. You can set an earlier contact date in Reminders.").font(.footnote).foregroundStyle(Theme.muted) }
+                } header: { Text("Reminders") } footer: { Text("Optional. Choose an interval to enable reminders. Importing or adding someone leaves them off.") }
             }.scrollContentBackground(.hidden).background(Theme.paper)
                 .navigationTitle(store.journal.people.contains(where: { $0.id == person.id }) ? "About \(person.name)" : "Add someone").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.buttonStyle(.automatic) }; ToolbarItem(placement: .confirmationAction) { Button("Save") { save() }.buttonStyle(.automatic).disabled(!valid || photoLoading).accessibilityIdentifier("save-person") } }
@@ -92,7 +92,6 @@ struct PersonEditor: View {
         person.emails = person.emails.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
         if hasBirthday { person.birthdayMonth = Calendar.current.component(.month, from: birthday); person.birthdayDay = Calendar.current.component(.day, from: birthday) }
         else { person.birthdayMonth = 0; person.birthdayDay = 0; person.birthdayReminder = false }
-        if person.cadence > 0 && person.reminderStart == nil && store.journal.lastConnection(person) == nil { person.reminderStart = Calendar.current.startOfDay(for: Date()) }
         if store.save(person) { dismiss() }
     }
 }
@@ -109,26 +108,27 @@ struct RhythmEditor: View {
     @State var person: Person
     @State private var hasLast = false
     @State private var last = Date()
+    var addingContactDate = false
     var body: some View {
         NavigationStack {
             Form {
-                Section { Text("How often would you like to connect with \(person.name)? Choose what feels right for this relationship.").foregroundStyle(Theme.muted) }
-                Section("Your rhythm") {
-                    Picker("A gentle reminder", selection: $person.cadence) { ForEach(Array(Set([0, 3, 7, 14, 21, 30, 60, 90, person.cadence])).sorted(), id: \.self) { Text(rhythmLabel($0)).tag($0) } }
-                    Toggle("Custom rhythm", isOn: Binding(get: { person.cadence > 0 }, set: { person.cadence = $0 ? max(1, person.cadence) : 0 }))
+                Section { Text("Choose how often you want a reminder to contact \(person.name).").foregroundStyle(Theme.muted) }
+                Section("Reminders") {
+                    Picker("Reminder interval", selection: $person.cadence) { ForEach(Array(Set([0, 3, 7, 14, 21, 30, 60, 90, person.cadence])).sorted(), id: \.self) { Text(rhythmLabel($0)).tag($0) } }.accessibilityIdentifier("person-reminder-interval")
+                    Toggle("Custom interval", isOn: Binding(get: { person.cadence > 0 }, set: { person.cadence = $0 ? max(1, person.cadence) : 0 }))
                     if person.cadence > 0 { Stepper("Every \(person.cadence) days", value: $person.cadence, in: 1...3650).accessibilityIdentifier("cadence-stepper") }
                     let suggestion = Person.suggestedCadence(person.closeness, deepen: person.wantsToGrow)
-                    if suggestion > 0 { Button("Use suggested rhythm: \(rhythmLabel(suggestion).lowercased())") { person.cadence = suggestion } }
+                    if suggestion > 0 { Button("Use suggested interval: \(rhythmLabel(suggestion).lowercased())") { person.cadence = suggestion } }
                     Toggle("Pause reminders for this person", isOn: $person.paused)
                 }
                 Section {
                     Toggle("Set an earlier connection", isOn: $hasLast)
                     if hasLast { DatePicker("Last connection", selection: $last, in: ...Date(), displayedComponents: .date); Toggle("This is an approximate date", isOn: $person.baselineApproximate) }
-                    Text("Logged moments also count. The latest confirmed connection sets the rhythm.").font(.footnote).foregroundStyle(Theme.muted)
-                } header: { Text("A starting point") } footer: { Text("If last contact is unknown, choosing a rhythm starts reminders from today without inventing a connection.") }
-            }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle("Find your rhythm").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.buttonStyle(.automatic) }; ToolbarItem(placement: .confirmationAction) { Button("Save") { person.baselineConnection = hasLast ? last : nil; if person.reminderStart == nil { person.reminderStart = Date() }; if store.save(person) { dismiss() } }.buttonStyle(.automatic) } }
-                .onAppear { hasLast = person.baselineConnection != nil; last = person.baselineConnection ?? Date() }
+                    Text("Recorded conversations also count. The latest confirmed connection starts the interval.").font(.footnote).foregroundStyle(Theme.muted)
+                } header: { Text("A starting point") } footer: { Text("If no contact is recorded, enabling reminders starts the interval today.") }
+            }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle("Reminder setup").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.buttonStyle(.automatic) }; ToolbarItem(placement: .confirmationAction) { Button("Save") { person.baselineConnection = hasLast ? last : nil; if store.save(person, configuringReminders: true) { dismiss() } }.buttonStyle(.automatic) } }
+                .onAppear { hasLast = addingContactDate || person.baselineConnection != nil; last = person.baselineConnection ?? Date() }
         }
     }
 }
@@ -144,7 +144,7 @@ struct MemoryEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("A little thing to remember") {
+                Section("Note") {
                     Picker("Keep it under", selection: $memory.category) { ForEach(Memory.categories, id: \.self) { Text($0) } }
                     TextField("Your note", text: $memory.text, axis: .vertical).lineLimit(4...12).accessibilityIdentifier("memory-text")
                     Toggle("Pin for the next catch-up", isOn: $memory.pinned)
@@ -152,7 +152,7 @@ struct MemoryEditor: View {
                 }
                 Section { Toggle("Follow up on a date", isOn: $followUp); if followUp { DatePicker("Follow-up date", selection: $due, displayedComponents: .date) }; Text("A reminder is scheduled only if follow-up notifications are enabled in Settings.").font(.footnote).foregroundStyle(Theme.muted) }
                 if existing { Section { Button("Delete note", role: .destructive) { deleting = true } } }
-            }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle(existing ? "Edit a memory" : "Keep a little memory").navigationBarTitleDisplayMode(.inline)
+            }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle(existing ? "Edit note" : "Add a note").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.buttonStyle(.automatic) }; ToolbarItem(placement: .confirmationAction) { Button("Save") { save() }.buttonStyle(.automatic).disabled(memory.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty).accessibilityIdentifier("save-memory") } }
                 .onAppear { followUp = memory.followUp != nil; due = memory.followUp ?? Date() }
                 .confirmationDialog("Delete this note?", isPresented: $deleting, titleVisibility: .visible) { Button("Delete note", role: .destructive) { if store.update({ j in if let i = j.people.firstIndex(where: { $0.id == personID }) { j.people[i].notes.removeAll { $0.id == memory.id } } }) { dismiss() } } }
@@ -180,7 +180,7 @@ struct MomentEditor: View {
             Form {
                 if let person = store.journal.people.first(where: { $0.id == personID }) {
                     Section {
-                        HStack(spacing: 14) { Avatar(person: person); VStack(alignment: .leading, spacing: 4) { Eyebrow(text: "A little time with"); Text(person.name).font(Theme.title(25)) } }
+                        HStack(spacing: 14) { Avatar(person: person); VStack(alignment: .leading, spacing: 4) { Eyebrow(text: "Contact with"); Text(person.name).font(Theme.title(25)) } }
                             .accessibilityElement(children: .combine).accessibilityIdentifier("moment-person")
                     }.listRowBackground(Color.clear)
                 }
@@ -206,7 +206,7 @@ struct MomentEditor: View {
                 Section {
                     TextField("What would you like to remember?", text: $moment.note, prompt: Text("What would you like to remember?").foregroundStyle(Theme.muted), axis: .vertical)
                         .lineLimit(3...8).focused($writingNote).accessibilityIdentifier("moment-note")
-                } header: { Text("A few words, if you like") } footer: {
+                } header: { Text("Note (optional)") } footer: {
                     Label("Type a note, or tap the microphone on your keyboard to dictate.", systemImage: "mic").font(.footnote)
                 }
                 Section {
@@ -214,10 +214,10 @@ struct MomentEditor: View {
                     Picker("What happened?", selection: $moment.connected) { Text("Connected").tag(true); Text("Reached out").tag(false) }
                         .pickerStyle(.segmented).accessibilityIdentifier("moment-status")
                 } footer: {
-                    Text(moment.connected ? "You caught up. This counts toward your contact rhythm." : "A message or missed call without a catch-up. Your last connection stays as it was.")
+                    Text(moment.connected ? "A confirmed conversation resets the reminder interval." : "A message or missed call without a catch-up. Your last connection stays as it was.")
                 }
                 if existing { Section { Button("Delete moment", role: .destructive) { deleting = true } } }
-            }.scrollDismissesKeyboard(.interactively).scrollContentBackground(.hidden).background(Theme.paper).navigationTitle(existing ? "Edit a moment" : "Log a moment").navigationBarTitleDisplayMode(.inline)
+            }.scrollDismissesKeyboard(.interactively).scrollContentBackground(.hidden).background(Theme.paper).navigationTitle(existing ? "Edit contact" : "Log contact").navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.buttonStyle(.automatic) }
                     ToolbarItem(placement: .confirmationAction) { Button("Save") { moment.note = moment.note.trimmingCharacters(in: .whitespacesAndNewlines); if store.save(moment, completingHandoff: handoffID) { dismiss() } }.buttonStyle(.automatic).accessibilityIdentifier("save-moment") }

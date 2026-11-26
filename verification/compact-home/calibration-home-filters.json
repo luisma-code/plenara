@@ -1,0 +1,14 @@
+{
+  "mode": "home-filters",
+  "faults": [
+    [
+      "HomeView.swift",
+      "HomeFiltersView(selection: selection) { selection = $0 }",
+      "HomeFiltersView(selection: selection) { _ in }"
+    ]
+  ],
+  "rejected": true,
+  "expectedFailures": [
+    "Applying Home filters must update the rendered list"
+  ]
+}

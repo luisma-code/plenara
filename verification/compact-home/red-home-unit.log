@@ -1,0 +1,70 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261125-192612.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraTests/FollowUpTests" "-only-testing:PlenaraTests/RankingTests/testColdStartStartsWithClosePeopleWithoutInventingHistory"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-25 19:26:12.752 xcodebuild[15189:8049456] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261125-192612.xcresult
+
+2026-11-25 19:26:12.756 xcodebuild[15189:8049456] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-25 19:26:14.080 xcodebuild[15189:8049456] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-25 19:26:16.462558-0800 Plenara[15201:8049715] [journal] Journal opened; read-only: false
+2026-11-25 19:26:16.900356-0800 Plenara[15201:8049715] [reminders] Local reminders refreshed
+2026-11-25 19:26:16.923020-0800 Plenara[15201:8049715] [reminders] Local reminders refreshed
+Test Suite 'Selected tests' started at 2026-11-25 19:26:16.938.
+Test Suite 'PlenaraTests.xctest' started at 2026-11-25 19:26:16.938.
+Test Suite 'FollowUpTests' started at 2026-11-25 19:26:16.938.
+Test Case '-[PlenaraTests.FollowUpTests testApproximateContactReasonsRemainApproximate]' started.
+Test Case '-[PlenaraTests.FollowUpTests testApproximateContactReasonsRemainApproximate]' passed (0.001 seconds).
+Test Case '-[PlenaraTests.FollowUpTests testDueOrderAnchorsFamilyFallbackAndStableIdentity]' started.
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/FollowUpTests.swift:49: error: -[PlenaraTests.FollowUpTests testDueOrderAnchorsFamilyFallbackAndStableIdentity] : XCTAssertEqual failed: ("[00000000-0000-0000-0000-000000000001, 00000000-0000-0000-0000-000000000003, 00000000-0000-0000-0000-000000000007, 00000000-0000-0000-0000-000000000004, 00000000-0000-0000-0000-000000000005, 00000000-0000-0000-0000-000000000006, 00000000-0000-0000-0000-000000000002]") is not equal to ("[00000000-0000-0000-0000-000000000001, 00000000-0000-0000-0000-000000000002, 00000000-0000-0000-0000-000000000003, 00000000-0000-0000-0000-000000000007, 00000000-0000-0000-0000-000000000004, 00000000-0000-0000-0000-000000000005, 00000000-0000-0000-0000-000000000006]")
+Test Case '-[PlenaraTests.FollowUpTests testDueOrderAnchorsFamilyFallbackAndStableIdentity]' failed (0.375 seconds).
+Test Case '-[PlenaraTests.FollowUpTests testFamilyAndIndependentFiltersCombineWithoutChangingJournal]' started.
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/FollowUpTests.swift:17: error: -[PlenaraTests.FollowUpTests testFamilyAndIndependentFiltersCombineWithoutChangingJournal] : XCTAssertEqual failed: ("[00000000-0000-0000-0000-000000000001, 00000000-0000-0000-0000-000000000002, 0C8A6E27-1055-42F5-BE4F-B1B8DF303C2E]") is not equal to ("[00000000-0000-0000-0000-000000000001, 00000000-0000-0000-0000-000000000002]")
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/FollowUpTests.swift:19: error: -[PlenaraTests.FollowUpTests testFamilyAndIndependentFiltersCombineWithoutChangingJournal] : XCTAssertEqual failed: ("[00000000-0000-0000-0000-000000000001, 0C8A6E27-1055-42F5-BE4F-B1B8DF303C2E, 00000000-0000-0000-0000-000000000002]") is not equal to ("[00000000-0000-0000-0000-000000000001, 0C8A6E27-1055-42F5-BE4F-B1B8DF303C2E]") - Family + Friend belongs to either type
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/FollowUpTests.swift:21: error: -[PlenaraTests.FollowUpTests testFamilyAndIndependentFiltersCombineWithoutChangingJournal] : XCTAssertEqual failed: ("[00000000-0000-0000-0000-000000000001, 00000000-0000-0000-0000-000000000002, 0C8A6E27-1055-42F5-BE4F-B1B8DF303C2E]") is not equal to ("[00000000-0000-0000-0000-000000000002]") - Every selected filter must apply together
+Test Case '-[PlenaraTests.FollowUpTests testFamilyAndIndependentFiltersCombineWithoutChangingJournal]' failed (0.010 seconds).
+Test Case '-[PlenaraTests.FollowUpTests testRecentContactSharedEventsPauseSnoozeAndOutreachSuppressOptionalInvitations]' started.
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/FollowUpTests.swift:35: error: -[PlenaraTests.FollowUpTests testRecentContactSharedEventsPauseSnoozeAndOutreachSuppressOptionalInvitations] : XCTAssertTrue failed - Recent shared contact must cool down every attendee; pause, snooze and unanswered outreach must apply everywhere
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/FollowUpTests.swift:38: error: -[PlenaraTests.FollowUpTests testRecentContactSharedEventsPauseSnoozeAndOutreachSuppressOptionalInvitations] : XCTAssertEqual failed: ("[00000000-0000-0000-0000-000000000001, 00000000-0000-0000-0000-000000000002]") is not equal to ("[00000000-0000-0000-0000-000000000001]") - A due short chosen rhythm still wins inside the optional cooldown
+Test Case '-[PlenaraTests.FollowUpTests testRecentContactSharedEventsPauseSnoozeAndOutreachSuppressOptionalInvitations]' failed (0.002 seconds).
+Test Case '-[PlenaraTests.FollowUpTests testSavingOffCannotPlantAnOldClockForLaterEnablement]' started.
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/FollowUpTests.swift:70: error: -[PlenaraTests.FollowUpTests testSavingOffCannotPlantAnOldClockForLaterEnablement] : XCTAssertNil failed: "2026-11-25 12:00:00 +0000" - Saving reminders off must not retain or create a schedule anchor
+Test Case '-[PlenaraTests.FollowUpTests testSavingOffCannotPlantAnOldClockForLaterEnablement]' failed (0.003 seconds).
+Test Suite 'FollowUpTests' failed at 2026-11-25 19:26:17.332.
+	 Executed 5 tests, with 7 failures (0 unexpected) in 0.392 (0.393) seconds
+Test Suite 'RankingTests' started at 2026-11-25 19:26:17.332.
+Test Case '-[PlenaraTests.RankingTests testColdStartStartsWithClosePeopleWithoutInventingHistory]' started.
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraTests/RankingTests.swift:19: error: -[PlenaraTests.RankingTests testColdStartStartsWithClosePeopleWithoutInventingHistory] : XCTAssertEqual failed: ("Optional(00000000-0000-0000-0000-000000000001)") is not equal to ("Optional(00000000-0000-0000-0000-000000000002)") - Home must start with chosen closeness when contact history and reminders are missing, including Keep it steady
+Test Case '-[PlenaraTests.RankingTests testColdStartStartsWithClosePeopleWithoutInventingHistory]' failed (0.003 seconds).
+Test Suite 'RankingTests' failed at 2026-11-25 19:26:17.335.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.003 (0.003) seconds
+Test Suite 'PlenaraTests.xctest' failed at 2026-11-25 19:26:17.335.
+	 Executed 6 tests, with 8 failures (0 unexpected) in 0.395 (0.397) seconds
+Test Suite 'Selected tests' failed at 2026-11-25 19:26:17.335.
+	 Executed 6 tests, with 8 failures (0 unexpected) in 0.395 (0.398) seconds
+2026-11-25 19:26:17.625 xcodebuild[15189:8049501]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-25 19:26:17.631 xcodebuild[15189:8049456] [MT] IDETestOperationsObserverDebug: 3.548 elapsed -- Testing started completed.
+2026-11-25 19:26:17.631 xcodebuild[15189:8049456] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-25 19:26:17.631 xcodebuild[15189:8049456] [MT] IDETestOperationsObserverDebug: 3.548 sec, +3.548 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261125-192612.xcresult
+
+Failing tests:
+	FollowUpTests.testDueOrderAnchorsFamilyFallbackAndStableIdentity()
+	FollowUpTests.testFamilyAndIndependentFiltersCombineWithoutChangingJournal()
+	FollowUpTests.testFamilyAndIndependentFiltersCombineWithoutChangingJournal()
+	FollowUpTests.testFamilyAndIndependentFiltersCombineWithoutChangingJournal()
+	FollowUpTests.testRecentContactSharedEventsPauseSnoozeAndOutreachSuppressOptionalInvitations()
+	FollowUpTests.testRecentContactSharedEventsPauseSnoozeAndOutreachSuppressOptionalInvitations()
+	FollowUpTests.testSavingOffCannotPlantAnOldClockForLaterEnablement()
+	RankingTests.testColdStartStartsWithClosePeopleWithoutInventingHistory()
+
+** TEST EXECUTE FAILED **
+
+Testing started

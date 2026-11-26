@@ -1,0 +1,234 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261125-193127.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/CompactHomeUITests/testEnablingReminderThroughEditorDoesNotReviveAnOldOffClock"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-25 19:31:28.839 xcodebuild[16030:8060086] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261125-193127.xcresult
+
+2026-11-25 19:31:28.849 xcodebuild[16030:8060086] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-25 19:31:30.073 xcodebuild[16030:8060086] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-25 19:31:31.320765-0800 PlenaraUITests-Runner[16041:8060240] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-25 19:31:31.920.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-25 19:31:31.921.
+Test Suite 'CompactHomeUITests' started at 2026-11-25 19:31:31.921.
+Test Case '-[PlenaraUITests.CompactHomeUITests testEnablingReminderThroughEditorDoesNotReviveAnOldOffClock]' started.
+    t =     0.00s Start Test at 2026-11-25 19:31:31.922
+    t =     0.02s Set Up
+    t =     0.02s Open com.plenara.plenaraApp
+    t =     0.02s     Launch com.plenara.plenaraApp
+2026-11-25 19:31:32.144 xcodebuild[16030:8060086] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-25 19:31:32.144 xcodebuild[16030:8060086] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[16041]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109fc8310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a4a8398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     0.84s         Setting up automation session
+    t =     1.68s         Wait for com.plenara.plenaraApp to idle
+    t =     3.15s Waiting 5.0s for "Follow up" StaticText to exist
+    t =     4.19s     Checking `Expect predicate `existsNoRetry == 1` for object "Follow up" StaticText`
+    t =     4.19s         Checking existence of `"Follow up" StaticText`
+    t =     4.28s Tap "tab-1" Button
+    t =     4.28s     Wait for com.plenara.plenaraApp to idle
+    t =     4.28s     Find the "tab-1" Button
+    t =     4.31s     Check for interrupting elements affecting "tab-1" Button
+    t =     4.34s     Synthesize event
+    t =     4.63s     Wait for com.plenara.plenaraApp to idle
+    t =     4.67s Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.70s Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.71s Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.73s Find the Target Application 'com.plenara.plenaraApp'
+    t =     4.75s Checking existence of `"tab-0" Button`
+    t =     4.78s Find the "tab-0" Button
+    t =     4.81s Find the "tab-0" Button
+    t =     4.84s Checking existence of `"home-filter-footer" Other`
+    t =     4.87s Checking existence of `Keyboard (First Match)`
+    t =     4.91s Checking existence of `"people-search" TextField`
+    t =     4.94s Find the "people-search" TextField
+    t =     4.97s Find the "people-search" TextField
+    t =     5.00s Tap "people-search" TextField
+    t =     5.00s     Wait for com.plenara.plenaraApp to idle
+    t =     5.00s     Find the "people-search" TextField
+    t =     5.03s     Check for interrupting elements affecting "people-search" TextField
+    t =     5.06s     Synthesize event
+    t =     5.35s     Wait for com.plenara.plenaraApp to idle
+    t =     5.43s Type 'Nora
+' into "people-search" TextField
+    t =     5.43s     Wait for com.plenara.plenaraApp to idle
+    t =     5.80s     Find the "people-search" TextField
+    t =     5.86s     Check for interrupting elements affecting "people-search" TextField
+    t =     5.89s     Synthesize event
+    t =     6.18s     Wait for com.plenara.plenaraApp to idle
+    t =     6.40s Find the Target Application 'com.plenara.plenaraApp'
+    t =     6.46s Find the Target Application 'com.plenara.plenaraApp'
+    t =     6.50s Find the Target Application 'com.plenara.plenaraApp'
+    t =     6.52s Find the Target Application 'com.plenara.plenaraApp'
+    t =     6.54s Checking existence of `"tab-0" Button`
+    t =     6.56s Find the "tab-0" Button
+    t =     6.59s Find the "tab-0" Button
+    t =     6.62s Checking existence of `"home-filter-footer" Other`
+    t =     6.63s Checking existence of `Keyboard (First Match)`
+    t =     6.66s Checking existence of `"person-Nora Ellis" Button`
+    t =     6.77s Find the "person-Nora Ellis" Button
+    t =     6.80s Find the "person-Nora Ellis" Button
+    t =     6.84s Tap "person-Nora Ellis" Button
+    t =     6.84s     Wait for com.plenara.plenaraApp to idle
+    t =     6.84s     Find the "person-Nora Ellis" Button
+    t =     6.86s     Check for interrupting elements affecting "person-Nora Ellis" Button
+    t =     6.92s     Synthesize event
+    t =     7.22s     Wait for com.plenara.plenaraApp to idle
+    t =     7.61s Find the Target Application 'com.plenara.plenaraApp'
+    t =     7.64s Find the Target Application 'com.plenara.plenaraApp'
+    t =     7.66s Find the Target Application 'com.plenara.plenaraApp'
+    t =     7.68s Find the Target Application 'com.plenara.plenaraApp'
+    t =     7.69s Checking existence of `"tab-0" Button`
+    t =     7.71s Find the "tab-0" Button
+    t =     7.74s Find the "tab-0" Button
+    t =     7.83s Checking existence of `"home-filter-footer" Other`
+    t =     7.85s Checking existence of `Keyboard (First Match)`
+    t =     7.91s Checking existence of `"Adjust" Button`
+    t =     7.93s Find the "Adjust" Button
+    t =     7.96s Find the "Adjust" Button
+    t =     8.00s Find the "Adjust" Button
+    t =     8.11s Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.13s Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.14s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 624.3) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 265.8) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =     8.14s     Wait for com.plenara.plenaraApp to idle
+    t =     8.15s     Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.16s     Check for interrupting elements affecting "Plenara" Application
+    t =     8.23s     Synthesize event
+    t =     8.24s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.28s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.30s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.32s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     8.34s         Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.37s     Wait for com.plenara.plenaraApp to idle
+    t =     9.37s Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.39s Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.40s Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.41s Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.43s Checking existence of `"tab-0" Button`
+    t =     9.45s Find the "tab-0" Button
+    t =     9.47s Find the "tab-0" Button
+    t =     9.49s Checking existence of `"home-filter-footer" Other`
+    t =     9.51s Checking existence of `Keyboard (First Match)`
+    t =     9.54s Checking existence of `"Adjust" Button`
+    t =     9.56s Find the "Adjust" Button
+    t =     9.58s Find the "Adjust" Button
+    t =     9.61s Tap "Adjust" Button
+    t =     9.61s     Wait for com.plenara.plenaraApp to idle
+    t =     9.61s     Find the "Adjust" Button
+    t =     9.63s     Check for interrupting elements affecting "Adjust" Button
+    t =     9.65s     Synthesize event
+    t =     9.94s     Wait for com.plenara.plenaraApp to idle
+    t =     9.99s Tap "Save" Button
+    t =     9.99s     Wait for com.plenara.plenaraApp to idle
+    t =    10.49s     Find the "Save" Button
+    t =    10.57s     Check for interrupting elements affecting "Save" Button
+    t =    10.62s     Synthesize event
+    t =    10.91s     Wait for com.plenara.plenaraApp to idle
+    t =    11.69s Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.71s Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.72s Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.74s Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.75s Checking existence of `"tab-0" Button`
+    t =    11.77s Find the "tab-0" Button
+    t =    11.80s Find the "tab-0" Button
+    t =    11.82s Checking existence of `"home-filter-footer" Other`
+    t =    11.84s Checking existence of `Keyboard (First Match)`
+    t =    11.86s Checking existence of `"Adjust" Button`
+    t =    11.88s Find the "Adjust" Button
+    t =    11.91s Find the "Adjust" Button
+    t =    11.94s Tap "Adjust" Button
+    t =    11.94s     Wait for com.plenara.plenaraApp to idle
+    t =    11.94s     Find the "Adjust" Button
+    t =    11.96s     Check for interrupting elements affecting "Adjust" Button
+    t =    11.98s     Synthesize event
+    t =    12.27s     Wait for com.plenara.plenaraApp to idle
+    t =    12.69s Find the Target Application 'com.plenara.plenaraApp'
+    t =    12.74s Find the Target Application 'com.plenara.plenaraApp'
+    t =    12.78s Find the Target Application 'com.plenara.plenaraApp'
+    t =    12.82s Find the Target Application 'com.plenara.plenaraApp'
+    t =    12.85s Checking existence of `"tab-0" Button`
+    t =    12.90s Find the "tab-0" Button
+    t =    12.95s Checking existence of `"home-filter-footer" Other`
+    t =    13.00s Checking existence of `Keyboard (First Match)`
+    t =    13.08s Checking existence of `"person-reminder-interval" Button`
+    t =    13.12s Find the "person-reminder-interval" Button
+    t =    13.17s Find the "person-reminder-interval" Button
+    t =    13.23s Tap "person-reminder-interval" Button
+    t =    13.23s     Wait for com.plenara.plenaraApp to idle
+    t =    13.23s     Find the "person-reminder-interval" Button
+    t =    13.28s     Check for interrupting elements affecting "person-reminder-interval" Button
+    t =    13.32s     Synthesize event
+    t =    13.61s     Wait for com.plenara.plenaraApp to idle
+    t =    14.90s Tap "Every week" Button
+    t =    14.90s     Wait for com.plenara.plenaraApp to idle
+    t =    14.91s     Find the "Every week" Button
+    t =    14.95s     Check for interrupting elements affecting "Every week" Button
+    t =    15.00s     Synthesize event
+    t =    15.28s     Wait for com.plenara.plenaraApp to idle
+    t =    16.80s Tap "Save" Button
+    t =    16.80s     Wait for com.plenara.plenaraApp to idle
+    t =    16.81s     Find the "Save" Button
+    t =    16.87s     Check for interrupting elements affecting "Save" Button
+    t =    16.92s     Synthesize event
+    t =    17.22s     Wait for com.plenara.plenaraApp to idle
+    t =    18.00s Checking existence of `"No contact recorded" StaticText`
+    t =    18.03s Tap "tab-0" Button
+    t =    18.03s     Wait for com.plenara.plenaraApp to idle
+    t =    18.03s     Find the "tab-0" Button
+    t =    18.05s     Check for interrupting elements affecting "tab-0" Button
+    t =    18.07s     Synthesize event
+    t =    18.37s     Wait for com.plenara.plenaraApp to idle
+    t =    18.72s Find the Target Application 'com.plenara.plenaraApp'
+    t =    18.77s Find the Target Application 'com.plenara.plenaraApp'
+    t =    18.79s Find the Target Application 'com.plenara.plenaraApp'
+    t =    18.87s Find the Target Application 'com.plenara.plenaraApp'
+    t =    18.92s Checking existence of `"tab-0" Button`
+    t =    18.95s Find the "tab-0" Button
+    t =    18.99s Find the "tab-0" Button
+    t =    19.02s Checking existence of `"home-filter-footer" Other`
+    t =    19.05s Checking existence of `Keyboard (First Match)`
+    t =    19.10s Checking existence of `"home-follow-up" Button`
+    t =    19.13s Find the "home-follow-up" Button
+    t =    19.23s Find the "home-follow-up" Button
+    t =    19.32s Tap "home-follow-up" Button
+    t =    19.32s     Wait for com.plenara.plenaraApp to idle
+    t =    19.33s     Find the "home-follow-up" Button
+    t =    19.36s     Check for interrupting elements affecting "home-follow-up" Button
+    t =    19.39s     Synthesize event
+    t =    19.69s     Wait for com.plenara.plenaraApp to idle
+    t =    20.84s Tap "Due reminders" Button
+    t =    20.84s     Wait for com.plenara.plenaraApp to idle
+    t =    20.84s     Find the "Due reminders" Button
+    t =    20.86s     Check for interrupting elements affecting "Due reminders" Button
+    t =    20.89s     Synthesize event
+    t =    21.18s     Wait for com.plenara.plenaraApp to idle
+    t =    22.59s Find the "home-count" StaticText
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/CompactHomeUITests.swift:95: error: -[PlenaraUITests.CompactHomeUITests testEnablingReminderThroughEditorDoesNotReviveAnOldOffClock] : XCTAssertEqual failed: ("1 person") is not equal to ("0 people") - Enabling a weekly reminder today must not revive the old disabled clock
+    t =    22.67s Tear Down
+    t =    22.67s     Terminate com.plenara.plenaraApp:16051
+Test Case '-[PlenaraUITests.CompactHomeUITests testEnablingReminderThroughEditorDoesNotReviveAnOldOffClock]' failed (23.775 seconds).
+Test Suite 'CompactHomeUITests' failed at 2026-11-25 19:31:55.697.
+	 Executed 1 test, with 1 failure (0 unexpected) in 23.775 (23.776) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-25 19:31:55.698.
+	 Executed 1 test, with 1 failure (0 unexpected) in 23.775 (23.777) seconds
+Test Suite 'Selected tests' failed at 2026-11-25 19:31:55.699.
+	 Executed 1 test, with 1 failure (0 unexpected) in 23.775 (23.778) seconds
+2026-11-25 19:31:56.159 xcodebuild[16030:8060118]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-25 19:31:56.164 xcodebuild[16030:8060086] [MT] IDETestOperationsObserverDebug: 26.088 elapsed -- Testing started completed.
+2026-11-25 19:31:56.164 xcodebuild[16030:8060086] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-25 19:31:56.164 xcodebuild[16030:8060086] [MT] IDETestOperationsObserverDebug: 26.088 sec, +26.088 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261125-193127.xcresult
+
+Failing tests:
+	CompactHomeUITests.testEnablingReminderThroughEditorDoesNotReviveAnOldOffClock()
+
+** TEST EXECUTE FAILED **
+
+Testing started

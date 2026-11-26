@@ -1,0 +1,14 @@
+{
+  "mode": "home-clock",
+  "faults": [
+    [
+      "JournalStore.swift",
+      "candidate.prepareReminderSave(previous: previous, knownConnection: journal.lastConnection(candidate), configuringReminders: configuringReminders)",
+      "/* deliberately skip schedule transition */"
+    ]
+  ],
+  "rejected": true,
+  "expectedFailures": [
+    "Enabling a weekly reminder today must not revive the old disabled clock"
+  ]
+}

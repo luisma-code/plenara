@@ -151,6 +151,20 @@ import XCTest
             XCTAssertEqual(reopened.journal.moments.first?.connected, connected)
         }
     }
+    func testPersonSaveKeepsUnknownClockOffUntilAnExplicitScheduleChange() throws {
+        let s = store(); var p = people(1)[0]; p.cadence = 14; p.baselineConnection = nil
+        XCTAssertTrue(s.update { $0.people = [p] })
+        p.name = "Renamed person"
+        XCTAssertTrue(s.save(p)); XCTAssertNil(s.journal.people[0].reminderStart, "An unrelated person edit must not start a missing reminder clock")
+        XCTAssertTrue(s.save(p, configuringReminders: true)); let started = try XCTUnwrap(s.journal.people[0].reminderStart)
+        XCTAssertTrue(Calendar.current.isDateInToday(started)); XCTAssertNil(s.journal.lastConnection(s.journal.people[0]))
+        p = s.journal.people[0]; p.cadence = 0
+        XCTAssertTrue(s.save(p)); XCTAssertNil(s.journal.people[0].reminderStart)
+        let before = s.journal
+        try FileManager.default.removeItem(at: s.file); try FileManager.default.createDirectory(at: s.file, withIntermediateDirectories: false)
+        p.cadence = 7
+        XCTAssertFalse(s.save(p)); XCTAssertEqual(s.journal, before, "A failed person save must not publish a newly started clock")
+    }
     func testUnchangedRhythmDoesNotPretendToReplaceEarlierUndo() throws {
         let s = store(); var friends = people(2); friends[0].cadence = 0; friends[1].cadence = 14
         XCTAssertTrue(s.update { $0.people = friends })

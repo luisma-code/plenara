@@ -43,6 +43,8 @@ extension XCTestCase {
             var bottom = min(app.frame.maxY - 28, surface.frame.maxY)
             let tab = app.buttons["tab-0"]
             if tab.exists && tab.isHittable { bottom = min(bottom, tab.frame.minY) }
+            let filterFooter = app.otherElements["home-filter-footer"]
+            if filterFooter.exists && !(element.exists && filterFooter.frame.contains(element.frame)) { bottom = min(bottom, filterFooter.frame.minY) }
             let keyboard = app.keyboards.firstMatch
             if keyboard.exists { bottom = min(bottom, keyboard.frame.minY) }
             let height = bottom - top

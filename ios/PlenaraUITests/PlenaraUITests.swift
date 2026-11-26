@@ -5,7 +5,7 @@ final class PlenaraUITests: XCTestCase {
     var app: XCUIApplication!
     override func setUpWithError() throws { continueAfterFailure = false; app = XCUIApplication(); app.launchArguments = ["--ui-testing", "--reset"]; app.launch() }
     func testManualPersonMemoryMomentAndReopen() throws {
-        app.buttons["Bring your people in"].tap(); app.buttons["Add someone yourself"].tap()
+        app.buttons["Add people"].tap(); app.buttons["Add by name"].tap()
         let name = app.textFields["person-name"]; XCTAssertTrue(name.waitForExistence(timeout: 5)); name.tap(); name.typeText("Julia Test")
         app.buttons["save-person"].tap()
         let setupFinished = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: app.buttons["tab-1"])
@@ -14,17 +14,17 @@ final class PlenaraUITests: XCTestCase {
         app.buttons["Add a note"].tap(); let memory = app.textFields["memory-text"]; memory.tap(); memory.typeText("Ask about the exhibition")
         app.buttons["save-memory"].tap()
         app.swipeUp(); XCTAssertTrue(app.buttons["memory-row"].firstMatch.waitForExistence(timeout: 5)); app.swipeDown()
-        app.buttons["Log a moment"].tap(); app.buttons["save-moment"].tap()
+        app.buttons["Log contact"].tap(); app.buttons["save-moment"].tap()
         XCTAssertTrue(app.staticTexts["Connected today"].waitForExistence(timeout: 5))
         app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch(); app.buttons["tab-1"].tap(); tapVisible(app.buttons["person-Julia Test"], app: app)
         XCTAssertTrue(app.staticTexts["Connected today"].waitForExistence(timeout: 5)); app.swipeUp(); XCTAssertTrue(app.staticTexts["Ask about the exhibition"].firstMatch.exists)
     }
     func testDemoNavigationAndScreenshots() throws {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo"]; app.launch()
-        XCTAssertTrue(app.staticTexts["A little closer."].waitForExistence(timeout: 5)); assertMinimumTapHeight(app.buttons["tab-1"]); assertMinimumTapHeight(app.buttons["Log a moment"]); assertMinimumTapHeight(app.buttons["Another week"]); attach("Stay close")
+        XCTAssertTrue(app.staticTexts["Follow up"].waitForExistence(timeout: 5)); assertMinimumTapHeight(app.buttons["tab-1"]); assertMinimumTapHeight(app.buttons["quick-log"]); app.buttons["home-actions-Sofia Chen"].tap(); assertMinimumTapHeight(app.buttons["home-later-Sofia Chen"]); attach("Stay close")
         app.buttons["tab-1"].tap(); attach("People"); app.buttons["Far away"].tap(); XCTAssertTrue(app.buttons["person-Sofia Chen"].exists); XCTAssertFalse(app.buttons["person-Daniel Rivera"].exists)
         app.buttons["Everyone"].tap(); app.swipeUp(); tapVisible(app.buttons["person-Sofia Chen"], app: app); XCTAssertTrue(app.staticTexts["Sofia Chen"].firstMatch.waitForExistence(timeout: 5)); attach("Person")
-        app.swipeUp(); attach("Person notes"); app.buttons["tab-2"].tap(); XCTAssertTrue(app.staticTexts["Time well spent."].exists); attach("Moments")
+        app.swipeUp(); attach("Person notes"); app.buttons["tab-2"].tap(); XCTAssertTrue(app.staticTexts["Contact history"].exists); attach("Moments")
         app.buttons["tab-0"].tap(); app.buttons["Settings and reminders"].tap(); XCTAssertTrue(app.buttons["Export a restorable backup"].exists); attach("Settings"); app.buttons["Export a restorable backup"].tap()
         let export = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"].buttons["Save"]
         XCTAssertTrue(export.waitForExistence(timeout: 8), "The native Files export destination must open")
@@ -56,7 +56,7 @@ final class PlenaraUITests: XCTestCase {
         maya.tap(); app.navigationBars["Contacts"].buttons["Done"].tap(); XCTAssertTrue(app.navigationBars["Contacts"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Import selected people"].waitForExistence(timeout: 5)); app.buttons["Import selected people"].tap(); app.buttons["import-rhythm-setup"].tap(); XCTAssertTrue(app.staticTexts["setup-rhythm-selection"].waitForExistence(timeout: 5)); XCTAssertEqual(app.staticTexts["setup-rhythm-selection"].label, "0 selected"); app.buttons["rhythm-done"].tap()
         XCTAssertTrue(app.buttons["person-Maya Plenara Test"].waitForExistence(timeout: 5)); tapVisible(app.buttons["person-Maya Plenara Test"], app: app)
-        XCTAssertTrue(app.staticTexts["No regular reminder"].exists); XCTAssertTrue(app.staticTexts["Last contact not set"].exists)
+        XCTAssertTrue(app.staticTexts["Reminders off"].exists); XCTAssertTrue(app.staticTexts["No contact recorded"].exists)
         app.buttons["tab-1"].tap(); openVisiblePeopleImport(); app.buttons["Choose from Contacts"].tap()
         XCTAssertTrue(maya.waitForExistence(timeout: 5)); maya.tap(); app.navigationBars["Contacts"].buttons["Done"].tap(); XCTAssertTrue(app.navigationBars["Contacts"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Import selected people"].waitForExistence(timeout: 5)); attach("Repeat import review"); XCTAssertTrue(app.staticTexts["0 selected"].exists, "A previously imported contact must start unselected")
@@ -69,8 +69,10 @@ final class PlenaraUITests: XCTestCase {
         XCTAssertTrue(app.buttons["dated-Mum"].waitForExistence(timeout: 5), "A due reminder must show its person context")
         attach("Dated reminders"); app.buttons["dated-Mum"].tap()
         XCTAssertTrue(app.staticTexts["birthday-info"].waitForExistence(timeout: 5))
-        app.buttons["tab-0"].tap(); app.swipeUp(); app.buttons["Picked up this thread"].tap()
+        app.buttons["tab-0"].tap(); app.swipeUp(); app.buttons["Mark followed up"].tap()
         XCTAssertFalse(app.buttons["dated-Sofia Chen"].exists, "Clearing the date keeps the memory but removes its reminder")
+        app.buttons["tab-1"].tap(); tapVisible(app.buttons["person-Sofia Chen"], app: app)
+        app.swipeUp()
         XCTAssertTrue(app.staticTexts["Her ceramics show opens in November. Ask how the pieces are coming along."].firstMatch.exists, "Completing a dated reminder must keep the memory")
     }
     func testNotificationPermissionAndNativeSchedule() throws {
@@ -80,14 +82,14 @@ final class PlenaraUITests: XCTestCase {
         let allow = springboard.alerts.buttons["Allow"]
         if allow.waitForExistence(timeout: 3) { allow.tap() }
         else if app.alerts.buttons["Allow"].exists { app.alerts.buttons["Allow"].tap() }
-        XCTAssertTrue(app.staticTexts["Your weekly reminder is ready."].waitForExistence(timeout: 8), "A system-accepted local weekly reminder must exist after opt-in")
+        XCTAssertTrue(app.staticTexts["Weekly reminder enabled."].waitForExistence(timeout: 8), "A system-accepted local weekly reminder must exist after opt-in")
         attach("Reminder settings")
         app.switches["notifications-toggle"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
-        XCTAssertFalse(app.staticTexts["Your weekly reminder is ready."].exists)
+        XCTAssertFalse(app.staticTexts["Weekly reminder enabled."].exists)
     }
     func testDarkAndLargeTextNavigation() throws {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo", "--dark"]; app.launch()
-        XCTAssertTrue(app.staticTexts["A little closer."].waitForExistence(timeout: 5)); assertDarkBackground(); attach("Dark Stay close")
+        XCTAssertTrue(app.staticTexts["Follow up"].waitForExistence(timeout: 5)); assertDarkBackground(); attach("Dark Stay close")
         app.buttons["tab-1"].tap(); app.swipeUp(); tapVisible(app.buttons["person-Sofia Chen"], app: app); attach("Dark person")
         app.buttons["relationship-intention"].tap(); waitForRelationshipEditor(); attach("Dark relationship choices"); app.buttons["Cancel"].tap()
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]; app.launch()
@@ -98,7 +100,7 @@ final class PlenaraUITests: XCTestCase {
         tapVisible(relationship, app: app); waitForRelationshipEditor()
         XCTAssertTrue(app.buttons["feeling-choice"].waitForExistence(timeout: 5)); attach("Large text relationship choices")
         app.buttons["Cancel"].tap()
-        app.buttons["tab-0"].tap(); XCTAssertTrue(app.staticTexts["A little closer."].exists)
+        app.buttons["tab-0"].tap(); XCTAssertTrue(app.staticTexts["Follow up"].exists)
     }
     func testExistingImportSurvivesUpgradeAndIndependentChoices() throws {
         let fixture = try XCTUnwrap(Bundle(for: PlenaraUITests.self).url(forResource: "journal-build-1001", withExtension: "json"))
@@ -144,7 +146,7 @@ final class PlenaraUITests: XCTestCase {
         attach("Combined relationship filters")
         app.buttons["people-filters"].tap(); attach("All relationship filters"); app.buttons["Close"].tap()
         shortcut("Grow closer")
-        XCTAssertTrue(app.staticTexts["No one matches yet."].exists)
+        XCTAssertTrue(app.staticTexts["No matching people."].exists)
         app.swipeDown()
         let clear = app.buttons["people-clear-filters"]
         XCTAssertTrue(clear.isHittable && clear.frame.maxY < app.buttons["tab-1"].frame.minY, "Clear filters must be visible beside Filters")
@@ -156,7 +158,7 @@ final class PlenaraUITests: XCTestCase {
     func testQuickLogCallsTextsVisitsAndNotesSurviveReopen() throws {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo"]; app.launch()
         for (channel, note) in [("Call", ""), ("Messages", "Ask about the new job"), ("In person", "Walked by the lake")] {
-            app.buttons["quick-log"].tap()
+            app.buttons["quick-log"].tap(); app.buttons["home-log-person"].tap()
             let search = app.searchFields.firstMatch
             XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Sofia")
             let person = app.buttons["log-person-Sofia Chen"]
@@ -173,7 +175,7 @@ final class PlenaraUITests: XCTestCase {
             XCTAssertTrue(app.buttons["quick-log"].waitForExistence(timeout: 5))
         }
         // Cancelling a draft must not create a fourth entry.
-        app.buttons["quick-log"].tap(); app.buttons["log-person-Sofia Chen"].tap()
+        app.buttons["quick-log"].tap(); app.buttons["home-log-person"].tap(); app.buttons["log-person-Sofia Chen"].tap()
         XCTAssertTrue(app.buttons["save-moment"].waitForExistence(timeout: 5)); app.buttons["Cancel"].tap()
         app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch(); app.buttons["tab-2"].tap()
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Sofia Chen ·")).count, 4, "Three saves and one cancelled draft must add exactly three moments to Sofia’s existing history")
@@ -192,7 +194,7 @@ final class PlenaraUITests: XCTestCase {
     }
     func testQuickLogDarkAndLargeText() throws {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo", "--dark"]; app.launch()
-        app.buttons["quick-log"].tap()
+        app.buttons["quick-log"].tap(); app.buttons["home-log-person"].tap()
         let search = app.searchFields.firstMatch; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Mum")
         app.buttons["log-person-Mum"].tap()
         XCTAssertTrue(app.buttons["channel-Messages"].waitForExistence(timeout: 5)); waitForRelationshipEditor(); attach("Dark quick moment")
@@ -200,7 +202,7 @@ final class PlenaraUITests: XCTestCase {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--demo", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]; app.launch()
         let quickLog = app.buttons["quick-log"]
         XCTAssertTrue(quickLog.isHittable && quickLog.frame.maxY <= app.buttons["tab-0"].frame.minY && quickLog.frame.minY >= 0, "Quick logging must stay visible above the introduction at the largest text size")
-        app.buttons["quick-log"].tap()
+        app.buttons["quick-log"].tap(); app.buttons["home-log-person"].tap()
         let largeSearch = app.searchFields.firstMatch
         XCTAssertTrue(largeSearch.waitForExistence(timeout: 5)); largeSearch.tap(); largeSearch.typeText("Mum")
         app.buttons["log-person-Mum"].tap()
@@ -212,47 +214,38 @@ final class PlenaraUITests: XCTestCase {
     }
     func testHomeRankingFullListLogSnoozeAndReopen() throws {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--ranking-demo"]; app.launch()
-        let hero = app.buttons["suggestion-hero-Maya Inner"]
-        XCTAssertTrue(hero.waitForExistence(timeout: 5), "The most relatively stale due inner-circle person must lead Home")
-        let reason = app.staticTexts["suggestion-reason-Maya Inner"]
-        XCTAssertTrue(reason.label.contains("Inner circle") && reason.label.contains("15 days") && reason.label.contains("Every week"))
-        XCTAssertFalse(app.buttons["suggestion-Owen Inner"].exists, "Only three primary suggestions appear before expanding")
-        attach("Ranked Home")
-        let expand = app.buttons["suggestions-expand"]; scrollHomeTo(expand)
-        XCTAssertEqual(expand.value as? String, "Collapsed"); expand.tap()
-        XCTAssertEqual(expand.value as? String, "Expanded", "The full-list control must actually expand the complete ranking")
-        let owen = app.buttons["suggestion-Owen Inner"], leo = app.buttons["suggestion-Leo Casual"], sofia = app.buttons["suggestion-Sofia Close"]
+        let leader = app.buttons["home-person-Maya Inner"]
+        XCTAssertTrue(leader.waitForExistence(timeout: 5), "The most relatively stale due inner-circle person must lead Home")
+        XCTAssertTrue(leader.label.contains("Inner circle") && leader.label.contains("15d"))
+        XCTAssertEqual(app.staticTexts["home-count"].label, "6 people", "The full eligible list must be available without a three-person cap")
+        attach("Ranked compact Home")
+        let owen = app.buttons["home-person-Owen Inner"], leo = app.buttons["home-person-Leo Casual"], sofia = app.buttons["home-person-Sofia Close"]
         scrollHomeTo(sofia)
-        XCTAssertTrue(owen.exists && leo.exists && sofia.exists, "The complete ordered list must expose everyone ready to reconnect")
-        XCTAssertLessThan(owen.frame.minY, leo.frame.minY, "All due inner-circle people precede the ordinary group")
-        XCTAssertLessThan(leo.frame.minY, sofia.frame.minY, "A very stale casual friend precedes a barely-less-stale close friend regardless of growth")
-        XCTAssertTrue(leo.label.contains("Casual") && leo.label.contains("About every 3 months"), "Ranked rows must explain closeness and the chosen rhythm")
-        XCTAssertFalse(app.buttons["growth-Sofia Close"].exists, "Expanded suggestions must not duplicate a person in a growth card")
-        attach("Complete ranked list")
-        scrollHomeTo(owen); owen.tap(); app.buttons["Log a moment"].tap(); app.buttons["save-moment"].tap()
-        app.buttons["Your people"].tap()
-        XCTAssertEqual(app.buttons["suggestions-expand"].value as? String, "Expanded", "Returning from a person must preserve the expanded workspace")
-        XCTAssertFalse(owen.exists, "A confirmed connection must immediately remove that person from the ready list")
-        let snooze = app.buttons["Another week"]; scrollHomeTo(snooze); snooze.tap()
-        XCTAssertTrue(app.buttons["suggestion-hero-Zoe Inner"].exists, "Snoozing the leader must promote the next inner-circle person")
-        XCTAssertFalse(app.buttons["growth-Maya Inner"].exists); XCTAssertFalse(app.buttons["care-Maya Inner"].exists)
+        XCTAssertTrue(sofia.exists, "The complete ordered list must expose everyone ready to reconnect")
+        XCTAssertLessThan(leo.frame.minY, sofia.frame.minY, "A stale casual friend precedes a less-stale close friend in the due queue")
+        scrollHomeTo(leo); leo.tap()
+        XCTAssertTrue(app.staticTexts["home-reason-Leo Casual"].label.contains("About every 3 months"), "Expanded reasons must explain the chosen rhythm")
+        attach("Complete compact ranked list")
+        scrollHomeTo(owen); owen.tap(); tapVisible(app.buttons["home-profile-Owen Inner"], app: app)
+        app.buttons["Log contact"].tap(); app.buttons["save-moment"].tap(); app.buttons["Back"].tap()
+        XCTAssertEqual(app.staticTexts["home-count"].label, "5 people", "Recording contact must remove that person from the follow-up queue")
+        scrollHomeTo(leader); leader.tap(); tapVisible(app.buttons["home-later-Maya Inner"], app: app)
+        app.buttons["home-snooze-save"].tap()
+        XCTAssertEqual(app.staticTexts["home-count"].label, "4 people")
         app.terminate(); app.launchArguments = ["--ui-testing"]; app.launch()
-        XCTAssertTrue(app.buttons["suggestion-hero-Zoe Inner"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["suggestion-hero-Maya Inner"].exists)
-        XCTAssertFalse(app.buttons["growth-Maya Inner"].exists); XCTAssertFalse(app.buttons["care-Maya Inner"].exists)
-        XCTAssertFalse(app.buttons["growth-Avery Snoozed"].exists); XCTAssertFalse(app.buttons["care-Blake Reply"].exists)
-        attach("Ranked Home after snooze")
+        XCTAssertTrue(app.buttons["home-person-Zoe Inner"].waitForExistence(timeout: 5), "Snoozing the leader must promote the next inner-circle person")
+        XCTAssertFalse(app.buttons["home-person-Maya Inner"].exists)
+        XCTAssertFalse(app.buttons["home-person-Avery Snoozed"].exists); XCTAssertFalse(app.buttons["home-person-Blake Reply"].exists)
+        attach("Compact ranked Home after snooze")
     }
     func testRankedHomeDarkAndLargeText() throws {
         for (flags, label) in [(["--dark"], "Dark ranked Home"), (["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"], "Large ranked Home")] {
             app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--ranking-demo"] + flags; app.launch()
-            let hero = app.buttons["suggestion-hero-Maya Inner"]; scrollHomeTo(hero)
-            XCTAssertTrue(hero.exists)
-            attach(label)
-            let expand = app.buttons["suggestions-expand"]; scrollHomeTo(expand); assertMinimumTapHeight(expand); expand.tap()
-            let owen = app.buttons["suggestion-Owen Inner"]; scrollHomeTo(owen); XCTAssertTrue(owen.isHittable)
-            attach(label + " expanded")
-            scrollHomeTo(expand); expand.tap(); XCTAssertEqual(expand.value as? String, "Collapsed")
+            let row = app.buttons["home-person-Maya Inner"]; scrollHomeTo(row); XCTAssertTrue(row.exists); attach(label)
+            let filters = app.buttons["home-filters"]; scrollHomeTo(filters); assertMinimumTapHeight(filters)
+            let actions = app.buttons["home-actions-Maya Inner"]; scrollHomeTo(actions); assertMinimumTapHeight(actions); actions.tap()
+            let log = app.buttons["home-log-Maya Inner"]; scrollHomeTo(log); assertMinimumTapHeight(log)
+            attach(label + " actions")
         }
     }
     func scrollHomeTo(_ element: XCUIElement) {

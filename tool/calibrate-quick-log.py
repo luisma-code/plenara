@@ -23,14 +23,12 @@ try:
         source.write_bytes(original)
         print('Rejected: ' + name, flush=True)
     text = home_original.decode()
-    start = text.index('                if !store.journal.people.isEmpty {')
-    end = text.index('                PageHeading', start)
-    early = text[start:end]
-    actions = early.removeprefix('                if !store.journal.people.isEmpty {\n').removesuffix('                }\n')
-    assert 'accessibilityIdentifier("quick-log")' in actions
-    destination = '                } else {\n                    if !store.journal.datedReminders()'
-    assert destination in text
-    text = text.replace(early, '', 1).replace(destination, '                } else {\n' + actions + '                    if !store.journal.datedReminders()', 1)
+    good = 'HStack { Text("Follow up").font(Theme.title(32)); Spacer(); logMenu }'
+    assert good in text
+    text = text.replace(good, 'HStack { Text("Follow up").font(Theme.title(32)); Spacer(); logMenu.hidden() }', 1)
+    good = 'VStack(alignment: .leading) { Text("Follow up").font(Theme.title(32)); logMenu }'
+    assert good in text
+    text = text.replace(good, 'VStack(alignment: .leading) { Text("Follow up").font(Theme.title(32)); logMenu.hidden() }', 1)
     home.write_text(text)
     Path('.tmp/native-tests.log').unlink(missing_ok=True)
     run = subprocess.run(['bash', 'tool/test-native.sh', '-only-testing:PlenaraUITests/PlenaraUITests/testQuickLogDarkAndLargeText'], capture_output=True, text=True)

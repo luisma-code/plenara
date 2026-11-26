@@ -1,0 +1,36 @@
+{
+  "driveUUID": "2B4972AC-6571-4862-9042-46B7AB6006A2",
+  "records": [
+    {
+      "device": "BB42F29A-928B-4B9E-BD39-160B70249D4F",
+      "externalData": "/Volumes/MacExt/DeveloperData/projects/plenara/simulators/BB42F29A-928B-4B9E-BD39-160B70249D4F/data",
+      "entriesVerified": 45722,
+      "logicalBytesVerified": 3933204467,
+      "copyMatches": true,
+      "excludedDisposableOSCacheFiles": [
+        "Library/Caches/locationd/locScoreInfo/secondary-817337048.364482-1",
+        "Library/Caches/locationd/locScoreInfo/secondary-817337078.540629-0",
+        "Library/Caches/locationd/locScoreInfo/secondary-817355010.377907-1"
+      ],
+      "excludedBytes": 120,
+      "exclusionReason": "OS Location Services datavault denies reads of these rebuildable simulator cache files; app data and contacts are not excluded.",
+      "internalBackup": "/Users/luisma.code/Library/Developer/CoreSimulator/Devices/BB42F29A-928B-4B9E-BD39-160B70249D4F/data-before-macext",
+      "consumerVerified": false,
+      "internalOriginalRestored": true
+    },
+    {
+      "device": "A7DB6C2C-908E-40CB-AB9D-63270EB0275B",
+      "externalData": "/Volumes/MacExt/DeveloperData/projects/plenara/simulators/A7DB6C2C-908E-40CB-AB9D-63270EB0275B/data",
+      "entriesVerified": 87,
+      "logicalBytesVerified": 18250024,
+      "copyMatches": true,
+      "excludedDisposableOSCacheFiles": [],
+      "excludedBytes": 0,
+      "exclusionReason": "OS Location Services datavault denies reads of these rebuildable simulator cache files; app data and contacts are not excluded.",
+      "internalBackup": "/Users/luisma.code/Library/Developer/CoreSimulator/Devices/A7DB6C2C-908E-40CB-AB9D-63270EB0275B/data-before-macext",
+      "consumerVerified": false,
+      "internalOriginalRestored": true
+    }
+  ],
+  "outcome": "External consumer denied by macOS filesystem privacy permissions, including a separately tested supported external device set; original offline data restored without deletion."
+}

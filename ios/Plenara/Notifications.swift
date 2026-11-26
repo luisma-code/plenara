@@ -13,7 +13,7 @@ struct ReminderPlan: Equatable {
         let p = j.preferences
         guard p.notifications else { return [] }
         let hour = p.allowedHour(p.hour)
-        let weekly = ReminderPlan(id: "weekly", title: "A little time for your people?", body: "Make room for a small hello. Your people are here when you’re ready.", components: DateComponents(calendar: calendar, hour: hour, minute: p.minute, weekday: p.weekday), repeats: true)
+        let weekly = ReminderPlan(id: "weekly", title: "Review your follow-ups", body: "Open Plenara to review your people and chosen reminders.", components: DateComponents(calendar: calendar, hour: hour, minute: p.minute, weekday: p.weekday), repeats: true)
         var dated: [(date: Date, plan: ReminderPlan)] = []
         if p.birthdays {
             for person in j.people.filter({ !$0.paused && $0.birthdayReminder && $0.birthdayMonth > 0 && $0.birthdayDay > 0 }) {
@@ -30,7 +30,7 @@ struct ReminderPlan: Equatable {
                       let date = calendar.date(bySettingHour: hour, minute: p.minute, second: 0, of: followUp), date > now else { continue }
                 var components = calendar.dateComponents([.era, .year, .month, .day, .hour, .minute], from: date)
                 components.calendar = calendar
-                dated.append((date, ReminderPlan(id: "followup-\(note.id)", title: "A thread to pick up", body: "You saved something to follow up on. Open Plenara when you have a moment.", components: components, repeats: false)))
+                dated.append((date, ReminderPlan(id: "followup-\(note.id)", title: "Dated follow-up", body: "You saved something to follow up on. Open Plenara when you have a moment.", components: components, repeats: false)))
             }
         }
         // Reserve the weekly invitation, then use the finite slots for the nearest

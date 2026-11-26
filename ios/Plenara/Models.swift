@@ -125,7 +125,7 @@ struct Journal: Codable, Equatable {
         max(0, calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day ?? 0)
     }
     // Shared suppression for due reminders and optional growth/care invitations.
-    private func invitationAllowed(_ p: Person, connection: Date?, outreach: Date?, now: Date, calendar: Calendar) -> Bool {
+    func invitationAllowed(_ p: Person, connection: Date?, outreach: Date?, now: Date, calendar: Calendar) -> Bool {
         guard !p.paused, !(p.snoozeUntil.map { $0 > now } ?? false) else { return false }
         return !(outreach.map { $0 > (connection ?? .distantPast) && daysSince($0, now: now, calendar: calendar) < 7 } ?? false)
     }
@@ -135,7 +135,7 @@ struct Journal: Codable, Equatable {
               invitationAllowed(p, connection: connection, outreach: lastOutreach(p), now: now, calendar: calendar) else { return false }
         return daysSince(anchor, now: now, calendar: calendar) >= p.cadence
     }
-    private func momentDates() -> (connections: [UUID: Date], outreach: [UUID: Date]) {
+    func momentDates() -> (connections: [UUID: Date], outreach: [UUID: Date]) {
         var connections: [UUID: Date] = [:], outreach: [UUID: Date] = [:]
         for moment in moments {
             for id in moment.participantIDs {
@@ -165,23 +165,6 @@ struct Journal: Codable, Equatable {
             if l.wantsToGrow != r.wantsToGrow { return l.wantsToGrow }
             return l.id.uuidString < r.id.uuidString
         }.map(\.person)
-    }
-    func suggestions(now: Date = Date(), calendar: Calendar = .current) -> [Person] {
-        Array(rankedSuggestions(now: now, calendar: calendar).prefix(3))
-    }
-    func contextualSuggestions(excluding ids: Set<UUID>, ranked: [Person], now: Date = Date(), calendar: Calendar = .current) -> (growth: Person?, care: [Person]) {
-        let dates = momentDates()
-        let allowed = people.filter { p in
-            let connection = [p.baselineConnection, dates.connections[p.id]].compactMap { $0 }.max()
-            return !ids.contains(p.id) && invitationAllowed(p, connection: connection, outreach: dates.outreach[p.id], now: now, calendar: calendar)
-        }.sorted { l, r in
-            let order = l.name.localizedStandardCompare(r.name)
-            return order == .orderedSame ? l.id.uuidString < r.id.uuidString : order == .orderedAscending
-        }
-        let growers = allowed.filter(\.wantsToGrow)
-        let growIDs = Set(growers.map(\.id))
-        let growth = ranked.first { growIDs.contains($0.id) } ?? growers.first
-        return (growth, allowed.filter { $0.feelingChoice == "Needs care" && $0.id != growth?.id })
     }
     func history(_ id: UUID? = nil) -> [Moment] { moments.filter { id.map($0.participantIDs.contains) ?? true }.sorted { $0.date > $1.date } }
     func participantNames(_ moment: Moment, excluding id: UUID? = nil) -> String {
@@ -224,10 +207,10 @@ extension Journal {
         let month = calendar.component(.month, from: now), day = calendar.component(.day, from: now)
         for p in people.filter({ !$0.paused }).sorted(by: { $0.name < $1.name }) {
             if p.birthdayReminder && p.birthdayMonth == month && p.birthdayDay == day {
-                reminders.append(DatedReminder(id: "birthday-\(p.id)", person: p, caption: "Birthday today", text: "A day for a little extra love."))
+                reminders.append(DatedReminder(id: "birthday-\(p.id)", person: p, caption: "Birthday today", text: "Birthday today."))
             }
             for n in p.notes.filter({ !$0.archived && $0.followUp.map { calendar.startOfDay(for: $0) <= calendar.startOfDay(for: now) } == true }).sorted(by: { $0.followUp! < $1.followUp! }) {
-                reminders.append(DatedReminder(id: "note-\(n.id)", person: p, caption: "A thread to pick up", text: n.text, noteID: n.id))
+                reminders.append(DatedReminder(id: "note-\(n.id)", person: p, caption: "Dated follow-up", text: n.text, noteID: n.id))
             }
         }
         return reminders
@@ -235,7 +218,7 @@ extension Journal {
 }
 
 
-struct PeopleFilter: Equatable {
+struct PeopleFilter: Codable, Equatable {
     var connection = "Everyone"
     var distance = "Everyone"
     var closeness = "Everyone"

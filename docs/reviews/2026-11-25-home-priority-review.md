@@ -1,6 +1,6 @@
 # Improving Home people priorities
 
-November 25, 2026. Review requested by Luis and performed with GPT 6.2 Astra, with independent source cross-checking. Proposal for review, not an approved change to the app or its design.
+November 25, 2026. Review requested by Luis and performed with GPT 6.2 Astra, with independent source cross-checking. Luis approved the compact, filterable Home direction on November 25, 2026. The [current product design](../../design/relationship-app.md#home) owns the adopted behavior; this review preserves the findings and options considered.
 
 Plenara currently answers two different questions on Home: who is due under a reminder rhythm, and who has been marked Grow closer. When little history or reminder setup exists, the first list can be empty and the second can choose the first name alphabetically. That can put Aaron ahead of close friends and family without any evidence that he needs attention more.
 

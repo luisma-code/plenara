@@ -78,24 +78,13 @@ struct QuietEmpty: View {
     var body: some View { Surface(color: Theme.lavender) { VStack(alignment: .leading, spacing: 13) { Image(systemName: "leaf").font(.title).foregroundStyle(Theme.plum); Text(title).font(Theme.title(28)); Text(message).foregroundStyle(Theme.muted).lineSpacing(4) } } }
 }
 func rhythmLabel(_ days: Int) -> String {
-    switch days { case 0: return "No regular reminder"; case 7: return "Every week"; case 14: return "Every 2 weeks"; case 30: return "About once a month"; case 60: return "About every 2 months"; case 90: return "About every 3 months"; default: return "Every \(days) days" }
+    switch days { case 0: return "Reminders off"; case 7: return "Every week"; case 14: return "Every 2 weeks"; case 30: return "About once a month"; case 60: return "About every 2 months"; case 90: return "About every 3 months"; default: return "Every \(days) days" }
 }
 func connectionLabel(_ p: Person, journal: Journal) -> String {
-    guard let date = journal.lastConnection(p) else { return "Last contact not set" }
+    guard let date = journal.lastConnection(p) else { return "No contact recorded" }
     let days = journal.daysSince(date)
     let approximate = p.baselineApproximate && date == p.baselineConnection ? "About " : ""
     return days == 0 ? "Connected today" : days == 1 ? "Connected yesterday" : "\(approximate)\(days) days since connecting"
-}
-
-func suggestionReason(_ p: Person, journal: Journal) -> String {
-    ([p.closeness == "Not set" ? nil : p.closeness].compactMap { $0 } + [connectionLabel(p, journal: journal), rhythmLabel(p.cadence)]).joined(separator: " · ")
-}
-
-struct PetalMotif: View {
-    var body: some View {
-        ZStack { ForEach([0.0, 60.0, 120.0], id: \.self) { angle in Ellipse().stroke(Theme.plum.opacity(0.16), lineWidth: 0.7).frame(width: 65, height: 145).rotationEffect(.degrees(angle)) } }
-            .frame(width: 145, height: 145).accessibilityHidden(true).allowsHitTesting(false)
-    }
 }
 
 struct ComfortableButtonStyle: ButtonStyle {

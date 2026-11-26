@@ -1,0 +1,15 @@
+{
+  "fullGateTests": 73,
+  "contactsDeniedTests": 1,
+  "smallGateTests": 46,
+  "finalNarrowRegressionTests": 2,
+  "sourceChangesAfterFullGate": [
+    "ios/Plenara/ReachOut.swift"
+  ],
+  "finalNarrowPaths": [
+    "CompactHomeUITests/testColdStartCompactFamilyAndCombinedFiltersSurviveReopen",
+    "WorkflowUITests/testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen"
+  ],
+  "labelContrast": "label-contrast.json",
+  "releaseSourceHashes": "source-hashes.json"
+}

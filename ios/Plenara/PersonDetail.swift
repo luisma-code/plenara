@@ -21,18 +21,18 @@ struct PersonDetail: View {
             if let p = person {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        HStack { Button { dismiss() } label: { Label(typeSize.isAccessibilitySize ? "Back" : "Your people", systemImage: "chevron.left").font(.subheadline).frame(minHeight: 44) }; Spacer(); Button("Edit") { editing = true }.frame(minHeight: 44) }
+                        HStack { Button { dismiss() } label: { Label("Back", systemImage: "chevron.left").font(.subheadline).frame(minHeight: 44) }; Spacer(); Button("Edit") { editing = true }.frame(minHeight: 44) }
                         header(p)
                         ViewThatFits(in: .horizontal) {
-                            HStack { ActionButton(title: "Log a moment") { logging = true }; ReachOutButton(person: p, compact: true) }
-                            VStack { ActionButton(title: "Log a moment") { logging = true }; ReachOutButton(person: p, compact: true) }
+                            HStack { ActionButton(title: "Log contact") { logging = true }; ReachOutButton(person: p, compact: true) }
+                            VStack { ActionButton(title: "Log contact") { logging = true }; ReachOutButton(person: p, compact: true) }
                         }
                         catchUp(p)
                         rhythmCard(p)
-                        HStack { Text("Little things to remember").font(Theme.title(25)); Spacer(); Button { addMemory = true } label: { Image(systemName: "plus").frame(width: 44, height: 44) }.accessibilityLabel("Add a note") }
+                        HStack { Text("Notes").font(Theme.title(25)); Spacer(); Button { addMemory = true } label: { Image(systemName: "plus").frame(width: 44, height: 44) }.accessibilityLabel("Add a note") }
                         memories(p)
                         Text("Time together").font(Theme.title(25))
-                        if store.journal.history(p.id).isEmpty { Text("Your calls, coffees, and little hellos will collect here.").foregroundStyle(Theme.muted) }
+                        if store.journal.history(p.id).isEmpty { Text("Recorded conversations and reach-outs appear here.").foregroundStyle(Theme.muted) }
                         ForEach(store.journal.history(p.id)) { m in Button { editingMoment = m } label: { MomentRow(moment: m, name: m.isSocialEvent ? store.journal.participantNames(m, excluding: p.id) : nil) }.buttonStyle(.plain).accessibilityIdentifier("moment-row") }
                         Button("Remove this person", role: .destructive) { deleting = true }.font(.footnote).frame(minHeight: 44).frame(maxWidth: .infinity).padding(.top)
                     }.padding(24)
@@ -80,7 +80,7 @@ struct PersonDetail: View {
     func location(_ p: Person) -> String {
         var parts = [p.city].filter { !$0.isEmpty }
         if let zone = TimeZone(identifier: p.timeZone) { let f = DateFormatter(); f.timeZone = zone; f.timeStyle = .short; parts.append(f.string(from: Date())) }
-        return parts.isEmpty ? "A place in your life" : parts.joined(separator: " · ")
+        return parts.isEmpty ? "Location not set" : parts.joined(separator: " · ")
     }
     @ViewBuilder func relationshipTags(_ p: Person) -> some View {
         ForEach(p.connectionKinds, id: \.self) { tag($0) }
@@ -92,25 +92,25 @@ struct PersonDetail: View {
         let note = p.notes.first(where: { $0.pinned && !$0.archived }) ?? p.notes.first(where: { !$0.archived && $0.category == "On their mind" })
         return Surface(color: Theme.peach) { VStack(alignment: .leading, spacing: 13) {
             Eyebrow(text: "Before you catch up")
-            Text("A thread to pick up.").font(Theme.title(26))
-            Text(note?.text ?? "Something they’re looking forward to, a question to revisit, an idea for your next time together.").lineSpacing(4)
+            Text("Conversation notes").font(Theme.title(26))
+            Text(note?.text ?? "No conversation notes recorded.").lineSpacing(4)
             if let note { Text("Noted \(note.date.formatted(date: .abbreviated, time: .omitted))").font(.caption).foregroundStyle(Theme.muted) }
             Button("Add a reminder for next time →") { addMemory = true }.font(.subheadline.weight(.semibold)).frame(minHeight: 44)
         } }
     }
     func rhythmCard(_ p: Person) -> some View {
         Surface { VStack(alignment: .leading, spacing: 14) {
-            HStack { Text("Your rhythm").font(Theme.title(25)); Spacer(); Button("Adjust") { rhythm = true }.frame(minHeight: 44) }
+            HStack { Text("Reminders").font(Theme.title(25)); Spacer(); Button("Adjust") { rhythm = true }.frame(minHeight: 44) }
             Label(p.paused ? "Reminders paused" : rhythmLabel(p.cadence), systemImage: "heart").font(.body)
             Text(connectionLabel(p, journal: store.journal)).font(.subheadline).foregroundStyle(Theme.muted).accessibilityIdentifier("last-connection")
-            if let outreach = store.journal.lastOutreach(p), outreach > (store.journal.lastConnection(p) ?? .distantPast), store.journal.daysSince(outreach) < 7 { Text("You reached out recently. A little space for a reply.").font(.footnote).foregroundStyle(Theme.muted) }
+            if let outreach = store.journal.lastOutreach(p), outreach > (store.journal.lastConnection(p) ?? .distantPast), store.journal.daysSince(outreach) < 7 { Text("You reached out recently. Suggestions resume after seven days unless you record a reply.").font(.footnote).foregroundStyle(Theme.muted) }
             if let snooze = p.snoozeUntil, snooze > Date() { Text("Snoozed until \(snooze.formatted(date: .abbreviated, time: .omitted))").font(.footnote); Button("End snooze") { var c = p; c.snoozeUntil = nil; store.save(c) }.frame(minHeight: 44) }
         } }
     }
     func memories(_ p: Person) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             let visible = p.notes.filter { showArchived || !$0.archived }.sorted { if $0.pinned != $1.pinned { return $0.pinned }; return $0.date > $1.date }
-            if visible.isEmpty { Text("Their people, favourite places, what’s going on. Keep the little things here.").foregroundStyle(Theme.muted) }
+            if visible.isEmpty { Text("No notes recorded.").foregroundStyle(Theme.muted) }
             ForEach(visible) { n in Button { editingMemory = n } label: { VStack(alignment: .leading, spacing: 9) {
                 HStack { Eyebrow(text: n.category); Spacer(); if n.pinned { Image(systemName: "pin.fill").font(.caption).accessibilityLabel("Pinned") }; if n.archived { Text("Archived").font(.caption) } }
                 Text(n.text).frame(maxWidth: .infinity, alignment: .leading).lineSpacing(4)
@@ -144,12 +144,12 @@ struct MomentsView: View {
     @State private var socialEvent = false
     var body: some View {
         ScrollView { VStack(alignment: .leading, spacing: 25) {
-            HStack { Eyebrow(text: "A little history"); Spacer(); Button { selecting = true } label: { Image(systemName: "plus").frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Log a moment").disabled(store.journal.people.isEmpty) }
-            Text("Time well spent.").font(Theme.title()).tracking(-1.3)
-            Text("The calls, coffees, and little hellos\nthat make a life together.").foregroundStyle(Theme.muted).lineSpacing(4)
-            Button { socialEvent = true } label: { Label("Log a social event", systemImage: "person.3").frame(minHeight: 44) }.disabled(store.journal.people.isEmpty).accessibilityIdentifier("log-social-event")
+            HStack { Eyebrow(text: "History"); Spacer(); Button { selecting = true } label: { Image(systemName: "plus").frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Log contact").disabled(store.journal.people.isEmpty) }
+            Text("Contact history").font(Theme.title()).tracking(-1.3)
+            Text("Recorded conversations, reach-outs and group events.").foregroundStyle(Theme.muted).lineSpacing(4)
+            Button { socialEvent = true } label: { Label("Log an event", systemImage: "person.3").frame(minHeight: 44) }.disabled(store.journal.people.isEmpty).accessibilityIdentifier("log-social-event")
             Divider()
-            if store.journal.moments.isEmpty { QuietEmpty(title: "A little history starts here.", message: "After a call, a coffee, or a proper catch-up, keep a moment to remember.") }
+            if store.journal.moments.isEmpty { QuietEmpty(title: "No contact recorded.", message: "Log contact with a person, or add an event with several people.") }
             ForEach(store.journal.history()) { m in VStack(alignment: .leading, spacing: 3) {
                 Button { editing = m } label: { MomentRow(moment: m, name: store.journal.participantNames(m)) }.buttonStyle(.plain).accessibilityIdentifier("history-moment-\(m.id)")
                 ForEach(m.participantIDs, id: \.self) { id in

@@ -10,7 +10,7 @@ import SwiftUI
         let args = ProcessInfo.processInfo.arguments
         if args.contains("--ui-testing") {
             url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("UITestJournal/journal.json")
-            if args.contains("--reset") { try? FileManager.default.removeItem(at: url!.deletingLastPathComponent()) }
+            if args.contains("--reset") { UserDefaults.standard.removeObject(forKey: "home.selection.ui-testing"); try? FileManager.default.removeItem(at: url!.deletingLastPathComponent()) }
             // A frozen fictional journal from build 1001 is supplied by the UI test bundle.
             // This never reads, replaces, or resets the production journal.
             if args.contains("--legacy-fixture"), let encoded = ProcessInfo.processInfo.environment["PLENARA_LEGACY_JOURNAL"], let bytes = Data(base64Encoded: encoded) {
@@ -25,6 +25,9 @@ import SwiftUI
         if ProcessInfo.processInfo.arguments.contains("--demo"), s.journal.people.isEmpty { s.update { $0 = DemoData.journal() } }
         if ProcessInfo.processInfo.arguments.contains("--contact-fixture") { DemoData.seedSystemContact() }
         let workflowArgs = ProcessInfo.processInfo.arguments
+        if workflowArgs.contains("--ui-testing"), workflowArgs.contains("--home-demo"), s.journal.people.isEmpty {
+            s.update { $0 = DemoData.followUpJournal(mixed: workflowArgs.contains("--home-mixed-demo")) }
+        }
         if workflowArgs.contains("--ui-testing"), workflowArgs.contains("--rhythm-demo") {
             s.update { j in
                 j.moments = []
@@ -91,9 +94,9 @@ struct RootView: View {
             VStack(spacing: 0) {
                 WorkflowFeedbackBar(reviewContact: offerContact, reviewMoment: { followThroughID = $0 })
                 HStack(spacing: 0) {
-                    tabButton("Stay close", icon: "heart", index: 0)
+                    tabButton("Home", icon: "heart", index: 0)
                     tabButton("People", icon: "person.2", index: 1)
-                    tabButton("Moments", icon: "clock.arrow.circlepath", index: 2)
+                    tabButton("History", icon: "clock.arrow.circlepath", index: 2)
                 }.dynamicTypeSize(...DynamicTypeSize.xxxLarge).padding(.top, 8).background(Theme.paper).overlay(alignment: .top) { Rectangle().fill(Theme.line).frame(height: 0.5) }
             }
             }

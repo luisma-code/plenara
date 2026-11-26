@@ -2,90 +2,131 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var store: JournalStore
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.dynamicTypeSize) private var typeSize
     var openSettings: () -> Void
+    static var preferenceKey: String {
+        #if targetEnvironment(simulator)
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing") { return "home.selection.ui-testing" }
+        #endif
+        return "home.selection"
+    }
+    @AppStorage(HomeView.preferenceKey) private var savedSelection = ""
+    @State private var selection = FollowUpSelection()
+    @State private var loaded = false
+    @State private var now = Date()
+    @State private var expanded: UUID?
     @State private var momentPerson: Person?
+    @State private var reminderPerson: Person?
+    @State private var snoozePerson: Person?
     @State private var quickLogging = false
     @State private var socialEvent = false
     @State private var rhythmSetup = false
     @State private var adding = false
-    @State private var showingAllSuggestions = false
+    @State private var filtering = false
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+        let candidates = store.journal.followUpCandidates(selection: selection, now: now)
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     HStack(spacing: 7) { Image(systemName: "asterisk").foregroundStyle(Theme.plum); Text("plenara").font(Theme.title(25)) }
                     Spacer()
-                    Button(action: openSettings) { Image(systemName: "bell").font(.title3).frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Settings and reminders")
+                    Button(action: openSettings) { Image(systemName: "bell").font(.title3).frame(width: 44, height: 44).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Settings and reminders")
                 }
-                if !store.journal.people.isEmpty {
-                    LazyVGrid(columns: dynamicTypeSize.isAccessibilitySize ? [GridItem(.flexible())] : [GridItem(.adaptive(minimum: 150))], spacing: 10) {
-                        ActionButton(title: "Log a moment", icon: "square.and.pencil") { quickLogging = true }.accessibilityIdentifier("quick-log")
-                        ActionButton(title: "Log a social event", icon: "person.3", primary: false) { socialEvent = true }.accessibilityIdentifier("log-social-event")
-                    }
+                ViewThatFits(in: .horizontal) {
+                    HStack { Text("Follow up").font(Theme.title(32)); Spacer(); logMenu }
+                    VStack(alignment: .leading) { Text("Follow up").font(Theme.title(32)); logMenu }
                 }
-                PageHeading(eyebrow: Date().formatted(.dateTime.weekday(.wide).month(.wide).day()), title: "A little closer.", subtitle: "Small moments keep your people close.\nWho’s on your mind today?")
                 if store.journal.people.isEmpty {
-                    QuietEmpty(title: "Start with your people.", message: "Bring in a few friends or family members. A name is all you need to begin.")
-                    ActionButton(title: "Bring your people in", icon: "person.badge.plus") { adding = true }
+                    QuietEmpty(title: "Add people to get started.", message: "Choose contacts to import, or add someone by name.")
+                    ActionButton(title: "Add people", icon: "person.badge.plus") { adding = true }
                 } else {
-                    if !store.journal.datedReminders().isEmpty {
-                        Text("A little reminder").font(Theme.title(25))
-                        ForEach(store.journal.datedReminders()) { reminder in
-                            Surface(color: Theme.peach) {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Eyebrow(text: reminder.caption)
-                                    NavigationLink(value: reminder.person.id) {
-                                        HStack { Avatar(person: reminder.person); Text(reminder.person.name).font(.headline); Spacer(); Image(systemName: "chevron.right") }.frame(minHeight: 50).contentShape(Rectangle())
-                                    }.buttonStyle(.plain).accessibilityIdentifier("dated-\(reminder.person.name)")
-                                    Text(reminder.text).lineSpacing(3)
-                                    if let noteID = reminder.noteID {
-                                        Button("Picked up this thread") {
-                                            store.update { j in if let i = j.people.firstIndex(where: { $0.id == reminder.person.id }), let n = j.people[i].notes.firstIndex(where: { $0.id == noteID }) { j.people[i].notes[n].followUp = nil } }
-                                        }.font(.subheadline.weight(.semibold)).frame(minHeight: 44)
-                                    }
-                                }
-                            }
+                    datedReminders
+                    relationshipTabs
+                    if typeSize.isAccessibilitySize { VStack(spacing: 8) { quickFilters } }
+                    else { HStack(spacing: 7) { quickFilters } }
+                    if !selection.extraChoices.isEmpty {
+                        HStack {
+                            Text(selection.extraChoices.joined(separator: " · ")).font(.caption).foregroundStyle(Theme.plum)
+                            Spacer()
+                            Button("Clear") { selection.people.distance = "Everyone"; selection.people.direction = "Everyone"; selection.people.feeling = "Everyone"; selection.query = ""; if selection.people.connection == "Not set" { selection.people.connection = "Everyone" } }.font(.caption).frame(minWidth: 44, minHeight: 44).accessibilityIdentifier("home-clear-extra-filters")
                         }
                     }
-                    let now = Date()
-                    let ranked = store.journal.rankedSuggestions(now: now)
-                    let suggestions = Array(ranked.prefix(3))
-                    ReconnectionSection(ranked: ranked, showingAllSuggestions: $showingAllSuggestions, logMoment: { momentPerson = $0 }, setupRhythms: { rhythmSetup = true })
-                    let visibleIDs = Set((showingAllSuggestions ? ranked : suggestions).map(\.id))
-                    let context = store.journal.contextualSuggestions(excluding: visibleIDs, ranked: ranked, now: now)
-                    let growth = context.growth
-                    if let local = growth {
-                        Text("Make a little room").font(Theme.title(25))
-                        NavigationLink(value: local.id) {
-                            Surface(color: Theme.sage) {
-                                VStack(alignment: .leading, spacing: 15) {
-                                    HStack { Avatar(person: local); VStack(alignment: .leading) { Text(local.distance == "Nearby" ? "\(local.name.components(separatedBy: " ").first ?? local.name) is nearby." : "A little time for \(local.name.components(separatedBy: " ").first ?? local.name).").font(Theme.title(24)); Text(local.feelingChoice == "Needs care" ? "Grow closer · Needs care" : "A connection you’d like to grow").font(.subheadline).foregroundStyle(Theme.muted) } }
-                                    Text(local.notes.first(where: { !$0.archived && $0.category == "An idea for us" })?.text ?? (local.distance == "Nearby" ? "A walk, a coffee, a little time together." : "A call or a voice note, and room for a proper catch-up.")).font(.body)
-                                    Label("An idea for you two", systemImage: "arrow.right").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.plum)
-                                }
-                            }
-                        }.buttonStyle(.plain).accessibilityIdentifier("growth-\(local.name)")
+                    HStack {
+                        Text("\(candidates.count) \(candidates.count == 1 ? "person" : "people")").font(.caption).foregroundStyle(Theme.muted).accessibilityIdentifier("home-count")
+                        Spacer()
+                        Menu {
+                            Picker("Sort people", selection: $selection.sort) { ForEach(FollowUpSort.allCases, id: \.self) { Text($0.title).tag($0) } }
+                        } label: { Label(selection.sort.title, systemImage: "chevron.down").font(.caption).frame(minHeight: 44) }.accessibilityIdentifier("home-sort")
                     }
-                    let care = context.care
-                    if !care.isEmpty {
-                        Text("A little care").font(Theme.title(25))
-                        Text("Relationships you’ve chosen to give some care. There’s no countdown.").font(.subheadline).foregroundStyle(Theme.muted)
-                        ForEach(Array(care.prefix(2))) { p in NavigationLink(value: p.id) { PersonRow(person: p, detail: p.intention.isEmpty ? "Needs care · at your own pace" : p.intention) }.buttonStyle(.plain).accessibilityIdentifier("care-\(p.name)") }
+                    if candidates.isEmpty { emptyState }
+                    LazyVStack(spacing: 0) {
+                        ForEach(candidates) { candidate in
+                            HomeFollowUpRow(candidate: candidate, expanded: expanded == candidate.id, toggle: { expanded = expanded == candidate.id ? nil : candidate.id }, log: { momentPerson = candidate.person }, remind: { reminderPerson = candidate.person }, later: { snoozePerson = candidate.person })
+                        }
                     }
-                    if store.journal.people.contains(where: { $0.cadence == 0 || (store.journal.lastConnection($0) == nil && $0.reminderStart == nil) }) {
-                        Button("Choose contact rhythms") { rhythmSetup = true }.font(.subheadline.weight(.semibold)).frame(minHeight: 44).accessibilityIdentifier("home-rhythm-setup")
+                    if candidates.contains(where: { $0.connection == nil }) {
+                        Text("Some contact dates haven’t been recorded.").font(.caption).foregroundStyle(Theme.muted).padding(.top, 8)
                     }
-                    Text("A little attention, at your own pace.").font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity).padding(.vertical)
+                    Button("Set up reminders") { rhythmSetup = true }.font(.subheadline.weight(.semibold)).frame(minHeight: 44).accessibilityIdentifier("home-rhythm-setup")
                 }
-            }.padding(24)
-        }.sheet(isPresented: $quickLogging) { LogMomentFlow() }
-            .sheet(item: $momentPerson) { MomentEditor(personID: $0.id) }
-            .sheet(isPresented: $adding) { AddPeopleView() }
-            .sheet(isPresented: $socialEvent) { SocialEventEditor() }
-            .sheet(isPresented: $rhythmSetup) { RhythmSetupView() }
+            }.padding(.horizontal, 20).padding(.vertical, 8)
+        }
+        .refreshable { now = Date() }
+        .onAppear { now = Date(); if !loaded { selection = FollowUpSelection(saved: savedSelection); loaded = true } }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in now = Date() }
+        .onChange(of: selection) { _, value in if loaded { savedSelection = value.encoded }; expanded = nil }
+        .onChange(of: store.journal) { _, _ in now = Date() }
+        .sheet(isPresented: $filtering) { HomeFiltersView(selection: selection) { selection = $0 } }
+        .sheet(isPresented: $quickLogging) { LogMomentFlow() }
+        .sheet(item: $momentPerson) { MomentEditor(personID: $0.id) }
+        .sheet(item: $reminderPerson) { RhythmEditor(person: $0, addingContactDate: true) }
+        .sheet(item: $snoozePerson) { FollowUpSnoozeView(person: $0) }
+        .sheet(isPresented: $adding) { AddPeopleView() }
+        .sheet(isPresented: $socialEvent) { SocialEventEditor() }
+        .sheet(isPresented: $rhythmSetup) { RhythmSetupView() }
     }
-
+    var logMenu: some View {
+        Menu {
+            Button("One person", systemImage: "person") { quickLogging = true }.accessibilityIdentifier("home-log-person")
+            Button("Group event", systemImage: "person.3") { socialEvent = true }.accessibilityIdentifier("log-social-event")
+        } label: { Label("Log contact", systemImage: "plus").font(.subheadline.weight(.semibold)).padding(.horizontal, 14).frame(minHeight: 44).foregroundStyle(.white).background(Theme.action, in: RoundedRectangle(cornerRadius: 14)) }.accessibilityIdentifier("quick-log")
+    }
+    var relationshipTabs: some View {
+        HStack(spacing: 3) {
+            ForEach([("All", "Everyone"), ("Family", "Family"), ("Friends", "Friend")], id: \.0) { label, value in
+                Button { selection.people.connection = value } label: { Text(label).font(.subheadline.weight(selection.people.connection == value ? .semibold : .regular)).frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle()).background(selection.people.connection == value ? Theme.card : Color.clear, in: RoundedRectangle(cornerRadius: 10)) }.buttonStyle(.plain).accessibilityIdentifier("home-type-\(label)").accessibilityAddTraits(selection.people.connection == value ? .isSelected : [])
+            }
+        }.padding(3).background(Theme.line, in: RoundedRectangle(cornerRadius: 13))
+    }
+    @ViewBuilder var quickFilters: some View {
+        HomeFilterMenu(title: selection.people.closeness == "Everyone" ? "Any closeness" : selection.people.closeness, identifier: "home-closeness") {
+            Picker("Closeness", selection: $selection.people.closeness) { Text("Any closeness").tag("Everyone"); ForEach(Person.closenessOptions, id: \.self) { Text($0).tag($0) } }
+        }
+        HomeFilterMenu(title: selection.status == .unknown ? "No history" : selection.status.title, identifier: "home-follow-up") {
+            Picker("Follow-up status", selection: $selection.status) { ForEach(FollowUpStatus.allCases, id: \.self) { Text($0.title).tag($0) } }
+        }
+        Button(selection.extraChoices.isEmpty ? "Filters" : "Filters (\(selection.extraChoices.count))") { filtering = true }.font(.caption).padding(.horizontal, 10).frame(minHeight: 44).frame(maxWidth: typeSize.isAccessibilitySize ? .infinity : nil).background(selection.extraChoices.isEmpty ? Theme.card : Theme.lavender, in: RoundedRectangle(cornerRadius: 13)).overlay(RoundedRectangle(cornerRadius: 13).stroke(Theme.line)).accessibilityIdentifier("home-filters")
+    }
+    @ViewBuilder var emptyState: some View {
+        let anyDue = !store.journal.rankedSuggestions(now: now).isEmpty
+        VStack(alignment: .leading, spacing: 10) {
+            Text(selection.status == .due && !anyDue ? "No reminders due." : selection.isActive ? "No one matches these filters." : "No follow-ups right now.").font(Theme.title(24))
+            Text(selection.status == .due && !anyDue ? "Reminders need a schedule and a starting date. All suggestions also includes people with missing contact history." : selection.isActive ? "Change a filter to see more people." : "Recent contact, pauses and snoozes keep people out of this list. Your full list is in People.").font(.subheadline).foregroundStyle(Theme.muted)
+            if selection.isActive { Button("Show all suggestions") { selection = FollowUpSelection() }.frame(minHeight: 44).accessibilityIdentifier("home-show-all") }
+        }.padding(.vertical, 15)
+    }
+    @ViewBuilder var datedReminders: some View {
+        let reminders = store.journal.datedReminders(now: now)
+        if !reminders.isEmpty {
+            Text("Dates and follow-ups").font(.headline)
+            ForEach(reminders) { reminder in
+                VStack(alignment: .leading, spacing: 6) {
+                    NavigationLink(value: reminder.person.id) { VStack(alignment: .leading, spacing: 3) { Text("\(reminder.person.name) · \(reminder.caption)").font(.subheadline.weight(.semibold)); if reminder.noteID != nil { Text(reminder.text).font(.caption).foregroundStyle(Theme.muted) } }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle()) }.buttonStyle(.plain).accessibilityIdentifier("dated-\(reminder.person.name)")
+                    if let noteID = reminder.noteID { Button("Mark followed up") { store.update { j in if let i = j.people.firstIndex(where: { $0.id == reminder.person.id }), let n = j.people[i].notes.firstIndex(where: { $0.id == noteID }) { j.people[i].notes[n].followUp = nil } } }.font(.caption).frame(minHeight: 44) }
+                }.padding(12).background(Theme.peach, in: RoundedRectangle(cornerRadius: 15))
+            }
+        }
+    }
 }
 struct AddPeopleView: View {
     @EnvironmentObject var store: JournalStore
@@ -96,9 +137,9 @@ struct AddPeopleView: View {
     var body: some View {
         NavigationStack {
             ScrollView { VStack(alignment: .leading, spacing: 24) {
-                PageHeading(eyebrow: "Your circle", title: "Bring your\npeople in.", subtitle: "Start with a few people. Your whole address book doesn’t have to become a to-do list.")
+                PageHeading(eyebrow: "People", title: "Add people", subtitle: "Add someone by name, or select contacts to import.")
                 ActionButton(title: "Import from Contacts", icon: "person.crop.circle.badge.plus") { countBeforeAdding = store.journal.people.count; importing = true }
-                ActionButton(title: "Add someone yourself", primary: false) { countBeforeAdding = store.journal.people.count; manual = true }
+                ActionButton(title: "Add by name", primary: false) { countBeforeAdding = store.journal.people.count; manual = true }
                 Text("Only the contacts you choose are shared with Plenara. Notes and moments stay in your private journal.").font(.footnote).foregroundStyle(Theme.muted)
             }.padding(24) }.background(Theme.paper).toolbar { DismissButton() }
                 .sheet(isPresented: $manual, onDismiss: finishAdding) { PersonEditor(person: Person()) }
@@ -145,13 +186,13 @@ struct PeopleView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                HStack { Eyebrow(text: "Your circle"); Spacer(); Button { adding = true } label: { Image(systemName: "plus").font(.title2).frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Add a person") }
+                HStack { Eyebrow(text: "People"); Spacer(); Button { adding = true } label: { Image(systemName: "plus").font(.title2).frame(width: 46, height: 46).overlay(Circle().stroke(Theme.line)) }.accessibilityLabel("Add a person") }
                 if !store.journal.people.isEmpty {
                 Button { searchFocused = false; organizing = true } label: { Label("Organize", systemImage: "slider.horizontal.3").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 48).background(Theme.lavender, in: RoundedRectangle(cornerRadius: 16)) }.buttonStyle(.plain).accessibilityIdentifier("people-organize")
-                Button("Set contact rhythms") { searchFocused = false; settingRhythms = true }.frame(minHeight: 44).accessibilityIdentifier("people-rhythm-setup")
+                Button("Set up reminders") { searchFocused = false; settingRhythms = true }.frame(minHeight: 44).accessibilityIdentifier("people-rhythm-setup")
                 }
-                Text("Your people.").font(Theme.title()).tracking(-1.3)
-                Text("Different kinds of close. All in one place.").foregroundStyle(Theme.muted)
+                Text("People").font(Theme.title()).tracking(-1.3)
+                Text("Find people and update relationship details.").foregroundStyle(Theme.muted)
                 HStack { Image(systemName: "magnifyingglass"); TextField("Find someone", text: $query, prompt: Text("Find someone").foregroundStyle(Theme.muted)).focused($searchFocused).submitLabel(.search).onSubmit { searchFocused = false }.accessibilityIdentifier("people-search").autocorrectionDisabled() }.padding(14).background(Theme.line.opacity(0.6), in: RoundedRectangle(cornerRadius: 15))
                 HStack {
                     Text("\(filtered.count) \(filtered.count == 1 ? "person" : "people")").font(.footnote).foregroundStyle(Theme.muted).accessibilityIdentifier("people-count")
@@ -169,11 +210,11 @@ struct PeopleView: View {
                     Text("All selected choices apply. Tap Everyone to clear them.").font(.footnote).foregroundStyle(Theme.muted)
                 }
                 if filtered.isEmpty {
-                    QuietEmpty(title: filter.isActive || !query.isEmpty ? "No one matches yet." : "Make room for someone.", message: filter.isActive || !query.isEmpty ? "Try another name or loosen a filter. Your people are still here." : "Add someone yourself, or choose a few people from Contacts.")
+                    QuietEmpty(title: filter.isActive || !query.isEmpty ? "No matching people." : "No people added.", message: filter.isActive || !query.isEmpty ? "Change the search or filters to see more people." : "Add by name, or choose a few people from Contacts.")
                 }
                 VStack(spacing: 11) { ForEach(filtered) { p in NavigationLink(value: p.id) { PersonRow(person: p) }.buttonStyle(.plain).accessibilityIdentifier("person-\(p.name)") } }
                 ActionButton(title: "Import from Contacts", icon: "person.badge.plus", primary: false) { importing = true }
-                Text("Choose just the people you want to keep close.").font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity)
+                Text("Import only the contacts you select.").font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity)
             }.padding(24)
         }.scrollDismissesKeyboard(.interactively).sheet(isPresented: $organizing) { OrganizePeopleView() }.sheet(isPresented: $showingFilters) { PeopleFiltersView(filter: $filter) }.sheet(isPresented: $adding) { PersonEditor(person: Person()) }.sheet(isPresented: $importing) { ImportContactsView() }.sheet(isPresented: $settingRhythms) { RhythmSetupView() }
     }
@@ -197,7 +238,7 @@ struct PeopleFiltersView: View {
                     Picker("How it feels", selection: $filter.feeling) { ForEach(["Everyone"] + Person.feelingOptions, id: \.self) { Text($0) } }
                 } footer: { Text("Choose independently. For example, Family + Far away + Needs care. Everyone leaves that dimension open; Not set finds unanswered profiles.") }
                 Button("Clear all filters") { filter = PeopleFilter() }
-            }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle("Find your people").navigationBarTitleDisplayMode(.inline).toolbar { DismissButton() }
+            }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle("Filter people").navigationBarTitleDisplayMode(.inline).toolbar { DismissButton() }
         }
     }
 }

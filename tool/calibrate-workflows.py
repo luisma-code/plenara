@@ -48,13 +48,31 @@ expected = {
 faults["refinements"] = [
     ("WorkflowModels.swift", "date: date, channel: channel", "date: Date(), channel: channel"),
     ("RhythmSetup.swift", "[3, 7, 14, 21, 30, 60, 90, cadence]", "[3, 7, 14, 21, 30, 60, 90]"),
-    ("JournalStore.swift", '        guard !changes.isEmpty else { errorMessage = "These people already have this rhythm. Nothing was changed."; return false }\n        guard update({ $0 = candidate }) else { return false }\n        rhythmUndo = RhythmReceipt(changes: changes)', '        guard update({ $0 = candidate }) else { return false }\n        if !changes.isEmpty { rhythmUndo = RhythmReceipt(changes: changes) }'),
+    ("JournalStore.swift", '        guard !changes.isEmpty else { errorMessage = "These reminder settings are already saved. Nothing was changed."; return false }\n        guard update({ $0 = candidate }) else { return false }\n        rhythmUndo = RhythmReceipt(changes: changes)', '        guard update({ $0 = candidate }) else { return false }\n        if !changes.isEmpty { rhythmUndo = RhythmReceipt(changes: changes) }'),
 ] + faults["handoff"]
 tests["refinements"] = ["PlenaraTests/WorkflowTests", "PlenaraUITests/WorkflowUITests/testOptionalCustomRhythmSetupPreservesUnknownHistoryAndUndo", "PlenaraUITests/WorkflowUITests/testHomeReachOutReturnConfirmationAndNoDuplicateOnReopen"]
 expected["refinements"] = ["testOvernightDraftUsesOriginalDateForEitherConfirmedOutcome", "testUnchangedRhythmDoesNotPretendToReplaceEarlierUndo", "The picker must name a custom rhythm", "Returning from a selected route must offer confirmation"]
-faults["geometry"] = [("ReconnectionSection.swift", '.frame(minHeight: 44).accessibilityIdentifier("suggestions-expand")', '.frame(height: 43).accessibilityIdentifier("suggestions-expand")'), ("Theme.swift", "configuration.label.frame(minWidth: 44, minHeight: 44)", "configuration.label.frame(minWidth: 44, minHeight: 43)")]
+faults["geometry"] = [("HomeFollowUpViews.swift", '.frame(width: 44, height: 44)', '.frame(width: 44, height: 43)'), ("Theme.swift", "configuration.label.frame(minWidth: 44, minHeight: 44)", "configuration.label.frame(minWidth: 44, minHeight: 43)")]
 tests["geometry"] = ["PlenaraUITests/PlenaraUITests/testRankedHomeDarkAndLargeText"]
 expected["geometry"] = ["Touch targets must be at least 44 points"]
+# Compact Home controls use the same exclusive runner and restoration path.
+faults["home-unit"] = [
+    ("FollowUpQueue.swift", 'if !due && closenessTier <= 1 { return 1 }', 'if !due && closenessTier <= 1 { return 5 }'),
+    ("FollowUpQueue.swift", 'selection.people.includes(person),', 'true,'),
+    ("FollowUpQueue.swift", 'guard due || (elapsed.map { $0 >= 7 } ?? true) else { return nil }', 'guard true else { return nil }'),
+    ("FollowUpQueue.swift", 'if cadence == 0 { reminderStart = nil }', 'if cadence == 0 { reminderStart = now }'),
+]
+tests["home-unit"] = ["PlenaraTests/FollowUpTests", "PlenaraTests/RankingTests/testColdStartStartsWithClosePeopleWithoutInventingHistory"]
+expected["home-unit"] = ["Home must start with chosen closeness", "Every selected filter must apply together", "Recent shared contact must cool down every attendee", "Saving reminders off must not retain or create a schedule anchor"]
+faults["home-density"] = [("HomeFollowUpViews.swift", '.frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)', '.frame(maxWidth: .infinity, minHeight: 220, alignment: .leading)')]
+tests["home-density"] = ["PlenaraUITests/CompactHomeUITests/testColdStartCompactFamilyAndCombinedFiltersSurviveReopen"]
+expected["home-density"] = ["Normal person rows must stay compact"]
+faults["home-filters"] = [("HomeView.swift", 'HomeFiltersView(selection: selection) { selection = $0 }', 'HomeFiltersView(selection: selection) { _ in }')]
+tests["home-filters"] = ["PlenaraUITests/CompactHomeUITests/testFilterDraftSearchCancelResetAndUnansweredRelationships"]
+expected["home-filters"] = ["Applying Home filters must update the rendered list"]
+faults["home-clock"] = [("JournalStore.swift", 'candidate.prepareReminderSave(previous: previous, knownConnection: journal.lastConnection(candidate), configuringReminders: configuringReminders)', '/* deliberately skip schedule transition */')]
+tests["home-clock"] = ["PlenaraUITests/CompactHomeUITests/testEnablingReminderThroughEditorDoesNotReviveAnOldOffClock"]
+expected["home-clock"] = ["Enabling a weekly reminder today must not revive the old disabled clock"]
 originals = {}
 try:
     for filename, good, bad in faults[mode]:
@@ -65,7 +83,7 @@ try:
     Path(".tmp/native-tests.log").unlink(missing_ok=True)
     code = run(["bash", "tool/test-native.sh"] + ["-only-testing:" + t for t in tests[mode]])
     log = Path(".tmp/native-tests.log").read_text()
-    evidence = Path("verification/workflows")
+    evidence = Path("verification/compact-home" if mode.startswith("home-") else "verification/workflows")
     (evidence / ("red-" + mode + ".log")).write_text(log)
     assert code != 0, "Broken production behavior unexpectedly passed"
     for message in expected[mode]:

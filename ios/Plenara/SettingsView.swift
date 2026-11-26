@@ -30,14 +30,14 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section { Text("A little attention, at your own pace.").font(Theme.title(27)); Text("Your journal stays on this iPhone. No account, subscription, or message monitoring.").foregroundStyle(Theme.muted) }
+                Section { Text("Your journal").font(Theme.title(27)); Text("Your journal stays on this iPhone. No account, subscription, or message monitoring.").foregroundStyle(Theme.muted) }
                 Section {
-                    Toggle("Gentle reminders", isOn: Binding(get: { preferences.notifications }, set: { enabled in
+                    Toggle("Reminders", isOn: Binding(get: { preferences.notifications }, set: { enabled in
                         if enabled { Task { if await notifications.request() { preferences.notifications = true } else { statusMessage = "Notifications are off in iPhone Settings. Your in-app reminders still work." } } }
                         else { preferences.notifications = false }
                     })).accessibilityIdentifier("notifications-toggle")
                     if preferences.notifications {
-                        if notifications.weeklyReady { Text("Your weekly reminder is ready.").font(.footnote).foregroundStyle(Theme.plum) }
+                        if notifications.weeklyReady { Text("Weekly reminder enabled.").font(.footnote).foregroundStyle(Theme.plum) }
                         Picker("Weekly digest", selection: $preferences.weekday) { ForEach(1...7, id: \.self) { Text(Calendar.current.weekdaySymbols[$0 - 1]).tag($0) } }
                         DatePicker("At", selection: digestTime, displayedComponents: .hourAndMinute)
                         Toggle("Birthday reminders", isOn: $preferences.birthdays)
@@ -49,7 +49,7 @@ struct SettingsView: View {
                     }
                     if notifications.status == .denied { Button("Open iPhone notification settings") { if let u = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(u) } } }
                     if let message = notifications.message { Text(message).font(.footnote).foregroundStyle(.red) }
-                } header: { Text("Gentle reminders") } footer: { Text("Connection reminders use your chosen rhythm. A weekly notification simply invites you back to your people.") }
+                } header: { Text("Reminders") } footer: { Text("Contact reminders use your chosen intervals. The weekly notification opens your follow-up list.") }
                 Section {
                     Button("Export a restorable backup") { do { document = BackupDocument(data: try store.exportData()); textExport = false; exportFilename = backupName(readable: false); exporting = true } catch { statusMessage = error.localizedDescription } }
                     Button("Export a readable journal") { document = BackupDocument(data: Data(store.exportText().utf8)); textExport = true; exportFilename = backupName(readable: true); exporting = true }.disabled(store.locked)
@@ -83,7 +83,7 @@ struct SettingsView: View {
                 } header: { Text("Keep your memories safe") } footer: { Text("On-device storage is not sync. Removing the app can remove the journal. Export regularly, and before changing phones.") }
                 if let statusMessage { Section { Text(statusMessage).font(.footnote).accessibilityIdentifier("settings-status") } }
                 if let error = store.errorMessage { Section { Text(error).foregroundStyle(.red) } }
-                Section { Text("Plenara 1.0 · A little closer").font(.footnote).foregroundStyle(Theme.muted) }
+                Section { Text("Plenara 1.0").font(.footnote).foregroundStyle(Theme.muted) }
             }.scrollContentBackground(.hidden).background(Theme.paper).navigationTitle("Your space").navigationBarTitleDisplayMode(.inline).toolbar { DismissButton() }
                 .onAppear { preferences = store.journal.preferences }
                 .onChange(of: preferences) { old, value in

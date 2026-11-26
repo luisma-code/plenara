@@ -36,8 +36,8 @@ import UserNotifications
         p.snoozeUntil = nil; p.paused = true; XCTAssertFalse(j.isDue(p))
         p.paused = false
         j.people = (0..<6).map { i in var q = p; q.id = UUID(); q.name = "Friend \(i)"; return q }
-        let today = j.suggestions(); let tomorrow = j.suggestions(now: Calendar.current.date(byAdding: .day, value: 1, to: Date())!)
-        XCTAssertEqual(today.count, 3); XCTAssertEqual(today.map(\.id), tomorrow.map(\.id), "Unchanged relative priorities must not rotate away on a new day")
+        let today = j.rankedSuggestions(); let tomorrow = j.rankedSuggestions(now: Calendar.current.date(byAdding: .day, value: 1, to: Date())!)
+        XCTAssertEqual(today.count, 6); XCTAssertEqual(today.map(\.id), tomorrow.map(\.id), "Unchanged relative priorities must not rotate away on a new day")
     }
     func testCalendarDaysAcrossDaylightSaving() {
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/New_York")!
@@ -160,7 +160,7 @@ import UserNotifications
         p.directionChoice = "Grow closer"; p.feelingChoice = "Needs care"
         var j = Journal(); j.people = [p]
         XCTAssertEqual(p.cadence, 0); XCTAssertNil(p.reminderStart)
-        XCTAssertTrue(j.suggestions().isEmpty, "A wish to grow or need for care must not start a reminder")
+        XCTAssertTrue(j.rankedSuggestions().isEmpty, "A wish to grow or need for care must not start a reminder")
         p.cadence = 30; p.baselineConnection = Date().addingTimeInterval(-60 * 86400)
         p.directionChoice = "Keep it steady"; p.feelingChoice = "Feels good"; j.people = [p]
         XCTAssertTrue(j.isDue(p), "A factual rhythm reminder is independent of feeling good")

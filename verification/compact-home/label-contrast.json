@@ -1,0 +1,14 @@
+{
+  "regionPixels": [
+    105,
+    1560,
+    405,
+    1650
+  ],
+  "nearWhitePixelCounts": {
+    "red": 0,
+    "green": 2254
+  },
+  "rejectedMissingLabel": true,
+  "acceptedVisibleLabel": true
+}

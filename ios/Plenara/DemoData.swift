@@ -3,6 +3,32 @@ import Foundation
 import Contacts
 
 enum DemoData {
+    static func followUpJournal(mixed: Bool = false, now: Date = Date()) -> Journal {
+        let entries: [(String, [String], String, String, String, String)] = [
+            ("Zoe Park", ["Friend"], "Inner circle", "Nearby", "Keep it steady", "Feels good"),
+            ("Samir Shah", ["Family", "Friend"], "Inner circle", "Far away", "Keep it steady", "Feels good"),
+            ("Mei Lin", ["Family"], "Close", "Nearby", "Keep it steady", "Feels good"),
+            ("Daniel Ross", ["Friend"], "Close", "Nearby", "Grow closer", "Needs care"),
+            ("Lena Shah", ["Family"], "Close", "Nearby", "Grow closer", "Feels good"),
+            ("Sofia Chen", ["Friend"], "Close", "Far away", "Keep it steady", "Needs care"),
+            ("Aaron Miller", ["Friend"], "Casual", "Nearby", "Grow closer", "Feels good"),
+            ("Nora Ellis", [], "Not set", "Not set", "Not set", "Not set")
+        ]
+        var j = Journal()
+        j.people = entries.enumerated().map { i, entry in
+            var p = Person(); p.id = UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", i + 1))!
+            p.name = entry.0; p.connectionKinds = entry.1; p.closeness = entry.2; p.distance = entry.3; p.directionChoice = entry.4; p.feelingChoice = entry.5
+            return p
+        }
+        // Frozen reproduction of the former editor saving a clock while Off.
+        j.people[7].reminderStart = Calendar.current.date(byAdding: .day, value: -30, to: now)
+        if mixed {
+            for (i, days, cadence) in [(1, 9, 7), (3, 34, 30), (6, 95, 90)] {
+                j.people[i].baselineConnection = Calendar.current.date(byAdding: .day, value: -days, to: now); j.people[i].cadence = cadence
+            }
+        }
+        return j
+    }
     static func journal(now: Date = Date()) -> Journal {
         func ago(_ days: Int) -> Date { Calendar.current.date(byAdding: .day, value: -days, to: now)! }
         var sofia = Person(); sofia.name = "Sofia Chen"; sofia.city = "Brooklyn, New York"; sofia.timeZone = "America/New_York"; sofia.closeness = "Close"; sofia.distance = "Far away"; sofia.directionChoice = "Grow closer"; sofia.feelingChoice = "Feels good"; sofia.cadence = 30

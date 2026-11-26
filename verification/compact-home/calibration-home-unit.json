@@ -1,0 +1,32 @@
+{
+  "mode": "home-unit",
+  "faults": [
+    [
+      "FollowUpQueue.swift",
+      "if !due && closenessTier <= 1 { return 1 }",
+      "if !due && closenessTier <= 1 { return 5 }"
+    ],
+    [
+      "FollowUpQueue.swift",
+      "selection.people.includes(person),",
+      "true,"
+    ],
+    [
+      "FollowUpQueue.swift",
+      "guard due || (elapsed.map { $0 >= 7 } ?? true) else { return nil }",
+      "guard true else { return nil }"
+    ],
+    [
+      "FollowUpQueue.swift",
+      "if cadence == 0 { reminderStart = nil }",
+      "if cadence == 0 { reminderStart = now }"
+    ]
+  ],
+  "rejected": true,
+  "expectedFailures": [
+    "Home must start with chosen closeness",
+    "Every selected filter must apply together",
+    "Recent shared contact must cool down every attendee",
+    "Saving reminders off must not retain or create a schedule anchor"
+  ]
+}

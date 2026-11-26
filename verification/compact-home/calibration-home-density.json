@@ -1,0 +1,14 @@
+{
+  "mode": "home-density",
+  "faults": [
+    [
+      "HomeFollowUpViews.swift",
+      ".frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)",
+      ".frame(maxWidth: .infinity, minHeight: 220, alignment: .leading)"
+    ]
+  ],
+  "rejected": true,
+  "expectedFailures": [
+    "Normal person rows must stay compact"
+  ]
+}

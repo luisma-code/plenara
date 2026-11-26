@@ -1,0 +1,46 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "A7DB6C2C-908E-40CB-AB9D-63270EB0275B",
+        "deviceName" : "Plenara compact screen verification",
+        "modelName" : "iPhone SE (3rd generation)",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 0,
+      "passedTests" : 46,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "Plenara · Built with macOS 26.6.2",
+  "expectedFailures" : 0,
+  "failedTests" : 0,
+  "finishTime" : 1795666048.192,
+  "passedTests" : 46,
+  "result" : "Passed",
+  "skippedTests" : 0,
+  "startTime" : 1795666004.214,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - Plenara",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "79% of duration",
+      "text" : "1 longest test run with outlier durations exceeding 0.50s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 46
+}

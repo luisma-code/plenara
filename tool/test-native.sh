@@ -2,7 +2,21 @@
 set -euo pipefail
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 cd "$(git rev-parse --show-toplevel)"
+source tool/require-storage.sh
 SIMULATOR_ID="${PLENARA_SIMULATOR_ID:-BB42F29A-928B-4B9E-BD39-160B70249D4F}"
+python3 - "$SIMULATOR_ID" <<'PYSTORAGE'
+from pathlib import Path
+import sys, os
+root = Path.home() / 'Library/Developer/CoreSimulator/Devices' / sys.argv[1] / 'data'
+resolved = root.resolve()
+base = Path('/Volumes/MacExt/DeveloperData/projects/plenara/simulators')
+if not root.is_dir():
+    raise SystemExit('Plenara simulator data is missing: ' + str(resolved))
+if base not in resolved.parents:
+    if os.environ.get('PLENARA_ALLOW_INTERNAL_SIMULATOR') != '1':
+        raise SystemExit('External simulator storage is required. macOS access or an explicitly authorized temporary internal-storage exception is needed: ' + str(resolved))
+    print('Using the explicitly authorized temporary internal simulator-storage exception.', file=sys.stderr)
+PYSTORAGE
 mkdir -p .tmp .build
 xcrun simctl bootstatus "$SIMULATOR_ID" -b > .tmp/simulator-boot.log
 (cd ios && xcodegen generate)

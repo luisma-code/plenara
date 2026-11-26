@@ -1,0 +1,281 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun -configuration Release -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261125-191346.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/CompactHomeUITests"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+2026-11-25 19:13:47.630 xcodebuild[13386:8024251] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261125-191346.xcresult
+
+2026-11-25 19:13:47.640 xcodebuild[13386:8024251] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-25 19:13:49.017 xcodebuild[13386:8024251] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-11-25 19:13:50.463090-0800 PlenaraUITests-Runner[13393:8024401] [Default] Running tests...
+objc[13393]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109fbc310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a468398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-25 19:13:54.831.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-25 19:13:54.832.
+Test Suite 'CompactHomeUITests' started at 2026-11-25 19:13:54.832.
+Test Case '-[PlenaraUITests.CompactHomeUITests testColdStartCompactFamilyAndCombinedFiltersSurviveReopen]' started.
+    t =     0.00s Start Test at 2026-11-25 19:13:54.833
+    t =     0.17s Set Up
+    t =     0.17s Open com.plenara.plenaraApp
+    t =     0.17s     Launch com.plenara.plenaraApp
+2026-11-25 19:13:55.211 xcodebuild[13386:8024251] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-25 19:13:55.211 xcodebuild[13386:8024251] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.04s         Setting up automation session
+    t =     1.97s         Wait for com.plenara.plenaraApp to idle
+    t =     3.84s Waiting 5.0s for "Follow up" StaticText to exist
+    t =     4.90s     Checking `Expect predicate `existsNoRetry == 1` for object "Follow up" StaticText`
+    t =     4.90s         Checking existence of `"Follow up" StaticText`
+    t =     5.11s Find the "tab-0" Button
+    t =     5.14s Checking existence of `"home-person-Zoe Park" Button`
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/CompactHomeUITests.swift:16: error: -[PlenaraUITests.CompactHomeUITests testColdStartCompactFamilyAndCombinedFiltersSurviveReopen] : XCTAssertTrue failed - Five compact people must fit above navigation at normal text size
+    t =     5.45s Tear Down
+    t =     5.45s     Terminate com.plenara.plenaraApp:13417
+Test Case '-[PlenaraUITests.CompactHomeUITests testColdStartCompactFamilyAndCombinedFiltersSurviveReopen]' failed (6.580 seconds).
+Test Case '-[PlenaraUITests.CompactHomeUITests testDueFilterKeepsFactualOrderAndUnknownHistoryEmptyState]' started.
+    t =     0.00s Start Test at 2026-11-25 19:14:01.414
+    t =     0.02s Set Up
+2026-11-25 19:14:01.481 xcodebuild[13386:8024251] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-25 19:14:01.481 xcodebuild[13386:8024251] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.02s Open com.plenara.plenaraApp
+    t =     0.02s     Launch com.plenara.plenaraApp
+    t =     0.50s         Setting up automation session
+    t =     1.24s         Wait for com.plenara.plenaraApp to idle
+    t =     2.74s Waiting 5.0s for "Follow up" StaticText to exist
+    t =     3.80s     Checking `Expect predicate `existsNoRetry == 1` for object "Follow up" StaticText`
+    t =     3.80s         Checking existence of `"Follow up" StaticText`
+    t =     3.89s Find the Target Application 'com.plenara.plenaraApp'
+    t =     3.91s Find the Target Application 'com.plenara.plenaraApp'
+    t =     3.93s Find the Target Application 'com.plenara.plenaraApp'
+    t =     3.95s Find the Target Application 'com.plenara.plenaraApp'
+    t =     3.97s Checking existence of `"tab-0" Button`
+    t =     4.00s Find the "tab-0" Button
+    t =     4.04s Find the "tab-0" Button
+    t =     4.07s Checking existence of `Keyboard (First Match)`
+    t =     4.12s Checking existence of `"home-follow-up" Button`
+    t =     4.15s Find the "home-follow-up" Button
+    t =     4.18s Find the "home-follow-up" Button
+    t =     4.22s Tap "home-follow-up" Button
+    t =     4.22s     Wait for com.plenara.plenaraApp to idle
+    t =     4.22s     Find the "home-follow-up" Button
+    t =     4.25s     Check for interrupting elements affecting "home-follow-up" Button
+    t =     4.30s     Synthesize event
+    t =     4.71s     Wait for com.plenara.plenaraApp to idle
+    t =     6.00s Tap "Due reminders" Button
+    t =     6.00s     Wait for com.plenara.plenaraApp to idle
+    t =     6.01s     Find the "Due reminders" Button
+    t =     6.04s     Check for interrupting elements affecting "Due reminders" Button
+    t =     6.08s     Synthesize event
+    t =     6.38s     Wait for com.plenara.plenaraApp to idle
+    t =     7.82s Waiting 5.0s for "No reminders due." StaticText to exist
+    t =     8.85s     Checking `Expect predicate `existsNoRetry == 1` for object "No reminders due." StaticText`
+    t =     8.86s         Checking existence of `"No reminders due." StaticText`
+    t =     8.88s Find the "home-count" StaticText
+    t =     9.01s Added attachment named 'Home no reminders'
+    t =     9.01s Tap "home-show-all" Button
+    t =     9.01s     Wait for com.plenara.plenaraApp to idle
+    t =     9.01s     Find the "home-show-all" Button
+    t =     9.04s     Check for interrupting elements affecting "home-show-all" Button
+    t =     9.05s     Synthesize event
+    t =     9.35s     Wait for com.plenara.plenaraApp to idle
+    t =     9.35s Find the "home-count" StaticText
+    t =     9.38s Terminate com.plenara.plenaraApp:13431
+    t =    10.44s Open com.plenara.plenaraApp
+    t =    10.44s     Launch com.plenara.plenaraApp
+2026-11-25 19:14:11.856 xcodebuild[13386:8024251] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-25 19:14:11.856 xcodebuild[13386:8024251] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    10.66s         Setting up automation session
+    t =    11.48s         Wait for com.plenara.plenaraApp to idle
+    t =    12.86s Waiting 5.0s for "Follow up" StaticText to exist
+    t =    13.92s     Checking `Expect predicate `existsNoRetry == 1` for object "Follow up" StaticText`
+    t =    13.92s         Checking existence of `"Follow up" StaticText`
+    t =    14.06s Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.09s Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.11s Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.13s Find the Target Application 'com.plenara.plenaraApp'
+    t =    14.15s Checking existence of `"tab-0" Button`
+    t =    14.29s Find the "tab-0" Button
+    t =    14.34s Find the "tab-0" Button
+    t =    14.38s Checking existence of `Keyboard (First Match)`
+    t =    14.42s Checking existence of `"home-follow-up" Button`
+    t =    14.45s Find the "home-follow-up" Button
+    t =    14.49s Find the "home-follow-up" Button
+    t =    14.52s Tap "home-follow-up" Button
+    t =    14.53s     Wait for com.plenara.plenaraApp to idle
+    t =    14.53s     Find the "home-follow-up" Button
+    t =    14.56s     Check for interrupting elements affecting "home-follow-up" Button
+    t =    14.62s     Synthesize event
+    t =    14.92s     Wait for com.plenara.plenaraApp to idle
+    t =    16.23s Tap "Due reminders" Button
+    t =    16.23s     Wait for com.plenara.plenaraApp to idle
+    t =    16.24s     Find the "Due reminders" Button
+    t =    16.27s     Check for interrupting elements affecting "Due reminders" Button
+    t =    16.31s     Synthesize event
+    t =    16.60s     Wait for com.plenara.plenaraApp to idle
+    t =    18.05s Find the "home-count" StaticText
+    t =    18.09s Find the "home-person-Samir Shah" Button
+    t =    19.12s     Find the "home-person-Samir Shah" Button (retry 1)
+    t =    20.16s     Find the "home-person-Samir Shah" Button (retry 2)
+    t =    20.19s     Collecting debug information to assist test failure triage
+    t =    20.19s         Requesting snapshot of accessibility hierarchy for app with pid 13449
+    t =    20.23s     Requesting snapshot of accessibility hierarchy for app with pid 13449
+    t =    20.25s     Find: Descendants matching type Button
+    t =    20.26s     Find: Elements matching predicate '"home-person-Samir Shah" IN identifiers'
+    t =    20.26s     Requesting snapshot of accessibility hierarchy for app with pid 13449
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/CompactHomeUITests.swift:64: error: -[PlenaraUITests.CompactHomeUITests testDueFilterKeepsFactualOrderAndUnknownHistoryEmptyState] : Failed to get matching snapshot: No matches found for Elements matching predicate '"home-person-Samir Shah" IN identifiers' from input {(
+    Button, identifier: 'tab-0', label: 'Home', Selected,
+    Button, identifier: 'tab-1', label: 'People',
+    Button, identifier: 'tab-2', label: 'History',
+    Button, identifier: 'bell', label: 'Settings and reminders',
+    Button, identifier: 'quick-log', label: 'Log contact',
+    Button, identifier: 'home-type-All', label: 'All', Selected,
+    Button, identifier: 'home-type-Family', label: 'Family',
+    Button, identifier: 'home-type-Friends', label: 'Friends',
+    Button, identifier: 'home-closeness', label: 'Any closeness',
+    Button, identifier: 'home-follow-up', label: 'Due reminders',
+    Button, identifier: 'home-filters', label: 'Filters',
+    Button, identifier: 'home-sort', label: 'Priority order',
+    Button, identifier: 'home-rhythm-setup', label: 'Set up reminders',
+    Button,
+    Button,
+    Button,
+    Button,
+    Button, identifier: 'home-actions-Samir Shah', label: 'Actions for Samir Shah',
+    Button, identifier: 'home-actions-Daniel Ross', label: 'Actions for Daniel Ross',
+    Button, identifier: 'home-actions-Aaron Miller', label: 'Actions for Aaron Miller',
+    Button, label: 'Samir Shah, Family + Friend · Inner circle, Reminder due · 9d since contact',
+    Button, label: 'Daniel Ross, Friend · Close, Reminder due · 34d since contact',
+    Button, label: 'Aaron Miller, Friend · Casual, Reminder due · 95d since contact'
+)}
+Possibly caused by runtime issues:
+Automation type mismatch: computed Button from legacy attributes vs PopUpButton from modern attribute. Input attributes and values: {
+    "XC_kAXXCAttributeAutomationType" = 14;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 1108101562369;
+}
+See test report attachments for more detail.
+    t =    20.29s Tear Down
+    t =    20.29s         Terminate com.plenara.plenaraApp:13449
+Test Case '-[PlenaraUITests.CompactHomeUITests testDueFilterKeepsFactualOrderAndUnknownHistoryEmptyState]' failed (21.395 seconds).
+Test Case '-[PlenaraUITests.CompactHomeUITests testHomeDarkAndAccessibilityFiltersRemainUsable]' started.
+    t =     0.00s Start Test at 2026-11-25 19:14:22.810
+    t =     0.02s Set Up
+    t =     0.03s     Open com.plenara.plenaraApp
+    t =     0.03s         Launch com.plenara.plenaraApp
+2026-11-25 19:14:22.889 xcodebuild[13386:8024251] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-25 19:14:22.889 xcodebuild[13386:8024251] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.30s             Setting up automation session
+    t =     1.19s             Wait for com.plenara.plenaraApp to idle
+    t =     2.81s     Waiting 5.0s for "Follow up" StaticText to exist
+    t =     3.86s         Checking `Expect predicate `existsNoRetry == 1` for object "Follow up" StaticText`
+    t =     3.86s             Checking existence of `"Follow up" StaticText`
+    t =     4.06s Added attachment named 'Dark compact Home'
+    t =     4.06s     Terminate com.plenara.plenaraApp:13476
+    t =     5.13s     Open com.plenara.plenaraApp
+    t =     5.13s         Launch com.plenara.plenaraApp
+2026-11-25 19:14:27.940 xcodebuild[13386:8024251] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-25 19:14:27.940 xcodebuild[13386:8024251] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     5.35s             Setting up automation session
+    t =     6.20s             Wait for com.plenara.plenaraApp to idle
+    t =     7.81s     Waiting 5.0s for "Follow up" StaticText to exist
+    t =     8.84s         Checking `Expect predicate `existsNoRetry == 1` for object "Follow up" StaticText`
+    t =     8.84s             Checking existence of `"Follow up" StaticText`
+    t =     9.01s     Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.03s     Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.05s     Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.07s     Find the Target Application 'com.plenara.plenaraApp'
+    t =     9.08s     Checking existence of `"tab-0" Button`
+    t =     9.11s     Find the "tab-0" Button
+    t =     9.14s     Find the "tab-0" Button
+    t =     9.17s     Checking existence of `Keyboard (First Match)`
+    t =     9.21s     Checking existence of `"home-filters" Button`
+    t =     9.23s     Find the "home-filters" Button
+    t =     9.26s     Find the "home-filters" Button
+    t =     9.30s     Tap "home-filters" Button
+    t =     9.30s         Wait for com.plenara.plenaraApp to idle
+    t =     9.30s         Find the "home-filters" Button
+    t =     9.33s         Check for interrupting elements affecting "home-filters" Button
+    t =     9.35s         Synthesize event
+    t =     9.64s         Wait for com.plenara.plenaraApp to idle
+    t =     9.96s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.07s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.11s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.15s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.19s     Checking existence of `"tab-0" Button`
+    t =    10.25s     Find the "tab-0" Button
+    t =    10.32s     Checking existence of `Keyboard (First Match)`
+    t =    10.40s     Checking existence of `"home-filter-feeling" Button`
+    t =    10.45s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.49s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.52s     Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 674.2) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 283.7) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    10.52s         Wait for com.plenara.plenaraApp to idle
+    t =    10.53s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.56s         Check for interrupting elements affecting "Plenara" Application
+    t =    10.60s         Synthesize event
+    t =    10.60s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.64s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.67s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.71s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    10.74s             Find the Target Application 'com.plenara.plenaraApp'
+    t =    11.85s         Wait for com.plenara.plenaraApp to idle
+    t =    13.41s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.46s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.50s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.53s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.57s     Checking existence of `"tab-0" Button`
+    t =    13.62s     Find the "tab-0" Button
+    t =    13.68s     Checking existence of `Keyboard (First Match)`
+    t =    13.76s     Checking existence of `"home-filter-feeling" Button`
+    t =    13.81s     Find the "home-filter-feeling" Button
+    t =    13.86s     Find the "home-filter-feeling" Button
+    t =    13.92s     Tap "home-filter-feeling" Button
+    t =    13.92s         Wait for com.plenara.plenaraApp to idle
+    t =    13.93s         Find the "home-filter-feeling" Button
+    t =    13.98s         Check for interrupting elements affecting "home-filter-feeling" Button
+    t =    14.02s         Synthesize event
+    t =    14.32s         Wait for com.plenara.plenaraApp to idle
+    t =    14.32s     Tap "Needs care" Button
+    t =    14.32s         Wait for com.plenara.plenaraApp to idle
+    t =    14.33s         Find the "Needs care" Button
+    t =    15.44s             Find the "Needs care" Button (retry 1)
+    t =    16.72s             Find the "Needs care" Button (retry 2)
+    t =    16.92s     Requesting snapshot of accessibility hierarchy for app with pid 13486
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/CompactHomeUITests.swift:77: error: -[PlenaraUITests.CompactHomeUITests testHomeDarkAndAccessibilityFiltersRemainUsable] : Failed to tap "Needs care" Button: No matches found for first query match sequence: `Descendants matching type Button` -> `Elements matching predicate '"Needs care" IN identifiers'`, given input App element pid: 13486
+Possibly caused by runtime issues:
+Automation type mismatch: computed Button from legacy attributes vs PopUpButton from modern attribute. Input attributes and values: {
+    "XC_kAXXCAttributeAutomationType" = 14;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 1108101562369;
+}
+See test report attachments for more detail.
+    t =    17.03s Tear Down
+    t =    17.03s         Terminate com.plenara.plenaraApp:13486
+Test Case '-[PlenaraUITests.CompactHomeUITests testHomeDarkAndAccessibilityFiltersRemainUsable]' failed (18.158 seconds).
+Test Suite 'CompactHomeUITests' failed at 2026-11-25 19:14:40.968.
+	 Executed 3 tests, with 3 failures (0 unexpected) in 46.133 (46.136) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-25 19:14:40.969.
+	 Executed 3 tests, with 3 failures (0 unexpected) in 46.133 (46.137) seconds
+Test Suite 'Selected tests' failed at 2026-11-25 19:14:40.969.
+	 Executed 3 tests, with 3 failures (0 unexpected) in 46.133 (46.138) seconds
+2026-11-25 19:14:41.361 xcodebuild[13386:8024252]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-25 19:14:41.371 xcodebuild[13386:8024251] [MT] IDETestOperationsObserverDebug: 52.351 elapsed -- Testing started completed.
+2026-11-25 19:14:41.371 xcodebuild[13386:8024251] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-25 19:14:41.371 xcodebuild[13386:8024251] [MT] IDETestOperationsObserverDebug: 52.351 sec, +52.351 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261125-191346.xcresult
+
+Failing tests:
+	CompactHomeUITests.testColdStartCompactFamilyAndCombinedFiltersSurviveReopen()
+	CompactHomeUITests.testDueFilterKeepsFactualOrderAndUnknownHistoryEmptyState()
+	CompactHomeUITests.testHomeDarkAndAccessibilityFiltersRemainUsable()
+
+** TEST EXECUTE FAILED **
+
+Testing started

@@ -34,15 +34,20 @@ journal. `--contact-fixture` seeds one fictional system contact only on a
 simulator with pre-granted contact access. These paths are not compiled into
 the physical-device binary. Production opens an empty journal.
 
-## Home suggestions
+## Home follow-ups
 
-The [approved ranking policy](../design/relationship-app.md#stay-close) is
-implemented by `Journal.rankedSuggestions`, with `suggestions` returning the
-first three. `ReconnectionSection` provides the leading invitation, factual
-reasons, and in-place expansion. `Journal.contextualSuggestions` keeps secondary
-growth/care invitations consistent with the shared suppression gate. Neither
-classification nor optional ideas turn on a contact rhythm. There is no new
-journal schema or storage path. [Verification and delivery](../verification/ranking/update.md).
+The [approved Home design](../design/relationship-app.md#home) is implemented by
+`Journal.followUpCandidates`, `FollowUpSelection`, `HomeView` and
+`HomeFollowUpViews`. The due-only filter preserves `rankedSuggestions` ordering;
+All suggestions adds closeness-led starting invitations and explicit growth/care
+without inventing history or turning on reminders. Shared suppression includes
+seven-day recent-connection cooling for optional invitations and all event guests.
+Relationship tabs, combined filters and custom sorting are UI choices stored in
+`UserDefaults` under `home.selection`; they do not change journal schema/storage.
+Simulator UI tests use `home.selection.ui-testing` and clear only that key on
+`--ui-testing --reset`. `--home-demo` supplies the approved preview's fictional
+people; `--home-mixed-demo` adds factual due reminder examples. These flags are
+simulator-only. [Implementation evidence](../verification/compact-home/update.md).
 
 The notification schedule reserves one slot for the weekly invitation and selects
 the nearest 47 birthday/follow-up dates together. A distant birthday cannot
@@ -65,8 +70,8 @@ successful backup restore. No contact import identity or journal schema changes.
 
 ## Quick logging
 
-Home’s **Log a moment** opens a searchable people list. A person’s page and
-Moments use the same editor. Called, Texted, and Met select the channel directly;
+Home’s **Log contact → One person** opens a searchable people list. A person’s page and
+History use the same editor. Called, Texted, and Met select the channel directly;
 Another way keeps video calls, voice notes, and email available. Today and
 Connected are the defaults. Notes are optional and editable with the standard
 keyboard, including system dictation when enabled on the iPhone. Plenara does
@@ -170,3 +175,24 @@ The bundle identifier remains `com.plenara.plenaraApp`; installation replaces
 the old executable while the new journal uses a fresh storage path. There is
 no automatic import of archived planner data. The archive is never active
 source or guidance.
+
+## External development storage
+
+`.build` resolves to `/Volumes/MacExt/DeveloperData/projects/plenara/build` and
+`.tmp` to `/Volumes/MacExt/DeveloperData/projects/plenara/tmp`. The mounted drive
+UUID is `2B4972AC-6571-4862-9042-46B7AB6006A2`. A missing drive must fail rather
+than recreate output internally. Previous external paths are compatibility links
+to the same working directories, not retained build copies.
+
+The dedicated iPhone 16 Pro simulator is `BB42F29A-928B-4B9E-BD39-160B70249D4F`.
+The smaller iPhone SE (3rd generation) verification target is
+`A7DB6C2C-908E-40CB-AB9D-63270EB0275B`. The native runner requires their data to
+resolve under `/Volumes/MacExt/DeveloperData/projects/plenara/simulators`.
+On this Mac, CoreSimulatorService currently receives a macOS filesystem privacy
+denial both through stable external data links and its supported external device
+set API. Offline copies were checked and original internal data was restored;
+no migration is claimed as successful. `PLENARA_ALLOW_INTERNAL_SIMULATOR=1`
+is an explicit operator override for an owner-authorized temporary exception,
+never a fallback. Luis authorized it for the compact Home build-1009 release on
+November 25, 2026. Future workflows need authorization or working external
+simulator access.
