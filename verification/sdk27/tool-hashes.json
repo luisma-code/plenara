@@ -1,0 +1,12 @@
+{
+  "tool/test-native.sh": "a1d0d6966c85054dd99039b10a35397c8787b298bfc3e88350ff55055d97540d",
+  "tool/precheck.sh": "eb1de8333c1b47e0b02c7028dec5b54e7ca0584dbe861a1613b87106fa295c3c",
+  "tool/simulator_config.py": "744849058f058343917ac796f91079d6a4118c176a6e876ba51c10d7c8667c8f",
+  "tool/wait-for-verification-slot.py": "43d8557ccbc44d3e073a54562c9e04162d075225f69e889741610560abc651a1",
+  "tool/watch-memory.py": "411b2e46e1261cdc8b492acd787550a702f348dabd689c7406791d1670c3cb12",
+  "tool/calibrate-memory.py": "3e1babcfafeedeb235dde20a0c108de1450c1a59f66242fc932634ac42a0d4f9",
+  "tool/export-compact-home-verification.py": "cd856cd4b87989bf2673ca27ffb30b9e0a331376bf8b6f619d388d5a7a54a445",
+  "tool/deploy-testflight.sh": "bfe5b39776f131e5fe0621c6b9c203b47e9d3e5d2e137cb2934cf88c57e12d54",
+  "tool/testflight.py": "a268dfe07cfc0a9436ab6cbb8fd870eef290cfa8aea7cf06c7e8bf19751b126e",
+  "tool/require-storage.sh": "93dd1f022f1fb8a6593c0a4c5958c8fb2405fe729733b6175c8330d962830d6e"
+}

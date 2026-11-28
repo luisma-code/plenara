@@ -1,0 +1,26 @@
+{
+  "build": "1010",
+  "Xcode": "27.2 (27B52)",
+  "SDK": "27.2",
+  "configuration": "Release",
+  "minimumIOS": "18.0",
+  "fullResult": ".build/native-20261127-172618.xcresult",
+  "contactsDeniedResult": ".build/native-20261127-175436.xcresult",
+  "fullPassed": 73,
+  "contactsDeniedPassed": 1,
+  "memoryLimitKiB": 524288,
+  "memory": {
+    "memory.csv": {
+      "samples": 648,
+      "peakRSSKiB": 471392
+    },
+    "contacts-denied-memory.csv": {
+      "samples": 28,
+      "peakRSSKiB": 421856
+    }
+  },
+  "sourceManifestSHA256": "d09ae8b51171cd970b465d45f3e10f2ef59e51aed0f37ecff132a690f2871278",
+  "toolManifestSHA256": "ce6aa0df6432c35e06704b0ab27f453ef4a849f23fbfb296f5531d154e239ce9",
+  "physicalPhoneTests": false,
+  "isolatedPerformanceOrLeakClaim": false
+}

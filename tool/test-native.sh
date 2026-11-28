@@ -3,11 +3,15 @@ set -euo pipefail
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 cd "$(git rev-parse --show-toplevel)"
 source tool/require-storage.sh
-SIMULATOR_ID="${PLENARA_SIMULATOR_ID:-BB42F29A-928B-4B9E-BD39-160B70249D4F}"
-python3 - "$SIMULATOR_ID" <<'PYSTORAGE'
+# A failed rebuild must not leave a prior native success looking current.
+rm -f .tmp/latest-native-result.txt .tmp/native-summary.json .tmp/native-test-context.json .tmp/native-build.log .tmp/native-tests.log
+PLENARA_SIMULATOR_CONFIGURATION=$(python3 tool/simulator_config.py)
+eval "$PLENARA_SIMULATOR_CONFIGURATION"
+simctl() { xcrun simctl --set "$SIMULATOR_SET" "$@"; }
+python3 - "$SIMULATOR_ID" "$SIMULATOR_SET" <<'PYSTORAGE'
 from pathlib import Path
 import sys, os
-root = Path.home() / 'Library/Developer/CoreSimulator/Devices' / sys.argv[1] / 'data'
+root = Path(sys.argv[2]) / sys.argv[1] / 'data'
 resolved = root.resolve()
 base = Path('/Volumes/MacExt/DeveloperData/projects/plenara/simulators')
 if not root.is_dir():
@@ -18,25 +22,27 @@ if base not in resolved.parents:
     print('Using the explicitly authorized temporary internal simulator-storage exception.', file=sys.stderr)
 PYSTORAGE
 mkdir -p .tmp .build
-xcrun simctl bootstatus "$SIMULATOR_ID" -b > .tmp/simulator-boot.log
+simctl bootstatus "$SIMULATOR_ID" -b > .tmp/simulator-boot.log
 (cd ios && xcodegen generate)
 xcodebuild -project ios/Plenara.xcodeproj -scheme Plenara -configuration Release \
-  -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath .build/simulator \
+  -DVTSimulatorSetLocation="$SIMULATOR_SET" -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath .build/simulator \
   CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES ONLY_ACTIVE_ARCH=YES build-for-testing > .tmp/native-build.log 2>&1
-xcrun simctl install "$SIMULATOR_ID" .build/simulator/Build/Products/Release-iphonesimulator/Plenara.app
+simctl install "$SIMULATOR_ID" .build/simulator/Build/Products/Release-iphonesimulator/Plenara.app
 # A fresh runner prevents a previous UI test executable from surviving an update.
 RUNNER_ID=com.plenara.plenaraApp.UITests.xctrunner
-xcrun simctl terminate "$SIMULATOR_ID" "$RUNNER_ID" >/dev/null 2>&1 || true
-xcrun simctl uninstall "$SIMULATOR_ID" "$RUNNER_ID" >/dev/null 2>&1 || true
-xcrun simctl install "$SIMULATOR_ID" .build/simulator/Build/Products/Release-iphonesimulator/PlenaraUITests-Runner.app
+simctl terminate "$SIMULATOR_ID" "$RUNNER_ID" >/dev/null 2>&1 || true
+simctl uninstall "$SIMULATOR_ID" "$RUNNER_ID" >/dev/null 2>&1 || true
+simctl install "$SIMULATOR_ID" .build/simulator/Build/Products/Release-iphonesimulator/PlenaraUITests-Runner.app
 if [ "${PLENARA_CONTACTS_DENIED:-0}" = 1 ]; then
-  xcrun simctl privacy "$SIMULATOR_ID" revoke contacts com.plenara.plenaraApp
+  simctl privacy "$SIMULATOR_ID" revoke contacts com.plenara.plenaraApp
 else
-  xcrun simctl privacy "$SIMULATOR_ID" grant contacts com.plenara.plenaraApp
+  simctl privacy "$SIMULATOR_ID" grant contacts com.plenara.plenaraApp
 fi
+# Recheck after compilation too: another project may have started meanwhile.
+python3 -u tool/wait-for-verification-slot.py
 python3 tool/watch-memory.py "$SIMULATOR_ID" &
 WATCH_PID=$!
-cleanup() { xcrun simctl terminate "$SIMULATOR_ID" "$RUNNER_ID" >/dev/null 2>&1 || true; xcrun simctl terminate "$SIMULATOR_ID" com.plenara.plenaraApp >/dev/null 2>&1 || true; kill "$WATCH_PID" >/dev/null 2>&1 || true; wait "$WATCH_PID" 2>/dev/null || true; }
+cleanup() { simctl terminate "$SIMULATOR_ID" "$RUNNER_ID" >/dev/null 2>&1 || true; simctl terminate "$SIMULATOR_ID" com.plenara.plenaraApp >/dev/null 2>&1 || true; kill "$WATCH_PID" >/dev/null 2>&1 || true; wait "$WATCH_PID" 2>/dev/null || true; }
 trap cleanup EXIT
 SDK_VERSION=$(xcrun --sdk iphonesimulator --show-sdk-version)
 TEST_MANIFEST=".build/simulator/Build/Products/Plenara_iphonesimulator${SDK_VERSION}-$(uname -m).xctestrun"
@@ -57,7 +63,7 @@ Path('.tmp/native-test-context.json').write_text(json.dumps({'manifest':str(mani
 PYCONTEXT
 RESULT=".build/native-$(date +%Y%m%d-%H%M%S).xcresult"
 xcodebuild -xctestrun "$TEST_MANIFEST" -configuration Release \
-  -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath .build/simulator \
+  -DVTSimulatorSetLocation="$SIMULATOR_SET" -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath .build/simulator \
   -parallel-testing-enabled NO -resultBundlePath "$RESULT" CODE_SIGNING_ALLOWED=NO \
   test-without-building "$@" > .tmp/native-tests.log 2>&1
 xcrun xcresulttool get test-results summary --path "$RESULT" > .tmp/native-summary.json

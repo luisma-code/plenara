@@ -1,0 +1,1444 @@
+{
+  "testIdentifier" : "PlenaraUITests/testDemoNavigationAndScreenshots()",
+  "testIdentifierURL" : "test://com.apple.xcode/Plenara/PlenaraUITests/PlenaraUITests/testDemoNavigationAndScreenshots",
+  "testName" : "testDemoNavigationAndScreenshots()",
+  "testRuns" : [
+    {
+      "activities" : [
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829636.518,
+          "title" : "Start Test at 2026-11-27 17:33:56.517"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "childActivities" : [
+                    {
+                      "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                      "isAssociatedWithFailure" : false,
+                      "startTime" : 1795829636.593,
+                      "title" : "Terminate com.plenara.plenaraApp:68984"
+                    },
+                    {
+                      "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                      "isAssociatedWithFailure" : false,
+                      "startTime" : 1795829639.504,
+                      "title" : "Setting up automation session"
+                    },
+                    {
+                      "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                      "isAssociatedWithFailure" : false,
+                      "startTime" : 1795829643.787,
+                      "title" : "Wait for com.plenara.plenaraApp to idle"
+                    }
+                  ],
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829636.593,
+                  "title" : "Launch com.plenara.plenaraApp"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829636.593,
+              "title" : "Open com.plenara.plenaraApp"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829636.592,
+          "title" : "Set Up"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829646.29,
+          "title" : "Terminate com.plenara.plenaraApp:69062"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829647.567,
+                  "title" : "Setting up automation session"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829650.638,
+                  "title" : "Wait for com.plenara.plenaraApp to idle"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829647.349,
+              "title" : "Launch com.plenara.plenaraApp"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829647.349,
+          "title" : "Open com.plenara.plenaraApp"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829653.547,
+                  "title" : "Checking existence of `\"Follow up\" StaticText`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829653.546,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"Follow up\" StaticText`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829652.499,
+          "title" : "Waiting 5.0s for \"Follow up\" StaticText to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829653.683,
+          "title" : "Find the \"tab-1\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829653.717,
+          "title" : "Find the \"quick-log\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829653.75,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829653.752,
+              "title" : "Find the \"home-actions-Sofia Chen\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829653.783,
+              "title" : "Check for interrupting elements affecting \"home-actions-Sofia Chen\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829653.811,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.102,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829653.75,
+          "title" : "Tap \"home-actions-Sofia Chen\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829654.105,
+          "title" : "Find the \"home-later-Sofia Chen\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829654.151,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Stay close_0_07CE407C-E12F-4F24-A0D3-ACB61B3786F3.png",
+              "payloadId" : "0~MW6FiAnocyRvhuyqlHmL6z3aHSCGX3udbGXb7ut8ZSuSh4AMaYaWaOtvkyYywoHb96kF741dSNMPLPON6My9Jg==",
+              "timestamp" : 1795829654.272,
+              "userInfos" : [
+                {
+                  "key" : "Scale",
+                  "value" : "3"
+                }
+              ],
+              "uuid" : "8AF24839-F157-4D86-A6FC-B4FB2062F5CB"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.272,
+              "title" : "Stay close"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829654.272,
+          "title" : "Added attachment named 'Stay close'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.273,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.276,
+              "title" : "Find the \"tab-1\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.309,
+              "title" : "Check for interrupting elements affecting \"tab-1\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.34,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.633,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829654.273,
+          "title" : "Tap \"tab-1\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829654.637,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "People_0_469C9CAC-678E-4937-9E0F-EF6C89982B9E.png",
+              "payloadId" : "0~JPGE71Wl6hoWv1IqW-LNBjY9ufeCPrYIZtaOsYq3Ybk2gt-tAuCBq8zw_BSIIhA5ieawh05pJ6WqaliLlIZ_QQ==",
+              "timestamp" : 1795829654.76,
+              "userInfos" : [
+                {
+                  "key" : "Scale",
+                  "value" : "3"
+                }
+              ],
+              "uuid" : "0643052C-1B0A-4464-B6F9-475BDFE6F1C6"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.76,
+              "title" : "People"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829654.76,
+          "title" : "Added attachment named 'People'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.761,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.763,
+              "title" : "Find the \"Far away\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.796,
+              "title" : "Check for interrupting elements affecting \"filter-Far away\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829654.861,
+                  "title" : "Scroll element to visible"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829654.868,
+                  "title" : "Find the \"filter-Far away\" Button"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829654.91,
+                  "title" : "Computed hit point {251.33333587646484, 560} after scrolling to visible"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829654.825,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829655.197,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829654.761,
+          "title" : "Tap \"Far away\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829655.202,
+          "title" : "Checking existence of `\"person-Sofia Chen\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829655.234,
+          "title" : "Checking existence of `\"person-Daniel Rivera\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829655.264,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829655.266,
+              "title" : "Find the \"Everyone\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829655.297,
+              "title" : "Check for interrupting elements affecting \"filter-Everyone\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829655.362,
+                  "title" : "Scroll element to visible"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829655.367,
+                  "title" : "Find the \"filter-Everyone\" Button"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829655.405,
+                  "title" : "Computed hit point {70.666667938232422, 560} after scrolling to visible"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829655.325,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829655.703,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829655.264,
+          "title" : "Tap \"Everyone\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829655.709,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829655.712,
+              "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829655.736,
+              "title" : "Check for interrupting elements affecting \"Plenara\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829655.762,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829656.186,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829655.708,
+          "title" : "Swipe up Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829656.84,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829656.865,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829656.888,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829656.914,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829656.935,
+          "title" : "Checking existence of `\"tab-0\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829656.966,
+          "title" : "Find the \"tab-0\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829657.013,
+          "title" : "Find the \"tab-0\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829657.049,
+          "title" : "Checking existence of `\"home-filter-footer\" Other`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829657.088,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829657.158,
+          "title" : "Checking existence of `\"person-Sofia Chen\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829657.191,
+          "title" : "Find the \"person-Sofia Chen\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829657.235,
+          "title" : "Find the \"person-Sofia Chen\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829657.278,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829657.28,
+              "title" : "Find the \"person-Sofia Chen\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829657.316,
+              "title" : "Check for interrupting elements affecting \"person-Sofia Chen\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829657.359,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829657.65,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829657.278,
+          "title" : "Tap \"person-Sofia Chen\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829658.747,
+                  "title" : "Checking existence of `\"Sofia Chen\" StaticText`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829658.743,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"Sofia Chen\" StaticText`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829657.707,
+          "title" : "Waiting 5.0s for \"Sofia Chen\" StaticText to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829658.776,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Person_0_781EEB2A-D5DF-4EFE-85E4-1C96E3D5AADC.png",
+              "payloadId" : "0~iv1rmDf9UVgCa8pCzXj0NSHcJcubSL0AfrhhPwcdbqRR52wApeB6w1EN_ZPdupo7Xzi37JABTNeJV4-J81y6xA==",
+              "timestamp" : 1795829658.899,
+              "userInfos" : [
+                {
+                  "key" : "Scale",
+                  "value" : "3"
+                }
+              ],
+              "uuid" : "48A49187-1902-4C0E-94E6-22BEC2EBC252"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829658.899,
+              "title" : "Person"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829658.899,
+          "title" : "Added attachment named 'Person'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829658.901,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829658.905,
+              "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829658.931,
+              "title" : "Check for interrupting elements affecting \"Plenara\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829658.959,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829659.385,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829658.901,
+          "title" : "Swipe up Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829661.484,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Person notes_0_A2F6EE6C-855D-4567-ADBD-13A76C655AC7.png",
+              "payloadId" : "0~DP0kYwj8E8I3NHOeiWOuhCBjkCpacoI4zeNvVkGOjiQKCdTbgy5bUODPFT_uSOXQn4AZtNfYz1H2VjAM3_pI0Q==",
+              "timestamp" : 1795829661.609,
+              "userInfos" : [
+                {
+                  "key" : "Scale",
+                  "value" : "3"
+                }
+              ],
+              "uuid" : "584DC1E7-5464-45B2-9ADB-555A8992FF0D"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829661.609,
+              "title" : "Person notes"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829661.609,
+          "title" : "Added attachment named 'Person notes'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829661.61,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829661.612,
+              "title" : "Find the \"tab-2\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829661.656,
+              "title" : "Check for interrupting elements affecting \"tab-2\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829661.686,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829661.981,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829661.61,
+          "title" : "Tap \"tab-2\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829662.355,
+          "title" : "Checking existence of `\"Contact history\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829662.381,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Moments_0_4F97B4A3-3D5E-4F39-A597-595636386764.png",
+              "payloadId" : "0~hd_PRCz5nDcp78Sss95e_WLrnM9_h77jCPvTDiptVwVABN_Sf3nd_W3s6520giUgt0CowJZS2hXUiwvnIxWWbw==",
+              "timestamp" : 1795829662.489,
+              "userInfos" : [
+                {
+                  "key" : "Scale",
+                  "value" : "3"
+                }
+              ],
+              "uuid" : "E34E42A1-14C0-4BA2-BCFF-E56AA784FCD2"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829662.489,
+              "title" : "Moments"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829662.489,
+          "title" : "Added attachment named 'Moments'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829662.49,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829662.491,
+              "title" : "Find the \"tab-0\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829662.518,
+              "title" : "Check for interrupting elements affecting \"tab-0\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829662.539,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829662.835,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829662.489,
+          "title" : "Tap \"tab-0\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829662.84,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829662.843,
+              "title" : "Find the \"Settings and reminders\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829662.885,
+              "title" : "Check for interrupting elements affecting \"bell\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829662.916,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829663.209,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829662.84,
+          "title" : "Tap \"Settings and reminders\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829663.631,
+          "title" : "Checking existence of `\"Export a restorable backup\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829663.757,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Settings_0_E8313FED-34FD-4A83-B749-0EAFA2CF111A.png",
+              "payloadId" : "0~tXBEJ9uwT5yjaBBJ5MdmU_guURNf4WaJ3Qe0_aAzwuHriAyf9twpAK3Murr3si7ue8OKK5UwMQbCUtTWWFh7mQ==",
+              "timestamp" : 1795829663.906,
+              "userInfos" : [
+                {
+                  "key" : "Scale",
+                  "value" : "3"
+                }
+              ],
+              "uuid" : "FD211C4C-5B39-465E-9C5E-1563899348A1"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829663.906,
+              "title" : "Settings"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829663.906,
+          "title" : "Added attachment named 'Settings'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829663.907,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829664.13,
+              "title" : "Find the \"Export a restorable backup\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829664.193,
+              "title" : "Check for interrupting elements affecting \"Export a restorable backup\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829664.247,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829664.541,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829663.907,
+          "title" : "Tap \"Export a restorable backup\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829665.86,
+                  "title" : "Checking existence of `\"DOCPicker.actionButton\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829665.917,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829665.859,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"DOCPicker.actionButton\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829666.86,
+                  "title" : "Checking existence of `\"DOCPicker.actionButton\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829666.917,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829666.859,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"DOCPicker.actionButton\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829667.847,
+                  "title" : "Checking existence of `\"DOCPicker.actionButton\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829667.911,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829667.846,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"DOCPicker.actionButton\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829668.843,
+                  "title" : "Checking existence of `\"DOCPicker.actionButton\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829669.083,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829668.843,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"DOCPicker.actionButton\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829669.81,
+                  "title" : "Checking existence of `\"DOCPicker.actionButton\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829669.809,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"DOCPicker.actionButton\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829664.8,
+          "title" : "Waiting 20.0s for \"DOCPicker.actionButton\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829672.276,
+          "title" : "Find the Target Application 'com.plenara.plenaraApp'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Backup export_0_F5941BA3-49F0-4365-A35A-57D6A15DFF4A.png",
+              "payloadId" : "0~OY___kXiIykzFqkwjn6Rg17J3Myj_K6Kpii1N8pSFUultTUe27T6LiG4MfzvnEdwQk7vOBclew8rs3swhsGx1A==",
+              "timestamp" : 1795829672.513,
+              "userInfos" : [
+                {
+                  "key" : "Scale",
+                  "value" : "3"
+                }
+              ],
+              "uuid" : "06F5A11F-3175-4B12-A9C4-41E4096483E3"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829672.513,
+              "title" : "Backup export"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829672.513,
+          "title" : "Added attachment named 'Backup export'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829672.515,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829672.517,
+              "title" : "Find the \"DOCPicker.actionButton\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829672.624,
+              "title" : "Check for interrupting elements affecting \"DOCPicker.actionButton\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829672.72,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829673.037,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829672.515,
+          "title" : "Tap \"DOCPicker.actionButton\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829674.099,
+                  "title" : "Checking existence of `\"FullDocumentManagerViewControllerNavigationBar\" NavigationBar`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829674.23,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829674.098,
+              "title" : "Checking `Expect predicate `existsNoRetry == 0` for object \"FullDocumentManagerViewControllerNavigationBar\" NavigationBar`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829675.076,
+                  "title" : "Checking existence of `\"FullDocumentManagerViewControllerNavigationBar\" NavigationBar`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829675.076,
+              "title" : "Checking `Expect predicate `existsNoRetry == 0` for object \"FullDocumentManagerViewControllerNavigationBar\" NavigationBar`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829673.04,
+          "title" : "Waiting 30.0s for \"FullDocumentManagerViewControllerNavigationBar\" NavigationBar to not exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829675.14,
+          "title" : "Checking existence of `\"settings-status\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829676.311,
+                  "title" : "Checking existence of `\"settings-status\" StaticText`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829676.309,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"settings-status\" StaticText`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829675.25,
+          "title" : "Waiting 5.0s for \"settings-status\" StaticText to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829676.485,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829676.487,
+              "title" : "Find the CollectionView (First Match)"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829676.518,
+              "title" : "Check for interrupting elements affecting CollectionView"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829676.578,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829677.106,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829676.485,
+          "title" : "Swipe down CollectionView (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829678.279,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829678.282,
+              "title" : "Find the \"Restore from a backup\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829678.423,
+              "title" : "Check for interrupting elements affecting \"Restore from a backup\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829678.486,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829678.8,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829678.278,
+          "title" : "Tap \"Restore from a backup\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829680.227,
+                  "title" : "Checking existence of `Cell (First Match)`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829680.197,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object Cell (First Match)`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829679.129,
+          "title" : "Waiting 8.0s for Cell (First Match) to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829680.69,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829680.692,
+              "title" : "Find the Cell (First Match)"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829680.844,
+              "title" : "Check for interrupting elements affecting \"Plenara backup 2026-11-27 17-34-24.json, json\" Cell"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829680.942,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829681.236,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829680.69,
+          "title" : "Tap Cell (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829682.526,
+                  "title" : "Checking existence of `\"Replace with backup\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829682.526,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"Replace with backup\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829681.466,
+          "title" : "Waiting 5.0s for \"Replace with backup\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829682.646,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829682.656,
+              "title" : "Find the \"Replace with backup\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829682.73,
+              "title" : "Check for interrupting elements affecting \"Replace with backup\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829682.792,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829683.101,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829682.646,
+          "title" : "Tap \"Replace with backup\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829683.306,
+          "title" : "Checking existence of `\"settings-status\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829683.641,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829683.652,
+              "title" : "Find the CollectionView (First Match)"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829683.736,
+              "title" : "Check for interrupting elements affecting CollectionView"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829683.817,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829684.267,
+              "title" : "Wait for com.plenara.plenaraApp to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829683.641,
+          "title" : "Swipe up CollectionView (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829684.783,
+          "title" : "Checking existence of `\"settings-status\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1795829685.931,
+                  "title" : "Checking existence of `\"settings-status\" StaticText`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1795829685.931,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"settings-status\" StaticText`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829684.903,
+          "title" : "Waiting 5.0s for \"settings-status\" StaticText to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1795829686.086,
+          "title" : "Tear Down"
+        }
+      ],
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "24BF69CD-E43A-4D88-80ED-BBCFD6798C32",
+        "deviceName" : "Plenara SDK 27 verification",
+        "modelName" : "iPhone 16 Pro",
+        "osBuildNumber" : "24B8117",
+        "osVersion" : "27.2",
+        "platform" : "iOS Simulator"
+      },
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ]
+}

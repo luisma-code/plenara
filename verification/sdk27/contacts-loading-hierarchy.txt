@@ -1,0 +1,98 @@
+Application, 0x106ef0280, pid: 48697, label: 'Plenara' <App element pid: 48697>
+  Window (Main), 0x106ef03c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4343939072.3>
+    Other, 0x106ef30c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4388513792.4>
+      Other, 0x106ef0000, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4388515072.5>
+        Other, 0x106ef3e80, {{-402.0, -874.0}, {1206.0, 2622.0}} <AX element pid: 48697, elementOrHash.elementID: 4397810944.84>
+        Other, 0x106ef35c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4343613952.6>
+          Other, 0x106ef26c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4531831264.7>
+            Other, 0x106ef1180, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4387415552.8>
+              Other, 0x106ef2a80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4345286592.12>
+                Other, 0x106ef2580, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4345116160.20>
+                  Other, 0x106ef1a40, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4343940096.22>
+                    Other, 0x106ef2bc0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4531835904.23>
+                      ScrollView, 0x106ef2d00, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4387467264.49>
+                        Other, 0x106ef1040, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4593206144.50>
+                          Other, 0x106ef3980, {{0.0, 0.0}, {402.0, 102.0}} <AX element pid: 48697, elementOrHash.elementID: 4593208384.54>
+                        Other, 0x106ef1b80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4593205696.51>
+                        Other, 0x106ef3ac0, {{0.0, 62.0}, {402.0, 735.0}} <AX element pid: 48697, elementOrHash.elementID: 4531057152.52>
+                          StaticText, 0x106ef2800, {{24.0, 102.3}, {53.7, 13.3}}, label: 'PEOPLE' <AX element pid: 48697, elementOrHash.elementID: 4531843104.55>
+                          Button, 0x106ef0500, {{332.0, 86.0}, {46.0, 46.0}}, identifier: 'plus', label: 'Add a person' <AX element pid: 48697, elementOrHash.elementID: 4531842624.56>
+                          StaticText, 0x106ef0f00, {{24.0, 154.0}, {111.3, 45.7}}, label: 'People' <AX element pid: 48697, elementOrHash.elementID: 4531843264.57>
+                          StaticText, 0x106ef2080, {{24.0, 221.7}, {331.0, 20.3}}, label: 'Find people and update relationship details.' <AX element pid: 48697, elementOrHash.elementID: 4531843424.58>
+                          Image, 0x106ef0640, {{40.0, 280.7}, {16.3, 16.7}}, identifier: 'magnifyingglass', label: 'Search' <AX element pid: 48697, elementOrHash.elementID: 4531843584.59>
+                          TextField, 0x106ef3c00, {{66.3, 278.0}, {297.7, 22.0}}, identifier: 'people-search', placeholderValue: 'Find someone' <AX element pid: 48697, elementOrHash.elementID: 4343617792.60>
+                          StaticText, 0x106ef2940, {{24.0, 350.2}, {53.0, 15.7}}, identifier: 'people-count', label: '0 people' <AX element pid: 48697, elementOrHash.elementID: 4531843904.61>
+                          Button, 0x106ef12c0, {{306.0, 336.0}, {72.0, 44.0}}, identifier: 'people-filters', label: 'Filters' <AX element pid: 48697, elementOrHash.elementID: 4531844384.62>
+                            StaticText, 0x106ef1680, {{306.0, 336.0}, {72.0, 44.0}}, label: 'Filters' <AX element pid: 48697, elementOrHash.elementID: 4531844224.70>
+                            Image, 0x106ef2e40, {{308.0, 353.3}, {15.3, 9.3}}, identifier: 'line.3.horizontal.decrease', label: 'Filter' <AX element pid: 48697, elementOrHash.elementID: 4531844064.71>
+                          ScrollView, 0x106ef3480, {{24.0, 402.0}, {354.0, 44.0}}, identifier: 'people-shortcuts' <AX element pid: 48697, elementOrHash.elementID: 4387464192.63>
+                            Other, 0x111a05680, {{24.0, 402.0}, {596.7, 44.0}} <AX element pid: 48697, elementOrHash.elementID: 4531054592.72>
+                              Button, 0x111a052c0, {{23.5, 401.5}, {94.3, 45.0}}, identifier: 'filter-Everyone', label: 'Everyone', Selected <AX element pid: 48697, elementOrHash.elementID: 4531844544.75>
+                              Button, 0x111a04dc0, {{124.8, 401.5}, {113.0, 45.0}}, identifier: 'filter-Grow closer', label: 'Grow closer' <AX element pid: 48697, elementOrHash.elementID: 4531844704.76>
+                              Button, 0x111a05540, {{244.8, 401.5}, {109.0, 45.0}}, identifier: 'filter-Needs care', label: 'Needs care' <AX element pid: 48697, elementOrHash.elementID: 4531844864.77>
+                              Button, 0x111a04a00, {{360.8, 401.5}, {80.7, 45.0}}, identifier: 'filter-Nearby', label: 'Nearby' <AX element pid: 48697, elementOrHash.elementID: 4531845024.78>
+                              Button, 0x111a048c0, {{448.5, 401.5}, {91.0, 45.0}}, identifier: 'filter-Far away', label: 'Far away' <AX element pid: 48697, elementOrHash.elementID: 4531845184.79>
+                              Button, 0x111a05400, {{546.5, 401.5}, {74.7, 45.0}}, identifier: 'filter-Family', label: 'Family' <AX element pid: 48697, elementOrHash.elementID: 4531845344.80>
+                          Image, 0x111a04640, {{47.3, 491.3}, {29.0, 26.0}}, identifier: 'leaf', label: 'Leaf' <AX element pid: 48697, elementOrHash.elementID: 4531845664.64>
+                          StaticText, 0x111a04500, {{45.0, 532.7}, {216.0, 32.0}}, label: 'No people added.' <AX element pid: 48697, elementOrHash.elementID: 4531845824.65>
+                          StaticText, 0x111a04780, {{45.0, 577.7}, {290.3, 44.7}}, label: 'Add by name, or choose a few people from Contacts.' <AX element pid: 48697, elementOrHash.elementID: 4531845984.66>
+                          Button, 0x111a057c0, {{24.0, 687.3}, {354.0, 48.0}}, label: 'Import from Contacts' <AX element pid: 48697, elementOrHash.elementID: 4531846464.67>
+                            StaticText, 0x111a06300, {{24.0, 687.3}, {354.0, 48.0}}, label: 'Import from Contacts' <AX element pid: 48697, elementOrHash.elementID: 4531846304.73>
+                            Image, 0x111a05180, {{113.7, 703.0}, {17.7, 17.3}}, identifier: 'person.badge.plus', label: 'Person With A Plus Badge' <AX element pid: 48697, elementOrHash.elementID: 4531846144.74>
+                          StaticText, 0x111a04b40, {{92.2, 757.3}, {217.7, 15.7}}, label: 'Import only the contacts you select.' <AX element pid: 48697, elementOrHash.elementID: 4531846624.68>
+                        Other, 0x111a04c80, {{369.0, 62.0}, {30.0, 750.0}}, label: 'Vertical scroll bar, 1 page', value: 0% <AX element pid: 48697, elementOrHash.elementID: 4388467200.53>
+                          Other, 0x111a04000, {{396.0, 108.0}, {3.0, 701.0}} <AX element pid: 48697, elementOrHash.elementID: 4593207040.69>
+                        Other, 0x111a07480, {{369.0, 62.0}, {30.0, 750.0}}, label: 'Vertical scroll bar, 1 page', value: 0% <AX element pid: 48697, elementOrHash.elementID: 4388467200.53>
+                          Other, 0x111a061c0, {{396.0, 108.0}, {3.0, 701.0}} <AX element pid: 48697, elementOrHash.elementID: 4593207040.69>
+              Toolbar, 0x111a04280, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar' <AX element pid: 48697, elementOrHash.elementID: 4387417088.13>
+                Other, 0x111a05b80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4397809664.21>
+            Button, 0x111a043c0, {{0.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-0', label: 'Home' <AX element pid: 48697, elementOrHash.elementID: 4390796608.9>
+              Image, 0x111a05f40, {{56.0, 791.7}, {22.3, 20.7}}, identifier: 'heart', label: 'Love' <AX element pid: 48697, elementOrHash.elementID: 4390796768.14>
+              StaticText, 0x111a06440, {{51.5, 819.2}, {31.0, 13.3}}, label: 'Home' <AX element pid: 48697, elementOrHash.elementID: 4390794688.15>
+            Button, 0x111a04140, {{134.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-1', label: 'People', Selected <AX element pid: 48697, elementOrHash.elementID: 4390797088.10>
+              Image, 0x111a07340, {{185.3, 790.3}, {33.7, 23.0}}, identifier: 'person.2', label: 'Two People' <AX element pid: 48697, elementOrHash.elementID: 4390796128.16>
+              StaticText, 0x111a04f00, {{182.3, 820.3}, {37.3, 13.3}}, label: 'People' <AX element pid: 48697, elementOrHash.elementID: 4390784128.17>
+            Button, 0x111a06080, {{268.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-2', label: 'History' <AX element pid: 48697, elementOrHash.elementID: 4531831104.11>
+              Image, 0x111a05900, {{321.3, 790.3}, {25.3, 23.0}}, identifier: 'clock.arrow.circlepath', label: 'Clock With A Circular Arrow' <AX element pid: 48697, elementOrHash.elementID: 4531830784.18>
+              StaticText, 0x1117a5b80, {{316.0, 820.3}, {38.0, 13.3}}, label: 'History' <AX element pid: 48697, elementOrHash.elementID: 4531830944.19>
+    Other, 0x1117a5f40, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4397812864.81>
+      Other, 0x1117a43c0, {{-402.0, -874.0}, {1206.0, 2622.0}} <AX element pid: 48697, elementOrHash.elementID: 4397813504.82>
+      Other, 0x1117a5680, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4531074176.83>
+        Other, 0x1117a4b40, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4387418112.85>
+          Other, 0x1117a6580, {{-354.0, -685.4}, {1110.0, 2242.1}} <AX element pid: 48697, elementOrHash.elementID: 4531130752.117>
+          Other, 0x1117a6e40, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4343951360.86>
+            Other, 0x1117a7e80, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4593293088.87>
+              Other, 0x1117a6440, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4388423680.88>
+                NavigationBar, 0x1117a57c0, {{16.0, 76.7}, {370.0, 49.7}}, identifier: '_TtGC7SwiftUI29PresentationHosting' <AX element pid: 48697, elementOrHash.elementID: 4533978624.89>
+                  Other, 0x1117a5180, {{34.4, 80.4}, {62.9, 33.1}} <AX element pid: 48697, elementOrHash.elementID: 4343620352.92>
+                    Other, 0x1117a4dc0, {{34.4, 80.4}, {62.9, 33.1}} <AX element pid: 48697, elementOrHash.elementID: 4593292448.95>
+                      Button, 0x1117a6f80, {{34.4, 80.4}, {62.9, 33.1}}, label: 'Close' <AX element pid: 48697, elementOrHash.elementID: 4593291808.97>
+                Other, 0x1117a66c0, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4593211968.90>
+                  Other, 0x1117a7480, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4388426240.93>
+                    Other, 0x1117a6800, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4343943168.96>
+                      Other, 0x1117a6300, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4593295968.98>
+                        ScrollView, 0x1117a4140, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4387458048.99>
+                          Other, 0x1117a4a00, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4593211072.100>
+                            Other, 0x1117a4500, {{16.0, 62.0}, {370.0, 101.2}} <AX element pid: 48697, elementOrHash.elementID: 4593220032.104>
+                          Other, 0x1117a75c0, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4593210624.101>
+                          Other, 0x1117a4c80, {{16.0, 126.4}, {370.0, 293.9}} <AX element pid: 48697, elementOrHash.elementID: 4531116288.102>
+                            StaticText, 0x1117a6080, {{38.1, 148.5}, {49.4, 12.3}}, label: 'PEOPLE' <AX element pid: 48697, elementOrHash.elementID: 4593293568.105>
+                            StaticText, 0x1117a7340, {{38.1, 171.8}, {244.5, 42.0}}, label: 'Choose contacts' <AX element pid: 48697, elementOrHash.elementID: 4593294688.106>
+                            StaticText, 0x1117a7840, {{38.1, 224.9}, {312.3, 41.1}}, label: 'Select a few people from your contacts. You decide who comes into Plenara.' <AX element pid: 48697, elementOrHash.elementID: 4593294848.107>
+                            Button, 0x1117a48c0, {{38.1, 286.3}, {325.8, 44.2}}, label: 'Choose from Contacts' <AX element pid: 48697, elementOrHash.elementID: 4593295488.108>
+                              StaticText, 0x1117a6bc0, {{38.1, 286.3}, {325.8, 44.2}}, label: 'Choose from Contacts' <AX element pid: 48697, elementOrHash.elementID: 4593295328.111>
+                              Image, 0x1117a6940, {{112.9, 300.7}, {17.8, 15.3}}, identifier: 'person.crop.circle.badge.plus', label: 'Add People/Follow' <AX element pid: 48697, elementOrHash.elementID: 4593295168.112>
+                            StaticText, 0x1117a7200, {{38.1, 350.7}, {315.1, 47.6}}, label: 'Apple’s picker shares only the contacts you select. It works without full address-book access, including when broader access is denied.' <AX element pid: 48697, elementOrHash.elementID: 4593295648.109>
+                          Other, 0x1117a5040, {{355.6, 126.4}, {27.6, 625.9}}, label: 'Vertical scroll bar, 1 page', value: 0% <AX element pid: 48697, elementOrHash.elementID: 4388429312.103>
+                            Other, 0x1117a7d40, {{380.5, 486.9}, {2.8, 262.6}} <AX element pid: 48697, elementOrHash.elementID: 4593216896.110>
+                          Other, 0x1117a7c00, {{355.6, 126.4}, {27.6, 625.9}}, label: 'Vertical scroll bar, 1 page', value: 0% <AX element pid: 48697, elementOrHash.elementID: 4388429312.103>
+                            Other, 0x1117a61c0, {{380.5, 486.9}, {2.8, 262.6}} <AX element pid: 48697, elementOrHash.elementID: 4593216896.110>
+                Toolbar, 0x1117a5540, {{16.0, 62.0}, {370.0, 747.4}}, identifier: 'Toolbar', label: 'Toolbar' <AX element pid: 48697, elementOrHash.elementID: 4388424192.91>
+                  Other, 0x1117a52c0, {{16.0, 62.0}, {370.0, 747.4}} <AX element pid: 48697, elementOrHash.elementID: 4531121408.94>
+    Other, 0x1117a5400, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 48697, elementOrHash.elementID: 4531132032.113>
+      Other, 0x1117a70c0, {{-402.0, -874.0}, {1206.0, 2622.0}} <AX element pid: 48697, elementOrHash.elementID: 4531129472.114>
+      Other, 0x1117a5e00, {{0.0, 72.0}, {402.0, 802.0}} <AX element pid: 48697, elementOrHash.elementID: 4531133312.115>
+        Other, 0x1117a6a80, {{0.0, 72.0}, {402.0, 802.0}} <AX element pid: 48697, elementOrHash.elementID: 4388388864.116>
+          Other, 0x1117a5cc0, {{0.0, 72.0}, {402.0, 802.0}} <AX element pid: 48697, elementOrHash.elementID: 4596088832.118>
+            Other, 0x1058975c0, {{0.0, 72.0}, {402.0, 802.0}} <AX element pid: 48697, elementOrHash.elementID: 4593296768.119>
+              Other, 0x105897e80, {{0.0, 72.0}, {402.0, 768.0}} <AX element pid: 48697, elementOrHash.elementID: 4345289728.120>

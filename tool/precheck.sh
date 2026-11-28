@@ -3,6 +3,7 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 source tool/require-storage.sh
+rm -f .tmp/latest-full-native-result.txt .tmp/latest-denied-native-result.txt
 python3 - <<'PY'
 import tarfile, hashlib, json
 from pathlib import Path

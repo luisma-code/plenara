@@ -25,39 +25,55 @@ final class PlenaraUITests: XCTestCase {
         app.buttons["tab-1"].tap(); attach("People"); app.buttons["Far away"].tap(); XCTAssertTrue(app.buttons["person-Sofia Chen"].exists); XCTAssertFalse(app.buttons["person-Daniel Rivera"].exists)
         app.buttons["Everyone"].tap(); app.swipeUp(); tapVisible(app.buttons["person-Sofia Chen"], app: app); XCTAssertTrue(app.staticTexts["Sofia Chen"].firstMatch.waitForExistence(timeout: 5)); attach("Person")
         app.swipeUp(); attach("Person notes"); app.buttons["tab-2"].tap(); XCTAssertTrue(app.staticTexts["Contact history"].exists); attach("Moments")
-        app.buttons["tab-0"].tap(); app.buttons["Settings and reminders"].tap(); XCTAssertTrue(app.buttons["Export a restorable backup"].exists); attach("Settings"); app.buttons["Export a restorable backup"].tap()
-        let export = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"].buttons["Save"]
-        XCTAssertTrue(export.waitForExistence(timeout: 8), "The native Files export destination must open")
-        attach("Backup export"); let exportedName = app.textFields["DOCPicker.filenameTextField"].value as? String ?? ""; export.tap()
-        XCTAssertTrue(app.navigationBars["FullDocumentManagerViewControllerNavigationBar"].waitForNonExistence(timeout: 5))
-        let status = app.staticTexts["settings-status"]
+        app.buttons["tab-0"].tap(); app.buttons["Settings and reminders"].tap(); XCTAssertTrue(app.buttons["Export a restorable backup"].exists); attach("Settings"); let exportStarted = Date(); app.buttons["Export a restorable backup"].tap()
+        let export = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"].buttons["DOCPicker.actionButton"]
+        XCTAssertTrue(export.waitForExistence(timeout: 20), "The native Files export destination must open")
+        attach("Backup export")
+        // iOS 27's Copy picker has no editable filename. Match only a backup
+        // created during this export, so an older file cannot satisfy restore.
+        let formatter = DateFormatter(); formatter.calendar = Calendar(identifier: .gregorian); formatter.dateFormat = "yyyy-MM-dd HH-mm-ss"
+        let exportReady = Date()
+        let names = stride(from: floor(exportStarted.timeIntervalSince1970), through: ceil(exportReady.timeIntervalSince1970), by: 1).map {
+            "Plenara backup \(formatter.string(from: Date(timeIntervalSince1970: $0)))"
+        }
+        export.tap()
+        XCTAssertTrue(app.navigationBars["FullDocumentManagerViewControllerNavigationBar"].waitForNonExistence(timeout: 30))
+        let status = app.staticTexts.matching(identifier: "settings-status").matching(NSPredicate(format: "label == %@", "Your export was saved.")).firstMatch
         for _ in 0..<3 { if status.exists { break }; app.collectionViews.firstMatch.swipeUp() }
-        XCTAssertTrue(status.waitForExistence(timeout: 5))
-        XCTAssertEqual(status.label, "Your export was saved.", "The backup must actually be saved through Files")
+        XCTAssertTrue(status.waitForExistence(timeout: 5), "The backup must actually be saved through Files")
         app.collectionViews.firstMatch.swipeDown(); app.buttons["Restore from a backup"].tap()
-        let file = app.collectionViews.cells.matching(NSPredicate(format: "label CONTAINS %@", exportedName)).firstMatch
-        XCTAssertFalse(exportedName.isEmpty); XCTAssertTrue(file.waitForExistence(timeout: 8), "The saved backup must be available in the native Files picker")
+        let filename = NSCompoundPredicate(orPredicateWithSubpredicates: names.map { NSPredicate(format: "label CONTAINS %@", $0) })
+        let file = app.collectionViews.cells.matching(filename).firstMatch
+        XCTAssertTrue(file.waitForExistence(timeout: 8), "The saved backup must be available in the native Files picker")
         file.tap()
         let replace = app.buttons["Replace with backup"]
         XCTAssertTrue(replace.waitForExistence(timeout: 5)); replace.tap()
-        let restored = app.staticTexts["settings-status"]
-        for _ in 0..<3 { if restored.exists && restored.label.hasPrefix("Restored ") { break }; app.collectionViews.firstMatch.swipeUp() }
-        XCTAssertTrue(restored.label.hasPrefix("Restored 5 people and 4 moments"), "Restoring the exported journal must complete")
+        // Match identity and completion text in one query. Restoring inserts a
+        // recovery row, which can recycle an offscreen Form status between reads.
+        let restored = app.staticTexts.matching(identifier: "settings-status").matching(NSPredicate(format: "label BEGINSWITH %@", "Restored 5 people and 4 moments")).firstMatch
+        for _ in 0..<3 { if restored.exists { break }; app.collectionViews.firstMatch.swipeUp() }
+        XCTAssertTrue(restored.waitForExistence(timeout: 5), "Restoring the exported journal must complete")
 
     }
     func testNativeContactPickerImportAndRepeat() throws {
         app.terminate(); app.launchArguments = ["--ui-testing", "--reset", "--contact-fixture"]; app.launch()
         app.buttons["tab-1"].tap(); openVisiblePeopleImport(); app.buttons["Choose from Contacts"].tap()
+        // Contacts runs in a separate system service. Its cold launch must
+        // finish before a missing row is diagnosed as a fixture/import failure.
+        func waitForPicker() {
+            XCTAssertTrue(app.navigationBars["Contacts"].waitForExistence(timeout: 30), "The native Contacts service must finish opening")
+        }
+        waitForPicker()
         let maya = app.collectionViews.staticTexts["Maya Plenara Test"].firstMatch
         XCTAssertTrue(maya.waitForExistence(timeout: 8), "The native picker must display the real seeded system contact")
         app.navigationBars["Contacts"].buttons["Done"].tap(); XCTAssertTrue(app.navigationBars["Contacts"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Choose from Contacts"].waitForExistence(timeout: 5), "Finishing without a selection must keep the import screen available")
-        app.buttons["Choose from Contacts"].tap(); XCTAssertTrue(maya.waitForExistence(timeout: 5))
+        app.buttons["Choose from Contacts"].tap(); waitForPicker(); XCTAssertTrue(maya.waitForExistence(timeout: 5))
         maya.tap(); app.navigationBars["Contacts"].buttons["Done"].tap(); XCTAssertTrue(app.navigationBars["Contacts"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Import selected people"].waitForExistence(timeout: 5)); app.buttons["Import selected people"].tap(); app.buttons["import-rhythm-setup"].tap(); XCTAssertTrue(app.staticTexts["setup-rhythm-selection"].waitForExistence(timeout: 5)); XCTAssertEqual(app.staticTexts["setup-rhythm-selection"].label, "0 selected"); app.buttons["rhythm-done"].tap()
         XCTAssertTrue(app.buttons["person-Maya Plenara Test"].waitForExistence(timeout: 5)); tapVisible(app.buttons["person-Maya Plenara Test"], app: app)
         XCTAssertTrue(app.staticTexts["Reminders off"].exists); XCTAssertTrue(app.staticTexts["No contact recorded"].exists)
-        app.buttons["tab-1"].tap(); openVisiblePeopleImport(); app.buttons["Choose from Contacts"].tap()
+        app.buttons["tab-1"].tap(); openVisiblePeopleImport(); app.buttons["Choose from Contacts"].tap(); waitForPicker()
         XCTAssertTrue(maya.waitForExistence(timeout: 5)); maya.tap(); app.navigationBars["Contacts"].buttons["Done"].tap(); XCTAssertTrue(app.navigationBars["Contacts"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Import selected people"].waitForExistence(timeout: 5)); attach("Repeat import review"); XCTAssertTrue(app.staticTexts["0 selected"].exists, "A previously imported contact must start unselected")
         app.switches.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap(); app.buttons["Import selected people"].tap(); app.buttons["import-not-now"].tap()
@@ -379,11 +395,17 @@ final class PlenaraUITests: XCTestCase {
             unanswered.tap(); XCTAssertTrue(app.buttons["organize-apply"].isEnabled)
             attach(label + " assessment")
             let quick = app.segmentedControls.buttons["Quick sort"]
-            for _ in 0..<6 { if quick.isHittable && quick.frame.minY > 0 { break }; list.swipeDown() }
+            let navigation = app.navigationBars["Organize your people"]
+            // The large search bar overlays scrolled content on iOS 27. A
+            // positive hittable flag alone can still target the bar above it.
+            for _ in 0..<6 { if quick.isHittable && quick.frame.minY >= navigation.frame.maxY { break }; list.swipeDown() }
+            XCTAssertTrue(quick.isHittable && quick.frame.minY >= navigation.frame.maxY, "Quick sort must be visible below the navigation and search bar")
             quick.tap()
-            app.switches["organize-unset-only"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+            let unsetOnly = app.switches["organize-unset-only"]
+            XCTAssertTrue(unsetOnly.waitForExistence(timeout: 5), "Switching modes must finish before changing its filter")
+            unsetOnly.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
             let nearby = app.buttons["sort-Amara Okafor-Nearby"]
-            for _ in 0..<5 { if nearby.isHittable && nearby.frame.maxY < app.frame.maxY - 100 { break }; app.descendants(matching: .any)["organize-list"].firstMatch.swipeUp() }
+            for _ in 0..<5 { if nearby.isHittable && nearby.frame.minY >= navigation.frame.maxY && nearby.frame.maxY < app.frame.maxY - 100 { break }; app.descendants(matching: .any)["organize-list"].firstMatch.swipeUp() }
             XCTAssertTrue(nearby.isHittable); nearby.tap(); attach(label)
             app.buttons["Close"].tap(); XCTAssertTrue(app.buttons["people-organize"].waitForExistence(timeout: 5))
         }

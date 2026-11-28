@@ -1,0 +1,13 @@
+{
+  "screenHeightPoints": 874,
+  "actionBottomPoints": 824,
+  "bottomMarginPoints": 50,
+  "originalImageSizePixels": [
+    1206,
+    2622
+  ],
+  "last150RowsAreBackground": true,
+  "appLayoutChanged": false,
+  "diagnosticAssertionRemovedToRestoreExactFullGateSource": true,
+  "originalImageSHA256": "a4381ce0cc836002d77db6f98318a9564d6041addf347033a2c7dfc87989911d"
+}

@@ -42,15 +42,20 @@ extension XCTestCase {
             let top = max(app.frame.minY + 65, surface.frame.minY)
             var bottom = min(app.frame.maxY - 28, surface.frame.maxY)
             let tab = app.buttons["tab-0"]
-            if tab.exists && tab.isHittable { bottom = min(bottom, tab.frame.minY) }
+            if tab.exists && tab.isHittable, let snapshot = try? tab.snapshot() { bottom = min(bottom, snapshot.frame.minY) }
             let filterFooter = app.otherElements["home-filter-footer"]
-            if filterFooter.exists && !(element.exists && filterFooter.frame.contains(element.frame)) { bottom = min(bottom, filterFooter.frame.minY) }
+            // A dismissing sheet can disappear between exists and a fresh frame query.
+            // A snapshot is one observation; missing optional UI is not a test failure.
+            if filterFooter.exists, let footer = try? filterFooter.snapshot() {
+                let target = element.exists ? try? element.snapshot() : nil
+                if target.map({ footer.frame.contains($0.frame) }) != true { bottom = min(bottom, footer.frame.minY) }
+            }
             let keyboard = app.keyboards.firstMatch
-            if keyboard.exists { bottom = min(bottom, keyboard.frame.minY) }
+            if keyboard.exists, let snapshot = try? keyboard.snapshot() { bottom = min(bottom, snapshot.frame.minY) }
             let height = bottom - top
             guard height > 44 else { break }
-            if element.exists {
-                let frame = element.frame
+            if element.exists, let snapshot = try? element.snapshot() {
+                let frame = snapshot.frame
                 let visibleTop = max(top, frame.minY), visibleBottom = min(bottom, frame.maxY)
                 if element.isHittable && frame.minY >= top && frame.maxY <= bottom { element.tap(); return }
                 if element.isHittable && frame.height > height && visibleBottom - visibleTop >= 44 {

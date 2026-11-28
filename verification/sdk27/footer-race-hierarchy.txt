@@ -1,0 +1,70 @@
+Application, 0x1085d6800, pid: 3127, label: 'Plenara' <App element pid: 3127>
+  Window (Main), 0x1085d6a80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4381753344.4>
+    Other, 0x1085d6d00, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4430424064.5>
+      Other, 0x1085d4640, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4430425344.6>
+        Other, 0x1085d4780, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4381854208.7>
+          Other, 0x1085d48c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4565549856.8>
+            Other, 0x1085d4a00, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4382222336.9>
+              Other, 0x1085d4b40, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4382837824.13>
+                Other, 0x1085d4c80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4430404096.21>
+                  Other, 0x1085d4dc0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4381754368.23>
+                    Other, 0x1085d6bc0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4565559936.24>
+                      ScrollView, 0x1085d5f40, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4383034368.25>
+                        Other, 0x1085d6080, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4382840960.26>
+                          Other, 0x1085d61c0, {{0.0, 0.0}, {402.0, 102.0}} <AX element pid: 3127, elementOrHash.elementID: 4564452224.30>
+                        Other, 0x1085d6300, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4382840512.27>
+                        Other, 0x1085d4f00, {{0.0, 62.0}, {402.0, 1534.7}} <AX element pid: 3127, elementOrHash.elementID: 4440098688.28>
+                          Image, 0x1085d5040, {{26.7, 77.0}, {46.3, 53.7}}, identifier: 'asterisk', label: 'Asterisk' <AX element pid: 3127, elementOrHash.elementID: 4565551296.31>
+                          StaticText, 0x1085d5180, {{86.7, 70.0}, {197.7, 67.3}}, label: 'plenara' <AX element pid: 3127, elementOrHash.elementID: 4565551456.32>
+                          Button, 0x1085d52c0, {{338.0, 81.7}, {44.0, 44.0}}, identifier: 'bell', label: 'Settings and reminders' <AX element pid: 3127, elementOrHash.elementID: 4565551616.33>
+                          StaticText, 0x1085d5400, {{20.0, 149.3}, {240.7, 62.7}}, label: 'Follow up' <AX element pid: 3127, elementOrHash.elementID: 4565551776.34>
+                          Button, 0x1085d5540, {{20.0, 242.7}, {348.7, 58.7}}, identifier: 'quick-log', label: 'Log contact' <AX element pid: 3127, elementOrHash.elementID: 4565552416.35>
+                            Button, 0x1085d5680, {{20.0, 242.7}, {348.7, 58.7}} <AX element pid: 3127, elementOrHash.elementID: 4382147456.48>
+                              StaticText, 0x1085d5b80, {{20.0, 242.7}, {348.7, 58.7}}, label: 'Log contact' <AX element pid: 3127, elementOrHash.elementID: 4565552096.62>
+                              Image, 0x1085d6580, {{40.0, 251.7}, {40.7, 40.7}}, identifier: 'plus', label: 'Add' <AX element pid: 3127, elementOrHash.elementID: 4565551936.63>
+                          Button, 0x1085d66c0, {{23.0, 345.3}, {116.7, 58.7}}, identifier: 'home-type-All', label: 'All', Selected <AX element pid: 3127, elementOrHash.elementID: 4565552736.36>
+                          Button, 0x11341fc00, {{142.7, 316.3}, {116.7, 116.7}}, identifier: 'home-type-Family', label: 'Family' <AX element pid: 3127, elementOrHash.elementID: 4565552896.37>
+                          Button, 0x11341fe80, {{262.3, 316.3}, {116.7, 116.7}}, identifier: 'home-type-Friends', label: 'Friends' <AX element pid: 3127, elementOrHash.elementID: 4565553056.38>
+                          Button, 0x11341cdc0, {{20.0, 448.0}, {362.0, 51.3}}, identifier: 'home-closeness', label: 'Any closeness' <AX element pid: 3127, elementOrHash.elementID: 4565553696.39>
+                            Button, 0x11341c280, {{20.0, 448.0}, {362.0, 51.3}} <AX element pid: 3127, elementOrHash.elementID: 4382148352.49>
+                              StaticText, 0x11341ca00, {{30.0, 448.0}, {264.3, 51.3}}, label: 'Any closeness' <AX element pid: 3127, elementOrHash.elementID: 4565553216.66>
+                              Image, 0x11341d040, {{333.0, 464.0}, {34.0, 19.3}}, identifier: 'chevron.down', label: 'Go Down' <AX element pid: 3127, elementOrHash.elementID: 4565553376.67>
+                          Button, 0x11341c500, {{20.0, 507.3}, {362.0, 51.3}}, identifier: 'home-follow-up', label: 'All suggestions' <AX element pid: 3127, elementOrHash.elementID: 4565554336.40>
+                            Button, 0x11341c3c0, {{20.0, 507.3}, {362.0, 51.3}} <AX element pid: 3127, elementOrHash.elementID: 4382149248.50>
+                              StaticText, 0x11341fd40, {{30.0, 507.3}, {278.3, 51.3}}, label: 'All suggestions' <AX element pid: 3127, elementOrHash.elementID: 4565553856.70>
+                              Image, 0x11341ef80, {{333.0, 523.3}, {34.0, 19.3}}, identifier: 'chevron.down', label: 'Go Down' <AX element pid: 3127, elementOrHash.elementID: 4565554016.71>
+                          Button, 0x11341cf00, {{19.5, 566.2}, {363.0, 52.3}}, identifier: 'home-filters', label: 'Filters (1)' <AX element pid: 3127, elementOrHash.elementID: 4565554496.41>
+                          StaticText, 0x11341df40, {{20.0, 630.1}, {208.0, 51.3}}, label: 'Needs care' <AX element pid: 3127, elementOrHash.elementID: 4671475136.249>
+                          Button, 0x11341d2c0, {{285.0, 630.0}, {97.0, 51.3}}, identifier: 'home-clear-extra-filters', label: 'Clear' <AX element pid: 3127, elementOrHash.elementID: 4671474656.250>
+                          StaticText, 0x11341c8c0, {{20.0, 718.9}, {159.0, 51.3}}, identifier: 'home-count', label: '2 people' <AX element pid: 3127, elementOrHash.elementID: 4565554656.42>
+                          Button, 0x11341db80, {{188.7, 693.3}, {193.3, 102.3}}, identifier: 'home-sort', label: 'Priority order' <AX element pid: 3127, elementOrHash.elementID: 4565555296.43>
+                            Button, 0x11341ea80, {{188.7, 693.3}, {193.3, 102.3}} <AX element pid: 3127, elementOrHash.elementID: 4382150144.51>
+                              StaticText, 0x11341d7c0, {{188.7, 693.3}, {193.3, 102.3}}, label: 'Priority order' <AX element pid: 3127, elementOrHash.elementID: 4565554976.74>
+                              Image, 0x11341e800, {{194.0, 709.7}, {36.7, 20.7}}, identifier: 'chevron.down', label: 'Go Down' <AX element pid: 3127, elementOrHash.elementID: 4565554816.75>
+                          Other, 0x11341de00, {{20.0, 807.7}, {362.0, 238.3}} <AX element pid: 3127, elementOrHash.elementID: 4565559296.46>
+                            Button, 0x11341e6c0, {{20.0, 807.7}, {318.0, 238.3}}, identifier: 'home-person-Daniel Ross', label: 'Daniel Ross, Friend · Close, No contact recorded', value: Collapsed <AX element pid: 3127, elementOrHash.elementID: 4565558976.56>
+                              StaticText, 0x11341d400, {{75.0, 817.7}, {256.0, 58.7}}, label: 'Daniel Ross' <AX element pid: 3127, elementOrHash.elementID: 4565558496.88>
+                              StaticText, 0x11341cb40, {{75.0, 879.4}, {248.3, 51.3}}, label: 'Friend · Close' <AX element pid: 3127, elementOrHash.elementID: 4565558656.89>
+                              StaticText, 0x11341e440, {{20.0, 905.0}, {44.0, 44.0}}, label: 'DR' <AX element pid: 3127, elementOrHash.elementID: 4565558336.90>
+                              StaticText, 0x11341f480, {{75.0, 933.7}, {210.3, 102.3}}, label: 'No contact recorded' <AX element pid: 3127, elementOrHash.elementID: 4565558816.91>
+                            Button, 0x11341e1c0, {{338.0, 905.0}, {44.0, 44.0}}, identifier: 'home-actions-Daniel Ross', label: 'Actions for Daniel Ross' <AX element pid: 3127, elementOrHash.elementID: 4565559136.59>
+                          StaticText, 0x11341fac0, {{20.0, 1306.7}, {354.3, 153.3}}, label: 'Some contact dates haven’t been recorded.' <AX element pid: 3127, elementOrHash.elementID: 4565559456.44>
+                          Button, 0x11341e580, {{20.0, 1472.0}, {221.3, 116.7}}, identifier: 'home-rhythm-setup', label: 'Set up reminders' <AX element pid: 3127, elementOrHash.elementID: 4565559616.45>
+                        Other, 0x11341da40, {{369.0, 62.0}, {30.0, 750.0}}, label: 'Vertical scroll bar, 2 pages', value: 0% <AX element pid: 3127, elementOrHash.elementID: 4430352384.29>
+                          Other, 0x11341d540, {{396.0, 65.0}, {3.0, 184.7}} <AX element pid: 3127, elementOrHash.elementID: 4382844096.47>
+                        Other, 0x11341ed00, {{369.0, 62.0}, {30.0, 750.0}}, label: 'Vertical scroll bar, 2 pages', value: 0% <AX element pid: 3127, elementOrHash.elementID: 4430352384.29>
+                          Other, 0x11341c640, {{396.0, 65.0}, {3.0, 184.7}} <AX element pid: 3127, elementOrHash.elementID: 4382844096.47>
+              Toolbar, 0x11341c780, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar' <AX element pid: 3127, elementOrHash.elementID: 4382223360.14>
+                Other, 0x11341ebc0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4440098048.22>
+            Button, 0x11341f980, {{0.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-0', label: 'Home', Selected <AX element pid: 3127, elementOrHash.elementID: 4432215840.10>
+              Image, 0x11341f200, {{55.7, 787.7}, {23.0, 21.3}}, identifier: 'heart', label: 'Love' <AX element pid: 3127, elementOrHash.elementID: 4432214400.15>
+              StaticText, 0x11341f840, {{43.3, 816.0}, {47.3, 20.3}}, label: 'Home' <AX element pid: 3127, elementOrHash.elementID: 4432200000.16>
+            Button, 0x11341f5c0, {{134.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-1', label: 'People' <AX element pid: 3127, elementOrHash.elementID: 4565549216.11>
+              Image, 0x11341d680, {{185.3, 787.3}, {33.0, 22.3}}, identifier: 'person.2', label: 'Two People' <AX element pid: 3127, elementOrHash.elementID: 4381209568.17>
+              StaticText, 0x107c8fac0, {{174.8, 816.5}, {52.3, 20.3}}, label: 'People' <AX element pid: 3127, elementOrHash.elementID: 4565549056.18>
+            Button, 0x107c8f340, {{268.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-2', label: 'History' <AX element pid: 3127, elementOrHash.elementID: 4565549696.12>
+              Image, 0x107c8fe80, {{321.3, 787.0}, {25.3, 23.0}}, identifier: 'clock.arrow.circlepath', label: 'Clock With A Circular Arrow' <AX element pid: 3127, elementOrHash.elementID: 4565549376.19>
+              StaticText, 0x107c8c8c0, {{307.7, 816.8}, {54.7, 20.3}}, label: 'History' <AX element pid: 3127, elementOrHash.elementID: 4565549536.20>
+  Window, 0x107c8cb40, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4654732288.218>
+    Other, 0x107c8ed00, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4430227456.221>
+      Other, 0x107c8ee40, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 3127, elementOrHash.elementID: 4430228480.223>

@@ -1,0 +1,30 @@
+{
+  "device": "BB42F29A-928B-4B9E-BD39-160B70249D4F",
+  "verifiedFiles": 23406,
+  "verifiedBytes": 3948089114,
+  "excludedDisposableOSCacheFiles": [
+    {
+      "path": "Library/Caches/locationd/locScoreInfo/secondary-817355010.377907-1",
+      "bytes": 60
+    },
+    {
+      "path": "Library/Caches/locationd/locScoreInfo/secondary-817337078.540629-0",
+      "bytes": 0
+    },
+    {
+      "path": "Library/Caches/locationd/locScoreInfo/secondary-817358875.846293-1",
+      "bytes": 60
+    },
+    {
+      "path": "Library/Caches/locationd/locScoreInfo/secondary-817337048.364482-1",
+      "bytes": 60
+    }
+  ],
+  "consumerVerified": true,
+  "internalOriginalRetained": false,
+  "consumerBootVerified": true,
+  "consumerTest": "testExistingImportSurvivesUpgradeAndIndependentChoices",
+  "consumerResult": ".build/native-20261127-170813.xcresult",
+  "consumerOS": "iOS 26.5",
+  "cleanupFailures": []
+}

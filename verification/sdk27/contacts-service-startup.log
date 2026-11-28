@@ -1,0 +1,27 @@
+2026-11-27 17:00:25.245 E  ContactsViewService[48737:a436a7] [com.apple.UIKit:CompositionalLayout] Invalid estimated dimension, must be > 0. NOTE: This will be a hard-assert soon, please update your call site.
+2026-11-27 17:00:26.982 E  ContactsViewService[48737:a43723] [com.apple.sharing:SFPairedContactManager] Sharing paired contact manager XPC interrupted
+2026-11-27 17:00:27.011 E  ContactsViewService[48737:a43723] [com.apple.sharing:SFPairedContactManager] Failed to get contact provider service (fetchAllContacts): Couldn’t communicate with a helper application.
+2026-11-27 17:00:27.014 E  ContactsViewService[48737:a43723] [com.apple.contacts:CNSharingPairedContactsFetcher] Error fetching sharing paired contacts: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.sharingd.pairedcontactmanager" UserInfo={NSDebugDescription=connection to service named com.apple.sharingd.pairedcontactmanager}
+2026-11-27 17:00:27.126 E  ContactsViewService[48737:a436a7] [com.apple.UIKit:CompositionalLayout] Invalid estimated dimension, must be > 0. NOTE: This will be a hard-assert soon, please update your call site.
+2026-11-27 17:00:27.485 E  ContactsViewService[48737:a436a7] [com.apple.UIKit:CompositionalLayout] Invalid estimated dimension, must be > 0. NOTE: This will be a hard-assert soon, please update your call site.
+2026-11-27 17:00:28.349 E  ContactsViewService[48737:a436a7] [com.apple.coreanimation:API] cannot add handler to 0 from 0 - dropping
+2026-11-27 17:00:28.349 E  ContactsViewService[48737:a436a7] [com.apple.coreanimation:API] cannot add handler to 0 from 0 - dropping
+2026-11-27 17:00:28.349 E  ContactsViewService[48737:a436a7] [com.apple.coreanimation:API] cannot add handler to 0 from 0 - dropping
+2026-11-27 17:00:28.466 F  ContactsViewService[48737:a436a7] [com.apple.defaults:User Defaults] Could not resolve UID for user "mobile".
+2026-11-27 17:00:28.486 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.544 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.569 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.570 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.574 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.575 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.579 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.580 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.581 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.582 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.584 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.585 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.587 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.588 E  ContactsViewService[48737:a436a7] [com.apple.calls.communicationsfilter:Default] Received an XPC_ERROR_CONNECTION_INVALID error.
+2026-11-27 17:00:28.773 E  ContactsViewService[48737:a436a7] [com.apple.UIKit:TraitCollection] Class CKBrowserSwitcherViewController overrides the -traitCollection getter, which is not supported. If you're trying to override traits, you must use the appropriate API.
+2026-11-27 17:00:29.139 E  ContactsViewService[48737:a436a7] [com.apple.BoardServices:XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+2026-11-27 17:00:29.689 E  ContactsViewService[48737:a438b9] [com.apple.FrontBoard:SceneClient] No scene exists for identity: com.apple.InputUI.keyboard:KeyboardInputScene-48697(v1805F1)->/UISceneHosting-com.plenara.plenaraApp:UIHostedScene-com.apple.ContactsUI.ContactsViewService-9619859E

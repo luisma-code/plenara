@@ -1,0 +1,23 @@
+{
+  "SDK": "27.2",
+  "oldPackageRejected": true,
+  "misstampedOldExecutableRejected": true,
+  "currentUnsignedPhoneProductAcceptedForSDK": true,
+  "signingValidatedSeparatelyByApple": true,
+  "currentPhoneMetadata": {
+    "CFBundleVersion": "1010",
+    "CFBundleShortVersionString": "1.0.0",
+    "CFBundleIdentifier": "com.plenara.plenaraApp",
+    "DTSDKName": "iphoneos27.2",
+    "DTXcodeBuild": "27B52",
+    "MinimumOSVersion": "18.0",
+    "UIDeviceFamily": [
+      1
+    ],
+    "binarySDKs": [
+      "27.2"
+    ],
+    "ipaSHA256": "882d947823c04bbbea7fc8ad6a4299dd45e236242e9613ef5a013a00e3ce7090"
+  },
+  "checkerSHA256": "062d2ff42e37972244c5b52ed28d0ced1a7add7cf20e4625bb80184d8537ffb6"
+}

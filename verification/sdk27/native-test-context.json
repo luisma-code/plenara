@@ -1,0 +1,16 @@
+{
+  "manifest": ".build/simulator/Build/Products/Plenara_iphonesimulator27.2-arm64.xctestrun",
+  "manifestSHA256": "be75d0231fa76271b4898d87b538e51c7ae04f016c98b67d57b3509f27802cb0",
+  "targets": {
+    "PlenaraTests": {
+      "host": "/Volumes/MacExt/DeveloperData/projects/plenara/build/simulator/Build/Products/Release-iphonesimulator/Plenara.app",
+      "bundle": "/Volumes/MacExt/DeveloperData/projects/plenara/build/simulator/Build/Products/Release-iphonesimulator/Plenara.app/PlugIns/PlenaraTests.xctest",
+      "binarySHA256": "635b9cf0a8e7cb5d00d7fd1b31178a758ac8907b0b39b298b996fb3463a1c49d"
+    },
+    "PlenaraUITests": {
+      "host": "/Volumes/MacExt/DeveloperData/projects/plenara/build/simulator/Build/Products/Release-iphonesimulator/PlenaraUITests-Runner.app",
+      "bundle": "/Volumes/MacExt/DeveloperData/projects/plenara/build/simulator/Build/Products/Release-iphonesimulator/PlenaraUITests-Runner.app/PlugIns/PlenaraUITests.xctest",
+      "binarySHA256": "85d790e9ef82e3d95880b5085537fc47770f170703855e2fd8708acd52efdbb0"
+    }
+  }
+}

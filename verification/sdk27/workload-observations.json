@@ -1,0 +1,11 @@
+[
+  {
+    "observedAt": "2026-11-27T16:58:25.950418-08:00",
+    "phase": "Final full native run",
+    "xcodeWorkloads": [
+      "45163       09:32 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+      "47495       02:36 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
+    ],
+    "note": "Clear inventory before start; another project began during execution. Functional assertions and the stop guard remain valid; no isolated performance or leak claim."
+  }
+]

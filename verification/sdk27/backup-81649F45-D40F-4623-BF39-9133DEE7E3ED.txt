@@ -1,0 +1,6 @@
+Query chain:
+ →Find: Target Application 'com.plenara.plenaraApp'
+  ↪︎Find: Descendants matching type NavigationBar
+    ↪︎Find: Elements matching predicate '"FullDocumentManagerViewControllerNavigationBar" IN identifiers'
+      ↪︎Find: Descendants matching type Button
+        ↪︎Find: Elements matching predicate '"Save" IN identifiers'

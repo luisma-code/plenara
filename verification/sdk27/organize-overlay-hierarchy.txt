@@ -1,0 +1,144 @@
+Application, 0x10baed180, pid: 39190, label: 'Plenara' <App element pid: 39190>
+  Window (Main), 0x10baecc80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4419551232.3>
+    Other, 0x10baeebc0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4468238976.4>
+      Other, 0x10baec000, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4468240256.5>
+        Other, 0x10baeee40, {{-402.0, -874.0}, {1206.0, 2622.0}} <AX element pid: 39190, elementOrHash.elementID: 4612303488.154>
+        Other, 0x10baeca00, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4419602944.6>
+          Other, 0x10baec500, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4611736512.7>
+            Other, 0x10baef980, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4420382208.8>
+              Other, 0x115e2b200, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4420586560.12>
+                Other, 0x115e2a1c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4468204032.20>
+                  Other, 0x115e2abc0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4419552256.22>
+                    Other, 0x115e2b480, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4611746432.23>
+                      ScrollView, 0x115e29680, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4466946048.90>
+                        Other, 0x115e29f40, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4610774272.91>
+                          Other, 0x115e2af80, {{0.0, 0.0}, {402.0, 102.0}} <AX element pid: 39190, elementOrHash.elementID: 4610776512.95>
+                        Other, 0x115e283c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4610773824.92>
+                        Other, 0x115e29180, {{0.0, 62.0}, {402.0, 3100.3}} <AX element pid: 39190, elementOrHash.elementID: 4612287744.93>
+                          StaticText, 0x115e29b80, {{24.0, 86.0}, {157.3, 48.0}}, label: 'PEOPLE' <AX element pid: 39190, elementOrHash.elementID: 4679078592.96>
+                          Button, 0x115e2b0c0, {{332.0, 87.0}, {46.0, 46.0}}, identifier: 'plus', label: 'Add a person' <AX element pid: 39190, elementOrHash.elementID: 4679078112.97>
+                          Button, 0x115e2ad00, {{24.0, 156.0}, {354.0, 58.7}}, identifier: 'people-organize', label: 'Organize' <AX element pid: 39190, elementOrHash.elementID: 4679079072.98>
+                            StaticText, 0x115e2b700, {{73.0, 156.0}, {262.0, 58.7}}, label: 'Organize' <AX element pid: 39190, elementOrHash.elementID: 4679078912.115>
+                            Image, 0x115e28500, {{73.0, 163.7}, {50.3, 43.0}}, identifier: 'slider.horizontal.3', label: 'Edit' <AX element pid: 39190, elementOrHash.elementID: 4679078752.116>
+                          Button, 0x115df8280, {{24.0, 236.7}, {224.0, 125.3}}, identifier: 'people-rhythm-setup', label: 'Set up reminders' <AX element pid: 39190, elementOrHash.elementID: 4679079232.99>
+                          StaticText, 0x115df8640, {{24.0, 384.0}, {194.7, 77.3}}, label: 'People' <AX element pid: 39190, elementOrHash.elementID: 4679079392.100>
+                          StaticText, 0x115df83c0, {{24.0, 483.3}, {273.3, 249.3}}, label: 'Find people and update relationship details.' <AX element pid: 39190, elementOrHash.elementID: 4679079552.101>
+                          Image, 0x115df8000, {{44.0, 775.0}, {50.7, 51.3}}, identifier: 'magnifyingglass', label: 'Search' <AX element pid: 39190, elementOrHash.elementID: 4679079712.102>
+                          TextField, 0x115df8140, {{108.7, 768.7}, {255.3, 64.0}}, identifier: 'people-search', placeholderValue: 'Find someone' <AX element pid: 39190, elementOrHash.elementID: 4419605504.103>
+                          StaticText, 0x115df9540, {{24.0, 900.7}, {163.7, 52.7}}, identifier: 'people-count', label: '5 people' <AX element pid: 39190, elementOrHash.elementID: 4679080032.104>
+                          Button, 0x115df8500, {{223.3, 868.7}, {154.7, 116.7}}, identifier: 'people-filters', label: 'Filters' <AX element pid: 39190, elementOrHash.elementID: 4679080512.105>
+                            StaticText, 0x1073baa80, {{223.3, 868.7}, {154.7, 116.7}}, label: 'Filters' <AX element pid: 39190, elementOrHash.elementID: 4679080352.117>
+                            Image, 0x1073bb480, {{229.3, 883.0}, {49.7, 30.0}}, identifier: 'line.3.horizontal.decrease', label: 'Filter' <AX element pid: 39190, elementOrHash.elementID: 4679080192.118>
+                          ScrollView, 0x1073bbac0, {{24.0, 1007.3}, {354.0, 58.7}}, identifier: 'people-shortcuts' <AX element pid: 39190, elementOrHash.elementID: 4466942976.106>
+                            Other, 0x1073b8b40, {{24.0, 1007.3}, {1366.3, 58.7}} <AX element pid: 39190, elementOrHash.elementID: 4612284544.119>
+                              Button, 0x1073bb980, {{23.5, 1006.8}, {224.3, 59.7}}, identifier: 'filter-Everyone', label: 'Everyone', Selected <AX element pid: 39190, elementOrHash.elementID: 4679080672.145>
+                              Button, 0x1073b8dc0, {{254.8, 1006.8}, {278.0, 59.7}}, identifier: 'filter-Grow closer', label: 'Grow closer' <AX element pid: 39190, elementOrHash.elementID: 4679080832.146>
+                              Button, 0x1073bb5c0, {{539.8, 1006.8}, {267.0, 59.7}}, identifier: 'filter-Needs care', label: 'Needs care' <AX element pid: 39190, elementOrHash.elementID: 4679080992.147>
+                              Button, 0x1073bbc00, {{813.8, 1006.8}, {182.3, 59.7}}, identifier: 'filter-Nearby', label: 'Nearby' <AX element pid: 39190, elementOrHash.elementID: 4679081152.148>
+                              Button, 0x1073bb840, {{1003.2, 1006.8}, {215.3, 59.7}}, identifier: 'filter-Far away', label: 'Far away' <AX element pid: 39190, elementOrHash.elementID: 4679081312.149>
+                              Button, 0x1073bae40, {{1225.5, 1006.8}, {165.3, 59.7}}, identifier: 'filter-Family', label: 'Family' <AX element pid: 39190, elementOrHash.elementID: 4679081472.150>
+                          Button, 0x1073bb700, {{24.0, 1088.0}, {354.0, 403.0}}, identifier: 'person-Amara Okafor', label: 'Amara Okafor, Grow closer, Oakland · Casual' <AX element pid: 39190, elementOrHash.elementID: 4679082592.107>
+                            StaticText, 0x1073bb340, {{103.0, 1104.0}, {142.0, 249.3}}, label: 'Amara Okafor' <AX element pid: 39190, elementOrHash.elementID: 4679081952.120>
+                            Image, 0x115bd3340, {{257.7, 1204.3}, {55.0, 49.0}}, identifier: 'leaf', label: 'Grow closer' <AX element pid: 39190, elementOrHash.elementID: 4679082112.121>
+                            StaticText, 0x115bd2080, {{40.0, 1264.7}, {50.0, 50.0}}, label: 'AO' <AX element pid: 39190, elementOrHash.elementID: 4679081792.122>
+                            Image, 0x115bd3ac0, {{338.7, 1271.3}, {20.7, 36.7}}, identifier: 'chevron.right', label: 'Forward' <AX element pid: 39190, elementOrHash.elementID: 4679082432.123>
+                            StaticText, 0x115bd2940, {{103.0, 1358.3}, {184.7, 116.7}}, label: 'Oakland · Casual' <AX element pid: 39190, elementOrHash.elementID: 4679082272.124>
+                          Button, 0x115bd1540, {{24.0, 1502.0}, {354.0, 337.0}}, identifier: 'person-Daniel Rivera', label: 'Daniel Rivera, San Francisco · Close' <AX element pid: 39190, elementOrHash.elementID: 4679083392.108>
+                            StaticText, 0x115bd12c0, {{103.0, 1518.0}, {160.0, 125.3}}, label: 'Daniel Rivera' <AX element pid: 39190, elementOrHash.elementID: 4679082912.125>
+                            StaticText, 0x115bd0500, {{40.0, 1645.7}, {50.0, 50.0}}, label: 'DR' <AX element pid: 39190, elementOrHash.elementID: 4679082752.126>
+                            StaticText, 0x115bd0000, {{103.0, 1648.3}, {212.3, 174.7}}, label: 'San Francisco · Close' <AX element pid: 39190, elementOrHash.elementID: 4679083072.127>
+                            Image, 0x115bd2f80, {{338.7, 1652.3}, {20.7, 36.7}}, identifier: 'chevron.right', label: 'Forward' <AX element pid: 39190, elementOrHash.elementID: 4679083232.128>
+                          Button, 0x115bd17c0, {{24.0, 1850.0}, {354.0, 279.0}}, identifier: 'person-Leo Park', label: 'Leo Park, Needs care, Seattle · Casual' <AX element pid: 39190, elementOrHash.elementID: 4679084352.109>
+                            StaticText, 0x115bd26c0, {{103.0, 1866.0}, {105.0, 125.3}}, label: 'Leo Park' <AX element pid: 39190, elementOrHash.elementID: 4679083712.129>
+                            Image, 0x115bd0a00, {{222.7, 1905.0}, {51.7, 47.7}}, identifier: 'heart', label: 'Needs care' <AX element pid: 39190, elementOrHash.elementID: 4679083872.130>
+                            StaticText, 0x115bd3d40, {{40.0, 1964.7}, {50.0, 50.0}}, label: 'LP' <AX element pid: 39190, elementOrHash.elementID: 4679083552.131>
+                            Image, 0x115bd2580, {{338.7, 1971.3}, {20.7, 36.7}}, identifier: 'chevron.right', label: 'Forward' <AX element pid: 39190, elementOrHash.elementID: 4679084192.132>
+                            StaticText, 0x115bd21c0, {{103.0, 1996.3}, {165.0, 116.7}}, label: 'Seattle · Casual' <AX element pid: 39190, elementOrHash.elementID: 4679084032.133>
+                          Button, 0x115bd1900, {{24.0, 2140.0}, {354.0, 333.0}}, identifier: 'person-Mum', label: 'Mum, Madrid, Spain · Inner circle' <AX element pid: 39190, elementOrHash.elementID: 4679085152.110>
+                            StaticText, 0x115bd3480, {{103.0, 2156.0}, {120.3, 63.3}}, label: 'Mum' <AX element pid: 39190, elementOrHash.elementID: 4679084672.134>
+                            StaticText, 0x115bd1180, {{103.0, 2224.3}, {165.0, 232.7}}, label: 'Madrid, Spain · Inner circle' <AX element pid: 39190, elementOrHash.elementID: 4679084832.135>
+                            StaticText, 0x115bd2440, {{40.0, 2281.7}, {50.0, 50.0}}, label: 'M' <AX element pid: 39190, elementOrHash.elementID: 4679084512.136>
+                            Image, 0x115bd1e00, {{338.7, 2288.3}, {20.7, 36.7}}, identifier: 'chevron.right', label: 'Forward' <AX element pid: 39190, elementOrHash.elementID: 4679084992.137>
+                          Button, 0x115bd2a80, {{24.0, 2484.0}, {354.0, 337.0}}, identifier: 'person-Sofia Chen', label: 'Sofia Chen, Grow closer, Brooklyn, New York · Close' <AX element pid: 39190, elementOrHash.elementID: 4679086112.111>
+                            StaticText, 0x115bd3840, {{103.0, 2500.0}, {133.0, 125.3}}, label: 'Sofia Chen' <AX element pid: 39190, elementOrHash.elementID: 4679085472.138>
+                            Image, 0x115bd2bc0, {{248.7, 2538.3}, {55.0, 49.0}}, identifier: 'leaf', label: 'Grow closer' <AX element pid: 39190, elementOrHash.elementID: 4679085632.139>
+                            StaticText, 0x115bd35c0, {{40.0, 2627.7}, {50.0, 50.0}}, label: 'SC' <AX element pid: 39190, elementOrHash.elementID: 4679085312.140>
+                            StaticText, 0x115bd3200, {{103.0, 2630.3}, {208.0, 174.7}}, label: 'Brooklyn, New York · Close' <AX element pid: 39190, elementOrHash.elementID: 4679085792.141>
+                            Image, 0x115bd2800, {{338.7, 2634.3}, {20.7, 36.7}}, identifier: 'chevron.right', label: 'Forward' <AX element pid: 39190, elementOrHash.elementID: 4679085952.142>
+                          Button, 0x115bd1cc0, {{24.0, 2843.0}, {354.0, 116.7}}, label: 'Import from Contacts' <AX element pid: 39190, elementOrHash.elementID: 4679086592.112>
+                            StaticText, 0x115bd0140, {{24.0, 2843.0}, {354.0, 116.7}}, label: 'Import from Contacts' <AX element pid: 39190, elementOrHash.elementID: 4679086432.143>
+                            Image, 0x115bd0b40, {{41.7, 2849.7}, {57.7, 56.3}}, identifier: 'person.badge.plus', label: 'Person With A Plus Badge' <AX element pid: 39190, elementOrHash.elementID: 4679086272.144>
+                          StaticText, 0x115bd1f40, {{56.0, 2981.7}, {290.0, 156.7}}, label: 'Import only the contacts you select.' <AX element pid: 39190, elementOrHash.elementID: 4679086752.113>
+                        Other, 0x115bd3e80, {{369.0, 62.0}, {30.0, 750.0}}, label: 'Vertical scroll bar, 4 pages', value: 0% <AX element pid: 39190, elementOrHash.elementID: 4420664832.94>
+                          Other, 0x115bd03c0, {{396.0, 65.0}, {3.0, 203.3}} <AX element pid: 39190, elementOrHash.elementID: 4610775168.114>
+                        Other, 0x115bd1680, {{369.0, 62.0}, {30.0, 750.0}}, label: 'Vertical scroll bar, 4 pages', value: 0% <AX element pid: 39190, elementOrHash.elementID: 4420664832.94>
+                          Other, 0x115bd1400, {{396.0, 65.0}, {3.0, 203.3}} <AX element pid: 39190, elementOrHash.elementID: 4610775168.114>
+              Toolbar, 0x115bd2300, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar' <AX element pid: 39190, elementOrHash.elementID: 4420383232.13>
+                Other, 0x115bd0c80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4478485120.21>
+            Button, 0x115bd0dc0, {{0.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-0', label: 'Home' <AX element pid: 39190, elementOrHash.elementID: 4418959264.9>
+              Image, 0x115bd1b80, {{56.0, 788.0}, {22.3, 20.7}}, identifier: 'heart', label: 'Love' <AX element pid: 39190, elementOrHash.elementID: 4470552960.14>
+              StaticText, 0x115bd30c0, {{44.2, 815.7}, {45.7, 20.3}}, label: 'Home' <AX element pid: 39190, elementOrHash.elementID: 4470554400.15>
+            Button, 0x115bd1040, {{134.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-1', label: 'People', Selected <AX element pid: 39190, elementOrHash.elementID: 4611735872.10>
+              Image, 0x115e04dc0, {{185.3, 787.0}, {33.7, 23.0}}, identifier: 'person.2', label: 'Two People' <AX element pid: 39190, elementOrHash.elementID: 4611735552.16>
+              StaticText, 0x115e06800, {{173.8, 816.8}, {54.3, 20.3}}, label: 'People' <AX element pid: 39190, elementOrHash.elementID: 4611735712.17>
+            Button, 0x115e05cc0, {{268.0, 782.0}, {134.0, 58.0}}, identifier: 'tab-2', label: 'History' <AX element pid: 39190, elementOrHash.elementID: 4611736352.11>
+              Image, 0x115e075c0, {{321.3, 787.0}, {25.3, 23.0}}, identifier: 'clock.arrow.circlepath', label: 'Clock With A Circular Arrow' <AX element pid: 39190, elementOrHash.elementID: 4611736032.18>
+              StaticText, 0x115e04780, {{307.7, 816.8}, {54.7, 20.3}}, label: 'History' <AX element pid: 39190, elementOrHash.elementID: 4611736192.19>
+    Other, 0x115e07ac0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4612306048.151>
+      Other, 0x115e057c0, {{-402.0, -874.0}, {1206.0, 2622.0}} <AX element pid: 39190, elementOrHash.elementID: 4612302208.152>
+      Other, 0x115e07e80, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4612307328.153>
+        Other, 0x115e04500, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4468120576.155>
+          Other, 0x115e05f40, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4419560448.156>
+            Other, 0x115e07980, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4701115232.157>
+              Other, 0x115e06a80, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4468126208.158>
+                NavigationBar, 0x115e06940, {{0.0, 78.0}, {402.0, 188.0}}, identifier: 'Organize your people' <AX element pid: 39190, elementOrHash.elementID: 4680696576.159>
+                  Other, 0x115e05680, {{20.0, 82.0}, {77.3, 36.0}} <AX element pid: 39190, elementOrHash.elementID: 4419610624.162>
+                    Other, 0x115e043c0, {{20.0, 82.0}, {77.3, 36.0}} <AX element pid: 39190, elementOrHash.elementID: 4701116352.167>
+                      Button, 0x115e04c80, {{20.0, 82.0}, {77.3, 36.0}}, label: 'Close' <AX element pid: 39190, elementOrHash.elementID: 4701111072.170>
+                  StaticText, 0x115e06440, {{113.3, 87.3}, {204.0, 25.3}}, label: 'Organize your people' <AX element pid: 39190, elementOrHash.elementID: 4420382720.163>
+                  SearchField, 0x115e05900, {{16.0, 132.0}, {370.0, 124.0}}, label: 'Find people by name or city', placeholderValue: 'Find people by name or city' <AX element pid: 39190, elementOrHash.elementID: 4419444224.164>
+                    Image, 0x115e05e00, {{28.0, 169.3}, {50.0, 48.3}}, identifier: 'magnifyingglass', label: 'Search' <AX element pid: 39190, elementOrHash.elementID: 4612324352.168>
+                Other, 0x115e07200, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4610777856.160>
+                  Other, 0x115e04140, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4420381184.165>
+                    Other, 0x115e06e40, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4419553280.169>
+                      Other, 0x115e07700, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4701117152.171>
+                        CollectionView, 0x115e048c0, {{0.0, 62.0}, {402.0, 812.0}}, identifier: 'organize-list' <AX element pid: 39190, elementOrHash.elementID: 4467052032.172>
+                          Other, 0x115e05b80, {{0.0, -1586.0}, {402.0, 4523.3}} <AX element pid: 39190, elementOrHash.elementID: 4701127936.174>
+                          Cell, 0x115e04640, {{0.0, 38.0}, {402.0, 1023.7}} <AX element pid: 39190, elementOrHash.elementID: 4419611904.177>
+                            Other, 0x115e07480, {{0.0, 38.0}, {402.0, 1023.7}} <AX element pid: 39190, elementOrHash.elementID: 4699149312.182>
+                              Other, 0x115e07c00, {{0.0, 38.0}, {402.0, 1023.7}} <AX element pid: 39190, elementOrHash.elementID: 4468067328.185>
+                                Other, 0x115e07d40, {{0.0, 38.0}, {402.0, 1023.7}} <AX element pid: 39190, elementOrHash.elementID: 4419565568.187>
+                                  Other, 0x115e04f00, {{0.0, 38.0}, {402.0, 1023.7}} <AX element pid: 39190, elementOrHash.elementID: 4701119392.189>
+                            Other, 0x115e06080, {{0.0, 38.0}, {402.0, 1023.7}} <AX element pid: 39190, elementOrHash.elementID: 4420593280.183>
+                              Other, 0x115e04b40, {{0.0, 38.0}, {402.0, 1023.7}} <AX element pid: 39190, elementOrHash.elementID: 4419447296.186>
+                                Other, 0x115e05400, {{0.0, 38.0}, {402.0, 1023.7}} <AX element pid: 39190, elementOrHash.elementID: 4701119232.188>
+                                  SegmentedControl, 0x115e05540, {{20.0, 50.0}, {362.0, 31.0}}, identifier: 'organize-mode' <AX element pid: 39190, elementOrHash.elementID: 4680705024.190>
+                                    Button, 0x115e04a00, {{20.0, 50.0}, {181.0, 32.0}}, label: 'Together', Selected <AX element pid: 39190, elementOrHash.elementID: 4680705792.199>
+                                    Button, 0x115e05040, {{201.0, 50.0}, {181.0, 32.0}}, label: 'Quick sort' <AX element pid: 39190, elementOrHash.elementID: 4680706560.200>
+                                  Switch, 0x115e052c0, {{20.0, 93.0}, {362.0, 187.3}}, identifier: 'organize-needs-assessment', label: 'Needs assessment only', value: 1 <AX element pid: 39190, elementOrHash.elementID: 4701117952.191>
+                                    StaticText, 0x115e07840, {{20.0, 93.0}, {280.3, 187.3}}, label: 'Needs assessment only' <AX element pid: 39190, elementOrHash.elementID: 4701117472.201>
+                                    Switch, 0x115e05a40, {{321.0, 172.7}, {63.0, 28.0}}, value: 1 <AX element pid: 39190, elementOrHash.elementID: 4699153792.202>
+                                  StaticText, 0x115e05180, {{20.0, 292.3}, {308.0, 63.3}}, label: 'Missing detail' <AX element pid: 39190, elementOrHash.elementID: 4701118112.193>
+                                  Button, 0x115e06580, {{20.0, 292.3}, {319.3, 144.7}}, identifier: 'organize-missing-detail', label: 'Missing detail, What I want' <AX element pid: 39190, elementOrHash.elementID: 4420781824.192>
+                                    StaticText, 0x115e07340, {{32.0, 366.7}, {265.3, 63.3}}, label: 'What I want' <AX element pid: 39190, elementOrHash.elementID: 4468072960.203>
+                                  StaticText, 0x115e3c000, {{20.0, 449.0}, {362.0, 104.7}}, label: 'Shows people with this detail not set.' <AX element pid: 39190, elementOrHash.elementID: 4701118432.194>
+                                  StaticText, 0x115e3c140, {{20.0, 565.7}, {362.0, 232.7}}, label: 'Select people, then change only the details they share.' <AX element pid: 39190, elementOrHash.elementID: 4701118592.195>
+                                  Button, 0x115e3c280, {{251.3, 810.3}, {130.7, 174.7}}, label: 'Clear selection' <AX element pid: 39190, elementOrHash.elementID: 4701118912.196>
+                                  Button, 0x115e3c3c0, {{20.0, 839.3}, {202.7, 116.7}}, identifier: 'organize-select-shown', label: 'Select shown (1)' <AX element pid: 39190, elementOrHash.elementID: 4701118752.197>
+                                  StaticText, 0x115e3c500, {{20.0, 997.0}, {188.3, 52.7}}, identifier: 'organize-selection-count', label: '1 selected' <AX element pid: 39190, elementOrHash.elementID: 4701119072.198>
+                          Other, 0x115e3c640, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4610781888.175>
+                            Other, 0x115e3c780, {{0.0, 62.0}, {402.0, 244.0}} <AX element pid: 39190, elementOrHash.elementID: 4700296448.181>
+                          Other, 0x115e3c8c0, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4610781440.176>
+                            Other, 0x115e3ca00, {{0.0, 62.0}, {402.0, 244.0}} <AX element pid: 39190, elementOrHash.elementID: 4701128576.245>
+                          Other, 0x115e3cb40, {{369.0, 266.0}, {30.0, 437.3}}, label: 'Vertical scroll bar, 3 pages', value: 27% <AX element pid: 39190, elementOrHash.elementID: 4468160512.178>
+                            Other, 0x115e3cc80, {{396.0, 328.7}, {3.0, 212.3}} <AX element pid: 39190, elementOrHash.elementID: 4420598656.184>
+                          Other, 0x115e3cdc0, {{369.0, 266.0}, {30.0, 437.3}}, label: 'Vertical scroll bar, 3 pages', value: 27% <AX element pid: 39190, elementOrHash.elementID: 4468160512.178>
+                            Other, 0x115e3cf00, {{396.0, 328.7}, {3.0, 212.3}} <AX element pid: 39190, elementOrHash.elementID: 4420598656.184>
+                        Button, 0x115e3d040, {{20.0, 713.3}, {362.0, 116.7}}, identifier: 'organize-apply', label: 'Organize 1 person' <AX element pid: 39190, elementOrHash.elementID: 4701116992.173>
+                          StaticText, 0x115e3d180, {{20.0, 713.3}, {362.0, 116.7}}, label: 'Organize 1 person' <AX element pid: 39190, elementOrHash.elementID: 4701116832.179>
+                          Image, 0x115e3d2c0, {{67.7, 721.0}, {50.3, 43.0}}, identifier: 'slider.horizontal.3', label: 'Edit' <AX element pid: 39190, elementOrHash.elementID: 4701116512.180>
+                Toolbar, 0x115e3d400, {{0.0, 62.0}, {402.0, 812.0}}, identifier: 'Toolbar', label: 'Toolbar' <AX element pid: 39190, elementOrHash.elementID: 4468126720.161>
+                  Other, 0x115e3d540, {{0.0, 62.0}, {402.0, 812.0}} <AX element pid: 39190, elementOrHash.elementID: 4612280064.166>
+  Window, 0x115e3d680, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4419613184.208>
+    Other, 0x115e3d7c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4467905536.211>
+      Other, 0x115e3d900, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 39190, elementOrHash.elementID: 4467906560.213>

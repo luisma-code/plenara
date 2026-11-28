@@ -1,0 +1,7 @@
+{
+  "CFBundleVersion": "1010",
+  "CFBundleIdentifier": "com.plenara.plenaraApp",
+  "DTSDKName": "iphoneos27.2",
+  "DTXcodeBuild": "27B52",
+  "MinimumOSVersion": "18.0"
+}

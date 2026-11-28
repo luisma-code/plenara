@@ -1,0 +1,346 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator27.2-arm64.xctestrun -configuration Release -DVTSimulatorSetLocation=/Users/luisma.code/Library/Developer/CoreSimulator/Devices -destination "platform=iOS Simulator,id=BB42F29A-928B-4B9E-BD39-160B70249D4F" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261127-170813.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/PlenaraUITests/testExistingImportSurvivesUpgradeAndIndependentChoices"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261127-170813.xcresult
+
+2026-11-27 17:08:18.412465-0800 PlenaraUITests-Runner[52185:10800842] [Default] Running tests...
+2026-11-27 17:08:18.463755-0800 PlenaraUITests-Runner[52185:10800996] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-11-27 17:08:18.507757-0800 PlenaraUITests-Runner[52185:10801000] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+objc[52185]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10ae30310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x109e9c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-27 17:08:22.531.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-27 17:08:22.532.
+Test Suite 'PlenaraUITests' started at 2026-11-27 17:08:22.532.
+Test Case '-[PlenaraUITests.PlenaraUITests testExistingImportSurvivesUpgradeAndIndependentChoices]' started.
+    t =     0.00s Start Test at 2026-11-27 17:08:22.533
+    t =     0.21s Set Up
+    t =     0.21s     Open com.plenara.plenaraApp
+    t =     0.21s         Launch com.plenara.plenaraApp
+2026-11-27 17:08:23.461 xcodebuild[52174:10800650] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 17:08:23.461 xcodebuild[52174:10800650] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     3.11s             Setting up automation session
+    t =     4.47s             Wait for com.plenara.plenaraApp to idle
+    t =     6.63s Terminate com.plenara.plenaraApp:52237
+    t =     7.70s Open com.plenara.plenaraApp
+    t =     7.70s     Launch com.plenara.plenaraApp
+2026-11-27 17:08:30.243 xcodebuild[52174:10800650] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 17:08:30.244 xcodebuild[52174:10800650] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     7.93s         Setting up automation session
+    t =     8.85s         Wait for com.plenara.plenaraApp to idle
+    t =    10.54s Tap "tab-1" Button
+    t =    10.55s     Wait for com.plenara.plenaraApp to idle
+    t =    10.61s     Find the "tab-1" Button
+    t =    10.91s     Check for interrupting elements affecting "tab-1" Button
+    t =    11.07s     Synthesize event
+    t =    11.59s     Wait for com.plenara.plenaraApp to idle
+    t =    11.74s Waiting 5.0s for "person-Maya Imported" Button to exist
+    t =    12.79s     Checking `Expect predicate `existsNoRetry == 1` for object "person-Maya Imported" Button`
+    t =    12.79s         Checking existence of `"person-Maya Imported" Button`
+    t =    12.88s Checking existence of `"person-Alex Imported" Button`
+    t =    12.96s Find the Target Application 'com.plenara.plenaraApp'
+    t =    12.98s Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.02s Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.09s Find the Target Application 'com.plenara.plenaraApp'
+    t =    13.16s Checking existence of `"tab-0" Button`
+    t =    13.23s Find the "tab-0" Button
+    t =    13.29s Find the "tab-0" Button
+    t =    13.32s Checking existence of `"home-filter-footer" Other`
+    t =    13.38s Checking existence of `Keyboard (First Match)`
+    t =    13.61s Checking existence of `"person-Maya Imported" Button`
+    t =    13.65s Find the "person-Maya Imported" Button
+    t =    13.70s Find the "person-Maya Imported" Button
+    t =    13.74s Tap "person-Maya Imported" Button
+    t =    13.74s     Wait for com.plenara.plenaraApp to idle
+    t =    13.74s     Find the "person-Maya Imported" Button
+    t =    13.78s     Check for interrupting elements affecting "person-Maya Imported" Button
+    t =    13.81s     Synthesize event
+    t =    14.12s     Wait for com.plenara.plenaraApp to idle
+    t =    14.17s Waiting 5.0s for "relationship-intention" Button to exist
+    t =    15.21s     Checking `Expect predicate `existsNoRetry == 1` for object "relationship-intention" Button`
+    t =    15.21s         Checking existence of `"relationship-intention" Button`
+    t =    15.26s Find the "relationship-intention" Button
+    t =    15.29s Find the "relationship-intention" Button
+    t =    15.33s Find the "relationship-intention" Button
+    t =    15.37s Find the Target Application 'com.plenara.plenaraApp'
+    t =    15.53s Added attachment named 'Migrated imported person'
+    t =    15.53s Tap "relationship-intention" Button
+    t =    15.53s     Wait for com.plenara.plenaraApp to idle
+    t =    15.54s     Find the "relationship-intention" Button
+    t =    15.59s     Check for interrupting elements affecting "relationship-intention" Button
+    t =    15.61s     Synthesize event
+    t =    15.91s     Wait for com.plenara.plenaraApp to idle
+    t =    17.13s Checking `Expect predicate `BLOCKPREDICATE(0x10aab9290)` for object "Cancel" Button`
+    t =    17.13s     Find the "Cancel" Button
+    t =    17.27s     Find the "Cancel" Button
+    t =    17.33s Find the "direction-choice" Button
+    t =    17.41s Find the "direction-choice" Button
+    t =    17.49s Tap "direction-choice" Button
+    t =    17.49s     Wait for com.plenara.plenaraApp to idle
+    t =    17.49s     Find the "direction-choice" Button
+    t =    17.55s     Check for interrupting elements affecting "direction-choice" Button
+    t =    17.60s     Synthesize event
+    t =    17.90s     Wait for com.plenara.plenaraApp to idle
+    t =    19.02s Tap "Keep it steady" Button
+    t =    19.03s     Wait for com.plenara.plenaraApp to idle
+    t =    19.04s     Find the "Keep it steady" Button
+    t =    19.18s     Check for interrupting elements affecting "Keep it steady" Button
+    t =    19.29s     Synthesize event
+    t =    19.61s     Wait for com.plenara.plenaraApp to idle
+    t =    21.01s Find the "feeling-choice" Button
+    t =    21.10s Find the "feeling-choice" Button
+    t =    21.16s Tap "feeling-choice" Button
+    t =    21.16s     Wait for com.plenara.plenaraApp to idle
+    t =    21.17s     Find the "feeling-choice" Button
+    t =    21.23s     Check for interrupting elements affecting "feeling-choice" Button
+    t =    21.29s     Synthesize event
+    t =    21.59s     Wait for com.plenara.plenaraApp to idle
+    t =    22.69s Tap "Needs care" Button
+    t =    22.69s     Wait for com.plenara.plenaraApp to idle
+    t =    22.69s     Find the "Needs care" Button
+    t =    22.77s     Check for interrupting elements affecting "Needs care" Button
+    t =    22.84s     Synthesize event
+    t =    24.02s     Wait for com.plenara.plenaraApp to idle
+    t =    25.11s Find the "relationship-context" TextField
+    t =    25.18s Find the Target Application 'com.plenara.plenaraApp'
+    t =    25.33s Added attachment named 'Independent relationship choices'
+    t =    25.33s Tap "save-relationship" Button
+    t =    25.33s     Wait for com.plenara.plenaraApp to idle
+    t =    25.33s     Find the "save-relationship" Button
+    t =    25.39s     Check for interrupting elements affecting "save-relationship" Button
+    t =    25.45s     Synthesize event
+    t =    25.75s     Wait for com.plenara.plenaraApp to idle
+    t =    26.57s Waiting 5.0s for "relationship-intention" Button to exist
+    t =    27.65s     Checking `Expect predicate `existsNoRetry == 1` for object "relationship-intention" Button`
+    t =    27.65s         Checking existence of `"relationship-intention" Button`
+    t =    27.68s Find the "relationship-intention" Button
+    t =    27.71s Find the "relationship-intention" Button
+    t =    27.74s Tap "Edit" Button
+    t =    27.74s     Wait for com.plenara.plenaraApp to idle
+    t =    27.74s     Find the "Edit" Button
+    t =    27.77s     Check for interrupting elements affecting "Edit" Button
+    t =    27.81s     Synthesize event
+    t =    28.11s     Wait for com.plenara.plenaraApp to idle
+    t =    28.30s Find the "connection-Friend" Switch
+    t =    28.43s Find the "connection-Friend" Switch
+    t =    28.50s Tap "connection-Friend" Switch[0.90, 0.50]
+    t =    28.50s     Wait for com.plenara.plenaraApp to idle
+    t =    28.80s     Find the "connection-Friend" Switch
+    t =    28.87s     Check for interrupting elements affecting "connection-Friend" Switch
+    t =    28.94s     Synthesize event
+    t =    28.94s         Find the "connection-Friend" Switch
+    t =    29.01s         Find the "connection-Friend" Switch
+    t =    29.08s         Find the "connection-Friend" Switch
+    t =    29.44s     Wait for com.plenara.plenaraApp to idle
+    t =    30.72s Find the "closeness-choice" Button
+    t =    30.80s Find the "closeness-choice" Button
+    t =    30.88s Tap "closeness-choice" Button
+    t =    30.88s     Wait for com.plenara.plenaraApp to idle
+    t =    30.88s     Find the "closeness-choice" Button
+    t =    30.95s     Check for interrupting elements affecting "closeness-choice" Button
+    t =    31.02s     Synthesize event
+    t =    31.32s     Wait for com.plenara.plenaraApp to idle
+    t =    32.41s Tap "Casual" Button
+    t =    32.41s     Wait for com.plenara.plenaraApp to idle
+    t =    32.41s     Find the "Casual" Button
+    t =    32.55s     Check for interrupting elements affecting "Casual" Button
+    t =    32.67s     Synthesize event
+    t =    32.99s     Wait for com.plenara.plenaraApp to idle
+    t =    34.46s Find the "distance-choice" Button
+    t =    35.58s     Find the "distance-choice" Button (retry 1)
+    t =    36.66s     Find the "distance-choice" Button (retry 2)
+    t =    36.74s Swipe up CollectionView (First Match)
+    t =    36.74s     Wait for com.plenara.plenaraApp to idle
+    t =    36.74s     Find the CollectionView (First Match)
+    t =    36.79s     Check for interrupting elements affecting CollectionView
+    t =    36.97s     Synthesize event
+    t =    37.42s     Wait for com.plenara.plenaraApp to idle
+    t =    39.65s Find the "distance-choice" Button
+    t =    39.97s Find the "distance-choice" Button
+    t =    40.15s Tap "distance-choice" Button
+    t =    40.15s     Wait for com.plenara.plenaraApp to idle
+    t =    40.17s     Find the "distance-choice" Button
+    t =    40.28s     Check for interrupting elements affecting "distance-choice" Button
+    t =    40.40s     Synthesize event
+    t =    40.80s     Wait for com.plenara.plenaraApp to idle
+    t =    41.91s Tap "Far away" Button
+    t =    41.91s     Wait for com.plenara.plenaraApp to idle
+    t =    41.91s     Find the "Far away" Button
+    t =    42.01s     Check for interrupting elements affecting "Far away" Button
+    t =    42.11s     Synthesize event
+    t =    42.48s     Wait for com.plenara.plenaraApp to idle
+    t =    44.01s Find the Target Application 'com.plenara.plenaraApp'
+    t =    44.25s Added attachment named 'About your relationship'
+    t =    44.25s Tap "save-person" Button
+    t =    44.25s     Wait for com.plenara.plenaraApp to idle
+    t =    44.25s     Find the "save-person" Button
+    t =    44.34s     Check for interrupting elements affecting "save-person" Button
+    t =    44.46s     Synthesize event
+    t =    44.77s     Wait for com.plenara.plenaraApp to idle
+    t =    45.59s Terminate com.plenara.plenaraApp:52258
+    t =    46.69s Open com.plenara.plenaraApp
+    t =    46.69s     Launch com.plenara.plenaraApp
+2026-11-27 17:09:09.251 xcodebuild[52174:10800650] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 17:09:09.252 xcodebuild[52174:10800650] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    47.14s         Setting up automation session
+    t =    49.08s         Wait for com.plenara.plenaraApp to idle
+    t =    51.02s Tap "tab-1" Button
+    t =    51.02s     Wait for com.plenara.plenaraApp to idle
+    t =    51.07s     Find the "tab-1" Button
+    t =    51.23s     Check for interrupting elements affecting "tab-1" Button
+    t =    51.36s     Synthesize event
+    t =    51.74s     Wait for com.plenara.plenaraApp to idle
+    t =    51.87s Find the Target Application 'com.plenara.plenaraApp'
+    t =    51.90s Find the Target Application 'com.plenara.plenaraApp'
+    t =    51.91s Find the Target Application 'com.plenara.plenaraApp'
+    t =    51.93s Find the Target Application 'com.plenara.plenaraApp'
+    t =    51.96s Checking existence of `"tab-0" Button`
+    t =    51.98s Find the "tab-0" Button
+    t =    52.02s Find the "tab-0" Button
+    t =    52.05s Checking existence of `"home-filter-footer" Other`
+    t =    52.08s Checking existence of `Keyboard (First Match)`
+    t =    52.11s Checking existence of `"person-Maya Imported" Button`
+    t =    52.14s Find the "person-Maya Imported" Button
+    t =    52.17s Find the "person-Maya Imported" Button
+    t =    52.22s Tap "person-Maya Imported" Button
+    t =    52.22s     Wait for com.plenara.plenaraApp to idle
+    t =    52.22s     Find the "person-Maya Imported" Button
+    t =    52.25s     Check for interrupting elements affecting "person-Maya Imported" Button
+    t =    52.28s     Synthesize event
+    t =    52.58s     Wait for com.plenara.plenaraApp to idle
+    t =    52.67s Checking existence of `"Family" StaticText`
+    t =    52.73s Checking existence of `"Friend" StaticText`
+    t =    52.79s Checking existence of `"Casual" StaticText`
+    t =    52.84s Checking existence of `"Far away" StaticText`
+    t =    52.88s Find the "relationship-intention" Button
+    t =    52.94s Find the "relationship-intention" Button
+    t =    52.98s Find the Target Application 'com.plenara.plenaraApp'
+    t =    53.13s Added attachment named 'Updated relationship profile'
+    t =    53.14s Checking existence of `"Ask about the exhibition" StaticText`
+    t =    53.19s Checking existence of `"Ask about the exhibition" StaticText`
+    t =    53.22s Tap "tab-1" Button
+    t =    53.22s     Wait for com.plenara.plenaraApp to idle
+    t =    53.22s     Find the "tab-1" Button
+    t =    53.29s     Check for interrupting elements affecting "tab-1" Button
+    t =    53.32s     Synthesize event
+    t =    53.62s     Wait for com.plenara.plenaraApp to idle
+    t =    53.99s Find the "filter-Family" Button
+    t =    54.09s Swipe right "people-shortcuts" ScrollView
+    t =    54.09s     Wait for com.plenara.plenaraApp to idle
+    t =    54.09s     Find the "people-shortcuts" ScrollView
+    t =    54.12s     Check for interrupting elements affecting "people-shortcuts" ScrollView
+    t =    54.15s     Synthesize event
+    t =    54.63s     Wait for com.plenara.plenaraApp to idle
+    t =    55.11s Find the "filter-Family" Button
+    t =    55.17s Swipe left "people-shortcuts" ScrollView
+    t =    55.17s     Wait for com.plenara.plenaraApp to idle
+    t =    55.18s     Find the "people-shortcuts" ScrollView
+    t =    55.20s     Check for interrupting elements affecting "people-shortcuts" ScrollView
+    t =    55.22s     Synthesize event
+    t =    55.68s     Wait for com.plenara.plenaraApp to idle
+    t =    56.20s Find the "filter-Family" Button
+    t =    56.25s Find the "filter-Family" Button
+    t =    56.29s Tap "filter-Family" Button
+    t =    56.29s     Wait for com.plenara.plenaraApp to idle
+    t =    56.29s     Find the "filter-Family" Button
+    t =    56.32s     Check for interrupting elements affecting "filter-Family" Button
+    t =    56.35s     Synthesize event
+    t =    56.64s     Wait for com.plenara.plenaraApp to idle
+    t =    56.65s Find the "filter-Far away" Button
+    t =    56.70s Find the "filter-Far away" Button
+    t =    56.74s Find the "filter-Far away" Button
+    t =    56.79s Tap "filter-Far away" Button
+    t =    56.79s     Wait for com.plenara.plenaraApp to idle
+    t =    56.79s     Find the "filter-Far away" Button
+    t =    56.83s     Check for interrupting elements affecting "filter-Far away" Button
+    t =    56.88s     Synthesize event
+    t =    57.20s     Wait for com.plenara.plenaraApp to idle
+    t =    57.21s Find the "filter-Needs care" Button
+    t =    57.29s Find the "filter-Needs care" Button
+    t =    57.36s Find the "filter-Needs care" Button
+    t =    57.44s Tap "filter-Needs care" Button
+    t =    57.44s     Wait for com.plenara.plenaraApp to idle
+    t =    57.45s     Find the "filter-Needs care" Button
+    t =    57.53s     Check for interrupting elements affecting "filter-Needs care" Button
+    t =    57.60s     Synthesize event
+    t =    57.93s     Wait for com.plenara.plenaraApp to idle
+    t =    57.94s Checking existence of `"person-Maya Imported" Button`
+    t =    57.97s Checking existence of `"person-Alex Imported" Button`
+    t =    57.99s Find the "people-count" StaticText
+    t =    58.01s Find the Target Application 'com.plenara.plenaraApp'
+    t =    58.19s Added attachment named 'Combined relationship filters'
+    t =    58.19s Tap "people-filters" Button
+    t =    58.19s     Wait for com.plenara.plenaraApp to idle
+    t =    58.19s     Find the "people-filters" Button
+    t =    58.23s     Check for interrupting elements affecting "people-filters" Button
+    t =    58.26s     Synthesize event
+    t =    58.55s     Wait for com.plenara.plenaraApp to idle
+    t =    58.96s Find the Target Application 'com.plenara.plenaraApp'
+    t =    59.14s Added attachment named 'All relationship filters'
+    t =    59.14s Tap "Close" Button
+    t =    59.14s     Wait for com.plenara.plenaraApp to idle
+    t =    59.46s     Find the "Close" Button
+    t =    59.52s     Check for interrupting elements affecting "Close" Button
+    t =    59.57s     Synthesize event
+    t =    59.86s     Wait for com.plenara.plenaraApp to idle
+    t =    60.62s Find the "filter-Grow closer" Button
+    t =    60.69s Swipe right "people-shortcuts" ScrollView
+    t =    60.69s     Wait for com.plenara.plenaraApp to idle
+    t =    60.69s     Find the "people-shortcuts" ScrollView
+    t =    60.72s     Check for interrupting elements affecting "people-shortcuts" ScrollView
+    t =    60.74s     Synthesize event
+    t =    61.18s     Wait for com.plenara.plenaraApp to idle
+    t =    61.80s Find the "filter-Grow closer" Button
+    t =    61.93s Find the "filter-Grow closer" Button
+    t =    62.08s Tap "filter-Grow closer" Button
+    t =    62.08s     Wait for com.plenara.plenaraApp to idle
+    t =    62.10s     Find the "filter-Grow closer" Button
+    t =    62.13s     Check for interrupting elements affecting "filter-Grow closer" Button
+    t =    62.21s     Synthesize event
+    t =    62.62s     Wait for com.plenara.plenaraApp to idle
+    t =    62.63s Checking existence of `"No matching people." StaticText`
+    t =    62.66s Swipe down Target Application 'com.plenara.plenaraApp'
+    t =    62.66s     Wait for com.plenara.plenaraApp to idle
+    t =    62.66s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    62.69s     Check for interrupting elements affecting "Plenara" Application
+    t =    62.72s     Synthesize event
+    t =    63.15s     Wait for com.plenara.plenaraApp to idle
+    t =    63.62s Find the "people-clear-filters" Button
+    t =    63.66s Find the "people-clear-filters" Button
+    t =    63.71s Find the "tab-1" Button
+    t =    63.74s Tap "people-clear-filters" Button
+    t =    63.74s     Wait for com.plenara.plenaraApp to idle
+    t =    63.74s     Find the "people-clear-filters" Button
+    t =    63.80s     Check for interrupting elements affecting "people-clear-filters" Button
+    t =    63.84s     Synthesize event
+    t =    64.14s     Wait for com.plenara.plenaraApp to idle
+    t =    64.14s Find the "people-count" StaticText
+    t =    64.17s Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    64.17s     Wait for com.plenara.plenaraApp to idle
+    t =    64.17s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    64.19s     Check for interrupting elements affecting "Plenara" Application
+    t =    64.21s     Synthesize event
+    t =    64.63s     Wait for com.plenara.plenaraApp to idle
+    t =    65.10s Checking existence of `"person-Maya Imported" Button`
+    t =    65.14s Checking existence of `"person-Alex Imported" Button`
+    t =    65.17s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testExistingImportSurvivesUpgradeAndIndependentChoices]' passed (66.338 seconds).
+Test Suite 'PlenaraUITests' passed at 2026-11-27 17:09:28.873.
+	 Executed 1 test, with 0 failures (0 unexpected) in 66.338 (66.341) seconds
+Test Suite 'PlenaraUITests.xctest' passed at 2026-11-27 17:09:28.873.
+	 Executed 1 test, with 0 failures (0 unexpected) in 66.338 (66.342) seconds
+Test Suite 'Selected tests' passed at 2026-11-27 17:09:28.874.
+	 Executed 1 test, with 0 failures (0 unexpected) in 66.338 (66.342) seconds
+2026-11-27 17:09:29.442 xcodebuild[52174:10800650] [MT] IDETestOperationsObserverDebug: 74.300 elapsed -- Testing started completed.
+2026-11-27 17:09:29.442 xcodebuild[52174:10800650] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-27 17:09:29.442 xcodebuild[52174:10800650] [MT] IDETestOperationsObserverDebug: 74.300 sec, +74.300 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261127-170813.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -1,0 +1,261 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator27.2-arm64.xctestrun -configuration Release -DVTSimulatorSetLocation=/Volumes/MacExt/DeveloperData/projects/plenara/simulators -destination "platform=iOS Simulator,id=24BF69CD-E43A-4D88-80ED-BBCFD6798C32" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261127-153902.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/CompactHomeUITests/testHomeDarkAndAccessibilityFiltersRemainUsable"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261127-153902.xcresult
+
+2026-11-27 15:39:08.453993-0800 PlenaraUITests-Runner[4483:10400077] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-27 15:39:13.544.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-27 15:39:13.549.
+Test Suite 'CompactHomeUITests' started at 2026-11-27 15:39:13.549.
+Test Case '-[PlenaraUITests.CompactHomeUITests testHomeDarkAndAccessibilityFiltersRemainUsable]' started.
+    t =     0.01s Start Test at 2026-11-27 15:39:13.556
+    t =     0.09s Set Up
+    t =     0.11s Open com.plenara.plenaraApp
+    t =     0.11s     Launch com.plenara.plenaraApp
+2026-11-27 15:39:14.124 xcodebuild[4456:10399534] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 15:39:14.124 xcodebuild[4456:10399534] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[4483]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.P6NWK8/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x106fa0310) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.P6NWK8/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x105ed4398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     2.32s         Setting up automation session
+    t =     6.76s         Wait for com.plenara.plenaraApp to idle
+    t =     9.47s Waiting 5.0s for "Follow up" StaticText to exist
+    t =    10.55s     Checking `Expect predicate `existsNoRetry == 1` for object "Follow up" StaticText`
+    t =    10.60s         Checking existence of `"Follow up" StaticText`
+    t =    12.02s Added attachment named 'Dark compact Home'
+    t =    12.02s Terminate com.plenara.plenaraApp:4577
+    t =    13.08s Open com.plenara.plenaraApp
+2026-11-27 15:39:26.637 xcodebuild[4456:10399534] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 15:39:26.638 xcodebuild[4456:10399534] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    13.08s     Launch com.plenara.plenaraApp
+    t =    13.31s         Setting up automation session
+    t =    16.98s         Wait for com.plenara.plenaraApp to idle
+    t =    18.94s Waiting 5.0s for "Follow up" StaticText to exist
+    t =    20.01s     Checking `Expect predicate `existsNoRetry == 1` for object "Follow up" StaticText`
+    t =    20.01s         Checking existence of `"Follow up" StaticText`
+    t =    20.38s Find the Target Application 'com.plenara.plenaraApp'
+    t =    20.41s Find the Target Application 'com.plenara.plenaraApp'
+    t =    20.44s Find the Target Application 'com.plenara.plenaraApp'
+    t =    20.46s Find the Target Application 'com.plenara.plenaraApp'
+    t =    20.49s Checking existence of `"tab-0" Button`
+    t =    20.55s Find the "tab-0" Button
+    t =    20.60s Find the "tab-0" Button
+    t =    20.65s Checking existence of `"home-filter-footer" Other`
+    t =    20.68s Checking existence of `Keyboard (First Match)`
+    t =    20.73s Checking existence of `"home-filters" Button`
+    t =    20.77s Find the "home-filters" Button
+    t =    20.82s Find the "home-filters" Button
+    t =    20.89s Tap "home-filters" Button
+    t =    20.89s     Wait for com.plenara.plenaraApp to idle
+    t =    20.90s     Find the "home-filters" Button
+    t =    20.94s     Check for interrupting elements affecting "home-filters" Button
+    t =    20.98s     Synthesize event
+    t =    21.28s     Wait for com.plenara.plenaraApp to idle
+    t =    21.53s Find the Target Application 'com.plenara.plenaraApp'
+    t =    21.61s Find the Target Application 'com.plenara.plenaraApp'
+    t =    21.64s Find the Target Application 'com.plenara.plenaraApp'
+    t =    21.68s Find the Target Application 'com.plenara.plenaraApp'
+    t =    21.72s Checking existence of `"tab-0" Button`
+    t =    21.78s Find the "tab-0" Button
+    t =    21.86s Checking existence of `"home-filter-footer" Other`
+    t =    21.92s Find the "home-filter-footer" Other
+    t =    21.98s Checking existence of `"home-filter-feeling" Button`
+    t =    22.04s Checking existence of `Keyboard (First Match)`
+    t =    22.13s Checking existence of `"home-filter-feeling" Button`
+    t =    22.18s Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.21s Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.25s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 501.5) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 221.7) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    22.25s     Wait for com.plenara.plenaraApp to idle
+    t =    22.25s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.29s     Check for interrupting elements affecting "Plenara" Application
+    t =    22.33s     Synthesize event
+    t =    22.33s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.37s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.40s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.44s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.47s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    23.37s     Wait for com.plenara.plenaraApp to idle
+    t =    24.96s Find the Target Application 'com.plenara.plenaraApp'
+    t =    25.00s Find the Target Application 'com.plenara.plenaraApp'
+    t =    25.04s Find the Target Application 'com.plenara.plenaraApp'
+    t =    25.07s Find the Target Application 'com.plenara.plenaraApp'
+    t =    25.11s Checking existence of `"tab-0" Button`
+    t =    25.15s Find the "tab-0" Button
+    t =    25.22s Checking existence of `"home-filter-footer" Other`
+    t =    25.33s Find the "home-filter-footer" Other
+    t =    25.41s Checking existence of `"home-filter-feeling" Button`
+    t =    25.53s Find the "home-filter-feeling" Button
+    t =    25.72s Checking existence of `Keyboard (First Match)`
+    t =    26.24s Checking existence of `"home-filter-feeling" Button`
+    t =    26.50s Find the "home-filter-feeling" Button
+    t =    26.61s Find the "home-filter-feeling" Button
+    t =    26.69s Find the "home-filter-feeling" Button
+    t =    26.78s Find the Target Application 'com.plenara.plenaraApp'
+    t =    26.83s Find the Target Application 'com.plenara.plenaraApp'
+    t =    26.88s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 501.5) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 221.7) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    26.88s     Wait for com.plenara.plenaraApp to idle
+    t =    26.88s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    26.97s     Check for interrupting elements affecting "Plenara" Application
+    t =    27.42s     Synthesize event
+    t =    27.43s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.50s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.55s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.62s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    27.67s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    28.60s     Wait for com.plenara.plenaraApp to idle
+    t =    30.17s Find the Target Application 'com.plenara.plenaraApp'
+    t =    30.24s Find the Target Application 'com.plenara.plenaraApp'
+    t =    30.28s Find the Target Application 'com.plenara.plenaraApp'
+    t =    30.32s Find the Target Application 'com.plenara.plenaraApp'
+    t =    30.37s Checking existence of `"tab-0" Button`
+    t =    30.43s Find the "tab-0" Button
+    t =    30.49s Checking existence of `"home-filter-footer" Other`
+    t =    30.54s Find the "home-filter-footer" Other
+    t =    30.60s Checking existence of `"home-filter-feeling" Button`
+    t =    30.65s Find the "home-filter-feeling" Button
+    t =    30.71s Checking existence of `Keyboard (First Match)`
+    t =    30.80s Checking existence of `"home-filter-feeling" Button`
+    t =    30.87s Find the "home-filter-feeling" Button
+    t =    30.93s Find the "home-filter-feeling" Button
+    t =    30.99s Tap "home-filter-feeling" Button
+    t =    30.99s     Wait for com.plenara.plenaraApp to idle
+    t =    30.99s     Find the "home-filter-feeling" Button
+    t =    31.04s     Check for interrupting elements affecting "home-filter-feeling" Button
+    t =    31.09s     Synthesize event
+    t =    31.38s     Wait for com.plenara.plenaraApp to idle
+    t =    31.89s Tap "Needs care" Button
+    t =    31.89s     Wait for com.plenara.plenaraApp to idle
+    t =    33.05s     Find the "Needs care" Button
+    t =    33.14s     Check for interrupting elements affecting "Needs care" Button
+    t =    33.21s     Synthesize event
+    t =    33.52s     Wait for com.plenara.plenaraApp to idle
+    t =    34.98s Find the "home-filter-cancel" Button
+    t =    35.06s Find the "home-filter-apply" Button
+    t =    35.28s Added attachment named 'Large Home filters'
+    t =    35.28s Tap "home-filter-apply" Button
+    t =    35.28s     Wait for com.plenara.plenaraApp to idle
+    t =    35.29s     Find the "home-filter-apply" Button
+    t =    35.34s     Check for interrupting elements affecting "home-filter-apply" Button
+    t =    35.39s     Synthesize event
+    t =    35.68s     Wait for com.plenara.plenaraApp to idle
+    t =    36.06s Find the "home-count" StaticText
+    t =    36.11s Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.14s Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.16s Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.18s Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.21s Checking existence of `"tab-0" Button`
+    t =    36.25s Find the "tab-0" Button
+    t =    36.31s Find the "tab-0" Button
+    t =    36.36s Checking existence of `"home-filter-footer" Other`
+    t =    36.39s Checking existence of `Keyboard (First Match)`
+    t =    36.43s Checking existence of `"home-person-Daniel Ross" Button`
+    t =    36.47s Find the "home-person-Daniel Ross" Button
+    t =    36.51s Find the "home-person-Daniel Ross" Button
+    t =    36.55s Find the "home-person-Daniel Ross" Button
+    t =    36.60s Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.62s Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.63s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 624.3) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 265.8) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    36.63s     Wait for com.plenara.plenaraApp to idle
+    t =    36.64s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.66s     Check for interrupting elements affecting "Plenara" Application
+    t =    36.68s     Synthesize event
+    t =    36.68s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.70s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.74s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.76s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    36.79s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    37.83s     Wait for com.plenara.plenaraApp to idle
+    t =    37.84s Find the Target Application 'com.plenara.plenaraApp'
+    t =    37.87s Find the Target Application 'com.plenara.plenaraApp'
+    t =    37.89s Find the Target Application 'com.plenara.plenaraApp'
+    t =    37.91s Find the Target Application 'com.plenara.plenaraApp'
+    t =    37.93s Checking existence of `"tab-0" Button`
+    t =    37.96s Find the "tab-0" Button
+    t =    38.00s Find the "tab-0" Button
+    t =    38.04s Checking existence of `"home-filter-footer" Other`
+    t =    38.07s Checking existence of `Keyboard (First Match)`
+    t =    38.12s Checking existence of `"home-person-Daniel Ross" Button`
+    t =    38.16s Find the "home-person-Daniel Ross" Button
+    t =    38.21s Find the "home-person-Daniel Ross" Button
+    t =    38.28s Tap "home-person-Daniel Ross" Button
+    t =    38.28s     Wait for com.plenara.plenaraApp to idle
+    t =    38.28s     Find the "home-person-Daniel Ross" Button
+    t =    38.31s     Check for interrupting elements affecting "home-person-Daniel Ross" Button
+    t =    38.34s     Synthesize event
+    t =    38.63s     Wait for com.plenara.plenaraApp to idle
+    t =    38.64s Find the Target Application 'com.plenara.plenaraApp'
+    t =    38.67s Find the Target Application 'com.plenara.plenaraApp'
+    t =    38.70s Find the Target Application 'com.plenara.plenaraApp'
+    t =    38.72s Find the Target Application 'com.plenara.plenaraApp'
+    t =    38.75s Checking existence of `"tab-0" Button`
+    t =    38.79s Find the "tab-0" Button
+    t =    38.87s Find the "tab-0" Button
+    t =    38.98s Checking existence of `"home-filter-footer" Other`
+    t =    39.04s Checking existence of `Keyboard (First Match)`
+    t =    39.08s Checking existence of `"home-log-Daniel Ross" Button`
+    t =    39.11s Find the "home-log-Daniel Ross" Button
+    t =    39.15s Find the "home-log-Daniel Ross" Button
+    t =    39.19s Find the "home-log-Daniel Ross" Button
+    t =    39.24s Find the Target Application 'com.plenara.plenaraApp'
+    t =    39.26s Find the Target Application 'com.plenara.plenaraApp'
+    t =    39.28s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 624.3) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 265.8) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    39.28s     Wait for com.plenara.plenaraApp to idle
+    t =    39.28s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    39.31s     Check for interrupting elements affecting "Plenara" Application
+    t =    39.33s     Synthesize event
+    t =    39.34s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    39.37s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    39.39s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    39.41s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    39.44s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    40.48s     Wait for com.plenara.plenaraApp to idle
+    t =    40.48s Find the Target Application 'com.plenara.plenaraApp'
+    t =    40.51s Find the Target Application 'com.plenara.plenaraApp'
+    t =    40.53s Find the Target Application 'com.plenara.plenaraApp'
+    t =    40.56s Find the Target Application 'com.plenara.plenaraApp'
+    t =    40.58s Checking existence of `"tab-0" Button`
+    t =    40.63s Find the "tab-0" Button
+    t =    40.68s Find the "tab-0" Button
+    t =    40.72s Checking existence of `"home-filter-footer" Other`
+    t =    40.76s Checking existence of `Keyboard (First Match)`
+    t =    40.81s Checking existence of `"home-log-Daniel Ross" Button`
+    t =    40.84s Find the "home-log-Daniel Ross" Button
+    t =    40.89s Find the "home-log-Daniel Ross" Button
+    t =    40.94s Tap "home-log-Daniel Ross" Button
+    t =    40.94s     Wait for com.plenara.plenaraApp to idle
+    t =    40.95s     Find the "home-log-Daniel Ross" Button
+    t =    40.99s     Check for interrupting elements affecting "home-log-Daniel Ross" Button
+    t =    41.02s     Synthesize event
+    t =    41.31s     Wait for com.plenara.plenaraApp to idle
+    t =    41.61s Waiting 5.0s for "save-moment" Button to exist
+    t =    42.67s     Checking `Expect predicate `existsNoRetry == 1` for object "save-moment" Button`
+    t =    42.67s         Checking existence of `"save-moment" Button`
+    t =    42.92s Added attachment named 'Large Home log contact'
+    t =    42.93s Tap "Cancel" Button
+    t =    42.93s     Wait for com.plenara.plenaraApp to idle
+    t =    42.93s     Find the "Cancel" Button
+    t =    43.04s     Check for interrupting elements affecting "Cancel" Button
+    t =    43.12s     Synthesize event
+    t =    43.42s     Wait for com.plenara.plenaraApp to idle
+    t =    43.87s Tear Down
+    t =    43.87s     Terminate com.plenara.plenaraApp:4706
+Test Case '-[PlenaraUITests.CompactHomeUITests testHomeDarkAndAccessibilityFiltersRemainUsable]' passed (45.089 seconds).
+Test Suite 'CompactHomeUITests' passed at 2026-11-27 15:39:58.645.
+	 Executed 1 test, with 0 failures (0 unexpected) in 45.089 (45.096) seconds
+Test Suite 'PlenaraUITests.xctest' passed at 2026-11-27 15:39:58.647.
+	 Executed 1 test, with 0 failures (0 unexpected) in 45.089 (45.098) seconds
+Test Suite 'Selected tests' passed at 2026-11-27 15:39:58.647.
+	 Executed 1 test, with 0 failures (0 unexpected) in 45.089 (45.103) seconds
+2026-11-27 15:39:58.965 xcodebuild[4456:10399534] [MT] IDETestOperationsObserverDebug: 53.670 elapsed -- Testing started completed.
+2026-11-27 15:39:58.965 xcodebuild[4456:10399534] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-27 15:39:58.965 xcodebuild[4456:10399534] [MT] IDETestOperationsObserverDebug: 53.670 sec, +53.670 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261127-153902.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

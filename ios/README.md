@@ -5,7 +5,7 @@ SwiftUI iPhone app, iOS 18+. Product behavior is owned by the
 
 ## Build and verify
 
-Xcode 26 and XcodeGen are available on this Mac. Run from the repository root:
+Xcode 27.2 (iOS 27.2 SDK) and XcodeGen are available on this Mac. Run from the repository root:
 
 ```sh
 bash tool/precheck.sh
@@ -15,8 +15,9 @@ The native gate builds the actual app in Release for the active simulator archit
 relationship/reminder checks, then XCUITest journeys on a dedicated iPhone 16
 Pro simulator. `ENABLE_TESTABILITY=YES` is used only for simulator test builds;
 compiler optimization remains Release. `tool/test-native.sh` accepts ordinary
-`xcodebuild` test-selection arguments and `PLENARA_SIMULATOR_ID` for another
-explicit simulator. The combined precheck also repeats native import with broad Contacts access denied.
+`xcodebuild` test-selection arguments. `tool/simulator_config.py` owns the
+dedicated simulator ID and device set; `PLENARA_SIMULATOR_ID` and
+`PLENARA_SIMULATOR_SET` select another explicit simulator and set. The combined precheck also repeats native import with broad Contacts access denied.
 Use `PLENARA_CONTACTS_DENIED=1` with `tool/test-native.sh` for that mode.
 It samples app RSS and stops it above 512 MiB; this is a
 bounded safeguard, not proof of device memory behavior or absence of leaks.
@@ -184,15 +185,23 @@ UUID is `2B4972AC-6571-4862-9042-46B7AB6006A2`. A missing drive must fail rather
 than recreate output internally. Previous external paths are compatibility links
 to the same working directories, not retained build copies.
 
-The dedicated iPhone 16 Pro simulator is `BB42F29A-928B-4B9E-BD39-160B70249D4F`.
-The smaller iPhone SE (3rd generation) verification target is
-`A7DB6C2C-908E-40CB-AB9D-63270EB0275B`. The native runner requires their data to
-resolve under `/Volumes/MacExt/DeveloperData/projects/plenara/simulators`.
-On this Mac, CoreSimulatorService currently receives a macOS filesystem privacy
-denial both through stable external data links and its supported external device
-set API. Offline copies were checked and original internal data was restored;
-no migration is claimed as successful. `PLENARA_ALLOW_INTERNAL_SIMULATOR=1`
-is an explicit operator override for an owner-authorized temporary exception,
-never a fallback. Luis authorized it for the compact Home build-1009 release on
-November 25, 2026. Future workflows need authorization or working external
-simulator access.
+`tool/simulator_config.py` owns the default iPhone 16 Pro on iOS 27.2:
+`24BF69CD-E43A-4D88-80ED-BBCFD6798C32`, in the external device set
+`/Volumes/MacExt/DeveloperData/projects/plenara/simulators`. All native runner,
+cleanup, memory-guard and calibration calls use that set. Xcode receives the
+same set through its verified `DVTSimulatorSetLocation` option.
+
+The older iOS 26.5 compatibility simulator remains
+`BB42F29A-928B-4B9E-BD39-160B70249D4F`, in the system device set with its data
+linked to MacExt after an offline byte-verified copy and successful boot. The
+smaller iPhone SE (3rd generation) remains
+`A7DB6C2C-908E-40CB-AB9D-63270EB0275B` in the system set. Set both simulator
+overrides explicitly when selecting one of those targets.
+
+With Xcode 27.2, external simulator creation and boot succeed. The SDK rebuild's
+[verification record](../verification/sdk27/update.md) records consumer checks
+and cleanup. The native runner requires external data by default.
+`PLENARA_ALLOW_INTERNAL_SIMULATOR=1` remains an explicit operator override, never
+a fallback: Luis authorized it only for the compact Home build-1009 release on
+November 25, 2026. A future internal-storage exception requires authorization
+for that workflow.

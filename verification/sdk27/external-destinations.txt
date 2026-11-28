@@ -1,0 +1,2 @@
+Relevant destination from xcodebuild -DVTSimulatorSetLocation=/Volumes/MacExt/DeveloperData/projects/plenara/simulators -showdestinations:
+		{ platform:iOS Simulator, arch:arm64, id:24BF69CD-E43A-4D88-80ED-BBCFD6798C32, OS:27.2, name:Plenara SDK 27 verification }

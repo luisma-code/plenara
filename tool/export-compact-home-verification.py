@@ -3,11 +3,12 @@
 from pathlib import Path
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 
 result = Path('.tmp/latest-full-native-result.txt').read_text().strip()
-dest = Path('verification/compact-home')
+dest = Path(os.environ.get('PLENARA_VERIFICATION_DIR', 'verification/compact-home'))
 dest.mkdir(exist_ok=True)
 scratch = Path('.tmp/compact-final-attachments')
 if scratch.exists():

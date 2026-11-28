@@ -1,0 +1,29 @@
+Failed to get matching snapshot: No matches found for Elements matching predicate '"home-filter-footer" IN identifiers' from input {(
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other,
+    Other, label: 'Vertical scroll bar, 2 pages', value: 0%,
+    Other,
+    Other,
+    Other
+)}
+Possibly caused by runtime issues:
+Automation type mismatch: computed Other from legacy attributes vs Toolbar from modern attribute. Input attributes and values: {
+    "XC_kAXXCAttributeAutomationType" = 24;
+    "XC_kAXXCAttributeElementBaseType" = "_UIFloatingBarContainerView";
+    "XC_kAXXCAttributeElementType" = "_UIFloatingBarContainerView";
+    "XC_kAXXCAttributeTraits" = 8589934592;
+}
+See test report attachments for more detail.

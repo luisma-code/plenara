@@ -2,12 +2,16 @@
 """Exercise the guard against the real simulator app, without a large allocation."""
 import subprocess,os,time,csv,json
 from pathlib import Path
-sim=os.environ.get('PLENARA_SIMULATOR_ID','BB42F29A-928B-4B9E-BD39-160B70249D4F')
+from simulator_config import command, settings
+sim, _ = settings()
 bundle='com.plenara.plenaraApp'
-launch=['xcrun','simctl','launch',sim,bundle,'--ui-testing','--reset','--demo']
-stop=['xcrun','simctl','terminate',sim,bundle]
+launch=command('launch',sim,bundle,'--ui-testing','--reset','--demo')
+stop=command('terminate',sim,bundle)
 watch=None
 try:
+ # No previous control output may satisfy this run's polling condition.
+ for old in ['.tmp/memory-stop-control.csv', '.tmp/memory-good-control.csv', 'verification/memory-guard-calibration.json']:
+  Path(old).unlink(missing_ok=True)
  subprocess.run(launch,check=True,capture_output=True)
  env=os.environ|{'PLENARA_RSS_LIMIT_KIB':'1','PLENARA_MEMORY_TRACE':'.tmp/memory-stop-control.csv'}
  broken=subprocess.run(['python3','tool/watch-memory.py',sim],env=env,capture_output=True,text=True,timeout=15)
@@ -25,7 +29,7 @@ try:
  else:raise AssertionError('Guard did not record three live samples')
  rows=list(csv.DictReader(trace.open()));peak=max(int(row['rss_kib']) for row in rows)
  assert 0<peak<524288
- result={'realAppStoppedWithOneKiBLimit':True,'realAppContinuedWithDefault512MiBLimit':True,'goodControlPeakRSSKiB':peak,'proof':'Guard routing and comparison; not a leak or device-resource claim.'}
+ result={'simulator':sim,'deviceSet':str(settings()[1]),'realAppStoppedWithOneKiBLimit':True,'realAppContinuedWithDefault512MiBLimit':True,'goodControlPeakRSSKiB':peak,'proof':'Guard routing and comparison; not a leak or device-resource claim.'}
  Path('verification/memory-guard-calibration.json').write_text(json.dumps(result,indent=2)+'\n')
  print(json.dumps(result))
 finally:

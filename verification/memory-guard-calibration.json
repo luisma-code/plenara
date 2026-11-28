@@ -1,6 +1,8 @@
 {
+  "simulator": "24BF69CD-E43A-4D88-80ED-BBCFD6798C32",
+  "deviceSet": "/Volumes/MacExt/DeveloperData/projects/plenara/simulators",
   "realAppStoppedWithOneKiBLimit": true,
   "realAppContinuedWithDefault512MiBLimit": true,
-  "goodControlPeakRSSKiB": 242192,
+  "goodControlPeakRSSKiB": 282800,
   "proof": "Guard routing and comparison; not a leak or device-resource claim."
 }

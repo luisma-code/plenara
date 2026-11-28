@@ -1,0 +1,211 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator27.2-arm64.xctestrun -configuration Release -DVTSimulatorSetLocation=/Volumes/MacExt/DeveloperData/projects/plenara/simulators -destination "platform=iOS Simulator,id=24BF69CD-E43A-4D88-80ED-BBCFD6798C32" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261127-161608.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/PlenaraUITests/testDemoNavigationAndScreenshots"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261127-161608.xcresult
+
+2026-11-27 16:16:15.636981-0800 PlenaraUITests-Runner[31592:10586324] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-27 16:16:21.223.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-27 16:16:21.225.
+Test Suite 'PlenaraUITests' started at 2026-11-27 16:16:21.225.
+Test Case '-[PlenaraUITests.PlenaraUITests testDemoNavigationAndScreenshots]' started.
+    t =     0.05s Start Test at 2026-11-27 16:16:21.271
+    t =     0.12s Set Up
+    t =     0.17s     Open com.plenara.plenaraApp
+    t =     0.17s         Launch com.plenara.plenaraApp
+2026-11-27 16:16:21.930 xcodebuild[31527:10585305] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:16:21.930 xcodebuild[31527:10585305] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[31592]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.P6NWK8/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x102ad4310) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.P6NWK8/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x101cf8398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     2.43s             Setting up automation session
+    t =     8.11s             Wait for com.plenara.plenaraApp to idle
+    t =    10.63s Terminate com.plenara.plenaraApp:31745
+    t =    11.67s Open com.plenara.plenaraApp
+    t =    11.67s     Launch com.plenara.plenaraApp
+2026-11-27 16:16:32.897 xcodebuild[31527:10585305] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:16:32.897 xcodebuild[31527:10585305] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    11.90s         Setting up automation session
+    t =    16.33s         Wait for com.plenara.plenaraApp to idle
+    t =    18.71s Waiting 5.0s for "Follow up" StaticText to exist
+    t =    19.79s     Checking `Expect predicate `existsNoRetry == 1` for object "Follow up" StaticText`
+    t =    19.79s         Checking existence of `"Follow up" StaticText`
+    t =    20.44s Find the "tab-1" Button
+    t =    20.58s Find the "quick-log" Button
+    t =    20.66s Tap "home-actions-Sofia Chen" Button
+    t =    20.66s     Wait for com.plenara.plenaraApp to idle
+    t =    20.67s     Find the "home-actions-Sofia Chen" Button
+    t =    20.73s     Check for interrupting elements affecting "home-actions-Sofia Chen" Button
+    t =    20.85s     Synthesize event
+    t =    21.21s     Wait for com.plenara.plenaraApp to idle
+    t =    21.22s Find the "home-later-Sofia Chen" Button
+    t =    21.27s Find the Target Application 'com.plenara.plenaraApp'
+    t =    21.48s Added attachment named 'Stay close'
+    t =    21.48s Tap "tab-1" Button
+    t =    21.48s     Wait for com.plenara.plenaraApp to idle
+    t =    21.48s     Find the "tab-1" Button
+    t =    21.54s     Check for interrupting elements affecting "tab-1" Button
+    t =    21.62s     Synthesize event
+    t =    22.16s     Wait for com.plenara.plenaraApp to idle
+    t =    22.33s Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.48s Added attachment named 'People'
+    t =    22.48s Tap "Far away" Button
+    t =    22.48s     Wait for com.plenara.plenaraApp to idle
+    t =    22.48s     Find the "Far away" Button
+    t =    22.52s     Check for interrupting elements affecting "filter-Far away" Button
+    t =    22.55s     Synthesize event
+    t =    22.59s         Scroll element to visible
+    t =    22.59s         Find the "filter-Far away" Button
+    t =    22.64s         Computed hit point {251.33333587646484, 560} after scrolling to visible
+    t =    22.92s     Wait for com.plenara.plenaraApp to idle
+    t =    22.92s Checking existence of `"person-Sofia Chen" Button`
+    t =    22.95s Checking existence of `"person-Daniel Rivera" Button`
+    t =    22.99s Tap "Everyone" Button
+    t =    22.99s     Wait for com.plenara.plenaraApp to idle
+    t =    22.99s     Find the "Everyone" Button
+    t =    23.02s     Check for interrupting elements affecting "filter-Everyone" Button
+    t =    23.05s     Synthesize event
+    t =    23.08s         Scroll element to visible
+    t =    23.08s         Find the "filter-Everyone" Button
+    t =    23.12s         Computed hit point {70.666667938232422, 560} after scrolling to visible
+    t =    23.40s     Wait for com.plenara.plenaraApp to idle
+    t =    23.40s Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    23.40s     Wait for com.plenara.plenaraApp to idle
+    t =    23.40s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    23.43s     Check for interrupting elements affecting "Plenara" Application
+    t =    23.47s     Synthesize event
+    t =    23.90s     Wait for com.plenara.plenaraApp to idle
+    t =    24.51s Find the Target Application 'com.plenara.plenaraApp'
+    t =    24.54s Find the Target Application 'com.plenara.plenaraApp'
+    t =    24.56s Find the Target Application 'com.plenara.plenaraApp'
+    t =    24.58s Find the Target Application 'com.plenara.plenaraApp'
+    t =    24.61s Checking existence of `"tab-0" Button`
+    t =    24.66s Find the "tab-0" Button
+    t =    24.71s Find the "tab-0" Button
+    t =    24.75s Checking existence of `"home-filter-footer" Other`
+    t =    24.79s Checking existence of `Keyboard (First Match)`
+    t =    24.83s Checking existence of `"person-Sofia Chen" Button`
+    t =    24.86s Find the "person-Sofia Chen" Button
+    t =    24.90s Find the "person-Sofia Chen" Button
+    t =    24.94s Tap "person-Sofia Chen" Button
+    t =    24.94s     Wait for com.plenara.plenaraApp to idle
+    t =    24.94s     Find the "person-Sofia Chen" Button
+    t =    24.98s     Check for interrupting elements affecting "person-Sofia Chen" Button
+    t =    25.01s     Synthesize event
+    t =    25.31s     Wait for com.plenara.plenaraApp to idle
+    t =    25.37s Waiting 5.0s for "Sofia Chen" StaticText to exist
+    t =    26.43s     Checking `Expect predicate `existsNoRetry == 1` for object "Sofia Chen" StaticText`
+    t =    26.43s         Checking existence of `"Sofia Chen" StaticText`
+    t =    26.47s Find the Target Application 'com.plenara.plenaraApp'
+    t =    26.59s Added attachment named 'Person'
+    t =    26.59s Swipe up Target Application 'com.plenara.plenaraApp'
+    t =    26.59s     Wait for com.plenara.plenaraApp to idle
+    t =    26.59s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    26.62s     Check for interrupting elements affecting "Plenara" Application
+    t =    26.64s     Synthesize event
+    t =    27.07s     Wait for com.plenara.plenaraApp to idle
+    t =    29.18s Find the Target Application 'com.plenara.plenaraApp'
+    t =    29.32s Added attachment named 'Person notes'
+    t =    29.32s Tap "tab-2" Button
+    t =    29.32s     Wait for com.plenara.plenaraApp to idle
+    t =    29.33s     Find the "tab-2" Button
+    t =    29.38s     Check for interrupting elements affecting "tab-2" Button
+    t =    29.42s     Synthesize event
+    t =    29.71s     Wait for com.plenara.plenaraApp to idle
+    t =    29.81s Checking existence of `"Contact history" StaticText`
+    t =    29.88s Find the Target Application 'com.plenara.plenaraApp'
+    t =    30.10s Added attachment named 'Moments'
+    t =    30.10s Tap "tab-0" Button
+    t =    30.10s     Wait for com.plenara.plenaraApp to idle
+    t =    30.28s     Find the "tab-0" Button
+    t =    30.31s     Check for interrupting elements affecting "tab-0" Button
+    t =    30.34s     Synthesize event
+    t =    30.63s     Wait for com.plenara.plenaraApp to idle
+    t =    30.64s Tap "Settings and reminders" Button
+    t =    30.64s     Wait for com.plenara.plenaraApp to idle
+    t =    30.64s     Find the "Settings and reminders" Button
+    t =    30.68s     Check for interrupting elements affecting "bell" Button
+    t =    30.72s     Synthesize event
+    t =    31.02s     Wait for com.plenara.plenaraApp to idle
+    t =    31.43s Checking existence of `"Export a restorable backup" Button`
+    t =    31.60s Find the Target Application 'com.plenara.plenaraApp'
+    t =    31.88s Added attachment named 'Settings'
+    t =    31.88s Tap "Export a restorable backup" Button
+    t =    31.88s     Wait for com.plenara.plenaraApp to idle
+    t =    31.93s     Find the "Export a restorable backup" Button
+    t =    32.06s     Check for interrupting elements affecting "Export a restorable backup" Button
+    t =    32.14s     Synthesize event
+    t =    32.44s     Wait for com.plenara.plenaraApp to idle
+    t =    32.70s Waiting 8.0s for "DOCPicker.actionButton" Button to exist
+    t =    33.76s     Checking `Expect predicate `existsNoRetry == 1` for object "DOCPicker.actionButton" Button`
+    t =    33.76s         Checking existence of `"DOCPicker.actionButton" Button`
+    t =    33.84s         Capturing element debug description
+    t =    34.71s     Checking `Expect predicate `existsNoRetry == 1` for object "DOCPicker.actionButton" Button`
+    t =    34.71s         Checking existence of `"DOCPicker.actionButton" Button`
+    t =    34.78s         Capturing element debug description
+    t =    35.74s     Checking `Expect predicate `existsNoRetry == 1` for object "DOCPicker.actionButton" Button`
+    t =    35.74s         Checking existence of `"DOCPicker.actionButton" Button`
+    t =    37.01s         Capturing element debug description
+    t =    37.77s     Checking `Expect predicate `existsNoRetry == 1` for object "DOCPicker.actionButton" Button`
+    t =    37.78s         Checking existence of `"DOCPicker.actionButton" Button`
+    t =    37.84s         Capturing element debug description
+    t =    38.72s     Checking `Expect predicate `existsNoRetry == 1` for object "DOCPicker.actionButton" Button`
+    t =    38.73s         Checking existence of `"DOCPicker.actionButton" Button`
+    t =    38.81s         Capturing element debug description
+    t =    39.77s     Checking `Expect predicate `existsNoRetry == 1` for object "DOCPicker.actionButton" Button`
+    t =    39.77s         Checking existence of `"DOCPicker.actionButton" Button`
+    t =    41.04s         Capturing element debug description
+    t =    41.04s     Checking existence of `"DOCPicker.actionButton" Button`
+    t =    45.53s Find the Target Application 'com.plenara.plenaraApp'
+    t =    46.00s Added attachment named 'Backup export'
+    t =    46.01s Tap "DOCPicker.actionButton" Button
+    t =    46.01s     Wait for com.plenara.plenaraApp to idle
+    t =    46.14s     Find the "DOCPicker.actionButton" Button
+    t =    46.34s     Check for interrupting elements affecting "DOCPicker.actionButton" Button
+    t =    47.15s     Synthesize event
+    t =    48.13s     Wait for com.plenara.plenaraApp to idle
+    t =    48.22s Waiting 5.0s for "FullDocumentManagerViewControllerNavigationBar" NavigationBar to not exist
+    t =    49.24s     Checking `Expect predicate `existsNoRetry == 0` for object "FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    49.24s         Checking existence of `"FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    50.14s         Capturing element debug description
+    t =    50.30s     Checking `Expect predicate `existsNoRetry == 0` for object "FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    50.30s         Checking existence of `"FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    50.61s         Capturing element debug description
+    t =    51.32s     Checking `Expect predicate `existsNoRetry == 0` for object "FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    51.32s         Checking existence of `"FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    51.53s         Capturing element debug description
+    t =    52.31s     Checking `Expect predicate `existsNoRetry == 0` for object "FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    52.31s         Checking existence of `"FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    53.11s         Capturing element debug description
+    t =    53.25s     Checking `Expect predicate `existsNoRetry == 0` for object "FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    53.27s         Checking existence of `"FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    53.59s     Checking existence of `"FullDocumentManagerViewControllerNavigationBar" NavigationBar`
+    t =    54.00s Collecting debug information to assist test failure triage
+    t =    54.01s     Requesting snapshot of accessibility hierarchy for app with pid 31783
+/Users/luisma.code/Documents/code/plenara/plenara/ios/PlenaraUITests/PlenaraUITests.swift:40: error: -[PlenaraUITests.PlenaraUITests testDemoNavigationAndScreenshots] : XCTAssertTrue failed
+    t =    55.75s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testDemoNavigationAndScreenshots]' failed (66.043 seconds).
+Test Suite 'PlenaraUITests' failed at 2026-11-27 16:17:27.315.
+	 Executed 1 test, with 1 failure (0 unexpected) in 66.043 (66.090) seconds
+Test Suite 'PlenaraUITests.xctest' failed at 2026-11-27 16:17:27.319.
+	 Executed 1 test, with 1 failure (0 unexpected) in 66.043 (66.093) seconds
+Test Suite 'Selected tests' failed at 2026-11-27 16:17:27.319.
+	 Executed 1 test, with 1 failure (0 unexpected) in 66.043 (66.096) seconds
+2026-11-27 16:17:27.978 xcodebuild[31527:10591370]  IDETestOperationsObserverDebug: Failure collecting diagnostics from simulator: Process exited with error 72:
+ xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+
+2026-11-27 16:17:27.994 xcodebuild[31527:10585305] [MT] IDETestOperationsObserverDebug: 75.080 elapsed -- Testing started completed.
+2026-11-27 16:17:27.994 xcodebuild[31527:10585305] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-27 16:17:27.994 xcodebuild[31527:10585305] [MT] IDETestOperationsObserverDebug: 75.080 sec, +75.080 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261127-161608.xcresult
+
+Failing tests:
+	PlenaraUITests.testDemoNavigationAndScreenshots()
+
+** TEST EXECUTE FAILED **
+
+Testing started

@@ -1,0 +1,733 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun .build/simulator/Build/Products/Plenara_iphonesimulator27.2-arm64.xctestrun -configuration Release -DVTSimulatorSetLocation=/Volumes/MacExt/DeveloperData/projects/plenara/simulators -destination "platform=iOS Simulator,id=24BF69CD-E43A-4D88-80ED-BBCFD6798C32" -derivedDataPath .build/simulator -parallel-testing-enabled NO -resultBundlePath .build/native-20261127-163434.xcresult CODE_SIGNING_ALLOWED=NO test-without-building "-only-testing:PlenaraUITests/PlenaraUITests/testOrganizeDarkAndLargeText" "-only-testing:PlenaraUITests/PlenaraUITests/testOrganizeNeedsAssessmentFilterBatchUndoAndReopen" "-only-testing:PlenaraUITests/PlenaraUITests/testOrganizeQuickSortUnsetSkipUndoAndSave"
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261127-163434.xcresult
+
+2026-11-27 16:34:39.961561-0800 PlenaraUITests-Runner[39898:10654588] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-27 16:34:43.922.
+Test Suite 'PlenaraUITests.xctest' started at 2026-11-27 16:34:43.925.
+Test Suite 'PlenaraUITests' started at 2026-11-27 16:34:43.925.
+Test Case '-[PlenaraUITests.PlenaraUITests testOrganizeDarkAndLargeText]' started.
+    t =     0.02s Start Test at 2026-11-27 16:34:43.941
+    t =     0.07s Set Up
+    t =     0.07s     Open com.plenara.plenaraApp
+    t =     0.07s         Launch com.plenara.plenaraApp
+2026-11-27 16:34:44.380 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:34:44.380 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[39898]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.P6NWK8/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x105750310) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.P6NWK8/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10569c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.09s             Setting up automation session
+    t =     6.01s             Wait for com.plenara.plenaraApp to idle
+    t =     9.70s Terminate com.plenara.plenaraApp:39933
+    t =    10.73s Open com.plenara.plenaraApp
+    t =    10.73s     Launch com.plenara.plenaraApp
+2026-11-27 16:34:54.662 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:34:54.662 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    10.95s         Setting up automation session
+    t =    14.52s         Wait for com.plenara.plenaraApp to idle
+    t =    16.51s Tap "tab-1" Button
+    t =    16.51s     Wait for com.plenara.plenaraApp to idle
+    t =    16.51s     Find the "tab-1" Button
+    t =    17.14s     Check for interrupting elements affecting "tab-1" Button
+    t =    17.23s     Synthesize event
+    t =    17.55s     Wait for com.plenara.plenaraApp to idle
+    t =    17.90s Waiting 5.0s for "people-organize" Button to exist
+    t =    18.96s     Checking `Expect predicate `existsNoRetry == 1` for object "people-organize" Button`
+    t =    18.96s         Checking existence of `"people-organize" Button`
+    t =    19.01s Find the "people-organize" Button
+    t =    19.05s Find the "people-organize" Button
+    t =    19.09s Find the "tab-1" Button
+    t =    19.13s Tap "people-organize" Button
+    t =    19.13s     Wait for com.plenara.plenaraApp to idle
+    t =    19.13s     Find the "people-organize" Button
+    t =    19.16s     Check for interrupting elements affecting "people-organize" Button
+    t =    19.19s     Synthesize event
+    t =    19.49s     Wait for com.plenara.plenaraApp to idle
+    t =    20.05s Waiting 5.0s for "organize-mode" SegmentedControl to exist
+    t =    21.11s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-mode" SegmentedControl`
+    t =    21.11s         Checking existence of `"organize-mode" SegmentedControl`
+    t =    21.30s Find the "organize-missing-detail" Button
+    t =    21.38s Find the "organize-missing-detail" Button
+    t =    21.46s Tap "organize-missing-detail" Button
+    t =    21.46s     Wait for com.plenara.plenaraApp to idle
+    t =    21.46s     Find the "organize-missing-detail" Button
+    t =    21.52s     Check for interrupting elements affecting "organize-missing-detail" Button
+    t =    21.58s     Synthesize event
+    t =    21.88s     Wait for com.plenara.plenaraApp to idle
+    t =    22.14s Waiting 5.0s for "What I want" Button to exist
+    t =    23.14s     Checking `Expect predicate `existsNoRetry == 1` for object "What I want" Button`
+    t =    23.24s         Checking existence of `"What I want" Button`
+    t =    23.95s Find the "What I want" Button
+    t =    24.25s Tap "What I want" Button
+    t =    24.25s     Wait for com.plenara.plenaraApp to idle
+    t =    24.26s     Find the "What I want" Button
+    t =    24.28s     Check for interrupting elements affecting "What I want" Button
+    t =    24.54s     Synthesize event
+    t =    24.86s     Wait for com.plenara.plenaraApp to idle
+    t =    26.98s Find the "organize-person-Leo Park" Button
+    t =    27.07s Find the "organize-person-Leo Park" Button
+    t =    27.13s Find the "organize-apply" Button
+    t =    27.19s Find the "organize-person-Leo Park" Button
+    t =    27.26s Find the "organize-person-Leo Park" Button
+    t =    27.31s Find the "organize-apply" Button
+    t =    27.37s Tap "organize-person-Leo Park" Button
+    t =    27.37s     Wait for com.plenara.plenaraApp to idle
+    t =    27.37s     Find the "organize-person-Leo Park" Button
+    t =    27.43s     Check for interrupting elements affecting "organize-person-Leo Park" Button
+    t =    27.48s     Synthesize event
+    t =    27.76s     Wait for com.plenara.plenaraApp to idle
+    t =    27.77s Find the "organize-apply" Button
+    t =    27.83s Find the Target Application 'com.plenara.plenaraApp'
+    t =    28.05s Added attachment named 'Dark organizer assessment'
+    t =    28.05s Find the "Quick sort" Button
+    t =    28.12s Find the "Quick sort" Button
+    t =    28.17s Find the "Organize your people" NavigationBar
+    t =    28.23s Find the "Quick sort" Button
+    t =    28.32s Find the "Quick sort" Button
+    t =    28.39s Find the "Organize your people" NavigationBar
+    t =    28.45s Tap "Quick sort" Button
+    t =    28.45s     Wait for com.plenara.plenaraApp to idle
+    t =    28.45s     Find the "Quick sort" Button
+    t =    28.51s     Check for interrupting elements affecting "Quick sort" Button
+    t =    28.56s     Synthesize event
+    t =    28.85s     Wait for com.plenara.plenaraApp to idle
+    t =    30.50s Waiting 5.0s for "organize-unset-only" Switch to exist
+    t =    31.52s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-unset-only" Switch`
+    t =    31.55s         Checking existence of `"organize-unset-only" Switch`
+    t =    31.65s Tap "organize-unset-only" Switch[0.90, 0.50]
+    t =    31.65s     Wait for com.plenara.plenaraApp to idle
+    t =    31.65s     Find the "organize-unset-only" Switch
+    t =    31.70s     Check for interrupting elements affecting "organize-unset-only" Switch
+    t =    31.80s     Synthesize event
+    t =    31.81s         Find the "organize-unset-only" Switch
+    t =    31.86s         Find the "organize-unset-only" Switch
+    t =    31.92s         Find the "organize-unset-only" Switch
+    t =    32.38s     Wait for com.plenara.plenaraApp to idle
+    t =    33.73s Find the "sort-Amara Okafor-Nearby" Button
+    t =    33.81s Find the "sort-Amara Okafor-Nearby" Button
+    t =    33.88s Find the "Organize your people" NavigationBar
+    t =    33.96s Find the "sort-Amara Okafor-Nearby" Button
+    t =    34.04s Find the Target Application 'com.plenara.plenaraApp'
+    t =    34.09s Find the "sort-Amara Okafor-Nearby" Button
+    t =    34.17s Tap "sort-Amara Okafor-Nearby" Button
+    t =    34.17s     Wait for com.plenara.plenaraApp to idle
+    t =    34.17s     Find the "sort-Amara Okafor-Nearby" Button
+    t =    34.24s     Check for interrupting elements affecting "sort-Amara Okafor-Nearby" Button
+    t =    34.30s     Synthesize event
+    t =    34.59s     Wait for com.plenara.plenaraApp to idle
+    t =    34.60s Find the Target Application 'com.plenara.plenaraApp'
+    t =    34.82s Added attachment named 'Dark organizer'
+    t =    34.82s Tap "Close" Button
+    t =    34.82s     Wait for com.plenara.plenaraApp to idle
+    t =    34.82s     Find the "Close" Button
+    t =    34.89s     Check for interrupting elements affecting "Close" Button
+    t =    34.95s     Synthesize event
+    t =    35.24s     Wait for com.plenara.plenaraApp to idle
+    t =    35.70s Waiting 5.0s for "people-organize" Button to exist
+    t =    36.76s     Checking `Expect predicate `existsNoRetry == 1` for object "people-organize" Button`
+    t =    36.76s         Checking existence of `"people-organize" Button`
+    t =    36.81s Terminate com.plenara.plenaraApp:40054
+    t =    37.93s Open com.plenara.plenaraApp
+    t =    37.93s     Launch com.plenara.plenaraApp
+2026-11-27 16:35:21.875 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:35:21.875 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    38.26s         Setting up automation session
+    t =    42.04s         Wait for com.plenara.plenaraApp to idle
+    t =    44.13s Tap "tab-1" Button
+    t =    44.13s     Wait for com.plenara.plenaraApp to idle
+    t =    44.14s     Find the "tab-1" Button
+    t =    45.73s     Check for interrupting elements affecting "tab-1" Button
+    t =    45.80s     Synthesize event
+    t =    46.13s     Wait for com.plenara.plenaraApp to idle
+    t =    46.55s Waiting 5.0s for "people-organize" Button to exist
+    t =    47.58s     Checking `Expect predicate `existsNoRetry == 1` for object "people-organize" Button`
+    t =    47.58s         Checking existence of `"people-organize" Button`
+    t =    47.63s Find the "people-organize" Button
+    t =    47.67s Find the "people-organize" Button
+    t =    47.70s Find the "tab-1" Button
+    t =    47.73s Tap "people-organize" Button
+    t =    47.73s     Wait for com.plenara.plenaraApp to idle
+    t =    47.74s     Find the "people-organize" Button
+    t =    47.77s     Check for interrupting elements affecting "people-organize" Button
+    t =    47.80s     Synthesize event
+    t =    48.09s     Wait for com.plenara.plenaraApp to idle
+    t =    48.60s Waiting 5.0s for "organize-mode" SegmentedControl to exist
+    t =    49.64s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-mode" SegmentedControl`
+    t =    49.64s         Checking existence of `"organize-mode" SegmentedControl`
+    t =    49.73s Find the "organize-missing-detail" Button
+    t =    49.80s Find the "organize-missing-detail" Button
+    t =    49.87s Tap "organize-missing-detail" Button
+    t =    49.87s     Wait for com.plenara.plenaraApp to idle
+    t =    49.87s     Find the "organize-missing-detail" Button
+    t =    49.92s     Check for interrupting elements affecting "organize-missing-detail" Button
+    t =    49.97s     Synthesize event
+    t =    50.27s     Wait for com.plenara.plenaraApp to idle
+    t =    50.66s Waiting 5.0s for "What I want" Button to exist
+    t =    51.70s     Checking `Expect predicate `existsNoRetry == 1` for object "What I want" Button`
+    t =    51.70s         Checking existence of `"What I want" Button`
+    t =    51.74s Find the "What I want" Button
+    t =    51.77s Tap "What I want" Button
+    t =    51.77s     Wait for com.plenara.plenaraApp to idle
+    t =    51.78s     Find the "What I want" Button
+    t =    51.81s     Check for interrupting elements affecting "What I want" Button
+    t =    51.86s     Synthesize event
+    t =    52.16s     Wait for com.plenara.plenaraApp to idle
+    t =    53.65s Find the "organize-person-Leo Park" Button
+    t =    54.73s     Find the "organize-person-Leo Park" Button (retry 1)
+    t =    55.79s     Find the "organize-person-Leo Park" Button (retry 2)
+    t =    55.85s Swipe up "organize-list" Any
+    t =    55.85s     Wait for com.plenara.plenaraApp to idle
+    t =    55.85s     Find the "organize-list" Any
+    t =    55.91s     Check for interrupting elements affecting "organize-list" CollectionView
+    t =    55.97s     Synthesize event
+    t =    56.41s     Wait for com.plenara.plenaraApp to idle
+    t =    58.59s Find the "organize-person-Leo Park" Button
+    t =    58.80s Find the "organize-person-Leo Park" Button
+    t =    58.87s Find the "organize-apply" Button
+    t =    58.93s Swipe up "organize-list" CollectionView
+    t =    58.93s     Wait for com.plenara.plenaraApp to idle
+    t =    58.93s     Find the "organize-list" CollectionView
+    t =    58.99s     Check for interrupting elements affecting "organize-list" CollectionView
+    t =    59.08s     Synthesize event
+    t =    59.56s     Wait for com.plenara.plenaraApp to idle
+    t =    60.04s Find the "organize-person-Leo Park" Button
+    t =    60.10s Find the "organize-person-Leo Park" Button
+    t =    60.16s Find the "organize-apply" Button
+    t =    60.22s Find the "organize-person-Leo Park" Button
+    t =    60.28s Find the "organize-person-Leo Park" Button
+    t =    60.35s Find the "organize-apply" Button
+    t =    60.42s Tap "organize-person-Leo Park" Button
+    t =    60.42s     Wait for com.plenara.plenaraApp to idle
+    t =    60.42s     Find the "organize-person-Leo Park" Button
+    t =    60.49s     Check for interrupting elements affecting "organize-person-Leo Park" Button
+    t =    60.54s     Synthesize event
+    t =    60.83s     Wait for com.plenara.plenaraApp to idle
+    t =    60.83s Find the "organize-apply" Button
+    t =    60.91s Find the Target Application 'com.plenara.plenaraApp'
+    t =    61.12s Added attachment named 'Large text organizer assessment'
+    t =    61.12s Find the "Quick sort" Button
+    t =    61.19s Swipe down "organize-list" CollectionView
+    t =    61.19s     Wait for com.plenara.plenaraApp to idle
+    t =    61.19s     Find the "organize-list" CollectionView
+    t =    61.26s     Check for interrupting elements affecting "organize-list" CollectionView
+    t =    61.32s     Synthesize event
+    t =    61.76s     Wait for com.plenara.plenaraApp to idle
+    t =    63.87s Find the "Quick sort" Button
+    t =    64.00s Swipe down "organize-list" CollectionView
+    t =    64.00s     Wait for com.plenara.plenaraApp to idle
+    t =    64.00s     Find the "organize-list" CollectionView
+    t =    64.20s     Check for interrupting elements affecting "organize-list" CollectionView
+    t =    64.26s     Synthesize event
+    t =    64.71s     Wait for com.plenara.plenaraApp to idle
+    t =    65.19s Find the "Quick sort" Button
+    t =    65.31s Find the "Quick sort" Button
+    t =    65.40s Find the "Organize your people" NavigationBar
+    t =    65.47s Find the "Quick sort" Button
+    t =    65.54s Find the "Quick sort" Button
+    t =    65.61s Find the "Organize your people" NavigationBar
+    t =    65.68s Tap "Quick sort" Button
+    t =    65.68s     Wait for com.plenara.plenaraApp to idle
+    t =    65.68s     Find the "Quick sort" Button
+    t =    65.77s     Check for interrupting elements affecting "Quick sort" Button
+    t =    65.84s     Synthesize event
+    t =    66.15s     Wait for com.plenara.plenaraApp to idle
+    t =    67.77s Waiting 5.0s for "organize-unset-only" Switch to exist
+    t =    68.79s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-unset-only" Switch`
+    t =    68.84s         Checking existence of `"organize-unset-only" Switch`
+    t =    68.91s Tap "organize-unset-only" Switch[0.90, 0.50]
+    t =    68.91s     Wait for com.plenara.plenaraApp to idle
+    t =    68.91s     Find the "organize-unset-only" Switch
+    t =    68.97s     Check for interrupting elements affecting "organize-unset-only" Switch
+    t =    69.02s     Synthesize event
+    t =    69.03s         Find the "organize-unset-only" Switch
+    t =    69.08s         Find the "organize-unset-only" Switch
+    t =    69.15s         Find the "organize-unset-only" Switch
+    t =    69.49s     Wait for com.plenara.plenaraApp to idle
+    t =    70.80s Find the "sort-Amara Okafor-Nearby" Button
+    t =    70.87s Swipe up "organize-list" Any
+    t =    70.87s     Wait for com.plenara.plenaraApp to idle
+    t =    70.87s     Find the "organize-list" Any
+    t =    70.93s     Check for interrupting elements affecting "organize-list" CollectionView
+    t =    71.00s     Synthesize event
+    t =    71.45s     Wait for com.plenara.plenaraApp to idle
+    t =    73.55s Find the "sort-Amara Okafor-Nearby" Button
+    t =    73.63s Find the "sort-Amara Okafor-Nearby" Button
+    t =    73.69s Find the "Organize your people" NavigationBar
+    t =    73.76s Find the "sort-Amara Okafor-Nearby" Button
+    t =    73.82s Find the Target Application 'com.plenara.plenaraApp'
+    t =    73.86s Find the "sort-Amara Okafor-Nearby" Button
+    t =    73.93s Tap "sort-Amara Okafor-Nearby" Button
+    t =    73.93s     Wait for com.plenara.plenaraApp to idle
+    t =    73.93s     Find the "sort-Amara Okafor-Nearby" Button
+    t =    73.99s     Check for interrupting elements affecting "sort-Amara Okafor-Nearby" Button
+    t =    74.04s     Synthesize event
+    t =    74.34s     Wait for com.plenara.plenaraApp to idle
+    t =    74.36s Find the Target Application 'com.plenara.plenaraApp'
+    t =    74.53s Added attachment named 'Large text organizer'
+    t =    74.53s Tap "Close" Button
+    t =    74.53s     Wait for com.plenara.plenaraApp to idle
+    t =    74.54s     Find the "Close" Button
+    t =    74.60s     Check for interrupting elements affecting "Close" Button
+    t =    74.65s     Synthesize event
+    t =    74.96s     Wait for com.plenara.plenaraApp to idle
+    t =    75.53s Waiting 5.0s for "people-organize" Button to exist
+    t =    76.56s     Checking `Expect predicate `existsNoRetry == 1` for object "people-organize" Button`
+    t =    76.56s         Checking existence of `"people-organize" Button`
+    t =    76.63s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testOrganizeDarkAndLargeText]' passed (77.111 seconds).
+Test Case '-[PlenaraUITests.PlenaraUITests testOrganizeNeedsAssessmentFilterBatchUndoAndReopen]' started.
+    t =     0.00s Start Test at 2026-11-27 16:36:01.058
+    t =     0.05s Set Up
+    t =     0.05s     Open com.plenara.plenaraApp
+    t =     0.05s         Launch com.plenara.plenaraApp
+    t =     0.05s             Terminate com.plenara.plenaraApp:40166
+2026-11-27 16:36:02.210 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:36:02.210 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.97s             Setting up automation session
+    t =     6.51s             Wait for com.plenara.plenaraApp to idle
+    t =     9.06s Terminate com.plenara.plenaraApp:40394
+    t =    10.10s Open com.plenara.plenaraApp
+    t =    10.10s     Launch com.plenara.plenaraApp
+2026-11-27 16:36:11.155 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:36:11.155 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    10.31s         Setting up automation session
+    t =    14.29s         Wait for com.plenara.plenaraApp to idle
+    t =    16.24s Tap "tab-1" Button
+    t =    16.24s     Wait for com.plenara.plenaraApp to idle
+    t =    16.25s     Find the "tab-1" Button
+    t =    16.88s     Check for interrupting elements affecting "tab-1" Button
+    t =    16.93s     Synthesize event
+    t =    17.23s     Wait for com.plenara.plenaraApp to idle
+    t =    17.72s Waiting 5.0s for "people-organize" Button to exist
+    t =    18.73s     Checking `Expect predicate `existsNoRetry == 1` for object "people-organize" Button`
+    t =    18.73s         Checking existence of `"people-organize" Button`
+    t =    18.78s Find the "people-organize" Button
+    t =    18.83s Find the "people-organize" Button
+    t =    18.87s Find the "tab-1" Button
+    t =    18.91s Tap "people-organize" Button
+    t =    18.91s     Wait for com.plenara.plenaraApp to idle
+    t =    18.91s     Find the "people-organize" Button
+    t =    18.95s     Check for interrupting elements affecting "people-organize" Button
+    t =    18.98s     Synthesize event
+    t =    19.28s     Wait for com.plenara.plenaraApp to idle
+    t =    19.71s Waiting 5.0s for "organize-mode" SegmentedControl to exist
+    t =    20.74s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-mode" SegmentedControl`
+    t =    20.74s         Checking existence of `"organize-mode" SegmentedControl`
+    t =    20.84s Waiting 5.0s for "organize-needs-assessment" Switch to exist
+    t =    21.86s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-needs-assessment" Switch`
+    t =    21.86s         Checking existence of `"organize-needs-assessment" Switch`
+    t =    21.93s Find the "organize-needs-assessment" Switch
+    t =    22.00s Checking existence of `"organize-person-Leo Park" Button`
+    t =    22.05s Checking existence of `"organize-person-Amara Okafor" Button`
+    t =    22.10s Find the Target Application 'com.plenara.plenaraApp'
+    t =    22.26s Added attachment named 'Assessment remaining'
+    t =    22.26s Find the "organize-missing-detail" Button
+    t =    22.33s Find the "organize-missing-detail" Button
+    t =    22.41s Tap "organize-missing-detail" Button
+    t =    22.41s     Wait for com.plenara.plenaraApp to idle
+    t =    22.41s     Find the "organize-missing-detail" Button
+    t =    22.47s     Check for interrupting elements affecting "organize-missing-detail" Button
+    t =    22.52s     Synthesize event
+    t =    22.82s     Wait for com.plenara.plenaraApp to idle
+    t =    23.05s Waiting 5.0s for "Distance" Button to exist
+    t =    24.10s     Checking `Expect predicate `existsNoRetry == 1` for object "Distance" Button`
+    t =    24.10s         Checking existence of `"Distance" Button`
+    t =    24.16s Find the "Distance" Button
+    t =    24.20s Tap "Distance" Button
+    t =    24.20s     Wait for com.plenara.plenaraApp to idle
+    t =    24.24s     Find the "Distance" Button
+    t =    24.26s     Check for interrupting elements affecting "Distance" Button
+    t =    24.32s     Synthesize event
+    t =    24.62s     Wait for com.plenara.plenaraApp to idle
+    t =    26.11s Checking existence of `"organize-person-Leo Park" Button`
+    t =    26.17s Checking existence of `"Show everyone" Button`
+    t =    26.23s Tap "Show everyone" Button
+    t =    26.23s     Wait for com.plenara.plenaraApp to idle
+    t =    26.23s     Find the "Show everyone" Button
+    t =    26.29s     Check for interrupting elements affecting "Show everyone" Button
+    t =    26.34s     Synthesize event
+    t =    26.63s     Wait for com.plenara.plenaraApp to idle
+    t =    26.81s Find the "organize-needs-assessment" Switch
+    t =    26.88s Checking existence of `"organize-person-Amara Okafor" Button`
+    t =    26.96s Tap "organize-needs-assessment" Switch[0.90, 0.50]
+    t =    26.96s     Wait for com.plenara.plenaraApp to idle
+    t =    26.96s     Find the "organize-needs-assessment" Switch
+    t =    27.05s     Check for interrupting elements affecting "organize-needs-assessment" Switch
+    t =    27.13s     Synthesize event
+    t =    27.13s         Find the "organize-needs-assessment" Switch
+    t =    27.21s         Find the "organize-needs-assessment" Switch
+    t =    27.29s         Find the "organize-needs-assessment" Switch
+    t =    27.64s     Wait for com.plenara.plenaraApp to idle
+    t =    28.95s Find the "organize-missing-detail" Button
+    t =    29.05s Find the "organize-missing-detail" Button
+    t =    29.13s Tap "organize-missing-detail" Button
+    t =    29.13s     Wait for com.plenara.plenaraApp to idle
+    t =    29.14s     Find the "organize-missing-detail" Button
+    t =    29.20s     Check for interrupting elements affecting "organize-missing-detail" Button
+    t =    29.25s     Synthesize event
+    t =    29.55s     Wait for com.plenara.plenaraApp to idle
+    t =    30.69s Waiting 5.0s for "What I want" Button to exist
+    t =    31.71s     Checking `Expect predicate `existsNoRetry == 1` for object "What I want" Button`
+    t =    31.71s         Checking existence of `"What I want" Button`
+    t =    31.75s Find the "What I want" Button
+    t =    31.79s Tap "What I want" Button
+    t =    31.79s     Wait for com.plenara.plenaraApp to idle
+    t =    31.79s     Find the "What I want" Button
+    t =    31.83s     Check for interrupting elements affecting "What I want" Button
+    t =    31.89s     Synthesize event
+    t =    32.18s     Wait for com.plenara.plenaraApp to idle
+    t =    33.61s Checking existence of `"organize-person-Leo Park" Button`
+    t =    33.66s Checking existence of `"organize-person-Amara Okafor" Button`
+    t =    33.72s Find the Target Application 'com.plenara.plenaraApp'
+    t =    33.87s Added attachment named 'Assessment specific detail'
+    t =    33.87s Tap "organize-select-shown" Button
+    t =    33.87s     Wait for com.plenara.plenaraApp to idle
+    t =    33.88s     Find the "organize-select-shown" Button
+    t =    33.95s     Check for interrupting elements affecting "organize-select-shown" Button
+    t =    34.00s     Synthesize event
+    t =    34.30s     Wait for com.plenara.plenaraApp to idle
+    t =    34.30s Tap "organize-apply" Button
+    t =    34.31s     Wait for com.plenara.plenaraApp to idle
+    t =    34.31s     Find the "organize-apply" Button
+    t =    34.37s     Check for interrupting elements affecting "organize-apply" Button
+    t =    34.43s     Synthesize event
+    t =    34.72s     Wait for com.plenara.plenaraApp to idle
+    t =    34.79s Find the "batch-What I want" Button
+    t =    34.92s Find the "batch-What I want" Button
+    t =    35.04s Tap "batch-What I want" Button
+    t =    35.04s     Wait for com.plenara.plenaraApp to idle
+    t =    35.29s     Find the "batch-What I want" Button
+    t =    35.37s     Check for interrupting elements affecting "batch-What I want" Button
+    t =    35.45s     Synthesize event
+    t =    35.74s     Wait for com.plenara.plenaraApp to idle
+    t =    36.92s Waiting 5.0s for "Grow closer" Button to exist
+    t =    37.97s     Checking `Expect predicate `existsNoRetry == 1` for object "Grow closer" Button`
+    t =    37.97s         Checking existence of `"Grow closer" Button`
+    t =    38.00s Find the "Grow closer" Button
+    t =    38.04s Tap "Grow closer" Button
+    t =    38.04s     Wait for com.plenara.plenaraApp to idle
+    t =    38.04s     Find the "Grow closer" Button
+    t =    38.07s     Check for interrupting elements affecting "Grow closer" Button
+    t =    38.16s     Synthesize event
+    t =    38.45s     Wait for com.plenara.plenaraApp to idle
+    t =    39.90s Tap "batch-save" Button
+    t =    39.90s     Wait for com.plenara.plenaraApp to idle
+    t =    39.91s     Find the "batch-save" Button
+    t =    40.00s     Check for interrupting elements affecting "batch-save" Button
+    t =    40.08s     Synthesize event
+    t =    40.38s     Wait for com.plenara.plenaraApp to idle
+    t =    40.88s Checking existence of `"organize-person-Leo Park" Button`
+    t =    40.94s Find the Target Application 'com.plenara.plenaraApp'
+    t =    41.10s Added attachment named 'Assessment complete'
+    t =    41.10s Tap "organize-undo" Button
+    t =    41.10s     Wait for com.plenara.plenaraApp to idle
+    t =    41.10s     Find the "organize-undo" Button
+    t =    41.17s     Check for interrupting elements affecting "organize-undo" Button
+    t =    41.22s     Synthesize event
+    t =    41.51s     Wait for com.plenara.plenaraApp to idle
+    t =    41.52s Checking existence of `"organize-person-Leo Park" Button`
+    t =    41.58s Tap "organize-select-shown" Button
+    t =    41.58s     Wait for com.plenara.plenaraApp to idle
+    t =    41.58s     Find the "organize-select-shown" Button
+    t =    41.66s     Check for interrupting elements affecting "organize-select-shown" Button
+    t =    41.73s     Synthesize event
+    t =    42.02s     Wait for com.plenara.plenaraApp to idle
+    t =    42.03s Tap "organize-apply" Button
+    t =    42.03s     Wait for com.plenara.plenaraApp to idle
+    t =    42.03s     Find the "organize-apply" Button
+    t =    42.09s     Check for interrupting elements affecting "organize-apply" Button
+    t =    42.14s     Synthesize event
+    t =    42.43s     Wait for com.plenara.plenaraApp to idle
+    t =    42.89s Find the "batch-What I want" Button
+    t =    43.01s Find the "batch-What I want" Button
+    t =    43.99s Tap "batch-What I want" Button
+    t =    44.00s     Wait for com.plenara.plenaraApp to idle
+    t =    44.01s     Find the "batch-What I want" Button
+    t =    44.90s     Check for interrupting elements affecting "batch-What I want" Button
+    t =    45.09s     Synthesize event
+    t =    45.67s     Wait for com.plenara.plenaraApp to idle
+    t =    46.19s Waiting 5.0s for "Grow closer" Button to exist
+    t =    47.22s     Checking `Expect predicate `existsNoRetry == 1` for object "Grow closer" Button`
+    t =    47.25s         Checking existence of `"Grow closer" Button`
+    t =    47.29s Find the "Grow closer" Button
+    t =    47.32s Tap "Grow closer" Button
+    t =    47.32s     Wait for com.plenara.plenaraApp to idle
+    t =    47.43s     Find the "Grow closer" Button
+    t =    47.45s     Check for interrupting elements affecting "Grow closer" Button
+    t =    47.52s     Synthesize event
+    t =    47.82s     Wait for com.plenara.plenaraApp to idle
+    t =    49.35s Tap "batch-save" Button
+    t =    49.35s     Wait for com.plenara.plenaraApp to idle
+    t =    49.36s     Find the "batch-save" Button
+    t =    49.45s     Check for interrupting elements affecting "batch-save" Button
+    t =    49.52s     Synthesize event
+    t =    49.82s     Wait for com.plenara.plenaraApp to idle
+    t =    50.40s Tap "Close" Button
+    t =    50.40s     Wait for com.plenara.plenaraApp to idle
+    t =    50.40s     Find the "Close" Button
+    t =    50.47s     Check for interrupting elements affecting "Close" Button
+    t =    50.53s     Synthesize event
+    t =    50.83s     Wait for com.plenara.plenaraApp to idle
+    t =    51.28s Terminate com.plenara.plenaraApp:40452
+    t =    52.35s Open com.plenara.plenaraApp
+    t =    52.35s     Launch com.plenara.plenaraApp
+2026-11-27 16:36:53.444 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:36:53.445 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    53.23s         Setting up automation session
+    t =    57.20s         Wait for com.plenara.plenaraApp to idle
+    t =    59.64s Tap "tab-1" Button
+    t =    59.64s     Wait for com.plenara.plenaraApp to idle
+    t =    59.64s     Find the "tab-1" Button
+    t =    60.13s     Check for interrupting elements affecting "tab-1" Button
+    t =    60.15s     Synthesize event
+    t =    60.45s     Wait for com.plenara.plenaraApp to idle
+    t =    60.86s Waiting 5.0s for "people-organize" Button to exist
+    t =    61.88s     Checking `Expect predicate `existsNoRetry == 1` for object "people-organize" Button`
+    t =    61.88s         Checking existence of `"people-organize" Button`
+    t =    61.92s Find the "people-organize" Button
+    t =    61.97s Find the "people-organize" Button
+    t =    62.00s Find the "tab-1" Button
+    t =    62.03s Tap "people-organize" Button
+    t =    62.03s     Wait for com.plenara.plenaraApp to idle
+    t =    62.03s     Find the "people-organize" Button
+    t =    62.07s     Check for interrupting elements affecting "people-organize" Button
+    t =    62.09s     Synthesize event
+    t =    62.39s     Wait for com.plenara.plenaraApp to idle
+    t =    62.81s Waiting 5.0s for "organize-mode" SegmentedControl to exist
+    t =    63.86s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-mode" SegmentedControl`
+    t =    63.86s         Checking existence of `"organize-mode" SegmentedControl`
+    t =    63.97s Checking existence of `"organize-person-Leo Park" Button`
+    t =    64.03s Checking existence of `"Show everyone" Button`
+    t =    64.08s Tap "Show everyone" Button
+    t =    64.08s     Wait for com.plenara.plenaraApp to idle
+    t =    64.09s     Find the "Show everyone" Button
+    t =    64.15s     Check for interrupting elements affecting "Show everyone" Button
+    t =    64.20s     Synthesize event
+    t =    64.50s     Wait for com.plenara.plenaraApp to idle
+    t =    64.72s Checking existence of `"organize-person-Leo Park" Button`
+    t =    64.81s Tap "Close" Button
+    t =    64.81s     Wait for com.plenara.plenaraApp to idle
+    t =    64.81s     Find the "Close" Button
+    t =    64.90s     Check for interrupting elements affecting "Close" Button
+    t =    64.96s     Synthesize event
+    t =    65.26s     Wait for com.plenara.plenaraApp to idle
+    t =    65.64s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testOrganizeNeedsAssessmentFilterBatchUndoAndReopen]' passed (65.988 seconds).
+Test Case '-[PlenaraUITests.PlenaraUITests testOrganizeQuickSortUnsetSkipUndoAndSave]' started.
+    t =     0.01s Start Test at 2026-11-27 16:37:07.054
+    t =     0.06s Set Up
+    t =     0.06s     Open com.plenara.plenaraApp
+    t =     0.06s         Launch com.plenara.plenaraApp
+    t =     0.06s             Terminate com.plenara.plenaraApp:40610
+2026-11-27 16:37:08.170 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:37:08.170 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.33s             Setting up automation session
+    t =     4.82s             Wait for com.plenara.plenaraApp to idle
+    t =     6.60s Terminate com.plenara.plenaraApp:40676
+    t =     7.66s Open com.plenara.plenaraApp
+    t =     7.66s     Launch com.plenara.plenaraApp
+2026-11-27 16:37:14.705 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:37:14.705 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     7.87s         Setting up automation session
+    t =    11.38s         Wait for com.plenara.plenaraApp to idle
+    t =    13.20s Tap "tab-1" Button
+    t =    13.20s     Wait for com.plenara.plenaraApp to idle
+    t =    13.21s     Find the "tab-1" Button
+    t =    13.60s     Check for interrupting elements affecting "tab-1" Button
+    t =    13.63s     Synthesize event
+    t =    13.94s     Wait for com.plenara.plenaraApp to idle
+    t =    13.94s Waiting 5.0s for "people-organize" Button to exist
+    t =    14.97s     Checking `Expect predicate `existsNoRetry == 1` for object "people-organize" Button`
+    t =    14.97s         Checking existence of `"people-organize" Button`
+    t =    15.02s Find the "people-organize" Button
+    t =    15.06s Find the "people-organize" Button
+    t =    15.10s Find the "tab-1" Button
+    t =    15.14s Tap "people-organize" Button
+    t =    15.14s     Wait for com.plenara.plenaraApp to idle
+    t =    15.14s     Find the "people-organize" Button
+    t =    15.17s     Check for interrupting elements affecting "people-organize" Button
+    t =    15.21s     Synthesize event
+    t =    15.51s     Wait for com.plenara.plenaraApp to idle
+    t =    15.72s Waiting 5.0s for "organize-mode" SegmentedControl to exist
+    t =    16.77s     Checking `Expect predicate `existsNoRetry == 1` for object "organize-mode" SegmentedControl`
+    t =    16.77s         Checking existence of `"organize-mode" SegmentedControl`
+    t =    16.85s Tap "Quick sort" Button
+    t =    16.85s     Wait for com.plenara.plenaraApp to idle
+    t =    16.85s     Find the "Quick sort" Button
+    t =    16.97s     Check for interrupting elements affecting "Quick sort" Button
+    t =    17.02s     Synthesize event
+    t =    17.32s     Wait for com.plenara.plenaraApp to idle
+    t =    18.96s Find the "organize-field" Button
+    t =    19.03s Find the "organize-field" Button
+    t =    19.09s Tap "organize-field" Button
+    t =    19.09s     Wait for com.plenara.plenaraApp to idle
+    t =    19.09s     Find the "organize-field" Button
+    t =    19.15s     Check for interrupting elements affecting "organize-field" Button
+    t =    19.21s     Synthesize event
+    t =    19.50s     Wait for com.plenara.plenaraApp to idle
+    t =    19.68s Waiting 5.0s for "What I want" Button to exist
+    t =    20.72s     Checking `Expect predicate `existsNoRetry == 1` for object "What I want" Button`
+    t =    20.72s         Checking existence of `"What I want" Button`
+    t =    20.77s Find the "What I want" Button
+    t =    20.81s Tap "What I want" Button
+    t =    20.81s     Wait for com.plenara.plenaraApp to idle
+    t =    20.86s     Find the "What I want" Button
+    t =    20.88s     Check for interrupting elements affecting "What I want" Button
+    t =    20.94s     Synthesize event
+    t =    21.23s     Wait for com.plenara.plenaraApp to idle
+    t =    22.75s Find the "organize-unset-only" Switch
+    t =    22.81s Tap SearchField (First Match)
+    t =    22.81s     Wait for com.plenara.plenaraApp to idle
+    t =    22.82s     Find the SearchField (First Match)
+    t =    22.85s     Check for interrupting elements affecting "Find people by name or city" SearchField
+    t =    22.92s     Synthesize event
+    t =    23.22s     Wait for com.plenara.plenaraApp to idle
+    t =    24.65s Type 'Leo
+' into "Find people by name or city" SearchField
+    t =    24.65s     Wait for com.plenara.plenaraApp to idle
+    t =    24.67s     Find the "Find people by name or city" SearchField
+    t =    24.74s     Check for interrupting elements affecting "Find people by name or city" SearchField
+    t =    24.81s     Synthesize event
+    t =    25.09s     Wait for com.plenara.plenaraApp to idle
+    t =    25.40s Waiting 5.0s for "sort-Leo Park-Grow closer" Button to exist
+    t =    26.44s     Checking `Expect predicate `existsNoRetry == 1` for object "sort-Leo Park-Grow closer" Button`
+    t =    26.44s         Checking existence of `"sort-Leo Park-Grow closer" Button`
+    t =    26.50s Find the "sort-Leo Park-Grow closer" Button
+    t =    26.56s Find the Target Application 'com.plenara.plenaraApp'
+    t =    26.77s Added attachment named 'Quick sort unanswered'
+    t =    26.77s Tap "sort-Leo Park-Grow closer" Button
+    t =    26.77s     Wait for com.plenara.plenaraApp to idle
+    t =    26.78s     Find the "sort-Leo Park-Grow closer" Button
+    t =    26.84s     Check for interrupting elements affecting "sort-Leo Park-Grow closer" Button
+    t =    26.89s     Synthesize event
+    t =    27.19s     Wait for com.plenara.plenaraApp to idle
+    t =    27.20s Checking existence of `"sort-skip-Leo Park" Button`
+    t =    27.26s Tap "organize-undo" Button
+    t =    27.26s     Wait for com.plenara.plenaraApp to idle
+    t =    27.27s     Find the "organize-undo" Button
+    t =    27.33s     Check for interrupting elements affecting "organize-undo" Button
+    t =    27.38s     Synthesize event
+    t =    27.67s     Wait for com.plenara.plenaraApp to idle
+    t =    27.68s Waiting 5.0s for "sort-Leo Park-Grow closer" Button to exist
+    t =    28.70s     Checking `Expect predicate `existsNoRetry == 1` for object "sort-Leo Park-Grow closer" Button`
+    t =    28.70s         Checking existence of `"sort-Leo Park-Grow closer" Button`
+    t =    28.76s Tap "sort-skip-Leo Park" Button
+    t =    28.76s     Wait for com.plenara.plenaraApp to idle
+    t =    28.77s     Find the "sort-skip-Leo Park" Button
+    t =    28.82s     Check for interrupting elements affecting "sort-skip-Leo Park" Button
+    t =    28.87s     Synthesize event
+    t =    29.16s     Wait for com.plenara.plenaraApp to idle
+    t =    29.16s Checking existence of `"sort-Leo Park-Grow closer" Button`
+    t =    29.23s Tap "Show skipped people" Button
+    t =    29.24s     Wait for com.plenara.plenaraApp to idle
+    t =    29.24s     Find the "Show skipped people" Button
+    t =    29.30s     Check for interrupting elements affecting "Show skipped people" Button
+    t =    29.36s     Synthesize event
+    t =    29.65s     Wait for com.plenara.plenaraApp to idle
+    t =    29.66s Waiting 5.0s for "sort-Leo Park-Grow closer" Button to exist
+    t =    30.71s     Checking `Expect predicate `existsNoRetry == 1` for object "sort-Leo Park-Grow closer" Button`
+    t =    30.71s         Checking existence of `"sort-Leo Park-Grow closer" Button`
+    t =    30.77s Tap "sort-Leo Park-Grow closer" Button
+    t =    30.77s     Wait for com.plenara.plenaraApp to idle
+    t =    30.77s     Find the "sort-Leo Park-Grow closer" Button
+    t =    30.82s     Check for interrupting elements affecting "sort-Leo Park-Grow closer" Button
+    t =    30.87s     Synthesize event
+    t =    31.16s     Wait for com.plenara.plenaraApp to idle
+    t =    31.16s Tap "Close" Button
+    t =    31.16s     Wait for com.plenara.plenaraApp to idle
+    t =    31.16s     Find the "Close" Button
+    t =    31.21s     Check for interrupting elements affecting "Close" Button
+    t =    31.26s     Synthesize event
+    t =    31.55s     Wait for com.plenara.plenaraApp to idle
+    t =    32.45s Terminate com.plenara.plenaraApp:40689
+    t =    34.47s Open com.plenara.plenaraApp
+    t =    34.47s     Launch com.plenara.plenaraApp
+2026-11-27 16:37:41.521 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-27 16:37:41.521 xcodebuild[39887:10654286] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    34.89s         Setting up automation session
+    t =    40.04s         Wait for com.plenara.plenaraApp to idle
+    t =    43.31s Tap "tab-1" Button
+    t =    43.31s     Wait for com.plenara.plenaraApp to idle
+    t =    43.33s     Find the "tab-1" Button
+    t =    43.89s     Check for interrupting elements affecting "tab-1" Button
+    t =    43.93s     Synthesize event
+    t =    44.22s     Wait for com.plenara.plenaraApp to idle
+    t =    44.58s Tap "Grow closer" Button
+    t =    44.58s     Wait for com.plenara.plenaraApp to idle
+    t =    44.59s     Find the "Grow closer" Button
+    t =    44.64s     Check for interrupting elements affecting "filter-Grow closer" Button
+    t =    44.68s     Synthesize event
+    t =    44.97s     Wait for com.plenara.plenaraApp to idle
+    t =    44.98s Checking existence of `"person-Leo Park" Button`
+    t =    45.05s Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.07s Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.09s Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.11s Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.14s Checking existence of `"tab-0" Button`
+    t =    45.17s Find the "tab-0" Button
+    t =    45.23s Find the "tab-0" Button
+    t =    45.28s Checking existence of `"home-filter-footer" Other`
+    t =    45.31s Checking existence of `Keyboard (First Match)`
+    t =    45.35s Checking existence of `"person-Leo Park" Button`
+    t =    45.38s Find the "person-Leo Park" Button
+    t =    45.42s Find the "person-Leo Park" Button
+    t =    45.45s Find the "person-Leo Park" Button
+    t =    45.50s Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.53s Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.56s Press Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 624.3) for 0.1 seconds, then drag to Target Application 'com.plenara.plenaraApp'[0.00, 0.00] -> (201.0, 265.8) with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    45.56s     Wait for com.plenara.plenaraApp to idle
+    t =    45.56s     Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.59s     Check for interrupting elements affecting "Plenara" Application
+    t =    45.62s     Synthesize event
+    t =    45.62s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.64s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.66s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.69s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    45.71s         Find the Target Application 'com.plenara.plenaraApp'
+    t =    46.76s     Wait for com.plenara.plenaraApp to idle
+    t =    47.14s Find the Target Application 'com.plenara.plenaraApp'
+    t =    47.17s Find the Target Application 'com.plenara.plenaraApp'
+    t =    47.19s Find the Target Application 'com.plenara.plenaraApp'
+    t =    47.21s Find the Target Application 'com.plenara.plenaraApp'
+    t =    47.23s Checking existence of `"tab-0" Button`
+    t =    47.26s Find the "tab-0" Button
+    t =    47.30s Find the "tab-0" Button
+    t =    47.33s Checking existence of `"home-filter-footer" Other`
+    t =    47.35s Checking existence of `Keyboard (First Match)`
+    t =    47.40s Checking existence of `"person-Leo Park" Button`
+    t =    47.42s Find the "person-Leo Park" Button
+    t =    47.46s Find the "person-Leo Park" Button
+    t =    47.50s Tap "person-Leo Park" Button
+    t =    47.50s     Wait for com.plenara.plenaraApp to idle
+    t =    47.50s     Find the "person-Leo Park" Button
+    t =    47.53s     Check for interrupting elements affecting "person-Leo Park" Button
+    t =    47.56s     Synthesize event
+    t =    47.84s     Wait for com.plenara.plenaraApp to idle
+    t =    48.32s Waiting 5.0s for "Far away" StaticText to exist
+    t =    49.35s     Checking `Expect predicate `existsNoRetry == 1` for object "Far away" StaticText`
+    t =    49.35s         Checking existence of `"Far away" StaticText`
+    t =    49.40s Find the "relationship-intention" Button
+    t =    49.43s Find the Target Application 'com.plenara.plenaraApp'
+    t =    49.55s Added attachment named 'Quick sorted profile'
+    t =    49.55s Tear Down
+Test Case '-[PlenaraUITests.PlenaraUITests testOrganizeQuickSortUnsetSkipUndoAndSave]' passed (49.829 seconds).
+Test Suite 'PlenaraUITests' passed at 2026-11-27 16:37:56.878.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 192.928 (192.953) seconds
+Test Suite 'PlenaraUITests.xctest' passed at 2026-11-27 16:37:56.885.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 192.928 (192.960) seconds
+Test Suite 'Selected tests' passed at 2026-11-27 16:37:56.885.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 192.928 (192.963) seconds
+2026-11-27 16:37:57.464 xcodebuild[39887:10654286] [MT] IDETestOperationsObserverDebug: 200.511 elapsed -- Testing started completed.
+2026-11-27 16:37:57.464 xcodebuild[39887:10654286] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-27 16:37:57.464 xcodebuild[39887:10654286] [MT] IDETestOperationsObserverDebug: 200.511 sec, +200.511 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/luisma.code/Documents/code/plenara/plenara/.build/native-20261127-163434.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

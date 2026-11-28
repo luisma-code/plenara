@@ -1,0 +1,14 @@
+Monitoring boot status for Plenara verification (BB42F29A-928B-4B9E-BD39-160B70249D4F).
+Booting device...
+[2026-11-27 22:26:33 +0000] Status=0, isTerminal=NO, Elapsed=00:00.
+	Booting
+
+[2026-11-27 22:26:55 +0000] Status=4, isTerminal=NO, Elapsed=00:22.
+	Waiting on System App
+
+[2026-11-27 22:27:08 +0000] Status=4, isTerminal=NO, Elapsed=00:35.
+	Waiting on System App
+
+[2026-11-27 22:27:28 +0000] Status=4294967295, isTerminal=YES, Elapsed=00:54.
+	Finished
+
