@@ -205,3 +205,12 @@ and cleanup. The native runner requires external data by default.
 a fallback: Luis authorized it only for the compact Home build-1009 release on
 November 25, 2026. A future internal-storage exception requires authorization
 for that workflow.
+
+Xcode 27.2's Foundation exporter ignores `TMPDIR` for its temporary distribution
+log bundle. After export exits, `tool/retain-distribution-logs.py` verifies every
+copied file and link before removing that internal original and retaining the
+logs on MacExt. It reuses the mounted-volume and output-link checks. The deploy
+helper runs the log guard's three tests before building. This confines retained
+logs to MacExt; Apple still creates the temporary bundle internally during export.
+The SDK gate separately checks the final IPA metadata and actual executable load
+commands before Apple validation/upload.

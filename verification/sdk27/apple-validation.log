@@ -1,0 +1,7 @@
+Running altool at path '/Applications/Xcode.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+2026-11-27 18:05:21.974  INFO: [ContentDelivery.Uploader.C57411140] 
+==========================================
+VERIFY SUCCEEDED with no errors
+==========================================
+No errors validating archive at '.build/testflight-candidate/export/Plenara.ipa'.

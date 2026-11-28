@@ -16,8 +16,9 @@ or automatic launch are authorized or performed.
 
 Release validation passed: the complete precheck finished with 73 native tests
 and the separate Contacts-denied journey, all green. Build 1010 uses SDK 27.2
-and keeps iOS 18 as its minimum. Signed TestFlight delivery is in progress;
-cloud availability is not yet claimed.
+and keeps iOS 18 as its minimum. Signed build 1010 is now processed as VALID
+and available to the Internal TestFlight group with Luis enrolled. The source commit is c712d1a. Installation
+and Automatic Updates remain controlled by TestFlight on the iPhone.
 
 ## Simulator storage
 
@@ -54,7 +55,7 @@ option. Before adopting it, `xcodebuild -showdestinations` with
 `DVTSimulatorSetLocation` positively listed Plenara's external iOS 27.2 target.
 The runner, memory guard and guard-calibration tool now share one simulator
 configuration, including the device set for every install, launch and stop.
-The release suite will use iOS 27.2 itself, not only compile its SDK. The
+The release suite used iOS 27.2 itself, not only its SDK. The
 internal-data control still fails before boot, demonstrating that the external
 storage guard has not been bypassed.
 
@@ -76,7 +77,7 @@ unchanged accessibility journey passed after the footer fix, and the search /
 cancel / reset journey and accessibility journey both passed after the complete
 helper repair. Other Xcode workloads started after that narrow run's initial
 clear check; those results establish functional behavior, not isolated memory
-figures. The guard calibration waits for clear workload inventory again.
+figures. Guard calibration waited for clear workload inventory again.
 
 The general lesson was added to the existing authoritative global
 `tests-that-can-fail/SKILL.md`, validated, mirrored and pushed to its authorized
@@ -100,8 +101,7 @@ The UI hierarchy and run log are retained. The test now waits for the picker’s
 actual dismissal, with a bounded 30-second deadline. The focused journey then
 passed: the system export completed, the newly saved file was available through
 Files, and restore reported five people and four moments. App export and journal
-code were unchanged. A full Release precheck is running against these final
-test adaptations.
+code were unchanged. Subsequent broad runs exercised these test adaptations, as recorded below.
 
 ## Calibrated safeguards
 
@@ -117,8 +117,8 @@ executable’s actual build load commands before validation or upload. It reject
 the prior SDK 26.5 package and a copy with only its plist restamped to SDK 27.2.
 It accepted a temporary unsigned wrapper of the newly compiled SDK 27.2 phone
 product for SDK compliance only. Apple validation of the final signed export
-remains a separate gate. Temporary control packages were removed; their receipt
-is retained. The final distribution package will have its own SHA-256 receipt.
+was a separate gate. Temporary control packages were removed; their receipt
+is retained. The final distribution package has its own SHA-256 receipt.
 
 
 ## Large-text organizer touch targeting
@@ -161,7 +161,7 @@ seeded row, on every picker opening. It keeps all selection, cancellation,
 repeat-import, no-contact-history and no-reminder assertions. After a simulator
 shutdown/boot, the full import journey passed. The same journey then passed with
 broad Contacts access denied. There is no app permission or picker implementation
-change. The final precheck will still rerun the complete suite and denied mode.
+change. The final precheck reran the complete suite and denied mode.
 
 
 ## Older runtime and storage cleanup
@@ -192,8 +192,8 @@ later test repairs. The existing authoritative testing skill now directs broad
 migration suites to collect independent failures, repair them together, verify
 focused cases, and then run the full gate. Unsafe growth or invalid shared state
 still requires stopping. The skill was validated, mirrored and pushed in global
-backup commit e5308a6. The current full precheck is allowed to finish collecting
-its independent cases; no active runner’s source will be edited.
+backup commit e5308a6. The next full precheck finished collecting
+its independent cases; no active runner’s source was edited.
 
 
 ## Final verification and visual review
@@ -235,3 +235,39 @@ all save/reopen assertions, and its focused run and rendered captures showed no
 corresponding failed behavior. The warning is retained in the result summary
 and `quick-log-runtime-warning.json`; this record does not claim a warning-free
 runtime or an identified cause for that framework diagnostic.
+
+
+## TestFlight delivery
+
+Build 1010 was archived and signed with Xcode 27.2, exported, checked against
+SDK 27.2 in both package metadata and Mach-O load commands, and accepted by
+Apple validation without errors. Upload succeeded with delivery/build ID
+56fdac0a-7108-415e-a696-7e6bb5bdc54e. Fresh App Store Connect readback confirms
+VALID, Internal-group assignment, owner enrollment and IN_BETA_TESTING. The
+actual signed IPA’s SHA-256 and inventory checks are in `delivered-package.json`;
+`testflight.json` is the fresh cloud readback. The package contains no test
+bundles, fixtures or simulator launch switches and retains the UserDefaults
+CA92.1 privacy declaration. No physical phone was tested or launched.
+
+The signed replacement is the retained usable iPhone build. The preliminary
+unsigned phone compiler output was removed after Apple accepted that replacement.
+Raw tool logs retain their original whitespace and CSV line endings; source and
+authored prose passed whitespace checks without rewriting execution evidence.
+
+Xcode’s Foundation-based exporter created a 135,254-byte temporary distribution
+log bundle internally despite the external TMPDIR. A Foundation/getconf check
+confirmed the OS-selected directory. Python does not expose Darwin’s symbolic
+confstr alias, so the first retention attempt failed before copying or deleting
+anything; the verified system getconf query resolved that lookup. After export
+had exited, all eight log files and links were verified on MacExt before the
+internal original was removed. The tested helper is now wired after successful
+exports for future releases. Three control tests passed, and removing each
+source, copy-integrity and completed-export guard made its corresponding check
+fail. The storage helper was integrated after the app’s completed delivery;
+it does not alter the app or its tested source. It moves completed logs safely,
+but does not claim Apple avoided the transient internal write.
+
+The image-preview false start also tightened the existing authoritative
+`measure-then-fix/SKILL.md` discovery and pre-report check. The validated change
+was mirrored and pushed in global backup commit 7e2dd05. It requires original
+pixel verification before reporting a product defect inferred from a tool preview.

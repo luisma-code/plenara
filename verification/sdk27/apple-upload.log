@@ -1,0 +1,10 @@
+Running altool at path '/Applications/Xcode.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+2026-11-27 18:06:33.800 ERROR: [ContentDelivery.Uploader.8FB065140] Failed to create URL for 'CDUploaderStateInfoResumeFilePath'. The file doesn’t exist. (4) The file doesn’t exist.
+2026-11-27 18:06:33.803  INFO: [ContentDelivery.Uploader.8FB065140] 
+==========================================
+UPLOAD SUCCEEDED with no errors
+Delivery UUID: 56fdac0a-7108-415e-a696-7e6bb5bdc54e
+Transferred 1608765 bytes in 3.181 seconds (505.67KB/s, 4.045Mbps)
+==========================================
+No errors uploading archive at '.build/testflight/export/Plenara.ipa'.

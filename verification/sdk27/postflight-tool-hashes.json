@@ -1,0 +1,5 @@
+{
+  "tool/deploy-testflight.sh": "b469056c82e9ee71a26e03ec1b0ff9f0f0ad2b5f4d4380a3599c8c4e935d71ea",
+  "tool/retain-distribution-logs.py": "111efbc6727dcee5e84d265b8e91658928df4b9f09347f64cf22dc95260586c1",
+  "tool/test_distribution_logs.py": "3258ca5d80b4537f3b5a332bd385c91a7d339a5e002f2a6b3c0115faea2f1229"
+}

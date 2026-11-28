@@ -3,6 +3,7 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 source tool/require-storage.sh
+python3 tool/test_distribution_logs.py
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_AQMT4FFHKW.p8"
 mkdir -p .tmp/testflight .build/testflight-candidate
@@ -28,6 +29,9 @@ xcodebuild -exportArchive -archivePath .build/testflight-candidate/Plenara.xcarc
   -authenticationKeyID AQMT4FFHKW \
   -authenticationKeyIssuerID 12ee92f1-bd97-4747-bc50-87c476d9eb9b \
   > .tmp/testflight/export.log 2>&1
+# Foundation ignores TMPDIR here. Export has exited; verify and move its
+# completed log bundle to MacExt before removing the internal original.
+python3 tool/retain-distribution-logs.py .tmp/testflight/export.log > .tmp/testflight/distribution-logs.json
 SDK_VERSION=$(xcrun --sdk iphoneos --show-sdk-version)
 python3 - "$SDK_VERSION" .build/testflight-candidate/export/Plenara.ipa > .tmp/testflight/package.json <<'PYSDK'
 import hashlib, json, plistlib, re, shutil, subprocess, sys, tempfile

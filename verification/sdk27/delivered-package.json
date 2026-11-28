@@ -1,0 +1,21 @@
+{
+  "CFBundleVersion": "1010",
+  "CFBundleShortVersionString": "1.0.0",
+  "CFBundleIdentifier": "com.plenara.plenaraApp",
+  "DTSDKName": "iphoneos27.2",
+  "DTXcodeBuild": "27B52",
+  "MinimumOSVersion": "18.0",
+  "UIDeviceFamily": [
+    1
+  ],
+  "binarySDKs": [
+    "27.2"
+  ],
+  "ipaSHA256": "4821680fa679897b7dd2fc043bdc80dcc2d60abf235cc13199415855291428f4",
+  "sourceCommit": "c712d1a791d42dd7ca5da4878bcd9d53602e5070",
+  "signedPackageValidatedByApple": true,
+  "noTestBundlesOrFixtures": true,
+  "noSimulatorLaunchFlags": true,
+  "userDefaultsPrivacyReason": "CA92.1",
+  "delivery": "Internal TestFlight available; device installation remains controlled by TestFlight."
+}

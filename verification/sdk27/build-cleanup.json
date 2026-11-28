@@ -1,0 +1,15 @@
+{
+  "retainedSignedBuild": ".build/testflight/Plenara.xcarchive",
+  "retainedIPA": ".build/testflight/export/Plenara.ipa",
+  "obsoleteUnsignedCompileRemoved": true,
+  "removedSupersededSimulatorCompilerOutput": [
+    ".build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64-x86_64.xctestrun",
+    ".build/simulator/Build/Products/Plenara_iphonesimulator27.2-x86_64.xctestrun",
+    ".build/simulator/Build/Products/Plenara_iphonesimulator26.5-x86_64.xctestrun",
+    ".build/simulator/Build/Products/Plenara_iphonesimulator26.5-arm64.xctestrun",
+    ".build/simulator/Build/Intermediates.noindex/Plenara.build/Release-iphonesimulator/PlenaraTests.build/Objects-normal/x86_64",
+    ".build/simulator/Build/Intermediates.noindex/Plenara.build/Release-iphonesimulator/Plenara.build/Objects-normal/x86_64",
+    ".build/simulator/Build/Intermediates.noindex/Plenara.build/Release-iphonesimulator/PlenaraUITests.build/Objects-normal/x86_64"
+  ],
+  "immutableResultBundlesRetained": true
+}

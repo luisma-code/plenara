@@ -1,0 +1,5 @@
+{
+  "verify_copyRemovalDetected": true,
+  "validate_sourceRemovalDetected": true,
+  "incompleteExportGuardRemovalDetected": true
+}
